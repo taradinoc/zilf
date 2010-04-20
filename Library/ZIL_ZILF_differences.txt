@@ -1,0 +1,129 @@
+The main documentation for ZIL programming is Infocom's "Learning ZIL" manual, 
+which you can find at
+http://www.xlisper.com/zil.pdf
+
+This doc describes the differences between ZILF's library and the description of 
+ZIL found in "Learning ZIL", including, at the bottom, what is not implemented
+yet in ZILF.
+
+
+-- ZILF has an OPENABLE bit.  If an object with CONTBIT also has OPENABLE, then it 
+can be opened and closed by the player. An object with CONTBIT and OPENBIT but no 
+OPENABLE flag will be considered always open.  An object with just CONTBIT
+assigned to it is considered a sealed-off container -- the author can make certain 
+game events add OPENBIT and/or OPENABLE to it to make it an accessible container.
+
+-- If an object has a TEXT property, that TEXT will show, along with any LDESC, 
+when the object is EXAMINED. If the object is READ, only the TEXT will be shown.
+
+-- New TEXT-HELD property.  If an object has a TEXT-HELD property, the string 
+associated with it will only be shown if the player is holding the object and 
+performs a READ on the object (for books, etc).
+
+-- New DEVICEBIT to indicate a device can be turned on and off.  ZIL used
+LIGHTBIT for this.  In ZILF, LIGHTBIT is used solely to indicate something
+providing light.
+
+-- "Learning ZIL" describes objects as having a default SIZE and CAPACITY of 5, 
+if the author does not specify them. If such default containers tested their 
+CAPACITY against a default object (being inserted)'s SIZE, then all default 
+containers could only hold 1 default object max (object of SIZE 5 filling the 
+container's CAPACITY of 5), which seems less than useful.  Therefore, in ZILF, 
+if an container is not assigned a CAPACITY, it will accept an unlimited number 
+of objects of SIZE 5 or under.  Thus an author who does not want to worry about 
+SIZE and CAPACITY can simply leave them off all objects, and any containers will 
+always accept any objects.  Then for special cases, SIZE and CAPACITY can be 
+specified (for the very special case of a container that is infinite in capacity, 
+but only allows objects of a certain size or below, the author can either specify 
+a very large CAPACITY along with the desired SIZE limit, or custom handle PUT-IN 
+in the object's ACTION routine).
+
+-- ZILF has the WEIGHT routine, as described in "Learning ZIL", but also a 
+CONTENTS-WEIGHT, which only adds up the SIZEs of the objects in the chosen container 
+- not adding the size of the container itself and also not recursing down through 
+any containers within the primary container.
+
+-- PICK-ONE in early versions of ZIL randomly picked any element from a given table, 
+and was later replaced by aversion that would randomly cycle through all elements of 
+the given table before repeating any of them.  ZILF offers both. PICK-ONE does the 
+cyclic 'shuffling' (no repeats til all elements have been displayed once).  PICK-ONE-R 
+is the totally random version (repeats likely).  Tables used with PICK-ONE must have 
+the numeral 2 as their first element. Both PICK-ONE and PICK-ONE-R tables must be LTABLES.
+
+-- The ZIL Manual is a little inconsistent about how a multiple-turn WAIT can/can't be 
+interrupted.  In ZILF, any routine that returns TRUE (whether an I-EVENT, the room's 
+M-END RARG, whatever) will interrupt a WAIT which is running though a sequence of passed 
+turns.  However, if a routine ends with a RFALSE, WAIT will continue to cycle on to 
+additional passed turns after the routine.  The default number of turns that pass with 
+WAIT is set by the global STANDARD-WAIT variable.
+
+-- New WAIT-TURNS routine. Pass a number to it, it will pass that number of game turns 
+in the same fashion as a player-called WAIT.
+
+-- New EDIBLEBIT (not in ZIL manual) for verb EAT
+
+-- COPYT routine is called COPY-TABLE, but functions exactly the same
+
+WHAT'S NOT IMPLEMENTED IN ZILF
+---------------------------------
+
+The following are not implemented yet as of v 0.3:
+
+General
+- Prompted disambiguation of similarly named objects
+- TAKE ALL/DROP ALL
+- Player commands with multiple direct objects
+- Player commands ending with a preposition (eg TURN OFF LIGHT works - 
+TURN LIGHT OFF doesn't)
+- All mouse and graphic routines
+
+Properties
+PLURAL (note this is different from PLURALBIT, which is implemented)
+DESCFCN
+CONTFCN
+GENERIC
+SDESC
+OWNER
+THINGS
+ADJACENT
+
+Bits
+TRYTAKEBIT
+DOORBIT
+LOCKEDBIT
+FLAMEBIT
+BURNBIT
+INVISIBLE
+SEARCHBIT (ZILF does not use the abitrary level-of-containment limit when searching 
+through visible & accessible objects)
+VEHBIT
+RLANDBIT
+RWATERBIT
+RAIRBIT
+KLUDGEBIT
+OUTSIDEBIT
+INTEGRALBIT
+PARTBIT
+NALLBIT
+DROPBIT
+INBIT
+
+Routines
+THIS-IS-IT
+INIT-STATUS
+UPDATE-STATUS
+ITALICIZE
+UNTOUCHABLE?
+WITHIN?
+OTHER-SIDE
+TOUCHING?
+CANT-SEE
+SEE-INSIDE?
+CAPITAL-NOUN?
+FIND-IN
+
+No OOPS
+
+
+
+
