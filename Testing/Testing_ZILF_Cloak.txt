@@ -1,0 +1,103 @@
+THINGS TO DO IN THE ZILF VERSION OF CLOAK OF DARKNESS
+
+The poor Cloak of Darkness example is now stuffed with things that
+in no way provide an interesting gaming experience, but do provide
+many ways to test the ZILF library.  Please try these things out,
+and email any bugs/issues to jj dot lawrence at gmail dot com.
+
+Note - ZILF-compiled games will not run in Mac Zoom (Andrew Hunter
+has been emailed about this), but runs fine in the newest versions
+of Spatterlight, Dumbfrotz, Gargoyle, Win Frotz, Unix Frotz and Nfrotz.
+
+SAVE, RESTORE, RESTART, AGAIN and UNDO should all function as expected
+WAIT/Z causes 4 turns to pass (you can toggle display of Turn # with DTURN command)
+
+
+THE FOYER
+----------
+- Examining the cube should cause 10 game turns to pass
+- Examining the painting or card should randomly display a different description each time, not 
+repeating until all possible descriptions have been shown once (6 for the painting, 3 for the 
+card)
+- Reading the painting should pick from three different signature possibilities to display, in 
+a 'totally' random fashion - ie, it doesn't guarantee all other possibilities have been shown 
+before repeating a particular possibility
+- Eating the apple should kill you, taking you to a "quit, restore, undo or restart?" query
+
+IQUEUE event tests:
+- A "You looked at grime 1 turn ago" message event should fire 1 turn after any EXAMINE GRIME 
+action
+- A "You looked at apple..." message should fire 2 turns after any
+EXAMINE APPLE action
+- The Foyer room's own routine should report if the above apple event is going fire (saying
+"The Foyer routine detects..." - a test of the RUNNING? (as in, is this event running?) routine
+- Examining the table should cause an event to fire every turn, until you examine the HOOK in the
+Cloakroom, which should dequeue it.  Note 'every turn' events do not fire during meta-actions
+like INVENTORY.
+
+CLOAKROOM
+----------
+- You should have to remove the Cloak before traveling west to Hallway to Study
+
+HALLWAY TO STUDY
+------------
+- Event describing spider should interrupt a wait cycle, ie full 4 turns won't go by
+ (test by toggling turn # display with DTURN). Example of RTRUE at end of IQUEUE event.
+- Examining the SIGN should reveal both its description and its text, reading it should
+only reveal its text.
+
+STUDY
+----------
+- The random event descriptions here (of mouse and scratching sound) should *not* interrupt a wait cycle.
+(There are examples of using RFALSE at end of IQUEUE event)
+- Has many containers and surfaces to test PUT IN and PUT ON with: jar is an always open container,
+wallet is a takeable container with very limited capacity which can be opened and closed, safe is
+a non-takeable container that can be opened and closed.  Tray and stand are surfaces.  Crate is
+an always-closed container.  The case is a transparent unopenable container holding a muffin that
+can be seen but not taken.
+- You can use DCONT command to toggle on and off descriptions of objects' sizes and capacities
+that will display when a PUT IN action is run
+- You can SWITCH/TURN ON and SWITCH/TURN OFF and FLIP the LIGHTSWITCH to control whether the 
+Closet is lit or not.  The flashlight is a device that you can SWITCH/TURN ON and SWITCH/TURN OFF,
+provides light when on.  The sphere is a transparent unopenable container that holds a firefly
+which provides light. 
+- You should have to hold the book to be able to read it.
+
+Note: TURN OFF FLASHLIGHT works, but TURN FLASHLIGHT OFF doesn't.  The syntax VERB OBJ PREPOSITION 
+is not supported yet - Jesse may make changes to the ZILF parser in the future to implement
+this syntax.
+
+GENERAL
+--------
+IT should refer to the last direct object you used in a command
+HE and SHE can be used to refer to Bentley and Stella after you've 
+used their names in commands at least once.
+THEM can be used to reference the grapes (the grapes have PLURALBIT)
+The CEILING is a global object that should be refrenceable in every room
+DARKNESS is an abstract (GENERIC in ZIL terms) object that you can THINK ABOUT.
+The RUG is a GLOBAL-LOCAL (scenery in multiple rooms) object that is in both the Foyer and the Bar.
+
+SPECIAL TEST COMMANDS
+----------------------
+DROB OBJ - OBJ must be in scope. Removes all objects contained in OBJ from play (test of ROB routine)
+DSEND OBJ TO OBJ - OBJs must be in scope.  Moves all objects contained in OBJ to the second OBJ
+(another test of ROB routine)
+DOBJL OBJ - OBJ must be in scope. Lists the contents of OBJ
+DVIS - Reports on the current visibility of the BILL and GRIME objects (test of VISIBLE? routine)
+DMETALOC OBJ - OBJ must be in scope.  Reports on the ultimate location of OBJ, which will
+either be a room name or false if OBJ is a global object, etc.  Also reports on the 
+meta-location of the grime object (grime does not have to be in scope).  Test by nesting 
+OBJ and/or grime within multiple containers to make sure the correct room is reported.
+(test of META-LOC routine)
+DACCESS OBJ - OBJ must be in scope. Reports if OBJ is currently accessible by the player
+(globals and local-globals return false, as they're scenery). (Test of ACCESSIBLE? routine)
+DHELD OBJ IN OBJ - OBJs must be in scope.  Reports if the first OBJ is contained by the
+second OBJ, and also reports if the first OBJ is contained in the Foyer. (test of HELD? routine)
+DHELDP OBJ - OBJ must be in scope. Reports if the OBJ is held by the player, and if the
+BILL object (which doesn't have to be in scope) is held by the player. (another HELD? test)
+DLIGHT - will toggle on/off status of flashlight, even in darkness
+DTURN - toggles reporting of the turn #.  Use when testing WAIT, looking at the cube, etc.
+DCONT - toggles reporting of size and capacity of objects in the PUT-IN routine.  For example, 
+PUT BOOK IN JAR could report "book of size 5 can't fit, since current weight of jar's contents 
+is 5 and jar's capacity is 6"
+
