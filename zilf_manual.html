@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>ZILF Manual</title>
+	<style type="text/css">
+		h1 { text-align: center; margin-bottom: 0em; }
+		.h1subtitle { text-align: center; margin-top: 0em; }
+		pre { margin-left: 0.75in; }
+	</style>
+</head>
+<body>
+	<h1>ZILF</h1>
+	<p class="h1subtitle">Version 0.3, April 2010</p>
+	
+	<h2>Introduction</h2>
+	<p>ZILF, the ZIL implementation of the Future, is an interpreter and compiler for the ZIL language. It can produce Z-machine assembler code for use with ZAPF, or it can interpret top-level ZIL constructs without compiling, similar to an MDL interpreter.</p>
+	<p>ZILF is a managed application and has been tested under Microsoft .NET (on Windows) as well as Mono (on Linux and Mac OS X).</p>
+	<p>To use ZILF, you should be familiar with the ZIL language: refer to the <cite>ZIL Language Guide</cite>.</p>
+	
+	<h2>Usage</h2>
+	<p>The simplest way to compile a game called "foo.zil" is with the command:</p>
+	<pre>zilf foo.zil</pre>
+	<p>Or, if using Mono:</p>
+	<pre>mono zilf.exe foo.zil</pre>
+	<p>This will generate ZAP assembly code with no debugging information and save a series of output files: a main file, "foo.zap", and a few associated files. To produce a playable game:<p>
+	<pre>zapf foo.zap</pre>
+	<p>More options are available: start ZILF with the "/?" or "--help" switches for details. In particular, you can change the output filename by specifying a new name after the input filename, and you can turn on debugging information with the "-d" switch or runtime tracing with "-tr".</p>
+	<p>To use ZILF as an interpreter, you can start it with no parameters to enter interactive mode. Type <tt>&lt;QUIT&gt;</tt> to exit. You can also interpret code from the command line or from a file with the "-e" and "-x" switches.</p>
+	
+	<h2>Syntax</h2>
+	<p>For a full description of the ZIL language syntax, see the <cite>ZIL Language Guide</cite>.</p>
+	<p>ZILF is <b>case-insensitive</b> by default. Atoms can be entered with any capitalization, and they will be printed back the way they were first entered. To run ZILF in case sensitive mode, use the "-s" switch.</p>
+	
+	<h3>Compiler Mode</h3>
+	<p>ZILF defaults to Z-machine version 3, and also supports versions 4, 5, and 8. Use <tt>VERSION</tt> at top level to change the Z-machine version.</p>
+	<p>When compiling, the values obtained by evaluating all the top-level expressions are ignored: only the resulting compilation state matters. The compiled game will start by executing a <tt>ROUTINE</tt> called <tt>GO</tt>, which must be defined and may not define any local atoms.
+	
+	<h3>Interpreter Mode</h3>
+	<p>In the interpreter modes, ZILF allows calls to compiler-oriented SUBRs such as <tt>ROUTINE</tt>, <tt>SYNTAX</tt>, and <tt>OBJECT</tt>, but their parameters may not be fully evaluated since code and data generation does not occur. In particular, this means macro calls inside routine and object definitions may not be expanded.</p>
+	<p>In interactive mode ("-i"), ZILF reads lines from the console until a complete ZIL expression is entered, then evaluates all the expressions and prints the result of the last one. Entering multiple expressions on one line will only show the result of the last expression.</p>
+	<p>In command line mode ("-e"), again, ZILF evaluates all expressions and prints the result of the last one.</p>
+	<p>In file mode ("-x"), ZILF evaluates all expressions but ignores the results. Nothing is printed unless the ZIL code calls an output SUBR such as <tt>PRINC</tt>.
+	
+	<h2>Compiler Targets</h2>
+	<p>By default, ZILF generates ZAPF assembly code for a version 3 game. To select another version, use the <tt>VERSION</tt> directive:</p>
+<pre>&lt;VERSION 3&gt;   or   &lt;VERSION ZIP&gt;
+&lt;VERSION 4&gt;   or   &lt;VERSION EZIP&gt;
+&lt;VERSION 5&gt;   or   &lt;VERSION XZIP&gt;
+&lt;VERSION 8&gt;</pre>
+	<p>Define the constant <tt>RELEASEID</tt> to set the release number of the game. (This is mandatory for version 5 and above.)</p>
+	<p>ZILF produces up to four assembly files: a file called "cloak.zil" will be compiled into "cloak.zap" (main file, with routines), "cloak_data.zap" (constants, objects, and tables), "cloak_str.zap" (strings), and possibly "cloak_freq.zap" (dummy abbreviations, only created if it doesn't already exist).</p>
+
+	<h2>Debugging</h2>
+	<p>ZILF offers two tools for debugging games: runtime tracing and debug file generation.</p>
+	
+	<h3>Runtime Tracing</h3>
+	<p>The "-tr" switch causes ZILF to generate code that prints the name and parameters of each routine call. The resulting game file will work in any interpreter. However, this adds to the size of the game code.</p>
+	
+	<h3>Debug File Generation</h3>
+	<p>The "-d" switch causes ZILF to generate annotations that ZAPF can use to produce an Inform-style debugging information file. The debug file can be used with an interpreter that supports it (such as Nitfol or ZLR) to provide source-level debugging: stepping through the game one line at a time, setting breakpoints, inspecting variables, and so on. This option does not change the game at all: the annotations cause a separate debug file to be produced, but the game itself is identical.</p>
+	
+	<h2>Library</h2>
+	<p>ZILF includes a library of code for writing interactive fiction, implementing a parser and world model similar to that described in <cite>Learning ZIL</cite> by Steve Meretzky (though only a subset at present). To include it:</p>
+<pre>&lt;INSERT-FILE "parser"&gt;</pre>
+	<p>See the included game source code for an example of using the library.</p>
+	
+	<h2>License</h2>
+	<p>The ZILF compiler is distributed under the terms of the GNU General Public License version 3 (GPLv3). See COPYING.txt for details.</p>
+	<p>The ZILF library is distributed under the following terms:</p>
+	<blockquote>
+		<p>"ZILF Library Copyright (C) 2010 Jesse McGrew and Josh Lawrence</p>
+		<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p>
+		<ul>
+			<li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</li>
+			<li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. <em>In the case of a binary z-code file compiled by the ZILF compiler, the appearance of the library version number within the text of the introductory title credits of your game (text that is displayed to a person who plays your z-code file via a z-code interpreter) is sufficient to satisfy the requirements for redistribution of said binary z-code file. (By default, using &lt;V-VERSION&gt; in your game's source code will display the library version number to a person playing your game on a z-code interpreter.)</em></li>
+			<li>The names of the authors may not be used to endorse or promote products derived from this software without specific prior written permission.</li>
+		</ul>
+		<p>THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."</p>
+	</blockquote>
+	
+	<h2>ZILF History</h2>
+	
+	<h3>0.3 &mdash; April 18, 2010</h3>
+	<ul>
+		<li>Now uses correct left-to-right evaluation order.</li>
+		<li>Added ZIL instructions: <tt>BIND</tt>, <tt>COPYT</tt>, <tt>IRESTORE</tt>, <tt>ISAVE</tt>, <tt>VERSION?</tt>.
+		<li>Added ZIL level support for the <tt>&lt;1 .LIST&gt;</tt> and <tt>&lt;1 .LIST .NEWITEM&gt;</tt> syntaxes (shortcuts for <tt>GET</tt> and <tt>PUT</tt>).</li>
+		<li>Added top level functions: <tt>AGAIN</tt>, <tt>ANDB</tt>, <tt>BIND</tt>, <tt>LSH</tt>, <tt>ORB</tt>, <tt>ORDER-OBJECTS?</tt>.
+		<li>Added <tt>,ZIL-VERSION</tt> as a string containing the ZILF version number.</li>
+		<li>Default "frequent words" file now has valid addresses for all 96 abbreviations, fixing an incompatibility with Zoom.</li>
+		<li>Better code generation for <tt>AND</tt>/<tt>OR</tt> in value-producing context.</li>
+		<li>Better error handling when:<ul>
+			<li>a non-constant expression appears in a table definition</li>
+			<li>a word has too many parts of speech</li>
+			<li>a property value is too long</li>
+			<li>a local variable's default value is non-constant (V3 only)</li>
+			</ul></li>
+	</ul>
+
+	<h3>0.2 &mdash; July 21, 2009</h3>
+	<ul>
+		<li>Initial release.</li>
+	</ul>
+</body>
+</html>

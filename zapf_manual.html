@@ -1,0 +1,602 @@
+<?xml version="1.0"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>ZAPF Manual</title>
+	<style type="text/css">
+		h1 { text-align: center; margin-bottom: 0em; }
+		.h1subtitle { text-align: center; margin-top: 0em; }
+		pre { margin-left: 0.75in; }
+	</style>
+</head>
+<body>
+	<h1>ZAPF</h1>
+	<p class="h1subtitle">Version 0.3, April 2010</p>
+	
+	<h2>Introduction</h2>
+	<p>ZAPF, the Z-machine Assembler Program of the Future, is an assembler for the Z-machine interactive fiction platform. It provides nearly complete control over the Z-machine's memory layout, and supports two assembly syntaxes: the default syntax is similar to the original ZAP used by Infocom, and a syntax similar to Inform's assembler can also be selected.</p>
+	<p>ZAPF is a managed application and has been tested under Microsoft .NET (on Windows) as well as Mono (on Linux and Mac OS X).</p>
+	<p>To use ZAPF, you should be familiar with the Z-machine architecture and instruction set. Refer to the <cite><a href="http://www.inform-fiction.org/zmachine/standards/z1point0/index.html">Z-Machine Standards Document</a></cite> if not, but note that the Standards Document uses the Inform opcode names (see the "-i" switch below).</p>
+
+	<h2>Usage</h2>
+	<p>The simplest way to assemble a file called "foo.zap" is with the command:</p>
+	<pre>zapf foo.zap</pre>
+	<p>Or, if using Mono:</p>
+	<pre>mono zapf.exe foo.zap</pre>
+	<p>This will use the default (Infocom) syntax and generate an output file named according to the Z-machine version, for example "foo.z3".</p>
+	<p>More options are available: start ZAPF with no parameters for details. In particular, you can change the output filename by specifying a new name after the input filename, and you can select the Inform syntax by specifying the "-i" switch before the input filename. You can change the Z-machine version with the "-v" switch, but the <tt>.NEW</tt> directive is preferred (see below).</p>
+	
+	<h2>Syntax</h2>
+	<p>A ZAPF input file consists of comments, labels, directives, and instructions. One instruction or directive is allowed per line. Comments and labels may appear on any line, even lines with no instruction or directive. Blank lines are ignored.</p>
+	<p>Note: directives, instructions, labels, and all other names in ZAPF are case-sensitive.</p>
+	
+	<h3>Comments</h3>
+	<p>Comments are ignored by the assembler. A comment begins with a semicolon and continues until the end of the line:</p>
+<pre>; This is a comment all by itself
+ADD X,Y &gt;Z        ; This is a comment after an instruction</pre>
+	
+	<h3>Labels</h3>
+	<p>Labels associate a name with a location in the output file. A label consists of a word followed by one or two colons. A label may appear before an instruction or directive, or by itself, but only one label may appear on a line.</p>
+	<p>A label with one colon is "local" and can only be referenced within the same routine (see the <tt>.FUNCT</tt> directive below). The name can be reused in other functions. Local labels may not be defined before the first <tt>.FUNCT</tt> directive.</p>
+	<p>A label with two colons is "global" and can be referenced from anywhere else, thus the name must be unique within the whole program. On Z-machine versions 3 and 4, certain global labels have special meaning and must be defined somewhere in the program: see "Version Considerations" below.</p>
+
+	<h3>Directives</h3>
+	<p>Directives are special commands to the assembler. Some directives cause data to be written to the output file; others merely affect how other parts of the file are interpreted. Directive names must always be given in uppercase.</p>
+	<p>Some directives take one or more expressions as parameters. Such an expression can be either a number (a positive or negative decimal integers), a global symbol (the name of a global label, object, constant, etc.), or the sum of two or more numbers or constant names connected by "+" signs.</p>
+	<p>Some directives take a string as a parameter. Strings are delimited by quotation marks and may contain line breaks. If a string contains a quotation mark, the quotation mark must be doubled.</p>
+	<p>Some directives take one or more names as parameters. Names must be words containing only A-Z (uppercase or lowercase), digits 0-9, and specific punctuation: hyphen (-), dollar sign ($), hash mask (#), ampersand (&amp;), or period (.). In the default syntax mode, question mark is also allowed, and apostrophe is allowed except at the beginning of the name; in Inform syntax mode, question mark and apostrophe are forbidden, but underscore is allowed instead.</p>
+
+	<h4>= (equal sign)</h4>
+	<pre>&lt;name&gt;=&lt;expression&gt;</pre>
+	<p>Defines the specified name as a global constant whose value is given by the expression. The name may then be used later in the file in place of the expression.</p>
+	
+	<h4>.BYTE</h4>
+	<pre>.BYTE &lt;expression&gt; [,&lt;expression&gt;,&ellipsis;]</pre>
+	<p>Writes one or more data bytes to the output file.</p>
+	<p>If a variable name is given as one of the expressions, the variable's number will be written, not its value.</p>
+	
+	<h4>.END</h4>
+	<pre>.END</pre>
+	<p>Marks the end of the program.</p>
+	
+	<h4>.ENDI</h4>
+	<pre>.ENDI</pre>
+	<p>Marks the end of an inserted file.</p>
+
+	<h4>.ENDT</h4>
+	<pre>.ENDT</pre>
+	<p>Marks the end of a table. If an expected size was supplied in the matching <tt>.TABLE</tt> directive, and the actual size of the table doen't match, ZAPF will print a warning message.</p>
+	
+	<h4>.FSTR</h4>
+	<pre>.FSTR &lt;name&gt;,"string"</pre>
+	<p>Writes an encoded string to the output file, and defines the specified name as a global symbol pointing to it (a word address, suitable for use in the <tt>WORDS</tt> table). If necessary, a zero byte will be written first to ensure that the string starts at an even address.</p>
+	<p>The string is also entered into the internal abbreviation table and automatically used to abbreviate game text. All abbreviations must be defined before any code or data that contains strings.</p>
+	<p>Note: this directive should not be used inside the &lt;WORDS&gt; table.</p>
+	
+	<h4>.FUNCT</h4>
+	<pre>.FUNCT &lt;routine name&gt; [,&lt;local name&gt; [=&lt;expression&gt;],&ellipsis;]</pre>
+	<p>Writes a routine header to the output file, and defines the specified name as a global symbol pointing to it (a packed address, suitable for use with a <tt>CALL</tt> instruction). If necessary, one or more zero bytes will be written first to ensure that the routine starts at an address divisible by 2, 4, or 8 (depending on the Z-machine version).</p>
+	<p>This directive also clears any local symbols that were defined previously. If any additional names are specified after the routine name, they will be defined as local variables. On Z-machine versions 3 and 4, expressions may also be given to define the initial values for the local variables; on later versions, local variables are always initialized to zero, and ZAPF will print a warning if any default values are given.</p>
+	
+	<h4>.GSTR</h4>
+	<pre>.GSTR &lt;name&gt;,"string"</pre>
+	<p>Writes an encoded string to the output file, and defines the specified name as a global symbol pointing to it (a packed address, suitable for use with a <tt>PRINT</tt> instruction). If necessary, one or more zero bytes will be written first to ensure that the string starts at an address divisible by 2, 4, or 8 (depending on the Z-machine version).</p>
+	
+	<h4>.GVAR</h4>
+	<pre>.GVAR &lt;name&gt; [=&lt;expression&gt;]</pre>
+	<p>Defines the specified name as a global symbol pointing to the next unused global variable slot, and writes the variable's initial value to the output file. If an expression is given, it will be used as the initial value; otherwise the initial value will be zero. This directive should be used in the <tt>GLOBAL</tt> table.</p>
+	
+	<h4>.INSERT</h4>
+	<pre>.INSERT "filename"</pre>
+	<p>Assembles the specified file in place of this directive, then resumes at the next line of the current file. The inserted file should end with a <tt>.ENDI</tt> directive.</p>
+	<p>If a file with this exact name is not found, ZAPF will try adding a ".zap" or ".xzap" extension before finally giving up.</p>
+	
+	<h4>.LEN</h4>
+	<pre>.LEN "string"</pre>
+	<p>Encodes a string (without writing it to the output file), then writes a byte to the output file indicating the number of words taken up by the encoded form of the string.</p>
+	
+	<h4>.NEW</h4>
+	<pre>.NEW &lt;expression&gt;</pre>
+	<p>Sets the Z-machine version number. Acceptable values range from 3 to 8.</p>
+	
+	<h4>.OBJECT</h4>
+	<p>Z-machine version 3:</p>
+	<pre>.OBJECT &lt;name&gt;,&lt;flags1&gt;,&lt;flags2&gt;,&lt;parent&gt;,&lt;sibling&gt;,&lt;child&gt;,&lt;properties&gt;</pre>
+	<p>Z-machine versions 4 and up:</p>
+	<pre>.OBJECT &lt;name&gt;,&lt;flags1&gt;,&lt;flags2&gt;,&lt;flags3&gt;,&lt;parent&gt;,&lt;sibling&gt;,&lt;child&gt;,&lt;properties&gt;</pre>
+	<p>Writes an object record to the output file, and defines the specified name as a global symbol pointing to the next unused object number. This directive should be used in the <tt>OBJECT</tt> table.</p>
+	<p>All parameters after the name are expressions whose values are written into the object record. Typically, <i>flags1</i>, <i>flags2</i>, and <i>flags3</i> are constants or sums of constants, <i>parent</i>, <i>sibling</i>, and <i>child</i> are object names, and <i>properties</i> is a global label pointing to a property table defined elsewhere.</p>
+	
+	<h4>.PROP</h4>
+	<pre>.PROP &lt;length&gt;,&lt;number&gt;</pre>
+	<p>Writes a property header to the output file. The parameters are expressions giving the length (in bytes) of the property data which follows and the property number, respectively. This directive should be used in property tables referenced by the <tt>.OBJECT</tt> directive.</p>
+	<p>Note: this directive does not begin or end the property table. The property table must begin with a length-prefixed string (see <tt>.STRL</tt>) and end with <tt>.BYTE 0</tt>.</p>
+	
+	<h4>.STR</h4>
+	<pre>.STR "string"</pre>
+	<p>Writes an encoded string to the output file.</p>
+	
+	<h4>.STRL</h4>
+	<pre>.STRL "string"</pre>
+	<p>Writes an encoded string to the output file, prefixed by a byte indicating the number of words taken up by the encoded string. This is equivalent to <tt>.LEN</tt> followed by <tt>.STR</tt> for the same string.</p>
+	
+	<h4>.TABLE</h4>
+	<pre>.TABLE [&lt;expression&gt;]</pre>
+	<p>Begins a table definition, which must be ended later with <tt>.ENDT</tt>. The expression, if specified, indicates the length of the table in bytes; <tt>.ENDT</tt> will print a warning if the table size is incorrect.</p>
+	<p>Table definitions may not be nested.</p>
+	
+	<h4>.VOCBEG</h4>
+	<pre>.VOCBEG &lt;record length&gt;,&lt;key length&gt;</pre>
+	<p>Begins a block of sorted records, which must be ended later with .VOCEND. <i>Record length</i> and <i>key length</i> are expressions giving the length (in bytes) of each record, and of the sort key, which must appear at the beginning of each record.</p>
+	<p>Records within the block will be rearranged in increasing order of their sort keys, treating the key as a big-endian number. Within the block, labels may only appear at the beginning of a record: that is, at a multiple of <i>record length</i> bytes after <tt>.VOCBEG</tt>. The labels will be updated as the records are moved.</p>
+	<p>Typically this directive is used in the <tt>VOCAB</tt> table to sort dictionary words. In this case, <i>record length</i> should be the length of an entire dictionary entry, and <i>key length</i> should be the length (in bytes!) of a dictionary word for the selected Z-machine version (4 in version 3, or 6 in all later versions).</p>
+	<p>Sorted blocks may not be nested.</p>
+	
+	<h4>.VOCEND</h4>
+	<pre>.VOCEND</pre>
+	<p>Ends a block of sorted records started with <tt>.VOCBEG</tt>.</p>
+	
+	<h4>.WORD</h4>
+	<pre>[.WORD] &lt;expression&gt; [,&lt;expression&gt;,&ellipsis;]</pre>
+	<p>Writes one or more data words to the output file.</p>
+	<p>Note: the <tt>.WORD</tt> directive itself is optional. If one or more expressions separated by commas are written on a line, without a directive or instruction name in front, ZAPF will write them to the output file as data words.</p>
+	
+	<h4>ZWORD</h4>
+	<pre>.ZWORD "string"</pre>
+	<p>Writes an encoded string to the output file as a dictionary word. The string will be padded or truncated to contain the correct number of Z-characters for the Z-machine version (6 in version 3, or 9 in all later versions).</p>
+	
+	<h3>Debugging Directives</h3>
+	<p>These directives cause ZAPF to generate records for a debug information file which can be loaded into an interpreter for source-level debugging. Refer to the <cite>Inform Technical Manual</cite> for the format of this file and the purposes of these records. A debug information file will be generated if, and only if, at least one debugging directive is present.</p>
+<pre>.DEBUG-ACTION &lt;expression&gt;,"name"
+.DEBUG-ARRAY &lt;expression&gt;,"name"
+.DEBUG-ATTR &lt;expression&gt;,"name"
+.DEBUG-CLASS "name",&lt;file1&gt;,&lt;line1&gt;,&lt;col1&gt;,&lt;file2&gt;,&lt;line2&gt;,&lt;col2&gt;
+.DEBUG-FAKE-ACTION &lt;expression&gt;,"name"
+.DEBUG-FILE &lt;num&gt;,"include name","file path"
+.DEBUG-GLOBAL &lt;expression&gt;,"name"
+.DEBUG-LINE &lt;file&gt;,&lt;line&gt;,&lt;col&gt;
+.DEBUG-MAP "key name" = &lt;expression&gt;
+.DEBUG-OBJECT &lt;expression&gt;,"name",&lt;file1&gt;,&lt;line1&gt;,&lt;col1&gt;,&lt;file2&gt;,&lt;line2&gt;,&lt;col2&gt;
+.DEBUG-PROP &lt;expression&gt;,"name"
+.DEBUG-ROUTINE &lt;file&gt;,&lt;line&gt;,&lt;col&gt;,"routine name" [,"param name",&ellipsis;]
+.DEBUG-ROUTINE-END &lt;file&gt;,&lt;line&gt;,&lt;col&gt;</pre>
+	<p>Note that "file" expressions must be given as file numbers, referencing a <tt>.DEBUG-FILE</tt> directive given previously.</p>
+	<p><tt>.DEBUG-ROUTINE</tt> and <tt>.DEBUG-ROUTINE-END</tt> should appear before and after a routine, respectively. Any <tt>.DEBUG-LINE</tt> directives in between will be associated with that routine.</p>
+	
+	<h3>Instructions</h3>
+	
+	<h4>Two Syntaxes</h4>
+	<p>The "-i" switch affects instructions in two ways. First, it changes the general syntax of operands, stores, and branches, as shown in the following table.</p>
+	<table>
+		<tr>
+			<th></th>
+			<th>Default syntax</th>
+			<th>Inform syntax</th>
+		</tr>
+		<tr>
+			<th>Plain instruction</th>
+			<td><tt>MOVE x,y</tt></td>
+			<td><tt>insert_obj x y</tt></td>
+		</tr>
+		<tr>
+			<th>Store</th>
+			<td><tt>ADD x,y &gt;r</tt></td>
+			<td><tt>add x y -&gt; r</tt></td>
+		</tr>
+		<tr>
+			<th>Branch</th>
+			<td><tt>EQUAL? x,y /label</tt></td>
+			<td><tt>je x y ?label</tt></td>
+		</tr>
+		<tr>
+			<th>Negated branch</th>
+			<td><tt>EQUAL? x,y \label</tt></td>
+			<td><tt>je x y ?~label</tt></td>
+		</tr>
+		<tr>
+			<th>Branch to return</th>
+			<td><tt>ZERO? x /TRUE</tt></td>
+			<td><tt>jz x ?rtrue</tt></td>
+		</tr>
+	</table>
+	<p>Second, it changes the opcode names from Infocom's original names to the names used in the <cite>Z-Machine Standards Document</cite>, as shown in the following table. Note that opcode names are case-sensitive in both modes. (Also note that CHECKU and PRINTU were not in Infocom's original design.)</p>
+	<table>
+		<tr>
+			<th>Default syntax</th>
+			<th>Inform syntax</th>
+			<th>Default syntax</th>
+			<th>Inform syntax</th>
+			<th>Default syntax</th>
+			<th>Inform syntax</th>
+		</tr>
+		<tr>
+			<td>ADD</td>
+			<td>add</td>
+			<td>HLIGHT</td>
+			<td>set_text_style</td>
+			<td>PRINTT</td>
+			<td>print_table</td>
+		</tr>
+		<tr>
+			<td>ASHIFT</td>
+			<td>art_shift</td>
+			<td>ICALL1</td>
+			<td>call_1n</td>
+			<td>PRINTU</td>
+			<td>print_unicode</td>
+		</tr>
+		<tr>
+			<td>ASSIGNED?</td>
+			<td>check_arg_count</td>
+			<td>ICALL2</td>
+			<td>call_2n</td>
+			<td>PTSIZE</td>
+			<td>get_prop_len</td>
+		</tr>
+		<tr>
+			<td>BAND</td>
+			<td>and</td>
+			<td>ICALL</td>
+			<td>call_vn</td>
+			<td>PUSH</td>
+			<td>push</td>
+		</tr>
+		<tr>
+			<td>BCOM</td>
+			<td>not</td>
+			<td>IGRTR?</td>
+			<td>inc_chk</td>
+			<td>PUTB</td>
+			<td>storeb</td>
+		</tr>
+		<tr>
+			<td>BOR</td>
+			<td>or</td>
+			<td>INC</td>
+			<td>inc</td>
+			<td>PUTP</td>
+			<td>put_prop</td>
+		</tr>
+		<tr>
+			<td>BTST</td>
+			<td>test</td>
+			<td>IN?</td>
+			<td>jin</td>
+			<td>PUT</td>
+			<td>storew</td>
+		</tr>
+		<tr>
+			<td>BUFOUT</td>
+			<td>buffer_mode</td>
+			<td>INPUT</td>
+			<td>read_char</td>
+			<td>QUIT</td>
+			<td>quit</td>
+		</tr>
+		<tr>
+			<td>CALL1</td>
+			<td>call_1s</td>
+			<td>INTBL?</td>
+			<td>scan_table</td>
+			<td>RANDOM</td>
+			<td>random</td>
+		</tr>
+		<tr>
+			<td>CALL2</td>
+			<td>call_2s</td>
+			<td>IRESTORE</td>
+			<td>restore_undo</td>
+			<td>READ</td>
+			<td>aread / sread</td>
+		</tr>
+		<tr>
+			<td>CALL</td>
+			<td>call_vs</td>
+			<td>ISAVE</td>
+			<td>save_undo</td>
+			<td>REMOVE</td>
+			<td>remove_obj</td>
+		</tr>
+		<tr>
+			<td>CATCH</td>
+			<td>catch</td>
+			<td>IXCALL</td>
+			<td>call_vn2</td>
+			<td>RESTART</td>
+			<td>restart</td>
+		</tr>
+		<tr>
+			<td>CHECKU</td>
+			<td>check_unicode</td>
+			<td>JUMP</td>
+			<td>jump</td>
+			<td>RESTORE</td>
+			<td>restore</td>
+		</tr>
+		<tr>
+			<td>CLEAR</td>
+			<td>erase_window</td>
+			<td>LESS?</td>
+			<td>jl</td>
+			<td>RETURN</td>
+			<td>ret</td>
+		</tr>
+		<tr>
+			<td>COLOR</td>
+			<td>set_colour</td>
+			<td>LEX</td>
+			<td>tokenise</td>
+			<td>RFALSE</td>
+			<td>rfalse</td>
+		</tr>
+		<tr>
+			<td>COPYT</td>
+			<td>copy_table</td>
+			<td>LOC</td>
+			<td>get_parent</td>
+			<td>RSTACK</td>
+			<td>ret_popped</td>
+		</tr>
+		<tr>
+			<td>CRLF</td>
+			<td>new_line</td>
+			<td>MARGIN</td>
+			<td>set_margins</td>
+			<td>RTRUE</td>
+			<td>rtrue</td>
+		</tr>
+		<tr>
+			<td>CURGET</td>
+			<td>get_cursor</td>
+			<td>MENU</td>
+			<td>make_menu</td>
+			<td>SAVE</td>
+			<td>save</td>
+		</tr>
+		<tr>
+			<td>DCLEAR</td>
+			<td>erase_picture</td>
+			<td>MOD</td>
+			<td>mod</td>
+			<td>SCREEN</td>
+			<td>set_window</td>
+		</tr>
+		<tr>
+			<td>DEC</td>
+			<td>dec</td>
+			<td>MOUSE-INFO</td>
+			<td>read_mouse</td>
+			<td>SCROLL</td>
+			<td>scroll_window</td>
+		</tr>
+		<tr>
+			<td>DIRIN</td>
+			<td>input_stream</td>
+			<td>MOUSE-LIMIT</td>
+			<td>mouse_window</td>
+			<td>SET</td>
+			<td>store</td>
+		</tr>
+		<tr>
+			<td>DIROUT</td>
+			<td>output_stream</td>
+			<td>MOVE</td>
+			<td>insert_obj</td>
+			<td>SHIFT</td>
+			<td>log_shift</td>
+		</tr>
+		<tr>
+			<td>DISPLAY</td>
+			<td>draw_picture</td>
+			<td>MUL</td>
+			<td>mul</td>
+			<td>SOUND</td>
+			<td>sound_effect</td>
+		</tr>
+		<tr>
+			<td>DIV</td>
+			<td>div</td>
+			<td>NEXT?</td>
+			<td>get_sibling</td>
+			<td>SPLIT</td>
+			<td>split_window</td>
+		</tr>
+		<tr>
+			<td>DLESS?</td>
+			<td>dec_chk</td>
+			<td>NEXTP</td>
+			<td>get_next_prop</td>
+			<td>SUB</td>
+			<td>sub</td>
+		</tr>
+		<tr>
+			<td>EQUAL?</td>
+			<td>je</td>
+			<td>NOOP</td>
+			<td>nop</td>
+			<td>THROW</td>
+			<td>throw</td>
+		</tr>
+		<tr>
+			<td>ERASE</td>
+			<td>erase_line</td>
+			<td>ORIGINAL?</td>
+			<td>piracy</td>
+			<td>USL</td>
+			<td>show_status</td>
+		</tr>
+		<tr>
+			<td>FCLEAR</td>
+			<td>clear_attr</td>
+			<td>PICINF</td>
+			<td>picture_data</td>
+			<td>VALUE</td>
+			<td>load</td>
+		</tr>
+		<tr>
+			<td>FIRST?</td>
+			<td>get_child</td>
+			<td>PICSET</td>
+			<td>picture_table</td>
+			<td>VERIFY</td>
+			<td>verify</td>
+		</tr>
+		<tr>
+			<td>FONT</td>
+			<td>set_font</td>
+			<td>POP</td>
+			<td>pull</td>
+			<td>WINATTR</td>
+			<td>window_style</td>
+		</tr>
+		<tr>
+			<td>FSET</td>
+			<td>set_attr</td>
+			<td>PRINTB</td>
+			<td>print_addr</td>
+			<td>WINGET</td>
+			<td>get_wind_prop</td>
+		</tr>
+		<tr>
+			<td>FSET?</td>
+			<td>test_attr</td>
+			<td>PRINTC</td>
+			<td>print_char</td>
+			<td>WINPOS</td>
+			<td>move_window</td>
+		</tr>
+		<tr>
+			<td>FSTACK</td>
+			<td>pop / pop_stack</td>
+			<td>PRINTD</td>
+			<td>print_obj</td>
+			<td>WINPUT</td>
+			<td>put_wind_prop</td>
+		</tr>
+		<tr>
+			<td>GETB</td>
+			<td>loadb</td>
+			<td>PRINTF</td>
+			<td>print_form</td>
+			<td>WINSIZE</td>
+			<td>window_size</td>
+		</tr>
+		<tr>
+			<td>GET</td>
+			<td>loadw</td>
+			<td>PRINTI</td>
+			<td>print</td>
+			<td>XCALL</td>
+			<td>call_vs2</td>
+		</tr>
+		<tr>
+			<td>GETP</td>
+			<td>get_prop</td>
+			<td>PRINTN</td>
+			<td>print_num</td>
+			<td>XPUSH</td>
+			<td>push_stack</td>
+		</tr>
+		<tr>
+			<td>GETPT</td>
+			<td>get_prop_addr</td>
+			<td>PRINT</td>
+			<td>print_paddr</td>
+			<td>ZERO?</td>
+			<td>jz</td>
+		</tr>
+		<tr>
+			<td>GRTR?</td>
+			<td>jg</td>
+			<td>PRINTR</td>
+			<td>print_ret</td>
+			<td>ZWSTR</td>
+			<td>encode_text</td>
+		</tr>
+	</table>
+	
+	<h4>Indirect Variable Operands</h4>
+	<p>Some opcodes (SET, VALUE, INC, DEC, IGRTR?, DLESS?) take the number of a variable as their first parameter. However, unlike Inform's assembler, ZAPF does not treat these parameters specially. This instruction stores 10 into the variable whose number is in "X":</p>
+	<pre>SET X,10</pre>
+	<p>To store 10 into the variable "X" Itself, prefix the variable name with an apostrophe:
+	<pre>SET 'X,10</pre>
+	<p>Even in Inform mode, the apostrophe is still necessary:</p>
+	<pre>store 'x 10</pre>
+	
+	<h3>Default Store Target</h3>
+	<p>If the target of a store instruction is omitted, the result will be stored to the stack by default.</p>
+	
+	<h2>Version Considerations</h2>
+	
+	<h3>Header</h3>
+	<h4>Version 3 and 4</h4>
+	
+	<p>In these versions, ZAPF automatically assembles the game header. Therefore, certain global labels <em>must</em> be defined:</p>
+	<table>
+		<tr>
+			<td><tt>ENDLOD</tt></td>
+			<td>Marks the end of low memory and the beginning of high memory. Some interpreters might conserve RAM by leaving high memory on the disk, so frequently used constant data should be (and all mutable data must be) located before this label.</td>
+		</tr>
+		<tr>
+			<td><tt>IMPURE</tt></td>
+			<td>Marks the end of "impure" (dynamic) memory and the beginning of "pure" (static) memory. This must be defined before <tt>ENDLOD</tt>.</td>
+		</tr>
+		<tr>
+			<td><tt>START</tt></td>
+			<td>Marks the instruction where the program begins.</td>
+		</tr>
+		<tr>
+			<td><tt>VOCAB</tt></td>
+			<td>Marks the beginning of the dictionary (vocabulary) table. See the <cite>Z-Machine Standards Document</cite> for the format of this table.</td>
+		</tr>
+		<tr>
+			<td><tt>OBJECT</tt></td>
+			<td>Marks the beginning of the object table. See the <cite>Z-Machine Standards Document</cite> for the format of this table, and see the <tt>.OBJECT</tt> directive above. This must be defined before <tt>ENDLOD</tt>.</td>
+		</tr>
+		<tr>
+			<td><tt>GLOBAL</tt></td>
+			<td>Marks the beginning of the global variable table, which consists of up to 240 words corresponding to the Z-machine's global variables. See the <tt>.GVAR</tt> directive above. This must be defined before <tt>ENDLOD</tt>.</td>
+		</tr>
+		<tr>
+			<td><tt>WORDS</tt></td>
+			<td>Marks the beginning of the abbreviation table, which consists of 96 word addresses (byte addresses divided by 2) pointing to abbreviation strings. See the <tt>.FSTR</tt> directive above.</td>
+		</tr>
+	</table>
+	
+	<p>Optionally, the constant <tt>RELEASEID</tt> may be defined to set the release number of the output file. If it is omitted, the release number will be 0.</p>
+	
+	<h4>Version 5 and up</h4>
+	<p>In these versions, ZAPF does not automatically create a game header. The input file must start with data directives to assemble one: refer to the <cite>Z-Machine Standards Document</cite> for the format of the header. ZAPF will, however, fill in the Z-code version, serial number, length, checksum, and creator ID (a.k.a. "Inform version") fields.</p>
+	
+	<h2>License</h2>
+	<p>ZAPF is distributed under the terms of the GNU General Public License version 3 (GPLv3). See COPYING.txt for details.</p>
+	
+	<h2>ZAPF History</h2>
+	
+	<h3>0.3 &mdash; April 18, 2010</h3>
+	<ul>
+		<li>Added the "-r", "-s", and "-c" switches to set release number, serial number, and creator code.</li>
+		<li>Added the "-ab' switch to find frequently used words (in the form of <tt>.FSTR</tt> directives and a <tt>WORDS::</tt> table).</li>
+		<li>Better parsing of unrecognized opcodes.</li>
+		<li>Fixed the SAVE opcode being assembled incorrectly.</li>
+		<li>Fixed opcodes not being recognized on versions 7 and 8.</li>
+	</ul>
+	
+	<h3>0.2 &mdash; July 21, 2009</h3>
+	<ul>
+		<li>Added debugging directives.</li>
+		<li>Improved support for V4-V5.</li>
+		<li>Allowed opcodes as local variable names, and apostrophe in symbol names.</li>
+		<li>Added checks for overly large files, and for V3-V4, checks for improper memory map arrangements.</li>
+		<li>Improved performance when string abbreviations are in use.</li>
+		<li>Added "-la" switch to dump global label addresses.</li>
+		<li>Optimized encoding of some 2OP instructions.</li>
+		<li>Known issues: versions higher than 5 are not fully supported.</li>
+	</ul>
+	
+	<h3>0.1 &mdash; July 2, 2009</h3>
+	<ul>
+		<li>Initial release.</li>
+		<li>Known issues: packed function and string addresses are not calculated correctly for V6 or V7 (workaround: set the string and code offsets in the header to 0). The status line "time" flag cannot be set for V3.</li>
+	</ul>
+</body>
+</html>
