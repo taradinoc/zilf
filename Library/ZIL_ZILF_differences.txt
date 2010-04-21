@@ -2,16 +2,18 @@ The main documentation for ZIL programming is Infocom's "Learning ZIL" manual,
 which you can find at
 http://www.xlisper.com/zil.pdf
 
-This doc describes the differences between ZILF's library and the description of 
-ZIL found in "Learning ZIL", including, at the bottom, what is not implemented
-yet in ZILF.
+This doc describes the differences between ZILF's v0.3 library and the description 
+of ZIL found in "Learning ZIL", including, at the bottom of this doc, what is not 
+yet implemented in the ZILF library.
 
+The code that comprises the library is part of parser.zil.
 
--- ZILF has an OPENABLE bit.  If an object with CONTBIT also has OPENABLE, then it 
+-- New OPENABLE bit.  If an object with CONTBIT also has OPENABLE, then it 
 can be opened and closed by the player. An object with CONTBIT and OPENBIT but no 
 OPENABLE flag will be considered always open.  An object with just CONTBIT
-assigned to it is considered a sealed-off container -- the author can make certain 
-game events add OPENBIT and/or OPENABLE to it to make it an accessible container.
+assigned to it is considered a sealed-off container (the author can make certain 
+game events add OPENBIT and/or OPENABLE to such a container to make it an 
+accessible container).
 
 -- If an object has a TEXT property, that TEXT will show, along with any LDESC, 
 when the object is EXAMINED. If the object is READ, only the TEXT will be shown.
@@ -62,10 +64,9 @@ in the same fashion as a player-called WAIT.
 
 -- New EDIBLEBIT (not in ZIL manual) for verb EAT
 
--- COPYT routine is called COPY-TABLE, but functions exactly the same
 
-WHAT'S NOT IMPLEMENTED IN ZILF
----------------------------------
+WHAT'S NOT IMPLEMENTED IN THE ZILF LIBRARY
+--------------------------------------------
 
 The following are not implemented yet as of v 0.3:
 
@@ -73,8 +74,8 @@ General
 - Prompted disambiguation of similarly named objects
 - TAKE ALL/DROP ALL
 - Player commands with multiple direct objects
-- Player commands ending with a preposition (eg TURN OFF LIGHT works - 
-TURN LIGHT OFF doesn't)
+- Player commands ending with a preposition (eg TURN OFF LIGHT works - TURN LIGHT 
+OFF doesn't)
 - All mouse and graphic routines
 
 Properties
@@ -94,8 +95,8 @@ LOCKEDBIT
 FLAMEBIT
 BURNBIT
 INVISIBLE
-SEARCHBIT (ZILF does not use the abitrary level-of-containment limit when searching 
-through visible & accessible objects)
+SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
+when searching through visible & accessible objects)
 VEHBIT
 RLANDBIT
 RWATERBIT
@@ -123,7 +124,3 @@ CAPITAL-NOUN?
 FIND-IN
 
 No OOPS
-
-
-
-
