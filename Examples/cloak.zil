@@ -89,8 +89,8 @@ ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence">
             <TELL "The message simply reads: \"You ">
             <COND (<G? ,DISTURBED 1> <TELL "lose.">)
                 (ELSE <TELL "win.">)>
-            <TELL "\"" CR>)>
-            <V-QUIT>>
+            <TELL "\"" CR>
+            <V-QUIT>)>>
 
 <ROOM CLOAKROOM
     (DESC "Cloakroom")
