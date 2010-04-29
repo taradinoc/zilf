@@ -351,16 +351,8 @@ General switches:
                         ctx.HandleSeriousError(ser);
                     }
 
-                foreach (Fixup f in ctx.Fixups)
-                {
-                    Symbol sym;
-                    if (ctx.GlobalSymbols.TryGetValue(f.Symbol, out sym) &&
-                        (sym.Value & 0xff) != sym.Value)
-                    {
-                        ctx.MeasureAgain = true;
-                        break;
-                    }
-                }
+                if (ctx.Fixups.Count > 0)
+                    ctx.MeasureAgain = true;
 
                 ctx.ResetBetweenPasses();
 
@@ -410,6 +402,9 @@ General switches:
                 {
                     ctx.HandleSeriousError(ser);
                 }
+
+            if (ctx.Fixups.Count > 0)
+                Errors.Serious(ctx, "unresolved references after final pass");
 
             // pad if necessary, finalize header length and checksum, close file
             try
@@ -1385,7 +1380,7 @@ General switches:
             AlignRoutine(ctx);
 
             Symbol sym;
-            int paddr = ctx.Position/ctx.PackingDivisor;
+            int paddr = ctx.Position / ctx.PackingDivisor;
             if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
             {
                 sym = new Symbol(name, SymbolType.Function, paddr);
