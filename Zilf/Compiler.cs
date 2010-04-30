@@ -2211,21 +2211,29 @@ namespace Zilf
                     {
                         if (resultStorage == rb.Stack)
                         {
-                            PushInnerLocal(cc, rb, tempAtom);
+                            if (and)
+                            {
+                                // don't need a temp variable, since a nonzero result will be discarded
+                                rb.BranchIfZero(resultStorage, nextLabel, false);
+                                rb.EmitStore(resultStorage, cc.Game.Zero);
+                            }
+                            else
+                            {
+                                // use a temp variable
+                                PushInnerLocal(cc, rb, tempAtom);
 
-                            ILocalBuilder temp = cc.Locals[tempAtom];
-                            rb.EmitStore(temp, result);
+                                ILocalBuilder temp = cc.Locals[tempAtom];
+                                rb.EmitStore(temp, result);
 
-                            rb.BranchIfZero(temp, nextLabel, !and);
-                            rb.EmitStore(resultStorage, temp);
+                                rb.BranchIfZero(temp, nextLabel, true);
+                                rb.EmitStore(resultStorage, temp);
 
-                            PopInnerLocal(cc, tempAtom);
+                                PopInnerLocal(cc, tempAtom);
+                            }
                         }
                         else
                         {
-                            if (resultStorage != result)
-                                rb.EmitStore(resultStorage, result);
-
+                            rb.EmitStore(resultStorage, result);
                             rb.BranchIfZero(resultStorage, nextLabel, !and);
                         }
                     }
