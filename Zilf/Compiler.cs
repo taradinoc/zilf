@@ -2815,14 +2815,9 @@ namespace Zilf
                         clause = clause.Rest as ZilList;
                     }
 
-                    if (condVersion == 0)
+                    if (condVersion == 0 && !clauses.IsEmpty)
                     {
-                        if (!clauses.IsEmpty)
-                        {
-                            //XXX warning message - following clauses will never be evaluated
-                        }
-
-                        break;
+                        //XXX warning message - following clauses will never be evaluated
                     }
 
                     return wantResult ? resultStorage : null;
