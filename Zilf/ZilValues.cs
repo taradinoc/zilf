@@ -123,13 +123,18 @@ namespace Zilf
                 case ZilLexer.UVECTOR:
                     return new ZilList(ReadChildrenFromAST(tree, ctx));
                 case ZilLexer.MACRO:
+                case ZilLexer.VMACRO:
                     // expand macros
                     ZilObject inner = ReadOneFromAST(tree.GetChild(0), ctx);
                     if (inner == null)
                         return null;
                     try
                     {
-                        return inner.Eval(ctx);
+                        ZilObject result = inner.Eval(ctx);
+                        if (tree.Type == ZilLexer.MACRO)
+                            return result;
+                        else
+                            return null;
                     }
                     catch (ZilError ex)
                     {
