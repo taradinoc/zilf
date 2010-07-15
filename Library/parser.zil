@@ -1744,6 +1744,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
         	  <NOT <FSET? ,PRSO ,OPENBIT>>
          >
 			  	<TELL "The " D ,PRSO " is closed." CR>
+			  	<COND (<AND <FSET? ,PRSO ,TRANSBIT> <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
 			  	<SET N 1>)
 	    (<AND <FSET? ,PRSO ,OPENABLE> 
         	  <FSET? ,PRSO ,OPENBIT>
@@ -1751,17 +1752,18 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 			  	<TELL "The " D ,PRSO " is open. ">
 			  	<DESCRIBE-CONTENTS ,PRSO>
 			  	<SET N 1>)
-		(<AND <AND <FSET? ,PRSO ,CONTBIT> 
-                   <AND <FIRST? ,PRSO>>
-              >
-              <OR <FSET? ,PRSO ,SURFACEBIT>
-          <AND <FSET? ,PRSO ,OPENBIT>
-               <FSET? ,PRSO ,OPENABLE>
-          >
-          <AND <FSET? ,PRSO ,CONTBIT>
-               <NOT <FSET? ,PRSO ,OPENABLE>>
-          >
-        >
+		(<AND 	<AND <FSET? ,PRSO ,CONTBIT> 
+                   	 <AND <FIRST? ,PRSO>>
+              	>
+              	<OR <FSET? ,PRSO ,TRANSBIT>
+              	    <FSET? ,PRSO ,SURFACEBIT>
+          		  	<AND <FSET? ,PRSO ,OPENBIT>
+               			 <FSET? ,PRSO ,OPENABLE>
+          		  	>
+          		  	<AND <FSET? ,PRSO ,CONTBIT>
+               		 	 <NOT <FSET? ,PRSO ,OPENABLE>>
+          			>
+        	 	>
      >
                 <DESCRIBE-CONTENTS ,PRSO>
                 <SET N 1>)
