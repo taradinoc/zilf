@@ -478,7 +478,7 @@ namespace Zapf
         public void SetLocalSymbol(string name, Symbol value)
         {
             if (localScope == null)
-                Errors.ThrowSerious("defining a local symbol outside a routine");
+                Errors.ThrowSerious("local symbols not allowed outside a function");
 
             Symbols[localScope.Name + " " + name] = value;
         }
@@ -493,12 +493,16 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Variable, num, CurrentPass);
                 Symbols.Add(name, sym);
             }
-            else if (sym.Pass == CurrentPass)
+            else if (sym.Type != SymbolType.Unknown &&
+                (sym.Type != SymbolType.Variable || sym.Pass == CurrentPass))
                 Errors.ThrowSerious("global redefined: " + name);
-            else if (sym.Value != num)
+            else if (sym.Type == SymbolType.Variable && sym.Value != num)
                 Errors.ThrowSerious("global {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
             else
-                sym.Pass = CurrentPass;
+            {
+                sym.Type = SymbolType.Variable;
+                sym.SetValue(num, CurrentPass);
+            }
         }
 
         public void AddObject(string name)
@@ -511,12 +515,16 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Object, num, CurrentPass);
                 Symbols.Add(name, sym);
             }
-            else if (sym.Pass == CurrentPass)
+            else if (sym.Type != SymbolType.Unknown &&
+                (sym.Type != SymbolType.Object || sym.Pass == CurrentPass))
                 Errors.ThrowSerious("object redefined: " + name);
-            else if (sym.Value != num)
+            else if (sym.Type == SymbolType.Object && sym.Value != num)
                 Errors.ThrowFatal("object {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
             else
-                sym.Pass = CurrentPass;
+            {
+                sym.Type = SymbolType.Object;
+                sym.SetValue(num, CurrentPass);
+            }
         }
 
         public void ResetBetweenPasses()

@@ -34,7 +34,7 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "ZAPF 0.3";
+        public const string VERSION = "ZAPF 0.4";
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main(string[] args)
@@ -326,9 +326,10 @@ General switches:
 
             // first pass: discover label addresses and header flags
             if (!ctx.Quiet)
-                Console.Error.Write("Measuring");
+                Console.Error.WriteLine("Measuring");
 
             ctx.CurrentPass = 1;
+            System.Diagnostics.Debug.WriteLine("===== PASS ONE =====");
 
             // write dummy header
             ctx.Position = 0;
@@ -347,9 +348,6 @@ General switches:
                 {
                     ctx.HandleSeriousError(ser);
                 }
-
-            if (!ctx.Quiet)
-                Console.Error.WriteLine();
 
             if (ctx.ErrorCount == 0)
             {
@@ -371,7 +369,8 @@ General switches:
             // stop early if errors detected
             foreach (Symbol sym in ctx.Symbols.Values)
                 if (sym.Pass == 0 || sym.Type == SymbolType.Unknown)
-                    Errors.Serious(ctx, "undefined symbol: {0}", sym.Name);
+                    Errors.Serious(ctx, "undefined symbol: {0} [{1}]", sym.Name,
+                        ctx.Symbols.Keys.First(k => ctx.Symbols[k] == sym));
 
             if (ctx.ErrorCount > 0)
                 return;
@@ -383,6 +382,8 @@ General switches:
                 Console.Error.WriteLine("Assembling");
 
             ctx.CurrentPass = 2;
+            System.Diagnostics.Debug.WriteLine("===== PASS TWO =====");
+
             IEnumerable<bool> longFormSequence = ctx.BranchOptimizer.Bake();
             using (IEnumerator<bool> longFormEnumerator = longFormSequence.GetEnumerator())
             {
@@ -698,13 +699,13 @@ General switches:
                         (address, possibleSavings, allowSpan, target) =>
                         {
                             longFormEnumerator.MoveNext();
-                            return longFormEnumerator.Current;
+                            return !longFormEnumerator.Current;
                         });
                     break;
 
                 case ZapParser.LLABEL:
                 case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, ctx.BranchOptimizer.RecordLabel);
+                    HandleLabel(ctx, node, label => { /* nada */ });
                     break;
 
                 default:
@@ -813,7 +814,9 @@ General switches:
                         return result;
                     if (ctx.CurrentPass > 1)
                         Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
-                    return new Symbol(node.Text);
+                    result = new Symbol(node.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
+                    ctx.Symbols[node.Text] = result;
+                    return result;
 
                 case ZapParser.PLUS:
                     Symbol left = EvalExpr(ctx, node.GetChild(0));
@@ -866,11 +869,13 @@ General switches:
                             if (!allowLocalLabel)
                                 Errors.Serious(ctx, node, "local label used as operand");
 
-                            // note: returned value is relative to the current position,
-                            // which is probably not where the value will be written.
-                            // caller must correct it.
                             type = OPERAND_WORD;
-                            value = (ushort)(sym.Value - ctx.Position);
+                            value = (ushort)sym.Value;
+                        }
+                        else if (sym.Type == SymbolType.Unknown)
+                        {
+                            type = OPERAND_WORD;
+                            value = 0;
                         }
                         else
                         {
@@ -898,9 +903,13 @@ General switches:
                     else
                     {
                         // not defined yet
-                        type = OPERAND_BYTE;
+                        type = OPERAND_WORD;
                         value = 0;
-                        ctx.SetLocalSymbol(node.Text, new Symbol(node.Text));
+                        sym = new Symbol(node.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
+                        if (allowLocalLabel)
+                            ctx.SetLocalSymbol(node.Text, sym);
+                        else
+                            ctx.Symbols.Add(node.Text, sym);
                     }
                     break;
 
@@ -1343,6 +1352,28 @@ General switches:
             bool gotDefaultValues = false;
 
             string name = node.GetChild(0).Text;
+            Symbol sym;
+
+            AlignRoutine(ctx);
+            int paddr = ctx.Position / ctx.PackingDivisor;
+            if (ctx.Symbols.TryGetValue(name, out sym) == false)
+            {
+                sym = new Symbol(name, SymbolType.Function, paddr, ctx.CurrentPass);
+                ctx.Symbols.Add(name, sym);
+            }
+            else if (sym.Type != SymbolType.Unknown &&
+                (sym.Type != SymbolType.Function || sym.Pass == ctx.CurrentPass))
+            {
+                Errors.ThrowSerious("function redefined: " + name);
+            }
+            else
+            {
+                sym.Type = SymbolType.Function;
+                sym.SetValue(paddr, ctx.CurrentPass);
+            }
+
+            ctx.EnterLocalScope(sym);
+            
             if (node.ChildCount > 1)
             {
                 localNames.Capacity = localValues.Capacity = node.ChildCount - 1;
@@ -1373,26 +1404,6 @@ General switches:
 
             if (localNames.Count > 15)
                 Errors.ThrowSerious(node, "too many local variables");
-
-            AlignRoutine(ctx);
-
-            Symbol sym;
-            int paddr = ctx.Position / ctx.PackingDivisor;
-            if (ctx.Symbols.TryGetValue(name, out sym) == false)
-            {
-                sym = new Symbol(name, SymbolType.Function, paddr, ctx.CurrentPass);
-                ctx.Symbols.Add(name, sym);
-            }
-            else if (sym.Pass == ctx.CurrentPass || sym.Type != SymbolType.Function)
-            {
-                Errors.ThrowSerious("function redefined: " + name);
-            }
-            else
-            {
-                sym.SetValue(paddr, ctx.CurrentPass);
-            }
-
-            ctx.EnterLocalScope(sym);
 
             ctx.WriteByte((byte)localNames.Count);
 
@@ -1426,12 +1437,14 @@ General switches:
                 sym = new Symbol(name, SymbolType.String, paddr, ctx.CurrentPass);
                 ctx.Symbols.Add(name, sym);
             }
-            else if (sym.Pass == ctx.CurrentPass || sym.Type != SymbolType.String)
+            else if (sym.Type != SymbolType.Unknown &&
+                (sym.Type != SymbolType.String || sym.Pass == ctx.CurrentPass))
             {
                 Errors.ThrowSerious("string redefined: " + name);
             }
             else
             {
+                sym.Type = SymbolType.String;
                 sym.SetValue(paddr, ctx.CurrentPass);
             }
 
@@ -1560,19 +1573,30 @@ General switches:
 
                 if ((attr.Flags & ZOpFlags.Label) != 0)
                 {
-                    // correct label offset (-3 for the opcode and operand, +2 for the normal jump bias)
-                    tmpOperandValues[0]--;
-
                     if (operands[0].Type == ZapParser.SYMBOL)
                     {
                         Symbol sym;
                         if (ctx.TryGetLocalSymbol(operands[0].Text, out sym) == false)
                             sym = ctx.Symbols[operands[0].Text];
 
-                        if (shortenBranch(ctx.Position + 1, 1, n => (n >= 0 && n <= 255), sym))
+                        bool shortForm = shortenBranch(ctx.Position + 1, 1, n => (n >= -1 && n <= 254), sym);
+                        if (shortForm)
                             tmpOperandTypes[0] = OPERAND_BYTE;
                         else
                             tmpOperandTypes[0] = OPERAND_WORD;
+
+                        // make label offset
+                        tmpOperandValues[0] -= (ushort)(ctx.Position + (shortForm ? 2 : 3));
+                        tmpOperandValues[0] += 2;   // jump bias
+
+                        System.Diagnostics.Debug.WriteLine("using " +
+                            (shortForm ? "short" : "long") + " form for JUMP at " +
+                            (ctx.Position + 1) + " (offset " + tmpOperandValues[0] + ")");
+
+                        System.Diagnostics.Debug.Assert(
+                            !(shortForm &&
+                                sym.Type != SymbolType.Unknown &&
+                                (tmpOperandValues[0] & 0xFFFFFF00) != 0));
                     }
                 }
 
@@ -1699,8 +1723,13 @@ General switches:
                                 sym = new Symbol(branch.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
                                 ctx.SetLocalSymbol(branch.Text, sym);
                             }
-                            offset = sym.Value;
-                            shortForm = shortenBranch(ctx.Position, 1, n => (n >= 0 && n <= 63), sym);
+
+                            shortForm = shortenBranch(ctx.Position, 1, n => (n >= -1 && n <= 62), sym);
+                            offset = sym.Value - (ctx.Position + (shortForm ? 1 : 2)) + 2;
+
+                            System.Diagnostics.Debug.Assert(
+                                !(shortForm && sym.Type != SymbolType.Unknown &&
+                                    (offset & ~0x3F) != 0)); ;
                             break;
                         default:
                             throw new NotImplementedException();
@@ -1708,6 +1737,10 @@ General switches:
 
                     if (offset < -8192 || offset > 8191)
                         Errors.Serious(ctx, node, "branch target is too far away");
+
+                    System.Diagnostics.Debug.WriteLine("using " +
+                        (shortForm ? "short" : "long") + " form for branch at " + ctx.Position +
+                        " (offset " + offset + ")");
 
                     if (!shortForm)
                         ctx.WriteWord((ushort)((polarity ? 0x8000 : 0) | (offset & 0x3fff)));
@@ -1725,12 +1758,14 @@ General switches:
             {
                 if (ctx.Symbols.TryGetValue(node.Text, out sym) == true)
                 {
-                    if (sym.Pass == ctx.CurrentPass || sym.Type != SymbolType.GlobalLabel)
+                    if (sym.Type != SymbolType.Unknown &&
+                        (sym.Type != SymbolType.GlobalLabel || sym.Pass == ctx.CurrentPass))
                         Errors.ThrowSerious(node, "redefining global label");
 
                     if (ctx.InVocab && !ctx.AtVocabRecord)
                         Errors.ThrowSerious(node, "unaligned global label in vocab section");
 
+                    sym.Type = SymbolType.GlobalLabel;
                     sym.SetValue(ctx.Position, ctx.CurrentPass);
                 }
                 else
@@ -1751,8 +1786,10 @@ General switches:
                     sym = new Symbol(node.Text, SymbolType.LocalLabel, ctx.Position, ctx.CurrentPass);
                     ctx.SetLocalSymbol(node.Text, sym);
                 }
-                else if (sym.Type == SymbolType.LocalLabel && sym.Pass < ctx.CurrentPass)
+                else if (sym.Type == SymbolType.Unknown ||
+                    (sym.Type == SymbolType.LocalLabel && sym.Pass < ctx.CurrentPass))
                 {
+                    sym.Type = SymbolType.LocalLabel;
                     sym.SetValue(ctx.Position, ctx.CurrentPass);
                 }
                 else
