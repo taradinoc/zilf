@@ -384,7 +384,10 @@ General switches:
             ctx.CurrentPass = 2;
             System.Diagnostics.Debug.WriteLine("===== PASS TWO =====");
 
-            IEnumerable<bool> longFormSequence = ctx.BranchOptimizer.Bake();
+            var allLabels = from s in ctx.Symbols.Values
+                            where s.Type == SymbolType.GlobalLabel || s.Type == SymbolType.LocalLabel
+                            select s;
+            IEnumerable<bool> longFormSequence = ctx.BranchOptimizer.Bake(allLabels);
             using (IEnumerator<bool> longFormEnumerator = longFormSequence.GetEnumerator())
             {
                 for (int i = 0; i < file.Count; i++)
@@ -938,7 +941,7 @@ General switches:
                         // the only legal local symbol operand is a local variable
                         return false;
                     }
-                    else if (ctx.Symbols.TryGetValue(node.Text, out sym))
+                    else if (ctx.Symbols.TryGetValue(node.Text, out sym) && sym.Type != SymbolType.Unknown)
                     {
                         return sym.Value < 0 || sym.Value > 255;
                     }
@@ -1420,8 +1423,15 @@ General switches:
 
         private static void AlignRoutine(Context ctx)
         {
+            int padding = 0;
+
             while (ctx.Position % ctx.PackingDivisor != 0)
+            {
                 ctx.WriteByte(0);
+                padding++;
+            }
+
+            System.Diagnostics.Debug.WriteLine("padded " + padding + " (routine)");
         }
 
         private static void PackString(Context ctx, ITree node)
@@ -1453,8 +1463,15 @@ General switches:
 
         private static void AlignString(Context ctx)
         {
+            int padding = 0;
+
             while (ctx.Position % ctx.PackingDivisor != 0)
+            {
                 ctx.WriteByte(0);
+                padding++;
+            }
+
+            System.Diagnostics.Debug.WriteLine("padded " + padding + " (string)");
         }
 
         private static void AddAbbreviation(Context ctx, ITree node)
@@ -1579,7 +1596,7 @@ General switches:
                         if (ctx.TryGetLocalSymbol(operands[0].Text, out sym) == false)
                             sym = ctx.Symbols[operands[0].Text];
 
-                        bool shortForm = shortenBranch(ctx.Position + 1, 1, n => (n >= -1 && n <= 254), sym);
+                        bool shortForm = shortenBranch(ctx.Position + 2, 1, n => (n >= 0 && n <= 253), sym);
                         if (shortForm)
                             tmpOperandTypes[0] = OPERAND_BYTE;
                         else
@@ -1591,11 +1608,10 @@ General switches:
 
                         System.Diagnostics.Debug.WriteLine("using " +
                             (shortForm ? "short" : "long") + " form for JUMP at " +
-                            (ctx.Position + 1) + " (offset " + tmpOperandValues[0] + ")");
+                            (ctx.Position + 1) + " (offset " + (short)tmpOperandValues[0] + ")");
 
                         System.Diagnostics.Debug.Assert(
-                            !(shortForm &&
-                                sym.Type != SymbolType.Unknown &&
+                            !(shortForm && ctx.CurrentPass > 1 &&
                                 (tmpOperandValues[0] & 0xFFFFFF00) != 0));
                     }
                 }
@@ -1704,6 +1720,7 @@ General switches:
                 {
                     bool polarity = (branch.Type == ZapParser.SLASH);
                     bool shortForm;
+                    bool labeled = true;
                     int offset;
                     branch = branch.GetChild(0);
                     switch (branch.Type)
@@ -1711,10 +1728,12 @@ General switches:
                         case ZapParser.TRUE:
                             offset = 1;
                             shortForm = true;
+                            labeled = false;
                             break;
                         case ZapParser.FALSE:
                             offset = 0;
                             shortForm = true;
+                            labeled = false;
                             break;
                         case ZapParser.SYMBOL:
                             Symbol sym;
@@ -1724,12 +1743,16 @@ General switches:
                                 ctx.SetLocalSymbol(branch.Text, sym);
                             }
 
-                            shortForm = shortenBranch(ctx.Position, 1, n => (n >= -1 && n <= 62), sym);
-                            offset = sym.Value - (ctx.Position + (shortForm ? 1 : 2)) + 2;
+                            shortForm = shortenBranch(ctx.Position + 1, 1, n => (n >= 0 && n <= 61), sym);
+
+                            if (sym.Type == SymbolType.Unknown)
+                                offset = 7;
+                            else
+                                offset = sym.Value - (ctx.Position + (shortForm ? 1 : 2)) + 2;
 
                             System.Diagnostics.Debug.Assert(
-                                !(shortForm && sym.Type != SymbolType.Unknown &&
-                                    (offset & ~0x3F) != 0)); ;
+                                !(shortForm && ctx.CurrentPass > 1 &&
+                                    (offset & ~0x3F) != 0));
                             break;
                         default:
                             throw new NotImplementedException();
@@ -1738,9 +1761,10 @@ General switches:
                     if (offset < -8192 || offset > 8191)
                         Errors.Serious(ctx, node, "branch target is too far away");
 
-                    System.Diagnostics.Debug.WriteLine("using " +
-                        (shortForm ? "short" : "long") + " form for branch at " + ctx.Position +
-                        " (offset " + offset + ")");
+                    if (labeled)
+                        System.Diagnostics.Debug.WriteLine("using " +
+                            (shortForm ? "short" : "long") + " form for branch at " + ctx.Position +
+                            " (offset " + offset + " to " + branch.Text + ")");
 
                     if (!shortForm)
                         ctx.WriteWord((ushort)((polarity ? 0x8000 : 0) | (offset & 0x3fff)));
