@@ -51,7 +51,7 @@ namespace Zapf
             precedingSdis.Add(label, sdis.Count);
         }
 
-        public IEnumerable<bool> Bake()
+        public IEnumerable<bool> Bake(IEnumerable<Symbol> allLabels)
         {
             // construct graph
             int?[] graph = new int?[sdis.Count];
@@ -95,11 +95,36 @@ namespace Zapf
                 INCREMENT[i + 1] = INCREMENT[i] + LONG[i];
 
             // update symbols
-            for (int i = 0; i < sdis.Count; i++)
+            foreach (Symbol sym in allLabels)
             {
-                Symbol sym = sdis[i].Operand;
                 int prec = precedingSdis[sym];
                 sym.SetValue(sym.Value + INCREMENT[prec], sym.Pass);
+                //System.Diagnostics.Debug.WriteLine(sym.Name + " moves " + INCREMENT[prec] +
+                //    " to " + sym.Value);
+            }
+
+            // verify graph
+            for (int i = 0; i < graph.Length; i++)
+            {
+                if (graph[i] == null)
+                    continue;
+
+                System.Diagnostics.Debug.Assert(sdis[i].AllowShortSpan(graph[i].Value),
+                    "illegal graph node");
+            }
+
+            // verify short form assignments
+            for (int i = 0; i < sdis.Count; i++)
+            {
+                if (LONG[i] == 0)
+                {
+                    Symbol sym = sdis[i].Operand;
+
+                    int finalAddr = sdis[i].MinAddress + INCREMENT[i];
+
+                    System.Diagnostics.Debug.Assert(sdis[i].AllowShortSpan(sym.Value - finalAddr),
+                        "illegal short form assignment");
+                }
             }
 
             return LONG.Select(l => l != 0);
@@ -119,12 +144,12 @@ namespace Zapf
 
                 if (parentOperand >= parentAddr)
                 {
-                    if (childAddr >= parentAddr && childAddr <= parentOperand)
+                    if (childAddr > parentAddr && childAddr <= parentOperand)
                         yield return i;
                 }
                 else
                 {
-                    if (childAddr >= parentOperand && childAddr <= parentAddr)
+                    if (childAddr > parentOperand && childAddr < parentAddr)
                         yield return i;
                 }
             }
