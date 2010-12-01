@@ -453,7 +453,7 @@ General switches:
                     if (node.ChildCount != 0)
                         Errors.Serious(ctx, node, "unrecognized opcode: " + node.Text);
                     else
-                        HandleDirective(ctx, node, false);
+                        HandleDirective(ctx, node, false, ctx.BranchOptimizer.RecordPadding);
                     break;
 
                 case ZapParser.LLABEL:
@@ -462,7 +462,7 @@ General switches:
                     break;
 
                 default:
-                    HandleDirective(ctx, node, false);
+                    HandleDirective(ctx, node, false, ctx.BranchOptimizer.RecordPadding);
                     break;
             }
         }
@@ -708,11 +708,11 @@ General switches:
 
                 case ZapParser.LLABEL:
                 case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, label => { /* nada */ });
+                    HandleLabel(ctx, node, (label, address) => { /* nada */ });
                     break;
 
                 default:
-                    HandleDirective(ctx, node, true);
+                    HandleDirective(ctx, node, true, (address, del) => {/* nada */});
                     break;
             }
         }
@@ -965,7 +965,8 @@ General switches:
             }
         }
 
-        private static void HandleDirective(Context ctx, ITree node, bool assembling)
+        private static void HandleDirective(Context ctx, ITree node, bool assembling,
+            PaddingRecorder recordPadding)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
             if (node.Type != ZapParser.DEBUG_LINE)
@@ -978,6 +979,7 @@ General switches:
                     break;
 
                 case ZapParser.FUNCT:
+                    recordPadding(ctx.Position, address => DetermineFunctPadding(ctx, address));
                     BeginFunction(ctx, node);
                     break;
 
@@ -1054,10 +1056,12 @@ General switches:
                     break;
 
                 case ZapParser.FSTR:
+                    recordPadding(ctx.Position, address => DetermineFstrPadding(ctx, address));
                     AddAbbreviation(ctx, node);
                     break;
 
                 case ZapParser.GSTR:
+                    recordPadding(ctx.Position, address => DetermineGstrPadding(ctx, address));
                     PackString(ctx, node);
                     break;
 
@@ -1421,17 +1425,26 @@ General switches:
             }
         }
 
+        private static int DeterminePadding(int address, int packingDivisor)
+        {
+            int rem = address % packingDivisor;
+            if (rem == 0)
+                return 0;
+            else
+                return packingDivisor - rem;
+        }
+
+        private static int DetermineFunctPadding(Context ctx, int address)
+        {
+            return DeterminePadding(address, ctx.PackingDivisor);
+        }
+
         private static void AlignRoutine(Context ctx)
         {
-            int padding = 0;
+            int padding = DetermineFunctPadding(ctx, ctx.Position);
 
-            while (ctx.Position % ctx.PackingDivisor != 0)
-            {
+            while (padding-- > 0)
                 ctx.WriteByte(0);
-                padding++;
-            }
-
-            System.Diagnostics.Debug.WriteLine("padded " + padding + " (routine)");
         }
 
         private static void PackString(Context ctx, ITree node)
@@ -1461,17 +1474,22 @@ General switches:
             ctx.WriteZString(node.GetChild(1).Text, false);
         }
 
+        private static int DetermineGstrPadding(Context ctx, int address)
+        {
+            return DeterminePadding(address, ctx.PackingDivisor);
+        }
+
         private static void AlignString(Context ctx)
         {
-            int padding = 0;
+            int padding = DetermineGstrPadding(ctx, ctx.Position);
 
-            while (ctx.Position % ctx.PackingDivisor != 0)
-            {
+            while (padding-- > 0)
                 ctx.WriteByte(0);
-                padding++;
-            }
+        }
 
-            System.Diagnostics.Debug.WriteLine("padded " + padding + " (string)");
+        private static int DetermineFstrPadding(Context ctx, int address)
+        {
+            return DeterminePadding(address, 2);
         }
 
         private static void AddAbbreviation(Context ctx, ITree node)
@@ -1510,6 +1528,8 @@ General switches:
 
         private delegate bool BranchShortener(int address, int possibleSavings,
             Predicate<int> allowSpan, Symbol target);
+        private delegate void LabelRecorder(Symbol label, int address);
+        private delegate void PaddingRecorder(int address, Func<int, int> determineSize);
 
         private static void HandleInstruction(Context ctx, ITree node,
             BranchShortener shortenBranch)
@@ -1774,7 +1794,7 @@ General switches:
             }
         }
 
-        private static void HandleLabel(Context ctx, ITree node, Action<Symbol> recordLabel)
+        private static void HandleLabel(Context ctx, ITree node, LabelRecorder recordLabel)
         {
             Symbol sym;
 
@@ -1798,7 +1818,7 @@ General switches:
                     ctx.Symbols.Add(node.Text, sym);
                 }
 
-                recordLabel(sym);
+                recordLabel(sym, ctx.Position);
             }
             else if (node.Type == ZapParser.LLABEL)
             {
@@ -1821,7 +1841,7 @@ General switches:
                     Errors.ThrowSerious(node, "redefining local label");
                 }
 
-                recordLabel(sym);
+                recordLabel(sym, ctx.Position);
             }
         }
     }
