@@ -36,15 +36,25 @@ namespace Zapf
         public Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> OpcodeDict;
         public StringEncoder StringEncoder;
         public AbbrevFinder AbbrevFinder;
-        public BranchOptimizer BranchOptimizer;
 
-        public Dictionary<string, Symbol> Symbols;
+        public Dictionary<string, Symbol> LocalSymbols;
+        public Dictionary<string, Symbol> GlobalSymbols;
+        public List<Fixup> Fixups;
 
         public Dictionary<string, Symbol> DebugFileMap;
         public ushort NextDebugRoutine;
         public int DebugRoutinePoints = -1, DebugRoutineStart = -1;
 
-        public int CurrentPass = 1;
+        /// <summary>
+        /// If true, a reference to an undefined global symbol is an error,
+        /// and expensive statistics may be collected.
+        /// </summary>
+        public bool FinalPass;
+
+        /// <summary>
+        /// If true, another measuring pass is needed because labels have moved.
+        /// </summary>
+        public bool MeasureAgain;
 
         public int? TableStart, TableSize;
         public bool InVocab;
@@ -56,18 +66,22 @@ namespace Zapf
         private Stack<string> fileStack;
         private int vocabStart, vocabRecSize, vocabKeySize;
 
-        private Symbol localScope;
+        private int reassemblyNodeIndex = -1, reassemblyPosition = -1, reassemblyAbbrevPos = 0;
+        private Symbol reassemblySymbol;
+        private Dictionary<string, bool> reassemblyLabels;
 
         public Context()
         {
             StringEncoder = new StringEncoder();
             AbbrevFinder = new AbbrevFinder();
-            BranchOptimizer = new BranchOptimizer();
 
-            Symbols = new Dictionary<string, Symbol>(1000);
+            LocalSymbols = new Dictionary<string, Symbol>(25);
+            GlobalSymbols = new Dictionary<string, Symbol>(200);
+            Fixups = new List<Fixup>(200);
             DebugFileMap = new Dictionary<string, Symbol>();
 
             fileStack = new Stack<string>();
+            reassemblyLabels = new Dictionary<string, bool>();
 
             ZVersion = Program.DEFAULT_ZVERSION;
         }
@@ -84,7 +98,7 @@ namespace Zapf
         {
             if (sym.Type == SymbolType.Unknown)
             {
-                if (CurrentPass > 1)
+                if (FinalPass)
                     Errors.ThrowSerious("undefined symbol");
                 else
                     WriteByte(0);
@@ -108,7 +122,7 @@ namespace Zapf
         {
             if (sym.Type == SymbolType.Unknown)
             {
-                if (CurrentPass > 1)
+                if (FinalPass)
                     Errors.ThrowSerious("undefined symbol");
                 else
                     WriteWord(0);
@@ -135,7 +149,7 @@ namespace Zapf
         public void WriteZString(string str, bool withLength, bool noAbbrevs)
         {
             byte[] zstr = StringEncoder.Encode(str, noAbbrevs);
-            if (CurrentPass == 1 && AbbreviateMode)
+            if (FinalPass && AbbreviateMode)
                 AbbrevFinder.AddText(str);
 
             if (withLength)
@@ -226,13 +240,13 @@ namespace Zapf
                 }
 
                 // update global labels that point to vocab words
-                foreach (Symbol sym in Symbols.Values)
+                foreach (Symbol sym in GlobalSymbols.Values)
                 {
-                    if (sym.Type == SymbolType.GlobalLabel && sym.Value >= vocabStart && sym.Value < position)
+                    if (sym.Type == SymbolType.Label && sym.Value >= vocabStart && sym.Value < position)
                     {
                         int offset = sym.Value - vocabStart;
                         if (offset % vocabRecSize == 0)
-                            sym.SetValue(vocabStart + newIndex[offset / vocabRecSize] * vocabRecSize, CurrentPass);
+                            sym.Value = vocabStart + newIndex[offset / vocabRecSize] * vocabRecSize;
                     }
                 }
 
@@ -449,38 +463,74 @@ namespace Zapf
             }
         }
 
-        public void EnterLocalScope(Symbol symbol)
+        public void BeginReassemblyScope(int nodeIndex, Symbol symbol)
         {
-            localScope = symbol;
+            reassemblyLabels.Clear();
+            reassemblyNodeIndex = nodeIndex;
+            reassemblyPosition = position;
+            reassemblyAbbrevPos = AbbrevFinder.Position;
+            reassemblySymbol = symbol;
         }
 
-        public void LeaveLocalScope()
+        public bool CausesReassembly(string label)
         {
-            localScope = null;
+            return reassemblyLabels.ContainsKey(label);
         }
 
-        public bool InLocalScope
+        public bool InReassemblyScope
         {
-            get { return localScope != null; }
+            get { return reassemblyPosition != -1; }
         }
 
-        public bool TryGetLocalSymbol(string name, out Symbol result)
+        public void MarkUnknownBranch(string label)
         {
-            if (localScope == null)
+            reassemblyLabels[label] = true;
+        }
+
+        public int Reassemble(string curLabel)
+        {
+            // define the current label, which is the one causing us to reassemble
+            Symbol sym;
+            if (LocalSymbols.TryGetValue(curLabel, out sym) == true)
+                sym.Value = position;
+            else
+                LocalSymbols.Add(curLabel, new Symbol(curLabel, SymbolType.Label, position));
+
+            // save labels as phantoms, wipe all other local symbols
+            Queue<string> goners = new Queue<string>();
+
+            foreach (Symbol i in LocalSymbols.Values)
             {
-                result = null;
-                return false;
+                if (i.Type == SymbolType.Label)
+                    i.Phantom = true;
+                else
+                    goners.Enqueue(i.Name);
             }
 
-            return Symbols.TryGetValue(localScope.Name + " " + name, out result);
+            while (goners.Count > 0)
+                LocalSymbols.Remove(goners.Dequeue());
+
+            // make function symbol into a phantom
+            reassemblySymbol.Phantom = true;
+
+            // clean up reassembly state and rewind to the beginning of the scope
+            reassemblyLabels.Clear();
+            Position = reassemblyPosition;
+            AbbrevFinder.Rollback(reassemblyAbbrevPos);
+            return reassemblyNodeIndex;
         }
 
-        public void SetLocalSymbol(string name, Symbol value)
+        public void EndReassemblyScope(int nodeIndex)
         {
-            if (localScope == null)
-                Errors.ThrowSerious("local symbols not allowed outside a function");
-
-            Symbols[localScope.Name + " " + name] = value;
+            if (nodeIndex != reassemblyNodeIndex)
+            {
+                reassemblyLabels.Clear();
+                reassemblyNodeIndex = -1;
+                reassemblyPosition = -1;
+                reassemblyAbbrevPos = 0;
+                reassemblySymbol = null;
+                LocalSymbols.Clear();
+            }
         }
 
         public void AddGlobalVar(string name)
@@ -488,21 +538,17 @@ namespace Zapf
             int num = 16 + globalVarCount++;
 
             Symbol sym;
-            if (Symbols.TryGetValue(name, out sym) == false)
+            if (GlobalSymbols.TryGetValue(name, out sym) == false)
             {
-                sym = new Symbol(name, SymbolType.Variable, num, CurrentPass);
-                Symbols.Add(name, sym);
+                sym = new Symbol(name, SymbolType.Variable, num);
+                GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Type != SymbolType.Unknown &&
-                (sym.Type != SymbolType.Variable || sym.Pass == CurrentPass))
+            else if (!sym.Phantom)
                 Errors.ThrowSerious("global redefined: " + name);
-            else if (sym.Type == SymbolType.Variable && sym.Value != num)
+            else if (sym.Value != num)
                 Errors.ThrowSerious("global {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
             else
-            {
-                sym.Type = SymbolType.Variable;
-                sym.SetValue(num, CurrentPass);
-            }
+                sym.Phantom = false;
         }
 
         public void AddObject(string name)
@@ -510,26 +556,26 @@ namespace Zapf
             int num = 1 + objectCount++;
 
             Symbol sym;
-            if (Symbols.TryGetValue(name, out sym) == false)
+            if (GlobalSymbols.TryGetValue(name, out sym) == false)
             {
-                sym = new Symbol(name, SymbolType.Object, num, CurrentPass);
-                Symbols.Add(name, sym);
+                sym = new Symbol(name, SymbolType.Object, num);
+                GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Type != SymbolType.Unknown &&
-                (sym.Type != SymbolType.Object || sym.Pass == CurrentPass))
+            else if (!sym.Phantom)
                 Errors.ThrowSerious("object redefined: " + name);
-            else if (sym.Type == SymbolType.Object && sym.Value != num)
+            else if (sym.Value != num)
                 Errors.ThrowFatal("object {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
             else
-            {
-                sym.Type = SymbolType.Object;
-                sym.SetValue(num, CurrentPass);
-            }
+                sym.Phantom = false;
         }
 
         public void ResetBetweenPasses()
         {
+            Fixups.Clear();
             StringEncoder = new StringEncoder();
+
+            foreach (Symbol sym in GlobalSymbols.Values)
+                sym.Phantom = true;
 
             globalVarCount = 0;
             objectCount = 0;
@@ -569,13 +615,9 @@ namespace Zapf
         /// </summary>
         Variable,
         /// <summary>
-        /// The symbol is a global label (byte address).
+        /// The symbol is a local or global label (byte address).
         /// </summary>
-        GlobalLabel,
-        /// <summary>
-        /// The symbol is a local label (byte address).
-        /// </summary>
-        LocalLabel,
+        Label,
         /// <summary>
         /// The symbol is a packed function address.
         /// </summary>
@@ -603,42 +645,50 @@ namespace Zapf
         /// <summary>
         /// The symbol's value, usually a numeric constant or an address.
         /// </summary>
-        public int Value { get; private set; }
+        public int Value;
         /// <summary>
-        /// The number of the pass where the symbol's value was last changed,
-        /// or 0 if the symbol has never been assigned a value.
+        /// Indicates whether the symbol has a value from a previous attempt,
+        /// but has not yet been defined in the current attempt.
         /// </summary>
-        public int Pass;
+        public bool Phantom;
 
         public Symbol()
         {
         }
 
-        public Symbol(string name)
-        {
-            this.Type = SymbolType.Unknown;
-            this.Name = name;
-        }
-
-        public Symbol(int value, int pass)
+        public Symbol(int value)
         {
             this.Type = SymbolType.Constant;
             this.Value = value;
-            this.Pass = pass;
         }
 
-        public Symbol(string name, SymbolType type, int value, int pass)
+        public Symbol(string name, SymbolType type, int value)
         {
             this.Name = name;
             this.Type = type;
             this.Value = value;
-            this.Pass = pass;
+        }
+    }
+
+    class Fixup
+    {
+        private readonly string symbol;
+        private int location;
+
+        public Fixup(string symbol)
+        {
+            this.symbol = symbol;
         }
 
-        public void SetValue(int newValue, int pass)
+        public string Symbol
         {
-            this.Value = newValue;
-            this.Pass = pass;
+            get { return symbol; }
+        }
+
+        public int Location
+        {
+            get { return location; }
+            set { location = value; }
         }
     }
 }

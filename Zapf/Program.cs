@@ -34,7 +34,7 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "ZAPF 0.4";
+        public const string VERSION = "ZAPF 0.3";
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main(string[] args)
@@ -54,7 +54,7 @@ namespace Zapf
             // set up for the target version
             ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
             string stackName = ctx.InformMode ? "sp" : "STACK";
-            ctx.Symbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0, ctx.CurrentPass));
+            ctx.GlobalSymbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0));
 
             try
             {
@@ -86,11 +86,10 @@ namespace Zapf
                 {
                     Console.Error.WriteLine();
 
-                    // XXX incorrect addresses for V6/7
-                    var query = from s in ctx.Symbols.Values
-                                where s.Type == SymbolType.Function || s.Type == SymbolType.GlobalLabel ||
+                    var query = from s in ctx.GlobalSymbols.Values
+                                where s.Type == SymbolType.Function || s.Type == SymbolType.Label ||
                                       s.Type == SymbolType.String
-                                let addr = (s.Type == SymbolType.GlobalLabel) ? s.Value : s.Value * ctx.PackingDivisor
+                                let addr = (s.Type == SymbolType.Label) ? s.Value : s.Value * ctx.PackingDivisor
                                 orderby addr
                                 select new { Name = s.Name, Address = addr };
 
@@ -243,7 +242,7 @@ namespace Zapf
                     case "-r":
                         if (++i == args.Length)
                             return null;
-                        result.Symbols["RELEASEID"] = new Symbol("RELEASEID", SymbolType.Constant, int.Parse(args[i]), 1);
+                        result.GlobalSymbols["RELEASEID"] = new Symbol("RELEASEID", SymbolType.Constant, int.Parse(args[i]));
                         break;
 
                     case "-s":
@@ -326,28 +325,43 @@ General switches:
 
             // first pass: discover label addresses and header flags
             if (!ctx.Quiet)
-                Console.Error.WriteLine("Measuring");
+                Console.Error.Write("Measuring");
 
-            ctx.CurrentPass = 1;
-            System.Diagnostics.Debug.WriteLine("===== PASS ONE =====");
+            ctx.FinalPass = false;
 
-            // write dummy header
-            ctx.Position = 0;
-            if (ctx.ZVersion < 5)
-                WriteHeader(ctx, false);
+            do
+            {
+                ctx.MeasureAgain = false;
 
-            for (int i = 0; i < file.Count; i++)
-                try
-                {
-                    if (file[i].Type == ZapParser.END)
-                        break;
-                    else
-                        PassOne(ctx, file[i]);
-                }
-                catch (SeriousError ser)
-                {
-                    ctx.HandleSeriousError(ser);
-                }
+                // write dummy header
+                ctx.Position = 0;
+                if (ctx.ZVersion < 5)
+                    WriteHeader(ctx, false);
+
+                for (int i = 0; i < file.Count; i++)
+                    try
+                    {
+                        if (file[i].Type == ZapParser.END)
+                            break;
+                        else
+                            PassOne(ctx, file[i], ref i);
+                    }
+                    catch (SeriousError ser)
+                    {
+                        ctx.HandleSeriousError(ser);
+                    }
+
+                if (ctx.Fixups.Count > 0)
+                    ctx.MeasureAgain = true;
+
+                ctx.ResetBetweenPasses();
+
+                if (!ctx.Quiet && ctx.MeasureAgain && ctx.ErrorCount == 0)
+                    Console.Error.Write('.');
+            } while (ctx.MeasureAgain && ctx.ErrorCount == 0);
+
+            if (!ctx.Quiet)
+                Console.Error.WriteLine();
 
             if (ctx.ErrorCount == 0)
             {
@@ -367,42 +381,30 @@ General switches:
             }
 
             // stop early if errors detected
-            foreach (Symbol sym in ctx.Symbols.Values)
-                if (sym.Pass == 0 || sym.Type == SymbolType.Unknown)
-                    Errors.Serious(ctx, "undefined symbol: {0} [{1}]", sym.Name,
-                        ctx.Symbols.Keys.First(k => ctx.Symbols[k] == sym));
-
             if (ctx.ErrorCount > 0)
                 return;
 
             // second pass: generate object code
-            ctx.ResetBetweenPasses();
-
             if (!ctx.Quiet)
                 Console.Error.WriteLine("Assembling");
 
-            ctx.CurrentPass = 2;
-            System.Diagnostics.Debug.WriteLine("===== PASS TWO =====");
+            ctx.FinalPass = true;
 
-            var allLabels = from s in ctx.Symbols.Values
-                            where s.Type == SymbolType.GlobalLabel || s.Type == SymbolType.LocalLabel
-                            select s;
-            IEnumerable<bool> longFormSequence = ctx.BranchOptimizer.Bake(allLabels);
-            using (IEnumerator<bool> longFormEnumerator = longFormSequence.GetEnumerator())
-            {
-                for (int i = 0; i < file.Count; i++)
-                    try
-                    {
-                        if (file[i].Type == ZapParser.END)
-                            break;
-                        else
-                            PassTwo(ctx, file[i], longFormEnumerator);
-                    }
-                    catch (SeriousError ser)
-                    {
-                        ctx.HandleSeriousError(ser);
-                    }
-            }
+            for (int i = 0; i < file.Count; i++)
+                try
+                {
+                    if (file[i].Type == ZapParser.END)
+                        break;
+                    else
+                        PassTwo(ctx, file[i], ref i);
+                }
+                catch (SeriousError ser)
+                {
+                    ctx.HandleSeriousError(ser);
+                }
+
+            if (ctx.Fixups.Count > 0)
+                Errors.Serious(ctx, "unresolved references after final pass");
 
             // pad if necessary, finalize header length and checksum, close file
             try
@@ -424,7 +426,9 @@ General switches:
         /// </remarks>
         /// <param name="ctx">The current context.</param>
         /// <param name="node">The node to process.</param>
-        private static void PassOne(Context ctx, ITree node)
+        /// <param name="nodeIndex">The current node's index. The method may change this
+        /// to rewind the source file.</param>
+        private static void PassOne(Context ctx, ITree node, ref int nodeIndex)
         {
             switch (node.Type)
             {
@@ -441,28 +445,23 @@ General switches:
                     break;
 
                 case ZapParser.OPCODE:
-                    HandleInstruction(ctx, node,
-                        (address, possibleSavings, allowSpan, target) =>
-                        {
-                            ctx.BranchOptimizer.RecordSDI(address, possibleSavings, allowSpan, target);
-                            return true;
-                        });
+                    HandleInstruction(ctx, node);
                     break;
 
                 case ZapParser.SYMBOL:
                     if (node.ChildCount != 0)
                         Errors.Serious(ctx, node, "unrecognized opcode: " + node.Text);
                     else
-                        HandleDirective(ctx, node, false);
+                        HandleDirective(ctx, node, nodeIndex, false);
                     break;
 
                 case ZapParser.LLABEL:
                 case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, ctx.BranchOptimizer.RecordLabel);
+                    HandleLabel(ctx, node, ref nodeIndex);
                     break;
 
                 default:
-                    HandleDirective(ctx, node, false);
+                    HandleDirective(ctx, node, nodeIndex, false);
                     break;
             }
         }
@@ -522,12 +521,12 @@ General switches:
         private static int GetHeaderValue(Context ctx, string name1, string name2, bool required)
         {
             Symbol sym;
-            if (ctx.Symbols.TryGetValue(name1, out sym) ||
-                (name2 != null && ctx.Symbols.TryGetValue(name2, out sym)))
+            if (ctx.GlobalSymbols.TryGetValue(name1, out sym) ||
+                (name2 != null && ctx.GlobalSymbols.TryGetValue(name2, out sym)))
             {
                 switch (sym.Type)
                 {
-                    case SymbolType.GlobalLabel:
+                    case SymbolType.Label:
                     case SymbolType.Function:
                     case SymbolType.Constant:
                         return sym.Value;
@@ -547,7 +546,7 @@ General switches:
         private static Symbol GetDebugMapValue(Context ctx, string name)
         {
             Symbol sym;
-            if (ctx.Symbols.TryGetValue(name, out sym))
+            if (ctx.GlobalSymbols.TryGetValue(name, out sym))
                 return sym;
             else
                 return null;
@@ -649,7 +648,7 @@ General switches:
                     {
                         Symbol objTree = new Symbol();
                         objTree.Type = objTable.Type;
-                        objTree.SetValue(objTable.Value + (ctx.ZVersion < 4 ? 31 : 63), ctx.CurrentPass);
+                        objTree.Value = objTable.Value + (ctx.ZVersion < 4 ? 31 : 63);
                         ctx.DebugFileMap[DEBF.ObjectsMapName] = objTree;
                     }
                 }
@@ -691,28 +690,23 @@ General switches:
         /// </remarks>
         /// <param name="ctx">The current context.</param>
         /// <param name="node">The node to process.</param>
-        /// <param name="longFormEnumerator">A sequence of booleans indicating which span-dependent
-        /// instructions need to be assembled in long form.</param>
-        private static void PassTwo(Context ctx, ITree node, IEnumerator<bool> longFormEnumerator)
+        /// <param name="nodeIndex">The current node's index. The method may change this
+        /// to rewind the source file.</param>
+        private static void PassTwo(Context ctx, ITree node, ref int nodeIndex)
         {
             switch (node.Type)
             {
                 case ZapParser.OPCODE:
-                    HandleInstruction(ctx, node,
-                        (address, possibleSavings, allowSpan, target) =>
-                        {
-                            longFormEnumerator.MoveNext();
-                            return !longFormEnumerator.Current;
-                        });
+                    HandleInstruction(ctx, node);
                     break;
 
                 case ZapParser.LLABEL:
                 case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, label => { /* nada */ });
+                    HandleLabel(ctx, node, ref nodeIndex);
                     break;
 
                 default:
-                    HandleDirective(ctx, node, true);
+                    HandleDirective(ctx, node, nodeIndex, true);
                     break;
             }
         }
@@ -807,30 +801,28 @@ General switches:
             switch (node.Type)
             {
                 case ZapParser.NUM:
-                    return new Symbol(int.Parse(node.Text), ctx.CurrentPass);
+                    return new Symbol(int.Parse(node.Text));
 
                 case ZapParser.SYMBOL:
                     Symbol result;
-                    if (ctx.Symbols.TryGetValue(node.Text, out result))
+                    if (ctx.LocalSymbols.TryGetValue(node.Text, out result))
                         return result;
-                    if (ctx.TryGetLocalSymbol(node.Text, out result))
+                    if (ctx.GlobalSymbols.TryGetValue(node.Text, out result))
                         return result;
-                    if (ctx.CurrentPass > 1)
+                    if (ctx.FinalPass)
                         Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
-                    result = new Symbol(node.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
-                    ctx.Symbols[node.Text] = result;
-                    return result;
+                    return new Symbol(null, SymbolType.Unknown, 0);
 
                 case ZapParser.PLUS:
                     Symbol left = EvalExpr(ctx, node.GetChild(0));
                     Symbol right = EvalExpr(ctx, node.GetChild(1));
-                    if (ctx.CurrentPass == 1 &&
+                    if (!ctx.FinalPass &&
                         (left.Type == SymbolType.Unknown || right.Type == SymbolType.Unknown))
                     {
-                        return new Symbol(null);
+                        return new Symbol(null, SymbolType.Unknown, 0);
                     }
                     if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
-                        return new Symbol(null, SymbolType.Constant, left.Value + right.Value, ctx.CurrentPass);
+                        return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
                     throw new NotImplementedException("Unimplemented symbol addition");
 
                 default:
@@ -838,14 +830,16 @@ General switches:
             }
         }
 
-        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value)
+        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value, out Fixup fixup)
         {
-            EvalOperand(ctx, node, out type, out value, false);
+            EvalOperand(ctx, node, out type, out value, out fixup, false);
         }
 
-        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value,
+        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value, out Fixup fixup,
             bool allowLocalLabel)
         {
+            fixup = null;
+
             bool apos = false;
             if (node.Type == ZapParser.APOSTROPHE)
             {
@@ -865,20 +859,18 @@ General switches:
 
                 case ZapParser.SYMBOL:
                     Symbol sym;
-                    if (ctx.TryGetLocalSymbol(node.Text, out sym))
+                    if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
                     {
-                        if (sym.Type == SymbolType.LocalLabel)
+                        if (sym.Type == SymbolType.Label)
                         {
                             if (!allowLocalLabel)
                                 Errors.Serious(ctx, node, "local label used as operand");
 
+                            // note: returned value is relative to the current position,
+                            // which is probably not where the value will be written.
+                            // caller must correct it.
                             type = OPERAND_WORD;
-                            value = (ushort)sym.Value;
-                        }
-                        else if (sym.Type == SymbolType.Unknown)
-                        {
-                            type = OPERAND_WORD;
-                            value = 0;
+                            value = (ushort)(sym.Value - ctx.Position);
                         }
                         else
                         {
@@ -887,7 +879,7 @@ General switches:
                             value = (byte)sym.Value;
                         }
                     }
-                    else if (ctx.Symbols.TryGetValue(node.Text, out sym))
+                    else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
                     {
                         if (sym.Type == SymbolType.Variable)
                             type = OPERAND_VAR;
@@ -897,7 +889,7 @@ General switches:
                             type = OPERAND_WORD;
                         value = (ushort)sym.Value;
                     }
-                    else if (ctx.CurrentPass > 1 && !allowLocalLabel)
+                    else if (ctx.FinalPass && !allowLocalLabel)
                     {
                         Errors.ThrowFatal(node, "undefined symbol: {0}", node.Text);
                         type = 0;
@@ -906,13 +898,12 @@ General switches:
                     else
                     {
                         // not defined yet
-                        type = OPERAND_WORD;
+                        type = OPERAND_BYTE;
                         value = 0;
-                        sym = new Symbol(node.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
                         if (allowLocalLabel)
-                            ctx.SetLocalSymbol(node.Text, sym);
+                            ctx.MarkUnknownBranch(node.Text);
                         else
-                            ctx.Symbols.Add(node.Text, sym);
+                            fixup = new Fixup(node.Text);
                     }
                     break;
 
@@ -936,12 +927,12 @@ General switches:
 
                 case ZapParser.SYMBOL:
                     Symbol sym;
-                    if (ctx.TryGetLocalSymbol(node.Text, out sym))
+                    if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
                     {
                         // the only legal local symbol operand is a local variable
                         return false;
                     }
-                    else if (ctx.Symbols.TryGetValue(node.Text, out sym) && sym.Type != SymbolType.Unknown)
+                    else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
                     {
                         return sym.Value < 0 || sym.Value > 255;
                     }
@@ -965,11 +956,11 @@ General switches:
             }
         }
 
-        private static void HandleDirective(Context ctx, ITree node, bool assembling)
+        private static void HandleDirective(Context ctx, ITree node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
             if (node.Type != ZapParser.DEBUG_LINE)
-                ctx.LeaveLocalScope();
+                ctx.EndReassemblyScope(nodeIndex);
 
             switch (node.Type)
             {
@@ -978,7 +969,7 @@ General switches:
                     break;
 
                 case ZapParser.FUNCT:
-                    BeginFunction(ctx, node);
+                    BeginFunction(ctx, node, nodeIndex);
                     break;
 
                 case ZapParser.TABLE:
@@ -1038,7 +1029,7 @@ General switches:
                     for (int i = 0; i < node.ChildCount; i++)
                     {
                         Symbol sym = EvalExpr(ctx, node.GetChild(i));
-                        if (sym.Type == SymbolType.Unknown && ctx.CurrentPass > 1)
+                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                         {
                             Errors.ThrowFatal(node.GetChild(i), "unrecognized symbol");
                         }
@@ -1079,13 +1070,13 @@ General switches:
 
                 case ZapParser.EQUALS:
                     Symbol rvalue = EvalExpr(ctx, node.GetChild(1));
-                    if (rvalue.Type == SymbolType.Unknown && ctx.CurrentPass > 1)
+                    if (rvalue.Type == SymbolType.Unknown && ctx.FinalPass)
                     {
                         Errors.ThrowFatal(node.GetChild(1), "unrecognized symbol");
                     }
                     else
                     {
-                        ctx.Symbols[node.GetChild(0).Text] = rvalue;
+                        ctx.GlobalSymbols[node.GetChild(0).Text] = rvalue;
                     }
                     break;
 
@@ -1094,7 +1085,7 @@ General switches:
                     if (node.ChildCount > 1)
                     {
                         Symbol sym = EvalExpr(ctx, node.GetChild(1));
-                        if (sym.Type == SymbolType.Unknown && ctx.CurrentPass > 1)
+                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                         {
                             Errors.ThrowFatal(node.GetChild(1), "unrecognized symbol");
                         }
@@ -1151,7 +1142,7 @@ General switches:
                 case ZapParser.PROP:
                     Symbol size = EvalExpr(ctx, node.GetChild(0));
                     Symbol prop = EvalExpr(ctx, node.GetChild(1));
-                    if (ctx.CurrentPass > 1 &&
+                    if (ctx.FinalPass &&
                         (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
                         Errors.Serious(ctx, node, "non-constant arguments to .PROP");
                     if (ctx.ZVersion < 4)
@@ -1222,7 +1213,7 @@ General switches:
                     ctx.WriteDebugString(node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_ARRAY:
-                    if (ctx.Symbols.TryGetValue("GLOBAL", out sym1) == false)
+                    if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out sym1) == false)
                     {
                         Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
                         return;
@@ -1348,35 +1339,13 @@ General switches:
             }
         }
 
-        private static void BeginFunction(Context ctx, ITree node)
+        private static void BeginFunction(Context ctx, ITree node, int nodeIndex)
         {
             List<string> localNames = new List<string>();
             List<ushort> localValues = new List<ushort>();
             bool gotDefaultValues = false;
 
             string name = node.GetChild(0).Text;
-            Symbol sym;
-
-            AlignRoutine(ctx);
-            int paddr = ctx.Position / ctx.PackingDivisor;
-            if (ctx.Symbols.TryGetValue(name, out sym) == false)
-            {
-                sym = new Symbol(name, SymbolType.Function, paddr, ctx.CurrentPass);
-                ctx.Symbols.Add(name, sym);
-            }
-            else if (sym.Type != SymbolType.Unknown &&
-                (sym.Type != SymbolType.Function || sym.Pass == ctx.CurrentPass))
-            {
-                Errors.ThrowSerious("function redefined: " + name);
-            }
-            else
-            {
-                sym.Type = SymbolType.Function;
-                sym.SetValue(paddr, ctx.CurrentPass);
-            }
-
-            ctx.EnterLocalScope(sym);
-            
             if (node.ChildCount > 1)
             {
                 localNames.Capacity = localValues.Capacity = node.ChildCount - 1;
@@ -1389,8 +1358,8 @@ General switches:
                         gotDefaultValues = true;
                         string lvname = child.GetChild(0).Text;
                         localNames.Add(lvname);
-                        ctx.SetLocalSymbol(lvname,
-                            new Symbol(lvname, SymbolType.Variable, localNames.Count, ctx.CurrentPass));
+                        ctx.LocalSymbols.Add(lvname,
+                            new Symbol(lvname, SymbolType.Variable, localNames.Count));
 
                         Symbol defv = EvalExpr(ctx, child.GetChild(1));
                         localValues.Add((ushort)defv.Value);
@@ -1398,8 +1367,8 @@ General switches:
                     else if (child.Type == ZapParser.SYMBOL)
                     {
                         localNames.Add(child.Text);
-                        ctx.SetLocalSymbol(child.Text,
-                            new Symbol(child.Text, SymbolType.Variable, localNames.Count, ctx.CurrentPass));
+                        ctx.LocalSymbols.Add(child.Text,
+                            new Symbol(child.Text, SymbolType.Variable, localNames.Count));
                         localValues.Add(0);
                     }
                 }
@@ -1407,6 +1376,31 @@ General switches:
 
             if (localNames.Count > 15)
                 Errors.ThrowSerious(node, "too many local variables");
+
+            AlignRoutine(ctx);
+
+            Symbol sym;
+            int paddr = ctx.Position / ctx.PackingDivisor;
+            if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
+            {
+                sym = new Symbol(name, SymbolType.Function, paddr);
+                ctx.GlobalSymbols.Add(name, sym);
+            }
+            else if (!sym.Phantom || sym.Type != SymbolType.Function)
+            {
+                Errors.ThrowSerious("function redefined: " + name);
+            }
+            else
+            {
+                sym.Phantom = false;
+                if (sym.Value != paddr)
+                {
+                    sym.Value = paddr;
+                    ctx.MeasureAgain = true;
+                }
+            }
+
+            ctx.BeginReassemblyScope(nodeIndex, sym);
 
             ctx.WriteByte((byte)localNames.Count);
 
@@ -1423,15 +1417,8 @@ General switches:
 
         private static void AlignRoutine(Context ctx)
         {
-            int padding = 0;
-
             while (ctx.Position % ctx.PackingDivisor != 0)
-            {
                 ctx.WriteByte(0);
-                padding++;
-            }
-
-            System.Diagnostics.Debug.WriteLine("padded " + padding + " (routine)");
         }
 
         private static void PackString(Context ctx, ITree node)
@@ -1442,20 +1429,23 @@ General switches:
 
             Symbol sym;
             int paddr = ctx.Position / ctx.PackingDivisor;
-            if (ctx.Symbols.TryGetValue(name, out sym) == false)
+            if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
             {
-                sym = new Symbol(name, SymbolType.String, paddr, ctx.CurrentPass);
-                ctx.Symbols.Add(name, sym);
+                sym = new Symbol(name, SymbolType.String, paddr);
+                ctx.GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Type != SymbolType.Unknown &&
-                (sym.Type != SymbolType.String || sym.Pass == ctx.CurrentPass))
+            else if (!sym.Phantom || sym.Type != SymbolType.String)
             {
                 Errors.ThrowSerious("string redefined: " + name);
             }
             else
             {
-                sym.Type = SymbolType.String;
-                sym.SetValue(paddr, ctx.CurrentPass);
+                sym.Phantom = false;
+                if (sym.Value != paddr)
+                {
+                    sym.Value = paddr;
+                    ctx.MeasureAgain = true;
+                }
             }
 
             ctx.WriteZString(node.GetChild(1).Text, false);
@@ -1463,15 +1453,8 @@ General switches:
 
         private static void AlignString(Context ctx)
         {
-            int padding = 0;
-
             while (ctx.Position % ctx.PackingDivisor != 0)
-            {
                 ctx.WriteByte(0);
-                padding++;
-            }
-
-            System.Diagnostics.Debug.WriteLine("padded " + padding + " (string)");
         }
 
         private static void AddAbbreviation(Context ctx, ITree node)
@@ -1484,14 +1467,7 @@ General switches:
             if (ctx.Position % 2 != 0)
                 ctx.WriteByte(0);
 
-            Symbol sym;
-            if (ctx.Symbols.TryGetValue(name, out sym) == false)
-            {
-                sym = new Symbol(name);
-                ctx.Symbols.Add(name, sym);
-            }
-            sym.Type = SymbolType.Constant;
-            sym.SetValue(ctx.Position / 2, ctx.CurrentPass);
+            ctx.GlobalSymbols[name] = new Symbol(name, SymbolType.Constant, ctx.Position / 2);
 
             string text = node.GetChild(1).Text;
             ctx.WriteZString(text, false, true);
@@ -1507,12 +1483,9 @@ General switches:
 
         private static byte[] tmpOperandTypes = new byte[8];
         private static ushort[] tmpOperandValues = new ushort[8];
+        private static Fixup[] tmpOperandFixups = new Fixup[8];
 
-        private delegate bool BranchShortener(int address, int possibleSavings,
-            Predicate<int> allowSpan, Symbol target);
-
-        private static void HandleInstruction(Context ctx, ITree node,
-            BranchShortener shortenBranch)
+        private static void HandleInstruction(Context ctx, ITree node)
         {
             var pair = ctx.OpcodeDict[node.Text];
             ushort opcode = pair.Key;
@@ -1564,8 +1537,10 @@ General switches:
                     Errors.ThrowSerious(node, "expected 2 operands");
 
                 byte b = (byte)opcode;
-                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0]);
-                EvalOperand(ctx, operands[1], out tmpOperandTypes[1], out tmpOperandValues[1]);
+                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0]);
+                EvalOperand(ctx, operands[1], out tmpOperandTypes[1], out tmpOperandValues[1], out tmpOperandFixups[1]);
+                System.Diagnostics.Debug.Assert(tmpOperandFixups[0] == null);
+                System.Diagnostics.Debug.Assert(tmpOperandFixups[1] == null);
                 System.Diagnostics.Debug.Assert(tmpOperandTypes[0] != OPERAND_WORD);
                 System.Diagnostics.Debug.Assert(tmpOperandTypes[1] != OPERAND_WORD);
 
@@ -1585,40 +1560,24 @@ General switches:
                     Errors.ThrowSerious(node, "expected 1 operand");
 
                 byte b = (byte)opcode;
-                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0],
+                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0],
                     (attr.Flags & ZOpFlags.Label) != 0);
 
                 if ((attr.Flags & ZOpFlags.Label) != 0)
                 {
-                    if (operands[0].Type == ZapParser.SYMBOL)
-                    {
-                        Symbol sym;
-                        if (ctx.TryGetLocalSymbol(operands[0].Text, out sym) == false)
-                            sym = ctx.Symbols[operands[0].Text];
-
-                        bool shortForm = shortenBranch(ctx.Position + 2, 1, n => (n >= 0 && n <= 253), sym);
-                        if (shortForm)
-                            tmpOperandTypes[0] = OPERAND_BYTE;
-                        else
-                            tmpOperandTypes[0] = OPERAND_WORD;
-
-                        // make label offset
-                        tmpOperandValues[0] -= (ushort)(ctx.Position + (shortForm ? 2 : 3));
-                        tmpOperandValues[0] += 2;   // jump bias
-
-                        System.Diagnostics.Debug.WriteLine("using " +
-                            (shortForm ? "short" : "long") + " form for JUMP at " +
-                            (ctx.Position + 1) + " (offset " + (short)tmpOperandValues[0] + ")");
-
-                        System.Diagnostics.Debug.Assert(
-                            !(shortForm && ctx.CurrentPass > 1 &&
-                                (tmpOperandValues[0] & 0xFFFFFF00) != 0));
-                    }
+                    // correct label offset (-3 for the opcode and operand, +2 for the normal jump bias)
+                    tmpOperandValues[0]--;
                 }
 
                 b |= (byte)(tmpOperandTypes[0] << 4);
 
                 ctx.WriteByte(b);
+                if (tmpOperandFixups[0] != null)
+                {
+                    tmpOperandFixups[0].Location = ctx.Position;
+                    ctx.Fixups.Add(tmpOperandFixups[0]);
+                    tmpOperandFixups[0] = null;
+                }
                 if (tmpOperandTypes[0] == OPERAND_WORD)
                     ctx.WriteWord(tmpOperandValues[0]);
                 else
@@ -1666,7 +1625,7 @@ General switches:
                     byte t;
                     if (i < operands.Count)
                     {
-                        EvalOperand(ctx, operands[i], out t, out tmpOperandValues[i]);
+                        EvalOperand(ctx, operands[i], out t, out tmpOperandValues[i], out tmpOperandFixups[i]);
                         tmpOperandTypes[i] = t;
                     }
                     else
@@ -1684,6 +1643,13 @@ General switches:
                 // operands
                 for (int i = 0; i < operands.Count; i++)
                 {
+                    if (tmpOperandFixups[i] != null)
+                    {
+                        tmpOperandFixups[i].Location = ctx.Position;
+                        ctx.Fixups.Add(tmpOperandFixups[i]);
+                        tmpOperandFixups[i] = null;
+                    }
+
                     if (tmpOperandTypes[i] == OPERAND_WORD)
                         ctx.WriteWord(tmpOperandValues[i]);
                     else
@@ -1702,7 +1668,8 @@ General switches:
                 {
                     byte type;
                     ushort value;
-                    EvalOperand(ctx, store.GetChild(0), out type, out value);
+                    Fixup fixup;
+                    EvalOperand(ctx, store.GetChild(0), out type, out value, out fixup);
 
                     if (type != OPERAND_VAR)
                         Errors.ThrowSerious(store, "expected local or global variable as store target");
@@ -1718,41 +1685,34 @@ General switches:
                 }
                 else
                 {
-                    bool polarity = (branch.Type == ZapParser.SLASH);
-                    bool shortForm;
-                    bool labeled = true;
+                    bool polarity = (branch.Type == ZapParser.SLASH), far = false;
                     int offset;
                     branch = branch.GetChild(0);
                     switch (branch.Type)
                     {
                         case ZapParser.TRUE:
                             offset = 1;
-                            shortForm = true;
-                            labeled = false;
                             break;
                         case ZapParser.FALSE:
                             offset = 0;
-                            shortForm = true;
-                            labeled = false;
                             break;
                         case ZapParser.SYMBOL:
                             Symbol sym;
-                            if (ctx.TryGetLocalSymbol(branch.Text, out sym) == false)
+                            if (ctx.LocalSymbols.TryGetValue(branch.Text, out sym))
                             {
-                                sym = new Symbol(branch.Text, SymbolType.Unknown, 0, ctx.CurrentPass);
-                                ctx.SetLocalSymbol(branch.Text, sym);
+                                offset = sym.Value - (ctx.Position + 1) + 2;
+                                if (offset < 2 || offset > 63)
+                                {
+                                    far = true;
+                                    offset--;
+                                }
                             }
-
-                            shortForm = shortenBranch(ctx.Position + 1, 1, n => (n >= 0 && n <= 61), sym);
-
-                            if (sym.Type == SymbolType.Unknown)
-                                offset = 7;
                             else
-                                offset = sym.Value - (ctx.Position + (shortForm ? 1 : 2)) + 2;
-
-                            System.Diagnostics.Debug.Assert(
-                                !(shortForm && ctx.CurrentPass > 1 &&
-                                    (offset & ~0x3F) != 0));
+                            {
+                                // not yet defined (we'll reassemble this later once it's defined)
+                                offset = 2;
+                                ctx.MarkUnknownBranch(branch.Text);
+                            }
                             break;
                         default:
                             throw new NotImplementedException();
@@ -1761,12 +1721,7 @@ General switches:
                     if (offset < -8192 || offset > 8191)
                         Errors.Serious(ctx, node, "branch target is too far away");
 
-                    if (labeled)
-                        System.Diagnostics.Debug.WriteLine("using " +
-                            (shortForm ? "short" : "long") + " form for branch at " + ctx.Position +
-                            " (offset " + offset + " to " + branch.Text + ")");
-
-                    if (!shortForm)
+                    if (far)
                         ctx.WriteWord((ushort)((polarity ? 0x8000 : 0) | (offset & 0x3fff)));
                     else
                         ctx.WriteByte((byte)((polarity ? 0xc0 : 0x40) | (offset & 0x3f)));
@@ -1774,54 +1729,66 @@ General switches:
             }
         }
 
-        private static void HandleLabel(Context ctx, ITree node, Action<Symbol> recordLabel)
+        private static void HandleLabel(Context ctx, ITree node, ref int nodeIndex)
         {
-            Symbol sym;
-
             if (node.Type == ZapParser.GLABEL)
             {
-                if (ctx.Symbols.TryGetValue(node.Text, out sym) == true)
+                Symbol sym;
+                if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym) == true)
                 {
-                    if (sym.Type != SymbolType.Unknown &&
-                        (sym.Type != SymbolType.GlobalLabel || sym.Pass == ctx.CurrentPass))
+                    // we don't require it to be a phantom because a global label might be
+                    // defined inside a routine, and reassembly could cause it to be defined twice
+                    if (sym.Type != SymbolType.Label /*|| !sym.Phantom*/)
                         Errors.ThrowSerious(node, "redefining global label");
 
-                    if (ctx.InVocab && !ctx.AtVocabRecord)
-                        Errors.ThrowSerious(node, "unaligned global label in vocab section");
+                    if (ctx.InVocab)
+                    {
+                        if (!ctx.AtVocabRecord)
+                            Errors.ThrowSerious(node, "unaligned global label in vocab section");
 
-                    sym.Type = SymbolType.GlobalLabel;
-                    sym.SetValue(ctx.Position, ctx.CurrentPass);
+                        sym.Value = ctx.Position;
+                    }
+                    else if (sym.Value != ctx.Position)
+                    {
+                        if (ctx.FinalPass)
+                            Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
+                                node.Text, sym.Value, ctx.Position);
+
+                        ctx.MeasureAgain = true;
+                        sym.Value = ctx.Position;
+                    }
+
+                    sym.Phantom = false;
                 }
                 else
                 {
-                    sym = new Symbol(node.Text, SymbolType.GlobalLabel, ctx.Position, ctx.CurrentPass);
-                    ctx.Symbols.Add(node.Text, sym);
+                    ctx.GlobalSymbols.Add(node.Text, new Symbol(node.Text, SymbolType.Label, ctx.Position));
                 }
-
-                recordLabel(sym);
             }
             else if (node.Type == ZapParser.LLABEL)
             {
-                if (!ctx.InLocalScope)
+                if (!ctx.InReassemblyScope)
                     Errors.ThrowSerious(node, "local labels not allowed outside a function");
 
-                if (ctx.TryGetLocalSymbol(node.Text, out sym) == false)
+                Symbol sym;
+                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym) == false)
                 {
-                    sym = new Symbol(node.Text, SymbolType.LocalLabel, ctx.Position, ctx.CurrentPass);
-                    ctx.SetLocalSymbol(node.Text, sym);
+                    if (ctx.CausesReassembly(node.Text))
+                        nodeIndex = ctx.Reassemble(node.Text) - 1;
+                    else
+                        ctx.LocalSymbols.Add(node.Text, new Symbol(node.Text, SymbolType.Label, ctx.Position));
                 }
-                else if (sym.Type == SymbolType.Unknown ||
-                    (sym.Type == SymbolType.LocalLabel && sym.Pass < ctx.CurrentPass))
+                else if (sym.Type == SymbolType.Label && sym.Phantom)
                 {
-                    sym.Type = SymbolType.LocalLabel;
-                    sym.SetValue(ctx.Position, ctx.CurrentPass);
+                    if (sym.Value != ctx.Position)
+                        nodeIndex = ctx.Reassemble(node.Text) - 1;
+                    else
+                        sym.Phantom = false;
                 }
                 else
                 {
                     Errors.ThrowSerious(node, "redefining local label");
                 }
-
-                recordLabel(sym);
             }
         }
     }
