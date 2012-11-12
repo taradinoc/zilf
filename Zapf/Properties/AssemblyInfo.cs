@@ -1,4 +1,4 @@
-﻿/* Copyright 2010 Jesse McGrew
+﻿/* Copyright 2010, 2012 Jesse McGrew
  * 
  * This file is part of ZAPF.
  * 
@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 #endif
 [assembly: AssemblyCompany("Jesse McGrew")]
 [assembly: AssemblyProduct("ZAPF")]
-[assembly: AssemblyCopyright("Copyright © Jesse McGrew 2009, 2010")]
+[assembly: AssemblyCopyright("Copyright © Jesse McGrew 2009, 2010, 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

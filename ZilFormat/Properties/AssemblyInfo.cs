@@ -1,4 +1,4 @@
-﻿/* Copyright 2010 Jesse McGrew
+﻿/* Copyright 2010, 2012 Jesse McGrew
  * 
  * This file is part of ZilFormat.
  * 
@@ -28,7 +28,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Jesse McGrew")]
 [assembly: AssemblyProduct("ZilFormat")]
-[assembly: AssemblyCopyright("Copyright © Jesse McGrew 2010")]
+[assembly: AssemblyCopyright("Copyright © Jesse McGrew 2010, 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
