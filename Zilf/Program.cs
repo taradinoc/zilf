@@ -1,4 +1,4 @@
-﻿/* Copyright 2010 Jesse McGrew
+﻿/* Copyright 2010, 2012 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -32,7 +32,7 @@ namespace Zilf
 {
     class Program
     {
-        public const string VERSION = "ZILF 0.3";
+        public const string VERSION = "ZILF 0.4";
 
         static int Main(string[] args)
         {

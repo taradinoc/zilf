@@ -1,4 +1,4 @@
-﻿/* Copyright 2010 Jesse McGrew
+﻿/* Copyright 2010, 2012 Jesse McGrew
  * 
  * This file is part of ZAPF.
  * 
@@ -34,7 +34,7 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "ZAPF 0.3";
+        public const string VERSION = "ZAPF 0.4";
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main(string[] args)
