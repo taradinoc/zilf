@@ -23,9 +23,15 @@ ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence">
     <REPEAT ()
         <COND (<PARSER>
                 <PERFORM ,PRSA ,PRSO ,PRSI>
-                <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                <OR <META-VERB?> <CLOCKER>>)>
-        <SETG HERE <LOC ,WINNER>>>>
+                ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
+                those routines if WAIT ran this turn"
+                <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+                <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>
+                ;"backup inputbuffers"
+                <COPY-READBUF>
+        		<COPY-LEXBUF>
+        		<SETG AGAINCALL 0>)>
+		<SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
 
