@@ -1,10 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf", "Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf", "Zapf\Zapf.csproj", "{C4379053-B0C7-4826-AC41-CEA59A743B15}"
-EndProject
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
 		zapf_manual.html = zapf_manual.html
@@ -12,15 +8,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		zilf_manual.html = zilf_manual.html
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DezapfTests", "DezapfTests\DezapfTests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4E29B85-317C-4E0F-AABD-D0101C558D91}"
 	ProjectSection(SolutionItems) = preProject
 		LocalTestRun.testrunconfig = LocalTestRun.testrunconfig
 		Zilf.vsmdi = Zilf.vsmdi
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf", "Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf", "Zapf\Zapf.csproj", "{C4379053-B0C7-4826-AC41-CEA59A743B15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DezapfTests", "DezapfTests\DezapfTests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilFormat", "ZilFormat\ZilFormat.csproj", "{38F82274-9C41-4883-AFEE-F1B7B5EE7B10}"
 EndProject
