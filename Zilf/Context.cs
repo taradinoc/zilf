@@ -79,6 +79,7 @@ namespace Zilf
         private RunMode runMode;
         private int errorCount;
         private bool ignoreCase, quiet, traceRoutines, wantDebugInfo;
+        private List<string> includePaths;
         private string curFile;
         private ZilForm callingForm;
 
@@ -115,6 +116,8 @@ namespace Zilf
 
             zenv = new ZEnvironment(this);
 
+            includePaths = new List<string>();
+
             InitStdAtoms();
             InitSubrs();
 
@@ -144,6 +147,11 @@ namespace Zilf
         public bool IgnoreCase
         {
             get { return ignoreCase; }
+        }
+
+        public List<string> IncludePaths
+        {
+            get { return includePaths; }
         }
 
         public bool Quiet
@@ -482,12 +490,17 @@ namespace Zilf
 
         public string FindIncludeFile(string name)
         {
-            if (File.Exists(name))
-                return name;
+            foreach (var path in includePaths)
+            {
+                var combined = Path.Combine(path, name);
 
-            name = Path.ChangeExtension(name, ".zil");
-            if (File.Exists(name))
-                return name;
+                if (File.Exists(combined))
+                    return combined;
+
+                combined = Path.ChangeExtension(combined, ".zil");
+                if (File.Exists(combined))
+                    return combined;
+            }
 
             throw new FileNotFoundException();
         }
