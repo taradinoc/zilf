@@ -180,6 +180,7 @@ namespace Zilf
             bool caseSensitive = false, traceRoutines = false, debugInfo = false;
             RunMode? mode = null;
             bool? quiet = null;
+            List<string> includePaths = new List<string>();
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -215,6 +216,19 @@ namespace Zilf
 
                     case "-x":
                         mode = RunMode.Interpreter;
+                        break;
+
+                    case "-ip":
+                        i++;
+                        if (i < args.Length)
+                        {
+                            includePaths.Add(args[i]);
+                        }
+                        else
+                        {
+                            Usage();
+                            return null;
+                        }
                         break;
 
                     case "-?":
@@ -267,10 +281,15 @@ namespace Zilf
             }
 
             Context ctx = new Context(!caseSensitive);
+
+            ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
+            ctx.IncludePaths.AddRange(includePaths);
+
             ctx.TraceRoutines = traceRoutines;
             ctx.WantDebugInfo = debugInfo;
             ctx.RunMode = mode.Value;
             ctx.Quiet = quiet.Value;
+
             return ctx;
         }
 
@@ -291,6 +310,7 @@ Modes:
 General switches:
   -q                    quiet: no banner or prompt
   -s                    case sensitive
+  -ip dir               add dir to include path (may be repeated)
 Compiler switches:
   -tr                   trace routine calls at runtime
   -d                    include debug information");
