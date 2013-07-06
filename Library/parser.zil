@@ -352,21 +352,38 @@ other versions. These macros let us write the same code for all versions."
 <ROUTINE MATCH-CLAUSE (WN YTBL NTBL "AUX" (TI 1) W VAL (MODE 0) (ADJ <>) (NOUN <>) (BUT <>))
     <REPEAT ()
         <COND
+        	;"exit loop if we reached the end of the command"
             (<G? .WN ,P-LEN> <RETURN>)
+            ;"fail if we found an unrecognized word"
             (<0? <SET W <GETWORD? .WN>>> <RFALSE>)
+            ;"recognize ALL/ANY/ONE"
             (<EQUAL? .W ,W?ALL ,W?ANY ,W?ONE>
                 <COND (<OR .MODE .ADJ .NOUN> <RFALSE>)>
                 <SET MODE
                     <COND (<==? .W ,W?ALL> ,MCM-ALL)
                         (ELSE ,MCM-ANY)>>)
+            ;"match adjectives, keeping only the first"
             (<VERSION?
                 (ZIP <SET VAL <WORD? .W ADJECTIVE>>)
                 (ELSE <AND <CHKWORD? .W ,PS?ADJECTIVE> <SET VAL .W>>)>
                     <COND
+                    	;"if W can also be a noun, treat it as such if we don't
+                    	  already have a noun, and it isn't followed by an adj or noun"
+                    	(<AND
+                    		<0? .NOUN>				;"no noun"
+                    		<WORD? .W OBJECT>		;"word can be a noun"
+                    		<OR
+                    			<==? .WN ,P-LEN>	;"word is at end of line"
+                    			<PROG ((NW <GETWORD? <+ .WN 1>>))
+                    				<NOT <OR		;"next word is not adj/noun"
+                    					<CHKWORD? .W ,PS?ADJECTIVE>
+                    					<CHKWORD? .W ,PS?OBJECT>>>>>>
+		                   	<SET NOUN .W>)
                         (<==? .TI ,P-MAXOBJS>
                             <TELL "That clause mentions too many objects." CR>
                             <RFALSE>)
                         (<NOT .ADJ> <SET ADJ .VAL>)>)
+            ;"match nouns, exiting the loop if we already found one"
             (<WORD? .W OBJECT>
                 <COND
                     (.NOUN <RETURN>)
@@ -374,18 +391,24 @@ other versions. These macros let us write the same code for all versions."
                         <TELL "That clause mentions too many objects." CR>
                         <RFALSE>)
                     (ELSE <SET NOUN .W>)>)
+            ;"recognize AND/comma"
             (<EQUAL? .W ,W?AND ,W?COMMA>
                 <COND (<OR .ADJ .NOUN>
                         <PUT .YTBL .TI .ADJ>
                         <PUT .YTBL <+ .TI 1> .NOUN>
+                        <SET ADJ <SET NOUN <>>>
                         <SET TI <+ .TI 2>>)>)
-            (<CHKWORD? .W ,PS?BUZZ-WORD>)       ;skip
+            ;"skip buzzwords"
+            (<CHKWORD? .W ,PS?BUZZ-WORD>)
+            ;"exit loop if we found any other word type"
             (ELSE <RETURN>)>
         <SET WN <+ .WN 1>>>
+    ;"store final adj/noun pair"
     <COND (<OR .ADJ .NOUN>
             <PUT .YTBL .TI .ADJ>
             <PUT .YTBL <+ .TI 1> .NOUN>
             <SET TI <+ .TI 2>>)>
+    ;"store phrase count and mode"
     <PUTB .YTBL 0 </ <- .TI 1> 2>>
     <PUTB .YTBL 1 .MODE>
     .WN>

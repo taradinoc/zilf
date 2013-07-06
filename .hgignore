@@ -1,0 +1,7 @@
+syntax: glob
+bin
+obj
+*.suo
+*.vsmdi
+*.orig
+*.user
