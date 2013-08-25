@@ -63,7 +63,7 @@ namespace Zilf.Emit
     /// Implements target-independent peephole optimizations, such as removing unnecessary branches.
     /// </summary>
     /// <typeparam name="TCode">The type used to represent instructions.</typeparam>
-    class Peephole<TCode>
+    class PeepholeBuffer<TCode>
     {
         private class Line
         {
@@ -167,7 +167,7 @@ namespace Zilf.Emit
         private Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
         private LinkedList<Line> lines = new LinkedList<Line>();
 
-        public Peephole()
+        public PeepholeBuffer()
         {
         }
 
@@ -294,7 +294,7 @@ namespace Zilf.Emit
         private void Optimize()
         {
             // apply alias mappings and link lines to each other
-            Dictionary<ILabel, Line> labelMap = new Dictionary<ILabel, Peephole<TCode>.Line>();
+            Dictionary<ILabel, Line> labelMap = new Dictionary<ILabel, PeepholeBuffer<TCode>.Line>();
 
             foreach (Line line in lines)
             {

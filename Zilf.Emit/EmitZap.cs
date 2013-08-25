@@ -37,7 +37,7 @@ namespace Zilf.Emit.Zap
         }
     }
 
-    class GameBuilder : IGameBuilder
+    public class GameBuilder : IGameBuilder
     {
         private const string INDENT = "\t";
 
@@ -292,6 +292,11 @@ namespace Zilf.Emit.Zap
         public int MaxPropertyLength
         {
             get { return zversion > 3 ? 64 : 8; }
+        }
+
+        public int MaxCallArguments
+        {
+            get { return zversion > 3 ? 7 : 3; }
         }
 
         public IOperand Zero
@@ -660,7 +665,7 @@ namespace Zilf.Emit.Zap
 
         internal DebugLineRef defnStart, defnEnd;
 
-        private Peephole<ZapCode> peep;
+        private PeepholeBuffer<ZapCode> peep;
         private int nextLabel = 0;
         private string pendingDebugText;
 
@@ -675,7 +680,7 @@ namespace Zilf.Emit.Zap
             this.entryPoint = entryPoint;
             this.cleanStack = cleanStack;
 
-            peep = new Peephole<ZapCode>();
+            peep = new PeepholeBuffer<ZapCode>();
             peep.Combiner = PeepholeCombiner;
         }
 
@@ -1377,17 +1382,18 @@ namespace Zilf.Emit.Zap
              * V4: CALL1 (0, store), CALL2 (1, store), XCALL (0-7, store)
              * V5: ICALL1 (0), ICALL2 (1), ICALL (0-3), IXCALL (0-7) */
 
-            if (args.Length > 7)
-                throw new CompilerError("too many arguments in routine call");
+            if (args.Length > game.MaxCallArguments)
+                throw new ArgumentException(
+                    string.Format(
+                    "Too many arguments in routine call: {0} supplied, {1} allowed",
+                    args.Length,
+                    game.MaxCallArguments));
 
             StringBuilder sb = new StringBuilder();
 
             if (game.zversion < 4)
             {
                 // V1-3: use only CALL opcode (3 args max), pop result if not needed
-                if (args.Length > 3)
-                    throw new CompilerError("too many arguments in routine call");
-
                 sb.Append("CALL ");
                 sb.Append(routine);
                 foreach (IOperand arg in args)

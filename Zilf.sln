@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
 		zapf_manual.html = zapf_manual.html
@@ -23,6 +23,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DezapfTests", "DezapfTests\DezapfTests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilFormat", "ZilFormat\ZilFormat.csproj", "{38F82274-9C41-4883-AFEE-F1B7B5EE7B10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Emit", "Zilf.Emit\Zilf.Emit.csproj", "{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
@@ -71,6 +73,12 @@ Global
 		{38F82274-9C41-4883-AFEE-F1B7B5EE7B10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38F82274-9C41-4883-AFEE-F1B7B5EE7B10}.Release|Any CPU.Build.0 = Release|Any CPU
 		{38F82274-9C41-4883-AFEE-F1B7B5EE7B10}.Release|x86.ActiveCfg = Release|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
