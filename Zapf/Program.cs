@@ -343,13 +343,15 @@ General switches:
                     {
                         if (file[i].Type == ZapParser.END)
                             break;
-                        else
-                            PassOne(ctx, file[i], ref i);
+
+                        PassOne(ctx, file[i], ref i);
                     }
                     catch (SeriousError ser)
                     {
                         ctx.HandleSeriousError(ser);
                     }
+
+                ctx.CheckForUndefinedSymbols();
 
                 if (ctx.Fixups.Count > 0)
                     ctx.MeasureAgain = true;

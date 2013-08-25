@@ -94,6 +94,11 @@ namespace Zilf.Emit
         int MaxPropertyLength { get; }
 
         /// <summary>
+        /// Gets the maximum allowable number of arguments to a routine call.
+        /// </summary>
+        int MaxCallArguments { get; }
+
+        /// <summary>
         /// Gets a predefined operand representing the constant 0.
         /// </summary>
         IOperand Zero { get; }

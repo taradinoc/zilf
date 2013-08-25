@@ -37,6 +37,21 @@ namespace Zilf.Emit.Zap
         }
     }
 
+    public interface IZapStreamFactory
+    {
+        Stream CreateMainStream();
+        Stream CreateFrequentWordsStream();
+        Stream CreateDataStream();
+        Stream CreateStringStream();
+
+        string GetMainFileName(bool withExt);
+        string GetDataFileName(bool withExt);
+        string GetFrequentWordsFileName(bool withExt);
+        string GetStringFileName(bool withExt);
+
+        bool FrequentWordsFileExists { get; }
+    }
+
     public class GameBuilder : IGameBuilder
     {
         private const string INDENT = "\t";
@@ -59,7 +74,7 @@ namespace Zilf.Emit.Zap
         private Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
         private Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
 
-        private readonly string outFile;
+        private readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder debug;
 
@@ -69,18 +84,33 @@ namespace Zilf.Emit.Zap
         private TextWriter writer;
 
         public GameBuilder(int zversion, string outFile, bool wantDebugInfo)
+            : this(zversion, new ZapStreamFactory(outFile), wantDebugInfo)
         {
+        }
+
+        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo)
+        {
+            if (!IsSupportedZversion(zversion))
+                throw new ArgumentOutOfRangeException("zversion", "Unsupported Z-machine version");
+            if (stream == null)
+                throw new ArgumentNullException("streamFactory");
+
             this.zversion = zversion;
-            this.outFile = outFile;
+            this.streamFactory = streamFactory;
 
             debug = wantDebugInfo ? new DebugFileBuilder() : null;
 
             propertyDefaults = new IOperand[(zversion >= 4) ? 63 : 31];
 
-            stream = new FileStream(outFile, FileMode.Create, FileAccess.Write);
+            stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
 
             Begin();
+        }
+
+        private static bool IsSupportedZversion(int zversion)
+        {
+            return zversion >= 1 && zversion <= 8;
         }
 
         private void Begin()
@@ -111,9 +141,8 @@ namespace Zilf.Emit.Zap
                 }
             }
 
-            string baseName = Path.GetFileNameWithoutExtension(outFile);
-            writer.WriteLine(INDENT + ".INSERT \"{0}_freq\"", baseName);
-            writer.WriteLine(INDENT + ".INSERT \"{0}_data\"", baseName);
+            writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetFrequentWordsFileName(false));
+            writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
         }
 
         public IDebugFileBuilder DebugFile
@@ -313,16 +342,15 @@ namespace Zilf.Emit.Zap
         {
             // finish main file
             writer.WriteLine();
-            string baseName = Path.GetFileNameWithoutExtension(outFile);
-            writer.WriteLine(INDENT + ".INSERT \"{0}_str\"", baseName);
+            writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetStringFileName(false));
             writer.WriteLine(INDENT + ".END");
             writer.Close();
 
             // write data file
-            stream = new FileStream(baseName + "_data.zap", FileMode.Create, FileAccess.Write);
+            stream = streamFactory.CreateDataStream();
             writer = new StreamWriter(stream);
 
-            writer.WriteLine(INDENT + "; Data to accompany {0}", Path.GetFileName(outFile));
+            writer.WriteLine(INDENT + "; Data to accompany {0}", streamFactory.GetMainFileName(true));
 
             // assembly constants
             FinishSymbols();
@@ -372,10 +400,10 @@ namespace Zilf.Emit.Zap
             writer.Close();
 
             // write strings file
-            stream = new FileStream(baseName + "_str.zap", FileMode.Create, FileAccess.Write);
+            stream = streamFactory.CreateStringStream();
             writer = new StreamWriter(stream);
 
-            writer.WriteLine(INDENT + "; Strings to accompany {0}", Path.GetFileName(outFile));
+            writer.WriteLine(INDENT + "; Strings to accompany {0}", streamFactory.GetMainFileName(true));
 
             FinishStrings();
 
@@ -383,13 +411,12 @@ namespace Zilf.Emit.Zap
             writer.Close();
 
             // write frequent words file if necessary
-            if (!File.Exists(baseName + "_freq.zap") &&
-                !File.Exists(baseName + "_freq.xzap"))
+            if (!streamFactory.FrequentWordsFileExists)
             {
-                stream = new FileStream(baseName + "_freq.zap", FileMode.Create, FileAccess.Write);
+                stream = streamFactory.CreateFrequentWordsStream();
                 writer = new StreamWriter(stream);
 
-                writer.WriteLine(INDENT + "; Dummy frequent words file for {0}", Path.GetFileName(outFile));
+                writer.WriteLine(INDENT + "; Dummy frequent words file for {0}", streamFactory.GetMainFileName(true));
                 writer.WriteLine(INDENT + ".FSTR FSTR?DUMMY,\"\"");
                 writer.WriteLine("WORDS::");
                 for (int i = 0; i < 96; i++)
@@ -2237,5 +2264,84 @@ namespace Zilf.Emit.Zap
         {
             ((RoutineBuilder)routine).MarkSequencePoint(point);
         }
+    }
+
+    public class ZapStreamFactory : IZapStreamFactory
+    {
+        private readonly string outFile;
+
+        private const string FrequentWordsSuffix = "_freq";
+        private const string DataSuffix = "_data";
+        private const string StringSuffix = "_str";
+
+        public ZapStreamFactory(string outFile)
+        {
+            this.outFile = outFile;
+        }
+
+        #region IZapStreamFactory Members
+
+        public Stream CreateMainStream()
+        {
+            return new FileStream(outFile, FileMode.Create, FileAccess.Write);
+        }
+
+        public Stream CreateFrequentWordsStream()
+        {
+            return new FileStream(
+                Path.GetFileNameWithoutExtension(outFile) + FrequentWordsSuffix + Path.GetExtension(outFile),
+                FileMode.Create,
+                FileAccess.Write);
+        }
+
+        public Stream CreateDataStream()
+        {
+            return new FileStream(
+                Path.GetFileNameWithoutExtension(outFile) + DataSuffix + Path.GetExtension(outFile),
+                FileMode.Create,
+                FileAccess.Write);
+        }
+
+        public Stream CreateStringStream()
+        {
+            return new FileStream(
+                Path.GetFileNameWithoutExtension(outFile) + StringSuffix + Path.GetExtension(outFile),
+                FileMode.Create,
+                FileAccess.Write);
+        }
+
+        public string GetMainFileName(bool withExt)
+        {
+            return withExt ? Path.GetFileName(outFile) : Path.GetFileNameWithoutExtension(outFile);
+        }
+
+        public string GetDataFileName(bool withExt)
+        {
+            var fn = Path.GetFileNameWithoutExtension(outFile) + DataSuffix;
+            return withExt ? fn + Path.GetExtension(outFile) : fn;
+        }
+
+        public string GetFrequentWordsFileName(bool withExt)
+        {
+            var fn = Path.GetFileNameWithoutExtension(outFile) + FrequentWordsSuffix;
+            return withExt ? fn + Path.GetExtension(outFile) : fn;
+        }
+
+        public string GetStringFileName(bool withExt)
+        {
+            var fn = Path.GetFileNameWithoutExtension(outFile) + StringSuffix;
+            return withExt ? fn + Path.GetExtension(outFile) : fn;
+        }
+
+        public bool FrequentWordsFileExists
+        {
+            get
+            {
+                var fn = GetFrequentWordsFileName(true);
+                return File.Exists(fn) || File.Exists(Path.ChangeExtension(fn, ".xzap"));
+            }
+        }
+
+        #endregion
     }
 }

@@ -5,3 +5,5 @@ obj
 *.vsmdi
 *.orig
 *.user
+packages
+TestResults
