@@ -91,12 +91,9 @@
     <Compile Include="Atoms.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="CompilerValues.cs" />
-    <Compile Include="Emit.cs" />
     <Compile Include="Context.cs" />
-    <Compile Include="EmitZap.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="ObList.cs" />
-    <Compile Include="Peephole.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Subrs.cs" />
@@ -124,6 +121,12 @@
       <ProductName>Windows Installer 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj">
+      <Project>{3dd99678-f71c-4caa-a8bf-7dba6188c3c4}</Project>
+      <Name>Zilf.Emit</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

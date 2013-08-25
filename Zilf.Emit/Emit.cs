@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Zilf.Emit
 {
-    struct DebugLineRef
+    public struct DebugLineRef
     {
         public string File;
         public int Line;
@@ -34,7 +34,7 @@ namespace Zilf.Emit
         }
     }
 
-    interface IGameBuilder
+    public interface IGameBuilder
     {
         /// <summary>
         /// Gets the debug file builder, if one exists.
@@ -148,16 +148,16 @@ namespace Zilf.Emit
         void Finish();
     }
 
-    interface IOperand
+    public interface IOperand
     {
     }
 
-    interface IVariable : IOperand
+    public interface IVariable : IOperand
     {
         IOperand Indirect { get; }
     }
 
-    enum Condition
+    public enum Condition
     {
         /// <summary>
         /// Branch if left &lt; right.
@@ -209,7 +209,7 @@ namespace Zilf.Emit
         Verify,
     }
 
-    enum TernaryOp
+    public enum TernaryOp
     {
         /// <summary>
         /// Stores the byte given by right at the address left + center.
@@ -237,7 +237,7 @@ namespace Zilf.Emit
         CopyTable,
     }
 
-    enum BinaryOp
+    public enum BinaryOp
     {
         /// <summary>
         /// Adds left to right.
@@ -324,7 +324,7 @@ namespace Zilf.Emit
         SetCursor,
     }
 
-    enum UnaryOp
+    public enum UnaryOp
     {
         /// <summary>
         /// Returns the negative of the value.
@@ -396,7 +396,7 @@ namespace Zilf.Emit
         PlaySound,
     }
 
-    enum NullaryOp
+    public enum NullaryOp
     {
         /// <summary>
         /// Updates the interpreter-drawn status line.
@@ -412,7 +412,7 @@ namespace Zilf.Emit
         RestoreUndo,
     }
 
-    enum PrintOp
+    public enum PrintOp
     {
         /// <summary>
         /// Prints a number.
@@ -436,7 +436,7 @@ namespace Zilf.Emit
         Object,
     }
 
-    interface IRoutineBuilder : IOperand
+    public interface IRoutineBuilder : IOperand
     {
         ILabel RTrue { get; }
         ILabel RFalse { get; }
@@ -529,26 +529,26 @@ namespace Zilf.Emit
         void Finish();
     }
 
-    interface ILocalBuilder : IVariable
+    public interface ILocalBuilder : IVariable
     {
         IOperand DefaultValue { get; set; }
     }
 
-    interface IGlobalBuilder : IVariable
+    public interface IGlobalBuilder : IVariable
     {
         IOperand DefaultValue { get; set; }
     }
 
-    interface IPropertyBuilder : IOperand
+    public interface IPropertyBuilder : IOperand
     {
         IOperand DefaultValue { get; set; }
     }
 
-    interface IFlagBuilder : IOperand
+    public interface IFlagBuilder : IOperand
     {
     }
 
-    interface IObjectBuilder : IOperand
+    public interface IObjectBuilder : IOperand
     {
         string DescriptiveName { get; set; }
         IObjectBuilder Parent { get; set; }
@@ -562,7 +562,7 @@ namespace Zilf.Emit
         void AddFlag(IFlagBuilder flag);
     }
 
-    interface ITableBuilder : IOperand
+    public interface ITableBuilder : IOperand
     {
         void AddByte(byte value);
         void AddByte(IOperand value);
@@ -570,15 +570,15 @@ namespace Zilf.Emit
         void AddShort(IOperand value);
     }
 
-    interface IWordBuilder : ITableBuilder
+    public interface IWordBuilder : ITableBuilder
     {
     }
 
-    interface ILabel
+    public interface ILabel
     {
     }
 
-    interface IDebugFileBuilder
+    public interface IDebugFileBuilder
     {
         /// <summary>
         /// Marks an operand as an action constant.
