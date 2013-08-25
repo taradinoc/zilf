@@ -569,6 +569,20 @@ namespace Zapf
                 sym.Phantom = false;
         }
 
+        public void CheckForUndefinedSymbols()
+        {
+            var offenders = new HashSet<string>();
+
+            foreach (var f in Fixups)
+            {
+                if (!GlobalSymbols.ContainsKey(f.Symbol) && !offenders.Contains(f.Symbol))
+                {
+                    Errors.Serious(this, "symbol is never defined: {0}", f.Symbol);
+                    offenders.Add(f.Symbol);
+                }
+            }
+        }
+
         public void ResetBetweenPasses()
         {
             Fixups.Clear();
