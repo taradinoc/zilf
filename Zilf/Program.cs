@@ -282,7 +282,10 @@ namespace Zilf
 
             Context ctx = new Context(!caseSensitive);
 
-            ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
+            if (inFile != null)
+            {
+                ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
+            }
             ctx.IncludePaths.AddRange(includePaths);
 
             ctx.TraceRoutines = traceRoutines;
