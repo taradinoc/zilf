@@ -92,7 +92,7 @@ namespace Zilf.Emit.Zap
         {
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException("zversion", "Unsupported Z-machine version");
-            if (stream == null)
+            if (streamFactory == null)
                 throw new ArgumentNullException("streamFactory");
 
             this.zversion = zversion;
