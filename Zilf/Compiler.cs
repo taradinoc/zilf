@@ -273,35 +273,12 @@ namespace Zilf
                 Word word = item.Word;
                 IWordBuilder wb = item.Builder;
 
-                wb.AddByte((byte)word.PartOfSpeech);
-
                 if ((word.PartOfSpeech & PartOfSpeech.Preposition) != 0)
                     numPreps++;
 
-                if ((word.PartOfSpeech & PartOfSpeech.Direction) != 0)
-                {
-                    // translate direction index into property number
-                    // (word could be a synonym, so use the original direction name)
-                    int dirIndex = word.GetValue(PartOfSpeech.DirectionFirst);
-                    ZilAtom propAtom = ctx.ZEnvironment.Directions[dirIndex];
-                    IPropertyBuilder pb = cc.Properties[propAtom];
+                Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
 
-                    if ((word.PartOfSpeech & PartOfSpeech.FirstMask) == PartOfSpeech.DirectionFirst)
-                    {
-                        wb.AddByte(pb);
-                        wb.AddByte(word.Value2);
-                    }
-                    else
-                    {
-                        wb.AddByte(word.Value1);
-                        wb.AddByte(pb);
-                    }
-                    continue;
-                }
-
-                // use values already calculated
-                wb.AddByte(word.Value1);
-                wb.AddByte(word.Value2);
+                word.WriteToBuilder(ctx, wb, dirIndexToPropertyOperand);
             }
 
             // build preposition table
@@ -363,14 +340,14 @@ namespace Zilf
             // verb table
             var query = from s in cc.Context.ZEnvironment.Syntaxes
                         group s by s.Verb into g
-                        orderby g.Key.GetValue(PartOfSpeech.VerbFirst) descending
+                        orderby g.Key.GetValue(PartOfSpeech.Verb) descending
                         select g;
 
             Dictionary<ZilAtom, Action> actions = new Dictionary<ZilAtom, Action>();
 
             foreach (var verb in query)
             {
-                int num = verb.Key.GetValue(PartOfSpeech.VerbFirst);
+                int num = verb.Key.GetValue(PartOfSpeech.Verb);
 
                 // syntax table
                 ITableBuilder stbl = cc.Game.DefineTable(true);
@@ -435,7 +412,7 @@ namespace Zilf
                         {
                             if (line.Preposition1 != null)
                             {
-                                byte pn = line.Preposition1.GetValue(PartOfSpeech.PrepositionFirst);
+                                byte pn = line.Preposition1.GetValue(PartOfSpeech.Preposition);
                                 stbl.AddByte((byte)((pn & 63) | (line.NumObjects << 6)));
                             }
                             else
@@ -453,7 +430,7 @@ namespace Zilf
                                 {
                                     if (line.Preposition2 != null)
                                     {
-                                        byte pn = line.Preposition2.GetValue(PartOfSpeech.PrepositionFirst);
+                                        byte pn = line.Preposition2.GetValue(PartOfSpeech.Preposition);
                                         stbl.AddByte((byte)(pn & 63));
                                     }
                                     else
@@ -576,7 +553,7 @@ namespace Zilf
                 if (!cc.Constants.ContainsKey(adjAtom))
                     cc.Constants.Add(adjAtom,
                         cc.Game.DefineConstant(adjConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.AdjectiveFirst))));
+                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Adjective))));
             }
 
             if ((word.PartOfSpeech & PartOfSpeech.Verb) != 0)
@@ -586,7 +563,7 @@ namespace Zilf
                 if (!cc.Constants.ContainsKey(verbAtom))
                     cc.Constants.Add(verbAtom,
                         cc.Game.DefineConstant(verbConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.VerbFirst))));
+                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Verb))));
             }
 
             if ((word.PartOfSpeech & PartOfSpeech.Preposition) != 0)
@@ -596,7 +573,7 @@ namespace Zilf
                 if (!cc.Constants.ContainsKey(prepAtom))
                     cc.Constants.Add(prepAtom,
                         cc.Game.DefineConstant(prepConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.PrepositionFirst))));
+                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Preposition))));
             }
         }
 

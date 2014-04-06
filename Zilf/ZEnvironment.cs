@@ -284,13 +284,13 @@ namespace Zilf
         None = 0,
         FirstMask = 3,
 
-        ObjectFirst = 0,
+        //ObjectFirst = 0,
         VerbFirst = 1,
         AdjectiveFirst = 2,
         DirectionFirst = 3,
 
-        PrepositionFirst = 0,
-        BuzzwordFirst = 0,
+        //PrepositionFirst = 0,
+        //BuzzwordFirst = 0,
 
         Buzzword = 4,
         Preposition = 8,
@@ -597,19 +597,15 @@ namespace Zilf
     {
         public readonly ZilAtom Atom;
         public PartOfSpeech PartOfSpeech;
-        public byte Value1, Value2;
+
+        private Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
 
         public Word(ZilAtom atom)
         {
-            this.Atom = atom;
-        }
+            if (atom == null)
+                throw new ArgumentNullException("atom");
 
-        public Word(ZilAtom atom, PartOfSpeech partOfSpeech, byte value1, byte value2)
-        {
             this.Atom = atom;
-            this.PartOfSpeech = partOfSpeech;
-            this.Value1 = value1;
-            this.Value2 = value2;
         }
 
         public override string ToString()
@@ -627,33 +623,72 @@ namespace Zilf
                 case PartOfSpeech.DirectionFirst:
                     sb.Append(" DIR1");
                     break;
-                case PartOfSpeech.ObjectFirst:
-                    sb.Append(" OBJ1");
-                    break;
                 case PartOfSpeech.VerbFirst:
                     sb.Append(" VERB1");
+                    break;
+                default: //case PartOfSpeech.ObjectFirst:
+                    sb.Append(" OBJ1");
                     break;
             }
 
             if ((PartOfSpeech & PartOfSpeech.Adjective) != 0)
-                sb.Append("|ADJ");
+            {
+                sb.Append("|ADJ=");
+                sb.Append(speechValues[Zilf.PartOfSpeech.Adjective]);
+            }
             if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
+            {
                 sb.Append("|BUZZ");
+            }
             if ((PartOfSpeech & PartOfSpeech.Direction) != 0)
+            {
                 sb.Append("|DIR");
+                sb.Append(speechValues[Zilf.PartOfSpeech.Direction]);
+            }
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
-                sb.Append("|OBJ");
+            {
+                sb.Append("|OBJ=");
+                sb.Append(speechValues[Zilf.PartOfSpeech.Object]);
+            }
             if ((PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                sb.Append("|PREP");
+            {
+                sb.Append("|PREP=");
+                sb.Append(speechValues[Zilf.PartOfSpeech.Preposition]);
+            }
             if ((PartOfSpeech & PartOfSpeech.Verb) != 0)
-                sb.Append("|VERB");
-
-            sb.Append(", Value1=");
-            sb.Append(Value1);
-            sb.Append(", Value2=");
-            sb.Append(Value2);
+            {
+                sb.Append("|VERB=");
+                sb.Append(speechValues[Zilf.PartOfSpeech.Verb]);
+            }
 
             return sb.ToString();
+        }
+
+        private bool IsNewVoc(Context ctx)
+        {
+            ZilObject value = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_VOC_P));
+            return (value != null && value.IsTrue);
+        }
+
+        /// <summary>
+        /// Checks whether adding a new part of speech should set the relevant First flag.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <returns>true if the new part of speech should set the First flag.</returns>
+        private bool ShouldSetFirst(Context ctx)
+        {
+            // if no parts of speech are set yet, this is easy
+            if (this.PartOfSpeech == Zilf.PartOfSpeech.None)
+                return true;
+
+            // ignore parts of speech that don't record values in the current context
+            var pos = this.PartOfSpeech;
+            if (ctx.ZEnvironment.ZVersion >= 4)
+                pos &= ~Zilf.PartOfSpeech.Adjective;
+            if (IsNewVoc(ctx))
+                pos &= ~Zilf.PartOfSpeech.Object;
+
+            return pos == Zilf.PartOfSpeech.None;
         }
 
         /// <summary>
@@ -685,8 +720,7 @@ namespace Zilf
             // when ,NEW-VOC? is true, Object is free
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
             {
-                ZilObject value = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_VOC_P));
-                if (value != null && value.IsTrue)
+                if (IsNewVoc(ctx))
                     count--;
             }
 
@@ -708,17 +742,10 @@ namespace Zilf
 
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
             {
-                // TODO: don't store a value for "object" words if ,NEW-VOC? is true
-                if (PartOfSpeech == PartOfSpeech.None)
-                {
-                    PartOfSpeech = PartOfSpeech.Object | PartOfSpeech.ObjectFirst;
-                    Value1 = 1;
-                }
-                else
-                {
-                    PartOfSpeech |= PartOfSpeech.Object;
-                    Value2 = 1;
-                }
+                // there is no PartOfSpeech.ObjectFirst, so don't change the First flags
+
+                PartOfSpeech |= PartOfSpeech.Object;
+                speechValues[Zilf.PartOfSpeech.Object] = 1;
                 CheckTooMany(ctx);
             }
         }
@@ -730,16 +757,11 @@ namespace Zilf
 
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
-                if (PartOfSpeech == PartOfSpeech.None)
-                {
-                    PartOfSpeech = PartOfSpeech.Verb | PartOfSpeech.VerbFirst;
-                    Value1 = value;
-                }
-                else
-                {
-                    PartOfSpeech |= PartOfSpeech.Verb;
-                    Value2 = value;
-                }
+                if (ShouldSetFirst(ctx))
+                    PartOfSpeech |= PartOfSpeech.VerbFirst;
+
+                PartOfSpeech |= PartOfSpeech.Verb;
+                speechValues[Zilf.PartOfSpeech.Verb] = value;
                 CheckTooMany(ctx);
             }
         }
@@ -751,16 +773,11 @@ namespace Zilf
             
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
-                if (PartOfSpeech == PartOfSpeech.None)
-                {
-                    PartOfSpeech = PartOfSpeech.Adjective | PartOfSpeech.AdjectiveFirst;
-                    Value1 = value;
-                }
-                else
-                {
-                    PartOfSpeech |= PartOfSpeech.Adjective;
-                    Value2 = value;
-                }
+                if (ctx.ZEnvironment.ZVersion < 4 && ShouldSetFirst(ctx))
+                    PartOfSpeech |= PartOfSpeech.AdjectiveFirst;
+
+                PartOfSpeech |= PartOfSpeech.Adjective;
+                speechValues[Zilf.PartOfSpeech.Adjective] = value;
                 CheckTooMany(ctx);
             }
         }
@@ -772,16 +789,11 @@ namespace Zilf
             
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
-                if (PartOfSpeech == PartOfSpeech.None)
-                {
-                    PartOfSpeech = PartOfSpeech.Direction | PartOfSpeech.DirectionFirst;
-                    Value1 = value;
-                }
-                else
-                {
-                    PartOfSpeech |= PartOfSpeech.Direction;
-                    Value2 = value;
-                }
+                if (ShouldSetFirst(ctx))
+                    PartOfSpeech |= PartOfSpeech.DirectionFirst;
+
+                PartOfSpeech |= PartOfSpeech.Direction;
+                speechValues[Zilf.PartOfSpeech.Direction] = value;
                 CheckTooMany(ctx);
             }
         }
@@ -792,8 +804,7 @@ namespace Zilf
                 throw new InterpreterError("buzzwords may not be used as any other part of speech");
 
             PartOfSpeech = PartOfSpeech.Buzzword;
-            Value1 = value;
-            Value2 = 0;
+            speechValues[Zilf.PartOfSpeech.Buzzword] = value;
         }
 
         public void SetPreposition(Context ctx, byte value)
@@ -806,18 +817,105 @@ namespace Zilf
                 // preposition value is always first
                 PartOfSpeech |= PartOfSpeech.Preposition;
                 PartOfSpeech &= ~PartOfSpeech.FirstMask;
-                Value2 = Value1;
-                Value1 = value;
+                speechValues[Zilf.PartOfSpeech.Preposition] = value;
                 CheckTooMany(ctx);
             }
         }
 
-        public byte GetValue(PartOfSpeech first)
+        public byte GetValue(PartOfSpeech part)
         {
-            if ((PartOfSpeech & PartOfSpeech.FirstMask) == first)
-                return Value1;
-            else
-                return Value2;
+            switch (part)
+            {
+                case Zilf.PartOfSpeech.Verb:
+                case Zilf.PartOfSpeech.Adjective:
+                case Zilf.PartOfSpeech.Direction:
+                case Zilf.PartOfSpeech.Buzzword:
+                case Zilf.PartOfSpeech.Preposition:
+                case Zilf.PartOfSpeech.Object:
+                    return speechValues[part];
+
+                default:
+                    throw new ArgumentOutOfRangeException("Unexpected part of speech: " + part);
+            }
+        }
+
+        public void WriteToBuilder(Context ctx, Emit.IWordBuilder wb, Func<byte, Emit.IOperand> dirIndexToPropertyOperand)
+        {
+            var pos = this.PartOfSpeech;
+            var partsToWrite = new List<PartOfSpeech>(2);
+
+            // expand parts of speech, observing the First flags and a few special cases
+            if ((pos & Zilf.PartOfSpeech.Adjective) != 0)
+            {
+                // in V4+, don't write a value for Adjective
+                if (ctx.ZEnvironment.ZVersion < 4)
+                {
+                    if ((pos & Zilf.PartOfSpeech.AdjectiveFirst) != 0)
+                        partsToWrite.Insert(0, Zilf.PartOfSpeech.Adjective);
+                    else
+                        partsToWrite.Add(Zilf.PartOfSpeech.Adjective);
+                }
+            }
+            if ((pos & Zilf.PartOfSpeech.Buzzword) != 0)
+            {
+                // there is no BuzzwordFirst, but Buzzword must be on its own anyway
+                System.Diagnostics.Debug.Assert(pos == Zilf.PartOfSpeech.Buzzword);
+                partsToWrite.Add(Zilf.PartOfSpeech.Buzzword);
+            }
+            if ((pos & Zilf.PartOfSpeech.Direction) != 0)
+            {
+                if ((pos & Zilf.PartOfSpeech.DirectionFirst) != 0)
+                    partsToWrite.Insert(0, Zilf.PartOfSpeech.Direction);
+                else
+                    partsToWrite.Add(Zilf.PartOfSpeech.Direction);
+            }
+            if ((pos & Zilf.PartOfSpeech.Verb) != 0)
+            {
+                if ((pos & Zilf.PartOfSpeech.VerbFirst) != 0)
+                    partsToWrite.Insert(0, Zilf.PartOfSpeech.Verb);
+                else
+                    partsToWrite.Add(Zilf.PartOfSpeech.Verb);
+            }
+            if ((pos & Zilf.PartOfSpeech.Object) != 0)
+            {
+                // for NewVoc, don't write a value for Object
+                if (!IsNewVoc(ctx))
+                {
+                    // there is no ObjectFirst, so keep it first if all other First flags are clear
+                    if ((pos & Zilf.PartOfSpeech.FirstMask) == 0)
+                        partsToWrite.Insert(0, Zilf.PartOfSpeech.Object);
+                    else
+                        partsToWrite.Add(Zilf.PartOfSpeech.Object);
+                }
+            }
+            if ((pos & Zilf.PartOfSpeech.Preposition) != 0)
+            {
+                // there is no PrepositionFirst because Preposition always comes first
+                System.Diagnostics.Debug.Assert((pos & Zilf.PartOfSpeech.FirstMask) == 0);
+                partsToWrite.Insert(0, Zilf.PartOfSpeech.Preposition);
+            }
+
+            // write part of speech flags
+            wb.AddByte((byte)pos);
+
+            // write values
+            for (int i = 0; i < 2; i++)
+            {
+                if (i < partsToWrite.Count)
+                {
+                    var p = partsToWrite[i];
+                    var value = GetValue(p);
+
+                    if (p == Zilf.PartOfSpeech.Direction)
+                        wb.AddByte(dirIndexToPropertyOperand(value));
+                    else
+                        wb.AddByte(value);
+                }
+                else
+                {
+                    wb.AddByte(0);
+                }
+            }
         }
     }
 
@@ -835,22 +933,22 @@ namespace Zilf
         public virtual void Apply(Context ctx)
         {
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Adjective) != 0)
-                SynonymWord.SetAdjective(ctx, OriginalWord.GetValue(PartOfSpeech.AdjectiveFirst));
+                SynonymWord.SetAdjective(ctx, OriginalWord.GetValue(PartOfSpeech.Adjective));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                SynonymWord.SetBuzzword(ctx, OriginalWord.GetValue(PartOfSpeech.BuzzwordFirst));
+                SynonymWord.SetBuzzword(ctx, OriginalWord.GetValue(PartOfSpeech.Buzzword));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Direction) != 0)
-                SynonymWord.SetDirection(ctx, OriginalWord.GetValue(PartOfSpeech.DirectionFirst));
+                SynonymWord.SetDirection(ctx, OriginalWord.GetValue(PartOfSpeech.Direction));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Object) != 0)
                 SynonymWord.SetObject(ctx);
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                SynonymWord.SetPreposition(ctx, OriginalWord.GetValue(PartOfSpeech.PrepositionFirst));
+                SynonymWord.SetPreposition(ctx, OriginalWord.GetValue(PartOfSpeech.Preposition));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Verb) != 0)
-                SynonymWord.SetVerb(ctx, OriginalWord.GetValue(PartOfSpeech.VerbFirst));
+                SynonymWord.SetVerb(ctx, OriginalWord.GetValue(PartOfSpeech.Verb));
         }
     }
 
