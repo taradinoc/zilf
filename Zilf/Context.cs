@@ -271,7 +271,7 @@ namespace Zilf
 
             // parts of speech
             var parts = new[] {
-                new { N="P1?OBJECT", V=PartOfSpeech.ObjectFirst },
+                new { N="P1?OBJECT", V=PartOfSpeech.None },     // there is no ObjectFirst
                 new { N="P1?VERB", V=PartOfSpeech.VerbFirst },
                 new { N="P1?ADJECTIVE", V=PartOfSpeech.AdjectiveFirst },
                 new { N="P1?DIRECTION", V=PartOfSpeech.DirectionFirst },
