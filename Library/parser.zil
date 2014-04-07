@@ -586,21 +586,10 @@ other versions. These macros let us write the same code for all versions."
     	<AND .F <RETURN .F>>
     	;"check local-globals"
     	<OBJECTLOOP I ,LOCAL-GLOBALS
-    		<COND (<FSET? .I ,LIGHTBIT>
-    				;<TELL "FOUND OBJ with light in LOCAL-GLOBALS - now checking room" CR>
-    				;<PROG () <TELL "I IS SET TO "> <PRINTN .I> <TELL CR>>
-    				<OR <SET H <GETPT ,HERE ,P?GLOBAL>> <RETURN>>
-   				        <SET GMAX <- </ <PTSIZE .H> 2> 1>>
-    					<REPEAT ((X 0))
-       							 <COND
-            						(<==? <GET .H .X> .I>
-            								;<TELL "ROOM has a object that matches this GLOBAL with LIGHTBIT" CR>
-            								<SET F .I>
-                							<RETURN>)
-            						(<IGRTR? X .GMAX> <RETURN>)
-            					  >
-            			>
-        	  )>>
+    		<COND (<AND <FSET? .I ,LIGHTBIT> <GLOBAL-IN? .I ,HERE>>
+				;"room has an object that matches this global with LIGHTBIT"
+				<SET F .I>
+				<RETURN>)>>
     	<AND .F <RTRUE>> 
     	;<TELL "no light source found" CR>
     	<RFALSE>>      
@@ -718,21 +707,9 @@ other versions. These macros let us write the same code for all versions."
     <AND .F <RETURN .F>>
     ;"check local-globals"
     <OBJECTLOOP I ,LOCAL-GLOBALS
-    	<COND (<REFERS? .A .N .I>
-    				;<TELL "FOUND OBJ in LOCAL-GLOBALS - now checking room" CR>
-    				;<PROG () <TELL "I IS SET TO "> <PRINTN .I> <TELL CR>>
-    				<OR <SET H <GETPT ,HERE ,P?GLOBAL>> <RETURN>>
-   				        <SET GMAX <- </ <PTSIZE .H> 2> 1>>
-    					<REPEAT ((X 0))
-       							 <COND
-            						(<==? <GET .H .X> .I>
-            								;<TELL "ROOM has a matching GLOBAL" CR>
-            								<SET F .I>
-                							<RETURN>)
-            						(<IGRTR? X .GMAX> <RETURN>)
-            					  >
-            			>
-        	  )>>
+    	<COND (<AND <REFERS? .A .N .I> <GLOBAL-IN? .I ,HERE>>
+				<SET F .I>
+				<RETURN>)>>
     <AND .F <RETURN .F>> 
     ;"no match"
     ;"TO DO - Search through containers in rooms to see if I-matching NPC is there for 'does not seem to be here' message"
@@ -775,43 +752,49 @@ other versions. These macros let us write the same code for all versions."
              >
        		<AND .F <RETURN .F>>
  >
- 
- 
-     	
-                	
-    
-<ROUTINE GLOBAL-IN? (O R "AUX" H GMAX X)
-	<OR <SET H <GETPT .R ,P?GLOBAL>> <RFALSE>>
-   		<SET GMAX <- </ <PTSIZE .H> 2> 1>>
-    	<REPEAT ((X 0))
-       			<COND
-            		(<==? <GET .H .X> .O>
-            				;<TELL "ROOM has a matching GLOBAL" CR>
-            				<RTRUE>)
-            		(<IGRTR? X .GMAX> <RFALSE>)>
-    	>
->
+
+<ROUTINE GLOBAL-IN? (O R)
+    <IN-PB/WTBL? .R ,P?GLOBAL .O>>
+
+;"Making this a macro is tempting, but it'd evaluate the parameters in the wrong order"
+;<DEFMAC GLOBAL-IN? ('O 'R)
+    <FORM IN-PB/WTBL? .R ',P?GLOBAL .O>>
 
 <ROUTINE REFERS? (A N O)
     <AND
         <OR <0? .A> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
             <IN-PWTBL? .O ,P?SYNONYM .N>>>
 
-<ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
-    <OR <SET PT <GETPT .O .P>> <RFALSE>>
-    <SET MAX <- </ <PTSIZE .PT> 2> 1>>
-    <REPEAT ((I 0))
-        <COND
-            (<==? <GET .PT .I> .V> <RTRUE>)
-            (<IGRTR? I .MAX> <RFALSE>)>>>
+<VERSION?
+    (ZIP
+	;"V3 has no INTBL? opcode"
+        <ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+            <SET MAX <- </ <PTSIZE .PT> 2> 1>>
+            <REPEAT ((I 0))
+                <COND
+                    (<==? <GET .PT .I> .V> <RTRUE>)
+                    (<IGRTR? I .MAX> <RFALSE>)>>>
 
-<ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
-    <OR <SET PT <GETPT .O .P>> <RFALSE>>
-    <SET MAX <- <PTSIZE .PT> 1>>
-    <REPEAT ((I 0))
-        <COND
-            (<==? <GETB .PT .I> .V> <RTRUE>)
-            (<IGRTR? I .MAX> <RFALSE>)>>>
+        <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+            <SET MAX <- <PTSIZE .PT> 1>>
+            <REPEAT ((I 0))
+                <COND
+                    (<==? <GETB .PT .I> .V> <RTRUE>)
+                    (<IGRTR? I .MAX> <RFALSE>)>>>)
+		    
+    (T
+	;"use built-in INTBL? in V4+"
+        <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+	    <SET LEN </ <PTSIZE .PT> 2>>
+	    <AND <INTBL? .V .PT .LEN> <RTRUE>>>
+    
+        <ROUTINE IN-PBTBL? (O P V "AUX" PT LEN)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+            <SET LEN <PTSIZE .PT>>
+            <AND <INTBL? .V .PT .LEN 1> <RTRUE>>>)>
 
 <ROUTINE DUMPLINE ("AUX" (P <+ ,LEXBUF 2>) (WDS <GETB ,LEXBUF 1>))
     <TELL N .WDS " words:">

@@ -213,7 +213,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (WEST TO CLOAKROOM)
     (NORTH SORRY "You've only just arrived, and besides, the weather outside
         seems to be getting worse.")
-    (GLOBAL RUG)
+    (GLOBAL RUG ODOR)
     (FLAGS LIGHTBIT)
     (ACTION FOYER-R)>
     
@@ -234,7 +234,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (LDESC "The bar, much rougher than you'd have guessed after the opulence
         of the foyer to the north, is completely empty.")
     (NORTH TO FOYER)
-    (GLOBAL RUG)
+    (GLOBAL RUG ODOR)
     (ACTION BAR-R)>
     
 
@@ -582,3 +582,8 @@ Additional material added for testing ZILF library by Josh Lawrence">
 <ROUTINE RUG-R ()
 	<COND (<VERB? PUT-ON>
 			<TELL "You don't want to place anything on that tatty rug." CR>)>>
+
+<OBJECT ODOR
+	(DESC "odor")
+	(IN LOCAL-GLOBALS)
+	(SYNONYM ODOR STENCH)>
