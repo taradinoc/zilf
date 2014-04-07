@@ -34,7 +34,7 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "ZAPF 0.4";
+        public const string VERSION = "ZAPF 0.5";
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main(string[] args)
