@@ -55,6 +55,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Interpreter\ArithmeticTests.cs" />
+    <Compile Include="Interpreter\AtomTests.cs" />
     <Compile Include="Interpreter\TestHelpers.cs" />
     <Compile Include="WordTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

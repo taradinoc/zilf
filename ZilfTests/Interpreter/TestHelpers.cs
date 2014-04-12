@@ -13,12 +13,23 @@ namespace ZilfTests.Interpreter
         internal static ZilObject Evaluate(string expression)
         {
             var ctx = new Context();
+            return Evaluate(ctx, expression);
+        }
+
+        internal static ZilObject Evaluate(Context ctx, string expression)
+        {
             return Program.Evaluate(ctx, expression, true);
         }
 
         internal static void EvalAndAssert(string expression, ZilObject expected)
         {
-            var actual = Evaluate(expression);
+            var ctx = new Context();
+            EvalAndAssert(ctx, expression, expected);
+        }
+
+        internal static void EvalAndAssert(Context ctx, string expression, ZilObject expected)
+        {
+            var actual = Evaluate(ctx, expression);
             if (!object.Equals(actual, expected))
                 throw new AssertFailedException(string.Format("TestHelpers.EvalAndAssert failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}", expected, actual, expression));
         }
