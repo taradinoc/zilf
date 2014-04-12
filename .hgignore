@@ -7,3 +7,13 @@ obj
 *.user
 packages
 TestResults
+Testing/*.dll
+Testing/*.exe
+Testing/*.z3
+Testing/*.z4
+Testing/*.z5
+Testing/*.z6
+Testing/*.z7
+Testing/*.z8
+Testing/*.zap
+Testing/parser.zil
