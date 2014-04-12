@@ -723,7 +723,32 @@ namespace Zilf
         [Subr]
         public static ZilObject LSH(Context ctx, ZilObject[] args)
         {
-            return PerformArithmetic(1, "LSH", (x, y) => x << y, args);
+            // "Logical shift", not left shift.
+            // Positive shifts left, negative shifts right.
+            
+            if (args.Length != 2)
+                throw new InterpreterError(null, "LSH", 2, 2);
+
+            var a = args[0] as ZilFix;
+            var b = args[1] as ZilFix;
+
+            if (a == null || b == null)
+                throw new InterpreterError("LSH: every arg must be a FIX");
+
+            int result;
+
+            if (b.Value >= 0)
+            {
+                int count = b.Value % 256;
+                result = count >= 32 ? 0 : a.Value << count;
+            }
+            else
+            {
+                int count = -b.Value % 256;
+                result = count >= 32 ? 0 : (int)((uint)a.Value >> count);
+            }
+
+            return new ZilFix(result);
         }
 
         [Subr]

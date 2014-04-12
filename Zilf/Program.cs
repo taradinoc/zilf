@@ -319,13 +319,13 @@ Compiler switches:
   -d                    include debug information");
         }
 
-        public static ZilObject Evaluate(Context ctx, string str)
+        public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)
         {
             ICharStream charStream = new ANTLRStringStream(str);
-            return Evaluate(ctx, charStream);
+            return Evaluate(ctx, charStream, wantExceptions);
         }
 
-        public static ZilObject Evaluate(Context ctx, ICharStream charStream)
+        public static ZilObject Evaluate(Context ctx, ICharStream charStream, bool wantExceptions = false)
         {
             ZilLexer lexer = new ZilLexer(charStream);
 
@@ -364,22 +364,37 @@ Compiler switches:
                     {
                         if (ex.SourceLine == null)
                             ex.SourceLine = node as ISourceLine;
+
+                        if (wantExceptions)
+                            throw;
+
                         ctx.HandleError(ex);
                     }
                     catch (ControlException ex)
                     {
-                        ctx.HandleError(new InterpreterError(node as ISourceLine, "misplaced " + ex.Message));
+                        var newEx = new InterpreterError(node as ISourceLine, "misplaced " + ex.Message);
+
+                        if (wantExceptions)
+                            throw newEx;
+                        else
+                            ctx.HandleError(newEx);
                     }
 
                 return result;
             }
             catch (InterpreterError ex)
             {
+                if (wantExceptions)
+                    throw;
+
                 ctx.HandleError(ex);
                 return null;
             }
             catch (ControlException ex)
             {
+                if (wantExceptions)
+                    throw;
+
                 ctx.HandleError(new InterpreterError("misplaced " + ex.Message));
                 return null;
             }
