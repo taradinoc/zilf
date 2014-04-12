@@ -3,6 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
+		Compatibility Notes.txt = Compatibility Notes.txt
 		zapf_manual.html = zapf_manual.html
 		ZIL Guide.odt = ZIL Guide.odt
 		zilf_manual.html = zilf_manual.html
