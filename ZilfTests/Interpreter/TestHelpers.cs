@@ -12,19 +12,20 @@ namespace ZilfTests.Interpreter
     {
         internal static ZilObject Evaluate(string expression)
         {
-            var ctx = new Context();
-            return Evaluate(ctx, expression);
+            return Evaluate(null, expression);
         }
 
         internal static ZilObject Evaluate(Context ctx, string expression)
         {
+            if (ctx == null)
+                ctx = new Context();
+
             return Program.Evaluate(ctx, expression, true);
         }
 
         internal static void EvalAndAssert(string expression, ZilObject expected)
         {
-            var ctx = new Context();
-            EvalAndAssert(ctx, expression, expected);
+            EvalAndAssert(null, expression, expected);
         }
 
         internal static void EvalAndAssert(Context ctx, string expression, ZilObject expected)
@@ -37,12 +38,18 @@ namespace ZilfTests.Interpreter
         internal static void EvalAndCatch<TException>(string expression)
             where TException : Exception
         {
+            EvalAndCatch<TException>(null, expression);
+        }
+
+        internal static void EvalAndCatch<TException>(Context ctx, string expression)
+            where TException : Exception
+        {
             const string SFailure = "TestHelpers.EvalAndCatch failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}";
 
             bool caught = false;
             try
             {
-                Evaluate(expression);
+                Evaluate(ctx, expression);
             }
             catch (TException)
             {
