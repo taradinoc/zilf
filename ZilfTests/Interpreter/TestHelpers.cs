@@ -47,9 +47,10 @@ namespace ZilfTests.Interpreter
             const string SFailure = "TestHelpers.EvalAndCatch failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}";
 
             bool caught = false;
+            ZilObject result = null;
             try
             {
-                Evaluate(ctx, expression);
+                result = Evaluate(ctx, expression);
             }
             catch (TException)
             {
@@ -57,11 +58,17 @@ namespace ZilfTests.Interpreter
             }
             catch (Exception ex)
             {
-                throw new AssertFailedException(string.Format(SFailure, typeof(TException).FullName, ex.GetType().FullName, expression));
+                throw new AssertFailedException(string.Format(SFailure,
+                    typeof(TException).FullName,
+                    ex.GetType().FullName,
+                    expression));
             }
 
             if (!caught)
-                throw new AssertFailedException(string.Format(SFailure, typeof(TException).FullName, "(no exception)", expression));
+                throw new AssertFailedException(string.Format(SFailure,
+                    typeof(TException).FullName,
+                    string.Format("(no exception, returned {0})", result),
+                    expression));
         }
     }
 }

@@ -452,6 +452,9 @@ namespace Zilf
             if (list == null)
                 throw new InterpreterError("CONS: second arg must be a list");
 
+            if (list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                list = new ZilList(list);
+
             return new ZilList(args[0], list);
         }
 

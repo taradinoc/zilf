@@ -167,8 +167,13 @@ namespace Zilf
             switch (type.StdAtom)
             {
                 case StdAtom.FALSE:
-                    // #FALSE (any value)
-                    return new ZilFalse(value);
+                    // #FALSE (list)
+                    if (vtype.StdAtom == StdAtom.LIST)
+                        return new ZilFalse((ZilList)value);
+                    else if (value is IEnumerable<ZilObject>)
+                        return new ZilFalse(new ZilList((IEnumerable<ZilObject>)value));
+                    else
+                        throw new InterpreterError("value cast to FALSE must be a list");
 
                 case StdAtom.SUBR:
                 case StdAtom.FSUBR:
@@ -408,7 +413,7 @@ namespace Zilf
         }
     }
 
-    class ZilSegment : ZilObject
+    class ZilSegment : ZilObject, IStructure
     {
         private ZilForm form;
 
@@ -450,6 +455,47 @@ namespace Zilf
         {
             return form.GetHashCode();
         }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return ((IStructure)form).GetFirst();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return ((IStructure)form).GetRest(skip);
+        }
+
+        public bool IsEmpty()
+        {
+            return ((IStructure)form).IsEmpty();
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                return ((IStructure)form)[index];
+            }
+            set
+            {
+                ((IStructure)form)[index] = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return ((IStructure)form).GetLength();
+        }
+
+        public int? GetLength(int limit)
+        {
+            return ((IStructure)form).GetLength(limit);
+        }
+
+        #endregion
     }
 
     #endregion
@@ -640,21 +686,18 @@ namespace Zilf
         }
     }
 
-    class ZilFalse : ZilObject
+    class ZilFalse : ZilObject, IStructure
     {
-        private ZilObject value;
+        private ZilList value;
 
-        public ZilFalse(ZilObject value)
+        public ZilFalse(ZilList value)
         {
             this.value = value;
         }
 
         public override string ToString()
         {
-            if (value.GetType() == typeof(ZilList) && ((ZilList)value).IsEmpty)
-                return "<>";
-            else
-                return "#FALSE " + value.ToString();
+            return "#FALSE " + value.ToString();
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -677,9 +720,50 @@ namespace Zilf
         {
             return value.GetHashCode();
         }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return value.First;
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return ((IStructure)value).GetRest(skip);
+        }
+
+        public bool IsEmpty()
+        {
+            return value.IsEmpty;
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                return ((IStructure)value)[index];
+            }
+            set
+            {
+                ((IStructure)value)[index] = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return ((IStructure)value).GetLength();
+        }
+
+        public int? GetLength(int limit)
+        {
+            return ((IStructure)value).GetLength(limit);
+        }
+
+        #endregion
     }
 
-    class ZilFix : ZilObject
+    class ZilFix : ZilObject, IApplicable
     {
         private readonly int value;
 
@@ -713,6 +797,25 @@ namespace Zilf
         {
             return value.GetHashCode();
         }
+
+        #region IApplicable Members
+
+        public ZilObject Apply(Context ctx, ZilObject[] args)
+        {
+            return ApplyNoEval(ctx, EvalSequence(ctx, args).ToArray());
+        }
+
+        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        {
+            if (args.Length == 1)
+                return Subrs.NTH(ctx, new ZilObject[] { args[0].Eval(ctx), this });
+            else if (args.Length == 2)
+                return Subrs.PUT(ctx, new ZilObject[] { args[0].Eval(ctx), this, args[1].Eval(ctx) });
+            else
+                throw new InterpreterError("expected 1 or 2 args after a FIX");
+        }
+
+        #endregion
     }
 
     #endregion
@@ -1062,16 +1165,6 @@ namespace Zilf
                 {
                     ctx.CallingForm = oldCF;
                 }
-            }
-            else if (target is ZilFix)
-            {
-                ZilObject[] args = Rest.ToArray();
-                if (args.Length == 1)
-                    return Subrs.NTH(ctx, new ZilObject[] { args[0].Eval(ctx), target });
-                else if (args.Length == 2)
-                    return Subrs.PUT(ctx, new ZilObject[] { args[0].Eval(ctx), target, args[1].Eval(ctx) });
-                else
-                    throw new InterpreterError("expected 1 or 2 args after a FIX");
             }
             else
                 throw new InterpreterError(this, "not an applicable type: " +
@@ -1537,6 +1630,12 @@ namespace Zilf
         private readonly int optArgsStart, auxArgsStart;
         private readonly ZilAtom varargsAtom;
         private readonly bool varargsQuoted;
+        private readonly ZilAtom quoteAtom;
+
+        public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
+            : this(prev.name, argspec)
+        {
+        }
 
         public ArgSpec(ZilAtom name, IEnumerable<ZilObject> argspec)
         {
@@ -1626,10 +1725,17 @@ namespace Zilf
                         !af.Rest.IsEmpty)
                     {
                         quoted = true;
+                        quoteAtom = (ZilAtom)af.First;
                         argName = af.Rest.First;
                     }
                     else
                         throw new InterpreterError("unexpected FORM in arg spec: " + argName.ToString());
+                }
+
+                // it'd better be an atom by now
+                if (!(argName is ZilAtom))
+                {
+                    throw new InterpreterError("expected atom in arg spec but found " + argName.ToString());
                 }
 
                 argAtoms.Add((ZilAtom)argName);
@@ -1679,31 +1785,18 @@ namespace Zilf
 
         public string ToString(Func<ZilObject, string> convert)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.Append('(');
 
-            for (int i = 0; i < argAtoms.Length; i++)
+            bool first = true;
+            foreach (var item in this.AsZilListBody())
             {
-                if (i > 0)
+                if (!first)
                     sb.Append(' ');
 
-                if (i == auxArgsStart)
-                    sb.Append("\"AUX\" ");
-                else if (i == optArgsStart)
-                    sb.Append("\"OPT\" ");
+                first = false;
 
-                if (argDefaults[i] == null)
-                {
-                    sb.Append(convert(argAtoms[i]));
-                }
-                else
-                {
-                    sb.Append('(');
-                    sb.Append(convert(argAtoms[i]));
-                    sb.Append(' ');
-                    sb.Append(convert(argDefaults[i]));
-                    sb.Append(')');
-                }
+                sb.Append(convert(item));
             }
 
             sb.Append(')');
@@ -1712,12 +1805,12 @@ namespace Zilf
 
         public override string ToString()
         {
-            return ToString(zo => zo.ToString());
+            return this.ToString(zo => zo.ToString());
         }
 
         public string ToStringContext(Context ctx, bool friendly)
         {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
+            return this.ToString(zo => zo.ToStringContext(ctx, friendly));
         }
 
         public override bool Equals(object obj)
@@ -1811,11 +1904,43 @@ namespace Zilf
             foreach (ZilAtom atom in argAtoms)
                 ctx.PopLocalVal(atom);
         }
+
+        public ZilList ToZilList()
+        {
+            return new ZilList(this.AsZilListBody());
+        }
+
+        public IEnumerable<ZilObject> AsZilListBody()
+        {
+            for (int i = 0; i < argAtoms.Length; i++)
+            {
+                if (i == auxArgsStart)
+                    yield return new ZilString("AUX");
+                else if (i == optArgsStart)
+                    yield return new ZilString("OPT");
+
+                ZilObject arg = argAtoms[i];
+
+                if (argQuoted[i])
+                {
+                    arg = new ZilForm(new ZilObject[] { quoteAtom, arg });
+                }
+
+                if (argDefaults[i] != null)
+                {
+                    arg = new ZilList(arg,
+                        new ZilList(argDefaults[i],
+                            new ZilList(null, null)));
+                }
+
+                yield return arg;
+            }
+        }
     }
 
-    class ZilFunction : ZilObject, IApplicable
+    class ZilFunction : ZilObject, IApplicable, IStructure
     {
-        private readonly ArgSpec argspec;
+        private ArgSpec argspec;
         private readonly ZilObject[] body;
 
         public ZilFunction(ZilAtom name, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body)
@@ -1910,9 +2035,56 @@ namespace Zilf
 
             return result;
         }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return argspec.ToZilList();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return new ZilList(body.Skip(skip - 1));
+        }
+
+        public bool IsEmpty()
+        {
+            return false;
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                if (index == 0)
+                    return argspec.ToZilList();
+                else
+                    return body[index - 1];
+            }
+            set
+            {
+                if (index == 0)
+                    argspec = new ArgSpec(argspec, (IEnumerable<ZilObject>)value);
+                else
+                    body[index - 1] = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return body.Length + 1;
+        }
+
+        public int? GetLength(int limit)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 
-    class ZilEvalMacro : ZilObject, IApplicable
+    class ZilEvalMacro : ZilObject, IApplicable, IStructure
     {
         private ZilObject value;
 
@@ -1978,6 +2150,48 @@ namespace Zilf
         {
             return value.GetHashCode();
         }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return value;
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return null;
+        }
+
+        public bool IsEmpty()
+        {
+            return false;
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                return index == 0 ? value : null;
+            }
+            set
+            {
+                if (index == 0)
+                    this.value = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return 1;
+        }
+
+        public int? GetLength(int limit)
+        {
+            return limit >= 1 ? 1 : (int?)null;
+        }
+
+        #endregion
     }
 
     #endregion
