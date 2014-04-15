@@ -83,12 +83,24 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<EVAL +>", ctx.GetStdAtom(StdAtom.Plus));
             TestHelpers.EvalAndAssert(ctx, "<EVAL <>>", ctx.FALSE);
 
-            // lists eval to copies of themselves
-            var list = new ZilList(new ZilObject[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) });
+            // lists eval to new lists formed by evaluating each element
+            var list = new ZilList(new ZilObject[] {
+                new ZilFix(1),
+                new ZilForm(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.Plus),
+                    new ZilFix(1),
+                    new ZilFix(1),
+                }),
+                new ZilFix(3),
+            });
+            var expected = new ZilList(new ZilObject[] {
+                new ZilFix(1),
+                new ZilFix(2),
+                new ZilFix(3),
+            });
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), list);
             var actual = TestHelpers.Evaluate(ctx, "<EVAL .T>");
-            Assert.AreEqual(list, actual);
-            Assert.AreNotSame(list, actual);
+            Assert.AreEqual(expected, actual);
 
             // forms execute when evaluated
             var form = new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) });
@@ -131,15 +143,17 @@ namespace ZilfTests.Interpreter
         public void TestAPPLY()
         {
             TestHelpers.EvalAndAssert("<APPLY ,+ 1 2>", new ZilFix(3));
+            TestHelpers.EvalAndAssert("<APPLY ,QUOTE 1>", new ZilFix(1));
             TestHelpers.EvalAndAssert("<APPLY <FUNCTION () 3>>", new ZilFix(3));
             TestHelpers.EvalAndAssert("<DEFMAC FOO () 3> <APPLY ,FOO>", new ZilFix(3));
+            TestHelpers.EvalAndAssert("<APPLY 2 (100 <+ 199 1> 300)>", new ZilFix(200));
 
             // can't apply non-applicable types
-            TestHelpers.EvalAndCatch<InterpreterError>("<APPLY 1>");
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY +>");
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY \"hello\">");
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY (+ 1 2)>");
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY <>>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<APPLY '<+ 1 2>>");
 
             // must have at least 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY>");
