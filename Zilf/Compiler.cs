@@ -672,7 +672,7 @@ namespace Zilf
                     return cc.Game.MakeOperand(((ZilFix)expr).Value);
 
                 case StdAtom.BYTE:
-                    return cc.Game.MakeOperand(((ZilFix)((ZilHash)expr).Value).Value);
+                    return cc.Game.MakeOperand(((ZilFix)((ZilHash)expr).GetPrimitive(cc.Context)).Value);
 
                 case StdAtom.STRING:
                     return cc.Game.MakeOperand(TranslateString(((ZilString)expr).Text));

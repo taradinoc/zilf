@@ -40,12 +40,46 @@ namespace Zilf
 
         public override string ToString()
         {
-            return "#OBLIST (NATIVE)";
+            var sb = new StringBuilder("#OBLIST (");
+
+            bool any = false;
+            foreach (var pair in dict)
+            {
+                sb.Append('(');
+                sb.Append(ZilString.Quote(pair.Key));
+                sb.Append(' ');
+                sb.Append(pair.Value.ToString());
+                sb.Append(") ");
+                any = true;
+            }
+
+            if (any)
+                sb.Remove(sb.Length - 1, 1);
+
+            sb.Append(')');
+            return sb.ToString();
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             return ctx.GetStdAtom(StdAtom.OBLIST);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            var result = new List<ZilObject>(dict.Count);
+
+            foreach (var pair in dict)
+                result.Add(new ZilList(new ZilString(pair.Key),
+                    new ZilList(pair.Value,
+                        new ZilList(null, null))));
+
+            return new ZilList(result);
         }
 
         public bool Contains(string pname)
