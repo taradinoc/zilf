@@ -403,7 +403,7 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError("CHTYPE: second arg must be an atom");
 
-            return ZilObject.ChangeType(ctx, args[0], atom);
+            return ctx.ChangeType(args[0], atom);
         }
 
         [Subr("APPLICABLE?")]

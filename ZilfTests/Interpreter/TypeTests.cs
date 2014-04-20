@@ -63,7 +63,7 @@ namespace ZilfTests.Interpreter
                 }
             )));
             ctx.SetLocalVal(ZilAtom.Parse("A-WACKY", ctx),
-                new ZilHash(ZilAtom.Parse("WACKY", ctx), new ZilList(null, null)));
+                new ZilHash(ZilAtom.Parse("WACKY", ctx), PrimType.LIST, new ZilList(null, null)));
 
             // TODO: test other ZilObject descendants: ObList, ZilRoutine, ZilConstant, ZilGlobal, ZilTable, ZilModelObject, OffsetString?
         }
@@ -141,79 +141,378 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestCHTYPE_to_ATOM()
         {
-            Assert.Inconclusive();
+            // nothing can be coerced to ATOM
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY ATOM>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_CHARACTER()
         {
-            Assert.Inconclusive();
+            // nothing can be coerced to CHARACTER
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY CHARACTER>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_FALSE()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to FALSE
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FALSE>",
+                new ZilFalse(new ZilList(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3)
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM FALSE>",
+                new ZilFalse(new ZilList(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION FALSE>",
+                new ZilFalse(new ZilList(new ZilObject[] {
+                    new ZilList(null, null),
+                    new ZilFix(3),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FALSE>",
+                new ZilFalse(new ZilList(new ZilFunction(
+                    null,
+                    new ZilObject[] { },
+                    new ZilObject[] {
+                        new ZilForm(new ZilObject[] {
+                            ctx.GetStdAtom(StdAtom.FORM),
+                            ctx.GetStdAtom(StdAtom.Plus),
+                            new ZilFix(1),
+                            new ZilFix(2),
+                        }),
+                    }),
+                    new ZilList(null, null))));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT FALSE>",
+                new ZilFalse(new ZilList(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FALSE>",
+                new ZilFalse(new ZilList(null, null)));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FALSE>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_FIX()
         {
-            Assert.Inconclusive();
+            // nothing can be coerced to FIX
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FIX>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_LIST()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to LIST
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE LIST>",
+                new ZilList(null, null));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM LIST>",
+                new ZilList(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION LIST>",
+                new ZilList(new ZilObject[] {
+                    new ZilList(null, null),
+                    new ZilFix(3),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO LIST>",
+                new ZilList(new ZilFunction(
+                    null,
+                    new ZilObject[] { },
+                    new ZilObject[] {
+                        new ZilForm(new ZilObject[] {
+                            ctx.GetStdAtom(StdAtom.FORM),
+                            ctx.GetStdAtom(StdAtom.Plus),
+                            new ZilFix(1),
+                            new ZilFix(2),
+                        }),
+                    }),
+                    new ZilList(null, null)));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT LIST>",
+                new ZilList(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY LIST>",
+                new ZilList(null, null));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR LIST>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_FORM()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to FORM
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE FORM>",
+                new ZilForm(new ZilObject[] {}));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FORM>",
+                new ZilForm(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION FORM>",
+                new ZilForm(new ZilObject[] {
+                    new ZilList(null, null),
+                    new ZilFix(3),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FORM>",
+                new ZilForm(new ZilObject[] { new ZilFunction(
+                    null,
+                    new ZilObject[] { },
+                    new ZilObject[] {
+                        new ZilForm(new ZilObject[] {
+                            ctx.GetStdAtom(StdAtom.FORM),
+                            ctx.GetStdAtom(StdAtom.Plus),
+                            new ZilFix(1),
+                            new ZilFix(2),
+                        }),
+                    }),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT FORM>",
+                new ZilForm(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2),
+                }));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FORM>",
+                new ZilForm(new ZilObject[] { }));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FORM>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_STRING()
         {
-            Assert.Inconclusive();
+            // string-based types can be coerced to STRING
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SUBR STRING>",
+                new ZilString("Plus"));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR STRING>",
+                new ZilString("QUOTE"));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY STRING>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_SUBR()
         {
-            Assert.Inconclusive();
+            // string-based types can be coerced to SUBR if they name an appropriate Subrs method
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE \"Plus\" SUBR>",
+                new ZilSubr(Subrs.Plus));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR SUBR>",
+                new ZilSubr(Subrs.QUOTE));
+
+            // arbitrary strings and non-matching methods can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"\" SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"foobarbaz\" SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"PerformArithmetic\" SUBR>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY SUBR>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_FSUBR()
         {
-            Assert.Inconclusive();
+            // string-based types can be coerced to FSUBR if they name an appropriate Subrs method
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE \"DEFINE\" FSUBR>",
+                new ZilFSubr(Subrs.DEFINE));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SUBR FSUBR>",
+                new ZilFSubr(Subrs.Plus));
+
+            // arbitrary strings and non-matching methods can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"\" FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"foobarbaz\" FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"PerformArithmetic\" FSUBR>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FSUBR>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_FUNCTION()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to FUNCTION if they fit the pattern ((argspec) body)
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE ((X) '<TYPE X>) FUNCTION>",
+                new ZilFunction(
+                    null,
+                    new ZilObject[] { ZilAtom.Parse("X", ctx) },
+                    new ZilObject[] {
+                        new ZilForm(new ZilObject[] {
+                            ZilAtom.Parse("TYPE", ctx),
+                            ZilAtom.Parse("X", ctx),
+                        }),
+                    }
+                ));
+
+            // arbitrary lists and other values can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FUNCTION>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_MACRO()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to MACRO if they fit the pattern (applicable)
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE (.A-FUNCTION) MACRO>",
+                new ZilEvalMacro(new ZilFunction(
+                    ZilAtom.Parse("MYFUNC", ctx),
+                    new ZilObject[] { },
+                    new ZilObject[] { new ZilFix(3) })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"Plus\"> MACRO>",
+                new ZilEvalMacro(new ZilSubr(Subrs.Plus)));
+
+            // arbitrary lists and other values can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY MACRO>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_SEGMENT()
         {
-            Assert.Inconclusive();
+            // list-based types can be coerced to SEGMENT
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] { })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] {
+                    new ZilList(null, null),
+                    new ZilFix(3),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] { new ZilFunction(
+                    null,
+                    new ZilObject[] { },
+                    new ZilObject[] {
+                        new ZilForm(new ZilObject[] {
+                            ctx.GetStdAtom(StdAtom.FORM),
+                            ctx.GetStdAtom(StdAtom.Plus),
+                            new ZilFix(1),
+                            new ZilFix(2),
+                        }),
+                    }),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2),
+                })));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY SEGMENT>",
+                new ZilSegment(new ZilForm(new ZilObject[] { })));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR SEGMENT>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_WACKY()
         {
-            Assert.Inconclusive();
+            // since WACKY isn't a registered type, we can't change anything to it
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT WACKY>");
         }
 
         [TestMethod]
