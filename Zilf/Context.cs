@@ -262,6 +262,7 @@ namespace Zilf
 
                     string name = attr.Name ?? mi.Name;
 
+                    // can't use ZilAtom.Parse here because the OBLIST path isn't set up
                     ZilAtom atom = rootObList[name];
                     globalValues.Add(atom, sub);
                 }
@@ -644,6 +645,30 @@ namespace Zilf
 
                 typeMap.Add(GetStdAtom(r.Attr.Name), entry);
             }
+
+            // default custom types
+            var defaultCustomTypes = new[] {
+                new { Name = "BYTE", PrimType = PrimType.FIX },
+                new { Name = "DECL", PrimType = PrimType.LIST },
+            };
+
+            foreach (var ct in defaultCustomTypes)
+            {
+                // can't use ZilAtom.Parse here because the OBLIST path isn't set up
+                var atom = rootObList[ct.Name];
+                var primType = ct.PrimType;
+
+                ChtypeDelegate chtypeDelegate =
+                    (ctx, zo) => new ZilHash(atom, primType, zo);
+
+                var entry = new TypeMapEntry()
+                {
+                    PrimType = ct.PrimType,
+                    ChtypeMethod = chtypeDelegate,
+                };
+
+                typeMap.Add(atom, entry);
+            }
         }
 
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)
@@ -675,7 +700,7 @@ namespace Zilf
             }
 
             // unknown type
-            throw new InterpreterError("unknown type " + newType);
+            throw new InterpreterError(newType + " is not a registered type");
         }
     }
 
