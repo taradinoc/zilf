@@ -159,10 +159,13 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestCHTYPE_to_CHARACTER()
         {
-            // nothing can be coerced to CHARACTER
+            // FIX can be coerced to CHARACTER
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FIX CHARACTER>",
+                new ZilChar((char)123));
+
+            // other types can't
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE CHARACTER>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING CHARACTER>");
@@ -222,9 +225,11 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestCHTYPE_to_FIX()
         {
-            // nothing can be coerced to FIX
+            // CHARACTER can be coerced to FIX
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-CHARACTER FIX>", new ZilFix(67));
+
+            // other types can't
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FIX>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM FIX>");
@@ -663,6 +668,34 @@ namespace ZilfTests.Interpreter
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<ASCII>");
             TestHelpers.EvalAndCatch<InterpreterError>("<ASCII !\\A !\\B>");
+        }
+
+        [TestMethod]
+        public void TestCustomType_BYTE()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #BYTE 255>", ctx.GetStdAtom(StdAtom.BYTE));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #BYTE 255 FIX>", new ZilFix(255));
+
+            TestHelpers.EvalAndCatch<InterpreterError>("#BYTE \"f\"");
+
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #BYTE 0>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #BYTE 0>", ctx.FALSE);
+        }
+
+        [TestMethod]
+        public void TestCustomType_DECL()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #DECL ((FOO) FIX)>", ZilAtom.Parse("DECL", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #DECL ((FOO) FIX) LIST>",
+                new ZilList(new ZilObject[] {
+                    new ZilList(ZilAtom.Parse("FOO", ctx), new ZilList(null,null)),
+                    ctx.GetStdAtom( StdAtom.FIX)
+                }));
+
+            TestHelpers.EvalAndCatch<InterpreterError>("#DECL BLAH");
+
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #DECL ((FOO) FIX)>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #DECL ((FOO) FIX)>", ctx.FALSE);
         }
     }
 }

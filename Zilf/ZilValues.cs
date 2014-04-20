@@ -537,6 +537,7 @@ namespace Zilf
 
     #region Monad Types
 
+    [BuiltinType(StdAtom.ATOM, PrimType.ATOM)]
     class ZilAtom : ZilObject
     {
         private readonly string text;
@@ -548,6 +549,13 @@ namespace Zilf
             this.text = text;
             this.list = list;
             this.stdAtom = stdAtom;
+        }
+
+        [ChtypeMethod]
+        public static ZilAtom FromAtom(Context ctx, ZilAtom other)
+        {
+            // we can't construct a new atom since it wouldn't be equal to the old one
+            return other;
         }
 
         public string Text
@@ -687,13 +695,25 @@ namespace Zilf
         }
     }
 
+    [BuiltinType(StdAtom.CHARACTER, PrimType.FIX)]
     class ZilChar : ZilObject
     {
         private readonly int value;
 
         public ZilChar(char ch)
+            : this((int)ch)
         {
-            this.value = (int)ch;
+        }
+
+        private ZilChar(int value)
+        {
+            this.value = value;
+        }
+
+        [ChtypeMethod]
+        public static ZilChar FromFix(Context ctx, ZilFix fix)
+        {
+            return new ZilChar(fix.Value);
         }
 
         public char Char
@@ -830,6 +850,7 @@ namespace Zilf
         #endregion
     }
 
+    [BuiltinType(StdAtom.FIX, PrimType.FIX)]
     class ZilFix : ZilObject, IApplicable
     {
         private readonly int value;
@@ -837,6 +858,12 @@ namespace Zilf
         public ZilFix(int value)
         {
             this.value = value;
+        }
+
+        [ChtypeMethod]
+        public ZilFix(ZilFix other)
+            : this(other.value)
+        {
         }
 
         public int Value
