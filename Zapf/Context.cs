@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2012 Jesse McGrew
+﻿/* Copyright 2010-2014 Jesse McGrew
  * 
  * This file is part of ZAPF.
  * 
@@ -24,6 +24,9 @@ using System.IO;
 
 namespace Zapf
 {
+    delegate Stream OpenFileDelegate(string filename, bool writing);
+    delegate bool FileExistsDelegate(string filename);
+
     class Context
     {
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode;
@@ -58,6 +61,9 @@ namespace Zapf
 
         public int? TableStart, TableSize;
         public bool InVocab;
+
+        public OpenFileDelegate InterceptOpenFile;
+        public FileExistsDelegate InterceptFileExists;
 
         private Stream stream, debugStream;
         private Stream prevStream;
@@ -317,7 +323,7 @@ namespace Zapf
                 OutFile = Path.ChangeExtension(OutFile, ".z" + ZVersion);
 
             position = 0;
-            stream = new FileStream(OutFile, FileMode.Create, FileAccess.ReadWrite);
+            stream = OpenFile(OutFile, true);
         }
 
         public void CloseOutput()
@@ -331,7 +337,7 @@ namespace Zapf
 
         public void OpenDebugFile()
         {
-            debugStream = new FileStream(DebugFile, FileMode.Create, FileAccess.Write);
+            debugStream = OpenFile(DebugFile, true);
             // debug file header
             WriteDebugWord(0xDEBF);     // magic number
             WriteDebugWord(0);          // file format
@@ -611,6 +617,43 @@ namespace Zapf
                 Console.Error.Write("line {0}: ", fer.Node.Line);
 
             Console.Error.WriteLine("fatal error: {0}", fer.Message);
+        }
+
+        public Stream OpenFile(string filename, bool writing)
+        {
+            var intercept = this.InterceptOpenFile;
+            if (intercept != null)
+                return intercept(filename, writing);
+
+            return new FileStream(
+                filename,
+                writing ? FileMode.Create : FileMode.Open,
+                writing ? FileAccess.ReadWrite : FileAccess.Read);
+        }
+
+        public bool FileExists(string filename)
+        {
+            var intercept = this.InterceptFileExists;
+            if (intercept != null)
+                return intercept(filename);
+
+            return File.Exists(filename);
+        }
+
+        public string FindInsertedFile(string name)
+        {
+            if (FileExists(name))
+                return name;
+
+            string search = name + ".zap";
+            if (FileExists(search))
+                return search;
+
+            search = name + ".xzap";
+            if (FileExists(search))
+                return search;
+
+            return null;
         }
     }
 

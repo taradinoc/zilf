@@ -34,7 +34,7 @@ namespace Zilf
     {
         public const string VERSION = "ZILF 0.5";
 
-        static int Main(string[] args)
+        internal static int Main(string[] args)
         {
             string inFile, outFile;
             Context ctx = ParseArgs(args, out inFile, out outFile);

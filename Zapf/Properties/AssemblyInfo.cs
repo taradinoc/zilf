@@ -59,4 +59,5 @@ using System.Runtime.InteropServices;
 
 #if DEBUG
 [assembly: InternalsVisibleTo("DezapfTests")]
+[assembly: InternalsVisibleTo("IntegrationTests")]
 #endif
