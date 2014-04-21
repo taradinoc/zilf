@@ -1644,7 +1644,6 @@ namespace Zilf
 
         private static bool HasSideEffects(CompileCtx cc, ZilObject expr)
         {
-            // TODO: move this into attributes
             ZilForm form = expr as ZilForm;
 
             // only forms can have side effects
@@ -1663,7 +1662,10 @@ namespace Zilf
                 case StdAtom.AGAIN:
                 case StdAtom.APPLY:
                 case StdAtom.BUFOUT:
+                case StdAtom.COLOR:
                 case StdAtom.COPYT:
+                case StdAtom.CURGET:
+                case StdAtom.CURSET:
                 case StdAtom.DEC:
                 case StdAtom.DIRIN:
                 case StdAtom.DIROUT:
@@ -1761,6 +1763,7 @@ namespace Zilf
                 case BinaryOp.ClearFlag:
                 case BinaryOp.DirectOutput:
                 case BinaryOp.SetCursor:
+                case BinaryOp.SetColor:
                     return false;
 
                 default:
