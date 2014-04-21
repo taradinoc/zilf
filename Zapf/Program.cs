@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2012 Jesse McGrew
+﻿/* Copyright 2010-2014 Jesse McGrew
  * 
  * This file is part of ZAPF.
  * 
@@ -50,6 +50,8 @@ namespace Zapf
             // show banner
             if (!ctx.Quiet)
                 Console.Error.WriteLine(VERSION);
+
+            // TODO: move all of this logic into ZapfAssembler and use that instead
 
             // set up for the target version
             ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
@@ -181,7 +183,7 @@ namespace Zapf
             return sb.ToString();
         }
 
-        private static Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> MakeOpcodeDict(
+        internal static Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> MakeOpcodeDict(
             int zversion, bool inform)
         {
             FieldInfo[] fields = typeof(Opcodes).GetFields(BindingFlags.Static | BindingFlags.Public);
@@ -307,7 +309,7 @@ General switches:
 
         }
 
-        private static void Assemble(Context ctx)
+        internal static void Assemble(Context ctx)
         {
             // read in all source code
             List<ITree> file;
@@ -720,7 +722,7 @@ General switches:
                 if (node.Type == ZapParser.INSERT)
                 {
                     string arg = node.GetChild(0).Text;
-                    string insertedFile = FindInsertedFile(arg);
+                    string insertedFile = ctx.FindInsertedFile(arg);
 
                     if (insertedFile == null)
                         Errors.ThrowFatal(node, "inserted file not found: " + arg, "root");
@@ -749,38 +751,25 @@ General switches:
 
         private static object ReadRootFromFile(Context ctx, string path)
         {
-            ICharStream charStream = new ANTLRFileStream(path);
-            ITokenSource lexer;
+            using (var stream = ctx.OpenFile(path, false))
+            {
+                ICharStream charStream = new ANTLRInputStream(stream);
+                ITokenSource lexer;
 
-            if (ctx.InformMode)
-                lexer = new ZapInf(charStream) { OpcodeDict = ctx.OpcodeDict };
-            else
-                lexer = new ZapLexer(charStream) { OpcodeDict = ctx.OpcodeDict };
+                if (ctx.InformMode)
+                    lexer = new ZapInf(charStream) { OpcodeDict = ctx.OpcodeDict };
+                else
+                    lexer = new ZapLexer(charStream) { OpcodeDict = ctx.OpcodeDict };
 
-            ZapParser parser = new ZapParser(new CommonTokenStream(lexer));
-            parser.InformMode = ctx.InformMode;
-            ZapParser.file_return fret = parser.file();
+                ZapParser parser = new ZapParser(new CommonTokenStream(lexer));
+                parser.InformMode = ctx.InformMode;
+                ZapParser.file_return fret = parser.file();
 
-            if (parser.NumberOfSyntaxErrors > 0)
-                Errors.ThrowFatal("syntax error");
+                if (parser.NumberOfSyntaxErrors > 0)
+                    Errors.ThrowFatal("syntax error");
 
-            return fret.Tree;
-        }
-
-        private static string FindInsertedFile(string name)
-        {
-            if (File.Exists(name))
-                return name;
-
-            string search = name + ".zap";
-            if (File.Exists(search))
-                return search;
-
-            search = name + ".xzap";
-            if (File.Exists(search))
-                return search;
-
-            return null;
+                return fret.Tree;
+            }
         }
 
         private static IEnumerable<ITree> GetRootNodes(object root)
