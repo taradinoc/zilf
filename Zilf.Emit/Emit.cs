@@ -327,6 +327,10 @@ namespace Zilf.Emit
         /// Moves the cursor to row left, column right.
         /// </summary>
         SetCursor,
+        /// <summary>
+        /// Sets the foreground and background color.
+        /// </summary>
+        SetColor,
     }
 
     public enum UnaryOp
@@ -399,6 +403,10 @@ namespace Zilf.Emit
         /// Plays the specified sound.
         /// </summary>
         PlaySound,
+        /// <summary>
+        /// Writes the cursor position into an array.
+        /// </summary>
+        GetCursor,
     }
 
     public enum NullaryOp
