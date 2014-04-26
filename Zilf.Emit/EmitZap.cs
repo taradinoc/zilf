@@ -1030,6 +1030,9 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.ClearWindow:
                     opcode = "CLEAR";
                     break;
+                case UnaryOp.GetCursor:
+                    opcode = "CURGET";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -1137,6 +1140,9 @@ namespace Zilf.Emit.Zap
                     break;
                 case BinaryOp.SetCursor:
                     opcode = "CURSET";
+                    break;
+                case BinaryOp.SetColor:
+                    opcode = "COLOR";
                     break;
                 default:
                     throw new NotImplementedException();

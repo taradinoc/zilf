@@ -1447,6 +1447,9 @@ namespace Zilf
                     case StdAtom.CURSET:
                         CompileBinaryOp(cc, rb, BinaryOp.SetCursor, form.Rest, false, null);
                         return cc.Game.One;
+                    case StdAtom.COLOR:
+                        CompileBinaryOp(cc, rb, BinaryOp.SetColor, form.Rest, false, null);
+                        return cc.Game.One;
 
                     case StdAtom.BCOM:
                         return CompileUnaryOp(cc, rb, UnaryOp.Not, form.Rest, wantResult, resultStorage);
@@ -1490,6 +1493,9 @@ namespace Zilf
                         return cc.Game.One;
                     case StdAtom.SPLIT:
                         CompileUnaryOp(cc, rb, UnaryOp.SplitWindow, form.Rest, false, null);
+                        return cc.Game.One;
+                    case StdAtom.CURGET:
+                        CompileUnaryOp(cc, rb, UnaryOp.GetCursor, form.Rest, false, null);
                         return cc.Game.One;
 
                     case StdAtom.PUT:
@@ -1656,7 +1662,10 @@ namespace Zilf
                 case StdAtom.AGAIN:
                 case StdAtom.APPLY:
                 case StdAtom.BUFOUT:
+                case StdAtom.COLOR:
                 case StdAtom.COPYT:
+                case StdAtom.CURGET:
+                case StdAtom.CURSET:
                 case StdAtom.DEC:
                 case StdAtom.DIRIN:
                 case StdAtom.DIROUT:
@@ -1710,6 +1719,7 @@ namespace Zilf
 
         private static bool HasResult(NullaryOp op)
         {
+            // TODO: move this into attributes
             switch (op)
             {
                 case NullaryOp.ShowStatus:
@@ -1722,6 +1732,7 @@ namespace Zilf
 
         private static bool HasResult(UnaryOp op)
         {
+            // TODO: move this into attributes
             switch (op)
             {
                 case UnaryOp.RemoveObject:
@@ -1733,6 +1744,7 @@ namespace Zilf
                 case UnaryOp.SelectWindow:
                 case UnaryOp.ClearWindow:
                 case UnaryOp.SplitWindow:
+                case UnaryOp.GetCursor:
                     return false;
 
                 default:
@@ -1742,6 +1754,7 @@ namespace Zilf
 
         private static bool HasResult(BinaryOp op)
         {
+            // TODO: move this into attributes
             switch (op)
             {
                 case BinaryOp.MoveObject:
@@ -1750,6 +1763,7 @@ namespace Zilf
                 case BinaryOp.ClearFlag:
                 case BinaryOp.DirectOutput:
                 case BinaryOp.SetCursor:
+                case BinaryOp.SetColor:
                     return false;
 
                 default:
