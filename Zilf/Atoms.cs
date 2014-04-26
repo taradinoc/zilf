@@ -85,6 +85,7 @@ namespace Zilf
         BTST,
         BUFOUT,
         BYTE,
+        BYTELENGTH,
         CARRIED,
         CHARACTER,
         CLEAR,
@@ -254,6 +255,7 @@ namespace Zilf
         [Atom("VERSION?")]
         VERSION_P,
         WORD,
+        WORDLENGTH,
         XZIP,
         YZIP,
         [Atom("ZERO?")]

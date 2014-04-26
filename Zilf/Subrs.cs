@@ -403,7 +403,7 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError("CHTYPE: second arg must be an atom");
 
-            return ZilObject.ChangeType(ctx, args[0], atom);
+            return ctx.ChangeType(args[0], atom);
         }
 
         [Subr("APPLICABLE?")]
@@ -451,6 +451,9 @@ namespace Zilf
             ZilList list = args[1] as ZilList;
             if (list == null)
                 throw new InterpreterError("CONS: second arg must be a list");
+
+            if (list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                list = new ZilList(list);
 
             return new ZilList(args[0], list);
         }
@@ -723,7 +726,32 @@ namespace Zilf
         [Subr]
         public static ZilObject LSH(Context ctx, ZilObject[] args)
         {
-            return PerformArithmetic(1, "LSH", (x, y) => x << y, args);
+            // "Logical shift", not left shift.
+            // Positive shifts left, negative shifts right.
+            
+            if (args.Length != 2)
+                throw new InterpreterError(null, "LSH", 2, 2);
+
+            var a = args[0] as ZilFix;
+            var b = args[1] as ZilFix;
+
+            if (a == null || b == null)
+                throw new InterpreterError("LSH: every arg must be a FIX");
+
+            int result;
+
+            if (b.Value >= 0)
+            {
+                int count = b.Value % 256;
+                result = count >= 32 ? 0 : a.Value << count;
+            }
+            else
+            {
+                int count = -b.Value % 256;
+                result = count >= 32 ? 0 : (int)((uint)a.Value >> count);
+            }
+
+            return new ZilFix(result);
         }
 
         [Subr]

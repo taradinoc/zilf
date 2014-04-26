@@ -22,6 +22,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.IO;
+using System.Linq.Expressions;
 
 namespace Zilf
 {
@@ -76,6 +77,14 @@ namespace Zilf
             }
         }
 
+        private delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
+
+        private class TypeMapEntry
+        {
+            public PrimType PrimType;
+            public ChtypeDelegate ChtypeMethod;
+        }
+
         private RunMode runMode;
         private int errorCount;
         private bool ignoreCase, quiet, traceRoutines, wantDebugInfo;
@@ -85,8 +94,9 @@ namespace Zilf
 
         private ObList rootObList;
         private Dictionary<ZilAtom, Binding> localValues;
-        private Dictionary<ZilAtom, ZilObject> globalValues;
-        private Dictionary<AssocPair, ZilObject> associations;
+        private readonly Dictionary<ZilAtom, ZilObject> globalValues;
+        private readonly Dictionary<AssocPair, ZilObject> associations;
+        private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         private readonly ZEnvironment zenv;
 
         /// <summary>
@@ -113,6 +123,7 @@ namespace Zilf
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             associations = new Dictionary<AssocPair, ZilObject>();
+            typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
 
             zenv = new ZEnvironment(this);
 
@@ -120,6 +131,7 @@ namespace Zilf
 
             InitStdAtoms();
             InitSubrs();
+            InitTypeMap();
 
             TRUE = GetStdAtom(StdAtom.T);
             FALSE = new ZilFalse(new ZilList(null, null));
@@ -250,6 +262,7 @@ namespace Zilf
 
                     string name = attr.Name ?? mi.Name;
 
+                    // can't use ZilAtom.Parse here because the OBLIST path isn't set up
                     ZilAtom atom = rootObList[name];
                     globalValues.Add(atom, sub);
                 }
@@ -503,6 +516,191 @@ namespace Zilf
             }
 
             throw new FileNotFoundException();
+        }
+
+        /// <summary>
+        /// Adapts a MethodInfo, describing a function that takes a context and a
+        /// specific ZilObject type and returns a ZilObject, to ChtypeDelegate.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="mi"></param>
+        /// <returns></returns>
+        private static ChtypeDelegate AdaptChtypeMethod<T>(MethodInfo mi)
+            where T : ZilObject
+        {
+            var rawDel = Delegate.CreateDelegate(typeof(Func<Context, T, ZilObject>), mi);
+            var del = (Func<Context, T, ZilObject>)rawDel;
+            return (ctx, zo) => del(ctx, (T)zo);
+        }
+
+        /// <summary>
+        /// Adapts a ConstructorInfo, describing a constructor that creates a
+        /// given a specific ZilObject type, to ChtypeDelegate.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ci"></param>
+        /// <returns></returns>
+        private static ChtypeDelegate AdaptChtypeCtor<T>(ConstructorInfo ci)
+            where T : ZilObject
+        {
+            var param1 = Expression.Parameter(typeof(Context), "ctx");
+            var param2 = Expression.Parameter(typeof(ZilObject), "primValue");
+            var expr = Expression.Lambda<ChtypeDelegate>(
+                Expression.New(ci, Expression.Convert(param2, typeof(T))),
+                param1, param2);
+            return expr.Compile();
+        }
+
+        private void InitTypeMap()
+        {
+            var query = from t in typeof(ZilObject).Assembly.GetTypes()
+                        where !t.IsAbstract && typeof(ZilObject).IsAssignableFrom(t)
+                        from BuiltinTypeAttribute a in t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                        select new { Type = t, Attr = a };
+
+            foreach (var r in query)
+            {
+                // look up chtype method
+                Type[] chtypeParamTypes = { typeof(Context), null };
+                Func<MethodInfo, ChtypeDelegate> adaptChtypeMethod;
+                Func<ConstructorInfo, ChtypeDelegate> adaptChtypeCtor;
+
+                switch (r.Attr.PrimType)
+                {
+                    case PrimType.ATOM:
+                        chtypeParamTypes[1] = typeof(ZilAtom);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilAtom>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilAtom>;
+                        break;
+                    case PrimType.FIX:
+                        chtypeParamTypes[1] = typeof(ZilFix);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilFix>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilFix>;
+                        break;
+                    case PrimType.LIST:
+                        chtypeParamTypes[1] = typeof(ZilList);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilList>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilList>;
+                        break;
+                    case PrimType.STRING:
+                        chtypeParamTypes[1] = typeof(ZilString);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilString>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilString>;
+                        break;
+                    default:
+                        throw new NotImplementedException("Unexpected primtype: " + r.Attr.PrimType);
+                }
+
+                ChtypeDelegate chtypeDelegate;
+
+                var chtypeMiQuery = from mi in r.Type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                                    let attrs = mi.GetCustomAttributes(typeof(ChtypeMethodAttribute), false)
+                                    where attrs.Length > 0
+                                    select mi;
+                var chtypeMethod = chtypeMiQuery.SingleOrDefault();
+                
+                if (chtypeMethod != null)
+                {
+                    // adapt the static method
+                    if (!chtypeMethod.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes))
+                        throw new InvalidOperationException(
+                            string.Format(
+                                "Wrong parameters for static ChtypeMethod {0} on type {1}",
+                                chtypeMethod.Name,
+                                r.Type.Name));
+
+                    chtypeDelegate = adaptChtypeMethod(chtypeMethod);
+                }
+                else
+                {
+                    var chtypeCiQuery = from ci in r.Type.GetConstructors()
+                                        let attrs = ci.GetCustomAttributes(typeof(ChtypeMethodAttribute), false)
+                                        where attrs.Length > 0
+                                        select ci;
+                    var chtypeCtor = chtypeCiQuery.SingleOrDefault();
+
+                    if (chtypeCtor != null)
+                    {
+                        // adapt the constructor
+                        if (!chtypeCtor.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes.Skip(1)))
+                            throw new InvalidOperationException(
+                                string.Format(
+                                    "Wrong parameters for ChtypeMethod constructor on type {0}",
+                                    r.Type.Name));
+
+                        chtypeDelegate = adaptChtypeCtor(chtypeCtor);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            string.Format("No ChtypeMethod found on type {0}", r.Type.Name));
+                    }
+                }
+
+                var entry = new TypeMapEntry()
+                {
+                    PrimType = r.Attr.PrimType,
+                    ChtypeMethod = chtypeDelegate,
+                };
+
+                typeMap.Add(GetStdAtom(r.Attr.Name), entry);
+            }
+
+            // default custom types
+            var defaultCustomTypes = new[] {
+                new { Name = "BYTE", PrimType = PrimType.FIX },
+                new { Name = "DECL", PrimType = PrimType.LIST },
+            };
+
+            foreach (var ct in defaultCustomTypes)
+            {
+                // can't use ZilAtom.Parse here because the OBLIST path isn't set up
+                var atom = rootObList[ct.Name];
+                var primType = ct.PrimType;
+
+                ChtypeDelegate chtypeDelegate =
+                    (ctx, zo) => new ZilHash(atom, primType, zo);
+
+                var entry = new TypeMapEntry()
+                {
+                    PrimType = ct.PrimType,
+                    ChtypeMethod = chtypeDelegate,
+                };
+
+                typeMap.Add(atom, entry);
+            }
+        }
+
+        public ZilObject ChangeType(ZilObject value, ZilAtom newType)
+        {
+            // chtype to the current type has no effect
+            if (value.GetTypeAtom(this) == newType)
+                return value;
+
+            /* hacky special cases for GVAL and LVAL:
+             * <CHTYPE FOO GVAL> gives '<GVAL FOO> rather than #GVAL FOO
+             */
+            if (newType.StdAtom == StdAtom.GVAL || newType.StdAtom == StdAtom.LVAL)
+            {
+                if (value.PrimType != PrimType.ATOM)
+                    throw new InterpreterError("CHTYPE to GVAL or LVAL requires ATOM");
+
+                return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) });
+            }
+
+            // look it up in the typemap
+            TypeMapEntry entry;
+            if (typeMap.TryGetValue(newType, out entry))
+            {
+                if (value.PrimType != entry.PrimType)
+                    throw new InterpreterError(
+                        string.Format("CHTYPE to {0} requires {1}", newType, entry.PrimType));
+
+                return entry.ChtypeMethod(this, value.GetPrimitive(this));
+            }
+
+            // unknown type
+            throw new InterpreterError(newType + " is not a registered type");
         }
     }
 

@@ -93,6 +93,19 @@ namespace Zilf
             return ctx.GetStdAtom(StdAtom.ROUTINE);
         }
 
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            var result = new List<ZilObject>(1 + body.Length);
+            result.Add(argspec.ToZilList());
+            result.AddRange(body);
+            return new ZilList(result);
+        }
+
         public override bool Equals(object obj)
         {
             ZilRoutine other = obj as ZilRoutine;
@@ -160,6 +173,18 @@ namespace Zilf
             return ctx.GetStdAtom(StdAtom.CONSTANT);
         }
 
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilList(name,
+                new ZilList(value,
+                    new ZilList(null, null)));
+        }
+
         public string SourceInfo
         {
             get { return "constant '" + name.ToString() + "'"; }
@@ -201,6 +226,18 @@ namespace Zilf
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             return ctx.GetStdAtom(StdAtom.GLOBAL);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilList(name,
+                new ZilList(value,
+                    new ZilList(null, null)));
         }
 
         public string SourceInfo
@@ -337,6 +374,43 @@ namespace Zilf
         {
             return ctx.GetStdAtom(StdAtom.TABLE);
         }
+
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            var result = new List<ZilObject>(3);
+
+            // element count
+            result.Add(new ZilFix(elements));
+
+            // flags
+            var flagList = new List<ZilObject>(4);
+            if ((flags & TableFlags.Byte) != 0)
+                flagList.Add(ctx.GetStdAtom(StdAtom.BYTE));
+            if ((flags & TableFlags.ByteLength) != 0)
+                flagList.Add(ctx.GetStdAtom(StdAtom.BYTELENGTH));
+            if ((flags & TableFlags.Lexv) != 0)
+                flagList.Add(ctx.GetStdAtom(StdAtom.LEXV));
+            if ((flags & TableFlags.WordLength) != 0)
+                flagList.Add(ctx.GetStdAtom(StdAtom.WORDLENGTH));
+            result.Add(new ZilList(flagList));
+
+            // initializer
+            if (initializer != null)
+            {
+                result.Add(new ZilList(initializer));
+            }
+            else
+            {
+                result.Add(new ZilList(null, null));
+            }
+
+            return new ZilList(result);
+        }
     }
 
     class ZilModelObject : ZilObject, ISourceLine
@@ -395,6 +469,19 @@ namespace Zilf
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             return ctx.GetStdAtom(StdAtom.OBJECT);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return Zilf.PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            var result = new List<ZilObject>(1 + props.Length);
+            result.Add(name);
+            result.AddRange(props);
+            return new ZilList(result);
         }
 
         public string SourceInfo

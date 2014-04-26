@@ -103,7 +103,7 @@ namespace DezapfTests
             }
         }
 
-        [TestMethod]
+        /*[TestMethod]
         public void RoundTripTest_name_z3()
         {
             TestRoundTrip(Resources.name_z3);
@@ -113,7 +113,7 @@ namespace DezapfTests
         public void RoundTripTest_hello_z3()
         {
             TestRoundTrip(Resources.hello_z3);
-        }
+        }*/
 
         private void TestRoundTrip(byte[] zcode)
         {

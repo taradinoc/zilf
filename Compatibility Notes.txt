@@ -1,0 +1,15 @@
+=== ZILF vs. MDL ===
+
+* MDL's concept of PRIMTYPEs and type conversions are poorly supported in ZILF.
+  * ZILF puts constraints on the construction of certain types: e.g. a FUNCTION
+    must have an args list and body, whereas MDL will allow an empty FUNCTION as
+	long as it's never invoked.
+	* MDL's <FUNCTION> takes any number of arguments. ZILF's requires at least 2 arguments
+	  to form a proper FUNCTION value.
+* MDL's word size is 36 bits, and it has separate FIX and WORD types.
+* MDL's <LSH> takes its second argument mod 256 and then applies the shift to a 36-bit word.
+* ZILF's SUBR and FSUBR types are based on strings naming the method that implements them.
+* MDL doesn't allow <APPLY> on functions that don't evaluate their arguments (or FSUBRs).
+* ZILF doesn't check DECLs.
+* ZILF has no VECTOR or UVECTOR types; they're parsed as LISTs instead.
+  * ZILF's OBLIST type is based on LIST.
