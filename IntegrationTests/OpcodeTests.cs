@@ -121,6 +121,13 @@ namespace IntegrationTests
 
             // alias
             AssertExpr("<ADD 1 2>").GivesNumber("3");
+        }
+
+        [TestMethod]
+        public void TestADD_REST()
+        {
+            // alias where 2nd operand defaults to 1
+            AssertExpr("<REST 1>").GivesNumber("2");
             AssertExpr("<REST 1 2>").GivesNumber("3");
         }
 
@@ -324,7 +331,11 @@ namespace IntegrationTests
 
             // we can't really test its side-effect here
             AssertExpr("<COLOR 5 5>").InV5().GivesNumber("1");
+        }
 
+        [TestMethod]
+        public void TestCOLOR_V6()
+        {
             // third argument is supported in V6+
             AssertExpr("<COLOR 5 5 1>").InV6().Compiles();
         }
@@ -415,7 +426,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestDCLEAR()
+        public void TestDCLEAR_V6()
         {
             // only exists in V6+
             Assert.Inconclusive();
@@ -454,9 +465,16 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDIROUT()
         {
-            AssertExpr("<DIROUT 0>").GivesNumber("1");
-            AssertExpr("<DIROUT 3 0>").GivesNumber("1");
+            AssertExpr("<DIROUT 1>").GivesNumber("1");
 
+            // needs a table
+            Assert.Inconclusive();
+            AssertExpr("<DIROUT 3 0>").GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void TestDIROUT_V6()
+        {
             // third operand allowed in V6
             AssertExpr("<DIROUT 3 0 0>").InV6().Compiles();
         }
@@ -469,7 +487,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestDISPLAY()
+        public void TestDISPLAY_V6()
         {
             // only exists in V6
             Assert.Inconclusive();
@@ -623,7 +641,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestFSTACK()
+        public void TestFSTACK_V6()
         {
             // only the V6 version is supported in ZIL
             AssertExpr("<FSTACK 0>").InV6().Compiles();
@@ -648,7 +666,6 @@ namespace IntegrationTests
             // V1 to V6
             // 2 to 2 operands
             AssertExpr("<GET 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -659,7 +676,6 @@ namespace IntegrationTests
             AssertExpr("<GET>").InV3().DoesNotCompile();
             AssertExpr("<GET 0>").InV3().DoesNotCompile();
             AssertExpr("<GET 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -667,8 +683,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETB 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<GETB 0 0>").InV3().GivesNumber("3");
         }
 
         [TestMethod]
@@ -679,16 +694,15 @@ namespace IntegrationTests
             AssertExpr("<GETB>").InV3().DoesNotCompile();
             AssertExpr("<GETB 0>").InV3().DoesNotCompile();
             AssertExpr("<GETB 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestGETP()
         {
+            // needs an object
+            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETP 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -699,16 +713,15 @@ namespace IntegrationTests
             AssertExpr("<GETP>").InV3().DoesNotCompile();
             AssertExpr("<GETP 0>").InV3().DoesNotCompile();
             AssertExpr("<GETP 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestGETPT()
         {
+            // needs an object
+            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETPT 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -719,7 +732,6 @@ namespace IntegrationTests
             AssertExpr("<GETPT>").InV3().DoesNotCompile();
             AssertExpr("<GETPT 0>").InV3().DoesNotCompile();
             AssertExpr("<GETPT 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -727,11 +739,19 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GRTR? 0 0>").InV3().Compiles();
+            AssertExpr("<GRTR? -1 3>").InV3().GivesNumber("0");
+            AssertExpr("<GRTR? 3 -1>").InV3().GivesNumber("1");
+            AssertExpr("<GRTR? 37 37>").InV3().GivesNumber("0");
 
             // alias
-            AssertExpr("<G? 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<G? 3 -1>").InV3().GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void TestGRTR_P_Cond()
+        {
+            // test as condition
+            Assert.Inconclusive();
         }
 
         [TestMethod]
@@ -742,20 +762,14 @@ namespace IntegrationTests
             AssertExpr("<GRTR?>").InV3().DoesNotCompile();
             AssertExpr("<GRTR? 0>").InV3().DoesNotCompile();
             AssertExpr("<GRTR? 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestHLIGHT()
         {
             // V4 to V6
-            // 0 to 4 operands
-            AssertExpr("<HLIGHT>").InV4().Compiles();
-            AssertExpr("<HLIGHT 0>").InV4().Compiles();
-            AssertExpr("<HLIGHT 0 0>").InV4().Compiles();
-            AssertExpr("<HLIGHT 0 0 0>").InV4().Compiles();
-            AssertExpr("<HLIGHT 0 0 0 0>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<HLIGHT 4>").InV4().Compiles();
         }
 
         [TestMethod]
@@ -765,9 +779,9 @@ namespace IntegrationTests
             AssertExpr("<HLIGHT>").InV3().DoesNotCompile();
 
             // V4 to V6
-            // 0 to 4 operands
-            AssertExpr("<HLIGHT 0 0 0 0 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<HLIGHT>").InV4().DoesNotCompile();
+            AssertExpr("<HLIGHT 0 0>").InV4().DoesNotCompile();
         }
 
         // ICALL, ICALL1, and ICALL2 are not supported in ZIL
@@ -775,24 +789,26 @@ namespace IntegrationTests
         [TestMethod]
         public void TestIGRTR_P()
         {
+            // needs a variable
+            Assert.Inconclusive();
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
         }
 
         [TestMethod]
         public void TestIGRTR_P_Error()
         {
+            // needs a variable
+            Assert.Inconclusive();
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
         }
 
         [TestMethod]
         public void TestIN_P()
         {
+            // needs objects
+            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<IN? 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -803,84 +819,85 @@ namespace IntegrationTests
             AssertExpr("<IN?>").InV3().DoesNotCompile();
             AssertExpr("<IN? 0>").InV3().DoesNotCompile();
             AssertExpr("<IN? 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestINC()
         {
+            // needs a variable
+            Assert.Inconclusive();
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
         }
 
         [TestMethod]
         public void TestINC_Error()
         {
+            // needs a variable
+            Assert.Inconclusive();
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
         }
 
         [TestMethod]
         public void TestINPUT()
         {
+            // needs input
+            Assert.Inconclusive();
             // V4 to V6
-            // 0 to 4 operands
-            AssertExpr("<INPUT>").InV4().Compiles();
-            AssertExpr("<INPUT 0>").InV4().Compiles();
-            AssertExpr("<INPUT 0 0>").InV4().Compiles();
-            AssertExpr("<INPUT 0 0 0>").InV4().Compiles();
-            AssertExpr("<INPUT 0 0 0 0>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 3 operands
+            AssertExpr("<INPUT 1>").InV4().Compiles();
+            AssertExpr("<INPUT 1 0>").InV4().Compiles();
+            AssertExpr("<INPUT 1 0 0>").InV4().Compiles();
         }
 
         [TestMethod]
         public void TestINPUT_Error()
         {
             // only exists in V4+
-            AssertExpr("<INPUT>").InV3().DoesNotCompile();
+            AssertExpr("<INPUT 1>").InV3().DoesNotCompile();
 
             // V4 to V6
             // 0 to 4 operands
-            AssertExpr("<INPUT 0 0 0 0 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<INPUT>").InV4().DoesNotCompile();
+            AssertExpr("<INPUT 0 0 0 0>").InV4().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestINTBL_P()
         {
+            // needs a table
+            Assert.Inconclusive();
+
             // V4 to V6
-            // 0 to 4 operands
-            AssertExpr("<INTBL?>").InV4().Compiles();
-            AssertExpr("<INTBL? 0>").InV4().Compiles();
-            AssertExpr("<INTBL? 0 0>").InV4().Compiles();
+            // 3 to 4 operands
             AssertExpr("<INTBL? 0 0 0>").InV4().Compiles();
-            AssertExpr("<INTBL? 0 0 0 0>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+
+            // 4th operand is allowed in V5
+            AssertExpr("<INTBL? 0 0 0 0>").InV5().Compiles();
         }
 
         [TestMethod]
         public void TestINTBL_P_Error()
         {
             // only exists in V4+
-            AssertExpr("<INTBL?>").InV3().DoesNotCompile();
+            AssertExpr("<INTBL? 0 0 0>").InV3().DoesNotCompile();
 
             // V4 to V6
-            // 0 to 4 operands
-            AssertExpr("<INTBL? 0 0 0 0 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 3 to 4 operands
+            AssertExpr("<INTBL?>").InV4().DoesNotCompile();
+            AssertExpr("<INTBL? 0>").InV4().DoesNotCompile();
+            AssertExpr("<INTBL? 0 0>").InV4().DoesNotCompile();
+
+            // 4th operand is only allowed in V5
+            AssertExpr("<INTBL? 0 0 0 0>").InV4().DoesNotCompile();
+            AssertExpr("<INTBL? 0 0 0 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestIRESTORE()
         {
             // V5 to V6
-            // 0 to 4 operands
+            // 0 operands
             AssertExpr("<IRESTORE>").InV5().Compiles();
-            AssertExpr("<IRESTORE 0>").InV5().Compiles();
-            AssertExpr("<IRESTORE 0 0>").InV5().Compiles();
-            AssertExpr("<IRESTORE 0 0 0>").InV5().Compiles();
-            AssertExpr("<IRESTORE 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -890,22 +907,16 @@ namespace IntegrationTests
             AssertExpr("<IRESTORE>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<IRESTORE 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 operands
+            AssertExpr("<IRESTORE 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestISAVE()
         {
             // V5 to V6
-            // 0 to 4 operands
+            // 0 operands
             AssertExpr("<ISAVE>").InV5().Compiles();
-            AssertExpr("<ISAVE 0>").InV5().Compiles();
-            AssertExpr("<ISAVE 0 0>").InV5().Compiles();
-            AssertExpr("<ISAVE 0 0 0>").InV5().Compiles();
-            AssertExpr("<ISAVE 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -915,64 +926,30 @@ namespace IntegrationTests
             AssertExpr("<ISAVE>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<ISAVE 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 operands
+            AssertExpr("<ISAVE 0>").InV5().DoesNotCompile();
         }
 
-        [TestMethod]
-        public void TestIXCALL()
-        {
-            // V5 to V6
-            // 0 to 8 operands
-            AssertExpr("<IXCALL>").InV5().Compiles();
-            AssertExpr("<IXCALL 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0 0 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0 0 0 0 0>").InV5().Compiles();
-            AssertExpr("<IXCALL 0 0 0 0 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
-
-        [TestMethod]
-        public void TestIXCALL_Error()
-        {
-            // only exists in V5+
-            AssertExpr("<IXCALL>").InV4().DoesNotCompile();
-
-            // V5 to V6
-            // 0 to 8 operands
-            AssertExpr("<IXCALL 0 0 0 0 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
-
-        [TestMethod]
-        public void TestJUMP()
-        {
-            // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
-        }
-
-        [TestMethod]
-        public void TestJUMP_Error()
-        {
-            // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
-        }
+        // IXCALL and JUMP are not supported in ZIL
 
         [TestMethod]
         public void TestLESS_P()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<LESS? 0 0>").InV3().Compiles();
+            AssertExpr("<LESS? -1 3>").InV3().GivesNumber("1");
+            AssertExpr("<LESS? 3 -1>").InV3().GivesNumber("0");
+            AssertExpr("<LESS? 37 37>").InV3().GivesNumber("0");
 
             // alias
-            AssertExpr("<L? 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<L? 3 -1>").InV3().GivesNumber("0");
+        }
+
+        [TestMethod]
+        public void TestLESS_P_Cond()
+        {
+            // test as condition
+            Assert.Inconclusive();
         }
 
         [TestMethod]
@@ -989,6 +966,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestLEX()
         {
+            // needs tables
+            Assert.Inconclusive();
+
             // V5 to V6
             // 0 to 4 operands
             AssertExpr("<LEX>").InV5().Compiles();
@@ -1014,6 +994,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestLOC()
         {
+            // needs an object
+            Assert.Inconclusive();
+
             // V1 to V6
             // 1 to 1 operands
             AssertExpr("<LOC 0>").InV3().Compiles();
@@ -1031,7 +1014,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMARGIN()
+        public void TestMARGIN_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1056,7 +1039,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMENU()
+        public void TestMENU_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1085,8 +1068,10 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MOD 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<MOD 15 4>").InV3().GivesNumber("3");
+            AssertExpr("<MOD -15 4>").InV3().GivesNumber("-3");
+            AssertExpr("<MOD -15 4>").InV3().GivesNumber("-3");
+            AssertExpr("<MOD 15 -4>").InV3().GivesNumber("3");
         }
 
         [TestMethod]
@@ -1097,11 +1082,10 @@ namespace IntegrationTests
             AssertExpr("<MOD>").InV3().DoesNotCompile();
             AssertExpr("<MOD 0>").InV3().DoesNotCompile();
             AssertExpr("<MOD 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
-        public void TestMOUSE_INFO()
+        public void TestMOUSE_INFO_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1126,7 +1110,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMOUSE_LIMIT()
+        public void TestMOUSE_LIMIT_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1175,8 +1159,12 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MUL 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<MUL 150 0>").InV3().GivesNumber("0");
+            AssertExpr("<MUL 0 -6>").InV3().GivesNumber("0");
+            AssertExpr("<MUL 150 3>").InV3().GivesNumber("450");
+            AssertExpr("<MUL 150 -3>").InV3().GivesNumber("-450");
+            AssertExpr("<MUL -15 4>").InV3().GivesNumber("-60");
+            AssertExpr("<MUL -1 128>").InV3().GivesNumber("-128");
         }
 
         [TestMethod]
@@ -1187,7 +1175,6 @@ namespace IntegrationTests
             AssertExpr("<MUL>").InV3().DoesNotCompile();
             AssertExpr("<MUL 0>").InV3().DoesNotCompile();
             AssertExpr("<MUL 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1229,23 +1216,7 @@ namespace IntegrationTests
             Assert.Inconclusive("This test was automatically generated.");
         }
 
-        [TestMethod]
-        public void TestNOOP()
-        {
-            // V1 to V6
-            // 0 to 0 operands
-            AssertExpr("<NOOP>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
-
-        [TestMethod]
-        public void TestNOOP_Error()
-        {
-            // V1 to V6
-            // 0 to 0 operands
-            AssertExpr("<NOOP 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
+        // NOOP is not supported in ZIL
 
         [TestMethod]
         public void TestORIGINAL_P()
@@ -1269,7 +1240,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPICINF()
+        public void TestPICINF_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1294,7 +1265,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPICSET()
+        public void TestPICSET_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1322,34 +1293,32 @@ namespace IntegrationTests
         public void TestPOP()
         {
             // V1 to V5
-            // 0 to 4 operands
-            AssertExpr("<POP>").InV3().Compiles();
-            AssertExpr("<POP 0>").InV3().Compiles();
-            AssertExpr("<POP 0 0>").InV3().Compiles();
-            AssertExpr("<POP 0 0 0>").InV3().Compiles();
-            AssertExpr("<POP 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+
+            // needs a variable
+            Assert.Inconclusive();
+            AssertExpr("<POP 1>").InV3().Compiles();
+        }
+
+        [TestMethod]
+        public void TestPOP_V6()
+        {
             // V6 to V6
-            // 0 to 4 operands
+            // 0 to 1 operands
             AssertExpr("<POP>").InV6().Compiles();
             AssertExpr("<POP 0>").InV6().Compiles();
-            AssertExpr("<POP 0 0>").InV6().Compiles();
-            AssertExpr("<POP 0 0 0>").InV6().Compiles();
-            AssertExpr("<POP 0 0 0 0>").InV6().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestPOP_Error()
         {
             // V1 to V5
-            // 0 to 4 operands
-            AssertExpr("<POP 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<POP>").InV3().DoesNotCompile();
+            AssertExpr("<POP 0 0>").InV3().DoesNotCompile();
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<POP 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 to 1 operands
+            AssertExpr("<POP 0 0>").InV6().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1394,27 +1363,24 @@ namespace IntegrationTests
         public void TestPRINTC()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTC>").InV3().Compiles();
-            AssertExpr("<PRINTC 0>").InV3().Compiles();
-            AssertExpr("<PRINTC 0 0>").InV3().Compiles();
-            AssertExpr("<PRINTC 0 0 0>").InV3().Compiles();
-            AssertExpr("<PRINTC 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PRINTC 65>").InV3().Outputs("A");
         }
 
         [TestMethod]
         public void TestPRINTC_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTC 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PRINTC>").InV3().DoesNotCompile();
+            AssertExpr("<PRINTC 65 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestPRINTD()
         {
+            // needs an object
+            Assert.Inconclusive();
             // V1 to V6
             // 1 to 1 operands
             AssertExpr("<PRINTD 0>").InV3().Compiles();
@@ -1428,11 +1394,10 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<PRINTD>").InV3().DoesNotCompile();
             AssertExpr("<PRINTD 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
-        public void TestPRINTF()
+        public void TestPRINTF_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1474,22 +1439,18 @@ namespace IntegrationTests
         public void TestPRINTN()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTN>").InV3().Compiles();
-            AssertExpr("<PRINTN 0>").InV3().Compiles();
-            AssertExpr("<PRINTN 0 0>").InV3().Compiles();
-            AssertExpr("<PRINTN 0 0 0>").InV3().Compiles();
-            AssertExpr("<PRINTN 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<PRINTN 0>").InV3().Outputs("0");
+            AssertExpr("<PRINTN -12345>").InV3().Outputs("-12345");
         }
 
         [TestMethod]
         public void TestPRINTN_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTN 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<PRINTN>").InV3().DoesNotCompile();
+            AssertExpr("<PRINTN 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1535,13 +1496,8 @@ namespace IntegrationTests
         public void TestPRINTU()
         {
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTU>").InV5().Compiles();
-            AssertExpr("<PRINTU 0>").InV5().Compiles();
-            AssertExpr("<PRINTU 0 0>").InV5().Compiles();
-            AssertExpr("<PRINTU 0 0 0>").InV5().Compiles();
-            AssertExpr("<PRINTU 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PRINTU 65>").InV5().Compiles();
         }
 
         [TestMethod]
@@ -1551,9 +1507,9 @@ namespace IntegrationTests
             AssertExpr("<PRINTU>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTU 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PRINTU>").InV5().DoesNotCompile();
+            AssertExpr("<PRINTU 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1579,88 +1535,68 @@ namespace IntegrationTests
         public void TestPUSH()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUSH>").InV3().Compiles();
-            AssertExpr("<PUSH 0>").InV3().Compiles();
-            AssertExpr("<PUSH 0 0>").InV3().Compiles();
-            AssertExpr("<PUSH 0 0 0>").InV3().Compiles();
-            AssertExpr("<PUSH 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PUSH 1234>").InV3().Compiles();
         }
 
         [TestMethod]
         public void TestPUSH_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUSH 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<PUSH>").InV3().DoesNotCompile();
+            AssertExpr("<PUSH 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestPUT()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUT>").InV3().Compiles();
-            AssertExpr("<PUT 0>").InV3().Compiles();
-            AssertExpr("<PUT 0 0>").InV3().Compiles();
+            // 3 to 3 operands
             AssertExpr("<PUT 0 0 0>").InV3().Compiles();
-            AssertExpr("<PUT 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestPUT_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUT 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 3 to 3 operands
+            AssertExpr("<PUT 0 0>").InV3().DoesNotCompile();
+            AssertExpr("<PUT 0 0 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestPUTB()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUTB>").InV3().Compiles();
-            AssertExpr("<PUTB 0>").InV3().Compiles();
-            AssertExpr("<PUTB 0 0>").InV3().Compiles();
+            // 3 to 3 operands
             AssertExpr("<PUTB 0 0 0>").InV3().Compiles();
-            AssertExpr("<PUTB 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestPUTB_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUTB 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 3 to 3 operands
+            AssertExpr("<PUTB 0 0>").InV3().DoesNotCompile();
+            AssertExpr("<PUTB 0 0 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestPUTP()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUTP>").InV3().Compiles();
-            AssertExpr("<PUTP 0>").InV3().Compiles();
-            AssertExpr("<PUTP 0 0>").InV3().Compiles();
+            // 3 to 3 operands
             AssertExpr("<PUTP 0 0 0>").InV3().Compiles();
-            AssertExpr("<PUTP 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestPUTP_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<PUTP 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 3 to 3 operands
+            AssertExpr("<PUTP 0 0>").InV3().DoesNotCompile();
+            AssertExpr("<PUTP 0 0 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1668,8 +1604,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<QUIT>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<QUIT> <PRINTI \"foo\"> <CRLF>").InV3().Outputs("");
         }
 
         [TestMethod]
@@ -1678,63 +1613,64 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<QUIT 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestRANDOM()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<RANDOM>").InV3().Compiles();
-            AssertExpr("<RANDOM 0>").InV3().Compiles();
-            AssertExpr("<RANDOM 0 0>").InV3().Compiles();
-            AssertExpr("<RANDOM 0 0 0>").InV3().Compiles();
-            AssertExpr("<RANDOM 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<RANDOM 14>").InV3().Compiles();
         }
 
         [TestMethod]
         public void TestRANDOM_Error()
         {
             // V1 to V6
-            // 0 to 4 operands
-            AssertExpr("<RANDOM 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<RANDOM>").InV3().DoesNotCompile();
+            AssertExpr("<RANDOM 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestREAD()
         {
-            // V1 to V4
-            // 0 to 4 operands
-            AssertExpr("<READ>").InV3().Compiles();
-            AssertExpr("<READ 0>").InV3().Compiles();
+            // V1 to V3
+            // 2 operands
             AssertExpr("<READ 0 0>").InV3().Compiles();
-            AssertExpr("<READ 0 0 0>").InV3().Compiles();
-            AssertExpr("<READ 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // V4
+            // 2 to 4 operands
+            AssertExpr("<READ 0 0>").InV4().Compiles();
+            AssertExpr("<READ 0 0 0>").InV4().Compiles();
+            AssertExpr("<READ 0 0 0 0>").InV4().Compiles();
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<READ>").InV5().Compiles();
+            // 1 to 4 operands
             AssertExpr("<READ 0>").InV5().Compiles();
             AssertExpr("<READ 0 0>").InV5().Compiles();
             AssertExpr("<READ 0 0 0>").InV5().Compiles();
             AssertExpr("<READ 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+
+            // needs a table
+            Assert.Inconclusive();
         }
 
         [TestMethod]
         public void TestREAD_Error()
         {
-            // V1 to V4
-            // 0 to 4 operands
-            AssertExpr("<READ 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // V1 to V3
+            // 2 operands
+            AssertExpr("<READ>").InV3().DoesNotCompile();
+            AssertExpr("<READ 0>").InV3().DoesNotCompile();
+            AssertExpr("<READ 0 0 0>").InV3().DoesNotCompile();
+            // V4
+            // 2 to 4 operands
+            AssertExpr("<READ>").InV4().DoesNotCompile();
+            AssertExpr("<READ 0>").InV4().DoesNotCompile();
+            AssertExpr("<READ 0 0 0 0 0>").InV4().DoesNotCompile();
             // V5 to V6
-            // 0 to 4 operands
+            // 1 to 4 operands
+            AssertExpr("<READ>").InV5().DoesNotCompile();
             AssertExpr("<READ 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1927,26 +1863,21 @@ namespace IntegrationTests
         public void TestSCREEN()
         {
             // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SCREEN>").InV3().Compiles();
+            // 1 operand
             AssertExpr("<SCREEN 0>").InV3().Compiles();
-            AssertExpr("<SCREEN 0 0>").InV3().Compiles();
-            AssertExpr("<SCREEN 0 0 0>").InV3().Compiles();
-            AssertExpr("<SCREEN 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestSCREEN_Error()
         {
             // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SCREEN 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 operand
+            AssertExpr("<SCREEN 0>").InV3().DoesNotCompile();
+            AssertExpr("<SCREEN 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
-        public void TestSCROLL()
+        public void TestSCROLL_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -1988,13 +1919,12 @@ namespace IntegrationTests
         public void TestSHIFT()
         {
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<SHIFT>").InV5().Compiles();
-            AssertExpr("<SHIFT 0>").InV5().Compiles();
-            AssertExpr("<SHIFT 0 0>").InV5().Compiles();
-            AssertExpr("<SHIFT 0 0 0>").InV5().Compiles();
-            AssertExpr("<SHIFT 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 2 to 2 operands
+            AssertExpr("<SHIFT 1 3>").InV5().GivesNumber("8");
+            AssertExpr("<SHIFT 16 -3>").InV5().GivesNumber("2");
+            AssertExpr("<SHIFT 1 16>").InV5().GivesNumber("0");
+            AssertExpr("<SHIFT 1 15>").InV5().GivesNumber("-32768");
+            AssertExpr("<SHIFT 16384 -14>").InV5().GivesNumber("1");
         }
 
         [TestMethod]
@@ -2004,53 +1934,55 @@ namespace IntegrationTests
             AssertExpr("<SHIFT>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<SHIFT 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 2 to 2 operands
+            AssertExpr("<SHIFT 0>").InV5().DoesNotCompile();
+            AssertExpr("<SHIFT 0 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestSOUND()
         {
-            // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SOUND>").InV3().Compiles();
+            // V3 to V4
+            // 1 to 3 operands
             AssertExpr("<SOUND 0>").InV3().Compiles();
             AssertExpr("<SOUND 0 0>").InV3().Compiles();
             AssertExpr("<SOUND 0 0 0>").InV3().Compiles();
-            AssertExpr("<SOUND 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // V5 to V6
+            // 1 to 4 operands
+            AssertExpr("<SOUND 0>").InV5().Compiles();
+            AssertExpr("<SOUND 0 0>").InV5().Compiles();
+            AssertExpr("<SOUND 0 0 0>").InV5().Compiles();
+            AssertExpr("<SOUND 0 0 0 0>").InV5().Compiles();
         }
 
         [TestMethod]
         public void TestSOUND_Error()
         {
-            // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SOUND 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // V3 to V4
+            // 1 to 3 operands
+            AssertExpr("<SOUND>").InV3().DoesNotCompile();
+            AssertExpr("<SOUND 0 0 0 0>").InV3().DoesNotCompile();
+            // V5 to V6
+            // 1 to 4 operands
+            AssertExpr("<SOUND>").InV5().DoesNotCompile();
+            AssertExpr("<SOUND 0 0 0 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestSPLIT()
         {
             // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SPLIT>").InV3().Compiles();
-            AssertExpr("<SPLIT 0>").InV3().Compiles();
-            AssertExpr("<SPLIT 0 0>").InV3().Compiles();
-            AssertExpr("<SPLIT 0 0 0>").InV3().Compiles();
-            AssertExpr("<SPLIT 0 0 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<SPLIT 1>").InV3().Compiles();
         }
 
         [TestMethod]
         public void TestSPLIT_Error()
         {
             // V3 to V6
-            // 0 to 4 operands
-            AssertExpr("<SPLIT 0 0 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 1 to 1 operands
+            AssertExpr("<SPLIT>").InV3().DoesNotCompile();
+            AssertExpr("<SPLIT 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]
@@ -2067,8 +1999,15 @@ namespace IntegrationTests
             AssertExpr("<- 0>").GivesNumber("0");
 
             // alias
-            AssertExpr("<BACK 1 2>").GivesNumber("-1");
             AssertExpr("<SUB 1 2>").GivesNumber("-1");
+        }
+
+        [TestMethod]
+        public void TestSUB_BACK()
+        {
+            // alias where 2nd operand defaults to 1
+            AssertExpr("<BACK 1>").GivesNumber("0");
+            AssertExpr("<BACK 1 2>").GivesNumber("-1");
         }
 
         [TestMethod]
@@ -2152,7 +2091,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINATTR()
+        public void TestWINATTR_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2177,7 +2116,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINGET()
+        public void TestWINGET_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2202,7 +2141,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINPOS()
+        public void TestWINPOS_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2227,7 +2166,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINPUT()
+        public void TestWINPUT_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2252,7 +2191,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINSIZE()
+        public void TestWINSIZE_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2276,37 +2215,10 @@ namespace IntegrationTests
             Assert.Inconclusive("This test was automatically generated.");
         }
 
-        [TestMethod]
-        public void TestXCALL()
-        {
-            // V4 to V6
-            // 0 to 8 operands
-            AssertExpr("<XCALL>").InV4().Compiles();
-            AssertExpr("<XCALL 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0 0 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0 0 0 0 0>").InV4().Compiles();
-            AssertExpr("<XCALL 0 0 0 0 0 0 0 0>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
+        // XCALL is not supported in ZIL
 
         [TestMethod]
-        public void TestXCALL_Error()
-        {
-            // only exists in V4+
-            AssertExpr("<XCALL>").InV3().DoesNotCompile();
-
-            // V4 to V6
-            // 0 to 8 operands
-            AssertExpr("<XCALL 0 0 0 0 0 0 0 0 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
-        }
-
-        [TestMethod]
-        public void TestXPUSH()
+        public void TestXPUSH_V6()
         {
             // V6 to V6
             // 0 to 4 operands
@@ -2356,12 +2268,10 @@ namespace IntegrationTests
         public void TestZWSTR()
         {
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<ZWSTR>").InV5().Compiles();
-            AssertExpr("<ZWSTR 0>").InV5().Compiles();
-            AssertExpr("<ZWSTR 0 0>").InV5().Compiles();
-            AssertExpr("<ZWSTR 0 0 0>").InV5().Compiles();
+            // 4 operands
             AssertExpr("<ZWSTR 0 0 0 0>").InV5().Compiles();
+
+            // needs a table
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -2372,9 +2282,12 @@ namespace IntegrationTests
             AssertExpr("<ZWSTR>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
+            // 4 operands
+            AssertExpr("<ZWSTR>").InV5().DoesNotCompile();
+            AssertExpr("<ZWSTR 0>").InV5().DoesNotCompile();
+            AssertExpr("<ZWSTR 0 0>").InV5().DoesNotCompile();
+            AssertExpr("<ZWSTR 0 0 0>").InV5().DoesNotCompile();
             AssertExpr("<ZWSTR 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
     }
 }

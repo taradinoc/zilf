@@ -265,5 +265,6 @@ namespace Zilf
         [Atom("ZIL-VERSION")]
         ZIL_VERSION,
         ZIP,
+        ZWSTR,
     }
 }
