@@ -948,6 +948,9 @@ namespace Zilf.Emit.Zap
                 case NullaryOp.ShowStatus:
                     opcode = "USL";
                     break;
+                case NullaryOp.Catch:
+                    opcode = "CATCH";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -1012,9 +1015,6 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.DirectOutput:
                     opcode = "DIROUT";
                     break;
-                case UnaryOp.PlaySound:
-                    opcode = "SOUND";
-                    break;
                 case UnaryOp.OutputBuffer:
                     opcode = "BUFOUT";
                     break;
@@ -1032,6 +1032,15 @@ namespace Zilf.Emit.Zap
                     break;
                 case UnaryOp.GetCursor:
                     opcode = "CURGET";
+                    break;
+                case UnaryOp.EraseLine:
+                    opcode = "ERASE";
+                    break;
+                case UnaryOp.SetFont:
+                    opcode = "FONT";
+                    break;
+                case UnaryOp.CheckUnicode:
+                    opcode = "CHECKU";
                     break;
                 default:
                     throw new NotImplementedException();
@@ -1144,6 +1153,9 @@ namespace Zilf.Emit.Zap
                 case BinaryOp.SetColor:
                     opcode = "COLOR";
                     break;
+                case BinaryOp.Throw:
+                    opcode = "THROW";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -1189,6 +1201,18 @@ namespace Zilf.Emit.Zap
                     right,
                     result == null ? "" : " >",
                     (object)result ?? ""),
+                null,
+                PeepholeLineType.Plain);
+        }
+
+        public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest)
+        {
+            AddLine(
+                string.Format("ZWSTR {0},{1},{2},{3}",
+                    src,
+                    length,
+                    srcOffset,
+                    dest),
                 null,
                 PeepholeLineType.Plain);
         }
@@ -1344,11 +1368,62 @@ namespace Zilf.Emit.Zap
                 case PrintOp.PackedAddr:
                     opcode = "PRINT";
                     break;
+                case PrintOp.Unicode:
+                    opcode = "PRINTU";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
 
             AddLine(opcode + " " + value.ToString(), null, PeepholeLineType.Plain);
+        }
+
+        public void EmitPrintTable(IOperand table, IOperand width, IOperand height, IOperand skip)
+        {
+            StringBuilder sb = new StringBuilder("PRINTT ");
+            sb.Append(table);
+            sb.Append(',');
+            sb.Append(width);
+
+            if (height != null)
+            {
+                sb.Append(',');
+                sb.Append(height);
+
+                if (skip != null)
+                {
+                    sb.Append(',');
+                    sb.Append(skip);
+                }
+            }
+
+            AddLine(sb.ToString(), null, PeepholeLineType.Plain);
+        }
+
+        public void EmitPlaySound(IOperand number, IOperand effect, IOperand volume, IOperand routine)
+        {
+            StringBuilder sb = new StringBuilder("SOUND ");
+            sb.Append(number);
+
+            if (effect != null)
+            {
+                sb.Append(',');
+                sb.Append(effect);
+
+                if (volume != null)
+                {
+                    sb.Append(',');
+                    sb.Append(volume);
+
+                    if (routine != null)
+                    {
+                        sb.Append(',');
+                        sb.Append(routine);
+                    }
+                }
+            }
+
+            AddLine(sb.ToString(), null, PeepholeLineType.Plain);
         }
 
         public void EmitRead(IOperand chrbuf, IOperand lexbuf, IOperand interval, IOperand routine,
@@ -1571,9 +1646,9 @@ namespace Zilf.Emit.Zap
                 {
                     AddLine("FSTACK", null, PeepholeLineType.Plain);
                 }
-                else if (game.zversion == 6 || game.zversion == 7)
+                else if (game.zversion == 6)
                 {
-                    AddLine("POP 1", null, PeepholeLineType.Plain);
+                    AddLine("FSTACK 1", null, PeepholeLineType.Plain);
                 }
                 else
                 {

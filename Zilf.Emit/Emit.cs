@@ -331,6 +331,10 @@ namespace Zilf.Emit
         /// Sets the foreground and background color.
         /// </summary>
         SetColor,
+        /// <summary>
+        /// Returns from the routine that produced a catch token.
+        /// </summary>
+        Throw,
     }
 
     public enum UnaryOp
@@ -400,13 +404,21 @@ namespace Zilf.Emit
         /// </summary>
         ClearWindow,
         /// <summary>
-        /// Plays the specified sound.
-        /// </summary>
-        PlaySound,
-        /// <summary>
         /// Writes the cursor position into an array.
         /// </summary>
         GetCursor,
+        /// <summary>
+        /// Erases a line of the screen.
+        /// </summary>
+        EraseLine,
+        /// <summary>
+        /// Selects a new font and returns the previous one.
+        /// </summary>
+        SetFont,
+        /// <summary>
+        /// Checks whether a Unicode character can be input or output.
+        /// </summary>
+        CheckUnicode,
     }
 
     public enum NullaryOp
@@ -423,6 +435,10 @@ namespace Zilf.Emit
         /// Restores the game state from an internal save.
         /// </summary>
         RestoreUndo,
+        /// <summary>
+        /// Obtains a catch token.
+        /// </summary>
+        Catch,
     }
 
     public enum PrintOp
@@ -447,6 +463,10 @@ namespace Zilf.Emit
         /// Prints the <see cref="IObjectBuilder.DescriptiveName"/> of an object.
         /// </summary>
         Object,
+        /// <summary>
+        /// Prints a character given its Unicode codepoint.
+        /// </summary>
+        Unicode,
     }
 
     public interface IRoutineBuilder : IOperand
@@ -521,10 +541,12 @@ namespace Zilf.Emit
         void EmitNullary(NullaryOp op, IVariable result);
         void EmitUnary(UnaryOp op, IOperand value, IVariable result);
         void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable result);
-        void EmitTernary(TernaryOp op, IOperand left, IOperand right, IOperand center, IVariable result);
+        void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable result);
 
         void EmitPrint(string text, bool crlfRtrue);
         void EmitPrint(PrintOp op, IOperand value);
+        // height and skip may be null
+        void EmitPrintTable(IOperand table, IOperand width, IOperand height, IOperand skip);
         void EmitPrintNewLine();
         // V3: interval, routine, and result must be null
         // V4: interval and routine may be null, result must be null
@@ -532,6 +554,12 @@ namespace Zilf.Emit
         void EmitRead(IOperand chrbuf, IOperand lexbuf, IOperand interval, IOperand routine, IVariable result);
         // interval and routine may be null
         void EmitReadChar(IOperand interval, IOperand routine, IVariable result);
+        // V3: routine must be null
+        // effect, volume, and routine may always be null
+        void EmitPlaySound(IOperand number, IOperand effect, IOperand volume, IOperand routine);
+
+        // TODO: make EmitQuaternary for EncodeText, PlaySound, and Read?
+        void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest);
 
         // result may be null
         void EmitCall(IOperand routine, IOperand[] args, IVariable result);

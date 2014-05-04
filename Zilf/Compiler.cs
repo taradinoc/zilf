@@ -24,7 +24,7 @@ using Zilf.Emit;
 
 namespace Zilf
 {
-    class Compiler
+    partial class Compiler
     {
         [Flags]
         private enum BlockReturnState
@@ -1118,6 +1118,12 @@ namespace Zilf
             {
                 return values;
             }
+
+            public IEnumerable<IOperand> Skip(int count)
+            {
+                for (int i = count; i < values.Length; i++)
+                    yield return values[i];
+            }
         }
 
         /// <summary>
@@ -1159,7 +1165,59 @@ namespace Zilf
                     return wantResult ? cc.Game.Zero : null;
                 }
 
-                // built-in statements
+                // built-in statements handled by ZBuiltins
+                // TODO: handle near matches (i.e. wrong number of arguments)
+                var zversion = cc.Context.ZEnvironment.ZVersion;
+                var argCount = form.Rest.Count();
+
+                if (wantResult)
+                {
+                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    {
+                        return ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
+                    }
+                    else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    {
+                        ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
+                        return cc.Game.One;
+                    }
+                    else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    {
+                        ILabel label1 = rb.DefineLabel();
+                        ILabel label2 = rb.DefineLabel();
+                        resultStorage = resultStorage ?? rb.Stack;
+                        ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label1, true);
+                        rb.EmitStore(resultStorage, cc.Game.Zero);
+                        rb.Branch(label2);
+                        rb.MarkLabel(label1);
+                        rb.EmitStore(resultStorage, cc.Game.One);
+                        rb.MarkLabel(label2);
+                        return resultStorage;
+                    }
+                }
+                else
+                {
+                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    {
+                        ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
+                        return null;
+                    }
+                    else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    {
+                        ILabel dummy = rb.DefineLabel();
+                        ZBuiltins.CompilePredCall(head.Text, cc, rb, form, dummy, true);
+                        rb.MarkLabel(dummy);
+                        return null;
+                    }
+                    else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    {
+                        if (ZBuiltins.CompileValueCall(head.Text, cc, rb, form, null) == rb.Stack)
+                            rb.EmitPopStack();
+                        return null;
+                    }
+                }
+
+                // built-in statements handled specially
                 ZilAtom atom;
                 IGlobalBuilder global;
                 ILocalBuilder local;
@@ -1211,45 +1269,45 @@ namespace Zilf
                             atom.ToStringContext(cc.Context, false));
                         return wantResult ? cc.Game.Zero : null;
 
-                    case StdAtom.SET:
-                    case StdAtom.SETG:
-                        atom = form.Rest.First as ZilAtom;
-                        if (atom == null)
-                        {
-                            // compile <SET .X Y> as <SET X Y>
-                            if (form.Rest.First is ZilForm &&
-                                (atom = ((ZilForm)form.Rest.First).First as ZilAtom) != null &&
-                                (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL))
-                            {
-                                atom = ((ZilForm)form.Rest.First).Rest.First as ZilAtom;
-                            }
-                            if (atom == null)
-                            {
-                                Errors.CompError(cc.Context, form, "expected an atom after SET/SETG");
-                                return wantResult ? cc.Game.Zero : null;
-                            }
-                        }
-                        if (cc.Locals.TryGetValue(atom, out local))
-                            variable = local;
-                        else if (cc.Globals.TryGetValue(atom, out global))
-                            variable = global;
-                        else
-                            variable = null;
-                        if (variable != null)
-                        {
-                            operand = CompileAsOperand(cc, rb, form.Rest.Rest.First, variable);
-                            if (operand != variable)
-                                rb.EmitStore(variable, operand);
-                            return variable;
-                        }
-                        else
-                        {
-                            Errors.CompError(cc.Context, form, "undefined variable: {0}",
-                                atom.ToStringContext(cc.Context, false));
-                            return wantResult ? cc.Game.Zero : null;
-                        }
+                    //case StdAtom.SET:
+                    //case StdAtom.SETG:
+                    //    atom = form.Rest.First as ZilAtom;
+                    //    if (atom == null)
+                    //    {
+                    //        // compile <SET .X Y> as <SET X Y>
+                    //        if (form.Rest.First is ZilForm &&
+                    //            (atom = ((ZilForm)form.Rest.First).First as ZilAtom) != null &&
+                    //            (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL))
+                    //        {
+                    //            atom = ((ZilForm)form.Rest.First).Rest.First as ZilAtom;
+                    //        }
+                    //        if (atom == null)
+                    //        {
+                    //            Errors.CompError(cc.Context, form, "expected an atom after SET/SETG");
+                    //            return wantResult ? cc.Game.Zero : null;
+                    //        }
+                    //    }
+                    //    if (cc.Locals.TryGetValue(atom, out local))
+                    //        variable = local;
+                    //    else if (cc.Globals.TryGetValue(atom, out global))
+                    //        variable = global;
+                    //    else
+                    //        variable = null;
+                    //    if (variable != null)
+                    //    {
+                    //        operand = CompileAsOperand(cc, rb, form.Rest.Rest.First, variable);
+                    //        if (operand != variable)
+                    //            rb.EmitStore(variable, operand);
+                    //        return variable;
+                    //    }
+                    //    else
+                    //    {
+                    //        Errors.CompError(cc.Context, form, "undefined variable: {0}",
+                    //            atom.ToStringContext(cc.Context, false));
+                    //        return wantResult ? cc.Game.Zero : null;
+                    //    }
 
-                    case StdAtom.INC:
+                    /*case StdAtom.INC:
                     case StdAtom.DEC:
                         atom = form.Rest.First as ZilAtom;
                         if (atom == null)
@@ -1277,57 +1335,57 @@ namespace Zilf
                             Errors.CompError(cc.Context, form, "undefined variable: {0}",
                                 atom.ToStringContext(cc.Context, false));
                             return wantResult ? cc.Game.Zero : null;
-                        }
+                        }*/
 
-                    case StdAtom.PUSH:
-                        rb.EmitStore(rb.Stack, CompileAsOperand(cc, rb, form.Rest.First));
-                        return wantResult ? cc.Game.One : null;
+                    //case StdAtom.PUSH:
+                    //    rb.EmitStore(rb.Stack, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return wantResult ? cc.Game.One : null;
 
                     case StdAtom.PRINTI:
                     case StdAtom.PRINTR:
                         CompilePRINTI(cc, rb, form.Rest, head.StdAtom == StdAtom.PRINTR);
                         return cc.Game.One;
-                    case StdAtom.PRINTN:
-                        rb.EmitPrint(PrintOp.Number, CompileAsOperand(cc, rb, form.Rest.First));
-                        return cc.Game.One;
-                    case StdAtom.PRINTC:
-                        rb.EmitPrint(PrintOp.Character, CompileAsOperand(cc, rb, form.Rest.First));
-                        return cc.Game.One;
-                    case StdAtom.PRINT:
-                        rb.EmitPrint(PrintOp.PackedAddr, CompileAsOperand(cc, rb, form.Rest.First));
-                        return cc.Game.One;
-                    case StdAtom.PRINTB:
-                        rb.EmitPrint(PrintOp.Address, CompileAsOperand(cc, rb, form.Rest.First));
-                        return cc.Game.One;
-                    case StdAtom.PRINTD:
-                        rb.EmitPrint(PrintOp.Object, CompileAsOperand(cc, rb, form.Rest.First));
-                        return cc.Game.One;
-                    case StdAtom.CRLF:
-                        rb.EmitPrintNewLine();
-                        return cc.Game.One;
-                    case StdAtom.READ:
-                        return CompileREAD(cc, rb, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.PRINTN:
+                    //    rb.EmitPrint(PrintOp.Number, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return cc.Game.One;
+                    //case StdAtom.PRINTC:
+                    //    rb.EmitPrint(PrintOp.Character, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return cc.Game.One;
+                    //case StdAtom.PRINT:
+                    //    rb.EmitPrint(PrintOp.PackedAddr, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return cc.Game.One;
+                    //case StdAtom.PRINTB:
+                    //    rb.EmitPrint(PrintOp.Address, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return cc.Game.One;
+                    //case StdAtom.PRINTD:
+                    //    rb.EmitPrint(PrintOp.Object, CompileAsOperand(cc, rb, form.Rest.First));
+                    //    return cc.Game.One;
+                    //case StdAtom.CRLF:
+                    //    rb.EmitPrintNewLine();
+                    //    return cc.Game.One;
+                    //case StdAtom.READ:
+                    //    return CompileREAD(cc, rb, form.Rest, wantResult, resultStorage);
                     case StdAtom.INPUT:
                         return CompileINPUT(cc, rb, form.Rest, wantResult, resultStorage);
 
                     case StdAtom.INTBL_P:
                         return CompileINTBL(cc, rb, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.RTRUE:
-                        rb.Return(cc.Game.One);
-                        return cc.Game.Zero;
-                    case StdAtom.RFALSE:
-                        rb.Return(cc.Game.Zero);
-                        return cc.Game.Zero;
-                    case StdAtom.RSTACK:
-                        rb.Return(rb.Stack);
-                        return cc.Game.Zero;
-                    case StdAtom.RESTART:
-                        rb.EmitRestart();
-                        return cc.Game.Zero;
-                    case StdAtom.QUIT:
-                        rb.EmitQuit();
-                        return cc.Game.Zero;
+                    //case StdAtom.RTRUE:
+                    //    rb.Return(cc.Game.One);
+                    //    return cc.Game.Zero;
+                    //case StdAtom.RFALSE:
+                    //    rb.Return(cc.Game.Zero);
+                    //    return cc.Game.Zero;
+                    //case StdAtom.RSTACK:
+                    //    rb.Return(rb.Stack);
+                    //    return cc.Game.Zero;
+                    //case StdAtom.RESTART:
+                    //    rb.EmitRestart();
+                    //    return cc.Game.Zero;
+                    //case StdAtom.QUIT:
+                    //    rb.EmitQuit();
+                    //    return cc.Game.Zero;
 
                     case StdAtom.APPLY:
                         ZilObject rtn = form.Rest.First;
@@ -1373,142 +1431,142 @@ namespace Zilf
                         }
                         return cc.Game.Zero;
 
-                    case StdAtom.Plus:
-                    case StdAtom.ADD:
-                        return CompileBinaryOp(cc, rb, BinaryOp.Add, form.Rest, wantResult, resultStorage);
-                    case StdAtom.Minus:
-                    case StdAtom.SUB:
-                        if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
-                            return CompileUnaryOp(cc, rb, UnaryOp.Neg, form.Rest, wantResult, resultStorage);
-                        else
-                            return CompileBinaryOp(cc, rb, BinaryOp.Sub, form.Rest, wantResult, resultStorage);
-                    case StdAtom.Times:
-                    case StdAtom.MUL:
-                        return CompileBinaryOp(cc, rb, BinaryOp.Mul, form.Rest, wantResult, resultStorage);
-                    case StdAtom.Divide:
-                    case StdAtom.DIV:
-                        return CompileBinaryOp(cc, rb, BinaryOp.Div, form.Rest, wantResult, resultStorage);
-                    case StdAtom.MOD:
-                        return CompileBinaryOp(cc, rb, BinaryOp.Mod, form.Rest, wantResult, resultStorage);
-                    case StdAtom.BAND:
-                    case StdAtom.ANDB:
-                        return CompileBinaryOp(cc, rb, BinaryOp.And, form.Rest, wantResult, resultStorage);
-                    case StdAtom.BOR:
-                    case StdAtom.ORB:
-                        return CompileBinaryOp(cc, rb, BinaryOp.Or, form.Rest, wantResult, resultStorage);
-                    case StdAtom.GET:
-                    case StdAtom.NTH:
-                        return CompileBinaryOp(cc, rb, BinaryOp.GetWord, form.Rest, wantResult, resultStorage);
-                    case StdAtom.GETB:
-                        return CompileBinaryOp(cc, rb, BinaryOp.GetByte, form.Rest, wantResult, resultStorage);
-                    case StdAtom.GETP:
-                        return CompileBinaryOp(cc, rb, BinaryOp.GetProperty, form.Rest, wantResult, resultStorage);
-                    case StdAtom.GETPT:
-                        return CompileBinaryOp(cc, rb, BinaryOp.GetPropAddress, form.Rest, wantResult, resultStorage);
-                    case StdAtom.NEXTP:
-                        return CompileBinaryOp(cc, rb, BinaryOp.GetNextProp, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.Plus:
+                    //case StdAtom.ADD:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.Add, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.Minus:
+                    //case StdAtom.SUB:
+                    //    if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
+                    //        return CompileUnaryOp(cc, rb, UnaryOp.Neg, form.Rest, wantResult, resultStorage);
+                    //    else
+                    //        return CompileBinaryOp(cc, rb, BinaryOp.Sub, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.Times:
+                    //case StdAtom.MUL:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.Mul, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.Divide:
+                    //case StdAtom.DIV:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.Div, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.MOD:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.Mod, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.BAND:
+                    //case StdAtom.ANDB:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.And, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.BOR:
+                    //case StdAtom.ORB:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.Or, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.GET:
+                    //case StdAtom.NTH:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.GetWord, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.GETB:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.GetByte, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.GETP:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.GetProperty, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.GETPT:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.GetPropAddress, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.NEXTP:
+                    //    return CompileBinaryOp(cc, rb, BinaryOp.GetNextProp, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.REST:
-                        // like + but the second operand defaults to 1
-                        if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
-                        {
-                            result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                            rb.EmitBinary(BinaryOp.Add,
-                                CompileAsOperand(cc, rb, form.Rest.First),
-                                cc.Game.One,
-                                result);
-                            return wantResult ? result : null;
-                        }
-                        else
-                            return CompileBinaryOp(cc, rb, BinaryOp.Add, form.Rest, wantResult, resultStorage);
-                    case StdAtom.BACK:
-                        // like - but the second operand defaults to 1
-                        if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
-                        {
-                            result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                            rb.EmitBinary(BinaryOp.Sub,
-                                CompileAsOperand(cc, rb, form.Rest.First),
-                                cc.Game.One,
-                                result);
-                            return wantResult ? result : null;
-                        }
-                        else
-                            return CompileBinaryOp(cc, rb, BinaryOp.Sub, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.REST:
+                    //    // like + but the second operand defaults to 1
+                    //    if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
+                    //    {
+                    //        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                    //        rb.EmitBinary(BinaryOp.Add,
+                    //            CompileAsOperand(cc, rb, form.Rest.First),
+                    //            cc.Game.One,
+                    //            result);
+                    //        return wantResult ? result : null;
+                    //    }
+                    //    else
+                    //        return CompileBinaryOp(cc, rb, BinaryOp.Add, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.BACK:
+                    //    // like - but the second operand defaults to 1
+                    //    if (!form.Rest.IsEmpty && form.Rest.Rest.IsEmpty)
+                    //    {
+                    //        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                    //        rb.EmitBinary(BinaryOp.Sub,
+                    //            CompileAsOperand(cc, rb, form.Rest.First),
+                    //            cc.Game.One,
+                    //            result);
+                    //        return wantResult ? result : null;
+                    //    }
+                    //    else
+                    //        return CompileBinaryOp(cc, rb, BinaryOp.Sub, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.MOVE:
-                        CompileBinaryOp(cc, rb, BinaryOp.MoveObject, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.FSET:
-                        CompileBinaryOp(cc, rb, BinaryOp.SetFlag, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.FCLEAR:
-                        CompileBinaryOp(cc, rb, BinaryOp.ClearFlag, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.CURSET:
-                        CompileBinaryOp(cc, rb, BinaryOp.SetCursor, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.COLOR:
-                        CompileBinaryOp(cc, rb, BinaryOp.SetColor, form.Rest, false, null);
-                        return cc.Game.One;
+                    //case StdAtom.MOVE:
+                    //    CompileBinaryOp(cc, rb, BinaryOp.MoveObject, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.FSET:
+                    //    CompileBinaryOp(cc, rb, BinaryOp.SetFlag, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.FCLEAR:
+                    //    CompileBinaryOp(cc, rb, BinaryOp.ClearFlag, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.CURSET:
+                    //    CompileBinaryOp(cc, rb, BinaryOp.SetCursor, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.COLOR:
+                    //    CompileBinaryOp(cc, rb, BinaryOp.SetColor, form.Rest, false, null);
+                    //    return cc.Game.One;
 
-                    case StdAtom.BCOM:
-                        return CompileUnaryOp(cc, rb, UnaryOp.Not, form.Rest, wantResult, resultStorage);
-                    case StdAtom.LOC:
-                        return CompileUnaryOp(cc, rb, UnaryOp.GetParent, form.Rest, wantResult, resultStorage);
-                    case StdAtom.FIRST_P:
-                        return CompileUnaryOp(cc, rb, UnaryOp.GetChild, form.Rest, wantResult, resultStorage);
-                    case StdAtom.NEXT_P:
-                        return CompileUnaryOp(cc, rb, UnaryOp.GetSibling, form.Rest, wantResult, resultStorage);
-                    case StdAtom.PTSIZE:
-                        return CompileUnaryOp(cc, rb, UnaryOp.GetPropSize, form.Rest, wantResult, resultStorage);
-                    case StdAtom.RANDOM:
-                        return CompileUnaryOp(cc, rb, UnaryOp.Random, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.BCOM:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.Not, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.LOC:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.GetParent, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.FIRST_P:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.GetChild, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.NEXT_P:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.GetSibling, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.PTSIZE:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.GetPropSize, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.RANDOM:
+                    //    return CompileUnaryOp(cc, rb, UnaryOp.Random, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.REMOVE:
-                        CompileUnaryOp(cc, rb, UnaryOp.RemoveObject, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.DIRIN:
-                        CompileUnaryOp(cc, rb, UnaryOp.DirectInput, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.DIROUT:
-                        if (form.Rest != null && form.Rest.Rest != null && !form.Rest.Rest.IsEmpty)
-                            CompileBinaryOp(cc, rb, BinaryOp.DirectOutput, form.Rest, false, null);
-                        else
-                            CompileUnaryOp(cc, rb, UnaryOp.DirectOutput, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.SOUND:
-                        CompileUnaryOp(cc, rb, UnaryOp.PlaySound, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.BUFOUT:
-                        CompileUnaryOp(cc, rb, UnaryOp.OutputBuffer, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.HLIGHT:
-                        CompileUnaryOp(cc, rb, UnaryOp.OutputStyle, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.CLEAR:
-                        CompileUnaryOp(cc, rb, UnaryOp.ClearWindow, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.SCREEN:
-                        CompileUnaryOp(cc, rb, UnaryOp.SelectWindow, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.SPLIT:
-                        CompileUnaryOp(cc, rb, UnaryOp.SplitWindow, form.Rest, false, null);
-                        return cc.Game.One;
-                    case StdAtom.CURGET:
-                        CompileUnaryOp(cc, rb, UnaryOp.GetCursor, form.Rest, false, null);
-                        return cc.Game.One;
+                    //case StdAtom.REMOVE:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.RemoveObject, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.DIRIN:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.DirectInput, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.DIROUT:
+                    //    if (form.Rest != null && form.Rest.Rest != null && !form.Rest.Rest.IsEmpty)
+                    //        CompileBinaryOp(cc, rb, BinaryOp.DirectOutput, form.Rest, false, null);
+                    //    else
+                    //        CompileUnaryOp(cc, rb, UnaryOp.DirectOutput, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.SOUND:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.PlaySound, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.BUFOUT:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.OutputBuffer, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.HLIGHT:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.OutputStyle, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.CLEAR:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.ClearWindow, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.SCREEN:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.SelectWindow, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.SPLIT:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.SplitWindow, form.Rest, false, null);
+                    //    return cc.Game.One;
+                    //case StdAtom.CURGET:
+                    //    CompileUnaryOp(cc, rb, UnaryOp.GetCursor, form.Rest, false, null);
+                    //    return cc.Game.One;
 
-                    case StdAtom.PUT:
-                        return CompileTernaryOp(cc, rb, TernaryOp.PutWord, form.Rest, wantResult, resultStorage);
-                    case StdAtom.PUTB:
-                        return CompileTernaryOp(cc, rb, TernaryOp.PutByte, form.Rest, wantResult, resultStorage);
-                    case StdAtom.PUTP:
-                        return CompileTernaryOp(cc, rb, TernaryOp.PutProperty, form.Rest, wantResult, resultStorage);
-                    case StdAtom.COPYT:
-                        return CompileTernaryOp(cc, rb, TernaryOp.CopyTable, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.PUT:
+                    //    return CompileTernaryOp(cc, rb, TernaryOp.PutWord, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.PUTB:
+                    //    return CompileTernaryOp(cc, rb, TernaryOp.PutByte, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.PUTP:
+                    //    return CompileTernaryOp(cc, rb, TernaryOp.PutProperty, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.COPYT:
+                    //    return CompileTernaryOp(cc, rb, TernaryOp.CopyTable, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.USL:
-                        return CompileNullaryOp(cc, rb, NullaryOp.ShowStatus, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.USL:
+                    //    return CompileNullaryOp(cc, rb, NullaryOp.ShowStatus, form.Rest, wantResult, resultStorage);
 
                     case StdAtom.PROG:
                     case StdAtom.REPEAT:
@@ -1552,29 +1610,29 @@ namespace Zilf
                         }
                         break;
 
-                    case StdAtom.ISAVE:
-                        if (rb.HasUndo)
-                        {
-                            if (!wantResult)
-                                throw new CompilerError("ISAVE in void context");
-                            result = resultStorage ?? rb.Stack;
-                            rb.EmitNullary(NullaryOp.SaveUndo, result);
-                            return resultStorage;
-                        }
-                        else
-                            throw new CompilerError("ISAVE not supported for this target");
+                    //case StdAtom.ISAVE:
+                    //    if (rb.HasUndo)
+                    //    {
+                    //        if (!wantResult)
+                    //            throw new CompilerError("ISAVE in void context");
+                    //        result = resultStorage ?? rb.Stack;
+                    //        rb.EmitNullary(NullaryOp.SaveUndo, result);
+                    //        return resultStorage;
+                    //    }
+                    //    else
+                    //        throw new CompilerError("ISAVE not supported for this target");
 
-                    case StdAtom.IRESTORE:
-                        if (rb.HasUndo)
-                        {
-                            if (!wantResult)
-                                throw new CompilerError("IRESTORE in void context");
-                            result = resultStorage ?? rb.Stack;
-                            rb.EmitNullary(NullaryOp.RestoreUndo, result);
-                            return result;
-                        }
-                        else
-                            throw new CompilerError("IRESTORE not supported for this target");
+                    //case StdAtom.IRESTORE:
+                    //    if (rb.HasUndo)
+                    //    {
+                    //        if (!wantResult)
+                    //            throw new CompilerError("IRESTORE in void context");
+                    //        result = resultStorage ?? rb.Stack;
+                    //        rb.EmitNullary(NullaryOp.RestoreUndo, result);
+                    //        return result;
+                    //    }
+                    //    else
+                    //        throw new CompilerError("IRESTORE not supported for this target");
                 }
 
                 // built-in conditionals
@@ -1702,6 +1760,7 @@ namespace Zilf
                 case StdAtom.SOUND:
                 case StdAtom.VERIFY:
                 case StdAtom.USL:
+                case StdAtom.ZWSTR:
                     return true;
             }
 
@@ -1740,11 +1799,11 @@ namespace Zilf
                 case UnaryOp.DirectOutput:
                 case UnaryOp.OutputBuffer:
                 case UnaryOp.OutputStyle:
-                case UnaryOp.PlaySound:
                 case UnaryOp.SelectWindow:
                 case UnaryOp.ClearWindow:
                 case UnaryOp.SplitWindow:
                 case UnaryOp.GetCursor:
+                case UnaryOp.EraseLine:
                     return false;
 
                 default:
@@ -1764,6 +1823,7 @@ namespace Zilf
                 case BinaryOp.DirectOutput:
                 case BinaryOp.SetCursor:
                 case BinaryOp.SetColor:
+                case BinaryOp.Throw:
                     return false;
 
                 default:
@@ -1876,13 +1936,8 @@ namespace Zilf
                 return result;
         }
 
-        private static IOperand CompileAsOperand(CompileCtx cc, IRoutineBuilder rb, ZilObject expr)
-        {
-            return CompileAsOperand(cc, rb, expr, null);
-        }
-
         private static IOperand CompileAsOperand(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
-            IVariable suggestion)
+            IVariable suggestion = null)
         {
             IOperand constant = CompileConstant(cc, expr);
             if (constant != null)
