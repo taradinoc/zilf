@@ -843,11 +843,16 @@ namespace Zilf.Emit.Zap
                     break;
                 case Condition.ArgProvided:
                     opcode = "ASSIGNED?";
+                    leftVar = true;
                     unary = true;
                     break;
 
                 case Condition.Verify:
                     opcode = "VERIFY";
+                    nullary = true;
+                    break;
+                case Condition.Original:
+                    opcode = "ORIGINAL?";
                     nullary = true;
                     break;
 
@@ -878,7 +883,7 @@ namespace Zilf.Emit.Zap
                 nullary ?
                     opcode :
                 unary ?
-                    string.Format("{0} {1}", opcode, left) :
+                    string.Format("{0} {1}{2}", opcode, leftVar ? "'" : "", left) :
                     string.Format("{0} {1}{2},{3}", opcode, leftVar ? "'" : "", left, right),
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);

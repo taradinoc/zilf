@@ -1257,17 +1257,17 @@ namespace Zilf
                         Errors.CompError(cc.Context, form, "undefined local: {0}",
                             atom.ToStringContext(cc.Context, false));
                         return wantResult ? cc.Game.Zero : null;
-                    case StdAtom.VALUE:
-                        atom = form.Rest.First as ZilAtom;
-                        if (atom == null)
-                            return CompileUnaryOp(cc, rb, UnaryOp.LoadIndirect, form.Rest, wantResult, resultStorage);
-                        if (cc.Locals.TryGetValue(atom, out local))
-                            return local;
-                        if (cc.Globals.TryGetValue(atom, out global))
-                            return global;
-                        Errors.CompError(cc.Context, form, "undefined variable: {0}",
-                            atom.ToStringContext(cc.Context, false));
-                        return wantResult ? cc.Game.Zero : null;
+                    //case StdAtom.VALUE:
+                    //    atom = form.Rest.First as ZilAtom;
+                    //    if (atom == null)
+                    //        return CompileUnaryOp(cc, rb, UnaryOp.LoadIndirect, form.Rest, wantResult, resultStorage);
+                    //    if (cc.Locals.TryGetValue(atom, out local))
+                    //        return local;
+                    //    if (cc.Globals.TryGetValue(atom, out global))
+                    //        return global;
+                    //    Errors.CompError(cc.Context, form, "undefined variable: {0}",
+                    //        atom.ToStringContext(cc.Context, false));
+                    //    return wantResult ? cc.Game.Zero : null;
 
                     //case StdAtom.SET:
                     //case StdAtom.SETG:
@@ -1341,10 +1341,10 @@ namespace Zilf
                     //    rb.EmitStore(rb.Stack, CompileAsOperand(cc, rb, form.Rest.First));
                     //    return wantResult ? cc.Game.One : null;
 
-                    case StdAtom.PRINTI:
-                    case StdAtom.PRINTR:
-                        CompilePRINTI(cc, rb, form.Rest, head.StdAtom == StdAtom.PRINTR);
-                        return cc.Game.One;
+                    //case StdAtom.PRINTI:
+                    //case StdAtom.PRINTR:
+                    //    CompilePRINTI(cc, rb, form.Rest, head.StdAtom == StdAtom.PRINTR);
+                    //    return cc.Game.One;
                     //case StdAtom.PRINTN:
                     //    rb.EmitPrint(PrintOp.Number, CompileAsOperand(cc, rb, form.Rest.First));
                     //    return cc.Game.One;
@@ -1365,11 +1365,11 @@ namespace Zilf
                     //    return cc.Game.One;
                     //case StdAtom.READ:
                     //    return CompileREAD(cc, rb, form.Rest, wantResult, resultStorage);
-                    case StdAtom.INPUT:
-                        return CompileINPUT(cc, rb, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.INPUT:
+                    //    return CompileINPUT(cc, rb, form.Rest, wantResult, resultStorage);
 
-                    case StdAtom.INTBL_P:
-                        return CompileINTBL(cc, rb, form.Rest, wantResult, resultStorage);
+                    //case StdAtom.INTBL_P:
+                    //    return CompileINTBL(cc, rb, form.Rest, wantResult, resultStorage);
 
                     //case StdAtom.RTRUE:
                     //    rb.Return(cc.Game.One);
@@ -1401,35 +1401,35 @@ namespace Zilf
                         System.Diagnostics.Debug.Assert(cc.AgainLabel != null);
                         rb.Branch(cc.AgainLabel);
                         return cc.Game.Zero;
-                    case StdAtom.RETURN:
-                        if (cc.ReturnLabel == null)
-                        {
-                            if (form.Rest.First == null)
-                                operand = cc.Game.One;
-                            else
-                                operand = CompileAsOperand(cc, rb, form.Rest.First);
-                            rb.Return(operand);
-                        }
-                        else
-                        {
-                            if ((cc.ReturnState & BlockReturnState.WantResult) != 0)
-                            {
-                                if (form.Rest.First == null)
-                                    operand = cc.Game.One;
-                                else
-                                    operand = CompileAsOperand(cc, rb, form.Rest.First, rb.Stack);
-                                if (operand != rb.Stack)
-                                    rb.EmitStore(rb.Stack, operand);
-                            }
-                            else if (form.Rest.First != null)
-                            {
-                                Errors.CompWarning(cc.Context, form, "RETURN value ignored: enclosing block is in void context");
-                            }
+                    //case StdAtom.RETURN:
+                    //    if (cc.ReturnLabel == null)
+                    //    {
+                    //        if (form.Rest.First == null)
+                    //            operand = cc.Game.One;
+                    //        else
+                    //            operand = CompileAsOperand(cc, rb, form.Rest.First);
+                    //        rb.Return(operand);
+                    //    }
+                    //    else
+                    //    {
+                    //        if ((cc.ReturnState & BlockReturnState.WantResult) != 0)
+                    //        {
+                    //            if (form.Rest.First == null)
+                    //                operand = cc.Game.One;
+                    //            else
+                    //                operand = CompileAsOperand(cc, rb, form.Rest.First, rb.Stack);
+                    //            if (operand != rb.Stack)
+                    //                rb.EmitStore(rb.Stack, operand);
+                    //        }
+                    //        else if (form.Rest.First != null)
+                    //        {
+                    //            Errors.CompWarning(cc.Context, form, "RETURN value ignored: enclosing block is in void context");
+                    //        }
 
-                            cc.ReturnState |= BlockReturnState.Returned;
-                            rb.Branch(cc.ReturnLabel);
-                        }
-                        return cc.Game.Zero;
+                    //        cc.ReturnState |= BlockReturnState.Returned;
+                    //        rb.Branch(cc.ReturnLabel);
+                    //    }
+                    //    return cc.Game.Zero;
 
                     //case StdAtom.Plus:
                     //case StdAtom.ADD:
@@ -1584,31 +1584,31 @@ namespace Zilf
                     case StdAtom.AND:
                         return CompileBoolean(cc, rb, form.Rest, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
 
-                    case StdAtom.SAVE:
-                        if (rb.HasStoreSave)
-                        {
-                            if (!wantResult)
-                                throw new CompilerError("SAVE in void context");
-                            result = resultStorage ?? rb.Stack;
-                            if (!form.Rest.IsEmpty)
-                                throw new NotImplementedException();
-                            rb.EmitSave(result);
-                            return result;
-                        }
-                        break;
+                    //case StdAtom.SAVE:
+                    //    if (rb.HasStoreSave)
+                    //    {
+                    //        if (!wantResult)
+                    //            throw new CompilerError("SAVE in void context");
+                    //        result = resultStorage ?? rb.Stack;
+                    //        if (!form.Rest.IsEmpty)
+                    //            throw new NotImplementedException();
+                    //        rb.EmitSave(result);
+                    //        return result;
+                    //    }
+                    //    break;
 
-                    case StdAtom.RESTORE:
-                        if (rb.HasStoreSave)
-                        {
-                            if (!wantResult)
-                                throw new CompilerError("RESTORE in void context");
-                            result = resultStorage ?? rb.Stack;
-                            if (!form.Rest.IsEmpty)
-                                throw new NotImplementedException();
-                            rb.EmitRestore(result);
-                            return result;
-                        }
-                        break;
+                    //case StdAtom.RESTORE:
+                    //    if (rb.HasStoreSave)
+                    //    {
+                    //        if (!wantResult)
+                    //            throw new CompilerError("RESTORE in void context");
+                    //        result = resultStorage ?? rb.Stack;
+                    //        if (!form.Rest.IsEmpty)
+                    //            throw new NotImplementedException();
+                    //        rb.EmitRestore(result);
+                    //        return result;
+                    //    }
+                    //    break;
 
                     //case StdAtom.ISAVE:
                     //    if (rb.HasUndo)
@@ -1635,30 +1635,30 @@ namespace Zilf
                     //        throw new CompilerError("IRESTORE not supported for this target");
                 }
 
-                // built-in conditionals
-                if (IsCondition(rb, head.StdAtom))
-                {
-                    if (wantResult)
-                    {
-                        ILabel label1 = rb.DefineLabel();
-                        ILabel label2 = rb.DefineLabel();
-                        result = resultStorage ?? rb.Stack;
-                        CompileCondition(cc, rb, form, label1, true);
-                        rb.EmitStore(result, cc.Game.Zero);
-                        rb.Branch(label2);
-                        rb.MarkLabel(label1);
-                        rb.EmitStore(result, cc.Game.One);
-                        rb.MarkLabel(label2);
-                        return result;
-                    }
-                    else
-                    {
-                        ILabel label = rb.DefineLabel();
-                        CompileCondition(cc, rb, form, label, true);
-                        rb.MarkLabel(label);
-                        return null;
-                    }
-                }
+                //// built-in conditionals
+                //if (IsCondition(rb, head.StdAtom))
+                //{
+                //    if (wantResult)
+                //    {
+                //        ILabel label1 = rb.DefineLabel();
+                //        ILabel label2 = rb.DefineLabel();
+                //        result = resultStorage ?? rb.Stack;
+                //        CompileCondition(cc, rb, form, label1, true);
+                //        rb.EmitStore(result, cc.Game.Zero);
+                //        rb.Branch(label2);
+                //        rb.MarkLabel(label1);
+                //        rb.EmitStore(result, cc.Game.One);
+                //        rb.MarkLabel(label2);
+                //        return result;
+                //    }
+                //    else
+                //    {
+                //        ILabel label = rb.DefineLabel();
+                //        CompileCondition(cc, rb, form, label, true);
+                //        rb.MarkLabel(label);
+                //        return null;
+                //    }
+                //}
 
                 // routine calls
                 ZilObject obj = cc.Context.GetGlobalVal(head);
@@ -1988,6 +1988,31 @@ namespace Zilf
                 return;
             }
 
+            // check for standard built-ins
+            var zversion = cc.Context.ZEnvironment.ZVersion;
+            var argCount = form.Count() - 1;
+            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+            {
+                ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label, polarity);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+            {
+                ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
+
+                // void calls return true
+                if (polarity == true)
+                    rb.Branch(label);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+            {
+                var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, rb.Stack);
+                rb.BranchIfZero(result, label, !polarity);
+                return;
+            }
+
+            // special cases
             IOperand op1, op2;
             ZilObject[] args = form.Skip(1).ToArray();
 
@@ -1997,149 +2022,149 @@ namespace Zilf
                     CompileCondition(cc, rb, args[0], label, !polarity);
                     break;
 
-                case StdAtom.FIRST_P:
-                case StdAtom.NEXT_P:
-                    op1 = CompileAsOperand(cc, rb, args[0]);
-                    rb.Branch(
-                            head.StdAtom == StdAtom.FIRST_P ? Condition.HasChild : Condition.HasSibling,
-                            op1, null, label, polarity);
-                    break;
+            //    case StdAtom.FIRST_P:
+            //    case StdAtom.NEXT_P:
+            //        op1 = CompileAsOperand(cc, rb, args[0]);
+            //        rb.Branch(
+            //                head.StdAtom == StdAtom.FIRST_P ? Condition.HasChild : Condition.HasSibling,
+            //                op1, null, label, polarity);
+            //        break;
 
                 case StdAtom.OR:
                 case StdAtom.AND:
                     CompileBoolean(cc, rb, args, head.StdAtom == StdAtom.AND, label, polarity);
                     break;
 
-                case StdAtom.DLESS_P:
-                case StdAtom.IGRTR_P:
-                    op2 = CompileAsOperand(cc, rb, args[1]);
-                    op1 = GetVariable(cc, args[0]);
-                    if (op1 == null)
-                        Errors.CompError(cc.Context, form, "first arg of DLESS?/IGRTR? must be a variable identifier");
-                    else
-                        rb.Branch(
-                            head.StdAtom == StdAtom.DLESS_P ? Condition.DecCheck : Condition.IncCheck,
-                            op1, op2, label, polarity);
-                    break;
+            //    case StdAtom.DLESS_P:
+            //    case StdAtom.IGRTR_P:
+            //        op2 = CompileAsOperand(cc, rb, args[1]);
+            //        op1 = GetVariable(cc, args[0]);
+            //        if (op1 == null)
+            //            Errors.CompError(cc.Context, form, "first arg of DLESS?/IGRTR? must be a variable identifier");
+            //        else
+            //            rb.Branch(
+            //                head.StdAtom == StdAtom.DLESS_P ? Condition.DecCheck : Condition.IncCheck,
+            //                op1, op2, label, polarity);
+            //        break;
 
-                case StdAtom.G_P:
-                case StdAtom.GEq_P:
-                case StdAtom.L_P:
-                case StdAtom.LEq_P:
-                case StdAtom.IN_P:
-                case StdAtom.FSET_P:
-                case StdAtom.BTST:
-                    using (Operands operands = Operands.Compile(cc, rb, args))
-                    {
-                        Condition cond;
-                        switch (head.StdAtom)
-                        {
-                            case StdAtom.G_P: cond = Condition.Greater; break;
-                            case StdAtom.L_P: cond = Condition.Less; break;
-                            case StdAtom.GEq_P: cond = Condition.Less; polarity = !polarity; break;
-                            case StdAtom.LEq_P: cond = Condition.Greater; polarity = !polarity; break;
-                            case StdAtom.IN_P: cond = Condition.Inside; break;
-                            case StdAtom.FSET_P: cond = Condition.TestAttr; break;
-                            case StdAtom.BTST: cond = Condition.TestBits; break;
-                            default: throw new NotImplementedException();
-                        }
-                        rb.Branch(cond, operands[0], operands[1], label, polarity);
-                    }
-                    break;
+            //    case StdAtom.G_P:
+            //    case StdAtom.GEq_P:
+            //    case StdAtom.L_P:
+            //    case StdAtom.LEq_P:
+            //    case StdAtom.IN_P:
+            //    case StdAtom.FSET_P:
+            //    case StdAtom.BTST:
+            //        using (Operands operands = Operands.Compile(cc, rb, args))
+            //        {
+            //            Condition cond;
+            //            switch (head.StdAtom)
+            //            {
+            //                case StdAtom.G_P: cond = Condition.Greater; break;
+            //                case StdAtom.L_P: cond = Condition.Less; break;
+            //                case StdAtom.GEq_P: cond = Condition.Less; polarity = !polarity; break;
+            //                case StdAtom.LEq_P: cond = Condition.Greater; polarity = !polarity; break;
+            //                case StdAtom.IN_P: cond = Condition.Inside; break;
+            //                case StdAtom.FSET_P: cond = Condition.TestAttr; break;
+            //                case StdAtom.BTST: cond = Condition.TestBits; break;
+            //                default: throw new NotImplementedException();
+            //            }
+            //            rb.Branch(cond, operands[0], operands[1], label, polarity);
+            //        }
+            //        break;
 
-                case StdAtom.Neq_P:
-                case StdAtom.Neeq_P:
-                case StdAtom.Eq_P:
-                case StdAtom.Eeq_P:
-                    using (Operands operands = Operands.Compile(cc, rb, args))
-                    {
-                        bool newPol =
-                            ((head.StdAtom == StdAtom.Eeq_P || head.StdAtom == StdAtom.Eq_P) == polarity);
-                        if (operands[1] == cc.Game.Zero)
-                            rb.BranchIfZero(operands[0], label, newPol);
-                        else if (operands[0] == cc.Game.Zero)
-                            rb.BranchIfZero(operands[1], label, newPol);
-                        else
-                            rb.BranchIfEqual(operands[0], operands[1], label, newPol);
-                    }
-                    break;
+            //    case StdAtom.Neq_P:
+            //    case StdAtom.Neeq_P:
+            //    case StdAtom.Eq_P:
+            //    case StdAtom.Eeq_P:
+            //        using (Operands operands = Operands.Compile(cc, rb, args))
+            //        {
+            //            bool newPol =
+            //                ((head.StdAtom == StdAtom.Eeq_P || head.StdAtom == StdAtom.Eq_P) == polarity);
+            //            if (operands[1] == cc.Game.Zero)
+            //                rb.BranchIfZero(operands[0], label, newPol);
+            //            else if (operands[0] == cc.Game.Zero)
+            //                rb.BranchIfZero(operands[1], label, newPol);
+            //            else
+            //                rb.BranchIfEqual(operands[0], operands[1], label, newPol);
+            //        }
+            //        break;
 
-                case StdAtom.Zero_P:
-                case StdAtom.ZERO_P:
-                    rb.BranchIfZero(CompileAsOperand(cc, rb, args[0]), label, polarity);
-                    break;
+            //    case StdAtom.Zero_P:
+            //    case StdAtom.ZERO_P:
+            //        rb.BranchIfZero(CompileAsOperand(cc, rb, args[0]), label, polarity);
+            //        break;
 
-                case StdAtom.One_P:
-                    rb.BranchIfEqual(CompileAsOperand(cc, rb, args[0]),
-                        cc.Game.One, label, polarity);
-                    break;
+            //    case StdAtom.One_P:
+            //        rb.BranchIfEqual(CompileAsOperand(cc, rb, args[0]),
+            //            cc.Game.One, label, polarity);
+            //        break;
 
-                case StdAtom.EQUAL_P:
-                    using (Operands operands = Operands.Compile(cc, rb, args))
-                    {
-                        switch (args.Length)
-                        {
-                            case 2:
-                                if (operands[1] == cc.Game.Zero)
-                                    rb.BranchIfZero(operands[0], label, polarity);
-                                else if (operands[0] == cc.Game.Zero)
-                                    rb.BranchIfZero(operands[1], label, polarity);
-                                else
-                                    rb.BranchIfEqual(operands[0], operands[1], label, polarity);
-                                break;
-                            case 3:
-                                rb.BranchIfEqual(operands[0], operands[1], operands[2],
-                                    label, polarity);
-                                break;
-                            case 4:
-                                rb.BranchIfEqual(operands[0], operands[1], operands[2], operands[3],
-                                    label, polarity);
-                                break;
-                            default:
-                                throw new CompilerError(form, "EQUAL?", 2, 4);
-                        }
-                    }
-                    break;
+            //    case StdAtom.EQUAL_P:
+            //        using (Operands operands = Operands.Compile(cc, rb, args))
+            //        {
+            //            switch (args.Length)
+            //            {
+            //                case 2:
+            //                    if (operands[1] == cc.Game.Zero)
+            //                        rb.BranchIfZero(operands[0], label, polarity);
+            //                    else if (operands[0] == cc.Game.Zero)
+            //                        rb.BranchIfZero(operands[1], label, polarity);
+            //                    else
+            //                        rb.BranchIfEqual(operands[0], operands[1], label, polarity);
+            //                    break;
+            //                case 3:
+            //                    rb.BranchIfEqual(operands[0], operands[1], operands[2],
+            //                        label, polarity);
+            //                    break;
+            //                case 4:
+            //                    rb.BranchIfEqual(operands[0], operands[1], operands[2], operands[3],
+            //                        label, polarity);
+            //                    break;
+            //                default:
+            //                    throw new CompilerError(form, "EQUAL?", 2, 4);
+            //            }
+            //        }
+            //        break;
 
-                case StdAtom.SAVE:
-                    if (!rb.HasBranchSave)
-                        goto default;
-                    rb.EmitSave(label, polarity);
-                    break;
+            //    case StdAtom.SAVE:
+            //        if (!rb.HasBranchSave)
+            //            goto default;
+            //        rb.EmitSave(label, polarity);
+            //        break;
 
-                case StdAtom.RESTORE:
-                    if (!rb.HasBranchSave)
-                        goto default;
-                    rb.EmitRestore(label, polarity);
-                    break;
+            //    case StdAtom.RESTORE:
+            //        if (!rb.HasBranchSave)
+            //            goto default;
+            //        rb.EmitRestore(label, polarity);
+            //        break;
 
-                case StdAtom.VERIFY:
-                    rb.Branch(Condition.Verify, null, null, label, polarity);
-                    break;
+            //    case StdAtom.VERIFY:
+            //        rb.Branch(Condition.Verify, null, null, label, polarity);
+            //        break;
 
-                case StdAtom.INTBL_P:
-                    if (rb.HasBranchScanTable)
-                    {
-                        using (Operands operands = Operands.Compile(cc, rb, args))
-                        {
-                            switch (args.Length)
-                            {
-                                case 3:
-                                    rb.EmitScanTable(operands[0], operands[1], operands[2], null, label, polarity);
-                                    break;
-                                case 4:
-                                    rb.EmitScanTable(operands[0], operands[1], operands[2], operands[3], label, polarity);
-                                    break;
-                                default:
-                                    throw new CompilerError(null, "INTBL?", 3, 4);
-                            }
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        goto default;
-                    }
+            //    case StdAtom.INTBL_P:
+            //        if (rb.HasBranchScanTable)
+            //        {
+            //            using (Operands operands = Operands.Compile(cc, rb, args))
+            //            {
+            //                switch (args.Length)
+            //                {
+            //                    case 3:
+            //                        rb.EmitScanTable(operands[0], operands[1], operands[2], null, label, polarity);
+            //                        break;
+            //                    case 4:
+            //                        rb.EmitScanTable(operands[0], operands[1], operands[2], operands[3], label, polarity);
+            //                        break;
+            //                    default:
+            //                        throw new CompilerError(null, "INTBL?", 3, 4);
+            //                }
+            //            }
+            //            break;
+            //        }
+            //        else
+            //        {
+            //            goto default;
+            //        }
 
                 default:
                     op1 = CompileAsOperand(cc, rb, form);
