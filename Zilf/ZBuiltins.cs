@@ -943,7 +943,7 @@ namespace Zilf
                 c.rb.EmitEncodeText(src, length, srcOffset, dest);
             }
 
-            [Builtin("RESTORE", MaxVersion = 3)]
+            [Builtin("RESTORE", MaxVersion = 3, HasSideEffect = true)]
             public static void RestoreOp_V3(PredCall c)
             {
                 if (c.rb.HasBranchSave)
@@ -956,7 +956,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RESTORE", MinVersion = 4, MaxVersion = 4)]
+            [Builtin("RESTORE", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
             public static IOperand RestoreOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -970,7 +970,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RESTORE", MinVersion = 5)]
+            [Builtin("RESTORE", MinVersion = 5, HasSideEffect = true)]
             public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
                 IOperand bytes, [Table] IOperand name)
             {
@@ -985,7 +985,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MaxVersion = 3)]
+            [Builtin("SAVE", MaxVersion = 3, HasSideEffect = true)]
             public static void SaveOp_V3(PredCall c)
             {
                 if (c.rb.HasBranchSave)
@@ -998,7 +998,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MinVersion = 4, MaxVersion = 4)]
+            [Builtin("SAVE", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
             public static IOperand SaveOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -1012,7 +1012,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MinVersion = 5)]
+            [Builtin("SAVE", MinVersion = 5, HasSideEffect = true)]
             public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
                 IOperand bytes, [Table] IOperand name)
             {
@@ -1027,7 +1027,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RETURN")]
+            [Builtin("RETURN", HasSideEffect = true)]
             public static void ReturnOp(VoidCall c, IOperand value = null)
             {
                 if (c.cc.ReturnLabel == null)
