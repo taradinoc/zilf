@@ -212,6 +212,10 @@ namespace Zilf.Emit
         /// Branch if the story file's checksum is correct.
         /// </summary>
         Verify,
+        /// <summary>
+        /// Branch if the story file is genuine.
+        /// </summary>
+        Original,
     }
 
     public enum TernaryOp

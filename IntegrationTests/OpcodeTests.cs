@@ -7,108 +7,19 @@ namespace IntegrationTests
     [TestClass]
     public class OpcodeTests
     {
-        private class ExprAssertionHelper
-        {
-            private readonly string expression;
-            private string zversion = "ZIP";
-
-            public ExprAssertionHelper(string expression)
-            {
-                Contract.Requires(!string.IsNullOrWhiteSpace(expression));
-
-                this.expression = expression;
-            }
-
-            public ExprAssertionHelper InV3()
-            {
-                zversion = "ZIP";
-                return this;
-            }
-
-            public ExprAssertionHelper InV4()
-            {
-                zversion = "EZIP";
-                return this;
-            }
-
-            public ExprAssertionHelper InV5()
-            {
-                zversion = "XZIP";
-                return this;
-            }
-
-            public ExprAssertionHelper InV6()
-            {
-                zversion = "YZIP";
-                return this;
-            }
-
-            public ExprAssertionHelper InV7()
-            {
-                zversion = "7";
-                return this;
-            }
-
-            public ExprAssertionHelper InV8()
-            {
-                zversion = "8";
-                return this;
-            }
-
-            public void GivesNumber(string expectedValue)
-            {
-                Contract.Requires(expectedValue != null);
-
-                const string SExprTestCode = @"<VERSION {0}> <CONSTANT RELEASEID 1> <ROUTINE GO () <PRINTN {1}>>";
-
-                ZlrHelper.RunAndAssert(
-                    string.Format(SExprTestCode, zversion, expression),
-                    null,
-                    expectedValue);
-            }
-
-            public void Outputs(string expectedValue)
-            {
-                Contract.Requires(expectedValue != null);
-
-                const string SExprTestCode = @"<VERSION {0}> <CONSTANT RELEASEID 1> <ROUTINE GO () {1}>";
-
-                ZlrHelper.RunAndAssert(
-                    string.Format(SExprTestCode, zversion, expression),
-                    null,
-                    expectedValue);
-            }
-
-            public void DoesNotCompile()
-            {
-                const string SExprTestCode = @"<VERSION {0}> <CONSTANT RELEASEID 1> <GLOBAL X <>> <ROUTINE GO () <SETG X {1}> <QUIT>>";
-
-                var result = ZlrHelper.Run(
-                    string.Format(SExprTestCode, zversion, expression),
-                    null,
-                    compileOnly: true);
-
-                Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
-            }
-
-            public void Compiles()
-            {
-                const string SExprTestCode = @"<VERSION {0}> <CONSTANT RELEASEID 1> <GLOBAL X <>> <ROUTINE GO () <SETG X {1}> <QUIT>>";
-
-                var result = ZlrHelper.Run(
-                    string.Format(SExprTestCode, zversion, expression),
-                    null,
-                    compileOnly: true);
-
-                Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed, "Failed to compile");
-            }
-        }
-
         private ExprAssertionHelper AssertExpr(string expression)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
             return new ExprAssertionHelper(expression);
+        }
+
+        private RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        {
+            Contract.Requires(argSpec != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(body));
+
+            return new RoutineAssertionHelper(argSpec, body);
         }
 
         [TestMethod]
@@ -165,15 +76,21 @@ namespace IntegrationTests
         [TestMethod]
         public void TestASSIGNED_P()
         {
-            // needs a routine
-            Assert.Inconclusive();
+            AssertRoutine("X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("999").GivesNumber("1");
+            AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("0").GivesNumber("1");
+            AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("").GivesNumber("0");
         }
 
         [TestMethod]
         public void TestASSIGNED_P_Error()
         {
-            // needs a routine
-            Assert.Inconclusive();
+            AssertRoutine("X", "<ASSIGNED? Y>").InV5().DoesNotCompile();
+            AssertRoutine("X", "<ASSIGNED? 1>").InV5().DoesNotCompile();
+            AssertRoutine("X", "<ASSIGNED?>").InV5().DoesNotCompile();
+            AssertRoutine("X", "<ASSIGNED? X X>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
@@ -435,18 +352,15 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDEC()
         {
-            // needs a variable
-            Assert.Inconclusive();
+            AssertRoutine("FOO", "<DEC FOO> .FOO").WhenCalledWith("200").GivesNumber("199");
         }
 
         [TestMethod]
         public void TestDEC_Error()
         {
             AssertExpr("<DEC>").DoesNotCompile();
-            AssertExpr("<DEC 1 1>").DoesNotCompile();
-
-            // should test with a nonexistent variable to
-            Assert.Inconclusive();
+            AssertExpr("<DEC 1>").DoesNotCompile();
+            AssertRoutine("FOO", "<DEC BAR>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -513,15 +427,20 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDLESS_P()
         {
-            // needs a variable
-            Assert.Inconclusive();
+            AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("100").Outputs("1\n99");
+            AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("101").Outputs("0\n100");
         }
 
         [TestMethod]
         public void TestDLESS_P_Error()
         {
-            // needs a variable
-            Assert.Inconclusive();
+            AssertExpr("<DLESS?>").DoesNotCompile();
+            AssertRoutine("FOO", "<DLESS? FOO>").DoesNotCompile();
+            AssertExpr("<DLESS? 11 22>").DoesNotCompile();
+            AssertRoutine("FOO", "<DLESS? BAR 100>").DoesNotCompile();
+            AssertRoutine("FOO BAR", "<DLESS? FOO BAR>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -748,13 +667,6 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestGRTR_P_Cond()
-        {
-            // test as condition
-            Assert.Inconclusive();
-        }
-
-        [TestMethod]
         public void TestGRTR_P_Error()
         {
             // V1 to V6
@@ -824,17 +736,15 @@ namespace IntegrationTests
         [TestMethod]
         public void TestINC()
         {
-            // needs a variable
-            Assert.Inconclusive();
-            // V1 to V6
+            AssertRoutine("FOO", "<INC FOO> .FOO").WhenCalledWith("200").GivesNumber("201");
         }
 
         [TestMethod]
         public void TestINC_Error()
         {
-            // needs a variable
-            Assert.Inconclusive();
-            // V1 to V6
+            AssertExpr("<INC>").DoesNotCompile();
+            AssertExpr("<INC 1>").DoesNotCompile();
+            AssertRoutine("FOO", "<INC BAR>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -943,13 +853,6 @@ namespace IntegrationTests
 
             // alias
             AssertExpr("<L? 3 -1>").InV3().GivesNumber("0");
-        }
-
-        [TestMethod]
-        public void TestLESS_P_Cond()
-        {
-            // test as condition
-            Assert.Inconclusive();
         }
 
         [TestMethod]
@@ -1223,8 +1126,7 @@ namespace IntegrationTests
         {
             // V5 to V6
             // 0 to 0 operands
-            AssertExpr("<ORIGINAL?>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<ORIGINAL?>").InV5().GivesNumber("1");
         }
 
         [TestMethod]
@@ -1236,7 +1138,6 @@ namespace IntegrationTests
             // V5 to V6
             // 0 to 0 operands
             AssertExpr("<ORIGINAL? 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1425,14 +1326,16 @@ namespace IntegrationTests
         public void TestPRINTI()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertExpr("<PRINTI \"hello|world\">").Outputs("hello\nworld");
         }
 
         [TestMethod]
         public void TestPRINTI_Error()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertExpr("<PRINTI>").DoesNotCompile();
+            AssertExpr("<PRINTI \"foo\" \"bar\">").DoesNotCompile();
+            AssertExpr("<PRINTI 123>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -1457,26 +1360,27 @@ namespace IntegrationTests
         public void TestPRINTR()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertRoutine("", "<PRINTR \"hello|world\">").Outputs("hello\nworld\n");
         }
 
         [TestMethod]
         public void TestPRINTR_Error()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertExpr("<PRINTR>").DoesNotCompile();
+            AssertExpr("<PRINTR \"foo\" \"bar\">").DoesNotCompile();
+            AssertExpr("<PRINTR 123>").DoesNotCompile();
         }
 
         [TestMethod]
         public void TestPRINTT()
         {
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<PRINTT>").InV5().Compiles();
-            AssertExpr("<PRINTT 0>").InV5().Compiles();
+            // 2 to 4 operands
             AssertExpr("<PRINTT 0 0>").InV5().Compiles();
             AssertExpr("<PRINTT 0 0 0>").InV5().Compiles();
             AssertExpr("<PRINTT 0 0 0 0>").InV5().Compiles();
+            // needs a table
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -1487,9 +1391,10 @@ namespace IntegrationTests
             AssertExpr("<PRINTT>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
+            // 2 to 4 operands
+            AssertExpr("<PRINTT>").InV5().DoesNotCompile();
+            AssertExpr("<PRINTT 0>").InV5().DoesNotCompile();
             AssertExpr("<PRINTT 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1751,20 +1656,26 @@ namespace IntegrationTests
         [TestMethod]
         public void TestRETURN()
         {
+            // NOTE: <RETURN> is more than just the Z-machine opcode. it also returns from <REPEAT>, and with no argument it returns true.
+
             // V1 to V6
-            // 1 to 1 operands
-            AssertExpr("<RETURN 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 to 1 operands
+            AssertRoutine("", "<RETURN>").InV3().GivesNumber("1");
+            AssertRoutine("", "<RETURN 41>").InV3().GivesNumber("41");
+        }
+
+        [TestMethod]
+        public void TestRETURN_FromBlock()
+        {
+            AssertRoutine("", "<* 2 <PROG () <RETURN 41>>>").GivesNumber("82");
         }
 
         [TestMethod]
         public void TestRETURN_Error()
         {
             // V1 to V6
-            // 1 to 1 operands
-            AssertExpr("<RETURN>").InV3().DoesNotCompile();
+            // 0 to 1 operands
             AssertExpr("<RETURN 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1872,7 +1783,7 @@ namespace IntegrationTests
         {
             // V3 to V6
             // 1 operand
-            AssertExpr("<SCREEN 0>").InV3().DoesNotCompile();
+            AssertExpr("<SCREEN>").InV3().DoesNotCompile();
             AssertExpr("<SCREEN 0 0>").InV3().DoesNotCompile();
         }
 
@@ -2077,8 +1988,7 @@ namespace IntegrationTests
         {
             // V3 to V6
             // 0 to 0 operands
-            AssertExpr("<VERIFY>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<VERIFY>").InV3().GivesNumber("1");
         }
 
         [TestMethod]
@@ -2087,7 +1997,6 @@ namespace IntegrationTests
             // V3 to V6
             // 0 to 0 operands
             AssertExpr("<VERIFY 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -2247,11 +2156,11 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<ZERO? 0>").InV3().Compiles();
+            AssertExpr("<ZERO? 0>").InV3().GivesNumber("1");
+            AssertExpr("<ZERO? -5>").InV3().GivesNumber("0");
 
             // alias
-            AssertExpr("<0? 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<0? 0>").InV3().GivesNumber("1");
         }
 
         [TestMethod]
@@ -2261,7 +2170,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<ZERO?>").InV3().DoesNotCompile();
             AssertExpr("<ZERO? 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]

@@ -170,7 +170,7 @@ namespace Zilf
                                 continue;
                             }
 
-                            if (pi.ParameterType == typeof(IOperand))
+                            if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string))
                             {
                                 // regular operand: may be optional
                                 max++;
@@ -300,7 +300,7 @@ namespace Zilf
             private delegate void InvalidArgumentDelegate(int index, string message);
 
             private static void ValidateArguments(
-                BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
+                CompileCtx cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
                 ZilObject[] args, InvalidArgumentDelegate error)
             {
                 // args may be short (for optional params)
@@ -313,24 +313,46 @@ namespace Zilf
                     if (pi.ParameterType == typeof(IVariable))
                     {
                         // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
-                        if (arg is ZilAtom)
-                            continue;
-
-                        var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
-                        if (attr.QuirksMode && arg is ZilForm)
+                        ZilAtom atom = arg as ZilAtom;
+                        bool quirks = false;
+                        if (arg == null)
                         {
-                            var form = (ZilForm)arg;
-                            var atom = form.First as ZilAtom;
-                            if (atom != null &&
-                                (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL) &&
-                                form.Rest.First is ZilAtom &&
-                                form.Rest.Rest.IsEmpty)
+                            var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
+                            quirks = attr.QuirksMode;
+                            if (quirks && arg is ZilForm)
                             {
-                                continue;
+                                var form = (ZilForm)arg;
+                                var fatom = form.First as ZilAtom;
+                                if (atom != null &&
+                                    (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL) &&
+                                    form.Rest.First is ZilAtom &&
+                                    form.Rest.Rest.IsEmpty)
+                                {
+                                    atom = (ZilAtom)form.Rest.First;
+                                }
                             }
                         }
 
-                        error(i, "argument must be a variable");
+                        if (atom == null)
+                        {
+                            const string SMustBeVar = "argument must be a variable";
+                            const string SMustBeVarQuirks = "argument must be a variable or GVAL/LVAL reference";
+                            error(i, quirks ? SMustBeVarQuirks : SMustBeVar);
+                        }
+                        else
+                        {
+                            ILocalBuilder local;
+                            IGlobalBuilder global;
+
+                            if (!cc.Locals.TryGetValue(atom, out local) && !cc.Globals.TryGetValue(atom, out global))
+                                error(i, "no such variable: " + atom.ToString());
+                        }
+                    }
+                    else if (pi.ParameterType == typeof(string))
+                    {
+                        // arg must be a string
+                        if (!(arg is ZilString))
+                            error(i, "argument must be a literal string");
                     }
                 }
             }
@@ -362,7 +384,7 @@ namespace Zilf
                         evaledList.AddRange(args.Skip(j));
                         break;
                     }
-                    else if (pi.ParameterType == typeof(IVariable))
+                    else if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(string))
                     {
                         unevaledList.Add(args[j]);
                     }
@@ -428,6 +450,20 @@ namespace Zilf
                             result.Add(evaledOperands[e++]);
                         }
                     }
+                    else if (pi.ParameterType == typeof(string))
+                    {
+                        if (u >= unevaledOperands.Length)
+                        {
+                            result.Add(pi.DefaultValue);
+                        }
+                        else
+                        {
+                            // one unevaled operand: convert it to a string
+                            var obj = unevaledOperands[u++];
+                            System.Diagnostics.Debug.Assert(obj is ZilString);
+                            result.Add(Compiler.TranslateString(((ZilString)obj).Text));
+                        }
+                    }
                     else if (pi.ParameterType == typeof(IVariable))
                     {
                         if (u >= unevaledOperands.Length)
@@ -461,6 +497,7 @@ namespace Zilf
                             }
                             else
                             {
+                                // shouldn't get here
                                 throw new NotImplementedException("undefined variable for IVariable parameter");
                             }
                         }
@@ -480,7 +517,7 @@ namespace Zilf
 
                 // validate arguments
                 bool valid = true;
-                ValidateArguments(spec, builtinParamInfos, args,
+                ValidateArguments(cc, spec, builtinParamInfos, args,
                     (i, msg) =>
                     {
                         Errors.CompError(cc.Context, form, "{0} argument {1}: {2}",
@@ -507,9 +544,9 @@ namespace Zilf
 
             public static IOperand CompileValueCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
             {
-                // XXX make sure resultStorage isn't passed in as null to handlers that can't handle it!
+                // TODO: allow resultStorage to be passed as null to handlers that want it? are there any?
                 return (IOperand)CompileBuiltinCall(name, cc, rb, form, 
-                    new ValueCall() { cc = cc, rb = rb, resultStorage = resultStorage });
+                    new ValueCall() { cc = cc, rb = rb, resultStorage = resultStorage ?? rb.Stack });
             }
 
             public static void CompileVoidCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form)
@@ -523,7 +560,7 @@ namespace Zilf
                     new PredCall() { cc = cc, rb = rb, label = label, polarity = polarity });
             }
 
-            [Builtin("EQUAL?")]
+            [Builtin("EQUAL?", "=?", "==?")]
             public static void VarargsEqualityOp(
                 PredCall c, IOperand arg1, IOperand arg2,
                 IOperand arg3 = null, IOperand arg4 = null)
@@ -560,7 +597,7 @@ namespace Zilf
                 c.rb.EmitTernary(op, left, center, right, null);
             }
 
-            [Builtin("COPYT", Data = TernaryOp.CopyTable, HasSideEffect = true)]
+            [Builtin("COPYT", Data = TernaryOp.CopyTable, HasSideEffect = true, MinVersion = 5)]
             public static void TernaryTableTableVoidOp(
                 VoidCall c, [Data] TernaryOp op,
                 [Table] IOperand left, [Table] IOperand center, IOperand right)
@@ -595,7 +632,7 @@ namespace Zilf
             [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, HasSideEffect = true)]
             [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true)]
             [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true)]
-            [Builtin("THROW", Data = BinaryOp.Throw, HasSideEffect = true)]
+            [Builtin("THROW", Data = BinaryOp.Throw, HasSideEffect = true, MinVersion = 5)]
             public static void BinaryVoidOp(
                 VoidCall c, [Data] BinaryOp op, IOperand left, IOperand right)
             {
@@ -604,8 +641,17 @@ namespace Zilf
 
             [Builtin("GRTR?", "G?", Data = Condition.Greater)]
             [Builtin("LESS?", "L?", Data = Condition.Less)]
+            [Builtin("BTST", Data = Condition.TestBits)]
             public static void BinaryPredOp(
                 PredCall c, [Data] Condition cond, IOperand left, IOperand right)
+            {
+                c.rb.Branch(cond, left, right, c.label, c.polarity);
+            }
+
+            [Builtin("DLESS?", Data = Condition.DecCheck)]
+            [Builtin("IGRTR?", Data = Condition.IncCheck)]
+            public static void BinaryVariablePredOp(
+                PredCall c, [Data] Condition cond, [Variable] IVariable left, IOperand right)
             {
                 c.rb.Branch(cond, left, right, c.label, c.polarity);
             }
@@ -678,6 +724,18 @@ namespace Zilf
                 c.rb.EmitUnary(op, value, null);
             }
 
+            [Builtin("ZERO?", "0?")]
+            public static void ZeroPredOp(PredCall c, IOperand value)
+            {
+                c.rb.BranchIfZero(value, c.label, c.polarity);
+            }
+
+            [Builtin("1?")]
+            public static void OnePredOp(PredCall c, IOperand value)
+            {
+                c.rb.BranchIfEqual(value, c.cc.Game.One, c.label, c.polarity);
+            }
+
             [Builtin("FIRST?", Data = UnaryOp.GetChild)]
             [Builtin("NEXT?", Data = UnaryOp.GetSibling)]
             [Builtin("LOC", Data = UnaryOp.GetParent)]
@@ -711,6 +769,13 @@ namespace Zilf
                 c.rb.EmitUnary(op, value, null);
             }
 
+            [Builtin("ASSIGNED?", Data = Condition.ArgProvided, MinVersion = 5)]
+            public static void UnaryVariablePredOp(
+                PredCall c, [Data] Condition cond, [Variable] IVariable var)
+            {
+                c.rb.Branch(cond, var, null, c.label, c.polarity);
+            }
+
             [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
             public static void UnaryTableVoidOp(
                 VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
@@ -736,6 +801,14 @@ namespace Zilf
                 IOperand height = null, IOperand skip = null)
             {
                 c.rb.EmitPrintTable(table, width, height, skip);
+            }
+
+            [Builtin("PRINTI", Data = false, HasSideEffect = true)]
+            [Builtin("PRINTR", Data = true, HasSideEffect = true)]
+            public static void UnaryPrintStringOp(
+                VoidCall c, [Data] bool crlfRtrue, string text)
+            {
+                c.rb.EmitPrint(text, crlfRtrue);
             }
 
             [Builtin("SET", "SETG", HasSideEffect = true)]
@@ -786,14 +859,21 @@ namespace Zilf
                 c.rb.EmitPrintNewLine();
             }
 
-            [Builtin("CATCH", Data = NullaryOp.Catch)]
-            [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true)]
-            [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true)]
+            [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
+            [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
+            [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5)]
             [Builtin("USL", Data = NullaryOp.ShowStatus, HasSideEffect = true)]
             public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
             {
                 c.rb.EmitNullary(NullaryOp.Catch, c.resultStorage);
                 return c.resultStorage;
+            }
+
+            [Builtin("ORIGINAL?", Data = Condition.Original, MinVersion = 5)]
+            [Builtin("VERIFY", Data = Condition.Verify)]
+            public static void NullaryPredOp(PredCall c, [Data] Condition cond)
+            {
+                c.rb.Branch(cond, null, null, c.label, c.polarity);
             }
 
             [Builtin("RTRUE", Data = 1, HasSideEffect = true)]
@@ -861,6 +941,120 @@ namespace Zilf
                 IOperand srcOffset, [Table] IOperand dest)
             {
                 c.rb.EmitEncodeText(src, length, srcOffset, dest);
+            }
+
+            [Builtin("RESTORE", MaxVersion = 3)]
+            public static void RestoreOp_V3(PredCall c)
+            {
+                if (c.rb.HasBranchSave)
+                {
+                    c.rb.EmitRestore(c.label, c.polarity);
+                }
+                else
+                {
+                    throw new NotImplementedException("RestoreOp_V3 without HasBranchSave");
+                }
+            }
+
+            [Builtin("RESTORE", MinVersion = 4, MaxVersion = 4)]
+            public static IOperand RestoreOp_V4(ValueCall c)
+            {
+                if (c.rb.HasStoreSave)
+                {
+                    c.rb.EmitRestore(c.resultStorage);
+                    return c.resultStorage;
+                }
+                else
+                {
+                    throw new NotImplementedException("RestoreOp_V4 without HasStoreSave");
+                }
+            }
+
+            [Builtin("RESTORE", MinVersion = 5)]
+            public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
+                IOperand bytes, [Table] IOperand name)
+            {
+                if (c.rb.HasExtendedSave)
+                {
+                    c.rb.EmitRestore(table, bytes, name, c.resultStorage);
+                    return c.resultStorage;
+                }
+                else
+                {
+                    throw new NotImplementedException("RestoreOp_V5 without HasExtendedSave");
+                }
+            }
+
+            [Builtin("SAVE", MaxVersion = 3)]
+            public static void SaveOp_V3(PredCall c)
+            {
+                if (c.rb.HasBranchSave)
+                {
+                    c.rb.EmitSave(c.label, c.polarity);
+                }
+                else
+                {
+                    throw new NotImplementedException("SaveOp_V3 without HasBranchSave");
+                }
+            }
+
+            [Builtin("SAVE", MinVersion = 4, MaxVersion = 4)]
+            public static IOperand SaveOp_V4(ValueCall c)
+            {
+                if (c.rb.HasStoreSave)
+                {
+                    c.rb.EmitSave(c.resultStorage);
+                    return c.resultStorage;
+                }
+                else
+                {
+                    throw new NotImplementedException("SaveOp_V4 without HasStoreSave");
+                }
+            }
+
+            [Builtin("SAVE", MinVersion = 5)]
+            public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
+                IOperand bytes, [Table] IOperand name)
+            {
+                if (c.rb.HasExtendedSave)
+                {
+                    c.rb.EmitSave(table, bytes, name, c.resultStorage);
+                    return c.resultStorage;
+                }
+                else
+                {
+                    throw new NotImplementedException("SaveOp_V5 without HasExtendedSave");
+                }
+            }
+
+            [Builtin("RETURN")]
+            public static void ReturnOp(VoidCall c, IOperand value = null)
+            {
+                if (c.cc.ReturnLabel == null)
+                {
+                    // return from routine
+                    c.rb.Return(value ?? c.cc.Game.One);
+                }
+                else
+                {
+                    // return from enclosing PROG/REPEAT
+                    if ((c.cc.ReturnState & BlockReturnState.WantResult) != 0)
+                    {
+                        if (value != c.rb.Stack)
+                            c.rb.EmitStore(c.rb.Stack, value);
+                    }
+                    else
+                    {
+                        if (value == c.rb.Stack)
+                            c.rb.EmitPopStack();
+
+                        //XXX need to pass the FORM here
+                        Errors.CompWarning(c.cc.Context, null, "RETURN value ignored: enclosing block is in void context");
+                    }
+
+                    c.cc.ReturnState |= BlockReturnState.Returned;
+                    c.rb.Branch(c.cc.ReturnLabel);
+                }
             }
         }
     }

@@ -114,7 +114,7 @@ namespace Zapf
         Add = 20,
         [ZOp("ASHIFT", "art_shift", 5, 6, ZOpFlags.Store)]
         Ashift = 259,
-        [ZOp("ASSIGNED?", "check_arg_count", 5, 6, ZOpFlags.Branch)]
+        [ZOp("ASSIGNED?", "check_arg_count", 5, 6, ZOpFlags.Branch | ZOpFlags.IndirectVar)]
         Assigned_P = 255,
         [ZOp("BAND", "and", 1, 6, ZOpFlags.Store)]
         Band = 9,
