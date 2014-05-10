@@ -1172,14 +1172,10 @@ namespace Zilf
 
                 if (wantResult)
                 {
+                    // prefer the value version, then predicate, then void
                     if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
                     {
                         return ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
-                    }
-                    else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
-                    {
-                        ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
-                        return cc.Game.One;
                     }
                     else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
                     {
@@ -1194,9 +1190,16 @@ namespace Zilf
                         rb.MarkLabel(label2);
                         return resultStorage;
                     }
+                    else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    {
+                        ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
+                        return cc.Game.One;
+                    }
                 }
                 else
                 {
+                    // prefer the void version, then predicate, then value
+                    // (predicate saves a cleanup instruction)
                     if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
                     {
                         ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
@@ -1387,15 +1390,15 @@ namespace Zilf
                     //    rb.EmitQuit();
                     //    return cc.Game.Zero;
 
-                    case StdAtom.APPLY:
-                        ZilObject rtn = form.Rest.First;
-                        ZilObject[] args = form.Skip(2).ToArray();
-                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                        using (Operands argOperands = Operands.Compile(cc, rb, args))
-                        {
-                            rb.EmitCall(CompileAsOperand(cc, rb, rtn), argOperands.ToArray(), result);
-                        }
-                        return result;
+                    //case StdAtom.APPLY:
+                    //    ZilObject rtn = form.Rest.First;
+                    //    ZilObject[] args = form.Skip(2).ToArray();
+                    //    result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                    //    using (Operands argOperands = Operands.Compile(cc, rb, args))
+                    //    {
+                    //        rb.EmitCall(CompileAsOperand(cc, rb, rtn), argOperands.ToArray(), result);
+                    //    }
+                    //    return result;
 
                     case StdAtom.AGAIN:
                         System.Diagnostics.Debug.Assert(cc.AgainLabel != null);
@@ -1989,11 +1992,18 @@ namespace Zilf
             }
 
             // check for standard built-ins
+            // prefer the predicate version, then value, then void
             var zversion = cc.Context.ZEnvironment.ZVersion;
             var argCount = form.Count() - 1;
             if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
             {
                 ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label, polarity);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+            {
+                var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, rb.Stack);
+                rb.BranchIfZero(result, label, !polarity);
                 return;
             }
             else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
@@ -2003,12 +2013,6 @@ namespace Zilf
                 // void calls return true
                 if (polarity == true)
                     rb.Branch(label);
-                return;
-            }
-            else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
-            {
-                var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, rb.Stack);
-                rb.BranchIfZero(result, label, !polarity);
                 return;
             }
 

@@ -51,6 +51,43 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestAPPLY()
+        {
+            AssertExpr("<APPLY 0>").GivesNumber("0");
+            AssertExpr("<APPLY 0 1 2 3>").GivesNumber("0");
+            AssertExpr("<APPLY 0 1 2 3 4 5 6 7>").InV5().GivesNumber("0");
+
+            AssertRoutine("\"AUX\" X", "<SET X ,OTHER-ROUTINE> <APPLY .X 12>")
+                .WithGlobal("<ROUTINE OTHER-ROUTINE (N) <* .N 2>>")
+                .GivesNumber("24");
+        }
+
+        [TestMethod]
+        public void TestAPPLY_ChoosesValueCallForPred()
+        {
+            /* V5 has void-context and value-context versions of APPLY.
+             * the void-context version is always true in predicate context,
+             * so we need to prefer the value-context version. */
+
+            AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<APPLY .X> 123) (T 456)>")
+                .InV5()
+                .WithGlobal("<ROUTINE FALSE-ROUTINE () 0>")
+                .GivesNumber("456");
+            AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<NOT <APPLY .X>> 123) (T 456)>")
+                .InV5()
+                .WithGlobal("<ROUTINE FALSE-ROUTINE () 0>")
+                .GivesNumber("123");
+        }
+
+        [TestMethod]
+        public void TestAPPLY_Error()
+        {
+            AssertExpr("<APPLY>").DoesNotCompile();
+            AssertExpr("<APPLY 0 1 2 3 4>").InV3().DoesNotCompile();
+            AssertExpr("<APPLY 0 1 2 3 4 5 6 7 8>").InV5().DoesNotCompile();
+        }
+
+        [TestMethod]
         public void TestASH()
         {
             // only exists in V5+
@@ -177,13 +214,6 @@ namespace IntegrationTests
             AssertExpr("<BUFOUT 0 1>").InV4().DoesNotCompile();
         }
 
-        [TestMethod]
-        public void TestCALL()
-        {
-            // alias: APPLY
-            Assert.Inconclusive();
-        }
-
         // CALL1 and CALL2 are not supported in ZIL
 
         [TestMethod]
@@ -274,8 +304,11 @@ namespace IntegrationTests
         {
             // only exists in V5+
 
-            // needs a table
-            Assert.Inconclusive();
+            AssertRoutine("", "<COPYT ,TABLE1 ,TABLE2 6> <GET ,TABLE2 2>")
+                .InV5()
+                .WithGlobal("<GLOBAL TABLE1 <TABLE 1 2 3>>")
+                .WithGlobal("<GLOBAL TABLE2 <TABLE 0 0 0>>")
+                .GivesNumber("3");
         }
 
         [TestMethod]
