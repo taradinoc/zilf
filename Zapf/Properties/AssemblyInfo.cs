@@ -58,6 +58,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("0.5.0.0")]
 
 #if DEBUG
+[assembly: InternalsVisibleTo("ZapfTests")]
 [assembly: InternalsVisibleTo("DezapfTests")]
 [assembly: InternalsVisibleTo("IntegrationTests")]
 #endif
