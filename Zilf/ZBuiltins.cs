@@ -306,6 +306,61 @@ namespace Zilf
                 return builtins[name].Any(s => s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect);
             }
 
+            public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, out string errorMsg)
+            {
+                // is there a match with this zversion but any arg count?
+                var wrongArgCount =
+                    builtins[name].Where(s => BuiltinSpec.VersionMatches(
+                        zversion, s.Attr.MinVersion, s.Attr.MaxVersion))
+                    .ToArray();
+                if (wrongArgCount.Length > 0)
+                {
+                    int minArgs = wrongArgCount.Min(s => s.MinArgs);
+
+                    int? maxArgs;
+                    if (wrongArgCount.Any(s => s.MaxArgs == null))
+                        maxArgs = null;
+                    else
+                        maxArgs = wrongArgCount.Max(s => s.MaxArgs);
+
+                    if (minArgs == maxArgs)
+                    {
+                        errorMsg = string.Format("{0} requires exactly {1} argument{2}",
+                            name, minArgs, minArgs == 1 ? "" : "s");
+                    }
+                    else if (maxArgs == null)
+                    {
+                        errorMsg = string.Format("{0} requires {1} or more arguments",
+                            name, minArgs);
+                    }
+                    else
+                    {
+                        errorMsg = string.Format("{0} requires {1} to {2} arguments",
+                            name, minArgs, maxArgs);
+                    }
+
+                    // be a little more helpful if this arg count would work in another zversion
+                    if (builtins[name].Any(
+                        s => argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs)))
+                    {
+                        errorMsg += " in this Z-machine version";
+                    }
+
+                    return true;
+                }
+
+                // is there a match with any zversion?
+                if (builtins.Contains(name))
+                {
+                    errorMsg = string.Format("{0} is not supported in this Z-machine version", name);
+                    return true;
+                }
+
+                // not a near match
+                errorMsg = null;
+                return false;
+            }
+
             private delegate void InvalidArgumentDelegate(int index, string message);
 
             private static void ValidateArguments(
