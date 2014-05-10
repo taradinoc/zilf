@@ -12,6 +12,12 @@ namespace IntegrationTests
         where TThis : AbstractAssertionHelper<TThis>
     {
         protected string zversion = "ZIP";
+        protected StringBuilder miscGlobals = new StringBuilder();
+
+        protected AbstractAssertionHelper()
+        {
+            System.Diagnostics.Debug.Assert(this.GetType() == typeof(TThis));
+        }
 
         public TThis InV3()
         {
@@ -49,6 +55,12 @@ namespace IntegrationTests
             return (TThis)this;
         }
 
+        public TThis WithGlobal(string code)
+        {
+            miscGlobals.Append(code);
+            return (TThis)this;
+        }
+
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -57,6 +69,8 @@ namespace IntegrationTests
             sb.Append(">");
 
             sb.Append("<CONSTANT RELEASEID 1>");
+
+            sb.Append(miscGlobals);
 
             return sb.ToString();
         }

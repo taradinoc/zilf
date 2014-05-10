@@ -13,12 +13,14 @@ namespace Zilf
         {
             public CompileCtx cc;
             public IRoutineBuilder rb;
+            public ZilForm form;
         }
 
         struct ValueCall
         {
             public CompileCtx cc;
             public IRoutineBuilder rb;
+            public ZilForm form;
 
             public IVariable resultStorage;
         }
@@ -27,6 +29,7 @@ namespace Zilf
         {
             public CompileCtx cc;
             public IRoutineBuilder rb;
+            public ZilForm form;
 
             public ILabel label;
             public bool polarity;
@@ -354,6 +357,11 @@ namespace Zilf
                         if (!(arg is ZilString))
                             error(i, "argument must be a literal string");
                     }
+                    else if (pi.ParameterType == typeof(IOperand[]))
+                    {
+                        // this absorbs the rest of the args, so we're done
+                        break;
+                    }
                 }
             }
 
@@ -362,13 +370,12 @@ namespace Zilf
                 ZilObject[] args,
                 out ZilObject[] unevaled, out ZilObject[] evaled)
             {
-                // args may be short (for optional params)
+                /* args.Length may differ from builtinParamInfos.Length, due to
+                 * optional arguments and params arrays. */
 
                 int startIdx = spec.Attr.Data == null ? 1 : 2;
                 var unevaledList = new List<ZilObject>();
                 var evaledList = new List<ZilObject>(builtinParamInfos.Length - startIdx);
-
-                System.Diagnostics.Debug.Assert(builtinParamInfos.Length - startIdx >= args.Length);
 
                 for (int i = startIdx, j = 0; j < args.Length; i++, j++)
                 {
@@ -403,7 +410,8 @@ namespace Zilf
                 ParameterInfo[] builtinParamInfos, object call,
                 ZilObject[] unevaledOperands, Operands evaledOperands)
             {
-                // unevaledOperands and evaledOperands may be short (for optional params)
+                /* unevaledOperands.Length + evaledOperands.Count may differ from
+                 * builtinParamInfos.Length, due to optional arguments and params arrays. */
 
                 var result = new List<object>(builtinParamInfos.Length);
 
@@ -546,18 +554,18 @@ namespace Zilf
             {
                 // TODO: allow resultStorage to be passed as null to handlers that want it? are there any?
                 return (IOperand)CompileBuiltinCall(name, cc, rb, form, 
-                    new ValueCall() { cc = cc, rb = rb, resultStorage = resultStorage ?? rb.Stack });
+                    new ValueCall() { cc = cc, rb = rb, form = form, resultStorage = resultStorage ?? rb.Stack });
             }
 
             public static void CompileVoidCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form)
             {
-                CompileBuiltinCall(name, cc, rb, form, new VoidCall() { cc = cc, rb = rb });
+                CompileBuiltinCall(name, cc, rb, form, new VoidCall() { cc = cc, rb = rb, form = form });
             }
 
             public static void CompilePredCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, ILabel label, bool polarity)
             {
                 CompileBuiltinCall(name, cc, rb, form,
-                    new PredCall() { cc = cc, rb = rb, label = label, polarity = polarity });
+                    new PredCall() { cc = cc, rb = rb, form = form, label = label, polarity = polarity });
             }
 
             [Builtin("EQUAL?", "=?", "==?")]
@@ -1048,13 +1056,47 @@ namespace Zilf
                         if (value == c.rb.Stack)
                             c.rb.EmitPopStack();
 
-                        //XXX need to pass the FORM here
-                        Errors.CompWarning(c.cc.Context, null, "RETURN value ignored: enclosing block is in void context");
+                        Errors.CompWarning(c.cc.Context, c.form, "RETURN value ignored: enclosing block is in void context");
                     }
 
                     c.cc.ReturnState |= BlockReturnState.Returned;
                     c.rb.Branch(c.cc.ReturnLabel);
                 }
+            }
+
+            [Builtin("APPLY", "CALL", HasSideEffect = true)]
+            public static IOperand CallValueOp(ValueCall c,
+                IOperand routine, params IOperand[] args)
+            {
+                if (args.Length > c.cc.Game.MaxCallArguments)
+                {
+                    Errors.CompError(
+                        c.cc.Context,
+                        c.form,
+                        "too many call arguments: only {0} allowed in V{1}",
+                        c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
+                    return c.cc.Game.Zero;
+                }
+
+                c.rb.EmitCall(routine, args, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("APPLY", "CALL", MinVersion = 5, HasSideEffect = true)]
+            public static void CallVoidOp(VoidCall c,
+                IOperand routine, params IOperand[] args)
+            {
+                if (args.Length > c.cc.Game.MaxCallArguments)
+                {
+                    Errors.CompError(
+                        c.cc.Context,
+                        c.form,
+                        "too many call arguments: only {0} allowed in V{1}",
+                        c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
+                    return;
+                }
+
+                c.rb.EmitCall(routine, args, null);
             }
         }
     }
