@@ -258,7 +258,7 @@ namespace Zilf
                     return (candidate >= rangeMin) && (candidate <= rangeMax);
                 }
 
-                public bool AppliesTo(int zversion, int argCount, Type callType)
+                public bool AppliesTo(int zversion, int argCount, Type callType = null)
                 {
                     if (!VersionMatches(zversion, Attr.MinVersion, Attr.MaxVersion))
                         return false;
@@ -266,7 +266,7 @@ namespace Zilf
                     if (argCount < MinArgs || (MaxArgs != null && argCount > MaxArgs))
                         return false;
 
-                    if (this.CallType != callType)
+                    if (callType != null && this.CallType != callType)
                         return false;
 
                     return true;
@@ -298,6 +298,12 @@ namespace Zilf
             public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
             {
                 return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(PredCall)));
+            }
+
+            public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
+            {
+                // true if there's a void, value, or predicate version with side effects
+                return builtins[name].Any(s => s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect);
             }
 
             private delegate void InvalidArgumentDelegate(int index, string message);
@@ -1061,6 +1067,19 @@ namespace Zilf
 
                     c.cc.ReturnState |= BlockReturnState.Returned;
                     c.rb.Branch(c.cc.ReturnLabel);
+                }
+            }
+
+            [Builtin("AGAIN", HasSideEffect = true)]
+            public static void AgainOp(VoidCall c)
+            {
+                if (c.cc.AgainLabel != null)
+                {
+                    c.rb.Branch(c.cc.AgainLabel);
+                }
+                else
+                {
+                    Errors.CompError(c.cc.Context, c.form, "AGAIN requires an enclosing PROG/REPEAT");
                 }
             }
 
