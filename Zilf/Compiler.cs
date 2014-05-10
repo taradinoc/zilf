@@ -1166,7 +1166,6 @@ namespace Zilf
                 }
 
                 // built-in statements handled by ZBuiltins
-                // TODO: handle near matches (i.e. wrong number of arguments)
                 var zversion = cc.Context.ZEnvironment.ZVersion;
                 var argCount = form.Rest.Count();
 
@@ -1306,8 +1305,16 @@ namespace Zilf
                 }
 
                 // unrecognized
-                Errors.CompError(cc.Context, form, "unrecognized routine or instruction: {0}",
-                    head.ToStringContext(cc.Context, false));
+                string msg;
+                if (ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out msg))
+                {
+                    Errors.CompError(cc.Context, form, msg);
+                }
+                else
+                {
+                    Errors.CompError(cc.Context, form, "unrecognized routine or instruction: {0}",
+                        head.ToStringContext(cc.Context, false));
+                }
                 return wantResult ? cc.Game.Zero : null;
             }
             catch (ZilError ex)
