@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfTests", "ZilfTests\Zilf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Zilf.vsmdi
@@ -104,6 +106,12 @@ Global
 		{D429D279-234D-43A7-8523-1E3E61FED51A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D429D279-234D-43A7-8523-1E3E61FED51A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D429D279-234D-43A7-8523-1E3E61FED51A}.Release|x86.ActiveCfg = Release|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
