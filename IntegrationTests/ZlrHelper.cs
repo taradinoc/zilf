@@ -99,6 +99,28 @@ namespace IntegrationTests
             this.input = input;
         }
 
+        private void PrintZilCode()
+        {
+            Console.Error.WriteLine("=== {0} ===", SZilFileName);
+            Console.Error.WriteLine(this.code);
+            Console.Error.WriteLine();
+        }
+
+        private void PrintZapCode()
+        {
+            PrintZapCode("Output.zap");
+            PrintZapCode("Output_data.zap");
+        }
+
+        private void PrintZapCode(string filename)
+        {
+            var zapStream = zilfOutputFiles[filename];
+            var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
+            Console.Error.WriteLine("=== {0} ===", filename);
+            Console.Error.WriteLine(zapCode);
+            Console.Error.WriteLine();
+        }
+
         public bool Compile()
         {
             // write code to a MemoryStream
@@ -140,7 +162,17 @@ namespace IntegrationTests
             //XXX need to intercept <INSERT_FILE> too
 
             // run compilation
-            return compiler.Compile(SZilFileName, SMainZapFileName);
+            PrintZilCode();
+            if (compiler.Compile(SZilFileName, SMainZapFileName))
+            {
+                PrintZapCode();
+                return true;
+            }
+            else
+            {
+                Console.Error.WriteLine();
+                return false;
+            }
         }
 
         public bool Assemble()
@@ -190,6 +222,7 @@ namespace IntegrationTests
             var io = new ReplayIO(inputStream);
             var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
             var zmachine = new ZMachine(gameStream, io);
+            zmachine.ReadingCommandsFromFile = true;
 
             zmachine.Run();
 

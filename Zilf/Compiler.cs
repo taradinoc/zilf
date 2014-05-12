@@ -1636,66 +1636,6 @@ namespace Zilf
             }
         }
 
-        private static IVariable GetVariable(CompileCtx cc, ZilObject expr)
-        {
-            ZilAtom atom = expr as ZilAtom;
-
-            if (atom != null)
-            {
-                ILocalBuilder lb;
-                IGlobalBuilder gb;
-
-                if (cc.Locals.TryGetValue(atom, out lb))
-                    return lb;
-                if (cc.Globals.TryGetValue(atom, out gb))
-                    return gb;
-
-                return null;
-            }
-
-            return null;
-        }
-
-        private static bool IsCondition(IRoutineBuilder rb, StdAtom stdAtom)
-        {
-            switch (stdAtom)
-            {
-                case StdAtom.NOT:
-                case StdAtom.FIRST_P:
-                case StdAtom.NEXT_P:
-                case StdAtom.OR:
-                case StdAtom.AND:
-                case StdAtom.DLESS_P:
-                case StdAtom.IGRTR_P:
-                case StdAtom.G_P:
-                case StdAtom.GEq_P:
-                case StdAtom.L_P:
-                case StdAtom.LEq_P:
-                case StdAtom.IN_P:
-                case StdAtom.FSET_P:
-                case StdAtom.BTST:
-                case StdAtom.Neq_P:
-                case StdAtom.Neeq_P:
-                case StdAtom.Eq_P:
-                case StdAtom.Eeq_P:
-                case StdAtom.Zero_P:
-                case StdAtom.ZERO_P:
-                case StdAtom.EQUAL_P:
-                case StdAtom.VERIFY:
-                    return true;
-
-                case StdAtom.SAVE:
-                case StdAtom.RESTORE:
-                    return rb.HasBranchSave;
-
-                case StdAtom.INTBL_P:
-                    return rb.HasBranchScanTable;
-
-                default:
-                    return false;
-            }
-        }
-
         private static void CompilePRINTI(CompileCtx cc, IRoutineBuilder rb, ZilList args, bool ret)
         {
             if (args == null || !args.Rest.IsEmpty)

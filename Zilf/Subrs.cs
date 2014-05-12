@@ -1362,7 +1362,7 @@ namespace Zilf
                         // no change
                         break;
                     case StdAtom.BYTE:
-                        flags = TableFlags.ByteLength | TableFlags.Byte;
+                        flags = TableFlags.ByteLength;
                         break;
                     case StdAtom.WORD:
                         flags = TableFlags.WordLength;
@@ -1495,6 +1495,8 @@ namespace Zilf
             TableFlags flags = 0;
             if (pure)
                 flags |= TableFlags.Pure;
+            if (type == T_BYTES || type == T_STRING)
+                flags |= TableFlags.Byte;
             if (wantLength)
             {
                 if (type == T_BYTES || type == T_STRING)
@@ -1507,8 +1509,6 @@ namespace Zilf
             while (i < args.Length)
             {
                 ZilObject val = args[i];
-                if (val == null)
-                    System.Diagnostics.Debugger.Break();
                 if (type == T_STRING && val.GetTypeAtom(ctx).StdAtom == StdAtom.STRING)
                 {
                     string str = val.ToStringContext(ctx, true);

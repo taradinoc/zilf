@@ -562,8 +562,9 @@ namespace Zilf.Emit
         // effect, volume, and routine may always be null
         void EmitPlaySound(IOperand number, IOperand effect, IOperand volume, IOperand routine);
 
-        // TODO: make EmitQuaternary for EncodeText, PlaySound, and Read?
+        // TODO: make EmitQuaternary for EncodeText, PlaySound, Read, and Tokenize?
         void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest);
+        void EmitTokenize(IOperand text, IOperand parse, IOperand dictionary, IOperand flag);
 
         // result may be null
         void EmitCall(IOperand routine, IOperand[] args, IVariable result);

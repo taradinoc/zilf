@@ -35,6 +35,126 @@ namespace Zilf
             public bool polarity;
         }
 
+        internal struct ArgCountRange
+        {
+            public int MinArgs;
+            public int? MaxArgs;
+
+            public ArgCountRange(int min, int? max)
+            {
+                this.MinArgs = min;
+                this.MaxArgs = max;
+            }
+        }
+
+        private static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
+            Func<T, T, bool> match, Func<T, T, T> combine)
+        {
+            var tor = sequence.GetEnumerator();
+            if (tor.MoveNext())
+            {
+                var last = tor.Current;
+
+                while (tor.MoveNext())
+                {
+                    var current = tor.Current;
+                    if (match(last, current))
+                    {
+                        last = combine(last, current);
+                    }
+                    else
+                    {
+                        yield return last;
+                        last = current;
+                    }
+                }
+
+                yield return last;
+            }
+        }
+
+        private static string EnglishJoin(IEnumerable<string> sequence, string conjunction)
+        {
+            var items = sequence.ToArray();
+
+            switch (items.Length)
+            {
+                case 0:
+                    return "";
+                case 1:
+                    return items[0];
+                case 2:
+                    return items[0] + " " + conjunction + " " + items[1];
+                default:
+                    var last = items.Length - 1;
+                    items[last] = conjunction + " " + items[last];
+                    return string.Join(", ", items);
+            }
+        }
+
+        internal static string FormatArgCount(IEnumerable<ArgCountRange> ranges)
+        {
+            var allCounts = new List<int>();
+            bool uncapped = false;
+            foreach (var r in ranges)
+            {
+                if (r.MaxArgs == null)
+                {
+                    uncapped = true;
+                    allCounts.Add(r.MinArgs);
+                }
+                else
+                {
+                    for (int i = r.MinArgs; i <= r.MaxArgs; i++)
+                        allCounts.Add(i);
+                }
+            }
+
+            if (allCounts.Count == 0)
+                throw new ArgumentException("No ranges provided");
+
+            allCounts.Sort();
+
+            // (1,2), (2,4) => (1,4)
+            var collapsed = Collapse(
+                allCounts.Select(c => new { min = c, max = c }),
+                (a, b) => b.min <= a.max + 1,
+                (a, b) => new { a.min, b.max })
+                .ToArray();
+
+            if (collapsed.Length == 1)
+            {
+                var r = collapsed[0];
+
+                // (1,_) uncapped => "1 or more arguments"
+                if (uncapped)
+                    return string.Format("{0} or more arguments", r.min);
+
+                // (1,1) => "exactly 1 argument"
+                if (r.max == r.min)
+                    return string.Format("exactly {0} argument{1}",
+                        r.min, r.min == 1 ? "" : "s");
+
+                // (1,2) => "1 or 2 arguments"
+                if (r.max == r.min + 1)
+                    return string.Format("{0} or {1} arguments", r.min, r.max);
+
+                // (1,3) => "1 to 3 arguments"
+                return string.Format("{0} to {1} arguments", r.min, r.max);
+            }
+            else
+            {
+                // disjoint ranges
+                var unrolled = from r in collapsed
+                               from n in Enumerable.Range(r.min, r.max - r.min + 1)
+                               select n.ToString();
+                if (uncapped)
+                    unrolled = unrolled.Concat(Enumerable.Repeat("more", 1));
+
+                return EnglishJoin(unrolled, "or") + " arguments";
+            }
+        }
+        
         static class ZBuiltins
         {
             #region Attributes
@@ -101,6 +221,14 @@ namespace Zilf
             /// </summary>
             [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
             class TableAttribute : Attribute
+            {
+            }
+
+            /// <summary>
+            /// Indicates that the parameter will be used as a routine address.
+            /// </summary>
+            [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
+            class RoutineAttribute : Attribute
             {
             }
 
@@ -315,29 +443,8 @@ namespace Zilf
                     .ToArray();
                 if (wrongArgCount.Length > 0)
                 {
-                    int minArgs = wrongArgCount.Min(s => s.MinArgs);
-
-                    int? maxArgs;
-                    if (wrongArgCount.Any(s => s.MaxArgs == null))
-                        maxArgs = null;
-                    else
-                        maxArgs = wrongArgCount.Max(s => s.MaxArgs);
-
-                    if (minArgs == maxArgs)
-                    {
-                        errorMsg = string.Format("{0} requires exactly {1} argument{2}",
-                            name, minArgs, minArgs == 1 ? "" : "s");
-                    }
-                    else if (maxArgs == null)
-                    {
-                        errorMsg = string.Format("{0} requires {1} or more arguments",
-                            name, minArgs);
-                    }
-                    else
-                    {
-                        errorMsg = string.Format("{0} requires {1} to {2} arguments",
-                            name, minArgs, maxArgs);
-                    }
+                    var counts = wrongArgCount.Select(s => new ArgCountRange(s.MinArgs, s.MaxArgs));
+                    errorMsg = name + " requires " + Compiler.FormatArgCount(counts);
 
                     // be a little more helpful if this arg count would work in another zversion
                     if (builtins[name].Any(
@@ -363,11 +470,37 @@ namespace Zilf
 
             private delegate void InvalidArgumentDelegate(int index, string message);
 
-            private static void ValidateArguments(
+            private enum BuiltinArgType
+            {
+                /// <summary>
+                /// An IOperand or other value ready to pass into the spec method.
+                /// </summary>
+                Operand,
+                /// <summary>
+                /// A ZilObject that must be evaluated before passing to the spec method.
+                /// </summary>
+                NeedsEval,
+            }
+
+            private struct BuiltinArg
+            {
+                public BuiltinArgType Type;
+                public object Value;
+
+                public BuiltinArg(BuiltinArgType type, object value)
+                {
+                    this.Type = type;
+                    this.Value = value;
+                }
+            }
+
+            private static IList<BuiltinArg> ValidateArguments(
                 CompileCtx cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
                 ZilObject[] args, InvalidArgumentDelegate error)
             {
                 // args may be short (for optional params)
+
+                var result = new List<BuiltinArg>(args.Length);
 
                 for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
                 {
@@ -411,50 +544,45 @@ namespace Zilf
                             if (!cc.Locals.TryGetValue(atom, out local) && !cc.Globals.TryGetValue(atom, out global))
                                 error(i, "no such variable: " + atom.ToString());
                         }
+
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, GetVariable(cc, arg, quirks)));
                     }
                     else if (pi.ParameterType == typeof(string))
                     {
                         // arg must be a string
-                        if (!(arg is ZilString))
+                        var zstr = arg as ZilString;
+                        if (zstr == null)
+                        {
                             error(i, "argument must be a literal string");
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
+                        }
+                        else
+                        {
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, Compiler.TranslateString(zstr.Text)));
+                        }
+                    }
+                    else if (pi.ParameterType == typeof(IOperand))
+                    {
+                        // if marked with [Variable], allow a variable reference
+                        var varAttr = (VariableAttribute)pi.GetCustomAttributes(typeof(VariableAttribute), false).SingleOrDefault();
+                        IVariable variable;
+                        if (varAttr != null && (variable = GetVariable(cc, arg, varAttr.QuirksMode)) != null)
+                        {
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Indirect));
+                        }
+                        else
+                        {
+                            result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, arg));
+                        }
                     }
                     else if (pi.ParameterType == typeof(IOperand[]))
                     {
-                        // this absorbs the rest of the args, so we're done
+                        // this absorbs the rest of the args
+                        while (i < args.Length)
+                        {
+                            result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, args[i++]));
+                        }
                         break;
-                    }
-                }
-            }
-
-            private static void PartitionArguments(
-                BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-                ZilObject[] args,
-                out ZilObject[] unevaled, out ZilObject[] evaled)
-            {
-                /* args.Length may differ from builtinParamInfos.Length, due to
-                 * optional arguments and params arrays. */
-
-                int startIdx = spec.Attr.Data == null ? 1 : 2;
-                var unevaledList = new List<ZilObject>();
-                var evaledList = new List<ZilObject>(builtinParamInfos.Length - startIdx);
-
-                for (int i = startIdx, j = 0; j < args.Length; i++, j++)
-                {
-                    // partition args[j] based on builtinParamInfos[i]
-                    var pi = builtinParamInfos[i];
-
-                    if (pi.ParameterType == typeof(IOperand))
-                    {
-                        evaledList.Add(args[j]);
-                    }
-                    else if (pi.ParameterType == typeof(IOperand[]))
-                    {
-                        evaledList.AddRange(args.Skip(j));
-                        break;
-                    }
-                    else if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(string))
-                    {
-                        unevaledList.Add(args[j]);
                     }
                     else
                     {
@@ -462,17 +590,49 @@ namespace Zilf
                     }
                 }
 
-                unevaled = unevaledList.ToArray();
-                evaled = evaledList.ToArray();
+                System.Diagnostics.Debug.Assert(result.Count == args.Length);
+                return result;
+            }
+
+            private static IVariable GetVariable(CompileCtx cc, ZilObject expr, bool quirks = true)
+            {
+                ZilAtom atom = expr as ZilAtom;
+
+                if (atom == null)
+                {
+                    if (!quirks)
+                        return null;
+
+                    var form = expr as ZilForm;
+                    if (form == null)
+                        return null;
+
+                    if (form.Rest == null || !(form.Rest.First is ZilAtom))
+                        return null;
+
+                    atom = (ZilAtom)form.Rest.First;
+                }
+
+                ILocalBuilder lb;
+                IGlobalBuilder gb;
+
+                if (cc.Locals.TryGetValue(atom, out lb))
+                    return lb;
+                if (cc.Globals.TryGetValue(atom, out gb))
+                    return gb;
+
+                return null;
             }
 
             private static List<object> MakeBuiltinMethodParams(
                 CompileCtx cc, BuiltinSpec spec,
                 ParameterInfo[] builtinParamInfos, object call,
-                ZilObject[] unevaledOperands, Operands evaledOperands)
+                IList<BuiltinArg> args)
             {
-                /* unevaledOperands.Length + evaledOperands.Count may differ from
-                 * builtinParamInfos.Length, due to optional arguments and params arrays. */
+                System.Diagnostics.Debug.Assert(args.All(a => a.Type == BuiltinArgType.Operand));
+
+                /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
+                 * due to optional arguments and params arrays. */
 
                 var result = new List<object>(builtinParamInfos.Length);
 
@@ -488,87 +648,32 @@ namespace Zilf
                 }
 
                 // operands
-                for (int u = 0, e = 0; i < builtinParamInfos.Length; i++)
+                for (int j = 0; i < builtinParamInfos.Length; i++, j++)
                 {
                     var pi = builtinParamInfos[i];
 
                     if (pi.ParameterType == typeof(IOperand[]))
                     {
-                        // add all remaining evaled operands as a param array
-                        if (e >= evaledOperands.Count)
+                        // add all remaining operands as a param array
+                        if (j >= args.Count)
                         {
                             result.Add(new IOperand[0]);
                         }
                         else
                         {
-                            result.Add(evaledOperands.Skip(e).ToArray());
+                            result.Add(args.Skip(j).Select(a => (IOperand)a.Value).ToArray());
                         }
                         break;
                     }
-                    else if (pi.ParameterType == typeof(IOperand))
+                    else
                     {
-                        if (e >= evaledOperands.Count)
+                        if (j >= args.Count)
                         {
                             result.Add(pi.DefaultValue);
                         }
                         else
                         {
-                            // XXX check for [Variable]
-
-                            // one evaled operand
-                            result.Add(evaledOperands[e++]);
-                        }
-                    }
-                    else if (pi.ParameterType == typeof(string))
-                    {
-                        if (u >= unevaledOperands.Length)
-                        {
-                            result.Add(pi.DefaultValue);
-                        }
-                        else
-                        {
-                            // one unevaled operand: convert it to a string
-                            var obj = unevaledOperands[u++];
-                            System.Diagnostics.Debug.Assert(obj is ZilString);
-                            result.Add(Compiler.TranslateString(((ZilString)obj).Text));
-                        }
-                    }
-                    else if (pi.ParameterType == typeof(IVariable))
-                    {
-                        if (u >= unevaledOperands.Length)
-                        {
-                            result.Add(pi.DefaultValue);
-                        }
-                        else
-                        {
-                            // one unevaled operand: convert it to a variable
-                            var obj = unevaledOperands[u++];
-                            var atom = obj as ZilAtom;
-
-                            if (atom == null)
-                            {
-                                System.Diagnostics.Debug.Assert(obj is ZilForm);
-                                var form = (ZilForm)obj;
-                                System.Diagnostics.Debug.Assert(form.Rest != null && form.Rest.First is ZilAtom);
-                                atom = (ZilAtom)form.Rest.First;
-                            }
-
-                            ILocalBuilder local;
-                            IGlobalBuilder global;
-
-                            if (cc.Locals.TryGetValue(atom, out local))
-                            {
-                                result.Add(local);
-                            }
-                            else if (cc.Globals.TryGetValue(atom, out global))
-                            {
-                                result.Add(global);
-                            }
-                            else
-                            {
-                                // shouldn't get here
-                                throw new NotImplementedException("undefined variable for IVariable parameter");
-                            }
+                            result.Add(args[j].Value);
                         }
                     }
                 }
@@ -586,7 +691,7 @@ namespace Zilf
 
                 // validate arguments
                 bool valid = true;
-                ValidateArguments(cc, spec, builtinParamInfos, args,
+                var validatedArgs = ValidateArguments(cc, spec, builtinParamInfos, args,
                     (i, msg) =>
                     {
                         Errors.CompError(cc.Context, form, "{0} argument {1}: {2}",
@@ -597,15 +702,26 @@ namespace Zilf
                 if (!valid)
                     return cc.Game.Zero;
 
-                // partition unevaluated vs. evaluated arguments
-                ZilObject[] unevaled, evaled;
-                PartitionArguments(spec, builtinParamInfos, args, out unevaled, out evaled);
+                // extract the arguments that need evaluation, and remember their original indexes
+                var needEval =
+                    validatedArgs
+                    .Select((a, oidx) => new { a, oidx })
+                    .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
+                    .ToArray();
+                var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
                 // generate code for arguments
-                using (var operands = Operands.Compile(cc, rb, evaled))
+                using (var operands = Operands.Compile(cc, rb, needEvalExprs))
                 {
+                    // update validatedArgs with the evaluated operands
+                    for (int i = 0; i < operands.Count; i++)
+                    {
+                        var oidx = needEval[i].oidx;
+                        validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
+                    }
+
                     // call the spec method to generate code for the builtin
-                    var builtinParams = MakeBuiltinMethodParams(cc, spec, builtinParamInfos, call, unevaled, operands);
+                    var builtinParams = MakeBuiltinMethodParams(cc, spec, builtinParamInfos, call, validatedArgs);
                     System.Diagnostics.Debug.Assert(builtinParams.Count == builtinParamInfos.Length);
                     return spec.Method.Invoke(null, builtinParams.ToArray());
                 }
@@ -701,7 +817,7 @@ namespace Zilf
             [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, HasSideEffect = true)]
             [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true)]
             [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true)]
-            [Builtin("THROW", Data = BinaryOp.Throw, HasSideEffect = true, MinVersion = 5)]
+            [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true)]
             public static void BinaryVoidOp(
                 VoidCall c, [Data] BinaryOp op, IOperand left, IOperand right)
             {
@@ -717,8 +833,8 @@ namespace Zilf
                 c.rb.Branch(cond, left, right, c.label, c.polarity);
             }
 
-            [Builtin("DLESS?", Data = Condition.DecCheck)]
-            [Builtin("IGRTR?", Data = Condition.IncCheck)]
+            [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
+            [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true)]
             public static void BinaryVariablePredOp(
                 PredCall c, [Data] Condition cond, [Variable] IVariable left, IOperand right)
             {
@@ -742,6 +858,20 @@ namespace Zilf
                 c.rb.EmitBinary(op, left, right, null);
             }
 
+            [Builtin("FSET?", Data = Condition.TestAttr)]
+            public static void BinaryObjectPredOp(
+                PredCall c, [Data] Condition cond, [Object] IOperand left, IOperand right)
+            {
+                c.rb.Branch(cond, left, right, c.label, c.polarity);
+            }
+
+            [Builtin("IN?", Data = Condition.Inside)]
+            public static void BinaryObjectObjectPredOp(
+                PredCall c, [Data] Condition cond, [Object] IOperand left, [Object] IOperand right)
+            {
+                c.rb.Branch(cond, left, right, c.label, c.polarity);
+            }
+
             [Builtin("MOVE", Data = BinaryOp.MoveObject, HasSideEffect = true)]
             public static void BinaryObjectObjectVoidOp(
                 VoidCall c, [Data] BinaryOp op, [Object] IOperand left, [Object] IOperand right)
@@ -749,7 +879,7 @@ namespace Zilf
                 c.rb.EmitBinary(op, left, right, null);
             }
 
-            [Builtin("GETPT", Data = BinaryOp.GetProperty)]
+            [Builtin("GETPT", Data = BinaryOp.GetPropAddress)]
             [return: Table]
             public static IOperand BinaryObjectToTableValueOp(
                 ValueCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
@@ -891,7 +1021,6 @@ namespace Zilf
                 return dest;
             }
 
-            /* XXX need a test case for this!
             [Builtin("SET", "SETG")]
             public static void SetVoidOp(
                 VoidCall c, [Variable(QuirksMode = true)] IOperand dest, IOperand value)
@@ -899,7 +1028,7 @@ namespace Zilf
                 // in void context, we don't need to return the newly set value, so we
                 // can support <SET <fancy-expression> value>.
                 c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, value, null);
-            }*/
+            }
 
             [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
             [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
@@ -910,16 +1039,32 @@ namespace Zilf
                 return victim;
             }
 
-            [Builtin("POP", MaxVersion = 5, HasSideEffect = true)]
-            public static void PopVoidOp(VoidCall c, [Variable] IVariable var)
-            {
-                c.rb.EmitStore(var, c.rb.Stack);
-            }
-
             [Builtin("PUSH", HasSideEffect = true)]
             public static void PushVoidOp(VoidCall c, IOperand value)
             {
                 c.rb.EmitStore(c.rb.Stack, value);
+            }
+
+            // TODO: support the IVariable and IOperand versions side by side? that way we can skip emitting an instruction for <VALUE VARNAME>
+            /*[Builtin("VALUE")]
+            public static IOperand ValueOp_Variable(ValueCall c, [Variable] IVariable var)
+            {
+                if (var == c.rb.Stack)
+                {
+                    c.rb.EmitUnary(UnaryOp.LoadIndirect, var.Indirect, c.resultStorage);
+                    return c.resultStorage;
+                }
+                else
+                {
+                    return var;
+                }
+            }*/
+
+            [Builtin("VALUE")]
+            public static IOperand ValueOp_Operand(ValueCall c, [Variable] IOperand value)
+            {
+                c.rb.EmitUnary(UnaryOp.LoadIndirect, value, c.resultStorage);
+                return c.resultStorage;
             }
 
             [Builtin("CRLF", HasSideEffect = true)]
@@ -931,7 +1076,7 @@ namespace Zilf
             [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
             [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
             [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5)]
-            [Builtin("USL", Data = NullaryOp.ShowStatus, HasSideEffect = true)]
+            [Builtin("USL", Data = NullaryOp.ShowStatus, MinVersion = 3, MaxVersion = 3, HasSideEffect = true)]
             public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
             {
                 c.rb.EmitNullary(NullaryOp.Catch, c.resultStorage);
@@ -977,16 +1122,31 @@ namespace Zilf
 
             [Builtin("READ", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
             public static void ReadOp_V4(VoidCall c, IOperand text, IOperand parse,
-                IOperand time = null, IOperand routine = null)
+                IOperand time = null, [Routine] IOperand routine = null)
             {
                 c.rb.EmitRead(text, parse, time, routine, null);
             }
 
             [Builtin("READ", MinVersion = 5, HasSideEffect = true)]
             public static IOperand ReadOp_V5(ValueCall c, IOperand text,
-                IOperand parse = null, IOperand time = null, IOperand routine = null)
+                IOperand parse = null, IOperand time = null,
+                [Routine] IOperand routine = null)
             {
                 c.rb.EmitRead(text, parse, time, routine, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("INPUT", MinVersion = 4, HasSideEffect = true)]
+            public static IOperand InputOp(ValueCall c, IOperand dummy,
+                IOperand interval = null, [Routine] IOperand routine = null)
+            {
+                if (!(c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value == 1))
+                {
+                    Errors.CompError(c.cc.Context, c.form, "INPUT: argument 1 must be 1");
+                    return c.cc.Game.Zero;
+                }
+
+                c.rb.EmitReadChar(interval, routine, c.resultStorage);
                 return c.resultStorage;
             }
 
@@ -999,7 +1159,8 @@ namespace Zilf
 
             [Builtin("SOUND", MinVersion = 5, HasSideEffect = true)]
             public static void SoundOp_V5(VoidCall c, IOperand number,
-                IOperand effect = null, IOperand volume = null, IOperand routine = null)
+                IOperand effect = null, IOperand volume = null,
+                [Routine] IOperand routine = null)
             {
                 c.rb.EmitPlaySound(number, effect, volume, null);
             }
@@ -1010,6 +1171,14 @@ namespace Zilf
                 IOperand srcOffset, [Table] IOperand dest)
             {
                 c.rb.EmitEncodeText(src, length, srcOffset, dest);
+            }
+
+            [Builtin("LEX", MinVersion = 5, HasSideEffect = true)]
+            public static void LexOp(VoidCall c,
+                [Table] IOperand text, [Table] IOperand parse,
+                [Table] IOperand dictionary = null, IOperand flag = null)
+            {
+                c.rb.EmitTokenize(text, parse, dictionary, flag);
             }
 
             [Builtin("RESTORE", MaxVersion = 3, HasSideEffect = true)]
@@ -1025,7 +1194,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RESTORE", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
+            [Builtin("RESTORE", MinVersion = 4, HasSideEffect = true)]
             public static IOperand RestoreOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -1067,7 +1236,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
+            [Builtin("SAVE", MinVersion = 4, HasSideEffect = true)]
             public static IOperand SaveOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -1140,7 +1309,7 @@ namespace Zilf
 
             [Builtin("APPLY", "CALL", HasSideEffect = true)]
             public static IOperand CallValueOp(ValueCall c,
-                IOperand routine, params IOperand[] args)
+                [Routine] IOperand routine, params IOperand[] args)
             {
                 if (args.Length > c.cc.Game.MaxCallArguments)
                 {
@@ -1158,7 +1327,7 @@ namespace Zilf
 
             [Builtin("APPLY", "CALL", MinVersion = 5, HasSideEffect = true)]
             public static void CallVoidOp(VoidCall c,
-                IOperand routine, params IOperand[] args)
+                [Routine] IOperand routine, params IOperand[] args)
             {
                 if (args.Length > c.cc.Game.MaxCallArguments)
                 {
@@ -1171,6 +1340,38 @@ namespace Zilf
                 }
 
                 c.rb.EmitCall(routine, args, null);
+            }
+
+            [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
+            [return: Table]
+            public static IOperand IntblValueOp_V4(ValueCall c,
+                IOperand value, [Table] IOperand table, IOperand length)
+            {
+                c.rb.EmitScanTable(value, table, length, null, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
+            public static void IntblPredOp_V4(PredCall c,
+                IOperand value, [Table] IOperand table, IOperand length)
+            {
+                c.rb.EmitScanTable(value, table, length, null, c.label, c.polarity);
+            }
+
+            [Builtin("INTBL?", MinVersion = 5)]
+            [return: Table]
+            public static IOperand IntblValueOp_V5(ValueCall c,
+                IOperand value, [Table] IOperand table, IOperand length, IOperand form = null)
+            {
+                c.rb.EmitScanTable(value, table, length, form, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("INTBL?", MinVersion = 5)]
+            public static void IntblPredOp_V5(PredCall c,
+                IOperand value, [Table] IOperand table, IOperand length, IOperand form = null)
+            {
+                c.rb.EmitScanTable(value, table, length, form, c.label, c.polarity);
             }
         }
     }

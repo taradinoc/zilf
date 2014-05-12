@@ -13,6 +13,7 @@ namespace IntegrationTests
     {
         protected string zversion = "ZIP";
         protected StringBuilder miscGlobals = new StringBuilder();
+        protected StringBuilder input = new StringBuilder();
 
         protected AbstractAssertionHelper()
         {
@@ -57,7 +58,13 @@ namespace IntegrationTests
 
         public TThis WithGlobal(string code)
         {
-            miscGlobals.Append(code);
+            miscGlobals.AppendLine(code);
+            return (TThis)this;
+        }
+
+        public TThis WithInput(string line)
+        {
+            input.AppendLine(line);
             return (TThis)this;
         }
 
@@ -66,9 +73,9 @@ namespace IntegrationTests
             var sb = new StringBuilder();
             sb.Append("<VERSION ");
             sb.Append(zversion);
-            sb.Append(">");
+            sb.AppendLine(">");
 
-            sb.Append("<CONSTANT RELEASEID 1>");
+            sb.AppendLine("<CONSTANT RELEASEID 1>");
 
             sb.Append(miscGlobals);
 
@@ -82,11 +89,11 @@ namespace IntegrationTests
             Contract.Requires(expectedValue != null);
 
             var testCode = string.Format(
-                "{0}<ROUTINE GO () <PRINTN {1}>>",
+                "{0}\r\n<ROUTINE GO () <PRINTN {1}>>",
                 GlobalCode(),
                 Expression());
 
-            ZlrHelper.RunAndAssert(testCode, null, expectedValue);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue);
         }
 
         public void Outputs(string expectedValue)
@@ -94,17 +101,17 @@ namespace IntegrationTests
             Contract.Requires(expectedValue != null);
 
             var testCode = string.Format(
-                "{0}<ROUTINE GO () {1}>",
+                "{0}\r\n<ROUTINE GO () {1}>",
                 GlobalCode(),
                 Expression());
 
-            ZlrHelper.RunAndAssert(testCode, null, expectedValue);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue);
         }
 
         public void DoesNotCompile()
         {
             var testCode = string.Format(
-                "{0}<GLOBAL DUMMY?VAR <>><ROUTINE GO () <SETG DUMMY?VAR {1}> <QUIT>>",
+                "{0}\r\n<GLOBAL DUMMY?VAR <>>\r\n<ROUTINE GO ()\r\n\t<SETG DUMMY?VAR {1}>\r\n\t<QUIT>>",
                 GlobalCode(),
                 Expression());
 
@@ -115,7 +122,7 @@ namespace IntegrationTests
         public void Compiles()
         {
             var testCode = string.Format(
-                "{0}<GLOBAL DUMMY?VAR <>><ROUTINE GO () <SETG DUMMY?VAR {1}> <QUIT>>",
+                "{0}\r\n<GLOBAL DUMMY?VAR <>>\r\n<ROUTINE GO ()\r\n\t<SETG DUMMY?VAR {1}>\r\n\t<QUIT>>",
                 GlobalCode(),
                 Expression());
 
