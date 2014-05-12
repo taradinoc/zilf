@@ -1093,6 +1093,11 @@ namespace Zilf.Emit.Zap
                 AddLine("DEC '" + result.ToString(), null, PeepholeLineType.Plain);
                 return;
             }
+            else if (op == BinaryOp.StoreIndirect && right == Stack)
+            {
+                AddLine("POP " + left.ToString(), null, PeepholeLineType.Plain);
+                return;
+            }
 
             string opcode;
 
