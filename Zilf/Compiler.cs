@@ -1142,6 +1142,8 @@ namespace Zilf
         private static IOperand CompileForm(CompileCtx cc, IRoutineBuilder rb, ZilForm form,
             bool wantResult, IVariable resultStorage)
         {
+            ILabel label1, label2;
+
             try
             {
                 // expand macro invocations
@@ -1178,8 +1180,8 @@ namespace Zilf
                     }
                     else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
                     {
-                        ILabel label1 = rb.DefineLabel();
-                        ILabel label2 = rb.DefineLabel();
+                        label1 = rb.DefineLabel();
+                        label2 = rb.DefineLabel();
                         resultStorage = resultStorage ?? rb.Stack;
                         ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label1, true);
                         rb.EmitStore(resultStorage, cc.Game.Zero);
@@ -1271,6 +1273,18 @@ namespace Zilf
 
                     case StdAtom.VERSION_P:
                         return CompileVERSION_P(cc, rb, form.Rest, wantResult, resultStorage);
+
+                    case StdAtom.NOT:
+                        resultStorage = resultStorage ?? rb.Stack;
+                        label1 = rb.DefineLabel();
+                        label2 = rb.DefineLabel();
+                        CompileCondition(cc, rb, form.Rest.First, label1, true);
+                        rb.EmitStore(resultStorage, cc.Game.One);
+                        rb.Branch(label2);
+                        rb.MarkLabel(label1);
+                        rb.EmitStore(resultStorage, cc.Game.Zero);
+                        rb.MarkLabel(label2);
+                        return resultStorage;
 
                     case StdAtom.OR:
                     case StdAtom.AND:
@@ -1388,6 +1402,13 @@ namespace Zilf
             if (type == StdAtom.FALSE)
             {
                 if (polarity == false)
+                    rb.Branch(label);
+                return;
+            }
+            else if (type == StdAtom.FIX)
+            {
+                bool nonzero = ((ZilFix)expr).Value != 0;
+                if (polarity == nonzero)
                     rb.Branch(label);
                 return;
             }

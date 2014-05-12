@@ -56,18 +56,6 @@ namespace Zilf
         Divide,
         [Atom("=")]
         Eq,
-        [Atom("=?")]
-        Eq_P,
-        [Atom("==?")]
-        Eeq_P,
-        [Atom("N=?")]
-        Neq_P,
-        [Atom("N==?")]
-        Neeq_P,
-        [Atom("0?")]
-        Zero_P,
-        [Atom("1?")]
-        One_P,
 
         ACTIONS,
         ADD,

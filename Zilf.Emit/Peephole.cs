@@ -514,7 +514,7 @@ namespace Zilf.Emit
                             }
                         }
 
-                        if (next != null)
+                        if (next != null && next.Previous != null)
                         {
                             node = next.Previous;
                             continue;

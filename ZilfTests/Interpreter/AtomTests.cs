@@ -34,8 +34,8 @@ namespace ZilfTests.Interpreter
             var actual = TestHelpers.Evaluate(ctx, "<PARSE \"FOO\">");
             Assert.AreSame(expected, actual);
 
-            expected = ctx.GetStdAtom(StdAtom.Eeq_P);
-            actual = TestHelpers.Evaluate(ctx, "<PARSE \"==?\">");
+            expected = ctx.GetStdAtom(StdAtom.Plus);
+            actual = TestHelpers.Evaluate(ctx, "<PARSE \"+\">");
             Assert.AreSame(expected, actual);
 
             // must have 1 argument
