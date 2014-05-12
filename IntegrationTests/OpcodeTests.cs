@@ -1,9 +1,111 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.Contracts;
+using Zilf;
 
 namespace IntegrationTests
 {
+    [TestClass]
+    public class FormatArgCountTests
+    {
+        [TestMethod]
+        public void TestExactly()
+        {
+            Assert.AreEqual("exactly 1 argument",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 1),
+                    new Compiler.ArgCountRange(1, 1),
+                }));
+        }
+
+        [TestMethod]
+        public void TestAlternatives()
+        {
+            Assert.AreEqual("1 or 2 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 2),
+                }));
+
+            Assert.AreEqual("1 or 2 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 1),
+                    new Compiler.ArgCountRange(2, 2),
+                }));
+
+            Assert.AreEqual("2 or 4 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(2, 2),
+                    new Compiler.ArgCountRange(4, 4),
+                }));
+
+            Assert.AreEqual("0, 2, or 4 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(0, 0),
+                    new Compiler.ArgCountRange(2, 2),
+                    new Compiler.ArgCountRange(4, 4),
+                }));
+        }
+
+        [TestMethod]
+        public void TestRange()
+        {
+            Assert.AreEqual("1 to 3 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 3),
+                }));
+
+            Assert.AreEqual("1 to 3 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 2),
+                    new Compiler.ArgCountRange(3, 3),
+                }));
+
+            Assert.AreEqual("1 to 3 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 1),
+                    new Compiler.ArgCountRange(2, 2),
+                    new Compiler.ArgCountRange(3, 3),
+                }));
+        }
+
+        [TestMethod]
+        public void TestUnlimited()
+        {
+            Assert.AreEqual("1 or more arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, null),
+                }));
+
+            Assert.AreEqual("1 or more arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 2),
+                    new Compiler.ArgCountRange(3, null),
+                }));
+        }
+
+        [TestMethod]
+        public void TestDisjointRanges()
+        {
+            Assert.AreEqual("1, 2, or 4 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(1, 2),
+                    new Compiler.ArgCountRange(4, 4),
+                }));
+
+            Assert.AreEqual("0, 1, 3, or 4 arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(0, 1),
+                    new Compiler.ArgCountRange(3, 4),
+                }));
+
+            Assert.AreEqual("0, 2, or more arguments",
+                Compiler.FormatArgCount(new[] {
+                    new Compiler.ArgCountRange(0, 0),
+                    new Compiler.ArgCountRange(2, null),
+                }));
+        }
+    }
+    
     [TestClass]
     public class OpcodeTests
     {
@@ -342,7 +444,10 @@ namespace IntegrationTests
             // only exists in V4+
 
             // needs a table
-            Assert.Inconclusive();
+            AssertExpr("<CURGET ,CURTABLE>")
+                .InV4()
+                .WithGlobal("<GLOBAL CURTABLE <TABLE 0 0>>")
+                .Compiles();
         }
 
         [TestMethod]
@@ -414,9 +519,10 @@ namespace IntegrationTests
         {
             AssertExpr("<DIROUT 1>").GivesNumber("1");
 
-            // needs a table
-            Assert.Inconclusive();
-            AssertExpr("<DIROUT 3 0>").GivesNumber("1");
+            // output stream 3 needs a table
+            AssertRoutine("", "<DIROUT 3 ,OUTTABLE> <PRINTI \"A\"> <DIROUT -3> <GETB ,OUTTABLE 2>")
+                .WithGlobal("<GLOBAL OUTTABLE <LTABLE (BYTE) 0 0 0 0 0 0 0 0>>")
+                .GivesNumber("65");
         }
 
         [TestMethod]
@@ -460,6 +566,7 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDLESS_P()
         {
+            // V1 to V6
             AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
                 .WhenCalledWith("100").Outputs("1\n99");
             AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
@@ -469,6 +576,7 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDLESS_P_Error()
         {
+            // V1 to V6
             AssertExpr("<DLESS?>").DoesNotCompile();
             AssertRoutine("FOO", "<DLESS? FOO>").DoesNotCompile();
             AssertExpr("<DLESS? 11 22>").DoesNotCompile();
@@ -518,8 +626,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestFCLEAR()
         {
-            // needs an object
-            Assert.Inconclusive();
+            AssertExpr("<FCLEAR ,MYOBJECT ,FOOBIT>")
+                .WithGlobal("<OBJECT MYOBJECT (FLAGS FOOBIT)>")
+                .GivesNumber("1");
         }
 
         [TestMethod]
@@ -533,8 +642,13 @@ namespace IntegrationTests
         [TestMethod]
         public void TestFIRST_P()
         {
-            // needs an object
-            Assert.Inconclusive();
+            AssertExpr("<FIRST? ,MYOBJECT>")
+                .WithGlobal("<OBJECT MYOBJECT>")
+                .GivesNumber("0");
+            AssertExpr("<==? <FIRST? ,MYOBJECT> ,INNEROBJECT>")
+                .WithGlobal("<OBJECT MYOBJECT>")
+                .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
+                .GivesNumber("1");
         }
 
         [TestMethod]
@@ -565,8 +679,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestFSET()
         {
-            // needs an object
-            Assert.Inconclusive();
+            AssertExpr("<FSET ,MYOBJECT ,FOOBIT>")
+                .WithGlobal("<OBJECT MYOBJECT (FLAGS FOOBIT)>")
+                .GivesNumber("1");
         }
 
         [TestMethod]
@@ -580,8 +695,10 @@ namespace IntegrationTests
         [TestMethod]
         public void TestFSET_P()
         {
-            // needs an object
-            Assert.Inconclusive();
+            AssertRoutine("", "<PRINTN <FSET? ,OBJECT1 FOOBIT>> <CRLF> <PRINTN <FSET? ,OBJECT2 FOOBIT>>")
+                .WithGlobal("<OBJECT OBJECT1 (FLAGS FOOBIT)>")
+                .WithGlobal("<OBJECT OBJECT2>")
+                .Outputs("1\n0");
         }
 
         [TestMethod]
@@ -651,10 +768,15 @@ namespace IntegrationTests
         [TestMethod]
         public void TestGETP()
         {
-            // needs an object
-            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
+            AssertExpr("<GETP ,MYOBJECT ,P?MYPROP>")
+                .WithGlobal("<OBJECT MYOBJECT (MYPROP 123)>")
+                .GivesNumber("123");
+            AssertExpr("<GETP ,OBJECT2 ,P?MYPROP>")
+                .WithGlobal("<OBJECT OBJECT1 (MYPROP 1)>")
+                .WithGlobal("<OBJECT OBJECT2>")
+                .GivesNumber("0");
         }
 
         [TestMethod]
@@ -670,10 +792,15 @@ namespace IntegrationTests
         [TestMethod]
         public void TestGETPT()
         {
-            // needs an object
-            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
+            AssertExpr("<GET <GETPT ,MYOBJECT ,P?MYPROP> 0>")
+                .WithGlobal("<OBJECT MYOBJECT (MYPROP 123)>")
+                .GivesNumber("123");
+            AssertExpr("<GETPT ,OBJECT2 ,P?MYPROP>")
+                .WithGlobal("<OBJECT OBJECT1 (MYPROP 1)>")
+                .WithGlobal("<OBJECT OBJECT2>")
+                .GivesNumber("0");
         }
 
         [TestMethod]
@@ -734,26 +861,37 @@ namespace IntegrationTests
         [TestMethod]
         public void TestIGRTR_P()
         {
-            // needs a variable
-            Assert.Inconclusive();
             // V1 to V6
+            AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("100").Outputs("1\n101");
+            AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("99").Outputs("0\n100");
         }
 
         [TestMethod]
         public void TestIGRTR_P_Error()
         {
-            // needs a variable
-            Assert.Inconclusive();
             // V1 to V6
+            AssertExpr("<IGRTR?>").DoesNotCompile();
+            AssertRoutine("FOO", "<IGRTR? FOO>").DoesNotCompile();
+            AssertExpr("<IGRTR? 11 22>").DoesNotCompile();
+            AssertRoutine("FOO", "<IGRTR? BAR 100>").DoesNotCompile();
+            AssertRoutine("FOO BAR", "<IGRTR? FOO BAR>").DoesNotCompile();
         }
 
         [TestMethod]
         public void TestIN_P()
         {
-            // needs objects
-            Assert.Inconclusive();
             // V1 to V6
             // 2 to 2 operands
+            AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
+                .WithGlobal("<OBJECT HAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .GivesNumber("123");
+            AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
+                .WithGlobal("<OBJECT HAT (LOC CAT)>")
+                .WithGlobal("<OBJECT CAT>")
+                .GivesNumber("456");
         }
 
         [TestMethod]
@@ -783,11 +921,13 @@ namespace IntegrationTests
         [TestMethod]
         public void TestINPUT()
         {
-            // needs input
-            Assert.Inconclusive();
             // V4 to V6
             // 1 to 3 operands
-            AssertExpr("<INPUT 1>").InV4().Compiles();
+            AssertExpr("<INPUT 1>")
+                .InV4()
+                .WithInput("A")
+                .GivesNumber("65");
+
             AssertExpr("<INPUT 1 0>").InV4().Compiles();
             AssertExpr("<INPUT 1 0 0>").InV4().Compiles();
         }
@@ -802,20 +942,35 @@ namespace IntegrationTests
             // 0 to 4 operands
             AssertExpr("<INPUT>").InV4().DoesNotCompile();
             AssertExpr("<INPUT 0 0 0 0>").InV4().DoesNotCompile();
+
+            // first argument must be a literal 1
+            AssertExpr("<INPUT 0>").InV4().DoesNotCompile();
+            AssertExpr("<INPUT <+ 1 0>>").InV4().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestINTBL_P()
         {
-            // needs a table
-            Assert.Inconclusive();
-
             // V4 to V6
             // 3 to 4 operands
-            AssertExpr("<INTBL? 0 0 0>").InV4().Compiles();
+            AssertExpr("<COND (<INTBL? 3 ,MYTABLE 4> 123) (T 456)>")
+                .InV4()
+                .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
+                .GivesNumber("123");
+            AssertExpr("<GET <INTBL? 3 ,MYTABLE 4> 0>")
+                .InV4()
+                .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
+                .GivesNumber("3");
+            AssertExpr("<INTBL? 9 ,MYTABLE 4>")
+                .InV4()
+                .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
+                .GivesNumber("0");
 
             // 4th operand is allowed in V5
-            AssertExpr("<INTBL? 0 0 0 0>").InV5().Compiles();
+            AssertExpr("<GETB <INTBL? 10 ,MYTABLE 9 3> 0>")
+                .InV5()
+                .WithGlobal("<GLOBAL MYTABLE <TABLE (BYTE) 111 111 111 222 222 222 10 123 123>>")
+                .GivesNumber("10");
         }
 
         [TestMethod]
@@ -896,23 +1051,23 @@ namespace IntegrationTests
             AssertExpr("<LESS?>").InV3().DoesNotCompile();
             AssertExpr("<LESS? 0>").InV3().DoesNotCompile();
             AssertExpr("<LESS? 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestLEX()
         {
-            // needs tables
-            Assert.Inconclusive();
-
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<LEX>").InV5().Compiles();
-            AssertExpr("<LEX 0>").InV5().Compiles();
-            AssertExpr("<LEX 0 0>").InV5().Compiles();
+            // 2 to 4 operands
+
+            AssertRoutine("", "<LEX ,TEXTBUF ,LEXBUF> <PRINTB <GET ,LEXBUF 1>>")
+                .InV5()
+                .WithGlobal("<GLOBAL TEXTBUF <TABLE (BYTE) 3 3 !\\c !\\a !\\t>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
+                .Outputs("cat");
+
             AssertExpr("<LEX 0 0 0>").InV5().Compiles();
             AssertExpr("<LEX 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -922,21 +1077,25 @@ namespace IntegrationTests
             AssertExpr("<LEX>").InV4().DoesNotCompile();
 
             // V5 to V6
-            // 0 to 4 operands
+            // 2 to 4 operands
+            AssertExpr("<LEX>").InV5().DoesNotCompile();
+            AssertExpr("<LEX 0>").InV5().DoesNotCompile();
             AssertExpr("<LEX 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestLOC()
         {
-            // needs an object
-            Assert.Inconclusive();
-
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<LOC 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<==? <LOC ,CAT> ,HAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .WithGlobal("<OBJECT HAT>")
+                .GivesNumber("1");
+            AssertExpr("<LOC ,HAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .WithGlobal("<OBJECT HAT>")
+                .GivesNumber("0");
         }
 
         [TestMethod]
@@ -946,7 +1105,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<LOC>").InV3().DoesNotCompile();
             AssertExpr("<LOC 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -963,7 +1121,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMARGIN_Error()
+        public void TestMARGIN_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<MARGIN>").InV5().DoesNotCompile();
@@ -988,7 +1146,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMENU_Error()
+        public void TestMENU_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<MENU>").InV5().DoesNotCompile();
@@ -1034,7 +1192,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMOUSE_INFO_Error()
+        public void TestMOUSE_INFO_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<MOUSE-INFO>").InV5().DoesNotCompile();
@@ -1059,7 +1217,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestMOUSE_LIMIT_Error()
+        public void TestMOUSE_LIMIT_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<MOUSE-LIMIT>").InV5().DoesNotCompile();
@@ -1075,8 +1233,10 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MOVE 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<MOVE ,CAT ,HAT> <IN? ,CAT ,HAT>")
+                .WithGlobal("<OBJECT CAT>")
+                .WithGlobal("<OBJECT HAT>")
+                .GivesNumber("1");
         }
 
         [TestMethod]
@@ -1087,7 +1247,6 @@ namespace IntegrationTests
             AssertExpr("<MOVE>").InV3().DoesNotCompile();
             AssertExpr("<MOVE 0>").InV3().DoesNotCompile();
             AssertExpr("<MOVE 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1118,8 +1277,15 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<NEXT? 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<MOVE ,RAT ,HAT> <==? <NEXT? ,RAT> ,CAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .WithGlobal("<OBJECT HAT>")
+                .WithGlobal("<OBJECT RAT>")
+                .GivesNumber("1");
+            AssertExpr("<NEXT? ,CAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .WithGlobal("<OBJECT HAT>")
+                .GivesNumber("0");
         }
 
         [TestMethod]
@@ -1129,7 +1295,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<NEXT?>").InV3().DoesNotCompile();
             AssertExpr("<NEXT? 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1137,8 +1302,15 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<NEXTP 0 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<==? <NEXTP ,MYOBJECT 0> ,P?FOO>")
+                .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
+                .GivesNumber("1");
+            AssertExpr("<==? <NEXTP ,MYOBJECT ,P?FOO> ,P?BAR>")
+                .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
+                .GivesNumber("1");
+            AssertExpr("<==? <NEXTP ,MYOBJECT ,P?BAR> 0>")
+                .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
+                .GivesNumber("1");
         }
 
         [TestMethod]
@@ -1149,7 +1321,6 @@ namespace IntegrationTests
             AssertExpr("<NEXTP>").InV3().DoesNotCompile();
             AssertExpr("<NEXTP 0>").InV3().DoesNotCompile();
             AssertExpr("<NEXTP 0 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         // NOOP is not supported in ZIL
@@ -1187,7 +1358,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPICINF_Error()
+        public void TestPICINF_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<PICINF>").InV5().DoesNotCompile();
@@ -1212,7 +1383,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPICSET_Error()
+        public void TestPICSET_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<PICSET>").InV5().DoesNotCompile();
@@ -1223,16 +1394,7 @@ namespace IntegrationTests
             Assert.Inconclusive("This test was automatically generated.");
         }
 
-        [TestMethod]
-        public void TestPOP()
-        {
-            // V1 to V5
-            // 1 to 1 operands
-
-            // needs a variable
-            Assert.Inconclusive();
-            AssertExpr("<POP 1>").InV3().Compiles();
-        }
+        // only the V6 version of POP is supported in ZIL
 
         [TestMethod]
         public void TestPOP_V6()
@@ -1246,10 +1408,6 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPOP_Error()
         {
-            // V1 to V5
-            // 1 to 1 operands
-            AssertExpr("<POP>").InV3().DoesNotCompile();
-            AssertExpr("<POP 0 0>").InV3().DoesNotCompile();
             // V6 to V6
             // 0 to 1 operands
             AssertExpr("<POP 0 0>").InV6().DoesNotCompile();
@@ -1260,8 +1418,10 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINT 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<PRINT ,MESSAGE>")
+                .InV3()
+                .WithGlobal("<GLOBAL MESSAGE \"hello\">")
+                .Outputs("hello");
         }
 
         [TestMethod]
@@ -1271,7 +1431,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<PRINT>").InV3().DoesNotCompile();
             AssertExpr("<PRINT 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1279,8 +1438,10 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTB 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<PRINTB <GETP ,MYOBJECT ,P?SYNONYM>>")
+                .InV3()
+                .WithGlobal("<OBJECT MYOBJECT (SYNONYM HELLO)>")
+                .Outputs("hello");
         }
 
         [TestMethod]
@@ -1290,7 +1451,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<PRINTB>").InV3().DoesNotCompile();
             AssertExpr("<PRINTB 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1313,12 +1473,11 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPRINTD()
         {
-            // needs an object
-            Assert.Inconclusive();
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTD 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<PRINTD ,MYOBJECT>")
+                .WithGlobal("<OBJECT MYOBJECT (DESC \"pocket fisherman\")>")
+                .Outputs("pocket fisherman");
         }
 
         [TestMethod]
@@ -1344,7 +1503,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPRINTF_Error()
+        public void TestPRINTF_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<PRINTF>").InV5().DoesNotCompile();
@@ -1410,11 +1569,20 @@ namespace IntegrationTests
         {
             // V5 to V6
             // 2 to 4 operands
-            AssertExpr("<PRINTT 0 0>").InV5().Compiles();
-            AssertExpr("<PRINTT 0 0 0>").InV5().Compiles();
-            AssertExpr("<PRINTT 0 0 0 0>").InV5().Compiles();
-            // needs a table
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<PRINTT ,MYTEXT 6>")
+                .InV5()
+                .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
+                .Outputs("hanspr\r\n");
+
+            AssertExpr("<PRINTT ,MYTEXT 4 3>")
+                .InV5()
+                .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
+                .Outputs("hans\r\npres\r\ntige\r\n");
+
+            AssertExpr("<PRINTT ,MYTEXT 3 3 1>")
+                .InV5()
+                .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
+                .Outputs("han\r\npre\r\ntig\r\n");
         }
 
         [TestMethod]
@@ -1455,8 +1623,9 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PTSIZE 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertExpr("<PTSIZE <GETPT ,MYOBJECT ,P?FOO>>")
+                .WithGlobal("<OBJECT MYOBJECT (FOO 1 2 3)>")
+                .GivesNumber("6");
         }
 
         [TestMethod]
@@ -1466,7 +1635,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<PTSIZE>").InV3().DoesNotCompile();
             AssertExpr("<PTSIZE 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1575,7 +1743,15 @@ namespace IntegrationTests
         {
             // V1 to V3
             // 2 operands
-            AssertExpr("<READ 0 0>").InV3().Compiles();
+            // ,HERE must point to a valid object for status line purposes
+            AssertRoutine("", "<READ ,TEXTBUF ,LEXBUF> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
+                .InV3()
+                .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
+                .WithGlobal("<GLOBAL HERE CAT>")
+                .WithInput("cat")
+                .Outputs("acat");
             // V4
             // 2 to 4 operands
             AssertExpr("<READ 0 0>").InV4().Compiles();
@@ -1583,13 +1759,16 @@ namespace IntegrationTests
             AssertExpr("<READ 0 0 0 0>").InV4().Compiles();
             // V5 to V6
             // 1 to 4 operands
+            AssertRoutine("", "<PRINTN <READ ,TEXTBUF ,LEXBUF>> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
+                .InV5()
+                .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
+                .WithInput("cat")
+                .Outputs("13ccat");
             AssertExpr("<READ 0>").InV5().Compiles();
-            AssertExpr("<READ 0 0>").InV5().Compiles();
             AssertExpr("<READ 0 0 0>").InV5().Compiles();
             AssertExpr("<READ 0 0 0 0>").InV5().Compiles();
-
-            // needs a table
-            Assert.Inconclusive();
         }
 
         [TestMethod]
@@ -1616,8 +1795,10 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<REMOVE 0>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<REMOVE ,CAT> <LOC ,CAT>")
+                .WithGlobal("<OBJECT CAT (LOC HAT)>")
+                .WithGlobal("<OBJECT HAT>")
+                .GivesNumber("0");
         }
 
         [TestMethod]
@@ -1627,7 +1808,6 @@ namespace IntegrationTests
             // 1 to 1 operands
             AssertExpr("<REMOVE>").InV3().DoesNotCompile();
             AssertExpr("<REMOVE 0 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1636,7 +1816,6 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RESTART>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1645,7 +1824,6 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RESTART 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1654,19 +1832,13 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<RESTORE>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
             // V4 to V4
             // 0 to 0 operands
             AssertExpr("<RESTORE>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
             // V5 to V6
-            // 0 to 4 operands
+            // 0 or(!) 3 operands
             AssertExpr("<RESTORE>").InV5().Compiles();
-            AssertExpr("<RESTORE 0>").InV5().Compiles();
-            AssertExpr("<RESTORE 0 0>").InV5().Compiles();
             AssertExpr("<RESTORE 0 0 0>").InV5().Compiles();
-            AssertExpr("<RESTORE 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1675,15 +1847,14 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<RESTORE 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
             // V4 to V4
             // 0 to 0 operands
             AssertExpr("<RESTORE 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<RESTORE 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 or(!) 3 operands
+            AssertExpr("<RESTORE 0>").InV5().DoesNotCompile();
+            AssertExpr("<RESTORE 0 0>").InV5().DoesNotCompile();
+            AssertExpr("<RESTORE 0 0 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1716,8 +1887,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RFALSE>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<RFALSE>").GivesNumber("0");
         }
 
         [TestMethod]
@@ -1726,7 +1896,6 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RFALSE 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1734,8 +1903,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RSTACK>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<PUSH 1234> <RSTACK>").GivesNumber("1234");
         }
 
         [TestMethod]
@@ -1744,7 +1912,6 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RSTACK 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1752,8 +1919,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RTRUE>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<RTRUE>").GivesNumber("1");
         }
 
         [TestMethod]
@@ -1762,7 +1928,6 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RTRUE 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1771,19 +1936,13 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<SAVE>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
             // V4 to V4
             // 0 to 0 operands
             AssertExpr("<SAVE>").InV4().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
             // V5 to V6
-            // 0 to 4 operands
+            // 0 or(!) 3 operands
             AssertExpr("<SAVE>").InV5().Compiles();
-            AssertExpr("<SAVE 0>").InV5().Compiles();
-            AssertExpr("<SAVE 0 0>").InV5().Compiles();
             AssertExpr("<SAVE 0 0 0>").InV5().Compiles();
-            AssertExpr("<SAVE 0 0 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1792,15 +1951,14 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<SAVE 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
             // V4 to V4
             // 0 to 0 operands
             AssertExpr("<SAVE 0>").InV4().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
             // V5 to V6
-            // 0 to 4 operands
-            AssertExpr("<SAVE 0 0 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 0 or(!) 3 operands
+            AssertExpr("<SAVE 0>").InV5().DoesNotCompile();
+            AssertExpr("<SAVE 0 0>").InV5().DoesNotCompile();
+            AssertExpr("<SAVE 0 0 0 0>").InV5().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1834,7 +1992,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestSCROLL_Error()
+        public void TestSCROLL_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<SCROLL>").InV5().DoesNotCompile();
@@ -1849,14 +2007,36 @@ namespace IntegrationTests
         public void TestSET()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertRoutine("\"AUX\" FOO", "<SET FOO 111> .FOO")
+                .GivesNumber("111");
+            AssertRoutine("", "<SET FOO 111> ,FOO")
+                .WithGlobal("<GLOBAL FOO 0>")
+                .GivesNumber("111");
+
+            // value version
+            AssertRoutine("\"AUX\" FOO", "<PRINTN <SET FOO 111>>")
+                .Outputs("111");
+
+            // void version
+            AssertRoutine("\"AUX\" FOO", "<SET 1 111> <PRINTN .FOO>")
+                .Outputs("111");
+
+            // alias: SETG
+            AssertRoutine("\"AUX\" FOO", "<SETG FOO 111> .FOO")
+                .GivesNumber("111");
+            AssertRoutine("", "<SETG FOO 111> ,FOO")
+                .WithGlobal("<GLOBAL FOO 0>")
+                .GivesNumber("111");
         }
 
         [TestMethod]
         public void TestSET_Error()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertExpr("<SET>").DoesNotCompile();
+            AssertRoutine("X", "<SET X>").DoesNotCompile();
+            AssertExpr("<SET 1 2>").DoesNotCompile();
+            AssertRoutine("X", "<SET Y 1>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -1966,8 +2146,10 @@ namespace IntegrationTests
         {
             // V5 to V6
             // 2 to 2 operands
-            AssertExpr("<THROW 0 0>").InV5().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("\"AUX\" X", "<SET X <CATCH>> <THROWER .X> 123")
+                .InV5()
+                .WithGlobal("<ROUTINE THROWER (F) <THROW 456 .F>>")
+                .GivesNumber("456");
         }
 
         [TestMethod]
@@ -1981,7 +2163,6 @@ namespace IntegrationTests
             AssertExpr("<THROW>").InV5().DoesNotCompile();
             AssertExpr("<THROW 0>").InV5().DoesNotCompile();
             AssertExpr("<THROW 0 0 0>").InV5().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1990,7 +2171,6 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<USL>").InV3().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1999,21 +2179,28 @@ namespace IntegrationTests
             // V1 to V3
             // 0 to 0 operands
             AssertExpr("<USL 0>").InV3().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+
+            AssertExpr("<USL>").InV4().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestVALUE()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertRoutine("\"AUX\" (X 123)", "<VALUE X>").GivesNumber("123");
+            AssertExpr("<VALUE G>")
+                .WithGlobal("<GLOBAL G 123>")
+                .GivesNumber("123");
+            AssertRoutine("", "<PUSH 1234> <VALUE 0>").GivesNumber("1234");
         }
 
         [TestMethod]
         public void TestVALUE_Error()
         {
             // V1 to V6
-            Assert.Inconclusive("This test could not be automatically generated.");
+            AssertExpr("<VALUE>").DoesNotCompile();
+            AssertExpr("<VALUE 0 0>").DoesNotCompile();
+            AssertExpr("<VALUE ASDF>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -2046,7 +2233,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINATTR_Error()
+        public void TestWINATTR_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<WINATTR>").InV5().DoesNotCompile();
@@ -2071,7 +2258,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINGET_Error()
+        public void TestWINGET_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<WINGET>").InV5().DoesNotCompile();
@@ -2096,7 +2283,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINPOS_Error()
+        public void TestWINPOS_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<WINPOS>").InV5().DoesNotCompile();
@@ -2121,7 +2308,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINPUT_Error()
+        public void TestWINPUT_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<WINPUT>").InV5().DoesNotCompile();
@@ -2146,7 +2333,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestWINSIZE_Error()
+        public void TestWINSIZE_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<WINSIZE>").InV5().DoesNotCompile();
@@ -2173,7 +2360,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestXPUSH_Error()
+        public void TestXPUSH_Error_V6()
         {
             // only exists in V6+
             AssertExpr("<XPUSH>").InV5().DoesNotCompile();
@@ -2210,10 +2397,11 @@ namespace IntegrationTests
         {
             // V5 to V6
             // 4 operands
-            AssertExpr("<ZWSTR 0 0 0 0>").InV5().Compiles();
-
-            // needs a table
-            Assert.Inconclusive("This test was automatically generated.");
+            AssertRoutine("", "<ZWSTR ,SRCBUF 5 1 ,DSTBUF> <PRINTB ,DSTBUF>")
+                .InV5()
+                .WithGlobal("<GLOBAL SRCBUF <TABLE (STRING) \"hello\">>")
+                .WithGlobal("<GLOBAL DSTBUF <TABLE 0 0 0>>")
+                .Outputs("hello");
         }
 
         [TestMethod]

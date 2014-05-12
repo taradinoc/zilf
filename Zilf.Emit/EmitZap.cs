@@ -1161,6 +1161,9 @@ namespace Zilf.Emit.Zap
                 case BinaryOp.Throw:
                     opcode = "THROW";
                     break;
+                case BinaryOp.StoreIndirect:
+                    opcode = "SET";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -1220,6 +1223,28 @@ namespace Zilf.Emit.Zap
                     dest),
                 null,
                 PeepholeLineType.Plain);
+        }
+
+        public void EmitTokenize(IOperand text, IOperand parse, IOperand dictionary, IOperand flag)
+        {
+            var sb = new StringBuilder("LEX ");
+            sb.Append(text);
+            sb.Append(',');
+            sb.Append(parse);
+
+            if (dictionary != null)
+            {
+                sb.Append(',');
+                sb.Append(dictionary);
+
+                if (flag != null)
+                {
+                    sb.Append(',');
+                    sb.Append(flag);
+                }
+            }
+
+            AddLine(sb.ToString(), null, PeepholeLineType.Plain);
         }
 
         public void EmitRestart()

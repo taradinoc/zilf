@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ZLR.VM;
 using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace IntegrationTests
 {
@@ -20,7 +21,6 @@ namespace IntegrationTests
 
     class ReplayIO : TestCaseIO, IZMachineIO
     {
-        private readonly Queue<string> inputBuffer = new Queue<string>();
         private readonly Stream inputStream;
 
         public ReplayIO(Stream prevInputStream)
@@ -33,8 +33,7 @@ namespace IntegrationTests
         string IZMachineIO.ReadLine(string initial, int time, TimedInputCallback callback,
             byte[] terminatingKeys, out byte terminator)
         {
-            terminator = 13;
-            return inputBuffer.Dequeue();
+            throw new AssertFailedException("Unexpected line input request");
         }
 
         void IZMachineIO.PutCommand(string command)
@@ -44,9 +43,7 @@ namespace IntegrationTests
 
         short IZMachineIO.ReadKey(int time, TimedInputCallback callback, CharTranslator translator)
         {
-            string inputLine;
-            do { inputLine = inputBuffer.Dequeue(); } while (inputLine.Length == 0);
-            return translator(inputLine[0]);
+            throw new AssertFailedException("Unexpected character input request");
         }
 
         void IZMachineIO.PutChar(char ch)
@@ -273,7 +270,8 @@ namespace IntegrationTests
 
         bool IZMachineIO.DrawCustomStatusLine(string location, short hoursOrScore, short minsOrTurns, bool useTime)
         {
-            return false;
+            // don't show the status line
+            return true;
         }
 
         #endregion
