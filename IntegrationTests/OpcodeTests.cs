@@ -1326,6 +1326,39 @@ namespace IntegrationTests
         // NOOP is not supported in ZIL
 
         [TestMethod]
+        public void TestNOT()
+        {
+            AssertExpr("<NOT 0>").GivesNumber("1");
+            AssertExpr("<NOT 123>").GivesNumber("0");
+
+            AssertExpr("<NOT ,FOO>")
+                .WithGlobal("<GLOBAL FOO 0>")
+                .GivesNumber("1");
+            AssertExpr("<NOT ,FOO>")
+                .WithGlobal("<GLOBAL FOO 123>")
+                .GivesNumber("0");
+
+            AssertRoutine("", "<COND (<NOT 0> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .Outputs("hello");
+            AssertRoutine("", "<COND (<NOT 123> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .Outputs("goodbye");
+
+            AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .WithGlobal("<GLOBAL FOO 0>")
+                .Outputs("hello");
+            AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .WithGlobal("<GLOBAL FOO 123>")
+                .Outputs("goodbye");
+        }
+
+        [TestMethod]
+        public void TestNOT_Error()
+        {
+            AssertExpr("<NOT>").DoesNotCompile();
+            AssertExpr("<NOT 0 0>").DoesNotCompile();
+        }
+
+        [TestMethod]
         public void TestORIGINAL_P()
         {
             // V5 to V6
@@ -1872,6 +1905,7 @@ namespace IntegrationTests
         public void TestRETURN_FromBlock()
         {
             AssertRoutine("", "<* 2 <PROG () <RETURN 41>>>").GivesNumber("82");
+            AssertRoutine("", "<PROG () <RETURN>> 42").GivesNumber("42");
         }
 
         [TestMethod]

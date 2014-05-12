@@ -765,6 +765,15 @@ namespace Zilf
                 }
             }
 
+            [Builtin("N=?", "N==?")]
+            public static void NegatedVarargsEqualityOp(
+                PredCall c, IOperand arg1, IOperand arg2,
+                IOperand arg3 = null, IOperand arg4 = null)
+            {
+                c.polarity = !c.polarity;
+                VarargsEqualityOp(c, arg1, arg2, arg3, arg4);
+            }
+
             [Builtin("PUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
             [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
             public static void TernaryTableVoidOp(
@@ -1278,10 +1287,12 @@ namespace Zilf
                     // return from enclosing PROG/REPEAT
                     if ((c.cc.ReturnState & BlockReturnState.WantResult) != 0)
                     {
-                        if (value != c.rb.Stack)
+                        if (value == null)
+                            c.rb.EmitStore(c.rb.Stack, c.cc.Game.One);
+                        else if (value != c.rb.Stack)
                             c.rb.EmitStore(c.rb.Stack, value);
                     }
-                    else
+                    else if (value != null)
                     {
                         if (value == c.rb.Stack)
                             c.rb.EmitPopStack();
