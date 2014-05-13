@@ -642,7 +642,7 @@ namespace Zilf
             }
             if ((PartOfSpeech & PartOfSpeech.Direction) != 0)
             {
-                sb.Append("|DIR");
+                sb.Append("|DIR=");
                 sb.Append(speechValues[Zilf.PartOfSpeech.Direction]);
             }
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
@@ -850,7 +850,7 @@ namespace Zilf
                 // in V4+, don't write a value for Adjective
                 if (ctx.ZEnvironment.ZVersion < 4)
                 {
-                    if ((pos & Zilf.PartOfSpeech.AdjectiveFirst) != 0)
+                    if ((pos & Zilf.PartOfSpeech.FirstMask) == Zilf.PartOfSpeech.AdjectiveFirst)
                         partsToWrite.Insert(0, Zilf.PartOfSpeech.Adjective);
                     else
                         partsToWrite.Add(Zilf.PartOfSpeech.Adjective);
@@ -864,14 +864,14 @@ namespace Zilf
             }
             if ((pos & Zilf.PartOfSpeech.Direction) != 0)
             {
-                if ((pos & Zilf.PartOfSpeech.DirectionFirst) != 0)
+                if ((pos & Zilf.PartOfSpeech.FirstMask) == Zilf.PartOfSpeech.DirectionFirst)
                     partsToWrite.Insert(0, Zilf.PartOfSpeech.Direction);
                 else
                     partsToWrite.Add(Zilf.PartOfSpeech.Direction);
             }
             if ((pos & Zilf.PartOfSpeech.Verb) != 0)
             {
-                if ((pos & Zilf.PartOfSpeech.VerbFirst) != 0)
+                if ((pos & Zilf.PartOfSpeech.FirstMask) == Zilf.PartOfSpeech.VerbFirst)
                     partsToWrite.Insert(0, Zilf.PartOfSpeech.Verb);
                 else
                     partsToWrite.Add(Zilf.PartOfSpeech.Verb);

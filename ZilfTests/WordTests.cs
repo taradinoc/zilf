@@ -388,6 +388,14 @@ namespace ZilfTests
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Preposition | PartOfSpeech.Verb | PartOfSpeech.Object, PREPNUM, VERBNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.AdjectiveFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, ADJNUM, DIRNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM, ADJNUM),
             };
 
             foreach (var tc in testCases)
