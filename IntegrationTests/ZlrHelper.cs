@@ -222,6 +222,7 @@ namespace IntegrationTests
             var io = new ReplayIO(inputStream);
             var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
             var zmachine = new ZMachine(gameStream, io);
+            zmachine.PredictableRandom = true;
             zmachine.ReadingCommandsFromFile = true;
 
             zmachine.Run();
