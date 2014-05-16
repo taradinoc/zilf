@@ -171,66 +171,6 @@ namespace ZilfTests
             word.SetAdjective(ctx, 250);
         }
 
-        [TestMethod]
-        public void Buzz_With_Other_Should_Throw()
-        {
-            Action<Context, Word>[] setOthers = {
-                (ctx, word) => word.SetAdjective(ctx, 1),
-                (ctx, word) => word.SetDirection(ctx, 2),
-                (ctx, word) => word.SetObject(ctx),
-                (ctx, word) => word.SetPreposition(ctx, 3),
-                (ctx, word) => word.SetVerb(ctx, 4),
-            };
-
-            // test buzzword before other
-            for (int i = 0; i < setOthers.Length; i++)
-            {
-                var set = setOthers[i];
-
-                Context ctx;
-                Word word;
-                CreateWordInContext(4, true, out ctx, out word);
-
-                word.SetBuzzword(ctx, 100);
-
-                bool caught = false;
-                try
-                {
-                    set(ctx, word);
-                }
-                catch (InterpreterError)
-                {
-                    caught = true;
-                }
-
-                Assert.IsTrue(caught, "Buzzword before other failed to throw (i={0})", i);
-            }
-
-            // test buzzword after other
-            for (int i = 0; i < setOthers.Length; i++)
-            {
-                var set = setOthers[i];
-
-                Context ctx;
-                Word word;
-                CreateWordInContext(4, true, out ctx, out word);
-
-                set(ctx, word);
-
-                bool caught = false;
-                try
-                {
-                    word.SetBuzzword(ctx, 100);
-                }
-                catch (InterpreterError)
-                {
-                    caught = true;
-                }
-
-                Assert.IsTrue(caught, "Buzzword after other failed to throw (i={0})", i);
-            }
-        }
-
         private struct WtwbTestCase
         {
             public int ZVersion;
@@ -396,6 +336,35 @@ namespace ZilfTests
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM, ADJNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, ADJNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, ADJNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Buzzword, BUZZNUM, OBJPRESENT),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Buzzword, BUZZNUM, DIRNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Buzzword, PREPNUM, BUZZNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Verb | PartOfSpeech.Buzzword, BUZZNUM, VERBNUM),
+                new WtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, 0),
             };
 
             foreach (var tc in testCases)
@@ -404,6 +373,8 @@ namespace ZilfTests
                 Context ctx;
                 Word word;
                 CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
+
+                // TODO: catch exceptions in this block to indicate which test failed
 
                 for (int i = 0; i < 3; i++)
                 {

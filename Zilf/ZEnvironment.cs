@@ -681,6 +681,10 @@ namespace Zilf
             if (this.PartOfSpeech == Zilf.PartOfSpeech.None)
                 return true;
 
+            // never add First flags to buzzwords
+            if ((this.PartOfSpeech & Zilf.PartOfSpeech.Buzzword) != 0)
+                return false;
+
             // ignore parts of speech that don't record values in the current context
             var pos = this.PartOfSpeech;
             if (ctx.ZEnvironment.ZVersion >= 4)
@@ -737,9 +741,6 @@ namespace Zilf
 
         public void SetObject(Context ctx)
         {
-            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
             {
                 // there is no PartOfSpeech.ObjectFirst, so don't change the First flags
@@ -752,9 +753,6 @@ namespace Zilf
 
         public void SetVerb(Context ctx, byte value)
         {
-            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -768,9 +766,6 @@ namespace Zilf
 
         public void SetAdjective(Context ctx, byte value)
         {
-            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-            
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
                 if (ctx.ZEnvironment.ZVersion < 4 && ShouldSetFirst(ctx))
@@ -784,9 +779,6 @@ namespace Zilf
 
         public void SetDirection(Context ctx, byte value)
         {
-            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-            
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -800,18 +792,18 @@ namespace Zilf
 
         public void SetBuzzword(Context ctx, byte value)
         {
-            if (PartOfSpeech != PartOfSpeech.None)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-
-            PartOfSpeech = PartOfSpeech.Buzzword;
-            speechValues[Zilf.PartOfSpeech.Buzzword] = value;
+            if ((PartOfSpeech & Zilf.PartOfSpeech.Buzzword) == 0)
+            {
+                // buzzword value comes before everything but preposition
+                PartOfSpeech |= PartOfSpeech.Buzzword;
+                PartOfSpeech &= ~PartOfSpeech.FirstMask;
+                speechValues[Zilf.PartOfSpeech.Buzzword] = value;
+                CheckTooMany(ctx);
+            }
         }
 
         public void SetPreposition(Context ctx, byte value)
         {
-            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                throw new InterpreterError("buzzwords may not be used as any other part of speech");
-
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
                 // preposition value is always first
@@ -856,12 +848,6 @@ namespace Zilf
                         partsToWrite.Add(Zilf.PartOfSpeech.Adjective);
                 }
             }
-            if ((pos & Zilf.PartOfSpeech.Buzzword) != 0)
-            {
-                // there is no BuzzwordFirst, but Buzzword must be on its own anyway
-                System.Diagnostics.Debug.Assert(pos == Zilf.PartOfSpeech.Buzzword);
-                partsToWrite.Add(Zilf.PartOfSpeech.Buzzword);
-            }
             if ((pos & Zilf.PartOfSpeech.Direction) != 0)
             {
                 if ((pos & Zilf.PartOfSpeech.FirstMask) == Zilf.PartOfSpeech.DirectionFirst)
@@ -887,6 +873,11 @@ namespace Zilf
                     else
                         partsToWrite.Add(Zilf.PartOfSpeech.Object);
                 }
+            }
+            if ((pos & Zilf.PartOfSpeech.Buzzword) != 0)
+            {
+                // there is no BuzzwordFirst: Buzzword comes before everything but Preposition
+                partsToWrite.Insert(0, Zilf.PartOfSpeech.Buzzword);
             }
             if ((pos & Zilf.PartOfSpeech.Preposition) != 0)
             {
