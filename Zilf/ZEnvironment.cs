@@ -203,7 +203,7 @@ namespace Zilf
             return result;
         }
 
-        public void SortObjects()
+        /*public void SortObjects()
         {
             // apply FIRST/LAST
             var origOrder = new Dictionary<ZilModelObject, int>(Objects.Count);
@@ -238,7 +238,8 @@ namespace Zilf
                         return -1;
                 }
 
-                return origOrder[a] - origOrder[b];
+                // last object defined gets the lowest number
+                return origOrder[b] - origOrder[a];
             });
 
             // apply ROOMS-FIRST/ROOMS-LAST
@@ -270,6 +271,111 @@ namespace Zilf
                 Objects.Clear();
                 Objects.AddRange(temp);
             }
+        }*/
+
+        private static IEnumerable<ZilAtom> ObjectNamesMentionedInProperty(ZilList prop)
+        {
+            if (prop.First is ZilAtom && prop.Rest.First != null)
+            {
+                switch (((ZilAtom)prop.First).StdAtom)
+                {
+                    case StdAtom.LOC:
+                        var loc = prop.Rest.First as ZilAtom;
+                        if (loc != null)
+                            yield return loc;
+                        break;
+                    case StdAtom.IN:
+                        if (prop.Count() == 2)
+                            goto case StdAtom.LOC;
+                        break;
+                    case StdAtom.GLOBAL:
+                        foreach (var g in prop.Rest.OfType<ZilAtom>())
+                            yield return g;
+                        break;
+                }
+            }
+        }
+
+        public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder()
+        {
+            /* define objects in the reverse of "mentioned in source code" order, where
+             * "mentioned" means either defined or used as the IN/LOC of another object */
+
+            var order = new List<ZilAtom>(Objects.Count);
+            var used = new HashSet<ZilAtom>();
+
+            foreach (var obj in Objects)
+            {
+                var atom = obj.Name;
+
+                // add this object if it hasn't already been added
+                if (!used.Contains(atom))
+                {
+                    // add this object
+                    order.Add(atom);
+                    used.Add(atom);
+                }
+
+                // same with objects it mentions
+                var mentioned = from p in obj.Properties
+                                from o in ObjectNamesMentionedInProperty(p)
+                                select o;
+
+                foreach (var m in mentioned)
+                {
+                    if (!used.Contains(m))
+                    {
+                        order.Add(m);
+                        used.Add(m);
+                    }
+                }
+            }
+
+            order.Reverse();
+            var objectsByName = Objects.ToDictionary(obj => obj.Name);
+            return from name in order select objectsByName[name];
+        }
+
+        private static ZilAtom GetObjectParentName(ZilModelObject obj)
+        {
+            foreach (var p in obj.Properties)
+            {
+                var name = p.First as ZilAtom;
+                if (name == null)
+                    continue;
+
+                if (name.StdAtom == StdAtom.LOC ||
+                    (name.StdAtom == StdAtom.IN && p.Count() == 2))
+                {
+                    return p.Rest.First as ZilAtom;
+                }
+            }
+
+            return null;
+        }
+
+        public IEnumerable<ZilModelObject> ObjectsInInsertionOrder()
+        {
+            /* insert objects in source code order, except that the first
+             * defined child of each parent is inserted last */
+
+            var result = new List<ZilModelObject>(Objects);
+            var objectsByParent = Objects.ToLookup(obj => GetObjectParentName(obj));
+
+            foreach (var obj in Objects)
+            {
+                // find the object's first-defined child and move it after the last-defined child
+                var first = objectsByParent[obj.Name].FirstOrDefault();
+                var last = objectsByParent[obj.Name].LastOrDefault();
+
+                if (first != last)
+                {
+                    result.Remove(first);
+                    result.Insert(result.IndexOf(last) + 1, first);
+                }
+            }
+
+            return result;
         }
 
         public void MergeVocabulary()
