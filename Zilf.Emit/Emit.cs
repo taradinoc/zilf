@@ -51,10 +51,11 @@ namespace Zilf.Emit
         /// <summary>
         /// Defines a new table.
         /// </summary>
+        /// <param name="name">The name of the table.</param>
         /// <param name="pure">true if the table should be stored in read-only memory.</param>
         /// <returns>A helper object which may be used to add values to the table or refer
         /// to the table as an operand.</returns>
-        ITableBuilder DefineTable(bool pure);
+        ITableBuilder DefineTable(string name, bool pure);
         /// <summary>
         /// Defines a new routine.
         /// </summary>

@@ -173,9 +173,11 @@ namespace Zilf.Emit.Zap
             return gb;
         }
 
-        public ITableBuilder DefineTable(bool pure)
+        public ITableBuilder DefineTable(string name, bool pure)
         {
-            string name = "TBL?" + Convert.ToString(pureTables.Count + impureTables.Count);
+            if (name == null)
+                name = "T?" + Convert.ToString(pureTables.Count + impureTables.Count);
+
             TableBuilder tb = new TableBuilder(name);
             if (pure)
                 pureTables.Add(tb);

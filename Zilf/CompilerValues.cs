@@ -289,6 +289,8 @@ namespace Zilf
             this.flags = flags;
         }
 
+        public string Name { get; set; }
+
         public int ElementCount
         {
             get { return elements; }

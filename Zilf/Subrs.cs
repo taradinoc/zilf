@@ -1286,6 +1286,9 @@ namespace Zilf
                     throw new InterpreterError("GLOBAL: already defined: " + atom.ToStringContext(ctx, false));
             }
 
+            if (args[1] is ZilTable)
+                ((ZilTable)args[1]).Name = "T?" + atom.ToStringContext(ctx, false);
+
             ZilGlobal g = new ZilGlobal(atom, args[1]);
             ctx.SetGlobalVal(atom, g);
             ctx.ZEnvironment.Globals.Add(g);
