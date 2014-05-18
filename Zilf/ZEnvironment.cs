@@ -505,36 +505,40 @@ namespace Zilf
                         if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                         {
                             if (numObjects == 0)
-                                throw new InterpreterError("misplaced list in syntax definition");
-
-                            atom = list.First as ZilAtom;
-                            if (atom == null)
-                                throw new InterpreterError("list in syntax definition must start with an atom");
-
-                            if (atom.StdAtom == StdAtom.FIND)
                             {
-                                if ((numObjects == 1 && find1 != null) || find2 != null)
-                                    throw new InterpreterError("too many FIND lists in syntax definition");
-                                else if (numObjects == 1)
-                                    find1 = list;
-                                else
-                                    find2 = list;
+                                Errors.TerpWarning(ctx, src, "ignoring list in syntax definition with no preceding OBJECT");
                             }
                             else
                             {
-                                if (numObjects == 1)
+                                atom = list.First as ZilAtom;
+                                if (atom == null)
+                                    throw new InterpreterError("list in syntax definition must start with an atom");
+
+                                if (atom.StdAtom == StdAtom.FIND)
                                 {
-                                    if (bits1 != null)
-                                        bits1 = new ZilList(Enumerable.Concat(bits1, list));
+                                    if ((numObjects == 1 && find1 != null) || find2 != null)
+                                        throw new InterpreterError("too many FIND lists in syntax definition");
+                                    else if (numObjects == 1)
+                                        find1 = list;
                                     else
-                                        bits1 = list;
+                                        find2 = list;
                                 }
                                 else
                                 {
-                                    if (bits2 != null)
-                                        bits2 = new ZilList(Enumerable.Concat(bits2, list));
+                                    if (numObjects == 1)
+                                    {
+                                        if (bits1 != null)
+                                            bits1 = new ZilList(Enumerable.Concat(bits1, list));
+                                        else
+                                            bits1 = list;
+                                    }
                                     else
-                                        bits2 = list;
+                                    {
+                                        if (bits2 != null)
+                                            bits2 = new ZilList(Enumerable.Concat(bits2, list));
+                                        else
+                                            bits2 = list;
+                                    }
                                 }
                             }
                         }
@@ -565,6 +569,19 @@ namespace Zilf
             }
 
             // validation
+            if (numObjects < 1)
+            {
+                prep1 = null;
+                find1 = null;
+                bits1 = null;
+            }
+            if (numObjects < 2)
+            {
+                prep2 = null;
+                find2 = null;
+                bits2 = null;
+            }
+
             Word verbWord = ctx.ZEnvironment.GetVocabVerb(verb);
             Word word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1);
             Word word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2);
