@@ -639,7 +639,7 @@ namespace Zilf
 
         private static string TranslateString(string str)
         {
-            // strip CR/LF and all following whitespace, translate '|' to LF
+            // strip CR/LF and ensure 1 space afterward; translate '|' to LF
             StringBuilder sb = new StringBuilder(str);
             bool wasSpace = false;
 
@@ -657,7 +657,7 @@ namespace Zilf
                     do
                     {
                         sb.Remove(i, 1);
-                    } while (i < sb.Length && char.IsWhiteSpace(sb[i]));
+                    } while (i < sb.Length && (sb[i] == '\r' || sb[i] == '\n'));
 
                     if (!wasSpace)
                         sb.Insert(i, ' ');
