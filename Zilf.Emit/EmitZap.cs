@@ -78,8 +78,6 @@ namespace Zilf.Emit.Zap
         internal readonly int zversion;
         internal readonly DebugFileBuilder debug;
 
-        private IOperand[] propertyDefaults;
-
         private Stream stream;
         private TextWriter writer;
 
@@ -99,8 +97,6 @@ namespace Zilf.Emit.Zap
             this.streamFactory = streamFactory;
 
             debug = wantDebugInfo ? new DebugFileBuilder() : null;
-
-            propertyDefaults = new IOperand[(zversion >= 4) ? 63 : 31];
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
@@ -476,8 +472,23 @@ namespace Zilf.Emit.Zap
             writer.WriteLine("OBJECT:: .TABLE");
 
             // property defaults
-            foreach (IOperand value in propertyDefaults)
-                writer.WriteLine(INDENT + ".WORD {0}", (object)value ?? "0");
+            var propNums = Enumerable.Range(1, (zversion >= 4) ? 63 : 31);
+            var propDefaults = from num in propNums
+                               join p in this.props on num equals p.Value.Number into propGroup
+                               from prop in propGroup.DefaultIfEmpty()
+                               let name = prop.Key
+                               let def = prop.Value == null ? null : prop.Value.DefaultValue
+                               select new { num, name, def };
+
+            foreach (var row in propDefaults)
+            {
+                if (row.name != null)
+                    writer.WriteLine(INDENT + "; {0}", row.name);
+                else
+                    writer.WriteLine(INDENT + "; Unused property #{0}", row.num);
+
+                writer.WriteLine(INDENT + ".WORD {0}", (object)row.def ?? "0");
+            }
 
             // object structures
             if (objects.Count > 0)
