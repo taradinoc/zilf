@@ -109,14 +109,14 @@ namespace IntegrationTests
     [TestClass]
     public class OpcodeTests
     {
-        private ExprAssertionHelper AssertExpr(string expression)
+        private static ExprAssertionHelper AssertExpr(string expression)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
             return new ExprAssertionHelper(expression);
         }
 
-        private RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));

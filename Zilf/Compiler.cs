@@ -118,8 +118,7 @@ namespace Zilf
                 DefineProperty(cc, pair.Key);
 
             // builders for objects
-            ctx.ZEnvironment.SortObjects();
-            foreach (ZilModelObject obj in ctx.ZEnvironment.Objects)
+            foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInDefinitionOrder())
             {
                 cc.Objects.Add(obj.Name, gb.DefineObject(obj.Name.ToString()));
                 // builders for the rest of the properties and flags,
@@ -248,7 +247,7 @@ namespace Zilf
                 throw new CompilerError("missing 'GO' routine");
 
             // build objects
-            foreach (ZilModelObject obj in ctx.ZEnvironment.Objects)
+            foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInInsertionOrder())
             {
                 IObjectBuilder ob = cc.Objects[obj.Name];
                 try
@@ -2423,17 +2422,8 @@ namespace Zilf
                             continue;
                         }
                         ob.Parent = parent;
-                        if (parent.Child == null)
-                        {
-                            parent.Child = ob;
-                        }
-                        else
-                        {
-                            IObjectBuilder last = parent.Child;
-                            while (last.Sibling != null)
-                                last = last.Sibling;
-                            last.Sibling = ob;
-                        }
+                        ob.Sibling = parent.Child;
+                        parent.Child = ob;
                         continue;
 
                     case StdAtom.FLAGS:

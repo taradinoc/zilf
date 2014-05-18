@@ -108,6 +108,25 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue);
         }
 
+        public void Implies(params string[] conditions)
+        {
+            Contract.Requires(conditions != null && conditions.Length > 0);
+            Contract.Requires(Contract.ForAll(conditions, c => !string.IsNullOrWhiteSpace(c)));
+
+            var sb = new StringBuilder();
+            foreach (var c in conditions)
+            {
+                sb.AppendFormat("<COND ({0}) (T <INC FAILS> <PRINTI \"FAIL: {0}|\">)>\r\n", c);
+            }
+
+            var testCode = string.Format(
+                "{0}\r\n<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {1} .FAILS>\r\n<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>",
+                GlobalCode(),
+                sb);
+
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS");
+        }
+
         public void DoesNotCompile()
         {
             var testCode = string.Format(
@@ -180,6 +199,23 @@ namespace IntegrationTests
         protected override string Expression()
         {
             return string.Format("<{0} {1}>", RoutineName, arguments);
+        }
+    }
+
+    sealed class GlobalsAssertionHelper : AbstractAssertionHelper<GlobalsAssertionHelper>
+    {
+        public GlobalsAssertionHelper(params string[] globals)
+        {
+            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+
+            foreach (var g in globals)
+                miscGlobals.AppendLine(g);
+        }
+
+        protected override string Expression()
+        {
+            return "";
         }
     }
 }
