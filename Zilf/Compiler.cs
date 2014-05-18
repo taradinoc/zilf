@@ -128,7 +128,7 @@ namespace Zilf
 
             // builders for tables
             foreach (ZilTable table in ctx.ZEnvironment.Tables)
-                cc.Tables.Add(table, gb.DefineTable((table.Flags & TableFlags.Pure) != 0));
+                cc.Tables.Add(table, gb.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0));
 
             // vocabulary for punctuation
             DefinePunctWord(ctx, cc, ".", "PERIOD");
@@ -326,10 +326,10 @@ namespace Zilf
 
         private void BuildSyntaxTables(CompileCtx cc)
         {
-            cc.VerbTable = cc.Game.DefineTable(true);
-            cc.ActionTable = cc.Game.DefineTable(true);
-            cc.PreactionTable = cc.Game.DefineTable(true);
-            cc.PrepositionTable = cc.Game.DefineTable(true);
+            cc.VerbTable = cc.Game.DefineTable("VTBL", true);
+            cc.ActionTable = cc.Game.DefineTable("ATBL", true);
+            cc.PreactionTable = cc.Game.DefineTable("PATBL", true);
+            cc.PrepositionTable = cc.Game.DefineTable("PRTBL", true);
 
             // compact syntaxes?
             ZilAtom compactAtom = cc.Context.GetStdAtom(StdAtom.COMPACT_SYNTAXES_P);
@@ -349,7 +349,7 @@ namespace Zilf
                 int num = verb.Key.GetValue(PartOfSpeech.Verb);
 
                 // syntax table
-                ITableBuilder stbl = cc.Game.DefineTable(true);
+                ITableBuilder stbl = cc.Game.DefineTable("ST?" + verb.Key.Atom.ToString(), true);
                 cc.VerbTable.AddShort(stbl);
 
                 stbl.AddByte((byte)verb.Count());
@@ -600,7 +600,21 @@ namespace Zilf
                     tb.AddShort((short)zt.ElementCount);
 
                 IOperand[] values = new IOperand[zt.ElementCount];
-                zt.CopyTo(values, 0, values.Length, zo => CompileConstant(cc, zo), cc.Game.Zero);
+                Func<ZilObject, IOperand> convertElement = zo =>
+                {
+                    // it's usually a constant value
+                    var constVal = CompileConstant(cc, zo);
+                    if (constVal != null)
+                        return constVal;
+
+                    // but we'll also allow a global name if the global contains a table
+                    IGlobalBuilder global;
+                    if (zo is ZilAtom && cc.Globals.TryGetValue((ZilAtom)zo, out global) && global.DefaultValue is ITableBuilder)
+                        return global.DefaultValue;
+
+                    return null;
+                };
+                zt.CopyTo(values, 0, values.Length, convertElement, cc.Game.Zero);
 
                 for (int i = 0; i < values.Length; i++)
                     if (values[i] == null)
@@ -682,7 +696,6 @@ namespace Zilf
                 case StdAtom.ATOM:
                     IRoutineBuilder routine;
                     IObjectBuilder obj;
-                    IGlobalBuilder global;
                     IOperand operand;
                     atom = (ZilAtom)expr;
                     if (atom.StdAtom == StdAtom.T)
@@ -693,9 +706,6 @@ namespace Zilf
                         return obj;
                     if (cc.Constants.TryGetValue(atom, out operand))
                         return operand;
-                    if (cc.Globals.TryGetValue(atom, out global))
-                        if (global.DefaultValue is ITableBuilder)
-                            return global.DefaultValue;
                     return null;
 
                 case StdAtom.FALSE:
