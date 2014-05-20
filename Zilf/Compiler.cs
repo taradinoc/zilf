@@ -1292,6 +1292,12 @@ namespace Zilf
                         return CompileVERSION_P(cc, rb, form.Rest, wantResult, resultStorage);
 
                     case StdAtom.NOT:
+                        if (form.Rest == null || form.Rest.First == null ||
+                            (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
+                        {
+                            Errors.CompError(cc.Context, form, "NOT requires exactly 1 argument");
+                            return cc.Game.Zero;
+                        }
                         resultStorage = resultStorage ?? rb.Stack;
                         label1 = rb.DefineLabel();
                         label2 = rb.DefineLabel();
