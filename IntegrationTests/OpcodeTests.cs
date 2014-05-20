@@ -2064,6 +2064,36 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestSET_Quirks()
+        {
+            /* SET and SETG have different QuirksMode behavior:
+             * 
+             * SETG treats a ,GVAL as its first argument as a variable name,
+             * but treats an .LVAL as an expression: <SETG ,FOO 1> sets the global FOO,
+             * whereas <SETG .FOO 1> sets the variable whose index is in .FOO.
+             * 
+             * Likewise, SET treats an .LVAL as a variable name but a ,GVAL as an
+             * expression: <SET .FOO 1> sets the local FOO, and <SET ,FOO 1> sets the
+             * variable whose index is in FOO. */
+
+            AssertRoutine("\"AUX\" (FOO 16)", "<SET .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("123\n1");
+
+            AssertRoutine("\"AUX\" (FOO 16)", "<SETG ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("16\n123");
+
+            AssertRoutine("\"AUX\" (FOO 16)", "<SETG .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("16\n123");
+
+            AssertRoutine("\"AUX\" (FOO 16)", "<SET ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("123\n1");
+        }
+
+        [TestMethod]
         public void TestSET_Error()
         {
             // V1 to V6

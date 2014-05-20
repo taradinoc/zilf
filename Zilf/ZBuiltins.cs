@@ -232,6 +232,15 @@ namespace Zilf
             {
             }
 
+            [Flags]
+            enum QuirksMode
+            {
+                None = 0,
+                Local = 1,
+                Global = 2,
+                Both = 3,
+            }
+
             /// <summary>
             /// Indicates that the parameter will be used as a variable index.
             /// The caller may pass an atom, which will be interpreted as the name of
@@ -247,7 +256,7 @@ namespace Zilf
                 /// as referring to its index. Use &lt;VALUE X&gt; to force the
                 /// value to be used.
                 /// </summary>
-                public bool QuirksMode { get; set; }
+                public QuirksMode QuirksMode { get; set; }
             }
 
             #endregion
@@ -511,17 +520,18 @@ namespace Zilf
                     {
                         // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
                         ZilAtom atom = arg as ZilAtom;
-                        bool quirks = false;
+                        QuirksMode quirks = QuirksMode.None;
                         if (arg == null)
                         {
                             var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
                             quirks = attr.QuirksMode;
-                            if (quirks && arg is ZilForm)
+                            if (quirks != QuirksMode.None && arg is ZilForm)
                             {
                                 var form = (ZilForm)arg;
                                 var fatom = form.First as ZilAtom;
                                 if (atom != null &&
-                                    (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL) &&
+                                    (((quirks & QuirksMode.Global) != 0 && atom.StdAtom == StdAtom.GVAL) ||
+                                     ((quirks & QuirksMode.Local) != 0 && atom.StdAtom == StdAtom.LVAL)) &&
                                     form.Rest.First is ZilAtom &&
                                     form.Rest.Rest.IsEmpty)
                                 {
@@ -532,9 +542,7 @@ namespace Zilf
 
                         if (atom == null)
                         {
-                            const string SMustBeVar = "argument must be a variable";
-                            const string SMustBeVarQuirks = "argument must be a variable or GVAL/LVAL reference";
-                            error(i, quirks ? SMustBeVarQuirks : SMustBeVar);
+                            error(i, "argument must be a variable");
                         }
                         else
                         {
@@ -594,18 +602,30 @@ namespace Zilf
                 return result;
             }
 
-            private static IVariable GetVariable(CompileCtx cc, ZilObject expr, bool quirks = true)
+            private static IVariable GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
             {
                 ZilAtom atom = expr as ZilAtom;
 
                 if (atom == null)
                 {
-                    if (!quirks)
+                    if (quirks == QuirksMode.None)
                         return null;
 
                     var form = expr as ZilForm;
-                    if (form == null)
+                    if (form == null || !(form.First is ZilAtom))
                         return null;
+
+                    switch (((ZilAtom)form.First).StdAtom)
+                    {
+                        case StdAtom.GVAL:
+                            if ((quirks & QuirksMode.Global) == 0)
+                                return null;
+                            break;
+                        case StdAtom.LVAL:
+                            if ((quirks & QuirksMode.Local) == 0)
+                                return null;
+                            break;
+                    }
 
                     if (form.Rest == null || !(form.Rest.First is ZilAtom))
                         return null;
@@ -1019,9 +1039,9 @@ namespace Zilf
                 c.rb.EmitPrint(text, crlfRtrue);
             }
 
-            [Builtin("SET", "SETG", HasSideEffect = true)]
+            [Builtin("SET", HasSideEffect = true)]
             public static IOperand SetValueOp(
-                ValueCall c, [Variable(QuirksMode = true)] IVariable dest, IOperand value)
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] IVariable dest, IOperand value)
             {
                 // in value context, we need to be able to return the newly set value,
                 // so dest is IVariable. this means <SET <fancy-expression> value> isn't
@@ -1030,9 +1050,29 @@ namespace Zilf
                 return dest;
             }
 
-            [Builtin("SET", "SETG")]
+            [Builtin("SETG", HasSideEffect = true)]
+            public static IOperand SetgValueOp(
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Global)] IVariable dest, IOperand value)
+            {
+                // in value context, we need to be able to return the newly set value,
+                // so dest is IVariable. this means <SET <fancy-expression> value> isn't
+                // supported in value context.
+                c.rb.EmitStore(dest, value);
+                return dest;
+            }
+
+            [Builtin("SET")]
             public static void SetVoidOp(
-                VoidCall c, [Variable(QuirksMode = true)] IOperand dest, IOperand value)
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Local)] IOperand dest, IOperand value)
+            {
+                // in void context, we don't need to return the newly set value, so we
+                // can support <SET <fancy-expression> value>.
+                c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, value, null);
+            }
+
+            [Builtin("SETG")]
+            public static void SetgVoidOp(
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] IOperand dest, IOperand value)
             {
                 // in void context, we don't need to return the newly set value, so we
                 // can support <SET <fancy-expression> value>.
