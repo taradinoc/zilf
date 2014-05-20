@@ -1552,6 +1552,7 @@ namespace IntegrationTests
         {
             // V1 to V6
             AssertExpr("<PRINTI \"hello|world\">").Outputs("hello\nworld");
+            AssertExpr("<PRINTI \"foo||\r\n\r\n    BAR\">").Outputs("foo\n\n     BAR");
         }
 
         [TestMethod]
