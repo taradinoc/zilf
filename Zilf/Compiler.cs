@@ -1406,8 +1406,12 @@ namespace Zilf
                 case StdAtom.ATOM:
                     ZilAtom atom = (ZilAtom)expr;
                     if (cc.Globals.ContainsKey(atom))
-                        return cc.Globals[atom];
-                    throw new CompilerError("no such global (used as operand): " + atom);
+                    {
+                        Errors.CompWarning(cc.Context, expr as ISourceLine,
+                            "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
+                        return cc.Globals[atom].Indirect;
+                    }
+                    throw new CompilerError(expr as ISourceLine, "bare atom used as operand is not a global variable: " + atom);
 
                 default:
                     throw new NotImplementedException();
