@@ -174,6 +174,9 @@ namespace Zilf.Emit.Zap
             if (name == null)
                 name = "T?" + Convert.ToString(pureTables.Count + impureTables.Count);
 
+            if (symbols.ContainsKey(name))
+                throw new ArgumentException("Global symbol already defined: " + name, "name");
+
             TableBuilder tb = new TableBuilder(name);
             if (pure)
                 pureTables.Add(tb);
@@ -240,6 +243,9 @@ namespace Zilf.Emit.Zap
         public IWordBuilder DefineVocabularyWord(string word)
         {
             string name = "W?" + SanitizeSymbol(word.ToUpper());
+            if (symbols.ContainsKey(name))
+                throw new ArgumentException("Global symbol already defined: " + name, "word");
+
             WordBuilder result = new WordBuilder(name, word.ToLower());
             vocabulary.Add(result);
             symbols.Add(name, true);

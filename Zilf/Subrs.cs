@@ -1282,10 +1282,24 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError(null, "GLOBAL: first arg must be an atom");
 
-            if (ctx.GetGlobalVal(atom) != null)
+            var oldVal = ctx.GetGlobalVal(atom);
+            if (oldVal != null)
             {
                 if (ctx.AllowRedefine)
+                {
+                    if (oldVal is ZilGlobal)
+                    {
+                        var defaultValue = ((ZilGlobal)oldVal).Value;
+                        if (defaultValue is ZilTable)
+                        {
+                            // prevent errors about duplicate symbol T?GLOBAL-NAME
+                            // TODO: undefine the table if it hasn't been referenced anywhere yet
+                            ((ZilTable)defaultValue).Name = null;
+                        }
+                    }
+
                     ctx.Redefine(atom);
+                }
                 else
                     throw new InterpreterError("GLOBAL: already defined: " + atom.ToStringContext(ctx, false));
             }
