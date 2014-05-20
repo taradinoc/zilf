@@ -125,7 +125,11 @@ namespace Zilf
         }
 
         [Subr("GC-MON")]
-        public static ZilObject GC_MON(Context ctx, ZilObject[] args)
+        [Subr("GC")]
+        [Subr("BLOAT")]
+        [Subr("ZSTR-ON")]
+        [Subr("ZSTR-OFF")]
+        public static ZilObject MdlMemoryCrap(Context ctx, ZilObject[] args)
         {
             // nada
             return ctx.FALSE;
