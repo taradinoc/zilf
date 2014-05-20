@@ -653,35 +653,31 @@ namespace Zilf
         {
             // strip CR/LF and ensure 1 space afterward; translate '|' to LF
             StringBuilder sb = new StringBuilder(str);
-            bool wasSpace = false;
+            char? last = null;
 
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
 
-                if (c == '|')
+                switch (c)
                 {
-                    sb[i] = '\n';
-                    wasSpace = true;
-                }
-                else if (c == '\r' || c == '\n')
-                {
-                    do
-                    {
-                        sb.Remove(i, 1);
-                    } while (i < sb.Length && (sb[i] == '\r' || sb[i] == '\n'));
+                    case '|':
+                        sb[i] = '\n';
+                        break;
 
-                    if (!wasSpace)
-                        sb.Insert(i, ' ');
-                    else
-                        i--;
+                    case '\r':
+                        sb.Remove(i--, 1);
+                        continue;
 
-                    wasSpace = true;
+                    case '\n':
+                        if (last == '|')
+                            sb.Remove(i--, 1);
+                        else
+                            sb[i] = ' ';
+                        break;
                 }
-                else
-                {
-                    wasSpace = char.IsWhiteSpace(c);
-                }
+
+                last = c;
             }
 
             return sb.ToString();
