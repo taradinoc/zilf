@@ -327,6 +327,16 @@ namespace Zilf.Emit.Zap
             get { return zversion > 3 ? 64 : 8; }
         }
 
+        public int MaxProperties
+        {
+            get { return zversion > 3 ? 63 : 31; }
+        }
+
+        public int MaxFlags
+        {
+            get { return zversion > 3 ? 48 : 32; }
+        }
+
         public int MaxCallArguments
         {
             get { return zversion > 3 ? 7 : 3; }

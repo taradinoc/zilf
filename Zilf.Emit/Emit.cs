@@ -95,6 +95,16 @@ namespace Zilf.Emit
         int MaxPropertyLength { get; }
 
         /// <summary>
+        /// Gets the maximum allowable number of properties.
+        /// </summary>
+        int MaxProperties { get; }
+
+        /// <summary>
+        /// Gets the maximum allowable number of flags.
+        /// </summary>
+        int MaxFlags { get; }
+
+        /// <summary>
         /// Gets the maximum allowable number of arguments to a routine call.
         /// </summary>
         int MaxCallArguments { get; }
