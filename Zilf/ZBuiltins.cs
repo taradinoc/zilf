@@ -862,6 +862,14 @@ namespace Zilf
                 c.rb.Branch(cond, left, right, c.label, c.polarity);
             }
 
+            [Builtin("L=?", Data = Condition.Greater)]
+            [Builtin("G=?", Data = Condition.Less)]
+            public static void NegatedBinaryPredOp(
+                PredCall c, [Data] Condition cond, IOperand left, IOperand right)
+            {
+                c.rb.Branch(cond, left, right, c.label, !c.polarity);
+            }
+
             [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
             [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true)]
             public static void BinaryVariablePredOp(

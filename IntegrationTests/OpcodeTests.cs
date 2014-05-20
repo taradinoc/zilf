@@ -814,6 +814,29 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestGEq_P()
+        {
+            // V1 to V6
+            // 2 to 2 operands
+            AssertExpr("<G=? -1 3>").InV3().GivesNumber("0");
+            AssertExpr("<G=? 3 -1>").InV3().GivesNumber("1");
+            AssertExpr("<G=? 37 37>").InV3().GivesNumber("1");
+
+            // alias
+            AssertExpr("<G? 3 -1>").InV3().GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void TestGEq_P_Error()
+        {
+            // V1 to V6
+            // 2 to 2 operands
+            AssertExpr("<G=?>").InV3().DoesNotCompile();
+            AssertExpr("<G=? 0>").InV3().DoesNotCompile();
+            AssertExpr("<G=? 0 0 0>").InV3().DoesNotCompile();
+        }
+
+        [TestMethod]
         public void TestGRTR_P()
         {
             // V1 to V6
@@ -1029,6 +1052,29 @@ namespace IntegrationTests
         }
 
         // IXCALL and JUMP are not supported in ZIL
+
+        [TestMethod]
+        public void TestLEq_P()
+        {
+            // V1 to V6
+            // 2 to 2 operands
+            AssertExpr("<L=? -1 3>").InV3().GivesNumber("1");
+            AssertExpr("<L=? 3 -1>").InV3().GivesNumber("0");
+            AssertExpr("<L=? 37 37>").InV3().GivesNumber("1");
+
+            // alias
+            AssertExpr("<L? 3 -1>").InV3().GivesNumber("0");
+        }
+
+        [TestMethod]
+        public void TestLEq_P_Error()
+        {
+            // V1 to V6
+            // 2 to 2 operands
+            AssertExpr("<L=?>").InV3().DoesNotCompile();
+            AssertExpr("<L=? 0>").InV3().DoesNotCompile();
+            AssertExpr("<L=? 0 0 0>").InV3().DoesNotCompile();
+        }
 
         [TestMethod]
         public void TestLESS_P()
