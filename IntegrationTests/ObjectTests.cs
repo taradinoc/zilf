@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace IntegrationTests
 {
     [TestClass]
-    public class TreeTests
+    public class ObjectTests
     {
         private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
@@ -15,6 +15,8 @@ namespace IntegrationTests
 
             return new GlobalsAssertionHelper(globals);
         }
+
+        #region Object Numbering & Tree Ordering
 
         private string[] TreeImplications(string[] numbering, params string[][] chains)
         {
@@ -95,5 +97,30 @@ namespace IntegrationTests
         }
 
         // TODO: tests for <ORDER-OBJECTS? ...>
+
+        #endregion
+
+        #region Attribute Numbering
+
+        [TestMethod]
+        public void TestFindbitsMustBeNonZero()
+        {
+            AssertGlobals(
+                "<OBJECT FOO (FLAGS F1BIT F2BIT F3BIT F4BIT F5BIT F6BIT F7BIT F8BIT " +
+                                   "F9BIT F10BIT F11BIT F12BIT F13BIT F14BIT F15BIT F16BIT " +
+                                   "F17BIT F18BIT F19BIT F20BIT F21BIT F22BIT F23BIT F24BIT " +
+                                   "F25BIT F26BIT F27BIT F28BIT F29BIT F30BIT F31BIT F32BIT)>",
+                "<SYNTAX BAR OBJECT (FIND F1BIT) WITH OBJECT (FIND F2BIT) = V-BAR>",
+                "<SYNTAX BAZ OBJECT (FIND F31BIT) WITH OBJECT (FIND F32BIT) = V-BAZ>",
+                "<ROUTINE V-BAR () <>>",
+                "<ROUTINE V-BAZ () <>>")
+                .Implies(
+                    "<NOT <0? ,F1BIT>>",
+                    "<NOT <0? ,F2BIT>>",
+                    "<NOT <0? ,F31BIT>>",
+                    "<NOT <0? ,F32BIT>>");
+        }
+        
+        #endregion
     }
 }
