@@ -697,5 +697,13 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #DECL ((FOO) FIX)>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #DECL ((FOO) FIX)>", ctx.FALSE);
         }
+
+        [TestMethod]
+        public void TestApplicableFIX()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<SET O <LIST <FORM + 1 2>>> <1 .O>",
+                new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) }));
+        }
     }
 }
