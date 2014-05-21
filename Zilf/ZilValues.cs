@@ -912,9 +912,9 @@ namespace Zilf
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
             if (args.Length == 1)
-                return Subrs.NTH(ctx, new ZilObject[] { args[0].Eval(ctx), this });
+                return Subrs.NTH(ctx, new ZilObject[] { args[0], this });
             else if (args.Length == 2)
-                return Subrs.PUT(ctx, new ZilObject[] { args[0].Eval(ctx), this, args[1].Eval(ctx) });
+                return Subrs.PUT(ctx, new ZilObject[] { args[0], this, args[1] });
             else
                 throw new InterpreterError("expected 1 or 2 args after a FIX");
         }
@@ -2133,6 +2133,7 @@ namespace Zilf
         {
             for (int i = 0; i < argAtoms.Length; i++)
             {
+                // TODO: include "ARGS" or "TUPLE"
                 if (i == auxArgsStart)
                     yield return new ZilString("AUX");
                 else if (i == optArgsStart)
