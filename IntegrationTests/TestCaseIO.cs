@@ -22,10 +22,14 @@ namespace IntegrationTests
     class ReplayIO : TestCaseIO, IZMachineIO
     {
         private readonly Stream inputStream;
+        private readonly bool wantStatusLine;
 
-        public ReplayIO(Stream prevInputStream)
+        private MemoryStream saveStream;
+
+        public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
         {
             this.inputStream = prevInputStream;
+            this.wantStatusLine = wantStatusLine;
         }
 
         #region Z-machine I/O implementation
@@ -80,11 +84,15 @@ namespace IntegrationTests
 
         Stream IZMachineIO.OpenSaveFile(int size)
         {
-            return null;
+            saveStream = new MemoryStream();
+            return saveStream;
         }
 
         Stream IZMachineIO.OpenRestoreFile()
         {
+            if (saveStream != null)
+                return new MemoryStream(saveStream.ToArray());
+
             return null;
         }
 
@@ -270,8 +278,7 @@ namespace IntegrationTests
 
         bool IZMachineIO.DrawCustomStatusLine(string location, short hoursOrScore, short minsOrTurns, bool useTime)
         {
-            // don't show the status line
-            return true;
+            return !wantStatusLine;
         }
 
         #endregion

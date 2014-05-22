@@ -83,9 +83,12 @@ namespace Zilf
                 ctx.CurrentFile = newFile;
                 try
                 {
-                    Antlr.Runtime.ICharStream stream =
-                        new Antlr.Runtime.ANTLRFileStream(newFile);
-                    Program.Evaluate(ctx, stream);
+                    using (var stream = ctx.OpenFile(newFile, false))
+                    {
+                        Antlr.Runtime.ICharStream inputStream =
+                            new Antlr.Runtime.ANTLRInputStream(stream);
+                        Program.Evaluate(ctx, inputStream);
+                    }
                     return new ZilString("DONE");
                 }
                 finally

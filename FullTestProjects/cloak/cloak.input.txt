@@ -1,0 +1,29 @@
+i
+x cloak
+x me
+n
+e
+s
+i
+e
+n
+w
+x hook
+get hook
+put cloak on hook
+e
+s
+read message
+n
+restart
+y
+s
+w
+s
+n
+w
+put cloak on hook
+e
+s
+x message
+y

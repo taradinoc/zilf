@@ -52,8 +52,15 @@ namespace Zilf
 
     public sealed class ZilfCompiler
     {
+        public ZilfCompiler()
+        {
+            this.IncludePaths = new List<string>();
+        }
+        
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
+
+        public IList<string> IncludePaths { get; private set; }
 
         private Stream OpenFile(string path, bool writing)
         {
@@ -187,6 +194,9 @@ namespace Zilf
                 var ctx = new Context();
 
                 ctx.CurrentFile = inputFileName;
+                ctx.InterceptOpenFile = this.OpenFile;
+                ctx.InterceptFileExists = this.CheckFileExists;
+                ctx.IncludePaths.AddRange(this.IncludePaths);
                 Zilf.Program.Evaluate(ctx, charStream);
 
                 // check for evaluation errors
