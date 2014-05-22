@@ -74,7 +74,7 @@ namespace IntegrationTests
                 var massagedExpected = MassageText(File.ReadAllText(outputFile));
                 if (massagedActual != massagedExpected)
                 {
-                    string[] expectedLines = SplitLines(File.ReadAllText(outputFile));
+                    string[] expectedLines = SplitLines(massagedExpected);
                     string[] actualLines = SplitLines(actualOutput);
 
                     var diff = Diff.Calculate(expectedLines, actualLines);
