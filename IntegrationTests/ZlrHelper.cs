@@ -156,6 +156,7 @@ namespace IntegrationTests
             };
             compiler.CheckingFilePresence += (sender, e) =>
             {
+                // XXX this isn't right...?
                 e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
             };
 
@@ -228,6 +229,183 @@ namespace IntegrationTests
             zmachine.Run();
 
             return io.CollectOutput();
+        }
+    }
+
+    // TODO: merge this with ZlrHelper
+    class FileBasedZlrHelper
+    {
+        private const string SMainZapFileName = "Output.zap";
+        private const string SStoryFileNameTemplate = "Output.z#";
+
+        private string codeFile;
+        private string[] includeDirs;
+        private string inputFile;
+
+        private Dictionary<string, MemoryStream> zilfOutputFiles;
+        private List<string> zilfLogMessages;
+
+        private MemoryStream zapfOutputFile;
+        private List<string> zapfLogMessages;
+
+        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(codeFile));
+            Contract.Requires(includeDirs != null && Contract.ForAll(includeDirs, d => !string.IsNullOrWhiteSpace(d)));
+
+            this.codeFile = codeFile;
+            this.includeDirs = includeDirs;
+            this.inputFile = inputFile;
+        }
+
+        public bool WantStatusLine { get; set; }
+
+        public bool Compile()
+        {
+            var codeStreams = new Dictionary<string, Stream>();
+
+            try
+            {
+                // initialize ZilfCompiler
+                this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
+                this.zilfLogMessages = new List<string>();
+
+                var compiler = new ZilfCompiler();
+                compiler.OpeningFile += (sender, e) =>
+                {
+                    if (e.Writing)
+                    {
+                        MemoryStream mstr;
+                        if (zilfOutputFiles.TryGetValue(e.FileName, out mstr))
+                        {
+                            e.Stream = mstr;
+                            return;
+                        }
+
+                        e.Stream = zilfOutputFiles[e.FileName] = new MemoryStream();
+                    }
+                    else
+                    {
+                        Stream result;
+                        if (codeStreams.TryGetValue(e.FileName, out result))
+                        {
+                            e.Stream = result;
+                            return;
+                        }
+
+                        foreach (var idir in includeDirs)
+                        {
+                            var path = Path.Combine(idir, e.FileName);
+                            if (File.Exists(path))
+                            {
+                                e.Stream = codeStreams[e.FileName] = new FileStream(path, FileMode.Open, FileAccess.Read);
+                                return;
+                            }
+                        }
+                    }
+                };
+                compiler.CheckingFilePresence += (sender, e) =>
+                {
+                    foreach (var idir in includeDirs)
+                    {
+                        if (File.Exists(Path.Combine(idir, e.FileName)))
+                        {
+                            e.Exists = true;
+                            return;
+                        }
+                    }
+                };
+                foreach (var dir in includeDirs)
+                    compiler.IncludePaths.Add(dir);
+
+                // run compilation
+                if (compiler.Compile(Path.GetFileName(codeFile), SMainZapFileName))
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.Error.WriteLine();
+                    return false;
+                }
+            }
+            finally
+            {
+                foreach (var stream in codeStreams.Values)
+                    stream.Dispose();
+            }
+        }
+
+        public bool Assemble()
+        {
+            // initialize ZapfAssembler
+            var assembler = new ZapfAssembler();
+            assembler.OpeningFile += (sender, e) =>
+            {
+                if (e.Writing)
+                {
+                    //XXX this could potentially be the debug file instead!
+
+                    zapfOutputFile = new MemoryStream();
+                    e.Stream = zapfOutputFile;
+                }
+                else if (zilfOutputFiles.ContainsKey(e.FileName))
+                {
+                    var buffer = zilfOutputFiles[e.FileName].ToArray();
+                    e.Stream = new MemoryStream(buffer, false);
+                }
+                else
+                {
+                    throw new InvalidOperationException("No such ZILF output file: " + e.FileName);
+                }
+            };
+            assembler.CheckingFilePresence += (sender, e) =>
+            {
+                e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
+            };
+
+            // run assembly
+            return assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
+        }
+
+        public string Execute()
+        {
+            Stream inputStream;
+            if (inputFile != null)
+            {
+                inputStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+            }
+            else
+            {
+                inputStream = new MemoryStream();
+            }
+
+            try
+            {
+                var io = new ReplayIO(inputStream, this.WantStatusLine);
+
+                try
+                {
+                    var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
+                    var zmachine = new ZMachine(gameStream, io);
+                    zmachine.PredictableRandom = true;
+                    zmachine.ReadingCommandsFromFile = true;
+
+                    zmachine.Run();
+                }
+                catch
+                {
+                    Console.WriteLine("Oh shit!");
+                    Console.Write(io.CollectOutput());
+                    throw;
+                }
+
+                return io.CollectOutput();
+            }
+            finally
+            {
+                inputStream.Dispose();
+            }
         }
     }
 }

@@ -34,6 +34,9 @@ namespace Zilf
         Compiler,
     }
 
+    delegate Stream OpenFileDelegate(string filename, bool writing);
+    delegate bool FileExistsDelegate(string filename);
+
     class Context
     {
         private class Binding
@@ -217,6 +220,30 @@ namespace Zilf
             set { callingForm = value; }
         }
 
+        public OpenFileDelegate InterceptOpenFile;
+        public FileExistsDelegate InterceptFileExists;
+
+        public Stream OpenFile(string filename, bool writing)
+        {
+            var intercept = this.InterceptOpenFile;
+            if (intercept != null)
+                return intercept(filename, writing);
+
+            return new FileStream(
+                filename,
+                writing ? FileMode.Create : FileMode.Open,
+                writing ? FileAccess.ReadWrite : FileAccess.Read);
+        }
+
+        public bool FileExists(string filename)
+        {
+            var intercept = this.InterceptFileExists;
+            if (intercept != null)
+                return intercept(filename);
+
+            return File.Exists(filename);
+        }
+        
         private void InitStdAtoms()
         {
             StdAtom[] ids = (StdAtom[])Enum.GetValues(typeof(StdAtom));
@@ -507,11 +534,11 @@ namespace Zilf
             {
                 var combined = Path.Combine(path, name);
 
-                if (File.Exists(combined))
+                if (FileExists(combined))
                     return combined;
 
                 combined = Path.ChangeExtension(combined, ".zil");
-                if (File.Exists(combined))
+                if (FileExists(combined))
                     return combined;
             }
 
