@@ -310,7 +310,7 @@ namespace Zilf
                                 continue;
                             }
 
-                            if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string))
+                            if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string) || pi.ParameterType == typeof(ZilObject))
                             {
                                 // regular operand: may be optional
                                 max++;
@@ -330,7 +330,7 @@ namespace Zilf
                                 continue;
                             }
 
-                            if (pi.ParameterType == typeof(IOperand[]))
+                            if (pi.ParameterType == typeof(IOperand[]) || pi.ParameterType == typeof(ZilObject[]))
                             {
                                 // varargs: must be the last parameter and marked [Params]
                                 if (i != parameters.Length - 1)
@@ -592,6 +592,19 @@ namespace Zilf
                         }
                         break;
                     }
+                    else if (pi.ParameterType == typeof(ZilObject))
+                    {
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
+                    }
+                    else if (pi.ParameterType == typeof(ZilObject[]))
+                    {
+                        // this absorbs the rest of the args
+                        while (i < args.Length)
+                        {
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, args[i++]));
+                        }
+                        break;
+                    }
                     else
                     {
                         throw new NotImplementedException("Unexpected parameter type");
@@ -682,6 +695,19 @@ namespace Zilf
                         else
                         {
                             result.Add(args.Skip(j).Select(a => (IOperand)a.Value).ToArray());
+                        }
+                        break;
+                    }
+                    else if (pi.ParameterType == typeof(ZilObject[]))
+                    {
+                        // add all remaining values as a param array
+                        if (j >= args.Count)
+                        {
+                            result.Add(new ZilObject[0]);
+                        }
+                        else
+                        {
+                            result.Add(args.Skip(j).Select(a => (ZilObject)a.Value).ToArray());
                         }
                         break;
                     }
@@ -1049,42 +1075,80 @@ namespace Zilf
 
             [Builtin("SET", HasSideEffect = true)]
             public static IOperand SetValueOp(
-                ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] IVariable dest, IOperand value)
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] IVariable dest, ZilObject value)
             {
                 // in value context, we need to be able to return the newly set value,
                 // so dest is IVariable. this means <SET <fancy-expression> value> isn't
                 // supported in value context.
-                c.rb.EmitStore(dest, value);
+
+                /* TODO: it could be supported if we wanted to get complicated:
+                 * <SET expr value> ->
+                 *   evaluate expr >TMP
+                 *   evaluate value >STACK
+                 *   PUSH 'STACK        ;duplicates top value
+                 *   SET TMP,STACK      ;performs indirect store
+                 *   return STACK       ;value is left on stack
+                 */
+
+                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, dest);
+                if (storage != dest)
+                    c.rb.EmitStore(dest, storage);
                 return dest;
             }
 
             [Builtin("SETG", HasSideEffect = true)]
             public static IOperand SetgValueOp(
-                ValueCall c, [Variable(QuirksMode = QuirksMode.Global)] IVariable dest, IOperand value)
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Global)] IVariable dest, ZilObject value)
             {
-                // in value context, we need to be able to return the newly set value,
-                // so dest is IVariable. this means <SET <fancy-expression> value> isn't
-                // supported in value context.
-                c.rb.EmitStore(dest, value);
-                return dest;
+                return SetValueOp(c, dest, value);
             }
 
             [Builtin("SET")]
             public static void SetVoidOp(
-                VoidCall c, [Variable(QuirksMode = QuirksMode.Local)] IOperand dest, IOperand value)
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Local)] IOperand dest, ZilObject value)
             {
                 // in void context, we don't need to return the newly set value, so we
                 // can support <SET <fancy-expression> value>.
-                c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, value, null);
+
+                if (dest is IIndirectOperand)
+                {
+                    var destVar = ((IIndirectOperand)dest).Variable;
+                    var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, destVar);
+                    if (storage != destVar)
+                        c.rb.EmitStore(destVar, storage);
+                }
+                else
+                {
+                    using (var operands = Operands.Compile(c.cc, c.rb, value))
+                    {
+                        if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
+                        {
+                            var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
+                            Compiler.PushInnerLocal(c.cc, c.rb, tempAtom);
+                            try
+                            {
+                                var tempLocal = c.cc.Locals[tempAtom];
+                                c.rb.EmitStore(tempLocal, operands[0]);
+                                c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, tempLocal, null);
+                            }
+                            finally
+                            {
+                                Compiler.PopInnerLocal(c.cc, tempAtom);
+                            }
+                        }
+                        else
+                        {
+                            c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, operands[0], null);
+                        }
+                    }
+                }
             }
 
             [Builtin("SETG")]
             public static void SetgVoidOp(
-                VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] IOperand dest, IOperand value)
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] IOperand dest, ZilObject value)
             {
-                // in void context, we don't need to return the newly set value, so we
-                // can support <SET <fancy-expression> value>.
-                c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, value, null);
+                SetVoidOp(c, dest, value);
             }
 
             [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]

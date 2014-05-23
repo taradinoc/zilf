@@ -687,9 +687,24 @@ namespace Zilf.Emit.Zap
         {
         }
 
-        public IOperand Indirect
+        public IIndirectOperand Indirect
         {
-            get { return new LiteralOperand("'" + this.ToString()); }
+            get { return new IndirectOperand(this); }
+        }
+    }
+
+    class IndirectOperand : IIndirectOperand
+    {
+        public IndirectOperand(IVariable variable)
+        {
+            this.Variable = variable;
+        }
+
+        public IVariable Variable { get; private set; }
+
+        public override string ToString()
+        {
+            return "'" + Variable.ToString();
         }
     }
 
@@ -1953,9 +1968,9 @@ namespace Zilf.Emit.Zap
             this.name = name;
         }
 
-        public IOperand Indirect
+        public IIndirectOperand Indirect
         {
-            get { return new LiteralOperand("'" + name); }
+            get { return new IndirectOperand(this); }
         }
 
         public IOperand DefaultValue
@@ -1985,9 +2000,9 @@ namespace Zilf.Emit.Zap
             this.name = name;
         }
 
-        public IOperand Indirect
+        public IIndirectOperand Indirect
         {
-            get { return new LiteralOperand("'" + name); }
+            get { return new IndirectOperand(this); }
         }
 
         public IOperand DefaultValue

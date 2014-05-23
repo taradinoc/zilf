@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace IntegrationTests
@@ -148,6 +149,23 @@ namespace IntegrationTests
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
+        }
+
+        public void GeneratesCodeMatching(string pattern)
+        {
+            Contract.Requires(pattern != null);
+
+            var testCode = string.Format(
+                "{0}\r\n<ROUTINE GO ()\r\n\t{1}\r\n\t<QUIT>>",
+                GlobalCode(),
+                Expression());
+
+            var helper = new ZlrHelper(testCode, null);
+            Assert.IsTrue(helper.Compile(), "Failed to compile");
+
+            var output = helper.GetZapCode();
+            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Multiline),
+                "Output did not match. Expected pattern: " + pattern);
         }
     }
 
