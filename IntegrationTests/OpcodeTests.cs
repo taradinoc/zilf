@@ -2101,6 +2101,10 @@ namespace IntegrationTests
             // void version
             AssertRoutine("\"AUX\" FOO", "<SET 1 111> <PRINTN .FOO>")
                 .Outputs("111");
+            AssertRoutine("\"AUX\" BAR", "<SET <ONE> <ONE-ELEVEN>> <PRINTN .BAR>")
+                .WithGlobal("<ROUTINE ONE () <PRINTI \"ONE.\"> 1>")
+                .WithGlobal("<ROUTINE ONE-ELEVEN () <PRINTI \"ONE-ELEVEN.\"> 111>")
+                .Outputs("ONE.ONE-ELEVEN.111");
 
             // alias: SETG
             AssertRoutine("\"AUX\" FOO", "<SETG FOO 111> .FOO")

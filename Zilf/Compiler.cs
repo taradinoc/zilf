@@ -1413,7 +1413,9 @@ namespace Zilf
                             "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
                         return cc.Globals[atom].Indirect;
                     }
-                    throw new CompilerError(expr as ISourceLine, "bare atom used as operand is not a global variable: " + atom);
+                    Errors.CompError(cc.Context, expr as ISourceLine,
+                        "bare atom used as operand is not a global variable: {0}", atom);
+                    return cc.Game.Zero;
 
                 default:
                     throw new NotImplementedException();

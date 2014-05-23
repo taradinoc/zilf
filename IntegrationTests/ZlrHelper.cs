@@ -176,6 +176,19 @@ namespace IntegrationTests
             }
         }
 
+        public string GetZapCode()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var stream in zilfOutputFiles.OrderBy(p => p.Key).Select(p => p.Value))
+            {
+                sb.Append(Encoding.UTF8.GetString(stream.ToArray()));
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
         public bool Assemble()
         {
             // initialize ZapfAssembler

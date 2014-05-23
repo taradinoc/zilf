@@ -170,7 +170,12 @@ namespace Zilf.Emit
 
     public interface IVariable : IOperand
     {
-        IOperand Indirect { get; }
+        IIndirectOperand Indirect { get; }
+    }
+
+    public interface IIndirectOperand : IOperand
+    {
+        IVariable Variable { get; }
     }
 
     public enum Condition
