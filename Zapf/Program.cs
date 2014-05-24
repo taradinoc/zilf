@@ -662,19 +662,12 @@ General switches:
                     ctx.DebugFileMap[DEBF.VocabMapName] = GetDebugMapValue(ctx, "VOCAB");
 
                 // write map
-                ctx.WriteDebugByte(DEBF.MAP_DBR);
-                foreach (var pair in ctx.DebugFileMap)
-                {
-                    ctx.WriteDebugString(pair.Key);
-                    ctx.WriteDebugAddress(pair.Value.Value);
-                }
-                ctx.WriteDebugByte(0);
+                ctx.DebugWriter.WriteMap(
+                    ctx.DebugFileMap.Select(
+                        p => new KeyValuePair<string, int>(p.Key, p.Value.Value)));
 
                 // write header
-                ctx.WriteDebugByte(DEBF.HEADER_DBR);
-                ctx.Position = 0;
-                for (int i = 0; i < 64; i++)
-                    ctx.WriteDebugByte(ctx.ReadByte());
+                ctx.DebugWriter.WriteHeader(ctx.GetHeader());
 
                 // done
                 ctx.CloseDebugFile();
@@ -1187,7 +1180,7 @@ General switches:
 
         private static void HandleDebugDirective(Context ctx, ITree node)
         {
-            if (ctx.DebugRoutinePoints != -1 &&
+            if (ctx.DebugWriter.InRoutine &&
                 node.Type != ZapParser.DEBUG_LINE &&
                 node.Type != ZapParser.DEBUG_ROUTINE_END)
             {
@@ -1199,9 +1192,9 @@ General switches:
             switch (node.Type)
             {
                 case ZapParser.DEBUG_ACTION:
-                    ctx.WriteDebugByte(DEBF.ACTION_DBR);
-                    ctx.WriteDebugWord((ushort)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteAction(
+                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_ARRAY:
                     if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out sym1) == false)
@@ -1209,123 +1202,108 @@ General switches:
                         Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
                         return;
                     }
-                    ctx.WriteDebugByte(DEBF.ARRAY_DBR);
                     sym2 = EvalExpr(ctx, node.GetChild(0));
-                    ctx.WriteDebugWord((ushort)(sym2.Value - sym1.Value));
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteArray(
+                        (ushort)(sym2.Value - sym1.Value),
+                        node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_ATTR:
-                    ctx.WriteDebugByte(DEBF.ATTR_DBR);
-                    ctx.WriteDebugWord((ushort)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteAttr(
+                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_CLASS:
-                    ctx.WriteDebugByte(DEBF.CLASS_DBR);
-                    ctx.WriteDebugString(node.GetChild(0).Text);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(1)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(2)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(3)).Value);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(4)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(5)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(6)).Value);
+                    ctx.DebugWriter.WriteClass(
+                        node.GetChild(0).Text,
+                        new LineRef(
+                            (byte)EvalExpr(ctx, node.GetChild(1)).Value,
+                            (ushort)EvalExpr(ctx, node.GetChild(2)).Value,
+                            (byte)EvalExpr(ctx, node.GetChild(3)).Value),
+                        new LineRef(
+                            (byte)EvalExpr(ctx, node.GetChild(4)).Value,
+                            (ushort)EvalExpr(ctx, node.GetChild(5)).Value,
+                            (byte)EvalExpr(ctx, node.GetChild(6)).Value));
+
                     break;
                 case ZapParser.DEBUG_FAKE_ACTION:
-                    ctx.WriteDebugByte(DEBF.FAKE_ACTION_DBR);
-                    ctx.WriteDebugWord((ushort)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteFakeAction(
+                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_FILE:
-                    ctx.WriteDebugByte(DEBF.FILE_DBR);
-                    ctx.WriteDebugByte((byte)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
-                    ctx.WriteDebugString(node.GetChild(2).Text);
+                    ctx.DebugWriter.WriteFile(
+                        (byte)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text,
+                        node.GetChild(2).Text);
                     break;
                 case ZapParser.DEBUG_GLOBAL:
-                    ctx.WriteDebugByte(DEBF.GLOBAL_DBR);
-                    ctx.WriteDebugByte((byte)(EvalExpr(ctx, node.GetChild(0)).Value - 16));
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteGlobal(
+                        (byte)(EvalExpr(ctx, node.GetChild(0)).Value - 16),
+                        (node.GetChild(1).Text));
                     break;
                 case ZapParser.DEBUG_LINE:
-                    if (ctx.DebugRoutinePoints < 0)
+                    if (!ctx.DebugWriter.InRoutine)
                     {
                         Errors.Serious(ctx, node, ".DEBUG-LINE outside of .DEBUG-ROUTINE");
                     }
                     else
                     {
-                        ctx.WriteDebugLineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(2)).Value);
-                        ctx.WriteDebugWord((ushort)(ctx.Position - ctx.DebugRoutineStart));
-                        ctx.DebugRoutinePoints++;
+                        ctx.DebugWriter.WriteLine(
+                            new LineRef(
+                                (byte)EvalExpr(ctx, node.GetChild(0)).Value,
+                                (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
+                                (byte)EvalExpr(ctx, node.GetChild(2)).Value),
+                            ctx.Position);
                     }
                     break;
                 case ZapParser.DEBUG_MAP:
                     ctx.DebugFileMap[node.GetChild(0).Text] = EvalExpr(ctx, node.GetChild(1));
                     break;
                 case ZapParser.DEBUG_OBJECT:
-                    ctx.WriteDebugByte(DEBF.OBJECT_DBR);
-                    ctx.WriteDebugWord((ushort)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(2)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(3)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(4)).Value);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(5)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(6)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(7)).Value);
+                    ctx.DebugWriter.WriteObject(
+                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text,
+                        new LineRef(
+                            (byte)EvalExpr(ctx, node.GetChild(2)).Value,
+                            (ushort)EvalExpr(ctx, node.GetChild(3)).Value,
+                            (byte)EvalExpr(ctx, node.GetChild(4)).Value),
+                        new LineRef(
+                            (byte)EvalExpr(ctx, node.GetChild(5)).Value,
+                            (ushort)EvalExpr(ctx, node.GetChild(6)).Value,
+                            (byte)EvalExpr(ctx, node.GetChild(7)).Value));
                     break;
                 case ZapParser.DEBUG_PROP:
-                    ctx.WriteDebugByte(DEBF.PROP_DBR);
-                    ctx.WriteDebugWord((ushort)EvalExpr(ctx, node.GetChild(0)).Value);
-                    ctx.WriteDebugString(node.GetChild(1).Text);
+                    ctx.DebugWriter.WriteProp(
+                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
+                        node.GetChild(1).Text);
                     break;
                 case ZapParser.DEBUG_ROUTINE:
-                    ctx.WriteDebugByte(DEBF.ROUTINE_DBR);
-                    ctx.WriteDebugWord(ctx.NextDebugRoutine);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(2)).Value);
                     AlignRoutine(ctx);
-                    ctx.WriteDebugAddress(ctx.Position);
-                    ctx.WriteDebugString(node.GetChild(3).Text);
-                    for (int i = 4; i < node.ChildCount; i++)
-                        ctx.WriteDebugString(node.GetChild(i).Text);
-                    ctx.WriteDebugByte(0);
-                    // start LINEREF_DBR block
-                    ctx.WriteDebugByte(DEBF.LINEREF_DBR);
-                    ctx.WriteDebugWord(ctx.NextDebugRoutine);
-                    ctx.WriteDebugWord(0);      // # sequence points, filled in later
-                    ctx.DebugRoutinePoints = 0;
-                    ctx.DebugRoutineStart = ctx.Position;
+                    var locals = from i in Enumerable.Range(4, node.ChildCount - 4)
+                                 select node.GetChild(i).Text;
+                    ctx.DebugWriter.StartRoutine(
+                        new LineRef(
+                            (byte)EvalExpr(ctx, node.GetChild(0)).Value,
+                            (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
+                            (byte)EvalExpr(ctx, node.GetChild(2)).Value),
+                        ctx.Position,
+                        node.GetChild(3).Text,
+                        locals);
                     break;
                 case ZapParser.DEBUG_ROUTINE_END:
-                    // finish LINEREF_DBR block
-                    if (ctx.DebugRoutinePoints < 0)
+                    if (!ctx.DebugWriter.InRoutine)
                     {
                         Errors.Serious(ctx, node, ".DEBUG-ROUTINE-END outside of .DEBUG-ROUTINE");
                     }
                     else
                     {
-                        int curPosition = ctx.DebugPosition;
-                        ctx.DebugPosition -= 2 + ctx.DebugRoutinePoints * 6;
-                        ctx.WriteDebugWord((ushort)ctx.DebugRoutinePoints);
-                        ctx.DebugPosition = curPosition;
-                        ctx.DebugRoutinePoints = -1;
-                        ctx.DebugRoutineStart = -1;
+                        ctx.DebugWriter.EndRoutine(
+                            new LineRef(
+                                (byte)EvalExpr(ctx, node.GetChild(0)).Value,
+                                (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
+                                (byte)EvalExpr(ctx, node.GetChild(2)).Value),
+                            ctx.Position);
                     }
-                    // write ROUTINE_END_DBR block
-                    ctx.WriteDebugByte(DEBF.ROUTINE_END_DBR);
-                    ctx.WriteDebugWord(ctx.NextDebugRoutine++);
-                    ctx.WriteDebugLineRef(
-                        (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                        (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                        (byte)EvalExpr(ctx, node.GetChild(2)).Value);
-                    ctx.WriteDebugAddress(ctx.Position);
                     break;
             }
         }

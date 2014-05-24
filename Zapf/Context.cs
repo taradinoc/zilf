@@ -44,9 +44,8 @@ namespace Zapf
         public Dictionary<string, Symbol> GlobalSymbols;
         public List<Fixup> Fixups;
 
+        public IDebugFileWriter DebugWriter;
         public Dictionary<string, Symbol> DebugFileMap;
-        public ushort NextDebugRoutine;
-        public int DebugRoutinePoints = -1, DebugRoutineStart = -1;
 
         /// <summary>
         /// If true, a reference to an undefined global symbol is an error,
@@ -65,7 +64,7 @@ namespace Zapf
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
 
-        private Stream stream, debugStream;
+        private Stream stream;
         private Stream prevStream;
         private int position;
         private int globalVarCount, objectCount;
@@ -337,72 +336,41 @@ namespace Zapf
 
         public void OpenDebugFile()
         {
-            debugStream = OpenFile(DebugFile, true);
-            // debug file header
-            WriteDebugWord(0xDEBF);     // magic number
-            WriteDebugWord(0);          // file format
-            WriteDebugWord(2001);       // creator version
-        }
-
-        public void WriteDebugByte(byte b)
-        {
-            if (debugStream != null)
-                debugStream.WriteByte(b);
-        }
-
-        public void WriteDebugWord(ushort w)
-        {
-            if (debugStream != null)
-            {
-                debugStream.WriteByte((byte)(w >> 8));
-                debugStream.WriteByte((byte)w);
-            }
-        }
-
-        public void WriteDebugAddress(int a)
-        {
-            if (debugStream != null)
-            {
-                debugStream.WriteByte((byte)(a >> 16));
-                debugStream.WriteByte((byte)(a >> 8));
-                debugStream.WriteByte((byte)a);
-            }
-        }
-
-        public void WriteDebugLineRef(byte file, ushort line, byte col)
-        {
-            if (debugStream != null)
-            {
-                debugStream.WriteByte(file);
-                debugStream.WriteByte((byte)(line >> 8));
-                debugStream.WriteByte((byte)line);
-                debugStream.WriteByte(col);
-            }
-        }
-
-        public void WriteDebugString(string s)
-        {
-            if (debugStream != null)
-            {
-                byte[] bytes = Encoding.ASCII.GetBytes(s);
-                debugStream.Write(bytes, 0, bytes.Length);
-                debugStream.WriteByte(0);
-            }
+            var debugStream = OpenFile(DebugFile, true);
+            DebugWriter = new BinaryDebugFileWriter(debugStream);
         }
 
         public void CloseDebugFile()
         {
-            if (debugStream != null)
+            if (DebugWriter != null)
             {
-                debugStream.WriteByte(DEBF.EOF_DBR);
-                debugStream.Close();
-                debugStream = null;
+                DebugWriter.Close();
+                DebugWriter = null;
             }
         }
 
         public bool IsDebugFileOpen
         {
-            get { return debugStream != null; }
+            get { return DebugWriter != null; }
+        }
+
+        public byte[] GetHeader()
+        {
+            var op = Position;
+            Position = 0;
+            try
+            {
+                var result = new byte[64];
+
+                for (int i = 0; i < 64; i++)
+                    result[i] = ReadByte();
+
+                return result;
+            }
+            finally
+            {
+                Position = op;
+            }
         }
 
         public int Position
@@ -415,12 +383,6 @@ namespace Zapf
                 if (stream != null)
                     stream.Seek(value, SeekOrigin.Begin);
             }
-        }
-
-        public int DebugPosition
-        {
-            get { return (int)debugStream.Position; }
-            set { debugStream.Seek(value, SeekOrigin.Begin); }
         }
 
         public int PackingDivisor
