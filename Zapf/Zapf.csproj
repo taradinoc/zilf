@@ -124,10 +124,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbbrevFinder.cs" />
+    <Compile Include="BinaryDebugFileWriter.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="DEBF.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="Horspool.cs" />
+    <Compile Include="IDebugFileWriter.cs" />
     <Compile Include="Opcodes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
