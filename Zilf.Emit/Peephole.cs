@@ -483,6 +483,9 @@ namespace Zilf.Emit
                                     count--;
                                 }
 
+                                // we'll leave node pointing at the first new line, but clear it for now
+                                node = null;
+
                                 // add new lines
                                 foreach (var newCline in newClines)
                                 {
@@ -500,7 +503,9 @@ namespace Zilf.Emit
                                         lines.AddFirst(newNode);
 
                                     addAfter = newNode;
-                                    node = newNode;
+
+                                    if (node == null)
+                                        node = newNode;
                                 }
 
                                 // fix targets for old and new lines
