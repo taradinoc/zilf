@@ -56,7 +56,14 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" FOO", "<SET FOO <WHATEVER>>")
                 .WithGlobal("<ROUTINE WHATEVER () 123>")
                 .InV3()
-                .GeneratesCodeMatching(@"CALL WHATEVER >FOO");
+                .GeneratesCodeMatching("CALL WHATEVER >FOO");
+        }
+
+        [TestMethod]
+        public void TestPrintiCrlfRtrueBecomesPRINTR()
+        {
+            AssertRoutine("", "<PRINTI \"hi\"> <CRLF> <RTRUE>")
+                .GeneratesCodeMatching("PRINTR \"hi\"");
         }
     }
 }

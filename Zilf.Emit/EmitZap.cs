@@ -752,7 +752,7 @@ namespace Zilf.Emit.Zap
             this.cleanStack = cleanStack;
 
             peep = new PeepholeBuffer<ZapCode>();
-            peep.Combiner = PeepholeCombiner;
+            peep.Combiner = new PeepholeCombiner();
         }
 
         public override string ToString()
@@ -1828,17 +1828,6 @@ namespace Zilf.Emit.Zap
                     }
                 }
 
-                if (code.Text == "CRLF+RTRUE")
-                {
-                    game.WriteOutput(string.Format("{0}{1}{2}CRLF",
-                        (object)label ?? "",
-                        label == null ? "" : ":",
-                        INDENT));
-
-                    game.WriteOutput(INDENT + "RTRUE");
-                    return;
-                }
-
                 sb.Length = 0;
                 if (label != null)
                 {
@@ -1875,86 +1864,152 @@ namespace Zilf.Emit.Zap
                     defnEnd.Column));
         }
 
-        private static bool PeepholeCombiner(ref ILabel label,
-            ref ZapCode code1, ref ILabel target1, ref PeepholeLineType type1,
-            ZapCode code2, ILabel target2, PeepholeLineType type2)
+        private class PeepholeCombiner : IPeepholeCombiner<ZapCode>
         {
-            if (code1.Text == null || code2.Text == null)
-                return false;
-
-            if (code1.Text == "CRLF" && code2.Text == "RTRUE")
+            private void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                // use a fake instruction so we can convert PRINTI+CRLF+RTRUE to PRINTR
-                // (it'll have to be expanded again in the finish handler if it isn't recombined)
-                code1 = CombineCode(code1, code2, "CRLF+RTRUE");
-                type1 = PeepholeLineType.Terminator;
-                return true;
-            }
-            if (code1.Text.StartsWith("PRINTI ") && code2.Text == "CRLF+RTRUE")
-            {
-                code1 = CombineCode(code1, code2, "PRINTR " + code1.Text.Substring(7));
-                target1 = null;
-                type1 = PeepholeLineType.HeavyTerminator;
-                return true;
+                enumerator = lines.GetEnumerator();
+                matches = new List<CombinableLine<ZapCode>>();
             }
 
-            if (code2.Text == "RSTACK" && code1.Text.StartsWith("PUSH "))
+            private bool Match(params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
-                if (code1.Text == "PUSH 0")
+                while (matches.Count < criteria.Length)
                 {
-                    code1 = CombineCode(code1, code2, "RFALSE");
-                    target1 = RFALSE;
-                    type1 = PeepholeLineType.BranchAlways;
+                    if (enumerator.MoveNext() == false)
+                        return false;
+
+                    matches.Add(enumerator.Current);
                 }
-                else if (code1.Text == "PUSH 1")
+
+                for (int i = 0; i < criteria.Length; i++)
                 {
-                    code1 = CombineCode(code1, code2, "RTRUE");
-                    target1 = RTRUE;
-                    type1 = PeepholeLineType.BranchAlways;
-                }
-                else
-                {
-                    code1 = CombineCode(code1, code2, "RETURN " + code1.Text.Substring(5));
-                    type1 = PeepholeLineType.Terminator;
+                    if (criteria[i](matches[i]) == false)
+                        return false;
                 }
 
                 return true;
             }
 
-            if (code1.Text.EndsWith(">STACK") && code2.Text.StartsWith("POP '"))
+            private void EndMatch()
             {
-                code1 = CombineCode(code1, code2,
-                    code1.Text.Substring(0, code1.Text.Length - 5) + code2.Text.Substring(5));
-                return true;
+                enumerator.Dispose();
+                enumerator = null;
+
+                matches = null;
             }
 
-            string str;
-            if (code1.Text.StartsWith("INC '") && (str = code1.Text.Substring(5)) != "STACK" &&
-                code2.Text.StartsWith("GRTR? " + str))
+            private IEnumerator<CombinableLine<ZapCode>> enumerator;
+            private List<CombinableLine<ZapCode>> matches;
+
+            private static ZapCode CombineCode(ZapCode code1, ZapCode code2, string newText)
             {
-                code1 = CombineCode(code1, code2, "IGRTR? '" + code2.Text.Substring(6));
-                target1 = target2;
-                type1 = type2;
-                return true;
-            }
-            if (code1.Text.StartsWith("DEC '") && (str = code1.Text.Substring(5)) != "STACK" &&
-                code2.Text.StartsWith("LESS? " + str))
-            {
-                code1 = CombineCode(code1, code2, "DLESS? '" + code2.Text.Substring(6));
-                target1 = target2;
-                type1 = type2;
-                return true;
+                ZapCode result;
+                result.Text = newText;
+                result.DebugText = code1.DebugText ?? code2.DebugText;
+                return result;
             }
 
-            return false;
-        }
+            private CombinerResult<ZapCode> Combine2to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            {
+                return new CombinerResult<ZapCode>(
+                    2,
+                    new CombinableLine<ZapCode>[] {
+                        new CombinableLine<ZapCode>(
+                            matches[0].Label,
+                            new ZapCode() {
+                                Text = newText,
+                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText,
+                            },
+                            target ?? matches[1].Target,
+                            type ?? matches[1].Type),
+                    });
+            }
 
-        private static ZapCode CombineCode(ZapCode code1, ZapCode code2, string newText)
-        {
-            ZapCode result;
-            result.Text = newText;
-            result.DebugText = code1.DebugText ?? code2.DebugText;
-            return result;
+            private CombinerResult<ZapCode> Combine3to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            {
+                return new CombinerResult<ZapCode>(
+                    3,
+                    new CombinableLine<ZapCode>[] {
+                        new CombinableLine<ZapCode>(
+                            matches[0].Label,
+                            new ZapCode() {
+                                Text = newText,
+                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText ?? matches[2].Code.DebugText,
+                            },
+                            target ?? matches[2].Target,
+                            type ?? matches[2].Type),
+                    });
+            }
+
+            public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    // 1 instruction sequences
+                    // TODO: some of these
+
+                    // 2 instruction sequences
+                    if (Match(a => a.Code.Text.StartsWith("PUSH "), b => b.Code.Text == "RSTACK"))
+                    {
+                        // PUSH + RSTACK => RFALSE/RTRUE/RETURN
+                        switch (matches[0].Code.Text)
+                        {
+                            case "PUSH 0":
+                                return Combine2to1("RFALSE", PeepholeLineType.BranchAlways, RoutineBuilder.RFALSE);
+                            case "PUSH 1":
+                                return Combine2to1("RTRUE", PeepholeLineType.BranchAlways, RoutineBuilder.RTRUE);
+                            default:
+                                return Combine2to1("RETURN " + matches[0].Code.Text.Substring(5));
+                        }
+                    }
+
+                    if (Match(a => a.Code.Text.EndsWith(">STACK"), b => b.Code.Text.StartsWith("POP '")))
+                    {
+                        // >STACK + POP 'dest => >dest
+                        var a = matches[0].Code.Text;
+                        var b = matches[1].Code.Text;
+                        return Combine2to1(a.Substring(0, a.Length - 5) + b.Substring(5));
+                    }
+
+                    if (Match(a => a.Code.Text.StartsWith("INC '"), b => b.Code.Text.StartsWith("GRTR? ")))
+                    {
+                        string str;
+                        if ((str = matches[0].Code.Text.Substring(5)) != "STACK" &&
+                            matches[1].Code.Text.StartsWith("GRTR? " + str))
+                        {
+                            // INC 'v + GRTR? v => IGRTR? 'v
+                            return Combine2to1("IGRTR? '" + matches[1].Code.Text.Substring(6));
+                        }
+                    }
+
+                    if (Match(a => a.Code.Text.StartsWith("DEC '"), b => b.Code.Text.StartsWith("LESS? ")))
+                    {
+                        string str;
+                        if ((str = matches[0].Code.Text.Substring(5)) != "STACK" &&
+                            matches[1].Code.Text.StartsWith("LESS? " + str))
+                        {
+                            // DEC 'v + LESS? v => DLESS? 'v
+                            return Combine2to1("DLESS? '" + matches[1].Code.Text.Substring(6));
+                        }
+                    }
+
+                    // 3 instruction sequences
+                    if (Match(a => a.Code.Text.StartsWith("PRINTI "), b => b.Code.Text == "CRLF", c => c.Code.Text == "RTRUE"))
+                    {
+                        // PRINTI + CRLF + RTRUE => PRINTR
+                        return Combine3to1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
+                    }
+
+                    // no matches
+                    return new CombinerResult<ZapCode>();
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
         }
     }
 
