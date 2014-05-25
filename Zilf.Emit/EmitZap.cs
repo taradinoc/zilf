@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-
+using System.Text.RegularExpressions;
 using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
@@ -1902,12 +1902,20 @@ namespace Zilf.Emit.Zap
             private IEnumerator<CombinableLine<ZapCode>> enumerator;
             private List<CombinableLine<ZapCode>> matches;
 
-            private static ZapCode CombineCode(ZapCode code1, ZapCode code2, string newText)
+            private CombinerResult<ZapCode> Combine1to1(string newText, PeepholeLineType? type = null, ILabel target = null)
             {
-                ZapCode result;
-                result.Text = newText;
-                result.DebugText = code1.DebugText ?? code2.DebugText;
-                return result;
+                return new CombinerResult<ZapCode>(
+                    1,
+                    new CombinableLine<ZapCode>[] {
+                        new CombinableLine<ZapCode>(
+                            matches[0].Label,
+                            new ZapCode() {
+                                Text = newText,
+                                DebugText = matches[0].Code.DebugText,
+                            },
+                            target ?? matches[0].Target,
+                            type ?? matches[0].Type),
+                    });
             }
 
             private CombinerResult<ZapCode> Combine2to1(string newText, PeepholeLineType? type = null, ILabel target = null)
@@ -1923,6 +1931,33 @@ namespace Zilf.Emit.Zap
                             },
                             target ?? matches[1].Target,
                             type ?? matches[1].Type),
+                    });
+            }
+
+            private CombinerResult<ZapCode> Combine2to2(
+                string newText1, string newText2,
+                PeepholeLineType? type1 = null, PeepholeLineType? type2 = null,
+                ILabel target1 = null, ILabel target2 = null)
+            {
+                return new CombinerResult<ZapCode>(
+                    2,
+                    new CombinableLine<ZapCode>[] {
+                        new CombinableLine<ZapCode>(
+                            matches[0].Label,
+                            new ZapCode() {
+                                Text = newText1,
+                                DebugText = matches[0].Code.DebugText,
+                            },
+                            target1 ?? matches[0].Target,
+                            type1 ?? matches[0].Type),
+                        new CombinableLine<ZapCode>(
+                            matches[1].Label,
+                            new ZapCode() {
+                                Text = newText2,
+                                DebugText = matches[1].Code.DebugText,
+                            },
+                            target2 ?? matches[1].Target,
+                            type2 ?? matches[1].Type),
                     });
             }
 
@@ -1942,15 +1977,21 @@ namespace Zilf.Emit.Zap
                     });
             }
 
+            private static readonly Regex equalZeroRegex = new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
+
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
+                System.Text.RegularExpressions.Match rm = null;
+
                 BeginMatch(lines);
                 try
                 {
-                    // 1 instruction sequences
-                    // TODO: some of these
+                    if (Match(a => (rm = equalZeroRegex.Match(a.Code.Text)).Success))
+                    {
+                        // EQUAL? x,0 | EQUAL? 0,x => ZERO? x
+                        return Combine1to1("ZERO? " + rm.Groups["var"]);
+                    }
 
-                    // 2 instruction sequences
                     if (Match(a => a.Code.Text.StartsWith("PUSH "), b => b.Code.Text == "RSTACK"))
                     {
                         // PUSH + RSTACK => RFALSE/RTRUE/RETURN
@@ -1995,7 +2036,82 @@ namespace Zilf.Emit.Zap
                         }
                     }
 
-                    // 3 instruction sequences
+                    if (Match(a => (a.Code.Text.StartsWith("EQUAL? ") || a.Code.Text.StartsWith("ZERO? ")) && a.Type == PeepholeLineType.BranchPositive,
+                              b => (b.Code.Text.StartsWith("EQUAL? ") || b.Code.Text.StartsWith("ZERO? ")) && b.Type == PeepholeLineType.BranchPositive))
+                    {
+                        if (matches[0].Target == matches[1].Target)
+                        {
+                            string[] aparts, bparts;
+
+                            if (matches[0].Code.Text.StartsWith("ZERO? "))
+                            {
+                                aparts = new[] { matches[0].Code.Text.Substring(6), "0" };
+                            }
+                            else
+                            {
+                                aparts = matches[0].Code.Text.Substring(7).Split(',');
+                            }
+
+                            if (matches[1].Code.Text.StartsWith("ZERO? "))
+                            {
+                                bparts = new[] { matches[1].Code.Text.Substring(6), "0" };
+                            }
+                            else
+                            {
+                                bparts = matches[1].Code.Text.Substring(7).Split(',');
+                            }
+
+                            if (aparts[0] == bparts[0] && aparts.Length < 4)
+                            {
+                                var sb = new StringBuilder(matches[0].Code.Text.Length + matches[1].Code.Text.Length);
+
+                                if (aparts.Length + bparts.Length <= 5)
+                                {
+                                    // EQUAL? v,a,b /L + EQUAL? v,c /L => EQUAL? v,a,b,c /L
+                                    sb.Append("EQUAL? ");
+                                    sb.Append(aparts[0]);
+                                    for (int i = 1; i < aparts.Length; i++)
+                                    {
+                                        sb.Append(',');
+                                        sb.Append(aparts[i]);
+                                    }
+                                    for (int i = 1; i < bparts.Length; i++)
+                                    {
+                                        sb.Append(',');
+                                        sb.Append(bparts[i]);
+                                    }
+                                    return Combine2to1(sb.ToString());
+                                }
+                                else
+                                {
+                                    // EQUAL? v,a,b /L + EQUAL? v,c,d /L => EQUAL? v,a,b,c /L + EQUAL? v,d /L
+                                    var allRhs = aparts.Skip(1).Concat(bparts.Skip(1));
+
+                                    sb.Append("EQUAL? ");
+                                    sb.Append(aparts[0]);
+                                    foreach (var rhs in allRhs.Take(3))
+                                    {
+                                        sb.Append(',');
+                                        sb.Append(rhs);
+                                    }
+                                    var first = sb.ToString();
+
+                                    sb.Length = 0;
+                                    sb.Append("EQUAL? ");
+                                    sb.Append(aparts[0]);
+                                    foreach (var rhs in allRhs.Skip(3))
+                                    {
+                                        sb.Append(',');
+                                        sb.Append(rhs);
+                                    }
+                                    var second = sb.ToString();
+
+                                    return Combine2to2(first, second);
+                                }
+                            }
+                        }
+                    }
+
                     if (Match(a => a.Code.Text.StartsWith("PRINTI "), b => b.Code.Text == "CRLF", c => c.Code.Text == "RTRUE"))
                     {
                         // PRINTI + CRLF + RTRUE => PRINTR

@@ -19,21 +19,21 @@ namespace IntegrationTests
         public void TestAddToVariable()
         {
             AssertRoutine("\"AUX\" X Y", "<SET X <+ .X .Y>>")
-                .GeneratesCodeMatching("ADD X,Y >X\r\n\\s*RETURN X");
+                .GeneratesCodeMatching(@"ADD X,Y >X\r\n\s*RETURN X");
         }
 
         [TestMethod]
         public void TestAddInVoidContextBecomesINC()
         {
             AssertRoutine("\"AUX\" X", "<SET X <+ .X 1>> .X")
-                .GeneratesCodeMatching("INC 'X\r\n\\s*RETURN X");
+                .GeneratesCodeMatching(@"INC 'X\r\n\s*RETURN X");
         }
 
         [TestMethod]
         public void TestAddInValueContextBecomesINC()
         {
             AssertRoutine("\"AUX\" X", "<SET X <+ .X 1>>")
-                .GeneratesCodeMatching("INC 'X\r\n\\s*RETURN X");
+                .GeneratesCodeMatching(@"INC 'X\r\n\s*RETURN X");
         }
 
         [TestMethod]
@@ -64,6 +64,39 @@ namespace IntegrationTests
         {
             AssertRoutine("", "<PRINTI \"hi\"> <CRLF> <RTRUE>")
                 .GeneratesCodeMatching("PRINTR \"hi\"");
+        }
+
+        [TestMethod]
+        public void TestAdjacentEqualsCombine()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (<OR <=? .X 1> <=? .X 2>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,1,2 /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<OR <EQUAL? .X 1 2> <EQUAL? .X 3 4>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,1,2,3 /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<OR <EQUAL? .X 1 2 3> <=? .X 4> <EQUAL? .X 5 6>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,1,2,3 /TRUE\r\n\s*EQUAL\? X,4,5,6 /TRUE");
+        }
+
+        [TestMethod]
+        public void TestEqualZeroBecomesZERO_P()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (<=? .X 0> <RTRUE>)>")
+                .GeneratesCodeMatching(@"ZERO\? X /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<=? 0 .X> <RTRUE>)>")
+                .GeneratesCodeMatching(@"ZERO\? X /TRUE");
+        }
+
+        [TestMethod]
+        public void TestAdjacentEqualsCombineEvenIfZero()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (<OR <=? .X 0> <=? .X 2>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,0,2 /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<OR <=? .X 0> <=? .X 0>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,0,0 /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<OR <EQUAL? .X 1 2> <=? .X 0> <EQUAL? .X 3 4>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,1,2,0 /TRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<OR <EQUAL? .X 1 2> <EQUAL? .X 3 0>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"EQUAL\? X,1,2,3 /TRUE\r\n\s*ZERO\? X /TRUE");
         }
     }
 }
