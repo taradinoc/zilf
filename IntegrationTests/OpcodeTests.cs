@@ -385,6 +385,8 @@ namespace IntegrationTests
         [TestMethod]
         public void TestCOLOR_V6()
         {
+            Assert.Inconclusive();
+
             // third argument is supported in V6+
             AssertExpr("<COLOR 5 5 1>").InV6().Compiles();
         }
@@ -528,6 +530,8 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDIROUT_V6()
         {
+            Assert.Inconclusive();
+
             // third operand allowed in V6
             AssertExpr("<DIROUT 3 0 0>").InV6().Compiles();
         }
@@ -713,6 +717,7 @@ namespace IntegrationTests
         public void TestFSTACK_V6()
         {
             // only the V6 version is supported in ZIL
+            Assert.Inconclusive(); 
             AssertExpr("<FSTACK 0>").InV6().Compiles();
             AssertExpr("<FSTACK 0 0>").InV6().Compiles();
         }
@@ -1156,6 +1161,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestMARGIN_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<MARGIN>").InV6().Compiles();
@@ -1181,6 +1189,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestMENU_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<MENU>").InV6().Compiles();
@@ -1227,6 +1238,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestMOUSE_INFO_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<MOUSE-INFO>").InV6().Compiles();
@@ -1252,6 +1266,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestMOUSE_LIMIT_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<MOUSE-LIMIT>").InV6().Compiles();
@@ -1426,6 +1443,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPICINF_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<PICINF>").InV6().Compiles();
@@ -1451,6 +1471,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPICSET_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<PICSET>").InV6().Compiles();
@@ -1478,6 +1501,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPOP_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 1 operands
             AssertExpr("<POP>").InV6().Compiles();
@@ -1571,6 +1597,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPRINTF_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<PRINTF>").InV6().Compiles();
@@ -2062,6 +2091,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestSCROLL_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<SCROLL>").InV6().Compiles();
@@ -2337,6 +2369,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestWINATTR_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<WINATTR>").InV6().Compiles();
@@ -2362,6 +2397,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestWINGET_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<WINGET>").InV6().Compiles();
@@ -2387,6 +2425,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestWINPOS_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<WINPOS>").InV6().Compiles();
@@ -2412,6 +2453,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestWINPUT_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<WINPUT>").InV6().Compiles();
@@ -2437,6 +2481,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestWINSIZE_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<WINSIZE>").InV6().Compiles();
@@ -2464,6 +2511,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestXPUSH_V6()
         {
+            // only exists in V6+
+            Assert.Inconclusive();
+            
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<XPUSH>").InV6().Compiles();
