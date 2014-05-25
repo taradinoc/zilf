@@ -59,6 +59,40 @@ namespace Zilf.Emit
         BranchNegative,
     }
 
+    struct CombinableLine<TCode>
+    {
+        public ILabel Label { get; private set; }
+        public TCode Code { get; private set; }
+        public ILabel Target { get; private set; }
+        public PeepholeLineType Type { get; private set; }
+
+        public CombinableLine(ILabel label, TCode code, ILabel target, PeepholeLineType type)
+            : this()
+        {
+            this.Label = label;
+            this.Code = code;
+            this.Target = target;
+            this.Type = type;
+        }
+    }
+
+    struct CombinerResult<TCode>
+    {
+        public int LinesConsumed;
+        public IEnumerable<CombinableLine<TCode>> NewLines;
+
+        public CombinerResult(int linesConsumed, IEnumerable<CombinableLine<TCode>> newLines)
+        {
+            this.LinesConsumed = linesConsumed;
+            this.NewLines = newLines;
+        }
+    }
+
+    interface IPeepholeCombiner<TCode>
+    {
+        CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines);
+    }
+
     /// <summary>
     /// Implements target-independent peephole optimizations, such as removing unnecessary branches.
     /// </summary>
@@ -73,8 +107,8 @@ namespace Zilf.Emit
             public PeepholeLineType Type;
 
             public Line TargetLine;
-            public bool Flag;
-            public int ReachableCount;
+            public bool Flag;       // toggled to mark reachability
+            public bool Synthetic;
 
             public Line(ILabel label, TCode code, ILabel target, PeepholeLineType type)
             {
@@ -93,7 +127,7 @@ namespace Zilf.Emit
 
                 this.TargetLine = other.TargetLine;
                 this.Flag = other.Flag;
-                this.ReachableCount = other.ReachableCount;
+                this.Synthetic = other.Synthetic;
             }
 
             public override string ToString()
@@ -130,40 +164,8 @@ namespace Zilf.Emit
             }
         }
 
-        /// <summary>
-        /// Wraps a method that can be used by the optimizer to combine a pair of
-        /// adjacent instructions.
-        /// </summary>
-        /// <param name="label">Input: the label of the first instruction. Output: the label
-        /// of the combined instruction.</param>
-        /// <param name="code1">Input: the code of the first instruction. Output: the code
-        /// of the combined instruction.</param>
-        /// <param name="target1">Input: the target label of the first instruction.
-        /// Output: the target label of the combined instruction.</param>
-        /// <param name="type1">Input: the type of the first instruction. Output: the
-        /// type of the combined instruction.</param>
-        /// <param name="code2">The code of the second instruction.</param>
-        /// <param name="target2">The target label of the second instruction.</param>
-        /// <param name="type2">The type of the second instruction.</param>
-        /// <returns>true if the two instructions were combined; otherwise, false.</returns>
-        /// <remarks>
-        /// <para>The optimizer will call the method (via its <see cref="Combiner"/> property)
-        /// for every pair of adjacent instructions, unless the second instruction is the
-        /// target of a branch. Note that the method may even be called for instructions
-        /// synthesized by the optimizer, in which case <paramref name="code1"/> and
-        /// <paramref name="code2"/> will be <c>default(<typeparamref name="TCode"/>)</c>.</para>
-        /// <para>If the method returns true, the pair of instructions will be replaced
-        /// with a single instruction specified by the <paramref name="label"/>,
-        /// <paramref name="code1"/>, <paramref name="target1"/>, and <paramref name="type1"/>
-        /// parameters. If it returns false, the second instruction will be left as-is; the
-        /// method should avoid changing any of the ref parameters in this case.</para>
-        /// </remarks>
-        public delegate bool CombinerDelegate(
-            ref ILabel label, ref TCode code1, ref ILabel target1, ref PeepholeLineType type1,
-            TCode code2, ILabel target2, PeepholeLineType type2);
-
         private ILabel pendingLabel;
-        private CombinerDelegate combiner;
+        private IPeepholeCombiner<TCode> combiner;
         private Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
         private LinkedList<Line> lines = new LinkedList<Line>();
 
@@ -174,7 +176,7 @@ namespace Zilf.Emit
         /// <summary>
         /// Gets or sets the delegate that will be used to combine adjacent instructions.
         /// </summary>
-        public CombinerDelegate Combiner
+        public IPeepholeCombiner<TCode> Combiner
         {
             get { return combiner; }
             set { combiner = value; }
@@ -309,13 +311,7 @@ namespace Zilf.Emit
 
             foreach (Line line in lines)
                 if (line.TargetLabel != null)
-                {
                     labelMap.TryGetValue(line.TargetLabel, out line.TargetLine);
-                    if (line.TargetLine != null)
-                        line.TargetLine.ReachableCount++;
-                }
-
-            labelMap = null;
 
             // apply optimizations
             bool changed;
@@ -345,7 +341,6 @@ namespace Zilf.Emit
                     if (line.Flag != reachableFlag)
                     {
                         line.Flag = reachableFlag;
-                        line.ReachableCount = 1;
                         if (line.TargetLabel != null)
                             usedLabels[line.TargetLabel] = true;
 
@@ -364,8 +359,6 @@ namespace Zilf.Emit
                             queue.Enqueue(targetNode);
                         }
                     }
-                    else
-                        line.ReachableCount++;
                 }
 
                 // apply optimizations to each line
@@ -391,13 +384,9 @@ namespace Zilf.Emit
                         if (line.TargetLine.Type == PeepholeLineType.BranchAlways)
                         {
                             // if the target is an unconditional branch, use its target instead
-                            line.TargetLine.ReachableCount--;
-
                             line.TargetLabel = line.TargetLine.TargetLabel;
                             line.TargetLine = line.TargetLine.TargetLine;
 
-                            if (line.TargetLine != null)
-                                line.TargetLine.ReachableCount++;
                             changed = true;
                         }
                         else if (IsInvertibleBranch(line.Type) &&
@@ -445,6 +434,7 @@ namespace Zilf.Emit
                                 null, default(TCode), line.TargetLabel, PeepholeLineType.BranchAlways);
                             newLine.TargetLine = line.TargetLine;
                             newLine.Flag = reachableFlag;
+                            newLine.Synthetic = true;
 
                             line.TargetLabel = node.Next.Value.TargetLabel;
                             line.TargetLine = node.Next.Value.TargetLine;
@@ -472,18 +462,54 @@ namespace Zilf.Emit
                     if (!delete && node.Next != null && node.Next.Value.Label == null)
                     {
                         // give the user a chance to combine lines
-                        if (combiner != null && combiner(
-                            ref line.Label, ref line.Code, ref line.TargetLabel, ref line.Type,
-                            node.Next.Value.Code, node.Next.Value.TargetLabel, node.Next.Value.Type))
+                        if (combiner != null)
                         {
-                            // the lines have been combined
-                            if (line.TargetLabel == null)
-                                line.TargetLine = null;
-                            else
-                                line.TargetLine = lines.FirstOrDefault(l => l.Label == line.TargetLabel);
+                            var result = combiner.Apply(EnumerateCombinableLines(node));
+                            if (result.LinesConsumed > 0)
+                            {
+                                // the lines have been combined
+                                var count = result.LinesConsumed;
+                                var newClines = result.NewLines.ToList();
+                                var addAfter = node.Previous;
 
-                            lines.Remove(node.Next);
-                            changed = true;
+                                // remove old lines
+                                var next = node.Next;
+                                while (node != null && count > 0)
+                                {
+                                    lines.Remove(node);
+                                    node = next;
+                                    if (node != null)
+                                        next = node.Next;
+                                    count--;
+                                }
+
+                                // add new lines
+                                foreach (var newCline in newClines)
+                                {
+                                    var newLine = new Line(newCline.Label, newCline.Code, newCline.Target, newCline.Type);
+                                    newLine.Flag = reachableFlag;
+
+                                    if (newLine.Label != null)
+                                        labelMap[newLine.Label] = newLine;
+
+                                    var newNode = new LinkedListNode<Line>(newLine);
+
+                                    if (addAfter != null)
+                                        lines.AddAfter(addAfter, newNode);
+                                    else
+                                        lines.AddFirst(newNode);
+
+                                    addAfter = newNode;
+                                    node = newNode;
+                                }
+
+                                // fix targets for old and new lines
+                                foreach (var l in lines)
+                                    if (l.TargetLabel != null)
+                                        labelMap.TryGetValue(l.TargetLabel, out l.TargetLine);
+
+                                changed = true;
+                            }
                         }
                     }
                     
@@ -524,6 +550,19 @@ namespace Zilf.Emit
                     }
                 }
             } while (changed);
+        }
+
+        private static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
+        {
+            if (node.Value.Synthetic)
+                yield break;
+
+            yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
+
+            for (node = node.Next; node != null && !node.Value.Synthetic && node.Value.Label == null; node = node.Next)
+            {
+                yield return new CombinableLine<TCode>(null, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
+            }
         }
 
         private static bool IsInvertibleBranch(PeepholeLineType type)
