@@ -2115,6 +2115,20 @@ namespace Zilf.Emit.Zap
             {
                 return new ZapCode() { Text = "JUMP" };
             }
+
+            public bool AreIdentical(ZapCode a, ZapCode b)
+            {
+                return a.Text == b.Text;
+            }
+
+            public ZapCode MergeIdentical(ZapCode a, ZapCode b)
+            {
+                return new ZapCode()
+                {
+                    Text = a.Text,
+                    DebugText = a.DebugText ?? b.DebugText,
+                };
+            }
         }
     }
 

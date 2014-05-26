@@ -91,7 +91,11 @@ namespace Zilf.Emit
     interface IPeepholeCombiner<TCode>
     {
         CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines);
+        
         TCode SynthesizeBranchAlways();
+
+        bool AreIdentical(TCode a, TCode b);
+        TCode MergeIdentical(TCode a, TCode b);
     }
 
     /// <summary>
@@ -460,62 +464,95 @@ namespace Zilf.Emit
                         }
                     }
 
-                    if (!delete && node.Next != null && node.Next.Value.Label == null)
+                    if (!delete && combiner != null && node.Next != null)
+                    {
+                        var nextLine = node.Next.Value;
+
+                        // merge adjacent identical terminators and unconditional branches
+                        if ((line.Type == PeepholeLineType.BranchAlways ||
+                             line.Type == PeepholeLineType.Terminator ||
+                             line.Type == PeepholeLineType.HeavyTerminator) &&
+                            line.TargetLabel == nextLine.TargetLabel &&
+                            combiner.AreIdentical(line.Code, nextLine.Code))
+                        {
+                            delete = true;
+
+                            nextLine.Flag = reachableFlag;
+
+                            // merge code
+                            nextLine.Code = combiner.MergeIdentical(line.Code, nextLine.Code);
+
+                            // merge labels
+                            if (nextLine.Label == null)
+                            {
+                                nextLine.Label = line.Label;
+                                line.Label = null;
+                            }
+
+                            foreach (var l in lines)
+                            {
+                                if (l.TargetLine == line)
+                                {
+                                    l.TargetLabel = nextLine.Label;
+                                    l.TargetLine = nextLine;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!delete && combiner != null)
                     {
                         // give the user a chance to combine lines
-                        if (combiner != null)
+                        var result = combiner.Apply(EnumerateCombinableLines(node));
+                        if (result.LinesConsumed > 0)
                         {
-                            var result = combiner.Apply(EnumerateCombinableLines(node));
-                            if (result.LinesConsumed > 0)
+                            // the lines have been combined
+                            var count = result.LinesConsumed;
+                            var newClines = result.NewLines.ToList();
+                            var addAfter = node.Previous;
+
+                            // remove old lines
+                            var next = node.Next;
+                            while (node != null && count > 0)
                             {
-                                // the lines have been combined
-                                var count = result.LinesConsumed;
-                                var newClines = result.NewLines.ToList();
-                                var addAfter = node.Previous;
-
-                                // remove old lines
-                                var next = node.Next;
-                                while (node != null && count > 0)
-                                {
-                                    lines.Remove(node);
-                                    node = next;
-                                    if (node != null)
-                                        next = node.Next;
-                                    count--;
-                                }
-
-                                // we'll leave node pointing at the first new line, but clear it for now
-                                node = null;
-
-                                // add new lines
-                                foreach (var newCline in newClines)
-                                {
-                                    var newLine = new Line(newCline.Label, newCline.Code, newCline.Target, newCline.Type);
-                                    newLine.Flag = reachableFlag;
-
-                                    if (newLine.Label != null)
-                                        labelMap[newLine.Label] = newLine;
-
-                                    var newNode = new LinkedListNode<Line>(newLine);
-
-                                    if (addAfter != null)
-                                        lines.AddAfter(addAfter, newNode);
-                                    else
-                                        lines.AddFirst(newNode);
-
-                                    addAfter = newNode;
-
-                                    if (node == null)
-                                        node = newNode;
-                                }
-
-                                // fix targets for old and new lines
-                                foreach (var l in lines)
-                                    if (l.TargetLabel != null)
-                                        labelMap.TryGetValue(l.TargetLabel, out l.TargetLine);
-
-                                changed = true;
+                                lines.Remove(node);
+                                node = next;
+                                if (node != null)
+                                    next = node.Next;
+                                count--;
                             }
+
+                            // we'll leave node pointing at the first new line, but clear it for now
+                            node = null;
+
+                            // add new lines
+                            foreach (var newCline in newClines)
+                            {
+                                var newLine = new Line(newCline.Label, newCline.Code, newCline.Target, newCline.Type);
+                                newLine.Flag = reachableFlag;
+
+                                if (newLine.Label != null)
+                                    labelMap[newLine.Label] = newLine;
+
+                                var newNode = new LinkedListNode<Line>(newLine);
+
+                                if (addAfter != null)
+                                    lines.AddAfter(addAfter, newNode);
+                                else
+                                    lines.AddFirst(newNode);
+
+                                addAfter = newNode;
+
+                                if (node == null)
+                                    node = newNode;
+                            }
+
+                            // fix targets for old and new lines
+                            foreach (var l in lines)
+                                if (l.TargetLabel != null)
+                                    labelMap.TryGetValue(l.TargetLabel, out l.TargetLine);
+
+                            changed = true;
                         }
                     }
                     
