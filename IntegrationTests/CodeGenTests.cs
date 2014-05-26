@@ -162,5 +162,21 @@ namespace IntegrationTests
                            .WithGlobal("<GLOBAL P?FDESC <>>")
                            .GeneratesCodeMatching(@"^(?:(?!ZERO I\?).)*PRINT P(?:(?!ZERO\? I).)*$");
         }
+
+        [TestMethod]
+        public void TestReturnOrWithPred()
+        {
+            AssertRoutine("\"AUX\" X", "<OR <EQUAL? .X 123> <FOO>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!PUSH|ZERO\?).)*$");
+        }
+
+        [TestMethod]
+        public void TestSetOrWithPred()
+        {
+            AssertRoutine("\"AUX\" X Y", "<SET Y <OR <EQUAL? .X 123> <FOO>>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!ZERO\?).)*$");
+        }
     }
 }
