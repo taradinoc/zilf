@@ -130,5 +130,17 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X \"blah\">> <RTRUE>)>")
                 .GeneratesCodeMatching(@"SET 'X,STR\?\d+\r\n\s*RFALSE");
         }
+
+        [TestMethod]
+        public void TestMergeAdjacentTerminators()
+        {
+            AssertRoutine("OBJ \"AUX\" (CNT 0) X",
+@"<COND (<SET X <FIRST? .OBJ>>
+	<REPEAT ()
+		<SET CNT <+ .CNT 1>>
+		<COND (<NOT <SET X <NEXT? .X>>> <RETURN>)>>)>
+.CNT").WhenCalledWith("<>")
+     .GeneratesCodeMatching(@"NEXT\? X >X /\?L\d+\r\n\s*\?L\d+:\s*RETURN CNT\r\n\r\n");
+        }
     }
 }
