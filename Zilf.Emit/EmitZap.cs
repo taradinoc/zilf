@@ -752,7 +752,7 @@ namespace Zilf.Emit.Zap
             this.cleanStack = cleanStack;
 
             peep = new PeepholeBuffer<ZapCode>();
-            peep.Combiner = new PeepholeCombiner();
+            peep.Combiner = new PeepholeCombiner(this);
         }
 
         public override string ToString()
@@ -1850,6 +1850,13 @@ namespace Zilf.Emit.Zap
 
         private class PeepholeCombiner : IPeepholeCombiner<ZapCode>
         {
+            private readonly RoutineBuilder routineBuilder;
+
+            public PeepholeCombiner(RoutineBuilder routineBuilder)
+            {
+                this.routineBuilder = routineBuilder;
+            }
+
             private void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
             {
                 enumerator = lines.GetEnumerator();
@@ -2128,6 +2135,31 @@ namespace Zilf.Emit.Zap
                     Text = a.Text,
                     DebugText = a.DebugText ?? b.DebugText,
                 };
+            }
+
+            public SameTestResult AreSameTest(ZapCode a, ZapCode b)
+            {
+                // if the stack is involved, all bets are off
+                if (a.Text.Contains("STACK") || b.Text.Contains("STACK"))
+                    return SameTestResult.Unrelated;
+
+                // if the instructions are identical, they must be the same test
+                if (a.Text == b.Text)
+                    return SameTestResult.SameTest;
+
+                /* otherwise, they can be related if 'a' is a store+branch instruction
+                 * and 'b' is ZERO? testing the result stored by 'a'. the z-machine's
+                 * store+branch instructions all branch upon storing a nonzero value,
+                 * so we always return OppositeTest in this case. */
+                if (b.Text.StartsWith("ZERO? ") && a.Text.EndsWith(">" + b.Text.Substring(6)))
+                    return SameTestResult.OppositeTest;
+
+                return SameTestResult.Unrelated;
+            }
+
+            public ILabel NewLabel()
+            {
+                return routineBuilder.DefineLabel();
             }
         }
     }

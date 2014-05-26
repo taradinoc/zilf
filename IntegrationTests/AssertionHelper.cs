@@ -164,7 +164,7 @@ namespace IntegrationTests
             Assert.IsTrue(helper.Compile(), "Failed to compile");
 
             var output = helper.GetZapCode();
-            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Multiline),
+            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline),
                 "Output did not match. Expected pattern: " + pattern);
         }
     }
