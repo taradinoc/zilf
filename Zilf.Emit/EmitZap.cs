@@ -760,6 +760,11 @@ namespace Zilf.Emit.Zap
             return name;
         }
 
+        public bool CleanStack
+        {
+            get { return cleanStack; }
+        }
+
         public ILabel RTrue
         {
             get { return RTRUE; }
@@ -876,15 +881,6 @@ namespace Zilf.Emit.Zap
                     opcode = "BTST";
                     break;
 
-                    // TODO: clear the result of FIRST? or NEXT? off the stack
-                case Condition.HasChild:
-                    opcode = "FIRST?";
-                    unary = true;
-                    break;
-                case Condition.HasSibling:
-                    opcode = "NEXT?";
-                    unary = true;
-                    break;
                 case Condition.ArgProvided:
                     opcode = "ASSIGNED?";
                     leftVar = true;
@@ -1363,16 +1359,9 @@ namespace Zilf.Emit.Zap
                 PeepholeLineType.Plain);
         }
 
-        public bool HasBranchScanTable
-        {
-            get { return true; }
-        }
-
         public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form,
-            IVariable result)
+            IVariable result, ILabel label, bool polarity)
         {
-            ILabel label = DefineLabel();
-
             StringBuilder sb = new StringBuilder("INTBL? ");
             sb.Append(value);
             sb.Append(',');
@@ -1387,28 +1376,23 @@ namespace Zilf.Emit.Zap
             sb.Append(" >");
             sb.Append(result);
 
-            AddLine(sb.ToString(), label, PeepholeLineType.BranchPositive);
-            MarkLabel(label);
+            AddLine(sb.ToString(), label,
+                polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
 
-        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form,
-            ILabel label, bool polarity)
+        public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
         {
-            // TODO: clear the result of INTBL? off the stack
+            AddLine(
+                string.Format("FIRST? {0} >{1}", value, result),
+                label,
+                polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
+        }
 
-            StringBuilder sb = new StringBuilder("INTBL? ");
-            sb.Append(value);
-            sb.Append(',');
-            sb.Append(table);
-            sb.Append(',');
-            sb.Append(length);
-            if (form != null)
-            {
-                sb.Append(',');
-                sb.Append(form);
-            }
-
-            AddLine(sb.ToString(), label,
+        public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity)
+        {
+            AddLine(
+                string.Format("NEXT? {0} >{1}", value, result),
+                label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
 
@@ -2125,6 +2109,11 @@ namespace Zilf.Emit.Zap
                 {
                     EndMatch();
                 }
+            }
+
+            public ZapCode SynthesizeBranchAlways()
+            {
+                return new ZapCode() { Text = "JUMP" };
             }
         }
     }

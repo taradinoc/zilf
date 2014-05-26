@@ -653,6 +653,14 @@ namespace IntegrationTests
                 .WithGlobal("<OBJECT MYOBJECT>")
                 .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
                 .GivesNumber("1");
+            AssertExpr("<COND (<FIRST? ,MYOBJECT> <PRINTI \"yes\">)>")
+                .WithGlobal("<OBJECT MYOBJECT>")
+                .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
+                .Outputs("yes");
+            AssertExpr("<COND (<FIRST? ,INNEROBJECT> <PRINTI \"yes\">) (T <PRINTI \"no\">)>")
+                .WithGlobal("<OBJECT MYOBJECT>")
+                .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
+                .Outputs("no");
         }
 
         [TestMethod]

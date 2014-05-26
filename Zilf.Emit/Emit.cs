@@ -212,14 +212,6 @@ namespace Zilf.Emit
         DecCheck,
 
         /// <summary>
-        /// Branch if object has a child.
-        /// </summary>
-        HasChild,
-        /// <summary>
-        /// Branch if object has a sibling.
-        /// </summary>
-        HasSibling,
-        /// <summary>
         /// Branch if at least this many arguments were passed in.
         /// </summary>
         ArgProvided,
@@ -491,6 +483,13 @@ namespace Zilf.Emit
 
     public interface IRoutineBuilder : IOperand
     {
+        /// <summary>
+        /// Gets a value indicating whether code generated for this routine is
+        /// sacrificing space to ensure the stack is kept clean.
+        /// </summary>
+        /// <see cref="IGameBuilder.DefineRoutine"/>
+        bool CleanStack { get; }
+
         ILabel RTrue { get; }
         ILabel RFalse { get; }
         IVariable Stack { get; }
@@ -543,14 +542,9 @@ namespace Zilf.Emit
         void EmitRestore(IOperand table, IOperand size, IOperand name, IVariable result);
 
         // form may be null
-        void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result);
-        /// <summary>
-        /// Gets a value indicating whether the form of <see cref="EmitScanTable"/> that takes label and
-        /// polarity parameters is supported.
-        /// </summary>
-        bool HasBranchScanTable { get; }
-        // form may be null
-        void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, ILabel label, bool polarity);
+        void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result, ILabel label, bool polarity);
+        void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity);
+        void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity);
 
         /// <summary>
         /// Gets a value indicating whether the nullary operations <see cref="NullaryOp.SaveUndo"/> and

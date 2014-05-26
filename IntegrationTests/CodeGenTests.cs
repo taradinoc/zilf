@@ -98,5 +98,37 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" X", "<COND (<OR <EQUAL? .X 1 2> <EQUAL? .X 3 0>> <RTRUE>)>")
                 .GeneratesCodeMatching(@"EQUAL\? X,1,2,3 /TRUE\r\n\s*ZERO\? X /TRUE");
         }
+
+        [TestMethod]
+        public void TestValuePredicateContext()
+        {
+            AssertRoutine("\"AUX\" X Y", "<COND (<NOT <SET X <FIRST? .Y>>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"FIRST\? Y >X \\TRUE");
+            AssertRoutine("\"AUX\" X Y", "<COND (<NOT .Y> <SET X <>>) (T <SET X <FIRST? .Y>>)> <OR .X <RTRUE>>")
+                .GeneratesCodeMatching(@"FIRST\? Y >X (?![/\\]TRUE)");
+        }
+
+        [TestMethod]
+        public void TestValuePredicateContext_Calls()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X <FOO>>> <RTRUE>)>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"CALL FOO >X\r\n\s*ZERO\? X /TRUE");
+        }
+
+        [TestMethod]
+        public void TestValuePredicateContext_Constants()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X <>>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"SET 'X,0\r\n\s*RTRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 0>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"SET 'X,0\r\n\s*RTRUE");
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 100>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"SET 'X,100\r\n\s*RFALSE");
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X T>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"SET 'X,1\r\n\s*RFALSE");
+            AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X \"blah\">> <RTRUE>)>")
+                .GeneratesCodeMatching(@"SET 'X,STR\?\d+\r\n\s*RFALSE");
+        }
     }
 }

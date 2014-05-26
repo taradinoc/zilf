@@ -35,6 +35,17 @@ namespace Zilf
             public bool polarity;
         }
 
+        struct ValuePredCall
+        {
+            public CompileCtx cc;
+            public IRoutineBuilder rb;
+            public ZilForm form;
+
+            public IVariable resultStorage;
+            public ILabel label;
+            public bool polarity;
+        }
+
         internal struct ArgCountRange
         {
             public int MinArgs;
@@ -292,7 +303,7 @@ namespace Zilf
                                 // first parameter: call type
                                 CallType = pi.ParameterType;
 
-                                if (CallType != typeof(VoidCall) && CallType != typeof(ValueCall) && CallType != typeof(PredCall))
+                                if (CallType != typeof(VoidCall) && CallType != typeof(ValueCall) && CallType != typeof(PredCall) && CallType != typeof(ValuePredCall))
                                     throw new ArgumentException("Unexpected call parameter type");
 
                                 continue;
@@ -375,6 +386,10 @@ namespace Zilf
                         {
                             throw new ArgumentException("Predicate call must return void");
                         }
+                        else if (CallType == typeof(ValuePredCall) && method.ReturnType != typeof(void))
+                        {
+                            throw new ArgumentException("Value+predicate call must return void");
+                        }
                     }
                     catch (ArgumentException ex)
                     {
@@ -435,6 +450,11 @@ namespace Zilf
             public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
             {
                 return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(PredCall)));
+            }
+
+            public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount)
+            {
+                return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(ValuePredCall)));
             }
 
             public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
@@ -791,6 +811,12 @@ namespace Zilf
                     new PredCall() { cc = cc, rb = rb, form = form, label = label, polarity = polarity });
             }
 
+            public static void CompileValuePredCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
+            {
+                CompileBuiltinCall(name, cc, rb, form,
+                    new ValuePredCall() { cc = cc, rb = rb, form = form, resultStorage = resultStorage ?? rb.Stack, label = label, polarity = polarity });
+            }
+
             [Builtin("EQUAL?", "=?", "==?")]
             public static void VarargsEqualityOp(
                 PredCall c, IOperand arg1, IOperand arg2,
@@ -998,8 +1024,6 @@ namespace Zilf
                 c.rb.BranchIfEqual(value, c.cc.Game.One, c.label, c.polarity);
             }
 
-            [Builtin("FIRST?", Data = UnaryOp.GetChild)]
-            [Builtin("NEXT?", Data = UnaryOp.GetSibling)]
             [Builtin("LOC", Data = UnaryOp.GetParent)]
             public static IOperand UnaryObjectValueOp(
                 ValueCall c, [Data] UnaryOp op, [Object] IOperand obj)
@@ -1008,12 +1032,15 @@ namespace Zilf
                 return c.resultStorage;
             }
 
-            [Builtin("FIRST?", Data = Condition.HasChild)]
-            [Builtin("NEXT?", Data = Condition.HasSibling)]
-            public static void UnaryObjectPredOp(
-                PredCall c, [Data] Condition cond, [Object] IOperand obj)
+            [Builtin("FIRST?", Data = false)]
+            [Builtin("NEXT?", Data = true)]
+            public static void UnaryObjectValuePredOp(
+                ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
             {
-                c.rb.Branch(cond, obj, null, c.label, c.polarity);
+                if (sibling)
+                    c.rb.EmitGetSibling(obj, c.resultStorage, c.label, c.polarity);
+                else
+                    c.rb.EmitGetChild(obj, c.resultStorage, c.label, c.polarity);
             }
 
             [Builtin("PTSIZE", Data = UnaryOp.GetPropSize)]
@@ -1149,6 +1176,21 @@ namespace Zilf
                 VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] IOperand dest, ZilObject value)
             {
                 SetVoidOp(c, dest, value);
+            }
+
+            [Builtin("SET", HasSideEffect = true)]
+            public static void SetPredOp(
+                PredCall c, [Variable(QuirksMode = QuirksMode.Local)] IVariable dest, ZilObject value)
+            {
+                // see note in SetValueOp regarding dest being IVariable
+                Compiler.CompileAsOperandWithBranch(c.cc, c.rb, value, dest, c.label, c.polarity);
+            }
+
+            [Builtin("SETG", HasSideEffect = true)]
+            public static void SetgPredOp(
+                PredCall c, [Variable(QuirksMode = QuirksMode.Global)] IVariable dest, ZilObject value)
+            {
+                SetPredOp(c, dest, value);
             }
 
             [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
@@ -1467,34 +1509,18 @@ namespace Zilf
 
             [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
             [return: Table]
-            public static IOperand IntblValueOp_V4(ValueCall c,
+            public static void IntblValuePredOp_V4(ValuePredCall c,
                 IOperand value, [Table] IOperand table, IOperand length)
             {
-                c.rb.EmitScanTable(value, table, length, null, c.resultStorage);
-                return c.resultStorage;
-            }
-
-            [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
-            public static void IntblPredOp_V4(PredCall c,
-                IOperand value, [Table] IOperand table, IOperand length)
-            {
-                c.rb.EmitScanTable(value, table, length, null, c.label, c.polarity);
+                c.rb.EmitScanTable(value, table, length, null, c.resultStorage, c.label, c.polarity);
             }
 
             [Builtin("INTBL?", MinVersion = 5)]
             [return: Table]
-            public static IOperand IntblValueOp_V5(ValueCall c,
+            public static void IntblValuePredOp_V5(ValuePredCall c,
                 IOperand value, [Table] IOperand table, IOperand length, IOperand form = null)
             {
-                c.rb.EmitScanTable(value, table, length, form, c.resultStorage);
-                return c.resultStorage;
-            }
-
-            [Builtin("INTBL?", MinVersion = 5)]
-            public static void IntblPredOp_V5(PredCall c,
-                IOperand value, [Table] IOperand table, IOperand length, IOperand form = null)
-            {
-                c.rb.EmitScanTable(value, table, length, form, c.label, c.polarity);
+                c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
             }
         }
     }
