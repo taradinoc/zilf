@@ -1735,51 +1735,20 @@ namespace Zilf
             {
                 ZilAtom tempAtom = ZilAtom.Parse("?TMP", cc.Context);
                 ILabel lastLabel = rb.DefineLabel();
+                bool usedTemp = false;
 
-                if (resultStorage == null)
-                    resultStorage = rb.Stack;
+                if (resultStorage == null || resultStorage == rb.Stack)
+                {
+                    PushInnerLocal(cc, rb, tempAtom);
+                    resultStorage = cc.Locals[tempAtom];
+                    usedTemp = true;
+                }
 
                 while (!args.Rest.IsEmpty)
                 {
                     ILabel nextLabel = rb.DefineLabel();
 
-                    result = CompileAsOperand(cc, rb, args.First, resultStorage);
-                    if (result == rb.Stack)
-                    {
-                        if (resultStorage == rb.Stack)
-                        {
-                            if (and)
-                            {
-                                // don't need a temp variable, since a nonzero result will be discarded
-                                rb.BranchIfZero(resultStorage, nextLabel, false);
-                                rb.EmitStore(resultStorage, cc.Game.Zero);
-                            }
-                            else
-                            {
-                                // use a temp variable
-                                PushInnerLocal(cc, rb, tempAtom);
-
-                                ILocalBuilder temp = cc.Locals[tempAtom];
-                                rb.EmitStore(temp, result);
-
-                                rb.BranchIfZero(temp, nextLabel, true);
-                                rb.EmitStore(resultStorage, temp);
-
-                                PopInnerLocal(cc, tempAtom);
-                            }
-                        }
-                        else
-                        {
-                            rb.EmitStore(resultStorage, result);
-                            rb.BranchIfZero(resultStorage, nextLabel, !and);
-                        }
-                    }
-                    else
-                    {
-                        rb.BranchIfZero(result, nextLabel, !and);
-                        if (resultStorage != result)
-                            rb.EmitStore(resultStorage, result);
-                    }
+                    CompileAsOperandWithBranch(cc, rb, args.First, resultStorage, nextLabel, and);
 
                     rb.Branch(lastLabel);
                     rb.MarkLabel(nextLabel);
@@ -1792,6 +1761,9 @@ namespace Zilf
                     rb.EmitStore(resultStorage, result);
 
                 rb.MarkLabel(lastLabel);
+
+                if (usedTemp)
+                    PopInnerLocal(cc, tempAtom);
 
                 return resultStorage;
             }
