@@ -1160,6 +1160,7 @@ namespace Zilf
             bool wantResult, IVariable resultStorage)
         {
             ILabel label1, label2;
+            IOperand operand;
 
             try
             {
@@ -1190,10 +1191,18 @@ namespace Zilf
 
                 if (wantResult)
                 {
-                    // prefer the value version, then predicate, then void
+                    // prefer the value version, then value+predicate, predicate, void
                     if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
                     {
                         return ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
+                    }
+                    else if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    {
+                        label1 = rb.DefineLabel();
+                        resultStorage = resultStorage ?? rb.Stack;
+                        ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, resultStorage, label1, true);
+                        rb.MarkLabel(label1);
+                        return resultStorage;
                     }
                     else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
                     {
@@ -1216,7 +1225,7 @@ namespace Zilf
                 }
                 else
                 {
-                    // prefer the void version, then predicate, then value
+                    // prefer the void version, then predicate, value, value+predicate
                     // (predicate saves a cleanup instruction)
                     if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
                     {
@@ -1236,6 +1245,14 @@ namespace Zilf
                             rb.EmitPopStack();
                         return null;
                     }
+                    else if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    {
+                        label1 = rb.DefineLabel();
+                        ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, rb.Stack, label1, true);
+                        rb.MarkLabel(label1);
+                        rb.EmitPopStack();
+                        return null;
+                    }
                 }
 
                 // built-in statements handled specially
@@ -1244,7 +1261,6 @@ namespace Zilf
                 ILocalBuilder local;
                 IObjectBuilder objbld;
                 IRoutineBuilder routine;
-                IOperand operand;
                 IVariable result;
                 switch (head.StdAtom)
                 {
@@ -1422,6 +1438,106 @@ namespace Zilf
             }
         }
 
+        private static void CompileAsOperandWithBranch(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
+            IVariable resultStorage, ILabel label, bool polarity)
+        {
+            System.Diagnostics.Debug.Assert(resultStorage != null && resultStorage != rb.Stack);
+
+            expr = expr.Expand(cc.Context);
+            StdAtom type = expr.GetTypeAtom(cc.Context).StdAtom;
+
+            if (type == StdAtom.FALSE)
+            {
+                rb.EmitStore(resultStorage, cc.Game.Zero);
+                if (polarity == false)
+                    rb.Branch(label);
+                return;
+            }
+            else if (type == StdAtom.FIX)
+            {
+                var value = ((ZilFix)expr).Value;
+                rb.EmitStore(resultStorage, cc.Game.MakeOperand(value));
+
+                bool nonzero = value != 0;
+                if (polarity == nonzero)
+                    rb.Branch(label);
+                return;
+            }
+            else if (type != StdAtom.FORM)
+            {
+                var value = CompileConstant(cc, expr);
+                if (value == null)
+                {
+                    Errors.CompError(cc.Context, expr as ZilForm, "unexpected expression in value+predicate context");
+                }
+                else
+                {
+                    rb.EmitStore(resultStorage, value);
+                    if (polarity == true)
+                        rb.Branch(label);
+                }
+                return;
+            }
+
+            // it's a FORM
+            ZilForm form = expr as ZilForm;
+            ZilAtom head = form.First as ZilAtom;
+
+            if (head == null)
+            {
+                Errors.CompError(cc.Context, form, "FORM must start with an atom");
+                return;
+            }
+
+            // check for standard built-ins
+            // prefer the value+predicate version, then value, predicate, void
+            var zversion = cc.Context.ZEnvironment.ZVersion;
+            var argCount = form.Count() - 1;
+            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+            {
+                ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, resultStorage, label, polarity);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+            {
+                var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
+                if (result != resultStorage)
+                    rb.EmitStore(resultStorage, result);
+                rb.BranchIfZero(resultStorage, label, !polarity);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+            {
+                var label1 = rb.DefineLabel();
+                var label2 = rb.DefineLabel();
+                ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label1, true);
+                rb.EmitStore(resultStorage, cc.Game.Zero);
+                rb.Branch(polarity ? label2 : label);
+                rb.MarkLabel(label1);
+                rb.EmitStore(resultStorage, cc.Game.One);
+                if (polarity)
+                    rb.Branch(label);
+                rb.MarkLabel(label2);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+            {
+                ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
+
+                // void calls return true
+                rb.EmitStore(resultStorage, cc.Game.One);
+                if (polarity == true)
+                    rb.Branch(label);
+                return;
+            }
+
+            // for anything more complicated, treat it as a value
+            var op1 = CompileAsOperand(cc, rb, form, resultStorage);
+            if (op1 != resultStorage)
+                rb.EmitStore(resultStorage, op1);
+            rb.BranchIfZero(resultStorage, label, !polarity);
+        }
+
         private static void CompileCondition(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
             ILabel label, bool polarity)
         {
@@ -1459,7 +1575,8 @@ namespace Zilf
             }
 
             // check for standard built-ins
-            // prefer the predicate version, then value, then void
+            // prefer the predicate version, then value, value+predicate, void
+            // (value+predicate is hard to clean up)
             var zversion = cc.Context.ZEnvironment.ZVersion;
             var argCount = form.Count() - 1;
             if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
@@ -1471,6 +1588,23 @@ namespace Zilf
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, rb.Stack);
                 rb.BranchIfZero(result, label, !polarity);
+                return;
+            }
+            else if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+            {
+                if (rb.CleanStack)
+                {
+                    /* wasting the branch and checking the result with ZERO? is more efficient
+                     * than using the branch and having to clean the result off the stack */
+                    var noBranch = rb.DefineLabel();
+                    ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, rb.Stack, noBranch, true);
+                    rb.MarkLabel(noBranch);
+                    rb.BranchIfZero(rb.Stack, label, !polarity);
+                }
+                else
+                {
+                    ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, rb.Stack, label, polarity);
+                }
                 return;
             }
             else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
@@ -1758,29 +1892,6 @@ namespace Zilf
                         break;
                     default:
                         throw new CompilerError(null, "INPUT", 1, 3);
-                }
-
-                return wantResult ? (result ?? cc.Game.One) : null;
-            }
-        }
-
-        private static IOperand CompileINTBL(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            bool wantResult, IVariable resultStorage)
-        {
-            using (Operands operands = Operands.Compile(cc, rb, args.ToArray()))
-            {
-                IVariable result = wantResult ? (resultStorage ?? rb.Stack) : null;
-
-                switch (operands.Count)
-                {
-                    case 3:
-                        rb.EmitScanTable(operands[0], operands[1], operands[2], null, result);
-                        break;
-                    case 4:
-                        rb.EmitScanTable(operands[0], operands[1], operands[2], operands[3], result);
-                        break;
-                    default:
-                        throw new CompilerError(null, "INTBL?", 3, 4);
                 }
 
                 return wantResult ? (result ?? cc.Game.One) : null;

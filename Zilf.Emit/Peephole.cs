@@ -91,6 +91,7 @@ namespace Zilf.Emit
     interface IPeepholeCombiner<TCode>
     {
         CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines);
+        TCode SynthesizeBranchAlways();
     }
 
     /// <summary>
@@ -108,7 +109,6 @@ namespace Zilf.Emit
 
             public Line TargetLine;
             public bool Flag;       // toggled to mark reachability
-            public bool Synthetic;
 
             public Line(ILabel label, TCode code, ILabel target, PeepholeLineType type)
             {
@@ -127,7 +127,6 @@ namespace Zilf.Emit
 
                 this.TargetLine = other.TargetLine;
                 this.Flag = other.Flag;
-                this.Synthetic = other.Synthetic;
             }
 
             public override string ToString()
@@ -431,10 +430,12 @@ namespace Zilf.Emit
                             line.Type = InvertBranch(line.Type);
 
                             Line newLine = new Line(
-                                null, default(TCode), line.TargetLabel, PeepholeLineType.BranchAlways);
+                                null,
+                                combiner == null ? default(TCode) : combiner.SynthesizeBranchAlways(),
+                                line.TargetLabel,
+                                PeepholeLineType.BranchAlways);
                             newLine.TargetLine = line.TargetLine;
                             newLine.Flag = reachableFlag;
-                            newLine.Synthetic = true;
 
                             line.TargetLabel = node.Next.Value.TargetLabel;
                             line.TargetLine = node.Next.Value.TargetLine;
@@ -559,12 +560,9 @@ namespace Zilf.Emit
 
         private static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
         {
-            if (node.Value.Synthetic)
-                yield break;
-
             yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
 
-            for (node = node.Next; node != null && !node.Value.Synthetic && node.Value.Label == null; node = node.Next)
+            for (node = node.Next; node != null && node.Value.Label == null; node = node.Next)
             {
                 yield return new CombinableLine<TCode>(null, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
             }
