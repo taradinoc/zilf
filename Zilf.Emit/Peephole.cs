@@ -88,14 +88,74 @@ namespace Zilf.Emit
         }
     }
 
+    /// <summary>
+    /// Indicates whether two branches test the same condition.
+    /// </summary>
+    enum SameTestResult
+    {
+        /// <summary>
+        /// The branches do not test the same condition.
+        /// </summary>
+        Unrelated,
+        /// <summary>
+        /// The branches test the same condition with the same polarity.
+        /// </summary>
+        SameTest,
+        /// <summary>
+        /// The branches test the same condition but with opposite polarity.
+        /// </summary>
+        OppositeTest,
+    }
+
     interface IPeepholeCombiner<TCode>
     {
+        /// <summary>
+        /// Tries to apply one or more optimizations to a sequence of code.
+        /// </summary>
+        /// <param name="lines">The original instruction sequence.</param>
+        /// <returns>A value indicating how many instructions were consumed
+        /// and which instructions they should be replaced with.</returns>
         CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines);
         
+        /// <summary>
+        /// Generates code for an unconditional branch.
+        /// </summary>
+        /// <returns>The code.</returns>
         TCode SynthesizeBranchAlways();
 
+        /// <summary>
+        /// Determines whether two instructions are functionally identical.
+        /// </summary>
+        /// <param name="a">The first instruction.</param>
+        /// <param name="b">The second instruction.</param>
+        /// <returns><b>true</b> if the instructions are identical.</returns>
         bool AreIdentical(TCode a, TCode b);
+
+        /// <summary>
+        /// Merges any non-functional information from two instructions that
+        /// have already been found to be functionally identical.
+        /// </summary>
+        /// <param name="a">The first instruction.</param>
+        /// <param name="b">The second instruction.</param>
+        /// <returns>The merged instruction.</returns>
         TCode MergeIdentical(TCode a, TCode b);
+
+        /// <summary>
+        /// Determines whether one branch instruction tests the same condition
+        /// that has already been tested by an earlier branch instruction,
+        /// assuming the second test happens immediately after the first.
+        /// </summary>
+        /// <param name="a">The first instruction.</param>
+        /// <param name="b">The second instruction.</param>
+        /// <returns>A value indicating whether the branches are related and
+        /// whether they have the same polarity.</returns>
+        SameTestResult AreSameTest(TCode a, TCode b);
+
+        /// <summary>
+        /// Allocates a new label.
+        /// </summary>
+        /// <returns>The new label.</returns>
+        ILabel NewLabel();
     }
 
     /// <summary>
@@ -313,8 +373,14 @@ namespace Zilf.Emit
             aliases.Clear();
 
             foreach (Line line in lines)
+            {
                 if (line.TargetLabel != null)
-                    labelMap.TryGetValue(line.TargetLabel, out line.TargetLine);
+                {
+                    Line labeledLine;
+                    if (labelMap.TryGetValue(line.TargetLabel, out labeledLine))
+                        line.TargetLine = labeledLine;
+                }
+            }
 
             // apply optimizations
             bool changed;
@@ -384,11 +450,115 @@ namespace Zilf.Emit
                     }
                     else if (line.TargetLine != null && line.TargetLine != line)
                     {
+                        SameTestResult sameTestResult;
                         if (line.TargetLine.Type == PeepholeLineType.BranchAlways)
                         {
                             // if the target is an unconditional branch, use its target instead
                             line.TargetLabel = line.TargetLine.TargetLabel;
                             line.TargetLine = line.TargetLine.TargetLine;
+
+                            changed = true;
+                        }
+                        else if (combiner != null && IsInvertibleBranch(line.TargetLine.Type) &&
+                                 (sameTestResult = combiner.AreSameTest(line.Code, line.TargetLine.Code)) != SameTestResult.Unrelated)
+                        {
+                            /* handle "conditional branch to [next?] related conditional branch":
+                             * 
+                             * If COND1? and COND2? test the same condition, then:
+                             * 
+                             *        COND1? /again
+                             *        ...
+                             * again: COND2? /elsewhere
+                             * 
+                             *        becomes:
+                             * 
+                             *        COND1? /elsewhere
+                             *        ...
+                             *        COND2? /elsewhere
+                             *        
+                             * If they test opposite conditions (or the polarities are opposite), then
+                             * instead it becomes:
+                             * 
+                             *        COND1? /skip
+                             *        ...
+                             *        COND2? /elsewhere
+                             * skip:  ...
+                             * 
+                             * Also, if COND1 falls through to its target (or falls through to an
+                             * unconditional jump to its target), insert a jump past COND2 (or to
+                             * COND2's target if they test opposite conditions!), so this:
+                             * 
+                             *        COND1? /again
+                             * again: COND2? /elsewhere
+                             *        ...
+                             * 
+                             *        becomes:
+                             *
+                             *        COND1? /elsewhere
+                             *        JUMP skip
+                             *        COND2? /elsewhere         ; may be deleted later
+                             * skip:  ...
+                             */
+
+                            var originalTarget = line.TargetLine;
+                            var targetNode = lines.Find(originalTarget);
+                            System.Diagnostics.Debug.Assert(targetNode != null && targetNode.Next != null);
+
+                            var lineAfterTarget = targetNode.Next.Value;
+
+                            var sameCondition = (sameTestResult == SameTestResult.SameTest) == (line.Type == line.TargetLine.Type);
+                            if (sameCondition)
+                            {
+                                line.TargetLabel = line.TargetLine.TargetLabel;
+                                line.TargetLine = line.TargetLine.TargetLine;
+                            }
+                            else
+                            {
+                                if (lineAfterTarget.Label == null)
+                                {
+                                    lineAfterTarget.Label = combiner.NewLabel();
+                                    labelMap[lineAfterTarget.Label] = lineAfterTarget;
+                                }
+
+                                line.TargetLabel = lineAfterTarget.Label;
+                                line.TargetLine = lineAfterTarget;
+                                usedLabels[line.TargetLabel] = true;
+                            }
+
+                            if (node.Next != null &&
+                                (node.Next.Value == originalTarget ||
+                                 (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine == originalTarget)))
+                            {
+                                ILabel jumpTargetLabel;
+                                Line jumpTargetLine;
+                                if (sameCondition)
+                                {
+                                    if (lineAfterTarget.Label == null)
+                                    {
+                                        lineAfterTarget.Label = combiner.NewLabel();
+                                        labelMap[lineAfterTarget.Label] = lineAfterTarget;
+                                    }
+
+                                    jumpTargetLabel = lineAfterTarget.Label;
+                                    jumpTargetLine = lineAfterTarget;
+                                }
+                                else
+                                {
+                                    jumpTargetLabel = originalTarget.TargetLabel;
+                                    jumpTargetLine = originalTarget.TargetLine;
+                                }
+
+                                var newLine = new Line(
+                                    null,
+                                    combiner.SynthesizeBranchAlways(),
+                                    jumpTargetLabel,
+                                    PeepholeLineType.BranchAlways);
+                                newLine.TargetLine = jumpTargetLine;
+                                newLine.Flag = reachableFlag;
+                                usedLabels[newLine.TargetLabel] = true;
+
+                                node = lines.AddAfter(node, newLine);
+                            }
 
                             changed = true;
                         }
@@ -460,6 +630,8 @@ namespace Zilf.Emit
                             ILabel oldLabel = line.Label;
                             line.CopyFrom(line.TargetLine);
                             line.Label = oldLabel;
+                            if (line.Label != null)
+                                labelMap[line.Label] = line;
                             changed = true;
                         }
                     }
@@ -486,6 +658,8 @@ namespace Zilf.Emit
                             if (nextLine.Label == null)
                             {
                                 nextLine.Label = line.Label;
+                                if (nextLine.Label != null)
+                                    labelMap[nextLine.Label] = nextLine;
                                 line.Label = null;
                             }
 
@@ -549,8 +723,14 @@ namespace Zilf.Emit
 
                             // fix targets for old and new lines
                             foreach (var l in lines)
+                            {
                                 if (l.TargetLabel != null)
-                                    labelMap.TryGetValue(l.TargetLabel, out l.TargetLine);
+                                {
+                                    Line labeledLine;
+                                    if (labelMap.TryGetValue(l.TargetLabel, out labeledLine))
+                                        l.TargetLine = labeledLine;
+                                }
+                            }
 
                             changed = true;
                         }
@@ -571,7 +751,10 @@ namespace Zilf.Emit
                         {
                             // update references to this label
                             if (next.Value.Label == null)
+                            {
                                 next.Value.Label = line.Label;
+                                labelMap[next.Value.Label] = next.Value;
+                            }
 
                             foreach (Line l2 in lines)
                             {

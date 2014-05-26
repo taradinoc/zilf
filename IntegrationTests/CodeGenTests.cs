@@ -140,7 +140,27 @@ namespace IntegrationTests
 		<SET CNT <+ .CNT 1>>
 		<COND (<NOT <SET X <NEXT? .X>>> <RETURN>)>>)>
 .CNT").WhenCalledWith("<>")
-     .GeneratesCodeMatching(@"NEXT\? X >X /\?L\d+\r\n\s*\?L\d+:\s*RETURN CNT\r\n\r\n");
+      .GeneratesCodeMatching(@"NEXT\? X >X /\?L\d+\r\n\s*\?L\d+:\s*RETURN CNT\r\n\r\n");
+        }
+
+        [TestMethod]
+        public void TestBranchToSameCondition()
+        {
+            AssertRoutine("\"AUX\" I P",
+@"<OBJECTLOOP I ,HERE
+    <COND (<AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
+		   <PRINT .P> <CRLF>)>>")
+                           .WithGlobal(@"<DEFMAC OBJECTLOOP ('VAR 'LOC ""ARGS"" BODY)
+    <FORM REPEAT <LIST <LIST .VAR <FORM FIRST? .LOC>>>
+        <FORM COND
+            <LIST <FORM LVAL .VAR>
+                !.BODY
+                <FORM SET .VAR <FORM NEXT? <FORM LVAL .VAR>>>>
+            '(ELSE <RETURN>)>>>")
+                           .WithGlobal("<GLOBAL HERE <>>")
+                           .WithGlobal("<GLOBAL TOUCHBIT <>>")
+                           .WithGlobal("<GLOBAL P?FDESC <>>")
+                           .GeneratesCodeMatching(@"^(?:(?!ZERO I\?).)*PRINT P(?:(?!ZERO\? I).)*$");
         }
     }
 }

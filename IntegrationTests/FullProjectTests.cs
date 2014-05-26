@@ -75,7 +75,7 @@ namespace IntegrationTests
                 if (massagedActual != massagedExpected)
                 {
                     string[] expectedLines = SplitLines(massagedExpected);
-                    string[] actualLines = SplitLines(actualOutput);
+                    string[] actualLines = SplitLines(massagedActual);
 
                     var diff = Diff.Calculate(expectedLines, actualLines);
                     int e = 0, a = 0;
@@ -103,7 +103,6 @@ namespace IntegrationTests
                         a += change.Length2;
                     }
 
-                    Console.Write(actualOutput);
                     Assert.Fail("Expected output not found (diff written to console)");
                 }
             }
