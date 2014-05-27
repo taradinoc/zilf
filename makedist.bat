@@ -14,6 +14,7 @@ copy distfiles\README.txt dist
 copy zilf\bin\debug\Antlr3.Runtime.dll dist\bin
 copy distfiles\AntlrLicense.txt dist\bin
 copy zilf\bin\debug\zilf.exe dist\bin
+copy zilf\bin\debug\zilf.emit.dll dist\bin
 copy zilf\COPYING.txt dist\bin
 copy zapf\bin\debug\zapf.exe dist\bin
 
