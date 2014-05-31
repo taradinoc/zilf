@@ -34,7 +34,8 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "ZAPF 0.5";
+        public const string VERSION = "0.5";
+        public const string BANNER = "ZAPF " + VERSION;
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main(string[] args)
@@ -49,7 +50,7 @@ namespace Zapf
 
             // show banner
             if (!ctx.Quiet)
-                Console.Error.WriteLine(VERSION);
+                Console.Error.WriteLine(BANNER);
 
             // TODO: move all of this logic into ZapfAssembler and use that instead
 
@@ -263,6 +264,10 @@ namespace Zapf
                         result.Creator = null;
                         break;
 
+                    case "-dx":
+                        result.XmlDebugMode = true;
+                        break;
+
                     case "-?":
                     case "--help":
                     case "/?":
@@ -286,14 +291,17 @@ namespace Zapf
             if (result.OutFile == null)
                 result.OutFile = Path.ChangeExtension(result.InFile, ".z#");
 
-            result.DebugFile = Path.ChangeExtension(result.OutFile, ".dbg");
+            if (result.XmlDebugMode)
+                result.DebugFile = Path.ChangeExtension(result.OutFile, ".dbg.xml");
+            else
+                result.DebugFile = Path.ChangeExtension(result.OutFile, ".dbg");
 
             return result;
         }
 
         private static void Usage()
         {
-            Console.Error.WriteLine(VERSION);
+            Console.Error.WriteLine(BANNER);
             Console.Error.WriteLine(
 @"Assemble: zapf [switches] <inFile.zap> [<outFile.z#>]
 
@@ -305,7 +313,8 @@ General switches:
   -r #                  set release number (RELEASEID overrides this)
   -s ######             set serial number
   -c ####               set creator version
-  -ab                   also optimize abbreviations and print ZAPF code");
+  -ab                   also optimize abbreviations and print ZAPF code
+  -dx                   use XML debug format");
 
         }
 
