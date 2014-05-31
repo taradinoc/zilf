@@ -29,7 +29,7 @@ namespace Zapf
 
     class Context
     {
-        public bool Quiet, InformMode, ListAddresses, AbbreviateMode;
+        public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
         public string InFile, OutFile, DebugFile;
         public string Creator = "ZAPF", Serial;
         public byte ZVersion, ZFlags;
@@ -337,7 +337,14 @@ namespace Zapf
         public void OpenDebugFile()
         {
             var debugStream = OpenFile(DebugFile, true);
-            DebugWriter = new BinaryDebugFileWriter(debugStream);
+            if (XmlDebugMode)
+            {
+                DebugWriter = new XmlDebugFileWriter(debugStream);
+            }
+            else
+            {
+                DebugWriter = new BinaryDebugFileWriter(debugStream);
+            }
         }
 
         public void CloseDebugFile()
