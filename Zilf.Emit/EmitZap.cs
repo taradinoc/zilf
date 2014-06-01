@@ -1812,6 +1812,17 @@ namespace Zilf.Emit.Zap
                     }
                 }
 
+                if (code.Text == "CRLF+RTRUE")
+                {
+                    game.WriteOutput(string.Format("{0}{1}{2}CRLF",
+                        (object)label ?? "",
+                        label == null ? "" : ":",
+                        INDENT));
+
+                    game.WriteOutput(INDENT + "RTRUE");
+                    return;
+                }
+
                 sb.Length = 0;
                 if (label != null)
                 {
@@ -2103,10 +2114,17 @@ namespace Zilf.Emit.Zap
                         }
                     }
 
-                    if (Match(a => a.Code.Text.StartsWith("PRINTI "), b => b.Code.Text == "CRLF", c => c.Code.Text == "RTRUE"))
+                    if (Match(a => a.Code.Text == "CRLF", b => b.Code.Text == "RTRUE"))
                     {
-                        // PRINTI + CRLF + RTRUE => PRINTR
-                        return Combine3to1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
+                        // combine CRLF + RTRUE into a single terminator
+                        // this can be pulled through a branch and thus allows more PRINTR transformations
+                        return Combine2to1("CRLF+RTRUE", PeepholeLineType.Terminator);
+                    }
+
+                    if (Match(a => a.Code.Text.StartsWith("PRINTI "), b => b.Code.Text == "CRLF+RTRUE"))
+                    {
+                        // PRINTI + (CRLF + RTRUE) => PRINTR
+                        return Combine2to1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
                     }
 
                     // no matches

@@ -178,5 +178,12 @@ namespace IntegrationTests
                 .WithGlobal("<ROUTINE FOO () <>>")
                 .GeneratesCodeMatching(@"^(?:(?!ZERO\?).)*$");
         }
+
+        [TestMethod]
+        public void TestPrintrOverBranch()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (.X <PRINTI \"foo\">) (T <PRINTI \"bar\">)> <CRLF> <RTRUE>")
+                .GeneratesCodeMatching("PRINTR \"foo\".*PRINTR \"bar\"");
+        }
     }
 }
