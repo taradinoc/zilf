@@ -185,5 +185,47 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" X", "<COND (.X <PRINTI \"foo\">) (T <PRINTI \"bar\">)> <CRLF> <RTRUE>")
                 .GeneratesCodeMatching("PRINTR \"foo\".*PRINTR \"bar\"");
         }
+
+        [TestMethod]
+        public void TestSimpleAND_1()
+        {
+            AssertRoutine("\"AUX\" A", "<AND .A <FOO>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+        }
+
+        [TestMethod]
+        public void TestSimpleAND_2()
+        {
+            AssertRoutine("\"AUX\" A", "<AND <OR <0? .A> <FOO>> <BAR>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE BAR () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+        }
+
+        [TestMethod]
+        public void TestSimpleOR_1()
+        {
+            AssertRoutine("\"AUX\" A", "<OR .A <FOO>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+        }
+
+        [TestMethod]
+        public void TestSimpleOR_2()
+        {
+            AssertRoutine("\"AUX\" OBJ", "<OR <FIRST? .OBJ> <FOO>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .GeneratesCodeMatching(@"RETURN \?TMP.*RSTACK");
+        }
+
+        [TestMethod]
+        public void TestSimpleOR_3()
+        {
+            AssertRoutine("\"AUX\" A", "<OR <SET A <FOO>> <BAR>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE BAR () <>>")
+                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+        }
     }
 }
