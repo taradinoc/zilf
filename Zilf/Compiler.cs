@@ -1438,30 +1438,67 @@ namespace Zilf
             }
         }
 
-        private static void CompileAsOperandWithBranch(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
-            IVariable resultStorage, ILabel label, bool polarity)
+        /// <summary>
+        /// Compiles an expression for its value, and then branches on whether the value is nonzero.
+        /// </summary>
+        /// <param name="cc">The compile context.</param>
+        /// <param name="rb">The routine builder.</param>
+        /// <param name="expr">The expression to compile.</param>
+        /// <param name="resultStorage">The variable in which to store the value, or <b>null</b> to
+        /// use a natural or temporary location. Must not be the stack.</param>
+        /// <param name="label">The label to branch to.</param>
+        /// <param name="polarity"><b>true</b> to branch when the expression's value is nonzero,
+        /// or <b>false</b> to branch when it's zero.</param>
+        /// <param name="tempVarProvider">A delegate that returns a temporary variable to use for
+        /// the result. Will only be called when <see cref="resultStorage"/> is <b>null</b> and
+        /// the expression has no natural location.</param>
+        /// <returns>The variable where the expression value was stored: always <see cref="resultStorage"/> if
+        /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
+        /// location of the expression, or a temporary variable from <see cref="tempVarProvider"/>.</returns>
+        private static IOperand CompileAsOperandWithBranch(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
+            IVariable resultStorage, ILabel label, bool polarity, Func<IVariable> tempVarProvider = null)
         {
-            System.Diagnostics.Debug.Assert(resultStorage != null && resultStorage != rb.Stack);
+            System.Diagnostics.Debug.Assert(resultStorage != rb.Stack);
+            System.Diagnostics.Debug.Assert(resultStorage != null || tempVarProvider != null);
 
             expr = expr.Expand(cc.Context);
             StdAtom type = expr.GetTypeAtom(cc.Context).StdAtom;
+            IOperand result = resultStorage;
 
             if (type == StdAtom.FALSE)
             {
-                rb.EmitStore(resultStorage, cc.Game.Zero);
+                if (resultStorage == null)
+                {
+                    result = cc.Game.Zero;
+                }
+                else
+                {
+                    rb.EmitStore(resultStorage, cc.Game.Zero);
+                }
+
                 if (polarity == false)
                     rb.Branch(label);
-                return;
+
+                return result;
             }
             else if (type == StdAtom.FIX)
             {
                 var value = ((ZilFix)expr).Value;
-                rb.EmitStore(resultStorage, cc.Game.MakeOperand(value));
+
+                if (resultStorage == null)
+                {
+                    result = cc.Game.MakeOperand(value);
+                }
+                else
+                {
+                    rb.EmitStore(resultStorage, cc.Game.MakeOperand(value));
+                }
 
                 bool nonzero = value != 0;
                 if (polarity == nonzero)
                     rb.Branch(label);
-                return;
+
+                return result;
             }
             else if (type != StdAtom.FORM)
             {
@@ -1472,11 +1509,19 @@ namespace Zilf
                 }
                 else
                 {
-                    rb.EmitStore(resultStorage, value);
+                    if (resultStorage == null)
+                    {
+                        result = value;
+                    }
+                    else
+                    {
+                        rb.EmitStore(resultStorage, value);
+                    }
+
                     if (polarity == true)
                         rb.Branch(label);
                 }
-                return;
+                return result;
             }
 
             // it's a FORM
@@ -1486,7 +1531,7 @@ namespace Zilf
             if (head == null)
             {
                 Errors.CompError(cc.Context, form, "FORM must start with an atom");
-                return;
+                return cc.Game.Zero;
             }
 
             // check for standard built-ins
@@ -1495,19 +1540,34 @@ namespace Zilf
             var argCount = form.Count() - 1;
             if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
             {
+                if (resultStorage == null)
+                    resultStorage = tempVarProvider();
+
                 ZBuiltins.CompileValuePredCall(head.Text, cc, rb, form, resultStorage, label, polarity);
-                return;
+                return resultStorage;
             }
             else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
             {
-                var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
-                if (result != resultStorage)
+                result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, resultStorage);
+                if (resultStorage != null && resultStorage != result)
+                {
                     rb.EmitStore(resultStorage, result);
-                rb.BranchIfZero(resultStorage, label, !polarity);
-                return;
+                    result = resultStorage;
+                }
+                else if (resultStorage == null && result == rb.Stack)
+                {
+                    resultStorage = tempVarProvider();
+                    rb.EmitStore(resultStorage, result);
+                    result = resultStorage;
+                }
+                rb.BranchIfZero(result, label, !polarity);
+                return result;
             }
             else if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
             {
+                if (resultStorage == null)
+                    resultStorage = tempVarProvider();
+
                 var label1 = rb.DefineLabel();
                 var label2 = rb.DefineLabel();
                 ZBuiltins.CompilePredCall(head.Text, cc, rb, form, label1, true);
@@ -1518,24 +1578,44 @@ namespace Zilf
                 if (polarity)
                     rb.Branch(label);
                 rb.MarkLabel(label2);
-                return;
+                return resultStorage;
             }
             else if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
             {
                 ZBuiltins.CompileVoidCall(head.Text, cc, rb, form);
 
                 // void calls return true
-                rb.EmitStore(resultStorage, cc.Game.One);
+                if (resultStorage == null)
+                {
+                    result = cc.Game.One;
+                }
+                else
+                {
+                    rb.EmitStore(resultStorage, cc.Game.One);
+                }
+
                 if (polarity == true)
                     rb.Branch(label);
-                return;
+
+                return result;
             }
 
             // for anything more complicated, treat it as a value
-            var op1 = CompileAsOperand(cc, rb, form, resultStorage);
-            if (op1 != resultStorage)
-                rb.EmitStore(resultStorage, op1);
-            rb.BranchIfZero(resultStorage, label, !polarity);
+            result = CompileAsOperand(cc, rb, form, resultStorage);
+            if (resultStorage != null && resultStorage != result)
+            {
+                rb.EmitStore(resultStorage, result);
+                result = resultStorage;
+            }
+            else if (resultStorage == null && result == rb.Stack)
+            {
+                resultStorage = tempVarProvider();
+                rb.EmitStore(resultStorage, result);
+                result = resultStorage;
+            }
+            
+            rb.BranchIfZero(result, label, !polarity);
+            return result;
         }
 
         private static void CompileCondition(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
@@ -1735,20 +1815,40 @@ namespace Zilf
             {
                 ZilAtom tempAtom = ZilAtom.Parse("?TMP", cc.Context);
                 ILabel lastLabel = rb.DefineLabel();
-                bool usedTemp = false;
+                IVariable tempVar = null;
 
-                if (resultStorage == null || resultStorage == rb.Stack)
+                if (resultStorage == null)
+                    resultStorage = rb.Stack;
+
+                IVariable nonStackResultStorage = (resultStorage != rb.Stack) ? resultStorage : null;
+                Func<IVariable> tempVarProvider = () =>
                 {
-                    PushInnerLocal(cc, rb, tempAtom);
-                    resultStorage = cc.Locals[tempAtom];
-                    usedTemp = true;
-                }
+                    if (tempVar == null)
+                    {
+                        PushInnerLocal(cc, rb, tempAtom);
+                        tempVar = cc.Locals[tempAtom];
+                    }
+                    return tempVar;
+                };
 
                 while (!args.Rest.IsEmpty)
                 {
                     ILabel nextLabel = rb.DefineLabel();
 
-                    CompileAsOperandWithBranch(cc, rb, args.First, resultStorage, nextLabel, and);
+                    if (and)
+                    {
+                        // for AND we only need the result of the last expr; otherwise we only care about truth value
+                        CompileCondition(cc, rb, args.First, nextLabel, true);
+                        rb.EmitStore(resultStorage, cc.Game.Zero);
+                    }
+                    else
+                    {
+                        // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
+                        result = CompileAsOperandWithBranch(cc, rb, args.First, nonStackResultStorage, nextLabel, false, tempVarProvider);
+
+                        if (result != resultStorage)
+                            rb.EmitStore(resultStorage, result);
+                    }
 
                     rb.Branch(lastLabel);
                     rb.MarkLabel(nextLabel);
@@ -1762,7 +1862,7 @@ namespace Zilf
 
                 rb.MarkLabel(lastLabel);
 
-                if (usedTemp)
+                if (tempVar != null)
                     PopInnerLocal(cc, tempAtom);
 
                 return resultStorage;
