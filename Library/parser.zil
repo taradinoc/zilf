@@ -295,7 +295,7 @@ other versions. These macros let us write the same code for all versions."
                 				  		;<TELL "Copying P-DOBJS into P-DOBJS-BACK" CR>
                 				  		<COPY-TABLE ,P-DOBJS ,P-DOBJS-BACK 21>
                 				  		<COPY-TABLE ,P-DOBJEX ,P-DOBJEX-BACK 21>
-                				  		<COND (<EQUAL? ,IT-ONCE 0> <SET ,IT-ONCE 1>)>)
+                				  		<COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
                 	    ;"if PRSO has PLURALBIT, back up to THEM instead"
                 	         (<AND <EQUAL? ,THEM-USE 0>
                 				    <AND ,PRSO>
@@ -304,7 +304,7 @@ other versions. These macros let us write the same code for all versions."
                 				  		;<TELL "Copying P-DOBJS into P-TOBJS-BACK" CR>
                 				  		<COPY-TABLE ,P-DOBJS ,P-TOBJS-BACK 21>
                 				  		<COPY-TABLE ,P-DOBJEX ,P-TOBJEX-BACK 21>
-                				  		<COND (<EQUAL? ,THEM-ONCE 0> <SET ,THEM-ONCE 1>)>)
+                				  		<COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
                 	    ;"if successful PRSO who is male, back up PRSO for HIM"
                 	    	   (<AND <EQUAL? ,HIM-USE 0>
                 				    	<AND ,PRSO>
@@ -313,7 +313,7 @@ other versions. These macros let us write the same code for all versions."
                 				  			;<TELL "Copying P-DOBJS into P-MOBJS-BACK" CR>
                 				  			<COPY-TABLE ,P-DOBJS ,P-MOBJS-BACK 21>
                 				  			<COPY-TABLE ,P-DOBJEX ,P-MOBJEX-BACK 21>
-                				  			<COND (<0? ,HIM-ONCE> <SET ,HIM-ONCE 1>)>)
+                				  			<COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
                 	   ;"if successful PRSO who is female, back up PRSO for HER"
                 	    	   (<AND <EQUAL? ,HER-USE 0>
                 				    	<AND ,PRSO>
@@ -322,7 +322,7 @@ other versions. These macros let us write the same code for all versions."
                 				  			;<TELL "Copying P-DOBJS into P-FOBJS-BACK" CR>
                 				  			<COPY-TABLE ,P-DOBJS ,P-FOBJS-BACK 21>
                 				  			<COPY-TABLE ,P-DOBJEX ,P-FOBJEX-BACK 21>
-                				  			<COND (<0? ,HER-ONCE> <SET ,HER-ONCE 1>)>
+                				  			<COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>
                 				  			)>
                 		<RTRUE>
                 )>
@@ -716,7 +716,7 @@ other versions. These macros let us write the same code for all versions."
     <OBJECTLOOP I ROOMS
     		<OBJECTLOOP J .I
     				<COND (<REFERS? .A .N .J>
-    						<SET .P .J>
+    						<SET P .J>
     						;<TELL "No match - P is " D .P CR>
     						<COND (<FSET? .P ,PERSONBIT>
     				  		  		<TELL D .P " does not seem to be here." CR > <RFALSE>)>
@@ -986,8 +986,8 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
       
 
 <ROUTINE WAIT-TURNS (TURNS "AUX" T INTERRUPT ENDACT BACKUP-WAIT)
-	<SET .BACKUP-WAIT ,STANDARD-WAIT>
-	<SET ,STANDARD-WAIT .TURNS>
+	<SET BACKUP-WAIT ,STANDARD-WAIT>
+	<SET STANDARD-WAIT .TURNS>
 	<SET T 1>
 	;<TELL "Time passes." CR>
 	<REPEAT ()
@@ -1001,9 +1001,9 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     			   <AND .ENDACT>
     			   <AND .INTERRUPT>
     		   >
-    					<SET ,STANDARD-WAIT .BACKUP-WAIT>
+    					<SET STANDARD-WAIT .BACKUP-WAIT>
     					;"To keep clocker from running again after the WAITED turns"
-    					<SET ,AGAINCALL 1>
+    					<SET AGAINCALL 1>
     					<RETURN>
     		  )
         >
@@ -1282,7 +1282,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     		  		    	<COND (<=? .Z ,IQ-LENGTH> 
     		  		    			<PUT ,IQUEUE <- .Z 1> 0>
     		  						<PUT ,IQUEUE .Z 0>
-    		  						<SETG ,IQ-LENGTH <- ,IQ-LENGTH 2>>
+    		  						<SETG IQ-LENGTH <- ,IQ-LENGTH 2>>
     		  						<SET S <- .S 2>>
     		  						<RETURN>)>
     		  		    	<SET Z <+ .Z 2>>
@@ -1345,7 +1345,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     							;<TELL "TURN COUNT IS 0, SO FIRE EVENT" CR>
     							<SET FIRED <APPLY <GET ,IQUEUE <- .S 1>>>>
     							<DEL-EVENT .S>
-    							<SET .C 1>
+    							<SET C 1>
     						   )>
     	      )
     	>
@@ -2164,7 +2164,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     >>
     
 <ROUTINE V-AGAIN ()
-     <SETG ,AGAINCALL 1>
+     <SETG AGAINCALL 1>
      <RESTORE-READBUF>
      <RESTORE-LEX>
      ;<TELL "In V-AGAIN - Previous readbuf and lexbuf restored." CR>
@@ -2383,19 +2383,19 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 	
 <ROUTINE V-DCONT ()
 	<COND (<AND ,DBCONT>
-				<SET ,DBCONT <>>
+				<SET DBCONT <>>
 				<TELL "Reporting of PUT-IN process with containers turned off." CR>)
 		      (ELSE
-				<SET ,DBCONT 1>
+				<SET DBCONT 1>
 				<TELL "Reporting of PUT-IN process with containers turned on." CR>)>
 >  
 
 <ROUTINE V-DTURN ()
 	<COND (<AND ,DTURNS>
-				<SET ,DTURNS <>>
+				<SET DTURNS <>>
 				<TELL "Reporting of TURN # turned off." CR>)
 		      (ELSE
-				<SET ,DTURNS 1>
+				<SET DTURNS 1>
 				<TELL "Reporting of TURN # turned on." CR>)>
 >  
 
