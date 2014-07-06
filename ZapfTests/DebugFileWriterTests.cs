@@ -11,7 +11,7 @@ namespace ZapfTests
         [TestMethod]
         public void MyTestMethod()
         {
-            
+            Assert.Fail("Write some DebugFileWriter tests. Debug directives are probably broken.");
         }
     }
 }
