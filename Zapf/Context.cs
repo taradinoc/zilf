@@ -575,7 +575,7 @@ namespace Zapf
             ErrorCount++;
 
             if (ser.Node != null)
-                Console.Error.Write("line {0}: ", ser.Node.Line);
+                Console.Error.Write("line {0}: ", ser.Node.LineNum);
 
             Console.Error.WriteLine("error: {0}", ser.Message);
         }
@@ -583,7 +583,7 @@ namespace Zapf
         public void HandleFatalError(FatalError fer)
         {
             if (fer.Node != null)
-                Console.Error.Write("line {0}: ", fer.Node.Line);
+                Console.Error.Write("line {0}: ", fer.Node.LineNum);
 
             Console.Error.WriteLine("fatal error: {0}", fer.Message);
         }

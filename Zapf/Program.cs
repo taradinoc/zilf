@@ -24,7 +24,6 @@ using System.Text;
 
 using Zapf.Lexing;
 using Zapf.Parsing;
-using Antlr.Runtime;
 using System.IO;
 using Antlr.Runtime.Tree;
 
@@ -321,12 +320,12 @@ General switches:
         internal static void Assemble(Context ctx)
         {
             // read in all source code
-            List<ITree> file;
+            List<AsmLine> file;
             ctx.PushFile(ctx.InFile);
             try
             {
-                object root = ReadRootFromFile(ctx, ctx.InFile);
-                file = new List<ITree>(ReadAllCode(ctx, root));
+                var roots = ReadRootsFromFile(ctx, ctx.InFile);
+                file = new List<AsmLine>(ReadAllCode(ctx, roots));
             }
             catch (IOException ex)
             {
@@ -352,7 +351,7 @@ General switches:
                 for (int i = 0; i < file.Count; i++)
                     try
                     {
-                        if (file[i].Type == ZapParser.END)
+                        if (file[i] is EndDirective)
                             break;
 
                         PassOne(ctx, file[i], ref i);
@@ -406,7 +405,7 @@ General switches:
             for (int i = 0; i < file.Count; i++)
                 try
                 {
-                    if (file[i].Type == ZapParser.END)
+                    if (file[i] is EndDirective)
                         break;
                     else
                         PassTwo(ctx, file[i], ref i);
@@ -441,41 +440,39 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        private static void PassOne(Context ctx, ITree node, ref int nodeIndex)
+        private static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            switch (node.Type)
+            if (node is NewDirective)
             {
-                case ZapParser.NEW:
-                    int version = (node.ChildCount == 0) ? 4 : EvalExpr(ctx, node.GetChild(0)).Value;
-                    if (version < 3 || version > 8)
-                        Errors.ThrowFatal("Only Z-machine versions 3-8 are supported");
-                    if (version != ctx.ZVersion)
-                    {
-                        ctx.ZVersion = (byte)version;
-                        ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
-                        throw new RestartException();
-                    }
-                    break;
-
-                case ZapParser.OPCODE:
-                    HandleInstruction(ctx, node);
-                    break;
-
-                case ZapParser.SYMBOL:
-                    if (node.ChildCount != 0)
-                        Errors.Serious(ctx, node, "unrecognized opcode: " + node.Text);
-                    else
-                        HandleDirective(ctx, node, nodeIndex, false);
-                    break;
-
-                case ZapParser.LLABEL:
-                case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, ref nodeIndex);
-                    break;
-
-                default:
+                var versionExpr = ((NewDirective)node).Version;
+                int version = versionExpr == null ? 4 : EvalExpr(ctx, versionExpr).Value;
+                if (version < 3 || version > 8)
+                    Errors.ThrowFatal("Only Z-machine versions 3-8 are supported");
+                if (version != ctx.ZVersion)
+                {
+                    ctx.ZVersion = (byte)version;
+                    ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
+                    throw new RestartException();
+                }
+            }
+            else if (node is Instruction)
+            {
+                HandleInstruction(ctx, (Instruction)node);
+            }
+            else if (node is BareSymbolLine)
+            {
+                if (((BareSymbolLine)node).UsedAsInstruction)
+                    Errors.Serious(ctx, node, "unrecognized opcode: " + ((BareSymbolLine)node).Text);
+                else
                     HandleDirective(ctx, node, nodeIndex, false);
-                    break;
+            }
+            else if (node is LocalLabel || node is GlobalLabel)
+            {
+                HandleLabel(ctx, node, ref nodeIndex);
+            }
+            else
+            {
+                HandleDirective(ctx, node, nodeIndex, false);
             }
         }
 
@@ -698,32 +695,29 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        private static void PassTwo(Context ctx, ITree node, ref int nodeIndex)
+        private static void PassTwo(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            switch (node.Type)
+            if (node is Instruction)
             {
-                case ZapParser.OPCODE:
-                    HandleInstruction(ctx, node);
-                    break;
-
-                case ZapParser.LLABEL:
-                case ZapParser.GLABEL:
-                    HandleLabel(ctx, node, ref nodeIndex);
-                    break;
-
-                default:
-                    HandleDirective(ctx, node, nodeIndex, true);
-                    break;
+                HandleInstruction(ctx, (Instruction)node);
+            }
+            else if (node is LocalLabel || node is GlobalLabel)
+            {
+                HandleLabel(ctx, node, ref nodeIndex);
+            }
+            else
+            {
+                HandleDirective(ctx, node, nodeIndex, true);
             }
         }
 
-        private static IEnumerable<ITree> ReadAllCode(Context ctx, object root)
+        private static IEnumerable<AsmLine> ReadAllCode(Context ctx, IEnumerable<AsmLine> roots)
         {
-            foreach (ITree node in GetRootNodes(root))
+            foreach (var node in roots)
             {
-                if (node.Type == ZapParser.INSERT)
+                if (node is InsertDirective)
                 {
-                    string arg = node.GetChild(0).Text;
+                    string arg = ((InsertDirective)node).InsertFileName;
                     string insertedFile = ctx.FindInsertedFile(arg);
 
                     if (insertedFile == null)
@@ -732,9 +726,9 @@ General switches:
                     ctx.PushFile(insertedFile);
                     try
                     {
-                        object insertedRoot = ReadRootFromFile(ctx, insertedFile);
-                        foreach (ITree insertedNode in ReadAllCode(ctx, insertedRoot))
-                            if (insertedNode.Type == ZapParser.ENDI || insertedNode.Type == ZapParser.END)
+                        IEnumerable<AsmLine> insertedRoots = ReadRootsFromFile(ctx, insertedFile);
+                        foreach (AsmLine insertedNode in ReadAllCode(ctx, insertedRoots))
+                            if (insertedNode is EndiDirective || insertedNode is EndDirective)
                                 break;
                             else
                                 yield return insertedNode;
@@ -751,604 +745,557 @@ General switches:
             }
         }
 
-        private static object ReadRootFromFile(Context ctx, string path)
+        private static IEnumerable<AsmLine> ReadRootsFromFile(Context ctx, string path)
         {
             using (var stream = ctx.OpenFile(path, false))
             {
-                ICharStream charStream = new ANTLRInputStream(stream);
-                ITokenSource lexer;
+                var parser = new AntlrBasedParser(ctx.InformMode, ctx.OpcodeDict);
+                var result = parser.Parse(stream, path);
 
-                if (ctx.InformMode)
-                    lexer = new ZapInf(charStream) { OpcodeDict = ctx.OpcodeDict };
-                else
-                    lexer = new ZapLexer(charStream) { OpcodeDict = ctx.OpcodeDict };
-
-                ZapParser parser = new ZapParser(new CommonTokenStream(lexer));
-                parser.InformMode = ctx.InformMode;
-                ZapParser.file_return fret = parser.file();
-
-                if (parser.NumberOfSyntaxErrors > 0)
+                if (result.NumberOfSyntaxErrors > 0)
                     Errors.ThrowFatal("syntax error");
 
-                return fret.Tree;
+                return result.Lines;
             }
         }
 
-        private static IEnumerable<ITree> GetRootNodes(object root)
+        private static Symbol EvalExpr(Context ctx, AsmExpr node)
         {
-            ITree tree = (ITree)root;
-
-            if (tree.Type == 0)
+            if (node is NumericLiteral)
             {
-                for (int i = 0; i < tree.ChildCount; i++)
-                    yield return tree.GetChild(i);
+                return new Symbol(int.Parse(node.Text));
+            }
+            else if (node is SymbolExpr)
+            {
+                Symbol result;
+                if (ctx.LocalSymbols.TryGetValue(node.Text, out result))
+                    return result;
+                if (ctx.GlobalSymbols.TryGetValue(node.Text, out result))
+                    return result;
+                if (ctx.FinalPass)
+                    Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
+                return new Symbol(null, SymbolType.Unknown, 0);
+            }
+            else if (node is AdditionExpr)
+            {
+                Symbol left = EvalExpr(ctx, ((AdditionExpr)node).Left);
+                Symbol right = EvalExpr(ctx, ((AdditionExpr)node).Right);
+                if (!ctx.FinalPass &&
+                    (left.Type == SymbolType.Unknown || right.Type == SymbolType.Unknown))
+                {
+                    return new Symbol(null, SymbolType.Unknown, 0);
+                }
+                if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
+                    return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
+                throw new NotImplementedException("Unimplemented symbol addition");
             }
             else
             {
-                yield return tree;
+                throw new NotImplementedException();
             }
         }
 
-        private static Symbol EvalExpr(Context ctx, ITree node)
-        {
-            switch (node.Type)
-            {
-                case ZapParser.NUM:
-                    return new Symbol(int.Parse(node.Text));
-
-                case ZapParser.SYMBOL:
-                    Symbol result;
-                    if (ctx.LocalSymbols.TryGetValue(node.Text, out result))
-                        return result;
-                    if (ctx.GlobalSymbols.TryGetValue(node.Text, out result))
-                        return result;
-                    if (ctx.FinalPass)
-                        Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
-                    return new Symbol(null, SymbolType.Unknown, 0);
-
-                case ZapParser.PLUS:
-                    Symbol left = EvalExpr(ctx, node.GetChild(0));
-                    Symbol right = EvalExpr(ctx, node.GetChild(1));
-                    if (!ctx.FinalPass &&
-                        (left.Type == SymbolType.Unknown || right.Type == SymbolType.Unknown))
-                    {
-                        return new Symbol(null, SymbolType.Unknown, 0);
-                    }
-                    if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
-                        return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
-                    throw new NotImplementedException("Unimplemented symbol addition");
-
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value, out Fixup fixup)
+        private static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, out Fixup fixup)
         {
             EvalOperand(ctx, node, out type, out value, out fixup, false);
         }
 
-        private static void EvalOperand(Context ctx, ITree node, out byte type, out ushort value, out Fixup fixup,
+        private static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, out Fixup fixup,
             bool allowLocalLabel)
         {
             fixup = null;
 
             bool apos = false;
-            if (node.Type == ZapParser.APOSTROPHE)
+            if (node is QuoteExpr)
             {
                 apos = true;
-                node = node.GetChild(0);
+                node = ((QuoteExpr)node).Inner;
             }
 
-            switch (node.Type)
+            if (node is NumericLiteral)
             {
-                case ZapParser.NUM:
-                    value = (ushort)int.Parse(node.Text);
-                    if (value < 256)
+                value = (ushort)int.Parse(node.Text);
+                if (value < 256)
+                    type = OPERAND_BYTE;
+                else
+                    type = OPERAND_WORD;
+            }
+            else if (node is SymbolExpr)
+            {
+                Symbol sym;
+                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
+                {
+                    if (sym.Type == SymbolType.Label)
+                    {
+                        if (!allowLocalLabel)
+                            Errors.Serious(ctx, node, "local label used as operand");
+
+                        // note: returned value is relative to the current position,
+                        // which is probably not where the value will be written.
+                        // caller must correct it.
+                        type = OPERAND_WORD;
+                        value = (ushort)(sym.Value - ctx.Position);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.Assert(sym.Type == SymbolType.Variable);
+                        type = OPERAND_VAR;
+                        value = (byte)sym.Value;
+                    }
+                }
+                else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
+                {
+                    if (sym.Type == SymbolType.Variable)
+                        type = OPERAND_VAR;
+                    else if ((sym.Value & 0xff) == sym.Value)
                         type = OPERAND_BYTE;
                     else
                         type = OPERAND_WORD;
-                    break;
-
-                case ZapParser.SYMBOL:
-                    Symbol sym;
-                    if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
-                    {
-                        if (sym.Type == SymbolType.Label)
-                        {
-                            if (!allowLocalLabel)
-                                Errors.Serious(ctx, node, "local label used as operand");
-
-                            // note: returned value is relative to the current position,
-                            // which is probably not where the value will be written.
-                            // caller must correct it.
-                            type = OPERAND_WORD;
-                            value = (ushort)(sym.Value - ctx.Position);
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.Assert(sym.Type == SymbolType.Variable);
-                            type = OPERAND_VAR;
-                            value = (byte)sym.Value;
-                        }
-                    }
-                    else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
-                    {
-                        if (sym.Type == SymbolType.Variable)
-                            type = OPERAND_VAR;
-                        else if ((sym.Value & 0xff) == sym.Value)
-                            type = OPERAND_BYTE;
-                        else
-                            type = OPERAND_WORD;
-                        value = (ushort)sym.Value;
-                    }
-                    else if (ctx.FinalPass && !allowLocalLabel)
-                    {
-                        Errors.ThrowFatal(node, "undefined symbol: {0}", node.Text);
-                        type = 0;
-                        value = 0;
-                    }
+                    value = (ushort)sym.Value;
+                }
+                else if (ctx.FinalPass && !allowLocalLabel)
+                {
+                    Errors.ThrowFatal(node, "undefined symbol: {0}", node.Text);
+                    type = 0;
+                    value = 0;
+                }
+                else
+                {
+                    // not defined yet
+                    type = OPERAND_BYTE;
+                    value = 0;
+                    if (allowLocalLabel)
+                        ctx.MarkUnknownBranch(node.Text);
                     else
-                    {
-                        // not defined yet
-                        type = OPERAND_BYTE;
-                        value = 0;
-                        if (allowLocalLabel)
-                            ctx.MarkUnknownBranch(node.Text);
-                        else
-                            fixup = new Fixup(node.Text);
-                    }
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                        fixup = new Fixup(node.Text);
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
             if (apos)
                 type = OPERAND_BYTE;
         }
 
-        private static bool IsLongConstant(Context ctx, ITree node)
+        private static bool IsLongConstant(Context ctx, AsmExpr node)
         {
             int value;
 
-            switch (node.Type)
+            if (node is NumericLiteral)
             {
-                case ZapParser.NUM:
-                    value = int.Parse(node.Text);
-                    return ((uint)value & 0xffffff00) != 0;
-
-                case ZapParser.SYMBOL:
-                    Symbol sym;
-                    if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
-                    {
-                        // the only legal local symbol operand is a local variable
-                        return false;
-                    }
-                    else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
-                    {
-                        return sym.Value < 0 || sym.Value > 255;
-                    }
-                    else
-                    {
-                        // not defined yet, assume it's a faraway global label
-                        // (could also be a local label if we're assembling a JUMP instruction,
-                        // but that's assembled as a word anyway)
-                        return true;
-                    }
-
-                case ZapParser.PLUS:
-                    return IsLongConstant(ctx, node.GetChild(0)) && IsLongConstant(ctx, node.GetChild(1));
-
-                case ZapParser.STRING:
-                case ZapParser.APOSTROPHE:
+                value = int.Parse(node.Text);
+                return ((uint)value & 0xffffff00) != 0;
+            }
+            else if (node is SymbolExpr)
+            {
+                Symbol sym;
+                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
+                {
+                    // the only legal local symbol operand is a local variable
                     return false;
+                }
+                else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
+                {
+                    return sym.Value < 0 || sym.Value > 255;
+                }
+                else
+                {
+                    // not defined yet, assume it's a faraway global label
+                    // (could also be a local label if we're assembling a JUMP instruction,
+                    // but that's assembled as a word anyway)
+                    return true;
+                }
 
-                default:
-                    throw new ArgumentException("Unexpected expr type: " + ZapParser.tokenNames[node.Type], "node");
+            }
+            else if (node is AdditionExpr)
+            {
+                return IsLongConstant(ctx, ((AdditionExpr)node).Left) && IsLongConstant(ctx, ((AdditionExpr)node).Right);
+            }
+            else if (node is StringLiteral || node is QuoteExpr)
+            {
+                return false;
+            }
+            else
+            {
+                throw new ArgumentException("Unexpected expr type: " + node.GetType().Name, "node");
             }
         }
 
-        private static void HandleDirective(Context ctx, ITree node, int nodeIndex, bool assembling)
+        private static void HandleDirective(Context ctx, AsmLine node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
-            if (node.Type != ZapParser.DEBUG_LINE)
+            if (!(node is DebugLineDirective))
                 ctx.EndReassemblyScope(nodeIndex);
 
-            switch (node.Type)
+            if (node is NewDirective)
             {
-                case ZapParser.NEW:
-                    // this is explicitly handled by PassOne
-                    break;
-
-                case ZapParser.FUNCT:
-                    BeginFunction(ctx, node, nodeIndex);
-                    break;
-
-                case ZapParser.TABLE:
-                    if (ctx.TableStart != null)
-                        Errors.Warn(node, "starting new table before ending old table");
-                    ctx.TableStart = ctx.Position;
-                    ctx.TableSize = null;
-                    if (node.ChildCount > 0)
+                // this is explicitly handled by PassOne
+            }
+            else if (node is FunctDirective)
+            {
+                BeginFunction(ctx, (FunctDirective)node, nodeIndex);
+            }
+            else if (node is TableDirective)
+            {
+                if (ctx.TableStart != null)
+                    Errors.Warn(node, "starting new table before ending old table");
+                ctx.TableStart = ctx.Position;
+                ctx.TableSize = null;
+                if (((TableDirective)node).Size != null)
+                {
+                    Symbol sym = EvalExpr(ctx, ((TableDirective)node).Size);
+                    if (sym.Type != SymbolType.Constant)
+                        Errors.Warn(node, "ignoring non-constant table size specifier");
+                    else
+                        ctx.TableSize = sym.Value;
+                }
+            }
+            else if (node is EndtDirective)
+            {
+                if (ctx.TableStart == null)
+                    Errors.Warn(node, "ignoring .ENDT outside of a table definition");
+                if (ctx.TableSize != null)
+                {
+                    if (ctx.Position - ctx.TableStart.Value != ctx.TableSize.Value)
+                        Errors.Warn(node, "incorrect table size: expected {0}, actual {1}",
+                            ctx.TableSize.Value,
+                            ctx.Position - ctx.TableStart.Value);
+                }
+                ctx.TableStart = null;
+                ctx.TableSize = null;
+            }
+            else if (node is VocbegDirective)
+            {
+                if (ctx.InVocab)
+                {
+                    Errors.Warn(node, "ignoring .VOCBEG inside another vocabulary block");
+                }
+                else
+                {
+                    Symbol sym1 = EvalExpr(ctx, ((VocbegDirective)node).RecordSize);
+                    Symbol sym2 = EvalExpr(ctx, ((VocbegDirective)node).KeySize);
+                    if (sym1.Type != SymbolType.Constant || sym2.Type != SymbolType.Constant)
+                        Errors.Warn(node, "ignoring .VOCBEG with non-constant size specifiers");
+                    else
+                        ctx.EnterVocab(sym1.Value, sym2.Value);
+                }
+            }
+            else if (node is VocendDirective)
+            {
+                if (!ctx.InVocab)
+                    Errors.Warn(node, "ignoring .VOCEND outside of a vocabulary block");
+                else
+                    ctx.LeaveVocab();
+            }
+            else if (node is ByteDirective || node is WordDirective)
+            {
+                var elements = ((DataDirective)node).Elements;
+                for (int i = 0; i < elements.Count; i++)
+                {
+                    Symbol sym = EvalExpr(ctx, elements[i]);
+                    if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                     {
-                        Symbol sym = EvalExpr(ctx, node.GetChild(0));
-                        if (sym.Type != SymbolType.Constant)
-                            Errors.Warn(node, "ignoring non-constant table size specifier");
-                        else
-                            ctx.TableSize = sym.Value;
+                        Errors.ThrowFatal(elements[i], "unrecognized symbol");
                     }
-                    break;
-
-                case ZapParser.ENDT:
-                    if (ctx.TableStart == null)
-                        Errors.Warn(node, "ignoring .ENDT outside of a table definition");
-                    if (ctx.TableSize != null)
+                    if (node is ByteDirective)
                     {
-                        if (ctx.Position - ctx.TableStart.Value != ctx.TableSize.Value)
-                            Errors.Warn(node, "incorrect table size: expected {0}, actual {1}",
-                                ctx.TableSize.Value,
-                                ctx.Position - ctx.TableStart.Value);
-                    }
-                    ctx.TableStart = null;
-                    ctx.TableSize = null;
-                    break;
-
-                case ZapParser.VOCBEG:
-                    if (ctx.InVocab)
-                    {
-                        Errors.Warn(node, "ignoring .VOCBEG inside another vocabulary block");
+                        ctx.WriteByte((byte)sym.Value);
                     }
                     else
                     {
-                        Symbol sym1 = EvalExpr(ctx, node.GetChild(0));
-                        Symbol sym2 = EvalExpr(ctx, node.GetChild(1));
-                        if (sym1.Type != SymbolType.Constant || sym2.Type != SymbolType.Constant)
-                            Errors.Warn(node, "ignoring .VOCBEG with non-constant size specifiers");
-                        else
-                            ctx.EnterVocab(sym1.Value, sym2.Value);
-                    }
-                    break;
-
-                case ZapParser.VOCEND:
-                    if (!ctx.InVocab)
-                        Errors.Warn(node, "ignoring .VOCEND outside of a vocabulary block");
-                    else
-                        ctx.LeaveVocab();
-                    break;
-
-                case ZapParser.BYTE:
-                case ZapParser.WORD:
-                    for (int i = 0; i < node.ChildCount; i++)
-                    {
-                        Symbol sym = EvalExpr(ctx, node.GetChild(i));
-                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
-                        {
-                            Errors.ThrowFatal(node.GetChild(i), "unrecognized symbol");
-                        }
-                        if (node.Type == ZapParser.BYTE)
-                        {
-                            ctx.WriteByte((byte)sym.Value);
-                        }
-                        else
-                        {
-                            ctx.WriteWord((ushort)sym.Value);
-                        }
-                    }
-                    break;
-
-                case ZapParser.FSTR:
-                    AddAbbreviation(ctx, node);
-                    break;
-
-                case ZapParser.GSTR:
-                    PackString(ctx, node);
-                    break;
-
-                case ZapParser.STR:
-                    ctx.WriteZString(node.GetChild(0).Text, false);
-                    break;
-
-                case ZapParser.STRL:
-                    ctx.WriteZString(node.GetChild(0).Text, true);
-                    break;
-
-                case ZapParser.LEN:
-                    ctx.WriteZStringLength(node.GetChild(0).Text);
-                    break;
-
-                case ZapParser.ZWORD:
-                    ctx.WriteZWord(node.GetChild(0).Text);
-                    break;
-
-                case ZapParser.EQUALS:
-                    Symbol rvalue = EvalExpr(ctx, node.GetChild(1));
-                    if (rvalue.Type == SymbolType.Unknown && ctx.FinalPass)
-                    {
-                        Errors.ThrowFatal(node.GetChild(1), "unrecognized symbol");
-                    }
-                    else
-                    {
-                        ctx.GlobalSymbols[node.GetChild(0).Text] = rvalue;
-                    }
-                    break;
-
-                case ZapParser.GVAR:
-                    ctx.AddGlobalVar(node.GetChild(0).Text);
-                    if (node.ChildCount > 1)
-                    {
-                        Symbol sym = EvalExpr(ctx, node.GetChild(1));
-                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
-                        {
-                            Errors.ThrowFatal(node.GetChild(1), "unrecognized symbol");
-                        }
                         ctx.WriteWord((ushort)sym.Value);
                     }
-                    else
+                }
+            }
+            else if (node is FstrDirective)
+            {
+                AddAbbreviation(ctx, (FstrDirective)node);
+            }
+            else if (node is GstrDirective)
+            {
+                PackString(ctx, (GstrDirective)node);
+            }
+            else if (node is StrDirective)
+            {
+                ctx.WriteZString(((StrDirective)node).Text, false);
+            }
+            else if (node is StrlDirective)
+            {
+                ctx.WriteZString(((StrlDirective)node).Text, true);
+            }
+            else if (node is LenDirective)
+            {
+                ctx.WriteZStringLength(((LenDirective)node).Text);
+            }
+            else if (node is ZwordDirective)
+            {
+                ctx.WriteZWord(((ZwordDirective)node).Text);
+            }
+            else if (node is EqualsDirective)
+            {
+                Symbol rvalue = EvalExpr(ctx, ((EqualsDirective)node).Right);
+                if (rvalue.Type == SymbolType.Unknown && ctx.FinalPass)
+                {
+                    Errors.ThrowFatal(((EqualsDirective)node).Right, "unrecognized symbol");
+                }
+                else
+                {
+                    ctx.GlobalSymbols[((EqualsDirective)node).Left] = rvalue;
+                }
+            }
+            else if (node is GvarDirective)
+            {
+                ctx.AddGlobalVar(((GvarDirective)node).Name);
+                if (((GvarDirective)node).InitialValue != null)
+                {
+                    Symbol sym = EvalExpr(ctx, ((GvarDirective)node).InitialValue);
+                    if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                     {
-                        ctx.WriteWord(0);
+                        Errors.ThrowFatal(((GvarDirective)node).InitialValue, "unrecognized symbol");
                     }
-                    break;
+                    ctx.WriteWord((ushort)sym.Value);
+                }
+                else
+                {
+                    ctx.WriteWord(0);
+                }
+            }
+            else if (node is ObjectDirective)
+            {
+                var od = (ObjectDirective)node;
+                ctx.AddObject(od.Name);
+                //XXX const string ObjectVersionError = "wrong .OBJECT syntax for this version";
+                if (ctx.ZVersion < 4)
+                {
+                    // 2 flag words
+                    ctx.WriteWord(EvalExpr(ctx, od.Flags1));
+                    ctx.WriteWord(EvalExpr(ctx, od.Flags2));
+                    // 3 object link bytes
+                    ctx.WriteByte(EvalExpr(ctx, od.Parent));
+                    ctx.WriteByte(EvalExpr(ctx, od.Sibling));
+                    ctx.WriteByte(EvalExpr(ctx, od.Child));
+                    // property table
+                    ctx.WriteWord(EvalExpr(ctx, od.PropTable));
+                }
+                else
+                {
+                    // 3 flag words
+                    ctx.WriteWord(EvalExpr(ctx, od.Flags1));
+                    ctx.WriteWord(EvalExpr(ctx, od.Flags2));
+                    ctx.WriteWord(EvalExpr(ctx, od.Flags3));
+                    // 3 object link words
+                    ctx.WriteWord(EvalExpr(ctx, od.Parent));
+                    ctx.WriteWord(EvalExpr(ctx, od.Sibling));
+                    ctx.WriteWord(EvalExpr(ctx, od.Child));
+                    // property table
+                    ctx.WriteWord(EvalExpr(ctx, od.PropTable));
+                }
+            }
+            else if (node is PropDirective)
+            {
+                Symbol size = EvalExpr(ctx, ((PropDirective)node).Size);
+                Symbol prop = EvalExpr(ctx, ((PropDirective)node).Prop);
+                if (ctx.FinalPass &&
+                    (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
+                    Errors.Serious(ctx, node, "non-constant arguments to .PROP");
+                if (ctx.ZVersion < 4)
+                {
+                    if (size.Value > 8)
+                        Errors.Serious(ctx, node, "property too long (8 bytes max in V3)");
+                    ctx.WriteByte((byte)(32 * (size.Value - 1) + prop.Value));
+                }
+                else if (size.Value > 2)
+                {
+                    if (size.Value > 64)
+                        Errors.Serious(ctx, node, "property too long (64 bytes max in V4+)");
+                    ctx.WriteByte((byte)(prop.Value | 128));
+                    ctx.WriteByte((byte)(size.Value | 128));
+                }
+                else
+                {
+                    byte b = (byte)prop.Value;
+                    if (size.Value == 2)
+                        b |= 64;
+                    ctx.WriteByte(b);
+                }
+            }
+            else if (node is DebugDirective)
+            {
+                if (assembling)
+                {
+                    if (!ctx.IsDebugFileOpen)
+                        ctx.OpenDebugFile();
 
-                case ZapParser.OBJECT:
-                    ctx.AddObject(node.GetChild(0).Text);
-                    const string ObjectVersionError = "wrong .OBJECT syntax for this version";
-                    if (ctx.ZVersion < 4)
-                    {
-                        if (node.ChildCount != 7)
-                        {
-                            Errors.Serious(ctx, ObjectVersionError);
-                            break;
-                        }
-
-                        // 2 flag words
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(1)));
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(2)));
-                        // 3 object link bytes
-                        ctx.WriteByte(EvalExpr(ctx, node.GetChild(3)));
-                        ctx.WriteByte(EvalExpr(ctx, node.GetChild(4)));
-                        ctx.WriteByte(EvalExpr(ctx, node.GetChild(5)));
-                        // property table
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(6)));
-                    }
-                    else
-                    {
-                        if (node.ChildCount != 8)
-                        {
-                            Errors.Serious(ctx, ObjectVersionError);
-                            break;
-                        }
-
-                        // 3 flag words
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(1)));
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(2)));
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(3)));
-                        // 3 object link words
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(4)));
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(5)));
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(6)));
-                        // property table
-                        ctx.WriteWord(EvalExpr(ctx, node.GetChild(7)));
-                    }
-                    break;
-
-                case ZapParser.PROP:
-                    Symbol size = EvalExpr(ctx, node.GetChild(0));
-                    Symbol prop = EvalExpr(ctx, node.GetChild(1));
-                    if (ctx.FinalPass &&
-                        (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
-                        Errors.Serious(ctx, node, "non-constant arguments to .PROP");
-                    if (ctx.ZVersion < 4)
-                    {
-                        if (size.Value > 8)
-                            Errors.Serious(ctx, node, "property too long (8 bytes max in V3)");
-                        ctx.WriteByte((byte)(32 * (size.Value - 1) + prop.Value));
-                    }
-                    else if (size.Value > 2)
-                    {
-                        if (size.Value > 64)
-                            Errors.Serious(ctx, node, "property too long (64 bytes max in V4+)");
-                        ctx.WriteByte((byte)(prop.Value | 128));
-                        ctx.WriteByte((byte)(size.Value | 128));
-                    }
-                    else
-                    {
-                        byte b = (byte)prop.Value;
-                        if (size.Value == 2)
-                            b |= 64;
-                        ctx.WriteByte(b);
-                    }
-                    break;
-
-                case ZapParser.DEBUG_ACTION:
-                case ZapParser.DEBUG_ARRAY:
-                case ZapParser.DEBUG_ATTR:
-                case ZapParser.DEBUG_CLASS:
-                case ZapParser.DEBUG_FAKE_ACTION:
-                case ZapParser.DEBUG_FILE:
-                case ZapParser.DEBUG_GLOBAL:
-                case ZapParser.DEBUG_LINE:
-                case ZapParser.DEBUG_MAP:
-                case ZapParser.DEBUG_OBJECT:
-                case ZapParser.DEBUG_PROP:
-                case ZapParser.DEBUG_ROUTINE:
-                case ZapParser.DEBUG_ROUTINE_END:
-                    if (assembling)
-                    {
-                        if (!ctx.IsDebugFileOpen)
-                            ctx.OpenDebugFile();
-
-                        HandleDebugDirective(ctx, node);
-                    }
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                    HandleDebugDirective(ctx, (DebugDirective)node);
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        private static void HandleDebugDirective(Context ctx, ITree node)
+        private static void HandleDebugDirective(Context ctx, DebugDirective node)
         {
             if (ctx.DebugWriter.InRoutine &&
-                node.Type != ZapParser.DEBUG_LINE &&
-                node.Type != ZapParser.DEBUG_ROUTINE_END)
+                !(node is DebugLineDirective || node is DebugRoutineEndDirective))
             {
                 Errors.Serious(ctx, node, "debug directives other than .DEBUG-LINE not allowed inside routines");
                 return;
             }
 
             Symbol sym1, sym2;
-            switch (node.Type)
+            if (node is DebugActionDirective)
             {
-                case ZapParser.DEBUG_ACTION:
-                    ctx.DebugWriter.WriteAction(
-                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text);
-                    break;
-                case ZapParser.DEBUG_ARRAY:
-                    if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out sym1) == false)
-                    {
-                        Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
-                        return;
-                    }
-                    sym2 = EvalExpr(ctx, node.GetChild(0));
-                    ctx.DebugWriter.WriteArray(
-                        (ushort)(sym2.Value - sym1.Value),
-                        node.GetChild(1).Text);
-                    break;
-                case ZapParser.DEBUG_ATTR:
-                    ctx.DebugWriter.WriteAttr(
-                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text);
-                    break;
-                case ZapParser.DEBUG_CLASS:
-                    ctx.DebugWriter.WriteClass(
-                        node.GetChild(0).Text,
+                ctx.DebugWriter.WriteAction(
+                    (ushort)EvalExpr(ctx, ((DebugActionDirective)node).Number).Value,
+                    ((DebugActionDirective)node).Name);
+            }
+            else if (node is DebugArrayDirective)
+            {
+                if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out sym1) == false)
+                {
+                    Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
+                    return;
+                }
+                sym2 = EvalExpr(ctx, ((DebugArrayDirective)node).Number);
+                ctx.DebugWriter.WriteArray(
+                    (ushort)(sym2.Value - sym1.Value),
+                    ((DebugArrayDirective)node).Name);
+            }
+            else if (node is DebugAttrDirective)
+            {
+                ctx.DebugWriter.WriteAttr(
+                    (ushort)EvalExpr(ctx, ((DebugAttrDirective)node).Number).Value,
+                    ((DebugAttrDirective)node).Name);
+            }
+            else if (node is DebugClassDirective)
+            {
+                ctx.DebugWriter.WriteClass(
+                    ((DebugClassDirective)node).Name,
+                    new LineRef(
+                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).StartFile).Value,
+                        (ushort)EvalExpr(ctx, ((DebugClassDirective)node).StartLine).Value,
+                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).StartColumn).Value),
+                    new LineRef(
+                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).EndFile).Value,
+                        (ushort)EvalExpr(ctx, ((DebugClassDirective)node).EndLine).Value,
+                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).EndColumn).Value));
+            }
+            else if (node is DebugFakeActionDirective)
+            {
+                ctx.DebugWriter.WriteFakeAction(
+                    (ushort)EvalExpr(ctx, ((DebugFakeActionDirective)node).Number).Value,
+                    ((DebugFakeActionDirective)node).Name);
+            }
+            else if (node is DebugFileDirective)
+            {
+                ctx.DebugWriter.WriteFile(
+                    (byte)EvalExpr(ctx, ((DebugFileDirective)node).Number).Value,
+                    ((DebugFileDirective)node).IncludeName,
+                    ((DebugFileDirective)node).ActualName);
+            }
+            else if (node is DebugGlobalDirective)
+            {
+                ctx.DebugWriter.WriteGlobal(
+                    (byte)(EvalExpr(ctx, ((DebugGlobalDirective)node).Number).Value - 16),
+                    ((DebugGlobalDirective)node).Name);
+            }
+            else if (node is DebugLineDirective)
+            {
+                if (!ctx.DebugWriter.InRoutine)
+                {
+                    Errors.Serious(ctx, node, ".DEBUG-LINE outside of .DEBUG-ROUTINE");
+                }
+                else
+                {
+                    ctx.DebugWriter.WriteLine(
                         new LineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(1)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(2)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(3)).Value),
+                            (byte)EvalExpr(ctx, ((DebugLineDirective)node).TheFile).Value,
+                            (ushort)EvalExpr(ctx, ((DebugLineDirective)node).TheLine).Value,
+                            (byte)EvalExpr(ctx, ((DebugLineDirective)node).TheColumn).Value),
+                        ctx.Position);
+                }
+            }
+            else if (node is DebugMapDirective)
+            {
+                ctx.DebugFileMap[((DebugMapDirective)node).Key] = EvalExpr(ctx, ((DebugMapDirective)node).Value);
+            }
+            else if (node is DebugObjectDirective)
+            {
+                ctx.DebugWriter.WriteObject(
+                    (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).Number).Value,
+                    ((DebugObjectDirective)node).Name,
+                    new LineRef(
+                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).StartFile).Value,
+                        (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).StartLine).Value,
+                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).StartColumn).Value),
+                    new LineRef(
+                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).EndFile).Value,
+                        (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).EndLine).Value,
+                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).EndColumn).Value));
+            }
+            else if (node is DebugPropDirective)
+            {
+                ctx.DebugWriter.WriteProp(
+                    (ushort)EvalExpr(ctx, ((DebugPropDirective)node).Number).Value,
+                    ((DebugPropDirective)node).Name);
+            }
+            else if (node is DebugRoutineDirective)
+            {
+                AlignRoutine(ctx);
+                ctx.DebugWriter.StartRoutine(
+                    new LineRef(
+                            (byte)EvalExpr(ctx, ((DebugRoutineDirective)node).TheFile).Value,
+                            (ushort)EvalExpr(ctx, ((DebugRoutineDirective)node).TheLine).Value,
+                            (byte)EvalExpr(ctx, ((DebugRoutineDirective)node).TheColumn).Value),
+                    ctx.Position,
+                    ((DebugRoutineDirective)node).Name,
+                    ((DebugRoutineDirective)node).Locals);
+            }
+            else if (node is DebugRoutineEndDirective)
+            {
+                if (!ctx.DebugWriter.InRoutine)
+                {
+                    Errors.Serious(ctx, node, ".DEBUG-ROUTINE-END outside of .DEBUG-ROUTINE");
+                }
+                else
+                {
+                    ctx.DebugWriter.EndRoutine(
                         new LineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(4)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(5)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(6)).Value));
-
-                    break;
-                case ZapParser.DEBUG_FAKE_ACTION:
-                    ctx.DebugWriter.WriteFakeAction(
-                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text);
-                    break;
-                case ZapParser.DEBUG_FILE:
-                    ctx.DebugWriter.WriteFile(
-                        (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text,
-                        node.GetChild(2).Text);
-                    break;
-                case ZapParser.DEBUG_GLOBAL:
-                    ctx.DebugWriter.WriteGlobal(
-                        (byte)(EvalExpr(ctx, node.GetChild(0)).Value - 16),
-                        (node.GetChild(1).Text));
-                    break;
-                case ZapParser.DEBUG_LINE:
-                    if (!ctx.DebugWriter.InRoutine)
-                    {
-                        Errors.Serious(ctx, node, ".DEBUG-LINE outside of .DEBUG-ROUTINE");
-                    }
-                    else
-                    {
-                        ctx.DebugWriter.WriteLine(
-                            new LineRef(
-                                (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                                (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                                (byte)EvalExpr(ctx, node.GetChild(2)).Value),
-                            ctx.Position);
-                    }
-                    break;
-                case ZapParser.DEBUG_MAP:
-                    ctx.DebugFileMap[node.GetChild(0).Text] = EvalExpr(ctx, node.GetChild(1));
-                    break;
-                case ZapParser.DEBUG_OBJECT:
-                    ctx.DebugWriter.WriteObject(
-                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text,
-                        new LineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(2)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(3)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(4)).Value),
-                        new LineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(5)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(6)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(7)).Value));
-                    break;
-                case ZapParser.DEBUG_PROP:
-                    ctx.DebugWriter.WriteProp(
-                        (ushort)EvalExpr(ctx, node.GetChild(0)).Value,
-                        node.GetChild(1).Text);
-                    break;
-                case ZapParser.DEBUG_ROUTINE:
-                    AlignRoutine(ctx);
-                    var locals = from i in Enumerable.Range(4, node.ChildCount - 4)
-                                 select node.GetChild(i).Text;
-                    ctx.DebugWriter.StartRoutine(
-                        new LineRef(
-                            (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                            (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                            (byte)EvalExpr(ctx, node.GetChild(2)).Value),
-                        ctx.Position,
-                        node.GetChild(3).Text,
-                        locals);
-                    break;
-                case ZapParser.DEBUG_ROUTINE_END:
-                    if (!ctx.DebugWriter.InRoutine)
-                    {
-                        Errors.Serious(ctx, node, ".DEBUG-ROUTINE-END outside of .DEBUG-ROUTINE");
-                    }
-                    else
-                    {
-                        ctx.DebugWriter.EndRoutine(
-                            new LineRef(
-                                (byte)EvalExpr(ctx, node.GetChild(0)).Value,
-                                (ushort)EvalExpr(ctx, node.GetChild(1)).Value,
-                                (byte)EvalExpr(ctx, node.GetChild(2)).Value),
-                            ctx.Position);
-                    }
-                    break;
+                            (byte)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheFile).Value,
+                            (ushort)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheLine).Value,
+                            (byte)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheColumn).Value),
+                        ctx.Position);
+                }
             }
         }
 
-        private static void BeginFunction(Context ctx, ITree node, int nodeIndex)
+        private static void BeginFunction(Context ctx, FunctDirective node, int nodeIndex)
         {
             List<string> localNames = new List<string>();
             List<ushort> localValues = new List<ushort>();
             bool gotDefaultValues = false;
 
-            string name = node.GetChild(0).Text;
-            if (node.ChildCount > 1)
+            string name = node.Name;
+            foreach (var local in node.Locals)
             {
-                localNames.Capacity = localValues.Capacity = node.ChildCount - 1;
+                localNames.Add(local.Name);
+                ctx.LocalSymbols.Add(local.Name,
+                    new Symbol(local.Name, SymbolType.Variable, localNames.Count));
 
-                for (int i = 1; i < node.ChildCount; i++)
+                if (local.DefaultValue != null)
                 {
-                    ITree child = node.GetChild(i);
-                    if (child.Type == ZapParser.EQUALS)
-                    {
-                        gotDefaultValues = true;
-                        string lvname = child.GetChild(0).Text;
-                        localNames.Add(lvname);
-                        ctx.LocalSymbols.Add(lvname,
-                            new Symbol(lvname, SymbolType.Variable, localNames.Count));
+                    gotDefaultValues = true;
 
-                        Symbol defv = EvalExpr(ctx, child.GetChild(1));
-                        localValues.Add((ushort)defv.Value);
-                    }
-                    else if (child.Type == ZapParser.SYMBOL)
-                    {
-                        localNames.Add(child.Text);
-                        ctx.LocalSymbols.Add(child.Text,
-                            new Symbol(child.Text, SymbolType.Variable, localNames.Count));
-                        localValues.Add(0);
-                    }
+                    Symbol defv = EvalExpr(ctx, local.DefaultValue);
+                    localValues.Add((ushort)defv.Value);
+                }
+                else
+                {
+                    localValues.Add(0);
                 }
             }
 
@@ -1399,9 +1346,9 @@ General switches:
                 ctx.WriteByte(0);
         }
 
-        private static void PackString(Context ctx, ITree node)
+        private static void PackString(Context ctx, GstrDirective node)
         {
-            string name = node.GetChild(0).Text;
+            string name = node.Name;
 
             AlignString(ctx);
 
@@ -1426,7 +1373,7 @@ General switches:
                 }
             }
 
-            ctx.WriteZString(node.GetChild(1).Text, false);
+            ctx.WriteZString(node.Text, false);
         }
 
         private static void AlignString(Context ctx)
@@ -1435,19 +1382,19 @@ General switches:
                 ctx.WriteByte(0);
         }
 
-        private static void AddAbbreviation(Context ctx, ITree node)
+        private static void AddAbbreviation(Context ctx, FstrDirective node)
         {
             if (ctx.StringEncoder.AbbrevsFrozen)
                 Errors.ThrowSerious(node, "abbreviations must be defined before strings");
 
-            string name = node.GetChild(0).Text;
+            string name = node.Name;
 
             if (ctx.Position % 2 != 0)
                 ctx.WriteByte(0);
 
             ctx.GlobalSymbols[name] = new Symbol(name, SymbolType.Constant, ctx.Position / 2);
 
-            string text = node.GetChild(1).Text;
+            string text = node.Text;
             ctx.WriteZString(text, false, true);
 
             if (text.Length > 0)
@@ -1463,60 +1410,28 @@ General switches:
         private static ushort[] tmpOperandValues = new ushort[8];
         private static Fixup[] tmpOperandFixups = new Fixup[8];
 
-        private static void HandleInstruction(Context ctx, ITree node)
+        private static void HandleInstruction(Context ctx, Instruction node)
         {
-            var pair = ctx.OpcodeDict[node.Text];
+            var pair = ctx.OpcodeDict[node.Name];
             ushort opcode = pair.Key;
             ZOpAttribute attr = pair.Value;
 
-            List<ITree> operands = new List<ITree>();
-            ITree store = null, branch = null;
-            bool usesLongConstants = false;
-
-            for (int i = 0; i < node.ChildCount; i++)
-            {
-                ITree child = node.GetChild(i);
-                switch (child.Type)
-                {
-                    case ZapParser.SLASH:
-                    case ZapParser.BACKSLASH:
-                        if (branch == null)
-                            branch = child;
-                        else
-                            Errors.ThrowFatal(child, "multiple branch operands");
-                        break;
-
-                    case ZapParser.RANGLE:
-                        if (store == null)
-                            store = child;
-                        else
-                            Errors.ThrowFatal(child, "multiple store operands");
-                        break;
-
-                    default:
-                        if (branch != null || store != null)
-                            Errors.ThrowFatal(child, "normal operand after branch/store operand");
-                        operands.Add(child);
-                        if (IsLongConstant(ctx, child))
-                            usesLongConstants = true;
-                        break;
-                }
-            }
+            bool usesLongConstants = node.Operands.Any(o => IsLongConstant(ctx, o));
 
             // force a 2OP instruction to EXT mode if it uses long constants
             // or has more than 2 operands
-            if (opcode < 128 && (usesLongConstants || operands.Count > 2))
+            if (opcode < 128 && (usesLongConstants || node.Operands.Count > 2))
                 opcode += 192;
 
             if (opcode < 128)
             {
                 // 2OP
-                if (operands.Count != 2)
+                if (node.Operands.Count != 2)
                     Errors.ThrowSerious(node, "expected 2 operands");
 
                 byte b = (byte)opcode;
-                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0]);
-                EvalOperand(ctx, operands[1], out tmpOperandTypes[1], out tmpOperandValues[1], out tmpOperandFixups[1]);
+                EvalOperand(ctx, node.Operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0]);
+                EvalOperand(ctx, node.Operands[1], out tmpOperandTypes[1], out tmpOperandValues[1], out tmpOperandFixups[1]);
                 System.Diagnostics.Debug.Assert(tmpOperandFixups[0] == null);
                 System.Diagnostics.Debug.Assert(tmpOperandFixups[1] == null);
                 System.Diagnostics.Debug.Assert(tmpOperandTypes[0] != OPERAND_WORD);
@@ -1534,11 +1449,11 @@ General switches:
             else if (opcode < 176)
             {
                 // 1OP
-                if (operands.Count != 1)
+                if (node.Operands.Count != 1)
                     Errors.ThrowSerious(node, "expected 1 operand");
 
                 byte b = (byte)opcode;
-                EvalOperand(ctx, operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0],
+                EvalOperand(ctx, node.Operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0],
                     (attr.Flags & ZOpFlags.Label) != 0);
 
                 if ((attr.Flags & ZOpFlags.Label) != 0)
@@ -1566,18 +1481,18 @@ General switches:
                 // 0OP
                 if ((attr.Flags & ZOpFlags.String) == 0)
                 {
-                    if (operands.Count != 0)
+                    if (node.Operands.Count != 0)
                         Errors.ThrowSerious(node, "expected 0 operands");
 
                     ctx.WriteByte((byte)opcode);
                 }
                 else
                 {
-                    if (operands.Count != 1)
+                    if (node.Operands.Count != 1)
                         Errors.ThrowSerious(node, "expected literal string as only operand");
 
                     ctx.WriteByte((byte)opcode);
-                    ctx.WriteZString(operands[0].Text, false);
+                    ctx.WriteZString(node.Operands[0].Text, false);
                 }
             }
             else
@@ -1585,7 +1500,7 @@ General switches:
                 // EXT
                 int maxArgs = ((attr.Flags & ZOpFlags.Extra) == 0) ? 4 : 8;
 
-                if (operands.Count > maxArgs)
+                if (node.Operands.Count > maxArgs)
                     Errors.ThrowSerious(node, "expected 0-{0} operands", maxArgs);
 
                 if (opcode >= 256)
@@ -1601,9 +1516,9 @@ General switches:
                 for (int i = 0; i < maxArgs; i++)
                 {
                     byte t;
-                    if (i < operands.Count)
+                    if (i < node.Operands.Count)
                     {
-                        EvalOperand(ctx, operands[i], out t, out tmpOperandValues[i], out tmpOperandFixups[i]);
+                        EvalOperand(ctx, node.Operands[i], out t, out tmpOperandValues[i], out tmpOperandFixups[i]);
                         tmpOperandTypes[i] = t;
                     }
                     else
@@ -1619,7 +1534,7 @@ General switches:
                 }
 
                 // operands
-                for (int i = 0; i < operands.Count; i++)
+                for (int i = 0; i < node.Operands.Count; i++)
                 {
                     if (tmpOperandFixups[i] != null)
                     {
@@ -1637,46 +1552,46 @@ General switches:
 
             if ((attr.Flags & ZOpFlags.Store) != 0)
             {
-                if (store == null)
+                if (node.StoreTarget == null)
                 {
                     // default to stack
                     ctx.WriteByte(0);
                 }
                 else
                 {
-                    byte type;
-                    ushort value;
-                    Fixup fixup;
-                    EvalOperand(ctx, store.GetChild(0), out type, out value, out fixup);
+                    Symbol sym;
+                    if ((ctx.LocalSymbols.TryGetValue(node.StoreTarget, out sym) == false &&
+                         ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) == false) ||
+                        sym.Type != SymbolType.Variable)
+                    {
+                        Errors.ThrowSerious(node, "expected local or global variable as store target");
+                    }
 
-                    if (type != OPERAND_VAR)
-                        Errors.ThrowSerious(store, "expected local or global variable as store target");
-                    ctx.WriteByte((byte)value);
+                    ctx.WriteByte((byte)sym.Value);
                 }
             }
 
             if ((attr.Flags & ZOpFlags.Branch) != 0)
             {
-                if (branch == null)
+                if (node.BranchTarget == null)
                 {
                     Errors.ThrowSerious(node, "expected branch target");
                 }
                 else
                 {
-                    bool polarity = (branch.Type == ZapParser.SLASH), far = false;
+                    bool polarity = (bool)node.BranchPolarity, far = false;
                     int offset;
-                    branch = branch.GetChild(0);
-                    switch (branch.Type)
+                    switch (node.BranchTarget)
                     {
-                        case ZapParser.TRUE:
+                        case Instruction.BranchTrue:
                             offset = 1;
                             break;
-                        case ZapParser.FALSE:
+                        case Instruction.BranchFalse:
                             offset = 0;
                             break;
-                        case ZapParser.SYMBOL:
+                        default:
                             Symbol sym;
-                            if (ctx.LocalSymbols.TryGetValue(branch.Text, out sym))
+                            if (ctx.LocalSymbols.TryGetValue(node.BranchTarget, out sym))
                             {
                                 offset = sym.Value - (ctx.Position + 1) + 2;
                                 if (offset < 2 || offset > 63)
@@ -1689,11 +1604,9 @@ General switches:
                             {
                                 // not yet defined (we'll reassemble this later once it's defined)
                                 offset = 2;
-                                ctx.MarkUnknownBranch(branch.Text);
+                                ctx.MarkUnknownBranch(node.BranchTarget);
                             }
                             break;
-                        default:
-                            throw new NotImplementedException();
                     }
 
                     if (offset < -8192 || offset > 8191)
@@ -1707,12 +1620,14 @@ General switches:
             }
         }
 
-        private static void HandleLabel(Context ctx, ITree node, ref int nodeIndex)
+        private static void HandleLabel(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            if (node.Type == ZapParser.GLABEL)
+            if (node is GlobalLabel)
             {
+                string name = ((GlobalLabel)node).Name;
+
                 Symbol sym;
-                if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym) == true)
+                if (ctx.GlobalSymbols.TryGetValue(name, out sym) == true)
                 {
                     // we don't require it to be a phantom because a global label might be
                     // defined inside a routine, and reassembly could cause it to be defined twice
@@ -1730,7 +1645,7 @@ General switches:
                     {
                         if (ctx.FinalPass)
                             Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
-                                node.Text, sym.Value, ctx.Position);
+                                name, sym.Value, ctx.Position);
 
                         ctx.MeasureAgain = true;
                         sym.Value = ctx.Position;
@@ -1740,26 +1655,30 @@ General switches:
                 }
                 else
                 {
-                    ctx.GlobalSymbols.Add(node.Text, new Symbol(node.Text, SymbolType.Label, ctx.Position));
+                    ctx.GlobalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
                 }
             }
-            else if (node.Type == ZapParser.LLABEL)
+            else
             {
+                System.Diagnostics.Debug.Assert(node is LocalLabel);
+
+                string name = ((LocalLabel)node).Name;
+
                 if (!ctx.InReassemblyScope)
                     Errors.ThrowSerious(node, "local labels not allowed outside a function");
 
                 Symbol sym;
-                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym) == false)
+                if (ctx.LocalSymbols.TryGetValue(name, out sym) == false)
                 {
-                    if (ctx.CausesReassembly(node.Text))
-                        nodeIndex = ctx.Reassemble(node.Text) - 1;
+                    if (ctx.CausesReassembly(name))
+                        nodeIndex = ctx.Reassemble(name) - 1;
                     else
-                        ctx.LocalSymbols.Add(node.Text, new Symbol(node.Text, SymbolType.Label, ctx.Position));
+                        ctx.LocalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
                 }
                 else if (sym.Type == SymbolType.Label && sym.Phantom)
                 {
                     if (sym.Value != ctx.Position)
-                        nodeIndex = ctx.Reassemble(node.Text) - 1;
+                        nodeIndex = ctx.Reassemble(name) - 1;
                     else
                         sym.Phantom = false;
                 }

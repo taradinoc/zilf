@@ -18,9 +18,16 @@
 
 using System;
 using Antlr.Runtime.Tree;
+using Zapf.Parsing;
 
 namespace Zapf
 {
+    public interface ISourceLine
+    {
+        string SourceFile { get; }
+        int LineNum { get; }
+    }
+
     /// <summary>
     /// Thrown when a configuration change has occurred that
     /// requires the assembler to restart.
@@ -31,15 +38,15 @@ namespace Zapf
 
     public class AssemblerError : Exception
     {
-        private readonly ITree node;
+        private readonly ISourceLine node;
 
-        public AssemblerError(ITree node, string message)
+        public AssemblerError(ISourceLine node, string message)
             : base(message)
         {
             this.node = node;
         }
 
-        public ITree Node
+        public ISourceLine Node
         {
             get { return node; }
         }
@@ -50,7 +57,7 @@ namespace Zapf
     /// </summary>
     public class FatalError : AssemblerError
     {
-        public FatalError(ITree node, string message)
+        public FatalError(ISourceLine node, string message)
             : base(node, message)
         {
         }
@@ -61,7 +68,7 @@ namespace Zapf
     /// </summary>
     public class SeriousError : AssemblerError
     {
-        public SeriousError(ITree node, string message)
+        public SeriousError(ISourceLine node, string message)
             : base(node, message)
         {
         }
@@ -69,12 +76,12 @@ namespace Zapf
 
     static class Errors
     {
-        public static void Warn(ITree node, string message)
+        public static void Warn(ISourceLine node, string message)
         {
-            Console.Error.WriteLine("line {0}: warning: {1}", node.Line, message);
+            Console.Error.WriteLine("line {0}: warning: {1}", node.LineNum, message);
         }
 
-        public static void Warn(ITree node, string format, params object[] args)
+        public static void Warn(ISourceLine node, string format, params object[] args)
         {
             Warn(node, string.Format(format, args));
         }
@@ -89,12 +96,12 @@ namespace Zapf
             Serious(ctx, string.Format(format, args));
         }
 
-        public static void Serious(Context ctx, ITree node, string message)
+        public static void Serious(Context ctx, ISourceLine node, string message)
         {
             ctx.HandleSeriousError(new SeriousError(node, message));
         }
 
-        public static void Serious(Context ctx, ITree node, string format, params object[] args)
+        public static void Serious(Context ctx, ISourceLine node, string format, params object[] args)
         {
             Serious(ctx, node, string.Format(format, args));
         }
@@ -109,19 +116,19 @@ namespace Zapf
             ThrowSerious(null, format, args);
         }
 
-        public static void ThrowSerious(ITree node, string message)
+        public static void ThrowSerious(ISourceLine node, string message)
         {
             throw new SeriousError(node, message);
         }
 
-        public static void ThrowSerious(ITree node, string format, params object[] args)
+        public static void ThrowSerious(ISourceLine node, string format, params object[] args)
         {
             ThrowSerious(node, string.Format(format, args));
         }
 
         public static void ThrowFatal(string message)
         {
-            ThrowFatal(null, message);
+            ThrowFatal((ISourceLine)null, message);
         }
 
         public static void ThrowFatal(string format, params object[] args)
@@ -129,14 +136,20 @@ namespace Zapf
             ThrowFatal(null, format, args);
         }
 
-        public static void ThrowFatal(ITree node, string message)
+        public static void ThrowFatal(ISourceLine node, string message)
         {
             throw new FatalError(node, message);
         }
 
-        public static void ThrowFatal(ITree node, string format, params object[] args)
+        public static void ThrowFatal(ISourceLine node, string format, params object[] args)
         {
             ThrowFatal(node, string.Format(format, args));
+        }
+
+        public static void ThrowFatal(ITree node, string message)
+        {
+            //XXX
+            throw new NotImplementedException();
         }
     }
 }
