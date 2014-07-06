@@ -131,18 +131,19 @@
     <Compile Include="Horspool.cs" />
     <Compile Include="IDebugFileWriter.cs" />
     <Compile Include="Opcodes.cs" />
+    <Compile Include="Parsing\AntlrBasedParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringEncoder.cs" />
     <Compile Include="XmlDebugFileWriter.cs" />
     <Compile Include="ZapfAssembler.cs" />
-    <Compile Include="ZapInf.cs" />
-    <Compile Include="ZapLexer.cs" />
-    <Compile Include="ZapParser.cs" />
+    <Compile Include="Parsing\ZapInf.cs" />
+    <Compile Include="Parsing\ZapLexer.cs" />
+    <Compile Include="Parsing\ZapParser.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Zap.g" />
-    <None Include="ZapInf.g" />
+    <None Include="Parsing\Zap.g" />
+    <None Include="Parsing\ZapInf.g" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
