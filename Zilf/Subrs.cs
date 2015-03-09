@@ -132,7 +132,8 @@ namespace Zilf
         [Subr("BLOAT")]
         [Subr("ZSTR-ON")]
         [Subr("ZSTR-OFF")]
-        public static ZilObject MdlMemoryCrap(Context ctx, ZilObject[] args)
+        [Subr("ENDLOAD")]
+        public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
             return ctx.FALSE;
