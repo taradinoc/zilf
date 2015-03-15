@@ -148,8 +148,10 @@ namespace Zilf
             DefinePunctWord(ctx, cc, "\"", "QUOTE");
 
             // builders for vocabulary
-            foreach (ZilAtom buzz in ctx.ZEnvironment.Buzzwords)
-                ctx.ZEnvironment.GetVocabBuzzword(buzz);
+            foreach (var pair in ctx.ZEnvironment.Buzzwords)
+            {
+                ctx.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
+            }
 
             ctx.ZEnvironment.MergeVocabulary();
 
@@ -2397,7 +2399,7 @@ namespace Zilf
                         if (!cc.Context.ZEnvironment.Directions.Contains(atom))
                         {
                             cc.Context.ZEnvironment.Directions.Add(atom);
-                            cc.Context.ZEnvironment.GetVocabDirection(atom);
+                            cc.Context.ZEnvironment.GetVocabDirection(atom, model);     // TODO: pass prop instead of model as the source location?
                         }
                     }
                     else
@@ -2430,7 +2432,7 @@ namespace Zilf
 
                                 try
                                 {
-                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom));
+                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, model));  // TODO: pass prop instead of model as the source location?
                                 }
                                 catch (ZilError ex)
                                 {
@@ -2450,7 +2452,7 @@ namespace Zilf
 
                                 try
                                 {
-                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom));
+                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, model)); // TODO: pass prop instead of model as the source location?
                                 }
                                 catch (ZilError ex)
                                 {
@@ -2665,7 +2667,7 @@ namespace Zilf
                                 break;
                             }
 
-                            Word word = cc.Context.ZEnvironment.GetVocabNoun(atom);
+                            Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);  // TODO: pass prop instead of model as the source location?
                             IWordBuilder wb = cc.Vocabulary[word];
                             tb.AddShort(wb);
                             length += 2;
@@ -2683,7 +2685,7 @@ namespace Zilf
                                 break;
                             }
 
-                            Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom);
+                            Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model); // TODO: pass prop instead of model as the source location?
                             IWordBuilder wb = cc.Vocabulary[word];
                             if (cc.Context.ZEnvironment.ZVersion == 3)
                             {

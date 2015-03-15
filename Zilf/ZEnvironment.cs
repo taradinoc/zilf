@@ -52,7 +52,7 @@ namespace Zilf
         public readonly Dictionary<ZilAtom, Word> Vocabulary = new Dictionary<ZilAtom, Word>();
         public readonly List<Synonym> Synonyms = new List<Synonym>();
         public readonly List<ZilAtom> Directions = new List<ZilAtom>();
-        public readonly List<ZilAtom> Buzzwords = new List<ZilAtom>();
+        public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
 
         public readonly List<ZilAtom> FirstObjects = new List<ZilAtom>();
         public readonly List<ZilAtom> LastObjects = new List<ZilAtom>();
@@ -75,7 +75,7 @@ namespace Zilf
             this.ctx = ctx;
         }
 
-        public Word GetVocabPreposition(ZilAtom text)
+        public Word GetVocabPreposition(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -90,13 +90,13 @@ namespace Zilf
                 if (NextPreposition == 0)
                     throw new InvalidOperationException("Too many prepositions");
 
-                result.SetPreposition(ctx, NextPreposition--);
+                result.SetPreposition(ctx, location, NextPreposition--);
             }
 
             return result;
         }
 
-        public Word GetVocabAdjective(ZilAtom text)
+        public Word GetVocabAdjective(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -114,18 +114,18 @@ namespace Zilf
                     if (NextAdjective == 0)
                         throw new InvalidOperationException("Too many adjectives");
 
-                    result.SetAdjective(ctx, NextAdjective--);
+                    result.SetAdjective(ctx, location, NextAdjective--);
                 }
                 else
                 {
-                    result.SetAdjective(ctx, 0);
+                    result.SetAdjective(ctx, location, 0);
                 }
             }
 
             return result;
         }
 
-        public Word GetVocabNoun(ZilAtom text)
+        public Word GetVocabNoun(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -135,11 +135,11 @@ namespace Zilf
                 Vocabulary.Add(text, result);
             }
 
-            result.SetObject(ctx);
+            result.SetObject(ctx, location);
             return result;
         }
 
-        public Word GetVocabBuzzword(ZilAtom text)
+        public Word GetVocabBuzzword(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -154,13 +154,13 @@ namespace Zilf
                 if (NextBuzzword == 0)
                     throw new InvalidOperationException("Too many buzzwords");
 
-                result.SetBuzzword(ctx, NextBuzzword--);
+                result.SetBuzzword(ctx, location, NextBuzzword--);
             }
 
             return result;
         }
 
-        public Word GetVocabVerb(ZilAtom text)
+        public Word GetVocabVerb(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -175,13 +175,13 @@ namespace Zilf
                 if (NextVerb == 0)
                     throw new InvalidOperationException("Too many verbs");
 
-                result.SetVerb(ctx, NextVerb--);
+                result.SetVerb(ctx, location, NextVerb--);
             }
 
             return result;
         }
 
-        public Word GetVocabDirection(ZilAtom text)
+        public Word GetVocabDirection(ZilAtom text, ISourceLine location)
         {
             Word result;
 
@@ -197,7 +197,7 @@ namespace Zilf
                 if (index == -1)
                     throw new ArgumentException("Not a direction");
 
-                result.SetDirection(ctx, (byte)index);
+                result.SetDirection(ctx, location, (byte)index);
             }
 
             return result;
@@ -582,9 +582,9 @@ namespace Zilf
                 bits2 = null;
             }
 
-            Word verbWord = ctx.ZEnvironment.GetVocabVerb(verb);
-            Word word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1);
-            Word word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2);
+            Word verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
+            Word word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1, src);
+            Word word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2, src);
             ScopeFlags flags1 = ParseScopeFlags(bits1);
             ScopeFlags flags2 = ParseScopeFlags(bits2);
             ZilAtom findFlag1 = ParseFindFlag(find1);
@@ -722,6 +722,7 @@ namespace Zilf
         public PartOfSpeech PartOfSpeech;
 
         private Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
+        private Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
         public Word(ZilAtom atom)
         {
@@ -859,10 +860,30 @@ namespace Zilf
             }
 
             if (count > 2)
-                throw new CompilerError("too many parts of speech for " + Atom);
+                throw new CompilerError(string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
         }
 
-        public void SetObject(Context ctx)
+        private string ListDefinitionLocations()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var pair in definitions)
+            {
+                if (sb.Length != 0)
+                {
+                    sb.Append(", ");
+                }
+
+                sb.Append(pair.Key.ToString());
+                sb.Append(" (");
+                sb.Append(pair.Value.SourceInfo);
+                sb.Append(")");
+            }
+
+            return sb.ToString();
+        }
+
+        public void SetObject(Context ctx, ISourceLine location)
         {
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
             {
@@ -870,11 +891,12 @@ namespace Zilf
 
                 PartOfSpeech |= PartOfSpeech.Object;
                 speechValues[Zilf.PartOfSpeech.Object] = 1;
+                definitions[Zilf.PartOfSpeech.Object] = location;
                 CheckTooMany(ctx);
             }
         }
 
-        public void SetVerb(Context ctx, byte value)
+        public void SetVerb(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
@@ -883,11 +905,12 @@ namespace Zilf
 
                 PartOfSpeech |= PartOfSpeech.Verb;
                 speechValues[Zilf.PartOfSpeech.Verb] = value;
+                definitions[Zilf.PartOfSpeech.Verb] = location;
                 CheckTooMany(ctx);
             }
         }
 
-        public void SetAdjective(Context ctx, byte value)
+        public void SetAdjective(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
@@ -896,11 +919,12 @@ namespace Zilf
 
                 PartOfSpeech |= PartOfSpeech.Adjective;
                 speechValues[Zilf.PartOfSpeech.Adjective] = value;
+                definitions[Zilf.PartOfSpeech.Adjective] = location;
                 CheckTooMany(ctx);
             }
         }
 
-        public void SetDirection(Context ctx, byte value)
+        public void SetDirection(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
@@ -909,11 +933,12 @@ namespace Zilf
 
                 PartOfSpeech |= PartOfSpeech.Direction;
                 speechValues[Zilf.PartOfSpeech.Direction] = value;
+                definitions[Zilf.PartOfSpeech.Direction] = location;
                 CheckTooMany(ctx);
             }
         }
 
-        public void SetBuzzword(Context ctx, byte value)
+        public void SetBuzzword(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & Zilf.PartOfSpeech.Buzzword) == 0)
             {
@@ -921,11 +946,12 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Buzzword;
                 PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Buzzword] = value;
+                definitions[Zilf.PartOfSpeech.Buzzword] = location;
                 CheckTooMany(ctx);
             }
         }
 
-        public void SetPreposition(Context ctx, byte value)
+        public void SetPreposition(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
@@ -933,6 +959,7 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Preposition;
                 PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Preposition] = value;
+                definitions[Zilf.PartOfSpeech.Preposition] = location;
                 CheckTooMany(ctx);
             }
         }
@@ -952,6 +979,11 @@ namespace Zilf
                 default:
                     throw new ArgumentOutOfRangeException("Unexpected part of speech: " + part);
             }
+        }
+
+        public ISourceLine GetDefinition(PartOfSpeech part)
+        {
+            return definitions[part];
         }
 
         public void WriteToBuilder(Context ctx, Emit.IWordBuilder wb, Func<byte, Emit.IOperand> dirIndexToPropertyOperand)
@@ -1047,22 +1079,22 @@ namespace Zilf
         public virtual void Apply(Context ctx)
         {
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Adjective) != 0)
-                SynonymWord.SetAdjective(ctx, OriginalWord.GetValue(PartOfSpeech.Adjective));
+                SynonymWord.SetAdjective(ctx, OriginalWord.GetDefinition(PartOfSpeech.Adjective), OriginalWord.GetValue(PartOfSpeech.Adjective));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                SynonymWord.SetBuzzword(ctx, OriginalWord.GetValue(PartOfSpeech.Buzzword));
+                SynonymWord.SetBuzzword(ctx, OriginalWord.GetDefinition(PartOfSpeech.Buzzword), OriginalWord.GetValue(PartOfSpeech.Buzzword));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Direction) != 0)
-                SynonymWord.SetDirection(ctx, OriginalWord.GetValue(PartOfSpeech.Direction));
+                SynonymWord.SetDirection(ctx, OriginalWord.GetDefinition(PartOfSpeech.Direction), OriginalWord.GetValue(PartOfSpeech.Direction));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Object) != 0)
-                SynonymWord.SetObject(ctx);
+                SynonymWord.SetObject(ctx, OriginalWord.GetDefinition(PartOfSpeech.Object));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                SynonymWord.SetPreposition(ctx, OriginalWord.GetValue(PartOfSpeech.Preposition));
+                SynonymWord.SetPreposition(ctx, OriginalWord.GetDefinition(PartOfSpeech.Preposition), OriginalWord.GetValue(PartOfSpeech.Preposition));
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Verb) != 0)
-                SynonymWord.SetVerb(ctx, OriginalWord.GetValue(PartOfSpeech.Verb));
+                SynonymWord.SetVerb(ctx, OriginalWord.GetDefinition(PartOfSpeech.Verb), OriginalWord.GetValue(PartOfSpeech.Verb));
         }
     }
 
