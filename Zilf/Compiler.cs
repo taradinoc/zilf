@@ -544,6 +544,7 @@ namespace Zilf
             IWordBuilder pwb = cc.Game.DefineVocabularyWord(punct);
             cc.Vocabulary.Add(pword, pwb);
             cc.Constants.Add(ZilAtom.Parse("W?" + name, cc.Context), pwb);
+            cc.Constants.Add(ZilAtom.Parse("W?" + punct, cc.Context), pwb);
         }
         
         private static void DefineWord(CompileCtx cc, Word word)
