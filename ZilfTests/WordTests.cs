@@ -110,8 +110,7 @@ namespace ZilfTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CompilerError))]
-        public void V3_OldVoc_Verb_Prep_Object_Should_Throw()
+        public void V3_OldVoc_Verb_Prep_Object_Should_Warn()
         {
             Context ctx;
             Word word;
@@ -120,11 +119,13 @@ namespace ZilfTests
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
             word.SetObject(ctx, dummySrc);
+
+            word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
+            Assert.AreNotEqual(0, ctx.WarningCount);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CompilerError))]
-        public void V4_OldVoc_Verb_Prep_Object_Should_Throw()
+        public void V4_OldVoc_Verb_Prep_Object_Should_Warn()
         {
             Context ctx;
             Word word;
@@ -133,6 +134,9 @@ namespace ZilfTests
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
             word.SetObject(ctx, dummySrc);
+
+            word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
+            Assert.AreNotEqual(0, ctx.WarningCount);
         }
 
         [TestMethod]
@@ -160,8 +164,7 @@ namespace ZilfTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CompilerError))]
-        public void V3_NewVoc_Verb_Prep_Object_Adj_Should_Throw()
+        public void V3_NewVoc_Verb_Prep_Object_Adj_Should_Warn()
         {
             Context ctx;
             Word word;
@@ -171,6 +174,9 @@ namespace ZilfTests
             word.SetPreposition(ctx, dummySrc, 200);
             word.SetObject(ctx, dummySrc);
             word.SetAdjective(ctx, dummySrc, 250);
+
+            word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
+            Assert.AreNotEqual(0, ctx.WarningCount);
         }
 
         private struct WtwbTestCase
@@ -188,6 +194,8 @@ namespace ZilfTests
             public PartOfSpeech ExpectedPartOfSpeech;
             public byte ExpectedValue1;
             public byte ExpectedValue2;
+
+            public bool Warn;
 
             public WtwbTestCase(int zversion, bool newVoc,
                 PartOfSpeech firstPart, byte firstValue,
@@ -231,6 +239,8 @@ namespace ZilfTests
                 this.ExpectedPartOfSpeech = expectedPartOfSpeech;
                 this.ExpectedValue1 = expectedValue1;
                 this.ExpectedValue2 = expectedValue2;
+
+                this.Warn = false;
             }
 
             public override string ToString()
@@ -312,6 +322,28 @@ namespace ZilfTests
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM),
+                new WtwbTestCase(4, true,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Adjective, PREPNUM, 0),
+                new WtwbTestCase(4, true,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Adjective, PREPNUM, 0),
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM) { Warn = true },
+                new WtwbTestCase(3, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Verb | PartOfSpeech.DirectionFirst, DIRNUM, VERBNUM) { Warn = true },
                 new WtwbTestCase(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Adjective, ADJNUM,
@@ -426,6 +458,15 @@ namespace ZilfTests
                         tc,
                         tc.ExpectedPartOfSpeech, tc.ExpectedValue1, tc.ExpectedValue2,
                         (PartOfSpeech)wb.ActualBytes[0], wb.ActualBytes[1], wb.ActualBytes[2]);
+                }
+
+                if (tc.Warn)
+                {
+                    Assert.AreNotEqual(0, ctx.WarningCount, "For {0}, expected some compiler warnings", tc);
+                }
+                else
+                {
+                    Assert.AreEqual(0, ctx.WarningCount, "For {0}, expected no compiler warnings", tc);
                 }
             }
         }

@@ -821,12 +821,9 @@ namespace Zilf
 
         /// <summary>
         /// Check whether the word has too many parts of speech defined, and
-        /// raise an exception if so.
+        /// if so, issue a warning and discard the extras.
         /// </summary>
         /// <param name="ctx">The current context.</param>
-        /// <exception cref="CompilerError">
-        /// The word has too many parts of speech defined.
-        /// </exception>
         /// <remarks>
         /// Generally, a vocabulary word is limited to no more than two parts
         /// of speech. However, in V4+, <see cref="PartOfSpeech.Adjective"/> does
@@ -845,22 +842,58 @@ namespace Zilf
                 count++;
             }
 
+            bool freeObject = false, freeAdjective = false;
+
             // when ,NEW-VOC? is true, Object is free
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
             {
                 if (IsNewVoc(ctx))
+                {
+                    freeObject = true;
                     count--;
+                }
             }
 
             // Adjective is always free in V4+
             if ((PartOfSpeech & PartOfSpeech.Adjective) != 0)
             {
                 if (ctx.ZEnvironment.ZVersion > 3)
+                {
+                    freeAdjective = true;
                     count--;
+                }
             }
 
             if (count > 2)
-                throw new CompilerError(string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
+            {
+                Errors.CompWarning(ctx, null, string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
+
+                /* The order we trim is mostly arbitrary, except that adjective and object are first
+                 * since they can sometimes be recognized without the part-of-speech flags. */
+                var partsToTrim = new[] {
+                    new { part = PartOfSpeech.Adjective, free = freeAdjective },
+                    new { part = PartOfSpeech.Object, free = freeObject },
+                    new { part = PartOfSpeech.Buzzword, free = false },
+                    new { part = PartOfSpeech.Preposition, free = false },
+                    new { part = PartOfSpeech.Verb, free = false },
+                    new { part = PartOfSpeech.Direction, free = false },
+                };
+
+                foreach (var trim in partsToTrim)
+                {
+                    if ((PartOfSpeech & trim.part) != 0 && !trim.free)
+                    {
+                        Errors.CompWarning(ctx, GetDefinition(trim.part),
+                            string.Format("discarding the {0} part of speech for {1}", trim.part, Atom));
+
+                        UnsetPartOfSpeech(ctx, trim.part);
+
+                        count--;
+                        if (count <= 2)
+                            break;
+                    }
+                }
+            }
         }
 
         private string ListDefinitionLocations()
@@ -892,7 +925,6 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Object;
                 speechValues[Zilf.PartOfSpeech.Object] = 1;
                 definitions[Zilf.PartOfSpeech.Object] = location;
-                CheckTooMany(ctx);
             }
         }
 
@@ -906,7 +938,6 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Verb;
                 speechValues[Zilf.PartOfSpeech.Verb] = value;
                 definitions[Zilf.PartOfSpeech.Verb] = location;
-                CheckTooMany(ctx);
             }
         }
 
@@ -920,7 +951,6 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Adjective;
                 speechValues[Zilf.PartOfSpeech.Adjective] = value;
                 definitions[Zilf.PartOfSpeech.Adjective] = location;
-                CheckTooMany(ctx);
             }
         }
 
@@ -934,7 +964,6 @@ namespace Zilf
                 PartOfSpeech |= PartOfSpeech.Direction;
                 speechValues[Zilf.PartOfSpeech.Direction] = value;
                 definitions[Zilf.PartOfSpeech.Direction] = location;
-                CheckTooMany(ctx);
             }
         }
 
@@ -947,7 +976,6 @@ namespace Zilf
                 PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Buzzword] = value;
                 definitions[Zilf.PartOfSpeech.Buzzword] = location;
-                CheckTooMany(ctx);
             }
         }
 
@@ -960,7 +988,46 @@ namespace Zilf
                 PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Preposition] = value;
                 definitions[Zilf.PartOfSpeech.Preposition] = location;
-                CheckTooMany(ctx);
+            }
+        }
+
+        private void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
+        {
+            var query = from pair in speechValues
+                        where pair.Key != part
+                        orderby pair.Key
+                        select new { part = pair.Key, value = pair.Value, location = definitions[pair.Key] };
+            var remainingParts = query.ToArray();
+
+            PartOfSpeech = 0;
+            speechValues.Clear();
+            definitions.Clear();
+
+            foreach (var p in remainingParts)
+            {
+                switch (p.part)
+                {
+                    case Zilf.PartOfSpeech.Verb:
+                        SetVerb(ctx, p.location, p.value);
+                        break;
+                    case Zilf.PartOfSpeech.Adjective:
+                        SetAdjective(ctx, p.location, p.value);
+                        break;
+                    case Zilf.PartOfSpeech.Direction:
+                        SetDirection(ctx, p.location, p.value);
+                        break;
+                    case Zilf.PartOfSpeech.Buzzword:
+                        SetBuzzword(ctx, p.location, p.value);
+                        break;
+                    case Zilf.PartOfSpeech.Preposition:
+                        SetPreposition(ctx, p.location, p.value);
+                        break;
+                    case Zilf.PartOfSpeech.Object:
+                        SetObject(ctx, p.location);
+                        break;
+                    default:
+                        throw new NotImplementedException("Unexpected part of speech: " + p);
+                }
             }
         }
 
@@ -988,6 +1055,9 @@ namespace Zilf
 
         public void WriteToBuilder(Context ctx, Emit.IWordBuilder wb, Func<byte, Emit.IOperand> dirIndexToPropertyOperand)
         {
+            // discard excess parts of speech if needed
+            CheckTooMany(ctx);
+
             var pos = this.PartOfSpeech;
             var partsToWrite = new List<PartOfSpeech>(2);
 
