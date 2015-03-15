@@ -1239,10 +1239,9 @@ namespace Zilf
             [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
             [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
             [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5)]
-            [Builtin("USL", Data = NullaryOp.ShowStatus, MinVersion = 3, MaxVersion = 3, HasSideEffect = true)]
             public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
             {
-                c.rb.EmitNullary(NullaryOp.Catch, c.resultStorage);
+                c.rb.EmitNullary(op, c.resultStorage);
                 return c.resultStorage;
             }
 
@@ -1251,6 +1250,12 @@ namespace Zilf
             public static void NullaryPredOp(PredCall c, [Data] Condition cond)
             {
                 c.rb.Branch(cond, null, null, c.label, c.polarity);
+            }
+
+            [Builtin("USL", Data = NullaryOp.ShowStatus, MinVersion = 3, MaxVersion = 3, HasSideEffect = true)]
+            public static void NullaryVoidOp(VoidCall c, [Data] NullaryOp op)
+            {
+                c.rb.EmitNullary(op, null);
             }
 
             [Builtin("RTRUE", Data = 1, HasSideEffect = true)]
