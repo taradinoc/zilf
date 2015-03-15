@@ -8,6 +8,8 @@ namespace ZilfTests
     [TestClass]
     public class WordTests
     {
+        private static readonly ISourceLine dummySrc = new StringSourceLine("dummy");
+
         [TestMethod]
         public void TestCtor()
         {
@@ -79,9 +81,9 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(3, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetVerb(ctx, verbValue);
-                word.SetPreposition(ctx, prepValue);
-                word.SetObject(ctx);
+                word.SetVerb(ctx, dummySrc, verbValue);
+                word.SetPreposition(ctx, dummySrc, prepValue);
+                word.SetObject(ctx, dummySrc);
             });
         }
 
@@ -90,9 +92,9 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(3, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetObject(ctx);
-                word.SetPreposition(ctx, prepValue);
-                word.SetVerb(ctx, verbValue);
+                word.SetObject(ctx, dummySrc);
+                word.SetPreposition(ctx, dummySrc, prepValue);
+                word.SetVerb(ctx, dummySrc, verbValue);
             });
         }
 
@@ -101,9 +103,9 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(3, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetPreposition(ctx, prepValue);
-                word.SetObject(ctx);
-                word.SetVerb(ctx, verbValue);
+                word.SetPreposition(ctx, dummySrc, prepValue);
+                word.SetObject(ctx, dummySrc);
+                word.SetVerb(ctx, dummySrc, verbValue);
             });
         }
 
@@ -115,9 +117,9 @@ namespace ZilfTests
             Word word;
             CreateWordInContext(3, false, out ctx, out word);
 
-            word.SetVerb(ctx, 100);
-            word.SetPreposition(ctx, 200);
-            word.SetObject(ctx);
+            word.SetVerb(ctx, dummySrc, 100);
+            word.SetPreposition(ctx, dummySrc, 200);
+            word.SetObject(ctx, dummySrc);
         }
 
         [TestMethod]
@@ -128,9 +130,9 @@ namespace ZilfTests
             Word word;
             CreateWordInContext(4, false, out ctx, out word);
 
-            word.SetVerb(ctx, 100);
-            word.SetPreposition(ctx, 200);
-            word.SetObject(ctx);
+            word.SetVerb(ctx, dummySrc, 100);
+            word.SetPreposition(ctx, dummySrc, 200);
+            word.SetObject(ctx, dummySrc);
         }
 
         [TestMethod]
@@ -138,10 +140,10 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(4, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetVerb(ctx, verbValue);
-                word.SetPreposition(ctx, prepValue);
-                word.SetObject(ctx);
-                word.SetAdjective(ctx, 7);
+                word.SetVerb(ctx, dummySrc, verbValue);
+                word.SetPreposition(ctx, dummySrc, prepValue);
+                word.SetObject(ctx, dummySrc);
+                word.SetAdjective(ctx, dummySrc, 7);
             });
         }
 
@@ -150,10 +152,10 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(4, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetVerb(ctx, verbValue);
-                word.SetAdjective(ctx, 7);
-                word.SetPreposition(ctx, prepValue);
-                word.SetObject(ctx);
+                word.SetVerb(ctx, dummySrc, verbValue);
+                word.SetAdjective(ctx, dummySrc, 7);
+                word.SetPreposition(ctx, dummySrc, prepValue);
+                word.SetObject(ctx, dummySrc);
             });
         }
 
@@ -165,10 +167,10 @@ namespace ZilfTests
             Word word;
             CreateWordInContext(3, true, out ctx, out word);
 
-            word.SetVerb(ctx, 100);
-            word.SetPreposition(ctx, 200);
-            word.SetObject(ctx);
-            word.SetAdjective(ctx, 250);
+            word.SetVerb(ctx, dummySrc, 100);
+            word.SetPreposition(ctx, dummySrc, 200);
+            word.SetObject(ctx, dummySrc);
+            word.SetAdjective(ctx, dummySrc, 250);
         }
 
         private struct WtwbTestCase
@@ -384,22 +386,22 @@ namespace ZilfTests
                     switch (part)
                     {
                         case PartOfSpeech.Adjective:
-                            word.SetAdjective(ctx, value);
+                            word.SetAdjective(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Buzzword:
-                            word.SetBuzzword(ctx, value);
+                            word.SetBuzzword(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Direction:
-                            word.SetDirection(ctx, value);
+                            word.SetDirection(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Object:
-                            word.SetObject(ctx);
+                            word.SetObject(ctx, dummySrc);
                             break;
                         case PartOfSpeech.Preposition:
-                            word.SetPreposition(ctx, value);
+                            word.SetPreposition(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Verb:
-                            word.SetVerb(ctx, value);
+                            word.SetVerb(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.None:
                             // nada

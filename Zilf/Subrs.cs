@@ -1674,7 +1674,7 @@ namespace Zilf
             foreach (ZilAtom arg in args)
             {
                 ctx.ZEnvironment.Directions.Add(arg);
-                ctx.ZEnvironment.GetVocabDirection(arg);
+                ctx.ZEnvironment.GetVocabDirection(arg, ctx.CallingForm as ISourceLine);
                 ctx.ZEnvironment.LowDirection = arg;
             }
 
@@ -1691,7 +1691,7 @@ namespace Zilf
                 throw new InterpreterError("BUZZ: all args must be atoms");
 
             foreach (ZilAtom arg in args)
-                ctx.ZEnvironment.Buzzwords.Add(arg);
+                ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.CallingForm));
 
             return ctx.TRUE;
         }
