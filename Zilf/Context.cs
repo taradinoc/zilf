@@ -89,7 +89,7 @@ namespace Zilf
         }
 
         private RunMode runMode;
-        private int errorCount;
+        private int errorCount, warningCount;
         private bool ignoreCase, quiet, traceRoutines, wantDebugInfo;
         private List<string> includePaths;
         private string curFile;
@@ -201,6 +201,12 @@ namespace Zilf
         {
             get { return errorCount; }
             set { errorCount = value; }
+        }
+
+        public int WarningCount
+        {
+            get { return warningCount; }
+            set { warningCount = value; }
         }
 
         public ZEnvironment ZEnvironment
@@ -516,6 +522,7 @@ namespace Zilf
 
         public void HandleWarning(ISourceLine node, string message, bool compiler)
         {
+            warningCount++;
             Console.Error.WriteLine("[warning] {0}{1}{2}",
                 node == null ? "" : node.SourceInfo,
                 node == null ? "" : ": ",
