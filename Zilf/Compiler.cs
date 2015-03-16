@@ -418,7 +418,7 @@ namespace Zilf
                                 Errors.CompWarning(cc.Context, line,
                                     "preaction mismatch for {0}: using {1} as before",
                                     line.Action,
-                                    act.PreRoutineName.ToString() ?? "no preaction");
+                                    act.PreRoutine != null ? act.PreRoutineName.ToString() : "no preaction");
                         }
 
                         if (compact)
