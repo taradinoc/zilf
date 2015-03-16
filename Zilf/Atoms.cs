@@ -144,6 +144,7 @@ namespace Zilf
         IRESTORE,
         IS,
         ISAVE,
+        ITABLE,
         KERNEL,
         [Atom("L?")]
         L_P,
@@ -156,6 +157,7 @@ namespace Zilf
         LOC,
         [Atom("LOW-DIRECTION")]
         LOW_DIRECTION,
+        LTABLE,
         LVAL,
         MACRO,
         MANY,
@@ -178,6 +180,7 @@ namespace Zilf
         OR,
         ORB,
         PER,
+        PLTABLE,
         [Atom("PLUS-MODE")]
         PLUS_MODE,
         PREACTIONS,
@@ -192,6 +195,7 @@ namespace Zilf
         PRINTR,
         PROG,
         PROPSPEC,
+        PTABLE,
         PTSIZE,
         PURE,
         PUSH,
