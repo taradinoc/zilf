@@ -1298,6 +1298,13 @@ namespace Zilf
                             atom.ToStringContext(cc.Context, false));
                         return wantResult ? cc.Game.Zero : null;
 
+                    case StdAtom.ITABLE:
+                    case StdAtom.TABLE:
+                    case StdAtom.PTABLE:
+                    case StdAtom.LTABLE:
+                    case StdAtom.PLTABLE:
+                        return CompileImpromptuTable(cc, rb, form, wantResult, resultStorage);
+
                     case StdAtom.PROG:
                     case StdAtom.REPEAT:
                     case StdAtom.BIND:
@@ -2366,6 +2373,49 @@ namespace Zilf
                 rb.EmitStore(resultStorage, cc.Game.Zero);
 
             return wantResult ? resultStorage : null;
+        }
+
+        private static IOperand CompileImpromptuTable(CompileCtx cc, IRoutineBuilder rb, ZilForm form,
+            bool wantResult, IVariable resultStorage)
+        {
+            var type = ((ZilAtom)form.First).StdAtom;
+            var args = form.Rest;
+
+            ZilTable table;
+
+            var oldCF = cc.Context.CallingForm;
+            cc.Context.CallingForm = form;
+            try
+            {
+                switch (type)
+                {
+                    case StdAtom.ITABLE:
+                        table = (ZilTable)Subrs.ITABLE(cc.Context, args.ToArray());
+                        break;
+                    case StdAtom.TABLE:
+                        table = (ZilTable)Subrs.TABLE(cc.Context, args.ToArray());
+                        break;
+                    case StdAtom.PTABLE:
+                        table = (ZilTable)Subrs.PTABLE(cc.Context, args.ToArray());
+                        break;
+                    case StdAtom.LTABLE:
+                        table = (ZilTable)Subrs.LTABLE(cc.Context, args.ToArray());
+                        break;
+                    case StdAtom.PLTABLE:
+                        table = (ZilTable)Subrs.PLTABLE(cc.Context, args.ToArray());
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+            finally
+            {
+                cc.Context.CallingForm = oldCF;
+            }
+
+            var tableBuilder = cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
+            cc.Tables.Add(table, tableBuilder);
+            return tableBuilder;
         }
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
