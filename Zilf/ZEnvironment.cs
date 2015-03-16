@@ -301,7 +301,8 @@ namespace Zilf
             /* define objects in the reverse of "mentioned in source code" order, where
              * "mentioned" means either defined or used as the IN/LOC of another object */
 
-            var order = new List<ZilAtom>(Objects.Count);
+            // the source line is only set for objects created from mentions
+            var order = new List<KeyValuePair<ZilAtom, ISourceLine>>(Objects.Count);
             var used = new HashSet<ZilAtom>();
 
             foreach (var obj in Objects)
@@ -312,7 +313,7 @@ namespace Zilf
                 if (!used.Contains(atom))
                 {
                     // add this object
-                    order.Add(atom);
+                    order.Add(new KeyValuePair<ZilAtom, ISourceLine>(atom, null));
                     used.Add(atom);
                 }
 
@@ -325,7 +326,7 @@ namespace Zilf
                 {
                     if (!used.Contains(m))
                     {
-                        order.Add(m);
+                        order.Add(new KeyValuePair<ZilAtom, ISourceLine>(m, obj));
                         used.Add(m);
                     }
                 }
@@ -333,7 +334,24 @@ namespace Zilf
 
             order.Reverse();
             var objectsByName = Objects.ToDictionary(obj => obj.Name);
-            return from name in order select objectsByName[name];
+
+            foreach (var pair in order)
+            {
+                var name = pair.Key;
+                var mention = pair.Value;
+
+                ZilModelObject obj;
+                if (objectsByName.TryGetValue(name, out obj))
+                {
+                    yield return obj;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(mention != null);
+                    Errors.CompWarning(ctx, mention, "mentioned object {0} is never defined", name);
+                    yield return new ZilModelObject(name, new ZilList[0], false);
+                }
+            }
         }
 
         private static ZilAtom GetObjectParentName(ZilModelObject obj)
