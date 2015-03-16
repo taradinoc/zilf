@@ -160,6 +160,20 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr]
+        public static ZilObject IMAGE(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "IMAGE", 1, 1);
+
+            ZilFix ch = args[0] as ZilFix;
+            if (ch == null)
+                throw new InterpreterError("IMAGE: arg must be a FIX");
+
+            Console.Write((char)ch.Value);
+            return ch;
+        }
+
         #endregion
 
         #region Atoms and Atom Values
