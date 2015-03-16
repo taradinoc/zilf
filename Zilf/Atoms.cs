@@ -195,6 +195,7 @@ namespace Zilf
         PRINTR,
         PROG,
         PROPSPEC,
+        PSEUDO,
         PTABLE,
         PTSIZE,
         PURE,

@@ -2514,6 +2514,26 @@ namespace Zilf
                             }
                             break;
 
+                        case StdAtom.PSEUDO:
+                            foreach (ZilObject obj in prop.Rest)
+                            {
+                                var str = obj as ZilString;
+                                if (str == null)
+                                    continue;
+
+                                try
+                                {
+                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model));
+                                }
+                                catch (ZilError ex)
+                                {
+                                    if (ex.SourceLine == null)
+                                        ex.SourceLine = model;
+                                    cc.Context.HandleError(ex);
+                                }
+                            }
+                            break;
+
                         case StdAtom.FLAGS:
                             foreach (ZilObject obj in prop.Rest)
                             {
@@ -2748,6 +2768,26 @@ namespace Zilf
                                 tb.AddShort(wb);
                                 length += 2;
                             }
+                        }
+                        break;
+
+                    case StdAtom.PSEUDO:
+                        tb = ob.AddComplexProperty(cc.Properties[atom]);
+                        foreach (ZilObject obj in prop.Rest)
+                        {
+                            var str = obj as ZilString;
+
+                            if (str != null)
+                            {
+                                Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model);
+                                IWordBuilder wb = cc.Vocabulary[word];
+                                tb.AddShort(wb);
+                            }
+                            else
+                            {
+                                tb.AddShort(CompileConstant(cc, obj));
+                            }
+                            length += 2;
                         }
                         break;
 
