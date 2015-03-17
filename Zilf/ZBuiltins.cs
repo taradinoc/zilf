@@ -871,10 +871,7 @@ namespace Zilf
                 c.rb.EmitTernary(op, left, center, right, null);
             }
 
-            [Builtin("ADD", "+", Data = BinaryOp.Add)]
-            [Builtin("SUB", "-", Data = BinaryOp.Sub)]
-            [Builtin("MUL", "*", Data = BinaryOp.Mul)]
-            [Builtin("DIV", "/", Data = BinaryOp.Div)]
+     
             [Builtin("MOD", Data = BinaryOp.Mod)]
             [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
             [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
@@ -885,6 +882,62 @@ namespace Zilf
             {
                 c.rb.EmitBinary(op, left, right, c.resultStorage);
                 return c.resultStorage;
+            }
+
+            [Builtin("ADD", "+", Data = BinaryOp.Add)]
+            [Builtin("SUB", "-", Data = BinaryOp.Sub)]
+            [Builtin("MUL", "*", Data = BinaryOp.Mul)]
+            [Builtin("DIV", "/", Data = BinaryOp.Div)]
+            public static IOperand ArithmeticOp(
+                ValueCall c, [Data] BinaryOp op, params IOperand[] args)
+            {
+                IOperand init;
+                switch (op)
+                {
+                    case BinaryOp.Mul:
+                    case BinaryOp.Div:
+                        init = c.cc.Game.One;
+                        break;
+
+                    default:
+                        init = c.cc.Game.Zero;
+                        break;
+                }
+
+                switch (args.Length)
+                {
+                    case 0:
+                        return init;
+
+                    case 1:
+                        switch (op)
+                        {
+                            case BinaryOp.Add:
+                            case BinaryOp.Mul:
+                                return args[0];
+
+                            case BinaryOp.Sub:
+                                c.rb.EmitUnary(UnaryOp.Neg, args[0], c.resultStorage);
+                                return c.resultStorage;
+
+                            default:
+                                c.rb.EmitBinary(op, init, args[0], c.resultStorage);
+                                return c.resultStorage;
+                        }
+
+                    case 2:
+                        c.rb.EmitBinary(op, args[0], args[1], c.resultStorage);
+                        return c.resultStorage;
+
+                    default:
+                        c.rb.EmitBinary(op, args[0], args[1], c.rb.Stack);
+                        for (int i = 2; i + 1 < args.Length; i++)
+                        {
+                            c.rb.EmitBinary(op, c.rb.Stack, args[i], c.rb.Stack);
+                        }
+                        c.rb.EmitBinary(op, c.rb.Stack, args[args.Length - 1], c.resultStorage);
+                        return c.resultStorage;
+                }
             }
 
             [Builtin("REST", Data = BinaryOp.Add)]
@@ -988,7 +1041,6 @@ namespace Zilf
 
             [Builtin("BCOM", Data = UnaryOp.Not)]
             [Builtin("RANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
-            [Builtin("SUB", "-", Data = UnaryOp.Neg)]
             [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true)]
             [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5)]
             public static IOperand UnaryValueOp(

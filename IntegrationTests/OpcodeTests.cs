@@ -131,6 +131,11 @@ namespace IntegrationTests
             AssertExpr("<+ 1 -2>").GivesNumber("-1");
             AssertExpr("<+ 32767 1>").GivesNumber("-32768");
             AssertExpr("<+ -32768 -1>").GivesNumber("32767");
+            AssertExpr("<+>").GivesNumber("0");
+            AssertExpr("<+ 5>").GivesNumber("5");
+            AssertExpr("<+ 1 2 3>").GivesNumber("6");
+            AssertExpr("<+ 1 2 3 4>").GivesNumber("10");
+            AssertExpr("<+ 1 2 3 4 5>").GivesNumber("15");
 
             // alias
             AssertExpr("<ADD 1 2>").GivesNumber("3");
@@ -142,14 +147,6 @@ namespace IntegrationTests
             // alias where 2nd operand defaults to 1
             AssertExpr("<REST 1>").GivesNumber("2");
             AssertExpr("<REST 1 2>").GivesNumber("3");
-        }
-
-        [TestMethod]
-        public void TestADD_Error()
-        {
-            AssertExpr("<+>").DoesNotCompile();
-            AssertExpr("<+ 1>").DoesNotCompile();
-            AssertExpr("<+ 1 2 3>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -557,14 +554,11 @@ namespace IntegrationTests
             AssertExpr("<DIV 100 -2>").GivesNumber("-50");
             AssertExpr("<DIV -100 -2>").GivesNumber("50");
             AssertExpr("<DIV -17 2>").GivesNumber("-8");
-        }
-
-        [TestMethod]
-        public void TestDIV_Error()
-        {
-            AssertExpr("<DIV>").DoesNotCompile();
-            AssertExpr("<DIV 1>").DoesNotCompile();
-            AssertExpr("<DIV 1 1 1>").DoesNotCompile();
+            AssertExpr("<DIV>").GivesNumber("1");
+            AssertExpr("<DIV 1>").GivesNumber("1");
+            AssertExpr("<DIV 2>").GivesNumber("0");
+            AssertExpr("<DIV 1 1>").GivesNumber("1");
+            AssertExpr("<DIV 1 1 1>").GivesNumber("1");
         }
 
         [TestMethod]
@@ -1331,16 +1325,11 @@ namespace IntegrationTests
             AssertExpr("<MUL 150 -3>").InV3().GivesNumber("-450");
             AssertExpr("<MUL -15 4>").InV3().GivesNumber("-60");
             AssertExpr("<MUL -1 128>").InV3().GivesNumber("-128");
-        }
-
-        [TestMethod]
-        public void TestMUL_Error()
-        {
-            // V1 to V6
-            // 2 to 2 operands
-            AssertExpr("<MUL>").InV3().DoesNotCompile();
-            AssertExpr("<MUL 0>").InV3().DoesNotCompile();
-            AssertExpr("<MUL 0 0 0>").InV3().DoesNotCompile();
+            AssertExpr("<MUL>").GivesNumber("1");
+            AssertExpr("<MUL 5>").GivesNumber("5");
+            AssertExpr("<MUL 1 2 3>").GivesNumber("6");
+            AssertExpr("<MUL 1 2 3 4>").GivesNumber("24");
+            AssertExpr("<MUL 1 2 3 4 -5>").GivesNumber("-120");
         }
 
         [TestMethod]
@@ -2277,6 +2266,12 @@ namespace IntegrationTests
             AssertExpr("<- -200>").GivesNumber("200");
             AssertExpr("<- 0>").GivesNumber("0");
 
+            AssertExpr("<->").GivesNumber("0");
+            AssertExpr("<- 5>").GivesNumber("-5");
+            AssertExpr("<- 1 2 3>").GivesNumber("-4");
+            AssertExpr("<- 1 2 3 4>").GivesNumber("-8");
+            AssertExpr("<- 1 2 3 4 5>").GivesNumber("-13");
+
             // alias
             AssertExpr("<SUB 1 2>").GivesNumber("-1");
         }
@@ -2287,13 +2282,6 @@ namespace IntegrationTests
             // alias where 2nd operand defaults to 1
             AssertExpr("<BACK 1>").GivesNumber("0");
             AssertExpr("<BACK 1 2>").GivesNumber("-1");
-        }
-
-        [TestMethod]
-        public void TestSUB_Error()
-        {
-            AssertExpr("<->").DoesNotCompile();
-            AssertExpr("<- 1 2 3>").DoesNotCompile();
         }
 
         [TestMethod]
