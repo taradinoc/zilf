@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using Antlr.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,6 +121,14 @@ namespace Zilf
 
         public InterpreterError(ISourceLine src, string func, int minArgs, int maxArgs)
             : base(src, func, minArgs, maxArgs)
+        {
+        }
+    }
+
+    class SyntaxError : InterpreterError
+    {
+        public SyntaxError(string filename, int line, string message)
+            : base(new StringSourceLine(string.Format("{0}:{1}", filename, line)), "syntax error: " + message)
         {
         }
     }

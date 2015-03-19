@@ -21,7 +21,7 @@
 grammar Zap;
 
 options {
-	language = CSharp2;
+	language = CSharp3;
 	output = AST;
 }
 
@@ -35,7 +35,7 @@ tokens { LLABEL; GLABEL; QUEST; TILDE; ARROW; }
 }
 
 @lexer::members {
-	internal IDictionary OpcodeDict;
+	internal System.Collections.IDictionary OpcodeDict;
 	
 	private bool IsOpcode(string text) {
 		return OpcodeDict.Contains(text);
@@ -156,7 +156,7 @@ fragment SPACE
 	:	' ' | '\t' | '\f'
 	;
 
-WS	:	SPACE+				{ $channel = HIDDEN; }
+WS	:	SPACE+				{ $channel = Hidden; }
 	;
 
 CRLF
@@ -168,11 +168,12 @@ STRING	:	'"'
 		'"'				{ $text = UnquoteString($text); }
 	;
 
-COMMENT	:	';' ~('\r' | '\n')*		{ $channel = HIDDEN; }
+COMMENT	:	';' ~('\r' | '\n')*		{ $channel = Hidden; }
 	;
 
+public
 file
-	:	CRLF!* (label | label? line) (CRLF!+ (label | label? line))* CRLF!*;
+	:	CRLF!* (label | label? line) (CRLF!+ (label | label? line))* CRLF!* EOF!;
 
 label	:	s=SYMBOL
 		( DCOLON	-> ^(GLABEL[$s])
@@ -184,16 +185,19 @@ symbol	:	SYMBOL
 	;
 
 line
-	:	OPCODE^ operands
-	|	OPCODE^ STRING
-	|	SYMBOL
-		(					-> ^(WORD SYMBOL)
-		| (expr | STRING | SLASH | BACKSLASH | RANGLE | QUEST | ARROW)=>
-			( operands			-> ^(SYMBOL operands)
-			| STRING			-> ^(SYMBOL STRING)
+	:	(OPCODE)=>
+			( OPCODE^ operands
+			| OPCODE^ STRING)
+	|	(SYMBOL)=>
+			( SYMBOL
+				(					-> ^(WORD SYMBOL)
+				| (expr | STRING | SLASH | BACKSLASH | RANGLE | QUEST | ARROW)=>
+					( operands			-> ^(SYMBOL operands)
+					| STRING			-> ^(SYMBOL STRING)
+					)
+				| EQUALS expr				-> ^(EQUALS SYMBOL expr)
+				)
 			)
-		| EQUALS expr				-> ^(EQUALS SYMBOL expr)
-		)
 	|	meta_directive
 	|	data_directive
 	|	funct_directive

@@ -19,7 +19,7 @@
 grammar Zil;
 
 options {
-	language = CSharp2;
+	language = CSharp3;
 	output = AST;
 }
 
@@ -27,6 +27,16 @@ tokens { COMMENT; FORM; LIST; VECTOR; UVECTOR; SEGMENT; MACRO; VMACRO; HASH; GVA
 
 @lexer::namespace { Zilf.Lexing }
 @parser::namespace { Zilf.Parsing }
+
+@members {
+	private List<SyntaxError> syntaxErrors = new List<SyntaxError>();
+
+	internal IEnumerable<SyntaxError> SyntaxErrors { get { return syntaxErrors; } }
+
+	public override void DisplayRecognitionError(string[] tokenNames, RecognitionException ex) {
+		syntaxErrors.Add(new SyntaxError($file::filename, ex.Line, GetErrorMessage(ex, tokenNames)));
+	}
+}
 
 fragment DIGIT
 	:	'0'..'9'
@@ -44,7 +54,7 @@ fragment SPACE
 	:	' ' | '\t' | '\r' | '\n' | '\f'
 	;
 
-WS	:	SPACE+				{ $channel = HIDDEN; }
+WS	:	SPACE+				{ $channel = Hidden; }
 	;
 
 fragment ATOM_HEAD
@@ -92,7 +102,11 @@ COMMA	:	',';
 APOS	:	'\'';
 
 
-file	:	(comment | noncomment_expr)*
+public
+file[string theFilename]
+scope { string filename }
+@init { $file::filename = $theFilename; }
+	:	(comment | noncomment_expr)* EOF!
 	;
 
 expr	:	comment* noncomment_expr

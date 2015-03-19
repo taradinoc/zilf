@@ -332,10 +332,13 @@ Compiler switches:
             ITokenStream tokenStream = new CommonTokenStream(lexer);
             ZilParser parser = new ZilParser(tokenStream);
 
-            ZilParser.file_return fret = parser.file();
+            var fret = parser.file(ctx.CurrentFile);
             if (parser.NumberOfSyntaxErrors > 0)
             {
-                ctx.HandleError(new InterpreterError("syntax error"));
+                foreach (var error in parser.SyntaxErrors)
+                {
+                    ctx.HandleError(error);
+                }
                 return null;
             }
 

@@ -503,7 +503,7 @@ namespace Zapf.Parsing
             ZapParser parser = new ZapParser(new CommonTokenStream(lexer));
             parser.InformMode = informMode;
 
-            ZapParser.file_return fret = parser.file();
+            var fret = parser.file();
 
             return new ParseResult()
             {
