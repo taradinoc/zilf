@@ -23,7 +23,7 @@
 lexer grammar ZapInf;
 
 options {
-	language = CSharp2;
+	language = CSharp3;
 	tokenVocab = Zap;
 }
 
@@ -36,7 +36,7 @@ tokens { LLABEL; GLABEL; }
 }
 
 @members {
-	internal IDictionary OpcodeDict;
+	internal System.Collections.IDictionary OpcodeDict;
 	
 	private bool IsOpcode(string text) {
 		return OpcodeDict.Contains(text);
@@ -152,7 +152,7 @@ fragment SPACE
 	:	' ' | '\t' | '\f'
 	;
 
-WS	:	SPACE+				{ $channel = HIDDEN; }
+WS	:	SPACE+				{ $channel = Hidden; }
 	;
 
 CRLF
@@ -164,5 +164,5 @@ STRING	:	'"'
 		'"'				{ $text = UnquoteString($text); }
 	;
 
-COMMENT	:	';' ~('\r' | '\n')*		{ $channel = HIDDEN; }
+COMMENT	:	';' ~('\r' | '\n')*		{ $channel = Hidden; }
 	;
