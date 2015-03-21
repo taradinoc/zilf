@@ -777,7 +777,7 @@ namespace Zilf
                 var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
                 // generate code for arguments
-                using (var operands = Operands.Compile(cc, rb, needEvalExprs))
+                using (var operands = Operands.Compile(cc, rb, form, needEvalExprs))
                 {
                     // update validatedArgs with the evaluated operands
                     for (int i = 0; i < operands.Count; i++)
@@ -1169,7 +1169,7 @@ namespace Zilf
                  *   return STACK       ;value is left on stack
                  */
 
-                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, dest);
+                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, dest);
                 if (storage != dest)
                     c.rb.EmitStore(dest, storage);
                 return dest;
@@ -1192,13 +1192,13 @@ namespace Zilf
                 if (dest is IIndirectOperand)
                 {
                     var destVar = ((IIndirectOperand)dest).Variable;
-                    var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, destVar);
+                    var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, destVar);
                     if (storage != destVar)
                         c.rb.EmitStore(destVar, storage);
                 }
                 else
                 {
-                    using (var operands = Operands.Compile(c.cc, c.rb, value))
+                    using (var operands = Operands.Compile(c.cc, c.rb, c.form, value))
                     {
                         if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                         {
