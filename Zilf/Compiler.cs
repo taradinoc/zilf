@@ -795,14 +795,14 @@ namespace Zilf
 
                             ILabel nextLabel = rb.DefineLabel();
                             rb.Branch(Condition.ArgProvided, lb.Indirect, null, nextLabel, true);
-                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, lb);
+                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine, lb);
                             if (val != lb)
                                 rb.EmitStore(lb, val);
                             rb.MarkLabel(nextLabel);
                         }
                         else
                         {
-                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, lb);
+                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine, lb);
                             if (val != lb)
                                 rb.EmitStore(lb, val);
                         }
@@ -888,7 +888,7 @@ namespace Zilf
                 this.tempAtom = tempAtom;
             }
 
-            public static Operands Compile(CompileCtx cc, IRoutineBuilder rb, params ZilObject[] exprs)
+            public static Operands Compile(CompileCtx cc, IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
             {
                 int length = exprs.Length;
                 IOperand[] values = new IOperand[length];
@@ -926,7 +926,7 @@ namespace Zilf
                     if (value == null)
                     {
                         // not a constant
-                        value = CompileAsOperand(cc, rb, exprs[i]);
+                        value = CompileAsOperand(cc, rb, exprs[i], src);
 
                         if (IsLocalVariableRef(exprs[i]))
                         {
@@ -979,7 +979,7 @@ namespace Zilf
                 // evaluate the rest of the arguments right to left, leaving the results
                 // in their natural locations.
                 for (int i = length - 1; i > marker; i--)
-                    values[i] = CompileAsOperand(cc, rb, exprs[i]);
+                    values[i] = CompileAsOperand(cc, rb, exprs[i], src);
 
                 return new Operands(cc, values, temps, tempAtom);
             }
@@ -1176,7 +1176,7 @@ namespace Zilf
                 else
                 {
                     if (wantResult)
-                        return CompileAsOperand(cc, rb, expanded, resultStorage);
+                        return CompileAsOperand(cc, rb, expanded, form, resultStorage);
                     else
                         return null;
                 }
@@ -1308,7 +1308,7 @@ namespace Zilf
                     case StdAtom.PROG:
                     case StdAtom.REPEAT:
                     case StdAtom.BIND:
-                        return CompilePROG(cc, rb, form.Rest, wantResult, resultStorage,
+                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage,
                             head.StdAtom == StdAtom.REPEAT, head.StdAtom != StdAtom.BIND);
 
                     case StdAtom.COND:
@@ -1337,7 +1337,7 @@ namespace Zilf
 
                     case StdAtom.OR:
                     case StdAtom.AND:
-                        return CompileBoolean(cc, rb, form.Rest, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
+                        return CompileBoolean(cc, rb, form.Rest, form, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
                 }
 
                 // routine calls
@@ -1360,7 +1360,7 @@ namespace Zilf
 
                     // compile routine call
                     result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                    using (Operands argOperands = Operands.Compile(cc, rb, args))
+                    using (Operands argOperands = Operands.Compile(cc, rb, form, args))
                     {
                         rb.EmitCall(cc.Routines[head], argOperands.ToArray(), result);
                     }
@@ -1419,7 +1419,7 @@ namespace Zilf
             return false;
         }
 
-        private static IOperand CompileAsOperand(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
+        private static IOperand CompileAsOperand(CompileCtx cc, IRoutineBuilder rb, ZilObject expr, ISourceLine src,
             IVariable suggestion = null)
         {
             IOperand constant = CompileConstant(cc, expr);
@@ -1435,11 +1435,11 @@ namespace Zilf
                     ZilAtom atom = (ZilAtom)expr;
                     if (cc.Globals.ContainsKey(atom))
                     {
-                        Errors.CompWarning(cc.Context, expr as ISourceLine,
+                        Errors.CompWarning(cc.Context, expr as ISourceLine ?? src,
                             "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
                         return cc.Globals[atom].Indirect;
                     }
-                    Errors.CompError(cc.Context, expr as ISourceLine,
+                    Errors.CompError(cc.Context, expr as ISourceLine ?? src,
                         "bare atom used as operand is not a global variable: {0}", atom);
                     return cc.Game.Zero;
 
@@ -1611,7 +1611,7 @@ namespace Zilf
             }
 
             // for anything more complicated, treat it as a value
-            result = CompileAsOperand(cc, rb, form, resultStorage);
+            result = CompileAsOperand(cc, rb, form, form, resultStorage);
             if (resultStorage != null && resultStorage != result)
             {
                 rb.EmitStore(resultStorage, result);
@@ -1719,18 +1719,18 @@ namespace Zilf
 
                 case StdAtom.OR:
                 case StdAtom.AND:
-                    CompileBoolean(cc, rb, args, head.StdAtom == StdAtom.AND, label, polarity);
+                    CompileBoolean(cc, rb, args, form, head.StdAtom == StdAtom.AND, label, polarity);
                     break;
 
                 default:
-                    op1 = CompileAsOperand(cc, rb, form);
+                    op1 = CompileAsOperand(cc, rb, form, form);
                     rb.BranchIfZero(op1, label, !polarity);
                     break;
             }
         }
 
-        private static void CompileBoolean(CompileCtx cc, IRoutineBuilder rb, ZilObject[] args, bool and,
-            ILabel label, bool polarity)
+        private static void CompileBoolean(CompileCtx cc, IRoutineBuilder rb, ZilObject[] args,
+            ISourceLine src, bool and, ILabel label, bool polarity)
         {
             if (args.Length == 0)
             {
@@ -1803,7 +1803,7 @@ namespace Zilf
         }
 
         private static IOperand CompileBoolean(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            bool and, bool wantResult, IVariable resultStorage)
+            ISourceLine src, bool and, bool wantResult, IVariable resultStorage)
         {
             if (args.IsEmpty)
                 return and ? cc.Game.One : cc.Game.Zero;
@@ -1811,7 +1811,7 @@ namespace Zilf
             if (args.Rest.IsEmpty)
             {
                 if (wantResult)
-                    return CompileAsOperand(cc, rb, args.First, resultStorage);
+                    return CompileAsOperand(cc, rb, args.First, src, resultStorage);
 
                 if (args.First is ZilForm)
                     return CompileForm(cc, rb, (ZilForm)args.First, wantResult, resultStorage);
@@ -1866,7 +1866,7 @@ namespace Zilf
                     args = args.Rest;
                 }
 
-                result = CompileAsOperand(cc, rb, args.First, resultStorage);
+                result = CompileAsOperand(cc, rb, args.First, src, resultStorage);
                 if (result != resultStorage)
                     rb.EmitStore(resultStorage, result);
 
@@ -1916,9 +1916,9 @@ namespace Zilf
         }
 
         private static IOperand CompileREAD(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            bool wantResult, IVariable resultStorage)
+            ISourceLine src, bool wantResult, IVariable resultStorage)
         {
-            using (Operands operands = Operands.Compile(cc, rb, args.ToArray()))
+            using (Operands operands = Operands.Compile(cc, rb, src, args.ToArray()))
             {
                 IVariable result;
                 if (cc.Context.ZEnvironment.ZVersion < 5)
@@ -1949,12 +1949,12 @@ namespace Zilf
         }
 
         private static IOperand CompileINPUT(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            bool wantResult, IVariable resultStorage)
+            ISourceLine src, bool wantResult, IVariable resultStorage)
         {
             if (cc.Context.ZEnvironment.ZVersion < 4)
                 throw new CompilerError("INPUT not supported in this version");
 
-            using (Operands operands = Operands.Compile(cc, rb, args.Skip(1).ToArray()))
+            using (Operands operands = Operands.Compile(cc, rb, src, args.Skip(1).ToArray()))
             {
                 IVariable result = wantResult ? (resultStorage ?? rb.Stack) : null;
 
@@ -1981,7 +1981,7 @@ namespace Zilf
         }
 
         private static IOperand CompilePROG(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            bool wantResult, IVariable resultStorage, bool repeat, bool catchy)
+            ISourceLine src, bool wantResult, IVariable resultStorage, bool repeat, bool catchy)
         {
             // NOTE: resultStorage is unused here, because PROG's result could come from
             // a RETURN statement (and REPEAT's result can *only* come from RETURN).
@@ -2019,7 +2019,7 @@ namespace Zilf
                             throw new InterpreterError("invalid atom binding");
                         innerLocals.Enqueue(atom);
                         ILocalBuilder lb = PushInnerLocal(cc, rb, atom);
-                        IOperand loc = CompileAsOperand(cc, rb, value, lb);
+                        IOperand loc = CompileAsOperand(cc, rb, value, src, lb);
                         if (loc != lb)
                             rb.EmitStore(lb, loc);
                         break;
