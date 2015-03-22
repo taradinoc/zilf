@@ -50,6 +50,13 @@ namespace Zilf
         public bool? Exists { get; set; }
     }
 
+    public struct ZilfCompilationResult
+    {
+        public bool Success;
+        public int ErrorCount;
+        public int WarningCount;
+    }
+
     public sealed class ZilfCompiler
     {
         public ZilfCompiler()
@@ -183,8 +190,10 @@ namespace Zilf
             #endregion
         }
 
-        public bool Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        public ZilfCompilationResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
+            var result = new ZilfCompilationResult();
+
             // open input file
             using (var inputStream = OpenFile(inputFileName, false))
             {
@@ -222,14 +231,10 @@ namespace Zilf
                     ctx.HandleError(ex);
                 }
 
-                // check for compilation errors
-                if (ctx.ErrorCount > 0)
-                {
-                    return false;
-                }
-
-                // done
-                return true;
+                result.ErrorCount = ctx.ErrorCount;
+                result.WarningCount = ctx.WarningCount;
+                result.Success = (ctx.ErrorCount == 0);
+                return result;
             }
         }
     }

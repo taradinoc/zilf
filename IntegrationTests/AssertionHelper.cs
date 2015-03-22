@@ -15,6 +15,7 @@ namespace IntegrationTests
         protected string zversion = "ZIP";
         protected StringBuilder miscGlobals = new StringBuilder();
         protected StringBuilder input = new StringBuilder();
+        protected bool? expectWarnings = null;
 
         protected AbstractAssertionHelper()
         {
@@ -69,6 +70,12 @@ namespace IntegrationTests
             return (TThis)this;
         }
 
+        public TThis WithWarnings()
+        {
+            expectWarnings = true;
+            return (TThis)this;
+        }
+
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -94,7 +101,7 @@ namespace IntegrationTests
                 GlobalCode(),
                 Expression());
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
         public void Outputs(string expectedValue)
@@ -106,7 +113,7 @@ namespace IntegrationTests
                 GlobalCode(),
                 Expression());
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
         public void Implies(params string[] conditions)
@@ -125,7 +132,7 @@ namespace IntegrationTests
                 GlobalCode(),
                 sb);
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS");
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
         public void DoesNotCompile()
@@ -137,6 +144,10 @@ namespace IntegrationTests
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+            }
         }
 
         public void Compiles()
@@ -149,6 +160,10 @@ namespace IntegrationTests
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+            }
         }
 
         public void GeneratesCodeMatching(string pattern)
@@ -166,6 +181,11 @@ namespace IntegrationTests
             var output = helper.GetZapCode();
             Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline),
                 "Output did not match. Expected pattern: " + pattern);
+
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0);
+            }
         }
     }
 

@@ -95,6 +95,7 @@
     <Compile Include="OpcodeTests.cs" />
     <Compile Include="HelloTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QuirksTests.cs" />
     <Compile Include="TestCaseIO.cs" />
     <Compile Include="ObjectTests.cs" />
     <Compile Include="FullProjectTests.cs" />
