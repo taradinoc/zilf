@@ -60,7 +60,7 @@ namespace Zilf.Emit.Zap
         internal static readonly LiteralOperand ONE = new LiteralOperand("1");
 
         // all global names go in here
-        private Dictionary<string, bool> symbols = new Dictionary<string, bool>(250);
+        private Dictionary<string, string> symbols = new Dictionary<string, string>(250);
 
         private List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
         private List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
@@ -153,7 +153,7 @@ namespace Zilf.Emit.Zap
                 throw new ArgumentException("Global symbol already defined: " + name, "name");
 
             constants.Add(name, value);
-            symbols.Add(name, true);
+            symbols.Add(name, "constant");
             return new LiteralOperand(name);
         }
 
@@ -165,7 +165,7 @@ namespace Zilf.Emit.Zap
 
             GlobalBuilder gb = new GlobalBuilder(name);
             globals.Add(gb);
-            symbols.Add(name, true);
+            symbols.Add(name, "global");
             return gb;
         }
 
@@ -182,7 +182,7 @@ namespace Zilf.Emit.Zap
                 pureTables.Add(tb);
             else
                 impureTables.Add(tb);
-            symbols.Add(name, true);
+            symbols.Add(name, "table");
             return tb;
         }
 
@@ -194,7 +194,7 @@ namespace Zilf.Emit.Zap
 
             RoutineBuilder result = new RoutineBuilder(this, name, entryPoint, cleanStack);
             routines.Add(result);
-            symbols.Add(name, true);
+            symbols.Add(name, "routine");
             return result;
         }
 
@@ -206,13 +206,13 @@ namespace Zilf.Emit.Zap
 
             ObjectBuilder result = new ObjectBuilder(this, 1 + objects.Count, name);
             objects.Add(result);
-            symbols.Add(name, true);
+            symbols.Add(name, "object");
             return result;
         }
 
         public IPropertyBuilder DefineProperty(string name)
         {
-            name = SanitizeSymbol(name);
+            name = "P?" + SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, "name");
 
@@ -221,7 +221,7 @@ namespace Zilf.Emit.Zap
 
             PropertyBuilder result = new PropertyBuilder(name, num);
             props.Add(name, result);
-            symbols.Add(name, true);
+            symbols.Add(name, "property");
             return result;
         }
 
@@ -236,7 +236,7 @@ namespace Zilf.Emit.Zap
 
             FlagBuilder result = new FlagBuilder(name, num);
             flags.Add(name, result);
-            symbols.Add(name, true);
+            symbols.Add(name, "flag");
             return result;
         }
 
@@ -248,7 +248,7 @@ namespace Zilf.Emit.Zap
 
             WordBuilder result = new WordBuilder(name, word.ToLower());
             vocabulary.Add(result);
-            symbols.Add(name, true);
+            symbols.Add(name, "word");
             return result;
         }
 
@@ -398,7 +398,7 @@ namespace Zilf.Emit.Zap
                 foreach (string name in from f in flags.Keys orderby f select f)
                     writer.WriteLine(INDENT + ".DEBUG-ATTR {0},\"{0}\"", name);
                 foreach (string name in from p in props.Keys orderby p select p)
-                    writer.WriteLine(INDENT + ".DEBUG-PROP P?{0},\"{0}\"", name);
+                    writer.WriteLine(INDENT + ".DEBUG-PROP {0},\"{0}\"", name);
                 foreach (string name in from g in globals orderby g.Name select g.Name)
                     writer.WriteLine(INDENT + ".DEBUG-GLOBAL {0},\"{0}\"", name);
                 foreach (string name in from t in impureTables.Concat(pureTables)
@@ -471,7 +471,7 @@ namespace Zilf.Emit.Zap
             foreach (var pair in from pp in props
                                  orderby pp.Value.Number
                                  select pp)
-                writer.WriteLine(INDENT + "P?{0}={1}", pair.Key, pair.Value.Number);
+                writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.Number);
 
             // constants
             if (constants.Count > 0)
@@ -2562,7 +2562,7 @@ namespace Zilf.Emit.Zap
 
         public override string ToString()
         {
-            return "P?" + name;
+            return name;
         }
     }
 
