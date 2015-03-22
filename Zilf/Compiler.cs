@@ -1274,6 +1274,8 @@ namespace Zilf
                             Errors.CompError(cc.Context, form, "expected an atom after GVAL");
                             return wantResult ? cc.Game.Zero : null;
                         }
+
+                        // constant, global, object, or routine
                         if (cc.Constants.TryGetValue(atom, out operand))
                             return operand;
                         if (cc.Globals.TryGetValue(atom, out global))
@@ -1282,6 +1284,16 @@ namespace Zilf
                             return objbld;
                         if (cc.Routines.TryGetValue(atom, out routine))
                             return routine;
+
+                        // quirks: local
+                        if (cc.Locals.TryGetValue(atom, out local))
+                        {
+                            Errors.CompWarning(cc.Context, form, "no such global {0}, using the local instead",
+                                atom.ToStringContext(cc.Context, false));
+                            return local;
+                        }
+
+                        // error
                         Errors.CompError(cc.Context, form, "undefined global or constant: {0}",
                             atom.ToStringContext(cc.Context, false));
                         return wantResult ? cc.Game.Zero : null;
@@ -1292,8 +1304,38 @@ namespace Zilf
                             Errors.CompError(cc.Context, form, "expected an atom after LVAL");
                             return wantResult ? cc.Game.Zero : null;
                         }
+
+                        // local
                         if (cc.Locals.TryGetValue(atom, out local))
                             return local;
+
+                        // quirks: constant, global, object, or routine
+                        if (cc.Constants.TryGetValue(atom, out operand))
+                        {
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the constant instead",
+                                atom.ToStringContext(cc.Context, false));
+                            return operand;
+                        }
+                        if (cc.Globals.TryGetValue(atom, out global))
+                        {
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the global instead",
+                                atom.ToStringContext(cc.Context, false));
+                            return global;
+                        }
+                        if (cc.Objects.TryGetValue(atom, out objbld))
+                        {
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the object instead",
+                                atom.ToStringContext(cc.Context, false));
+                            return objbld;
+                        }
+                        if (cc.Routines.TryGetValue(atom, out routine))
+                        {
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the routine instead",
+                                atom.ToStringContext(cc.Context, false));
+                            return routine;
+                        }
+
+                        // error
                         Errors.CompError(cc.Context, form, "undefined local: {0}",
                             atom.ToStringContext(cc.Context, false));
                         return wantResult ? cc.Game.Zero : null;

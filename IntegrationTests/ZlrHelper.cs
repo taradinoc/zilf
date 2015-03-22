@@ -25,17 +25,23 @@ namespace IntegrationTests
     {
         public ZlrTestStatus Status;
         public string Output;
+        public int WarningCount;
     }
 
     class ZlrHelper
     {
-        public static void RunAndAssert(string code, string input, string expectedOutput)
+        public static void RunAndAssert(string code, string input, string expectedOutput, bool? expectWarnings = null)
         {
             Contract.Requires(code != null);
             Contract.Requires(expectedOutput != null);
 
             var helper = new ZlrHelper(code, input);
             Assert.IsTrue(helper.Compile(), "Failed to compile");
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0,
+                    (bool)expectWarnings ? "Expected warnings" : "Expected no warnings");
+            }
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");
             string actualOutput = helper.Execute();
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
@@ -48,7 +54,9 @@ namespace IntegrationTests
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
 
-            if (!helper.Compile())
+            bool compiled = helper.Compile();
+            result.WarningCount = helper.WarningCount;
+            if (!compiled)
             {
                 result.Status = ZlrTestStatus.CompilationFailed;
                 return result;
@@ -90,6 +98,8 @@ namespace IntegrationTests
 
         private MemoryStream zapfOutputFile;
         private List<string> zapfLogMessages;
+
+        public int WarningCount { get; private set; }
 
         public ZlrHelper(string code, string input)
         {
@@ -164,7 +174,9 @@ namespace IntegrationTests
 
             // run compilation
             PrintZilCode();
-            if (compiler.Compile(SZilFileName, SMainZapFileName))
+            var result = compiler.Compile(SZilFileName, SMainZapFileName);
+            this.WarningCount = result.WarningCount;
+            if (result.Success)
             {
                 PrintZapCode();
                 return true;
@@ -332,7 +344,7 @@ namespace IntegrationTests
                     compiler.IncludePaths.Add(dir);
 
                 // run compilation
-                if (compiler.Compile(Path.GetFileName(codeFile), SMainZapFileName))
+                if (compiler.Compile(Path.GetFileName(codeFile), SMainZapFileName).Success)
                 {
                     return true;
                 }
