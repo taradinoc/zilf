@@ -1282,6 +1282,11 @@ General switches:
             string name = node.Name;
             foreach (var local in node.Locals)
             {
+                if (ctx.LocalSymbols.ContainsKey(local.Name))
+                {
+                    Errors.ThrowSerious(node, "duplicate local: {0}", local.Name);
+                }
+
                 localNames.Add(local.Name);
                 ctx.LocalSymbols.Add(local.Name,
                     new Symbol(local.Name, SymbolType.Variable, localNames.Count));

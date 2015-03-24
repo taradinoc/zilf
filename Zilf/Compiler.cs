@@ -72,6 +72,7 @@ namespace Zilf
             public ITableBuilder VerbTable, ActionTable, PreactionTable, PrepositionTable;
 
             public Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
+            public HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
             public Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
             public Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
 
@@ -750,6 +751,7 @@ namespace Zilf
         {
             // set up arguments and locals
             cc.Locals.Clear();
+            cc.TempLocalNames.Clear();
             cc.SpareLocals.Clear();
             cc.OuterLocals.Clear();
 
@@ -2163,6 +2165,7 @@ namespace Zilf
             ILocalBuilder prev;
             if (cc.Locals.TryGetValue(atom, out prev))
             {
+                // save the old binding
                 Stack<ILocalBuilder> stk;
                 if (cc.OuterLocals.TryGetValue(atom, out stk) == false)
                 {
@@ -2170,23 +2173,36 @@ namespace Zilf
                     cc.OuterLocals.Add(atom, stk);
                 }
                 stk.Push(prev);
-
-                int num = 1;
-                do
-                {
-                    name = atom.Text + "?" + num;
-                    num++;
-                } while (cc.Locals.ContainsKey(ZilAtom.Parse(name, cc.Context)));
             }
 
-            ILocalBuilder cur;
+            ILocalBuilder result;
             if (cc.SpareLocals.Count > 0)
-                cur = cc.SpareLocals.Pop();
+            {
+                // reuse a spare variable
+                result = cc.SpareLocals.Pop();
+            }
             else
-                cur = rb.DefineLocal(name);
+            {
+                // allocate a new variable with a unique name
+                if (cc.Locals.ContainsKey(atom) || cc.TempLocalNames.Contains(atom))
+                {
+                    ZilAtom newAtom;
+                    int num = 1;
+                    do
+                    {
+                        name = atom.Text + "?" + num;
+                        num++;
+                        newAtom = ZilAtom.Parse(name, cc.Context);
+                    } while (cc.Locals.ContainsKey(newAtom) || cc.TempLocalNames.Contains(newAtom));
 
-            cc.Locals[atom] = cur;
-            return cur;
+                    cc.TempLocalNames.Add(newAtom);
+                }
+
+                result = rb.DefineLocal(name);
+            }
+
+            cc.Locals[atom] = result;
+            return result;
         }
 
         private static void PopInnerLocal(CompileCtx cc, ZilAtom atom)

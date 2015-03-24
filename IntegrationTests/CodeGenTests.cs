@@ -227,5 +227,32 @@ namespace IntegrationTests
                 .WithGlobal("<ROUTINE BAR () <>>")
                 .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
         }
+
+        [TestMethod]
+        public void TestNestedTempVariables()
+        {
+            // this code should use 3 temp variables:
+            // ?TMP is the value of GLOB before calling FOO
+            // ?TMP?1 is the value returned by FOO
+            // ?TMP?2 is the value of GLOB before calling BAR
+
+            AssertRoutine("\"AUX\" X", @"<PUT ,GLOB <FOO> <+ .X <GET ,GLOB <BAR>>>>")
+                .WithGlobal("<GLOBAL GLOB <>>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE BAR () <>>")
+                .GeneratesCodeMatching(@"\?TMP\?2");
+        }
+
+        [TestMethod]
+        public void TestNestedBindVariables()
+        {
+            AssertRoutine("", @"<BIND (X)
+                                  <SET X 0>
+                                  <BIND (X)
+                                    <SET X 1>
+                                    <BIND (X)
+                                      <SET X 2>>>>")
+                .GeneratesCodeMatching(@"X\?2");
+        }
     }
 }

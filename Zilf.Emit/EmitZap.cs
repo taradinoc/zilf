@@ -780,10 +780,17 @@ namespace Zilf.Emit.Zap
             get { return STACK; }
         }
 
+        private bool LocalExists(string name)
+        {
+            return requiredParams.Concat(optionalParams).Concat(locals).Any(lb => lb.Name == name);
+        }
+
         public ILocalBuilder DefineRequiredParameter(string name)
         {
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
+            if (LocalExists(name))
+                throw new ArgumentException("Local variable already exists: " + name, "name");
 
             LocalBuilder local = new LocalBuilder(name);
             requiredParams.Add(local);
@@ -794,6 +801,8 @@ namespace Zilf.Emit.Zap
         {
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
+            if (LocalExists(name))
+                throw new ArgumentException("Local variable already exists: " + name, "name");
 
             LocalBuilder local = new LocalBuilder(name);
             optionalParams.Add(local);
@@ -804,6 +813,8 @@ namespace Zilf.Emit.Zap
         {
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have local variables");
+            if (LocalExists(name))
+                throw new ArgumentException("Local variable already exists: " + name, "name");
 
             LocalBuilder local = new LocalBuilder(name);
             locals.Add(local);
