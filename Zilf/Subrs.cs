@@ -1776,6 +1776,12 @@ namespace Zilf
             return PerformSynonym(ctx, args, "VERB-SYNONYM", typeof(VerbSynonym));
         }
 
+        [Subr("PREP-SYNONYM")]
+        public static ZilObject PREP_SYNONYM(Context ctx, ZilObject[] args)
+        {
+            return PerformSynonym(ctx, args, "PREP-SYNONYM", typeof(PrepSynonym));
+        }
+
         [Subr("FREQUENT-WORDS?")]
         public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
         {

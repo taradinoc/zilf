@@ -1192,10 +1192,13 @@ namespace Zilf
             : base(original, synonym)
         {
         }
+    }
 
-        public override void Apply(Context ctx)
+    class PrepSynonym : Synonym
+    {
+        public PrepSynonym(Word original, Word synonym)
+            : base(original, synonym)
         {
-            base.Apply(ctx);
         }
     }
 }
