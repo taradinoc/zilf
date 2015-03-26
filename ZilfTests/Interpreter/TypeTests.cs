@@ -53,6 +53,18 @@ namespace ZilfTests.Interpreter
                     }
                 )
             ));
+            ctx.SetLocalVal(ZilAtom.Parse("A-VECTOR", ctx), new ZilVector(new ZilObject[] {
+                new ZilFix(4),
+                new ZilFix(8),
+                new ZilFix(15),
+                new ZilFix(16),
+                new ZilFix(23),
+                new ZilFix(42),
+            }));
+            ctx.SetLocalVal(ZilAtom.Parse("A-ADECL", ctx), new ZilAdecl(
+                new ZilString("FIDO"),
+                ZilAtom.Parse("DOG", ctx)
+            ));
 
             // special types
             ctx.SetLocalVal(ZilAtom.Parse("A-SEGMENT", ctx), new ZilSegment(
@@ -74,13 +86,14 @@ namespace ZilfTests.Interpreter
             ctx = null;
         }
 
-        // ATOM, CHARACTER, FALSE, FIX
+        // ADECL, ATOM, CHARACTER, FALSE, FIX
         // LIST, FORM, STRING, SUBR, FSUBR, FUNCTION, MACRO
-        // SEGMENT, WACKY
+        // SEGMENT, VECTOR, WACKY
 
         [TestMethod]
         public void TestTYPE()
         {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE .A-ADECL>", ctx.GetStdAtom(StdAtom.ADECL));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-ATOM>", ctx.GetStdAtom(StdAtom.ATOM));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-CHARACTER>", ctx.GetStdAtom(StdAtom.CHARACTER));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-FALSE>", ctx.GetStdAtom(StdAtom.FALSE));
@@ -93,7 +106,21 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-FUNCTION>", ctx.GetStdAtom(StdAtom.FUNCTION));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-MACRO>", ctx.GetStdAtom(StdAtom.MACRO));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-SEGMENT>", ctx.GetStdAtom(StdAtom.SEGMENT));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE .A-VECTOR>", ctx.GetStdAtom(StdAtom.VECTOR));
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-WACKY>", ZilAtom.Parse("WACKY", ctx));
+
+            // literals
+            TestHelpers.EvalAndAssert(ctx, "<TYPE 5:FIX>", ctx.GetStdAtom(StdAtom.ADECL));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE FOO>", ctx.GetStdAtom(StdAtom.ATOM));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE !\\c>", ctx.GetStdAtom(StdAtom.CHARACTER));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE <>>", ctx.GetStdAtom(StdAtom.FALSE));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE 5>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE '(1 2)>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE '<+ 1 2>>", ctx.GetStdAtom(StdAtom.FORM));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE \"HELLO\">", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE '!<FOO>>", ctx.GetStdAtom(StdAtom.SEGMENT));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE [1 2 3]>", ctx.GetStdAtom(StdAtom.VECTOR));
+            // no literals for SUBR, FSUBR, FUNCTION, MACRO, WACKY
 
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<TYPE>");
@@ -118,8 +145,8 @@ namespace ZilfTests.Interpreter
         {
             // everything can be coerced to its own type
             string[] types = {
-                "ATOM", "CHARACTER", "FALSE", "FIX", "LIST", "FORM", "STRING",
-                "SUBR", "FSUBR", "FUNCTION", "MACRO", "SEGMENT", "WACKY",
+                "ADECL", "ATOM", "CHARACTER", "FALSE", "FIX", "LIST", "FORM", "STRING",
+                "SUBR", "FSUBR", "FUNCTION", "MACRO", "SEGMENT", "VECTOR", "WACKY",
             };
 
             foreach (var t in types)
@@ -142,6 +169,7 @@ namespace ZilfTests.Interpreter
         public void TestCHTYPE_to_ATOM()
         {
             // nothing can be coerced to ATOM
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX ATOM>");
@@ -153,6 +181,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY ATOM>");
         }
 
@@ -164,6 +193,7 @@ namespace ZilfTests.Interpreter
                 new ZilChar((char)123));
 
             // other types can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST CHARACTER>");
@@ -174,6 +204,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT CHARACTER>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR CHARACTER>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY CHARACTER>");
         }
 
@@ -214,12 +245,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FALSE>",
                 new ZilFalse(new ZilList(null, null)));
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FALSE>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FALSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR FALSE>");
         }
 
         [TestMethod]
@@ -229,6 +262,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-CHARACTER FIX>", new ZilFix(67));
 
             // other types can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST FIX>");
@@ -239,6 +273,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR FIX>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FIX>");
         }
 
@@ -277,12 +312,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY LIST>",
                 new ZilList(null, null));
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR LIST>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR LIST>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR LIST>");
         }
 
         [TestMethod]
@@ -320,12 +357,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FORM>",
                 new ZilForm(new ZilObject[] { }));
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FORM>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR FORM>");
         }
 
         [TestMethod]
@@ -337,6 +376,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR STRING>",
                 new ZilString("QUOTE"));
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX STRING>");
@@ -346,6 +386,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT STRING>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY STRING>");
         }
 
@@ -363,6 +404,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"foobarbaz\" SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"PerformArithmetic\" SUBR>");
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX SUBR>");
@@ -372,6 +414,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT SUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR SUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY SUBR>");
         }
 
@@ -389,6 +432,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"foobarbaz\" FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"PerformArithmetic\" FSUBR>");
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FSUBR>");
@@ -398,6 +442,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FSUBR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR FSUBR>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FSUBR>");
         }
 
@@ -418,6 +463,7 @@ namespace ZilfTests.Interpreter
                 ));
 
             // arbitrary lists and other values can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX FUNCTION>");
@@ -429,6 +475,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT FUNCTION>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR FUNCTION>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY FUNCTION>");
         }
 
@@ -445,6 +492,7 @@ namespace ZilfTests.Interpreter
                 new ZilEvalMacro(new ZilSubr(Subrs.Plus)));
 
             // arbitrary lists and other values can't
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX MACRO>");
@@ -456,6 +504,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT MACRO>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR MACRO>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY MACRO>");
         }
 
@@ -494,18 +543,21 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY SEGMENT>",
                 new ZilSegment(new ZilForm(new ZilObject[] { })));
 
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR SEGMENT>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR SEGMENT>");
         }
 
         [TestMethod]
         public void TestCHTYPE_to_WACKY()
         {
             // since WACKY isn't a registered type, we can't change anything to it
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL WACKY>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM WACKY>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER WACKY>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX WACKY>");
@@ -518,6 +570,57 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION WACKY>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO WACKY>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR WACKY>");
+        }
+
+        [TestMethod]
+        public void TestCHTYPE_to_VECTOR()
+        {
+            // vector-based types can be coerced to VECTOR
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-ADECL VECTOR>",
+                new ZilVector(new ZilObject[] {
+                    new ZilString("FIDO"),
+                    ZilAtom.Parse("DOG", ctx),
+                })
+            );
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT VECTOR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY VECTOR>");
+        }
+
+        [TestMethod]
+        public void TestCHTYPE_to_ADECL()
+        {
+            // vector-based types can be coerced to ADECL, but only if they have length 2
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE <VECTOR FIX 5> ADECL>",
+                new ZilAdecl(ctx.GetStdAtom(StdAtom.FIX), new ZilFix(5))
+            );
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR ADECL>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-WACKY ADECL>");
         }
 
         [TestMethod]
@@ -529,6 +632,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-FUNCTION>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-MACRO>", ctx.TRUE);
 
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-ADECL>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-ATOM>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-CHARACTER>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-FALSE>", ctx.FALSE);
@@ -536,6 +640,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-FORM>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-STRING>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-SEGMENT>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-VECTOR>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? .A-WACKY>", ctx.FALSE);
 
             // must have 1 argument
@@ -546,6 +651,7 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestSTRUCTURED_P()
         {
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-ADECL>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-FALSE>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-FUNCTION>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-MACRO>", ctx.TRUE);
@@ -553,6 +659,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-FORM>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-STRING>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-SEGMENT>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-VECTOR>", ctx.TRUE);
             
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-FIX>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-ATOM>", ctx.FALSE);
@@ -593,6 +700,18 @@ namespace ZilfTests.Interpreter
                     new ZilFix(3),
                 }
             ));
+        }
+
+        [TestMethod]
+        public void TestVECTOR()
+        {
+            TestHelpers.EvalAndAssert("<VECTOR>", new ZilVector());
+            TestHelpers.EvalAndAssert("<VECTOR 1>", new ZilVector(new ZilFix(1)));
+            TestHelpers.EvalAndAssert("<VECTOR 1 2 3>", new ZilVector(new ZilObject[] {
+                new ZilFix(1),
+                new ZilFix(2),
+                new ZilFix(3),
+            }));
         }
 
         [TestMethod]
@@ -704,6 +823,18 @@ namespace ZilfTests.Interpreter
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<SET O <LIST <FORM + 1 2>>> <1 .O>",
                 new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) }));
+        }
+
+        [TestMethod]
+        public void TestEvalStructures()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "(<+ 1 2> <+ 3 4>)",
+                new ZilList(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
+            TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
+                new ZilVector(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
+            TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:<+ 3 4>",
+                new ZilAdecl(new ZilFix(3), new ZilFix(7)));
         }
     }
 }

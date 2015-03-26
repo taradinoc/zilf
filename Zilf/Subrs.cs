@@ -465,6 +465,12 @@ namespace Zilf
         }
 
         [Subr]
+        public static ZilObject VECTOR(Context ctx, ZilObject[] args)
+        {
+            return new ZilVector(args);
+        }
+
+        [Subr]
         public static ZilObject CONS(Context ctx, ZilObject[] args)
         {
             if (args.Length != 2)
