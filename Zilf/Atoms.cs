@@ -59,6 +59,7 @@ namespace Zilf
 
         ACTIONS,
         ADD,
+        ADECL,
         ADJECTIVE,
         AGAIN,
         AND,
@@ -243,6 +244,7 @@ namespace Zilf
         TRUE_VALUE,
         USL,
         VALUE,
+        VECTOR,
         VERBS,
         VERIFY,
         [Atom("VERSION?")]

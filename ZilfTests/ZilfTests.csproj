@@ -59,6 +59,7 @@
     <Compile Include="Interpreter\TestHelpers.cs" />
     <Compile Include="Interpreter\FunctionTests.cs" />
     <Compile Include="Interpreter\TypeTests.cs" />
+    <Compile Include="Interpreter\ParsingTests.cs" />
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="WordTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

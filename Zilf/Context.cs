@@ -621,6 +621,11 @@ namespace Zilf
                         adaptChtypeMethod = AdaptChtypeMethod<ZilString>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilString>;
                         break;
+                    case PrimType.VECTOR:
+                        chtypeParamTypes[1] = typeof(ZilVector);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilVector>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilVector>;
+                        break;
                     default:
                         throw new NotImplementedException("Unexpected primtype: " + r.Attr.PrimType);
                 }

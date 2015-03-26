@@ -48,6 +48,10 @@ namespace Zilf
         /// The primitive type is <see cref="ZilList"/>.
         /// </summary>
         LIST,
+        /// <summary>
+        /// The primitive type is <see cref="ZilVector"/>.
+        /// </summary>
+        VECTOR,
     }
 
     /// <summary>
@@ -165,6 +169,8 @@ namespace Zilf
         /// <returns>The translated object.</returns>
         private static ZilObject ReadOneFromAST(ITree tree, Context ctx)
         {
+            ZilObject[] children;
+
             switch (tree.Type)
             {
                 case ZilLexer.ATOM:
@@ -175,7 +181,7 @@ namespace Zilf
                     // ignore comments
                     return null;
                 case ZilLexer.FORM:
-                    ZilObject[] children = ReadChildrenFromAST(tree, ctx);
+                    children = ReadChildrenFromAST(tree, ctx);
                     if (children.Length == 0)
                         return ctx.FALSE;
                     else
@@ -183,9 +189,14 @@ namespace Zilf
                 case ZilLexer.HASH:
                     return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
                 case ZilLexer.LIST:
-                case ZilLexer.VECTOR:   // TODO: a real ZilVector type?
-                case ZilLexer.UVECTOR:
                     return new ZilList(ReadChildrenFromAST(tree, ctx));
+                case ZilLexer.VECTOR:
+                case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
+                    return new ZilVector(ReadChildrenFromAST(tree, ctx));
+                case ZilLexer.ADECL:
+                    children = ReadChildrenFromAST(tree, ctx);
+                    System.Diagnostics.Debug.Assert(children.Length == 2);
+                    return new ZilAdecl(children[0], children[1]);
                 case ZilLexer.MACRO:
                 case ZilLexer.VMACRO:
                     // expand macros
@@ -1029,12 +1040,13 @@ namespace Zilf
             get { return First == null && Rest == null; }
         }
 
-        protected string ToString(char start, char end, Func<ZilObject, string> convert)
+        public static string SequenceToString(IEnumerable<ZilObject> items,
+            string start, string end, Func<ZilObject, string> convert)
         {
             StringBuilder sb = new StringBuilder(2);
             sb.Append(start);
 
-            foreach (ZilObject obj in this)
+            foreach (ZilObject obj in items)
             {
                 if (sb.Length > 1)
                     sb.Append(' ');
@@ -1048,12 +1060,12 @@ namespace Zilf
 
         public override string ToString()
         {
-            return ToString('(', ')', zo => zo.ToString());
+            return SequenceToString(this, "(", ")", zo => zo.ToString());
         }
 
         public override string ToStringContext(Context ctx, bool friendly)
         {
-            return ToString('(', ')', zo => zo.ToStringContext(ctx, friendly));
+            return SequenceToString(this, "(", ")", zo => zo.ToStringContext(ctx, friendly));
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -1113,9 +1125,9 @@ namespace Zilf
 
         public override int GetHashCode()
         {
-            int result = 0;
+            int result = (int)StdAtom.LIST;
             foreach (ZilObject obj in this)
-                result ^= obj.GetHashCode();
+                result = result * 31 + obj.GetHashCode();
             return result;
         }
 
@@ -1247,7 +1259,7 @@ namespace Zilf
             }
 
             // otherwise display like a list with angle brackets
-            return ToString('<', '>', convert);
+            return ZilList.SequenceToString(this, "<", ">", convert);
         }
 
         public override string ToString()
@@ -1678,6 +1690,295 @@ namespace Zilf
                     return length;
             }
         }
+    }
+
+    [BuiltinType(StdAtom.VECTOR, PrimType.VECTOR)]
+    sealed class ZilVector : ZilObject, IEnumerable<ZilObject>, IStructure
+    {
+        #region Storage
+
+        private class VectorStorage
+        {
+            private ZilObject[] items;
+
+            public VectorStorage()
+                : this(new ZilObject[0])
+            {
+            }
+
+            public VectorStorage(ZilObject[] items)
+            {
+                this.items = items;
+            }
+
+            public IEnumerable<ZilObject> GetSequence(int offset)
+            {
+                // TODO: handle offset
+                return items;
+            }
+
+            public int GetLength(int offset)
+            {
+                // TODO: handle offset
+                return items.Length;
+            }
+
+            public ZilObject GetItem(int offset, int index)
+            {
+                // TODO: handle offset
+                return items[index];
+            }
+
+            public void PutItem(int offset, int index, ZilObject value)
+            {
+                // TODO: handle offset
+                items[index] = value;
+            }
+        }
+
+        #endregion
+
+        private readonly VectorStorage storage;
+        private readonly int offset;
+
+        public ZilVector()
+        {
+            storage = new VectorStorage();
+            offset = 0;
+        }
+
+        [ChtypeMethod]
+        public ZilVector(ZilVector other)
+        {
+            this.storage = other.storage;
+            this.offset = other.offset;
+        }
+
+        public ZilVector(params ZilObject[] items)
+        {
+            storage = new VectorStorage(items);
+            offset = 0;
+        }
+
+        public override bool Equals(object obj)
+        {
+            ZilVector other = obj as ZilVector;
+            if (other == null)
+                return false;
+
+            return this.SequenceEqual(other);
+        }
+
+        public override int GetHashCode()
+        {
+            int result = (int)StdAtom.VECTOR;
+            foreach (ZilObject obj in this)
+                result = result * 31 + obj.GetHashCode();
+            return result;
+        }
+
+        public override string ToString()
+        {
+            return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
+        }
+
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
+        }
+
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            return ctx.GetStdAtom(StdAtom.VECTOR);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return PrimType.VECTOR; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return this;
+        }
+
+        public override ZilObject Eval(Context ctx)
+        {
+            return new ZilVector(EvalSequence(ctx, this).ToArray());
+        }
+
+        #region IEnumerable<ZilObject> Members
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            return storage.GetSequence(offset).GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        #endregion
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ZilObject this[int index]
+        {
+            get { return storage.GetItem(offset, index); }
+            set { storage.PutItem(offset, index, value); }
+        }
+
+        public int GetLength()
+        {
+            return storage.GetLength(offset);
+        }
+
+        public int? GetLength(int limit)
+        {
+            var length = storage.GetLength(offset);
+            if (length <= limit)
+                return length;
+            else
+                return null;
+        }
+
+        #endregion
+    }
+
+    [BuiltinType(StdAtom.ADECL, PrimType.VECTOR)]
+    sealed class ZilAdecl : ZilObject, IStructure
+    {
+        public ZilObject First;
+        public ZilObject Second;
+
+        [ChtypeMethod]
+        public ZilAdecl(ZilVector vector)
+        {
+            if (vector.GetLength() != 2)
+                throw new InterpreterError("vector coerced to ADECL must have length 2");
+
+            First = vector[0];
+            Second = vector[1];
+        }
+
+        public ZilAdecl(ZilObject first, ZilObject second)
+        {
+            if (first == null)
+                throw new ArgumentNullException("first");
+            if (second == null)
+                throw new ArgumentNullException("second");
+
+            this.First = first;
+            this.Second = second;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as ZilAdecl;
+            if (other == null)
+                return false;
+
+            return other.First.Equals(First) && other.Second.Equals(Second);
+        }
+
+        public override int GetHashCode()
+        {
+            var result = (int)StdAtom.ADECL;
+            result = result * 31 + First.GetHashCode();
+            result = result * 31 + Second.GetHashCode();
+            return result;
+        }
+
+        public override string ToString()
+        {
+            return First.ToString() + ":" + Second.ToString();
+        }
+
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            return First.ToStringContext(ctx, friendly) + ":" + Second.ToStringContext(ctx, friendly);
+        }
+
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            return ctx.GetStdAtom(StdAtom.ADECL);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return PrimType.VECTOR; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilVector(First, Second);
+        }
+
+        public override ZilObject Eval(Context ctx)
+        {
+            return new ZilAdecl(First.Eval(ctx), Second.Eval(ctx));
+        }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public int GetLength()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int? GetLength(int limit)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 
     #endregion

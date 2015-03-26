@@ -116,8 +116,14 @@ comment	:	SEMI noncomment_expr	-> ^(COMMENT noncomment_expr)
 	;
 
 noncomment_expr
+	:	a=non_adecl_expr
+		( (COLON)=> COLON b=non_adecl_expr	-> ^(ADECL $a $b)
+		|									-> $a
+		)
+	;
+
+non_adecl_expr
 	:	ATOM
-	|	ATOM COLON ATOM		-> ^(ADECL ATOM ATOM)
 	|	NUM
 	|	CHAR
 	|	STRING
