@@ -75,7 +75,7 @@ namespace Zilf
             this.ctx = ctx;
         }
 
-        public Word GetVocabPreposition(ZilAtom text, ISourceLine location)
+        public Word GetVocab(ZilAtom text)
         {
             Word result;
 
@@ -84,6 +84,13 @@ namespace Zilf
                 result = new Word(text);
                 Vocabulary.Add(text, result);
             }
+
+            return result;
+        }
+
+        public Word GetVocabPreposition(ZilAtom text, ISourceLine location)
+        {
+            Word result = GetVocab(text);
 
             if ((result.PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
@@ -98,14 +105,8 @@ namespace Zilf
 
         public Word GetVocabAdjective(ZilAtom text, ISourceLine location)
         {
-            Word result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
-            {
-                result = new Word(text);
-                Vocabulary.Add(text, result);
-            }
-
+            Word result = GetVocab(text);
+            
             if ((result.PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
                 // adjective numbers only exist in V3
@@ -127,13 +128,7 @@ namespace Zilf
 
         public Word GetVocabNoun(ZilAtom text, ISourceLine location)
         {
-            Word result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
-            {
-                result = new Word(text);
-                Vocabulary.Add(text, result);
-            }
+            Word result = GetVocab(text);
 
             result.SetObject(ctx, location);
             return result;
@@ -141,13 +136,7 @@ namespace Zilf
 
         public Word GetVocabBuzzword(ZilAtom text, ISourceLine location)
         {
-            Word result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
-            {
-                result = new Word(text);
-                Vocabulary.Add(text, result);
-            }
+            Word result = GetVocab(text);
 
             if ((result.PartOfSpeech & PartOfSpeech.Buzzword) == 0)
             {
@@ -162,13 +151,7 @@ namespace Zilf
 
         public Word GetVocabVerb(ZilAtom text, ISourceLine location)
         {
-            Word result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
-            {
-                result = new Word(text);
-                Vocabulary.Add(text, result);
-            }
+            Word result = GetVocab(text);
 
             if ((result.PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
@@ -183,13 +166,7 @@ namespace Zilf
 
         public Word GetVocabDirection(ZilAtom text, ISourceLine location)
         {
-            Word result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
-            {
-                result = new Word(text);
-                Vocabulary.Add(text, result);
-            }
+            Word result = GetVocab(text);
 
             if ((result.PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
