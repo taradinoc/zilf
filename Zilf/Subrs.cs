@@ -1717,6 +1717,50 @@ namespace Zilf
         }
 
         [Subr]
+        public static ZilObject VOC(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError(null, "VOC", 1, 2);
+
+            var text = args[0] as ZilString;
+            if (text == null)
+                throw new InterpreterError("VOC: first arg must be a string");
+
+            var atom = ZilAtom.Parse(text.Text, ctx);
+            var word = ctx.ZEnvironment.GetVocab(atom);
+
+            if (args.Length > 1)
+            {
+                var type = args[1] as ZilAtom;
+                if (type == null)
+                    throw new InterpreterError("VOC: second arg must be an atom");
+
+                switch (type.StdAtom)
+                {
+                    case StdAtom.ADJ:
+                    case StdAtom.ADJECTIVE:
+                        word = ctx.ZEnvironment.GetVocabAdjective(atom, ctx.CallingForm);
+                        break;
+
+                    case StdAtom.NOUN:
+                    case StdAtom.OBJECT:
+                        word = ctx.ZEnvironment.GetVocabNoun(atom, ctx.CallingForm);
+                        break;
+
+                    case StdAtom.BUZZ:
+                        word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.CallingForm);
+                        break;
+
+                    default:
+                        throw new InterpreterError("VOC: unrecognized part of speech: " + type);
+                }
+            }
+
+            return new ZilForm(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
+                new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("W?" + atom, ctx) });
+        }
+
+        [Subr]
         public static ZilObject SYNTAX(Context ctx, ZilObject[] args)
         {
             if (args.Length < 3)
