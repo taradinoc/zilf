@@ -1304,7 +1304,14 @@ namespace Zilf
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
-                throw new InterpreterError(null, "GLOBAL: first arg must be an atom");
+            {
+                var adecl = args[0] as ZilAdecl;
+                if (adecl != null)
+                    atom = adecl.First as ZilAtom;
+
+                if (atom == null)
+                    throw new InterpreterError(null, "GLOBAL: first arg must be an atom (or ADECL'd atom)");
+            }
 
             var oldVal = ctx.GetGlobalVal(atom);
             if (oldVal != null)
