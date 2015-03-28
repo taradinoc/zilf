@@ -1385,7 +1385,7 @@ namespace Zilf
                 }
 
                 // routine calls
-                ZilObject obj = cc.Context.GetGlobalVal(head);
+                ZilObject obj = cc.Context.GetZVal(head);
                 if (obj is ZilRoutine)
                 {
                     ZilRoutine rtn = (ZilRoutine)obj;
