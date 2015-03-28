@@ -297,6 +297,49 @@ namespace Zilf
             return ctx.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
+        [Subr]
+        public static ZilObject GETPROP(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2 || args.Length > 3)
+                throw new InterpreterError(null, "GETPROP", 2, 3);
+
+            var result = ctx.GetProp(args[0], args[1]);
+
+            if (result != null)
+            {
+                return result;
+            }
+            else if (args.Length > 2)
+            {
+                return args[2].Eval(ctx);
+            }
+            else
+            {
+                return ctx.FALSE;
+            }
+        }
+
+        [Subr]
+        public static ZilObject PUTPROP(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2 || args.Length > 3)
+                throw new InterpreterError(null, "PUTPROP", 2, 3);
+
+            if (args.Length == 2)
+            {
+                // clear, and return previous value or <>
+                var result = ctx.GetProp(args[0], args[1]);
+                ctx.PutProp(args[0], args[1], null);
+                return result ?? ctx.FALSE;
+            }
+            else
+            {
+                // set, and return first arg
+                ctx.PutProp(args[0], args[1], args[2]);
+                return args[0];
+            }
+        }
+
         #endregion
 
         #region Functions/Macros
@@ -1252,7 +1295,7 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError("ROUTINE: first arg must be an atom");
 
-            if (ctx.GetGlobalVal(atom) != null)
+            if (ctx.GetZVal(atom) != null)
             {
                 if (ctx.AllowRedefine)
                     ctx.Redefine(atom);
@@ -1267,7 +1310,7 @@ namespace Zilf
                 atom,
                 (IEnumerable<ZilObject>)args[1],
                 args.Skip(2));
-            ctx.SetGlobalVal(atom, rtn);
+            ctx.SetZVal(atom, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);
             return atom;
         }
@@ -1282,7 +1325,7 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError(null, "CONSTANT: first arg must be an atom");
 
-            if (ctx.GetGlobalVal(atom) != null)
+            if (ctx.GetZVal(atom) != null)
             {
                 if (ctx.AllowRedefine)
                     ctx.Redefine(atom);
@@ -1291,7 +1334,7 @@ namespace Zilf
             }
 
             ZilConstant constant = new ZilConstant(atom, args[1]);
-            ctx.SetGlobalVal(atom, constant);
+            ctx.SetZVal(atom, constant);
             ctx.ZEnvironment.Constants.Add(constant);
             return constant;
         }
@@ -1313,7 +1356,7 @@ namespace Zilf
                     throw new InterpreterError(null, "GLOBAL: first arg must be an atom (or ADECL'd atom)");
             }
 
-            var oldVal = ctx.GetGlobalVal(atom);
+            var oldVal = ctx.GetZVal(atom);
             if (oldVal != null)
             {
                 if (ctx.AllowRedefine)
@@ -1339,7 +1382,7 @@ namespace Zilf
                 ((ZilTable)args[1]).Name = "T?" + atom.ToStringContext(ctx, false);
 
             ZilGlobal g = new ZilGlobal(atom, args[1]);
-            ctx.SetGlobalVal(atom, g);
+            ctx.SetZVal(atom, g);
             ctx.ZEnvironment.Globals.Add(g);
             return g;
         }
@@ -1367,7 +1410,7 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError(name + ": first arg must be an atom");
 
-            if (ctx.GetGlobalVal(atom) != null)
+            if (ctx.GetZVal(atom) != null)
             {
                 if (ctx.AllowRedefine)
                     ctx.Redefine(atom);
@@ -1384,7 +1427,7 @@ namespace Zilf
             }
 
             ZilModelObject zmo = new ZilModelObject(atom, props, isRoom);
-            ctx.SetGlobalVal(atom, zmo);
+            ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
             return zmo;
         }

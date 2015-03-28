@@ -497,6 +497,28 @@ namespace Zilf
                 globalValues[atom] = value;
         }
 
+        /// <summary>
+        /// Gets the Z-code structure assigned to an atom.
+        /// </summary>
+        /// <param name="atom">The atom.</param>
+        /// <returns>The value, or null if no value is assigned.</returns>
+        /// <remarks>This is equivalent to &lt;GETPROP atom ZVAL&gt;.</remarks>
+        public ZilObject GetZVal(ZilAtom atom)
+        {
+            return GetProp(atom, GetStdAtom(StdAtom.ZVAL));
+        }
+
+        /// <summary>
+        /// Sets or clears the Z-code structure assigned to an atom.
+        /// </summary>
+        /// <param name="atom">The atom.</param>
+        /// <param name="value">The new value, or null to clear the value.</param>
+        /// <remarks>This is equivalent to &lt;PUTPROP atom ZVAL value&gt;.</remarks>
+        public void SetZVal(ZilAtom atom, ZilObject value)
+        {
+            PutProp(atom, GetStdAtom(StdAtom.ZVAL), value);
+        }
+
         public bool AllowRedefine
         {
             get
@@ -508,7 +530,7 @@ namespace Zilf
 
         public void Redefine(ZilAtom atom)
         {
-            ZilObject obj = GetGlobalVal(atom);
+            ZilObject obj = GetZVal(atom);
 
             if (obj is ZilGlobal)
                 zenv.Globals.Remove((ZilGlobal)obj);
