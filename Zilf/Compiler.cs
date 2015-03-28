@@ -352,7 +352,7 @@ namespace Zilf
             bool compact = (compactObj != null && compactObj.IsTrue);
 
             // verb table
-            var query = from s in cc.Context.ZEnvironment.Syntaxes
+            var query = from s in Enumerable.Reverse(cc.Context.ZEnvironment.Syntaxes)
                         group s by s.Verb into g
                         orderby g.Key.GetValue(PartOfSpeech.Verb) descending
                         select g;
