@@ -146,6 +146,8 @@ namespace Zilf
             ZilList olpath = new ZilList(new ZilObject[] { userObList, rootObList });
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
             localValues[olatom] = new Binding(olpath);
+
+            InitTellPatterns();
         }
 
         public ObList RootObList
@@ -339,7 +341,7 @@ namespace Zilf
 
         public void SetDefaultConstants()
         {
-            if (!globalValues.ContainsKey(GetStdAtom(StdAtom.SERIAL)))
+            if (GetZVal(GetStdAtom(StdAtom.SERIAL)) == null)
                 AddZConstant(GetStdAtom(StdAtom.SERIAL), new ZilFix(0));
         }
 
@@ -762,6 +764,35 @@ namespace Zilf
 
             // unknown type
             throw new InterpreterError(newType + " is not a registered type");
+        }
+
+        private void InitTellPatterns()
+        {
+            ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(
+                new ZilObject[] {
+                    // (CR CRLF) <CRLF>
+                    new ZilList(new ZilObject[] { GetStdAtom(StdAtom.CR), GetStdAtom(StdAtom.CRLF) }),
+                    new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.CRLF) }),
+                    // D * <PRINTD .X>
+                    GetStdAtom(StdAtom.D), GetStdAtom(StdAtom.Times),
+                    new ZilForm(new ZilObject[] {
+                        GetStdAtom(StdAtom.PRINTD),
+                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) }),
+                    }),
+                    // N * <PRINTN .X>
+                    GetStdAtom(StdAtom.N), GetStdAtom(StdAtom.Times),
+                    new ZilForm(new ZilObject[] {
+                        GetStdAtom(StdAtom.PRINTN),
+                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) }),
+                    }),
+                    // C * <PRINTC .X>
+                    GetStdAtom(StdAtom.C), GetStdAtom(StdAtom.Times),
+                    new ZilForm(new ZilObject[] {
+                        GetStdAtom(StdAtom.PRINTC),
+                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) }),
+                    }),
+                },
+                this));
         }
     }
 

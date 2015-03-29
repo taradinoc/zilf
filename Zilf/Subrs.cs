@@ -1982,6 +1982,20 @@ namespace Zilf
             throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-LAST, FIRST, or LAST");
         }
 
+        [FSubr("TELL-TOKENS")]
+        public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
+        {
+            ctx.ZEnvironment.TellPatterns.Clear();
+            return ADD_TELL_TOKENS(ctx, args);
+        }
+
+        [FSubr("ADD-TELL-TOKENS")]
+        public static ZilObject ADD_TELL_TOKENS(Context ctx, ZilObject[] args)
+        {
+            ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args, ctx));
+            return ctx.TRUE;
+        }
+
         #endregion
     }
 }

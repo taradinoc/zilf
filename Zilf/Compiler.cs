@@ -1382,6 +1382,9 @@ namespace Zilf
                     case StdAtom.OR:
                     case StdAtom.AND:
                         return CompileBoolean(cc, rb, form.Rest, form, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
+
+                    case StdAtom.TELL:
+                        return CompileTell(cc, rb, form);
                 }
 
                 // routine calls
@@ -1946,84 +1949,6 @@ namespace Zilf
             }
         }
 
-        private static void CompilePRINTI(CompileCtx cc, IRoutineBuilder rb, ZilList args, bool ret)
-        {
-            if (args == null || !args.Rest.IsEmpty)
-                throw new CompilerError("PRINTI/PRINTR: expected 1 arg");
-
-            ZilObject value = args.First;
-
-            if (value is ZilString)
-                rb.EmitPrint(TranslateString(((ZilString)value).Text), ret);
-            else
-                throw new CompilerError("argument to PRINTI/PRINTR must be a string");
-        }
-
-        private static IOperand CompileREAD(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            ISourceLine src, bool wantResult, IVariable resultStorage)
-        {
-            using (Operands operands = Operands.Compile(cc, rb, src, args.ToArray()))
-            {
-                IVariable result;
-                if (cc.Context.ZEnvironment.ZVersion < 5)
-                    result = null;
-                else
-                    result = wantResult ? (resultStorage ?? rb.Stack) : null;
-
-                switch (operands.Count)
-                {
-                    case 1:
-                        rb.EmitRead(operands[0], null, null, null, result);
-                        break;
-                    case 2:
-                        rb.EmitRead(operands[0], operands[1], null, null, result);
-                        break;
-                    case 3:
-                        rb.EmitRead(operands[0], operands[1], operands[2], null, result);
-                        break;
-                    case 4:
-                        rb.EmitRead(operands[0], operands[1], operands[2], operands[3], result);
-                        break;
-                    default:
-                        throw new CompilerError(null, "READ", 1, 4);
-                }
-
-                return wantResult ? (result ?? cc.Game.One) : null;
-            }
-        }
-
-        private static IOperand CompileINPUT(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            ISourceLine src, bool wantResult, IVariable resultStorage)
-        {
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-                throw new CompilerError("INPUT not supported in this version");
-
-            using (Operands operands = Operands.Compile(cc, rb, src, args.Skip(1).ToArray()))
-            {
-                IVariable result = wantResult ? (resultStorage ?? rb.Stack) : null;
-
-                if (!(args.First is ZilFix && ((ZilFix)args.First).Value == 1))
-                    throw new CompilerError("INPUT: first arg must be 1");
-
-                switch (operands.Count)
-                {
-                    case 0:
-                        rb.EmitReadChar(null, null, result);
-                        break;
-                    case 1:
-                        rb.EmitReadChar(operands[0], null, result);
-                        break;
-                    case 2:
-                        rb.EmitReadChar(operands[0], operands[1], result);
-                        break;
-                    default:
-                        throw new CompilerError(null, "INPUT", 1, 3);
-                }
-
-                return wantResult ? (result ?? cc.Game.One) : null;
-            }
-        }
-
         private static IOperand CompilePROG(CompileCtx cc, IRoutineBuilder rb, ZilList args,
             ISourceLine src, bool wantResult, IVariable resultStorage, bool repeat, bool catchy)
         {
@@ -2474,6 +2399,84 @@ namespace Zilf
             var tableBuilder = cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
             cc.Tables.Add(table, tableBuilder);
             return tableBuilder;
+        }
+
+        private static IOperand CompileTell(CompileCtx cc, IRoutineBuilder rb, ZilForm form)
+        {
+            var args = form.Rest.ToArray();
+
+            int index = 0;
+            while (index < args.Length)
+            {
+                // look for a matching pattern
+                bool handled = false;
+                foreach (var pattern in cc.Context.ZEnvironment.TellPatterns)
+                {
+                    var result = pattern.Match(args, index);
+                    if (result.Matched)
+                    {
+                        CompileForm(cc, rb, result.Output, false, null);
+                        index += pattern.Length;
+                        handled = true;
+                        break;
+                    }
+                }
+
+                if (handled)
+                    continue;
+
+                // literal string -> PRINTI
+                if (args[index] is ZilString)
+                {
+                    rb.EmitPrint(TranslateString(((ZilString)args[index]).Text), false);
+                    index++;
+                    continue;
+                }
+
+                // <QUOTE foo> -> <PRINTD ,foo>
+                if (args[index] is ZilForm)
+                {
+                    var innerForm = (ZilForm)args[index];
+                    if (innerForm.First is ZilAtom && ((ZilAtom)innerForm.First).StdAtom == StdAtom.QUOTE && innerForm.Rest != null)
+                    {
+                        var transformed = new ZilForm(new ZilObject[] {
+                            cc.Context.GetStdAtom(StdAtom.GVAL),
+                            innerForm.Rest.First,
+                        });
+                        var obj = CompileAsOperand(cc, rb, transformed, innerForm);
+                        rb.EmitPrint(PrintOp.Object, obj);
+                        index++;
+                        continue;
+                    }
+                }
+
+                // P?foo expr -> <PRINT <GETP expr ,P?foo>>
+                if (args[index] is ZilAtom && index + 1 < args.Length)
+                {
+                    var transformed = new ZilForm(new ZilObject[] {
+                        cc.Context.GetStdAtom(StdAtom.PRINT),
+                        new ZilForm(new ZilObject[] {
+                            cc.Context.GetStdAtom(StdAtom.GETP),
+                            args[index+1],
+                            new ZilForm(new ZilObject[] {
+                                cc.Context.GetStdAtom(StdAtom.GVAL),
+                                args[index],
+                            }),
+                        }),
+                    });
+                    CompileForm(cc, rb, transformed, false, null);
+                    index += 2;
+                    continue;
+                }
+
+                // otherwise, treat it as a packed string
+                var str = CompileAsOperand(cc, rb, args[index], (args[index] as ISourceLine) ?? form);
+                rb.EmitPrint(PrintOp.PackedAddr, str);
+                index++;
+                continue;
+            }
+
+            return cc.Game.One;
         }
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)

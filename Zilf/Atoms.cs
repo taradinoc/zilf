@@ -77,6 +77,7 @@ namespace Zilf
         BUZZ,
         BYTE,
         BYTELENGTH,
+        C,
         CARRIED,
         CHARACTER,
         CLEAR,
@@ -86,9 +87,11 @@ namespace Zilf
         COND,
         CONSTANT,
         COPYT,
+        CR,
         CRLF,
         CURGET,
         CURSET,
+        D,
         DEC,
         DEFAULT,
         DEFINED,
@@ -167,6 +170,7 @@ namespace Zilf
         MOD,
         MOVE,
         MUL,
+        N,
         [Atom("NEW-VOC?")]
         NEW_VOC_P,
         [Atom("NEXT?")]
@@ -242,6 +246,7 @@ namespace Zilf
         T,
         TABLE,
         TAKE,
+        TELL,
         TO,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,
@@ -254,6 +259,7 @@ namespace Zilf
         VERSION_P,
         WORD,
         WORDLENGTH,
+        X,
         XZIP,
         YZIP,
         [Atom("ZERO?")]
