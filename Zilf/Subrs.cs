@@ -471,6 +471,15 @@ namespace Zilf
             return ctx.ChangeType(args[0], atom);
         }
 
+        [Subr("MAKE-GVAL")]
+        public static ZilObject MAKE_GVAL(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "MAKE-GVAL", 1, 1);
+
+            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), args[0] });
+        }
+
         [Subr("APPLICABLE?")]
         public static ZilObject APPLICABLE_P(Context ctx, ZilObject[] args)
         {
