@@ -132,6 +132,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Subrs.cs" />
+    <Compile Include="TellTokens.cs" />
     <Compile Include="ZBuiltins.cs" />
     <Compile Include="ZEnvironment.cs" />
     <Compile Include="ZilfCompiler.cs" />

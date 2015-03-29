@@ -58,6 +58,8 @@ namespace Zilf
         public readonly List<ZilAtom> LastObjects = new List<ZilAtom>();
         public ObjectOrdering ObjectOrdering;
 
+        public readonly List<TellPattern> TellPatterns = new List<TellPattern>();
+
         /// <summary>
         /// The last direction defined with &lt;DIRECTIONS&gt;.
         /// </summary>
