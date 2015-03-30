@@ -1153,7 +1153,7 @@ namespace Zilf
                 // apply loop function
                 try
                 {
-                    results.Add(loopf.Apply(ctx, loopArgs));
+                    results.Add(loopf.ApplyNoEval(ctx, loopArgs));
                 }
                 catch (MapStopException ex)
                 {
