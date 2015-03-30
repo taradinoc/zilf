@@ -997,6 +997,46 @@ namespace Zilf
             return equal ? ctx.FALSE : ctx.TRUE;
         }
 
+        private static ZilObject PerformComparison(Context ctx, string name, Func<int, int, bool> op, ZilObject[] args)
+        {
+            const string STypeError = "every arg must be a FIX";
+
+            if (args.Length != 2)
+                throw new InterpreterError(null, name, 2, 2);
+
+            if (!(args[0] is ZilFix && args[1] is ZilFix))
+                throw new InterpreterError(name + ": " + STypeError);
+
+            int value1 = ((ZilFix)args[0]).Value;
+            int value2 = ((ZilFix)args[1]).Value;
+
+            return op(value1, value2) ? ctx.TRUE : ctx.FALSE;
+        }
+
+        [Subr("L?")]
+        public static ZilObject L_P(Context ctx, ZilObject[] args)
+        {
+            return PerformComparison(ctx, "L?", (a, b) => a < b, args);
+        }
+
+        [Subr("L=?")]
+        public static ZilObject LEq_P(Context ctx, ZilObject[] args)
+        {
+            return PerformComparison(ctx, "L=?", (a, b) => a <= b, args);
+        }
+
+        [Subr("G?")]
+        public static ZilObject G_P(Context ctx, ZilObject[] args)
+        {
+            return PerformComparison(ctx, "G?", (a, b) => a > b, args);
+        }
+
+        [Subr("G=?")]
+        public static ZilObject GEq_P(Context ctx, ZilObject[] args)
+        {
+            return PerformComparison(ctx, "G=?", (a, b) => a >= b, args);
+        }
+
         #endregion
 
         #region Mapping
