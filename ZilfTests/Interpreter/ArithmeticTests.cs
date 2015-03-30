@@ -165,5 +165,27 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>("<ANDB 0 ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>("<ANDB (1 2 3)>");
         }
+
+        [TestMethod]
+        public void TestComparisons()
+        {
+            var ctx = new Context();
+
+            TestHelpers.EvalAndAssert(ctx, "<L? 4 5>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<L? 4 4>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<L? 4 3>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<L=? 4 5>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<L=? 4 4>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<L=? 4 3>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<G? 4 5>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<G? 4 4>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<G? 4 3>", ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx, "<G=? 4 5>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<G=? 4 4>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<G=? 4 3>", ctx.TRUE);
+        }
     }
 }
