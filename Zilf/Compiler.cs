@@ -1355,6 +1355,10 @@ namespace Zilf
                         return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage,
                             head.StdAtom == StdAtom.REPEAT, head.StdAtom != StdAtom.BIND);
 
+                    case StdAtom.DO:
+                        CompileDO(cc, rb, form.Rest, form);
+                        return wantResult ? cc.Game.One : null;
+
                     case StdAtom.COND:
                         return CompileCOND(cc, rb, form.Rest, wantResult, resultStorage);
 
@@ -2143,6 +2147,140 @@ namespace Zilf
             }
             else
                 cc.Locals.Remove(atom);
+        }
+
+        private static bool IsNonVariableForm(ZilObject zo)
+        {
+            if (zo == null)
+                return false;
+
+            var form = zo as ZilForm;
+            if (form == null)
+                return false;
+
+            var first = form.First as ZilAtom;
+            if (first == null)
+                return true;
+
+            return first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
+        }
+
+        private static void CompileDO(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src)
+        {
+            // parse binding list
+            if (args == null || args.First == null ||
+                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            {
+                throw new CompilerError("expected binding list at start of DO");
+            }
+
+            var spec = (ZilList)args.First;
+            var specLength = ((IStructure)spec).GetLength(4);
+            if (specLength < 3 || specLength == null)
+            {
+                throw new CompilerError("DO: expected 3 or 4 elements in binding list");
+            }
+
+            var atom = spec.First as ZilAtom;
+            if (atom == null)
+            {
+                throw new CompilerError("DO: first element in binding list must be an atom");
+            }
+
+            var start = spec.Rest.First;
+            var end = spec.Rest.Rest.First;
+
+            // create block
+            var oldAgain = cc.AgainLabel;
+            var oldReturn = cc.ReturnLabel;
+            var oldReturnState = cc.ReturnState;
+
+            cc.AgainLabel = rb.DefineLabel();
+            cc.ReturnLabel = rb.DefineLabel();
+            cc.ReturnState = 0;
+
+            // initialize counter
+            var counter = PushInnerLocal(cc, rb, atom);
+            IOperand operand = CompileAsOperand(cc, rb, start, src, counter);
+            if (operand != counter)
+                rb.EmitStore(counter, operand);
+
+            rb.MarkLabel(cc.AgainLabel);
+
+            // test and branch before the body, if end is a (non-[GL]VAL) FORM
+            bool testFirst;
+            if (IsNonVariableForm(end))
+            {
+                CompileCondition(cc, rb, end, cc.ReturnLabel, true);
+                cc.ReturnState |= BlockReturnState.Returned;
+                testFirst = true;
+            }
+            else
+            {
+                testFirst = false;
+            }
+
+            // body
+            args = args.Rest;
+            while (args != null && !args.IsEmpty)
+            {
+                // ignore the results of all statements
+                CompileStmt(cc, rb, args.First, false);
+                args = args.Rest;
+            }
+
+            // increment
+            bool down;
+            if (specLength == 4)
+            {
+                var inc = spec.Rest.Rest.Rest.First;
+                int incValue;
+
+                if (inc is ZilFix && (incValue = ((ZilFix)inc).Value) < 0)
+                {
+                    rb.EmitBinary(BinaryOp.Sub, counter, cc.Game.MakeOperand(-incValue), counter);
+                    down = true;
+                }
+                else if (IsNonVariableForm(inc))
+                {
+                    operand = CompileAsOperand(cc, rb, inc, src, counter);
+                    if (operand != counter)
+                        rb.EmitStore(counter, operand);
+                    down = false;
+                }
+                else
+                {
+                    operand = CompileAsOperand(cc, rb, inc, src);
+                    rb.EmitBinary(BinaryOp.Add, counter, operand, counter);
+                    down = false;
+                }
+            }
+            else
+            {
+                down = (start is ZilFix && end is ZilFix && ((ZilFix)end).Value < ((ZilFix)start).Value);
+                rb.EmitBinary(down ? BinaryOp.Sub : BinaryOp.Add, counter, cc.Game.One, counter);
+            }
+
+            // test and branch after the body, if end is GVAL/LVAL or a constant
+            if (!testFirst)
+            {
+                operand = CompileAsOperand(cc, rb, end, src);
+                rb.Branch(down ? Condition.Less : Condition.Greater, counter, operand, cc.AgainLabel, false);
+            }
+            else
+            {
+                rb.Branch(cc.AgainLabel);
+            }
+
+            // clean up block and counter
+            if ((cc.ReturnState & BlockReturnState.Returned) != 0)
+                rb.MarkLabel(cc.ReturnLabel);
+
+            PopInnerLocal(cc, atom);
+
+            cc.AgainLabel = oldAgain;
+            cc.ReturnLabel = oldReturn;
+            cc.ReturnState = oldReturnState;
         }
 
         private static IOperand CompileCOND(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,

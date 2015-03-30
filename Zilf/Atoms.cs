@@ -101,6 +101,7 @@ namespace Zilf
         DIV,
         [Atom("DLESS?")]
         DLESS_P,
+        DO,
         ELSE,
         [Atom("EQUAL?")]
         EQUAL_P,

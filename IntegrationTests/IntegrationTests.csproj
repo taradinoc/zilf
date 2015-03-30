@@ -101,6 +101,7 @@
     <Compile Include="FullProjectTests.cs" />
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="TellTests.cs" />
+    <Compile Include="FlowControlTests.cs" />
     <Compile Include="ZlrHelper.cs" />
   </ItemGroup>
   <ItemGroup>
