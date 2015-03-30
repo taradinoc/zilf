@@ -158,5 +158,38 @@ namespace ZilfTests.Interpreter
             // must have at least 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<APPLY>");
         }
+
+        [TestMethod]
+        public void TestMAPF()
+        {
+            TestHelpers.EvalAndAssert("<MAPF <> <FUNCTION (N) <* .N 2>> '(1 2 3)>",
+                new ZilFix(6));
+
+            TestHelpers.EvalAndAssert("<MAPF ,VECTOR <FUNCTION (N) <* .N 2>> '(1 2 3)>",
+                new ZilVector(new ZilFix(2), new ZilFix(4), new ZilFix(6)));
+
+            TestHelpers.EvalAndAssert("<MAPF ,VECTOR <FUNCTION (N M) <* .N .M>> '(1 10 100 1000) '(2 3 4)>",
+                new ZilVector(new ZilFix(2), new ZilFix(30), new ZilFix(400)));
+        }
+
+        [TestMethod]
+        public void TestMAPR()
+        {
+            var ctx = new Context();
+
+            var atom = ZilAtom.Parse("FOO", ctx);
+            ctx.SetLocalVal(atom, new ZilList(new ZilObject[] { 
+                new ZilFix(1), new ZilFix(2), new ZilFix(3)
+            }));
+
+            var expectedItems = new ZilObject[] {
+                new ZilFix(3), new ZilFix(6), new ZilFix(9),
+            };
+
+            TestHelpers.EvalAndAssert(ctx, "<MAPR ,VECTOR <FUNCTION (L) <1 .L <* 3 <1 .L>>>> .FOO>",
+                new ZilVector(expectedItems));
+
+            Assert.AreEqual(new ZilList(expectedItems), ctx.GetLocalVal(atom));
+        }
     }
 }
