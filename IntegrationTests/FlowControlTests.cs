@@ -15,6 +15,8 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        #region DO
+
         [TestMethod]
         public void TestDO_Up_Fixes()
         {
@@ -65,5 +67,56 @@ namespace IntegrationTests
                 .WithGlobal("<ROUTINE BAR (I) <PRINTI \"BAR\"> <CRLF> <G? .I 9>>")
                 .Outputs("FOO\nBAR\n7\nBAR\n8\nBAR\n9\nBAR\n");
         }
+
+        #endregion
+
+        #region MAP-CONTENTS
+
+        [TestMethod]
+        public void TestMAP_CONTENTS_Basic()
+        {
+            AssertRoutine("", "<MAP-CONTENTS (F ,TABLE) <PRINTD .F> <CRLF>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .WithGlobal("<OBJECT APPLE (IN TABLE) (DESC \"apple\")>")
+                .WithGlobal("<OBJECT CHERRY (IN TABLE) (DESC \"cherry\")>")
+                .WithGlobal("<OBJECT BANANA (IN TABLE) (DESC \"banana\")>")
+                .Outputs("apple\nbanana\ncherry\n");
+        }
+
+        [TestMethod]
+        public void TestMAP_CONTENTS_WithNext()
+        {
+            AssertRoutine("", "<MAP-CONTENTS (F N ,TABLE) <REMOVE .F> <PRINTD .F> <PRINTI \", \"> <PRINTD? .N> <CRLF>>")
+               .WithGlobal("<ROUTINE PRINTD? (OBJ) <COND (.OBJ <PRINTD .OBJ>) (ELSE <PRINTI \"nothing\">)>>")
+               .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+               .WithGlobal("<OBJECT APPLE (IN TABLE) (DESC \"apple\")>")
+               .WithGlobal("<OBJECT CHERRY (IN TABLE) (DESC \"cherry\")>")
+               .WithGlobal("<OBJECT BANANA (IN TABLE) (DESC \"banana\")>")
+               .Outputs("apple, banana\nbanana, cherry\ncherry, nothing\n");
+        }
+
+        [TestMethod]
+        public void TestMAP_CONTENTS_WithEnd()
+        {
+            AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F ,TABLE) (END <RETURN .SUM>) <SET SUM <+ .SUM <GETP .F ,P?PRICE>>>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .WithGlobal("<OBJECT APPLE (IN TABLE) (PRICE 1)>")
+                .WithGlobal("<OBJECT CHERRY (IN TABLE) (PRICE 2)>")
+                .WithGlobal("<OBJECT BANANA (IN TABLE) (PRICE 3)>")
+                .GivesNumber("6");
+        }
+
+        [TestMethod]
+        public void TestMAP_CONTENTS_WithNextAndEnd()
+        {
+            AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F N ,TABLE) (END <RETURN .SUM>) <REMOVE .F> <SET SUM <+ .SUM <GETP .F ,P?PRICE>>>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .WithGlobal("<OBJECT APPLE (IN TABLE) (PRICE 1)>")
+                .WithGlobal("<OBJECT CHERRY (IN TABLE) (PRICE 2)>")
+                .WithGlobal("<OBJECT BANANA (IN TABLE) (PRICE 3)>")
+                .GivesNumber("6");
+        }
+
+        #endregion
     }
 }
