@@ -168,6 +168,8 @@ namespace Zilf
         LVAL,
         MACRO,
         MANY,
+        [Atom("MAP-CONTENTS")]
+        MAP_CONTENTS,
         MOD,
         MOVE,
         MUL,

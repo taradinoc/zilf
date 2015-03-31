@@ -1358,6 +1358,8 @@ namespace Zilf
                     case StdAtom.DO:
                         CompileDO(cc, rb, form.Rest, form);
                         return wantResult ? cc.Game.One : null;
+                    case StdAtom.MAP_CONTENTS:
+                        return CompileMAP_CONTENTS(cc, rb, form.Rest, form, wantResult, resultStorage);
 
                     case StdAtom.COND:
                         return CompileCOND(cc, rb, form.Rest, wantResult, resultStorage);
@@ -2281,6 +2283,147 @@ namespace Zilf
             cc.AgainLabel = oldAgain;
             cc.ReturnLabel = oldReturn;
             cc.ReturnState = oldReturnState;
+        }
+
+        private static IOperand CompileMAP_CONTENTS(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
+            bool wantResult, IVariable resultStorage)
+        {
+            // parse binding list
+            if (args == null || args.First == null ||
+                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            {
+                throw new CompilerError("expected binding list at start of MAP-CONTENTS");
+            }
+
+            var spec = (ZilList)args.First;
+            var specLength = ((IStructure)spec).GetLength(3);
+            if (specLength < 2 || specLength == null)
+            {
+                throw new CompilerError("MAP-CONTENTS: expected 2 or 3 elements in binding list");
+            }
+
+            var atom = spec.First as ZilAtom;
+            if (atom == null)
+            {
+                throw new CompilerError("MAP-CONTENTS: first element in binding list must be an atom");
+            }
+
+            ZilAtom nextAtom;
+            ZilObject container;
+            if (specLength == 3)
+            {
+                nextAtom = spec.Rest.First as ZilAtom;
+                if (nextAtom == null)
+                {
+                    throw new CompilerError("MAP-CONTENTS: middle element in binding list must be an atom");
+                }
+
+                container = spec.Rest.Rest.First;
+            }
+            else
+            {
+                nextAtom = null;
+                container = spec.Rest.First;
+            }
+
+            // look for an end block
+            var body = args.Rest;
+            ZilList endStmts;
+            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            {
+                endStmts = (ZilList)body.First;
+                body = body.Rest;
+            }
+            else
+            {
+                endStmts = null;
+            }
+
+            // create block
+            var oldAgain = cc.AgainLabel;
+            var oldReturn = cc.ReturnLabel;
+            var oldReturnState = cc.ReturnState;
+
+            cc.AgainLabel = rb.DefineLabel();
+            cc.ReturnLabel = rb.DefineLabel();
+            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+
+            var exhaustedLabel = rb.DefineLabel();
+
+            // initialize counter
+            var counter = PushInnerLocal(cc, rb, atom);
+            IOperand operand = CompileAsOperand(cc, rb, container, src);
+            rb.EmitGetChild(operand, counter, exhaustedLabel, false);
+
+            rb.MarkLabel(cc.AgainLabel);
+
+            // loop over the objects using one or two variables
+            if (nextAtom != null)
+            {
+                // initialize next
+                var next = PushInnerLocal(cc, rb, nextAtom);
+                var tempLabel = rb.DefineLabel();
+                rb.EmitGetSibling(counter, next, tempLabel, true);
+                rb.MarkLabel(tempLabel);
+
+                // body
+                while (body != null && !body.IsEmpty)
+                {
+                    // ignore the results of all statements
+                    CompileStmt(cc, rb, body.First, false);
+                    body = body.Rest;
+                }
+
+                // next object
+                rb.EmitStore(counter, next);
+                rb.BranchIfZero(counter, cc.AgainLabel, false);
+
+                // end statements
+                while (endStmts != null && !endStmts.IsEmpty)
+                {
+                    CompileStmt(cc, rb, endStmts.First, false);
+                    endStmts = endStmts.Rest;
+                }
+
+                // clean up next
+                PopInnerLocal(cc, nextAtom);
+            }
+            else
+            {
+                // body
+                while (body != null && !body.IsEmpty)
+                {
+                    // ignore the results of all statements
+                    CompileStmt(cc, rb, body.First, false);
+                    body = body.Rest;
+                }
+
+                // next object
+                rb.EmitGetSibling(counter, counter, cc.AgainLabel, true);
+
+                // end statements
+                while (endStmts != null && !endStmts.IsEmpty)
+                {
+                    CompileStmt(cc, rb, endStmts.First, false);
+                    endStmts = endStmts.Rest;
+                }
+            }
+
+            // exhausted label, provide a return value if we need one
+            rb.MarkLabel(exhaustedLabel);
+            if (wantResult)
+                rb.EmitStore(rb.Stack, cc.Game.One);
+
+            // clean up block and counter
+            rb.MarkLabel(cc.ReturnLabel);
+
+            PopInnerLocal(cc, atom);
+
+            cc.AgainLabel = oldAgain;
+            cc.ReturnLabel = oldReturn;
+            cc.ReturnState = oldReturnState;
+
+            return wantResult ? rb.Stack : null;
         }
 
         private static IOperand CompileCOND(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
