@@ -779,9 +779,9 @@ namespace ZilfTests.Interpreter
         public void TestASCII()
         {
             TestHelpers.EvalAndAssert("<ASCII !\\A>", new ZilFix(65));
+            TestHelpers.EvalAndAssert("<ASCII 65>", new ZilChar('A'));
 
-            // argument must be a character
-            TestHelpers.EvalAndCatch<InterpreterError>("<ASCII 65>");
+            // argument must be a character or FIX
             TestHelpers.EvalAndCatch<InterpreterError>("<ASCII \"A\">");
 
             // must have 1 argument
