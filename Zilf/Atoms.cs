@@ -89,6 +89,8 @@ namespace Zilf
         COPYT,
         CR,
         CRLF,
+        [Atom("CRLF-CHARACTER")]
+        CRLF_CHARACTER,
         CURGET,
         CURSET,
         D,
