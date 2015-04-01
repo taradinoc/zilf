@@ -589,7 +589,7 @@ namespace Zilf
                         }
                         else
                         {
-                            result.Add(new BuiltinArg(BuiltinArgType.Operand, Compiler.TranslateString(zstr.Text)));
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, Compiler.TranslateString(zstr.Text, cc.Context)));
                         }
                     }
                     else if (pi.ParameterType == typeof(IOperand))

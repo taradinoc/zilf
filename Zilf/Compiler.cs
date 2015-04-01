@@ -670,7 +670,13 @@ namespace Zilf
             }
         }
 
-        private static string TranslateString(string str)
+        private static string TranslateString(string str, Context ctx)
+        {
+            var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
+            return TranslateString(str, crlfChar == null ? '|' : crlfChar.Char);
+        }
+
+        private static string TranslateString(string str, char crlfChar)
         {
             // strip CR/LF and ensure 1 space afterward; translate '|' to LF
             StringBuilder sb = new StringBuilder(str);
@@ -682,19 +688,20 @@ namespace Zilf
 
                 switch (c)
                 {
-                    case '|':
-                        sb[i] = '\n';
-                        break;
-
                     case '\r':
                         sb.Remove(i--, 1);
                         continue;
 
                     case '\n':
-                        if (last == '|')
+                        if (last == crlfChar)
                             sb.Remove(i--, 1);
                         else
                             sb[i] = ' ';
+                        break;
+
+                    default:
+                        if (c == crlfChar)
+                            sb[i] = '\n';
                         break;
                 }
 
@@ -717,7 +724,7 @@ namespace Zilf
                     return cc.Game.MakeOperand(((ZilFix)((ZilHash)expr).GetPrimitive(cc.Context)).Value);
 
                 case StdAtom.STRING:
-                    return cc.Game.MakeOperand(TranslateString(((ZilString)expr).Text));
+                    return cc.Game.MakeOperand(TranslateString(((ZilString)expr).Text, cc.Context));
 
                 case StdAtom.CHARACTER:
                     return cc.Game.MakeOperand((byte)((ZilChar)expr).Char);
@@ -2726,7 +2733,7 @@ namespace Zilf
                 // literal string -> PRINTI
                 if (args[index] is ZilString)
                 {
-                    rb.EmitPrint(TranslateString(((ZilString)args[index]).Text), false);
+                    rb.EmitPrint(TranslateString(((ZilString)args[index]).Text, cc.Context), false);
                     index++;
                     continue;
                 }
@@ -3260,7 +3267,7 @@ namespace Zilf
                 if (msgStr == null)
                     tb.AddShort(0);
                 else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr)));
+                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
             }
             else
             {
@@ -3268,7 +3275,7 @@ namespace Zilf
                 if (msgStr == null)
                     tb.AddShort(0);
                 else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr)));
+                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
                 tb.AddByte(gb);
             }
         }
@@ -3299,7 +3306,7 @@ namespace Zilf
                 if (msgStr == null)
                     tb.AddShort(0);
                 else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr)));
+                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
                 tb.AddByte(0);
             }
             else
@@ -3309,7 +3316,7 @@ namespace Zilf
                 if (msgStr == null)
                     tb.AddShort(0);
                 else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr)));
+                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
             }
         }
 
@@ -3359,7 +3366,7 @@ namespace Zilf
                 throw new CompilerError("NEXIT must specify a string");
 
             string msgStr = message.ToStringContext(cc.Context, true);
-            IOperand msgOperand = cc.Game.MakeOperand(TranslateString(msgStr));
+            IOperand msgOperand = cc.Game.MakeOperand(TranslateString(msgStr, cc.Context));
 
             if (cc.Context.ZEnvironment.ZVersion < 4)
             {

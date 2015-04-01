@@ -51,5 +51,13 @@ namespace IntegrationTests
             AssertRoutine("", "<TELL \"foo|bar|\nbaz\nquux\">")
                 .Outputs("foo\nbar\nbaz quux");
         }
+
+        [TestMethod]
+        public void CRLF_CHARACTER_Should_Affect_String_Translation()
+        {
+            AssertRoutine("", "<TELL \"foo^bar\">")
+                .WithGlobal("<SETG CRLF-CHARACTER !\\^>")
+                .Outputs("foo\nbar");
+        }
     }
 }
