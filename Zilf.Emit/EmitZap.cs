@@ -327,6 +327,8 @@ namespace Zilf.Emit.Zap
                 return "COMMA";
             else if (symbol == "\"")
                 return "QUOTE";
+            else if (symbol == "'")
+                return "APOSTROPHE";
 
             StringBuilder sb = new StringBuilder(symbol);
 

@@ -150,6 +150,7 @@ namespace Zilf
             DefinePunctWord(ctx, cc, ".", "PERIOD");
             DefinePunctWord(ctx, cc, ",", "COMMA");
             DefinePunctWord(ctx, cc, "\"", "QUOTE");
+            DefinePunctWord(ctx, cc, "'", "APOSTROPHE");
 
             // builders for vocabulary
             foreach (var pair in ctx.ZEnvironment.Buzzwords)
