@@ -39,6 +39,7 @@ namespace Zilf
         private readonly Context ctx;
 
         public int ZVersion = 3;
+        public ZilAtom EntryRoutineName;
 
         public readonly List<ZilRoutine> Routines = new List<ZilRoutine>();
         public readonly List<ZilConstant> Constants = new List<ZilConstant>();
