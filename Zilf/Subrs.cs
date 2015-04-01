@@ -589,10 +589,14 @@ namespace Zilf
                 throw new InterpreterError(null, "ASCII", 1, 1);
 
             ZilChar ch = args[0] as ZilChar;
-            if (ch == null)
-                throw new InterpreterError("ASCII: arg must be a character");
+            if (ch != null)
+                return new ZilFix(ch.Char);
 
-            return new ZilFix(ch.Char);
+            ZilFix fix = args[0] as ZilFix;
+            if (fix != null)
+                return new ZilChar((char)fix.Value);
+
+            throw new InterpreterError("ASCII: arg must be a character or FIX");
         }
 
         #endregion
