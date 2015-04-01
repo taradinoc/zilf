@@ -170,6 +170,10 @@ namespace Zilf
             foreach (Synonym syn in ctx.ZEnvironment.Synonyms)
                 syn.Apply(ctx);
 
+            // may as well do bit synonyms here too
+            foreach (var pair in ctx.ZEnvironment.BitSynonyms)
+                DefineFlagAlias(cc, pair.Key, pair.Value);
+
             // builders and values for constants (which may refer to vocabulary,
             // routines, tables, objects, properties, or flags)
             foreach (ZilConstant constant in ctx.ZEnvironment.Constants)
@@ -537,6 +541,15 @@ namespace Zilf
 
                 // create constant
                 cc.Constants.Add(flag, fb);
+            }
+        }
+
+        private static void DefineFlagAlias(CompileCtx cc, ZilAtom alias, ZilAtom original)
+        {
+            if (!cc.Flags.ContainsKey(alias))
+            {
+                var fb = cc.Flags[original];
+                cc.Constants.Add(alias, fb);
             }
         }
 
@@ -2889,7 +2902,11 @@ namespace Zilf
 
                                 try
                                 {
-                                    DefineFlag(cc, atom);
+                                    ZilAtom dummy;
+                                    if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                    {
+                                        DefineFlag(cc, atom);
+                                    }
                                 }
                                 catch (ZilError ex)
                                 {
@@ -3067,6 +3084,10 @@ namespace Zilf
                                 Errors.CompError(cc.Context, model, "values for FLAGS property must be atoms");
                                 break;
                             }
+
+                            ZilAtom original;
+                            if (cc.Context.ZEnvironment.TryGetBitSynonym(atom, out original))
+                                atom = original;
 
                             IFlagBuilder fb = cc.Flags[atom];
                             ob.AddFlag(fb);

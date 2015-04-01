@@ -2097,6 +2097,32 @@ namespace Zilf
             return args[0];
         }
 
+        [Subr("BIT-SYNONYM")]
+        public static ZilObject BIT_SYNONYM(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "BIT-SYNONYM", 2, 0);
+
+            if (!args.All(a => a is ZilAtom))
+                throw new InterpreterError("BIT-SYNONYM: all args must be atoms");
+
+            var first = (ZilAtom)args[0];
+            ZilAtom original;
+
+            if (ctx.ZEnvironment.TryGetBitSynonym(first, out original))
+                first = original;
+
+            foreach (var synonym in args.Skip(1).Cast<ZilAtom>())
+            {
+                if (ctx.GetZVal(synonym) != null)
+                    throw new InterpreterError("BIT-SYNONYM: symbol is already defined: " + synonym);
+
+                ctx.ZEnvironment.AddBitSynonym(synonym, first);
+            }
+
+            return first;
+        }
+
         #endregion
     }
 }

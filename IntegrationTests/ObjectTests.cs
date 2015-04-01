@@ -16,6 +16,14 @@ namespace IntegrationTests
             return new GlobalsAssertionHelper(globals);
         }
 
+        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        {
+            Contract.Requires(argSpec != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(body));
+
+            return new RoutineAssertionHelper(argSpec, body);
+        }
+
         #region Object Numbering & Tree Ordering
 
         private string[] TreeImplications(string[] numbering, params string[][] chains)
@@ -120,7 +128,17 @@ namespace IntegrationTests
                     "<NOT <0? ,F31BIT>>",
                     "<NOT <0? ,F32BIT>>");
         }
-        
+
+        [TestMethod]
+        public void TestBitSynonym()
+        {
+            AssertRoutine("", "<AND <==? ,MAINBIT ,ALIASBIT> <FSET? ,FOO ,MAINBIT> <FSET? ,BAR ,ALIASBIT>>")
+                .WithGlobal("<BIT-SYNONYM MAINBIT ALIASBIT>")
+                .WithGlobal("<OBJECT FOO (FLAGS MAINBIT)>")
+                .WithGlobal("<OBJECT BAR (FLAGS ALIASBIT)>")
+                .GivesNumber("1");
+        }
+
         #endregion
     }
 }

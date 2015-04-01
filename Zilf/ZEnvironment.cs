@@ -49,6 +49,7 @@ namespace Zilf
         public readonly List<ZilTable> Tables = new List<ZilTable>();
 
         public readonly Dictionary<ZilAtom, ZilObject> PropertyDefaults = new Dictionary<ZilAtom, ZilObject>();
+        public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms = new Dictionary<ZilAtom, ZilAtom>();
 
         public readonly List<Syntax> Syntaxes = new List<Syntax>();
         public readonly Dictionary<ZilAtom, Word> Vocabulary = new Dictionary<ZilAtom, Word>();
@@ -411,6 +412,33 @@ namespace Zilf
 
                 default:
                     return null;
+            }
+        }
+
+        public bool TryGetBitSynonym(ZilAtom alias, out ZilAtom original)
+        {
+            return BitSynonyms.TryGetValue(alias, out original);
+        }
+
+        public void AddBitSynonym(ZilAtom alias, ZilAtom target)
+        {
+            if (ctx.GetZVal(alias) != null)
+            {
+                throw new InterpreterError(string.Format("{0} is already defined", alias, target));
+            }
+
+            ZilAtom original;
+            if (TryGetBitSynonym(target, out original))
+            {
+                target = original;
+            }
+
+            BitSynonyms[alias] = target;
+
+            var zval = ctx.GetZVal(target);
+            if (zval != null)
+            {
+                ctx.SetZVal(target, zval);
             }
         }
     }
