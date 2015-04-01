@@ -124,6 +124,8 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        #region Z-Machine Opcodes
+
         [TestMethod]
         public void TestADD()
         {
@@ -2579,5 +2581,18 @@ namespace IntegrationTests
             AssertExpr("<ZWSTR 0 0 0>").InV5().DoesNotCompile();
             AssertExpr("<ZWSTR 0 0 0 0 0>").InV5().DoesNotCompile();
         }
+
+        #endregion
+
+        #region Not Exactly Opcodes
+
+        [TestMethod]
+        public void TestLOWCORE()
+        {
+            AssertRoutine("", "<LOWCORE FLAGS>")
+                .GeneratesCodeMatching(@"^\s*GET 16,0 >STACK\s*$");
+        }
+
+        #endregion
     }
 }

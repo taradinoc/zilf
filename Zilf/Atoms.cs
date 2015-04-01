@@ -219,6 +219,7 @@ namespace Zilf
         RANDOM,
         READ,
         REDEFINE,
+        RELEASEID,
         REMOVE,
         REPEAT,
         REST,
@@ -273,7 +274,9 @@ namespace Zilf
         [Atom("ZIL-VERSION")]
         ZIL_VERSION,
         ZIP,
+        ZORKID,
         ZVAL,
+        ZVERSION,
         ZWSTR,
     }
 }

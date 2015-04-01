@@ -323,7 +323,8 @@ namespace Zilf
                                 continue;
                             }
 
-                            if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string) || pi.ParameterType == typeof(ZilObject))
+                            if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string) || pi.ParameterType == typeof(ZilObject) ||
+                                pi.ParameterType == typeof(ZilAtom) || pi.ParameterType == typeof(int))
                             {
                                 // regular operand: may be optional
                                 max++;
@@ -617,6 +618,20 @@ namespace Zilf
                     else if (pi.ParameterType == typeof(ZilObject))
                     {
                         result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
+                    }
+                    else if (pi.ParameterType == typeof(ZilAtom))
+                    {
+                        if (arg.GetTypeAtom(cc.Context).StdAtom != StdAtom.ATOM)
+                            error(i, "argument must be an atom");
+
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
+                    }
+                    else if (pi.ParameterType == typeof(int))
+                    {
+                        if (arg.GetTypeAtom(cc.Context).StdAtom != StdAtom.FIX)
+                            error(i, "argument must be a FIX");
+
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, ((ZilFix)arg).Value));
                     }
                     else if (pi.ParameterType == typeof(ZilObject[]))
                     {
@@ -1615,7 +1630,7 @@ namespace Zilf
 
             #endregion
 
-            #region Table Opcodes
+            #region Table Opcodes/Builtins
 
             [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
             [return: Table]
@@ -1631,6 +1646,73 @@ namespace Zilf
                 IOperand value, [Table] IOperand table, IOperand length, IOperand form = null)
             {
                 c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
+            }
+
+            [Builtin("LOWCORE")]
+            public static IOperand LowCoreReadOp(ValueCall c, ZilAtom atom)
+            {
+                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
+                if (offset == null)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
+                    offset = 0;
+                }
+
+                c.rb.EmitBinary(BinaryOp.GetWord, c.cc.Game.MakeOperand((int)offset), c.cc.Game.Zero, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("LOWCORE", HasSideEffect = true)]
+            public static void LowCoreWriteOp(VoidCall c, ZilAtom atom, IOperand newValue)
+            {
+                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
+                if (offset == null)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
+                    offset = 0;
+                }
+
+                c.rb.EmitTernary(TernaryOp.PutWord, c.cc.Game.MakeOperand((int)offset), c.cc.Game.Zero, newValue, null);
+            }
+
+            [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
+            public static void LowCoreTableOp(VoidCall c, ZilAtom atom, int length, ZilAtom handler)
+            {
+                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
+                if (offset == null)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
+                    offset = 0;
+                }
+
+                var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
+                var lb = PushInnerLocal(c.cc, c.rb, tmpAtom);
+                try
+                {
+                    c.rb.EmitStore(lb, c.cc.Game.MakeOperand((int)offset));
+
+                    var label = c.rb.DefineLabel();
+                    c.rb.MarkLabel(label);
+
+                    var form = new ZilForm(new ZilObject[] {
+                        handler,
+                        new ZilForm(new ZilObject[] {
+                            c.cc.Context.GetStdAtom(StdAtom.GETB),
+                            new ZilFix(0),
+                            new ZilForm(new ZilObject[] {
+                                c.cc.Context.GetStdAtom(StdAtom.LVAL),
+                                tmpAtom
+                            }),
+                        }),
+                    });
+                    CompileForm(c.cc, c.rb, form, false, null);
+
+                    c.rb.Branch(Condition.IncCheck, lb, c.cc.Game.MakeOperand((int)offset + length - 1), label, false);
+                }
+                finally
+                {
+                    PopInnerLocal(c.cc, tmpAtom);
+                }
             }
 
             #endregion

@@ -381,6 +381,38 @@ namespace Zilf
         {
             // XXX merge words that are indistinguishable because of the vocabulary resolution
         }
+
+        public int? GetLowCoreOffset(ZilAtom atom)
+        {
+            // common names
+            switch (atom.StdAtom)
+            {
+                case StdAtom.ZVERSION:
+                    return 0;
+                case StdAtom.ZORKID:
+                case StdAtom.RELEASEID:
+                    return 2;
+                case StdAtom.FLAGS:
+                    return 16;
+                case StdAtom.SERIAL:
+                    return 18;
+            }
+
+            // version-specific names
+            switch (ZVersion)
+            {
+                case 3:
+                    switch (atom.StdAtom)
+                    {
+                        default:
+                            return null;
+                    }
+                    break;
+
+                default:
+                    return null;
+            }
+        }
     }
 
     [Flags]
