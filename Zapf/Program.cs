@@ -455,6 +455,17 @@ General switches:
                     throw new RestartException();
                 }
             }
+            else if (node is TimeDirective)
+            {
+                if (ctx.ZVersion == 3)
+                {
+                    ctx.ZFlags |= 2;
+                }
+                else
+                {
+                    Errors.ThrowFatal(".TIME is only supported in Z-machine version 3");
+                }
+            }
             else if (node is Instruction)
             {
                 HandleInstruction(ctx, (Instruction)node);
@@ -929,9 +940,9 @@ General switches:
             if (!(node is DebugLineDirective))
                 ctx.EndReassemblyScope(nodeIndex);
 
-            if (node is NewDirective)
+            if (node is NewDirective || node is TimeDirective)
             {
-                // this is explicitly handled by PassOne
+                // these are explicitly handled by PassOne
             }
             else if (node is FunctDirective)
             {

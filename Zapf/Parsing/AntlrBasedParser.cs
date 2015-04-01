@@ -49,6 +49,13 @@ namespace Zapf.Parsing
         public AsmExpr Version { get; set; }
     }
 
+    sealed class TimeDirective : AsmLine
+    {
+        public TimeDirective()
+        {
+        }
+    }
+
     struct FunctLocal
     {
         public FunctLocal(string name, AsmExpr defaultValue)
@@ -631,6 +638,10 @@ namespace Zapf.Parsing
 
                     case ZapParser.NEW:
                         line = new NewDirective(node.ChildCount > 0 ? ParseAsmExpr(node.GetChild(0)) : null);
+                        break;
+
+                    case ZapParser.TIME:
+                        line = new TimeDirective();
                         break;
 
                     case ZapParser.FUNCT:
