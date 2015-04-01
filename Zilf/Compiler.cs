@@ -3193,7 +3193,14 @@ namespace Zilf
                         pb = cc.Properties[atom];
                         if (prop.Rest.Rest.IsEmpty)
                         {
-                            ob.AddWordProperty(pb, CompileConstant(cc, value));
+                            var word = CompileConstant(cc, value);
+                            if (word == null)
+                            {
+                                Errors.CompError(cc.Context, model,
+                                    string.Format("non-constant value for property {0}: {1}", atom, value));
+                                word = cc.Game.Zero;
+                            }
+                            ob.AddWordProperty(pb, word);
                             length = 2;
                         }
                         else
@@ -3201,7 +3208,14 @@ namespace Zilf
                             tb = ob.AddComplexProperty(pb);
                             foreach (ZilObject obj in prop.Rest)
                             {
-                                tb.AddShort(CompileConstant(cc, obj));
+                                var word = CompileConstant(cc, obj);
+                                if (word == null)
+                                {
+                                    Errors.CompError(cc.Context, model,
+                                        string.Format("non-constant value in initializer for property {0}: {1}", atom, obj));
+                                    word = cc.Game.Zero;
+                                }
+                                tb.AddShort(word);
                                 length += 2;
                             }
                         }
