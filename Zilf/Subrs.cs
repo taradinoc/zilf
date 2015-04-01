@@ -1828,11 +1828,11 @@ namespace Zilf
             var atom = ZilAtom.Parse(text.Text, ctx);
             var word = ctx.ZEnvironment.GetVocab(atom);
 
-            if (args.Length > 1)
+            if (args.Length > 1 && !(args[1] is ZilFalse))
             {
                 var type = args[1] as ZilAtom;
                 if (type == null)
-                    throw new InterpreterError("VOC: second arg must be an atom");
+                    throw new InterpreterError("VOC: second arg must be FALSE or an atom");
 
                 switch (type.StdAtom)
                 {
