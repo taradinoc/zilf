@@ -9,6 +9,8 @@ namespace Zilf
 {
     partial class Compiler
     {
+        #region ZBuiltins Infrastructure
+
         struct VoidCall
         {
             public CompileCtx cc;
@@ -817,6 +819,10 @@ namespace Zilf
                     new ValuePredCall() { cc = cc, rb = rb, form = form, resultStorage = resultStorage ?? rb.Stack, label = label, polarity = polarity });
             }
 
+        #endregion
+
+            #region Varargs Opcodes
+
             [Builtin("EQUAL?", "=?", "==?")]
             public static void VarargsEqualityOp(
                 PredCall c, IOperand arg1, IOperand arg2,
@@ -846,6 +852,10 @@ namespace Zilf
                 VarargsEqualityOp(c, arg1, arg2, arg3, arg4);
             }
 
+            #endregion
+
+            #region Ternary Opcodes
+
             [Builtin("PUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
             [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
             public static void TernaryTableVoidOp(
@@ -871,7 +881,10 @@ namespace Zilf
                 c.rb.EmitTernary(op, left, center, right, null);
             }
 
-     
+            #endregion
+
+            #region Binary Opcodes
+
             [Builtin("MOD", Data = BinaryOp.Mod)]
             [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
             [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
@@ -1039,6 +1052,10 @@ namespace Zilf
                 return c.resultStorage;
             }
 
+            #endregion
+
+            #region Unary Opcodes
+
             [Builtin("BCOM", Data = UnaryOp.Not)]
             [Builtin("RANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
             [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true)]
@@ -1124,6 +1141,10 @@ namespace Zilf
                 c.rb.EmitUnary(op, value, null);
             }
 
+            #endregion
+
+            #region Print Opcodes
+
             [Builtin("PRINT", Data = PrintOp.PackedAddr, HasSideEffect = true)]
             [Builtin("PRINTB", Data = PrintOp.Address, HasSideEffect = true)]
             [Builtin("PRINTC", Data = PrintOp.Character, HasSideEffect = true)]
@@ -1151,6 +1172,16 @@ namespace Zilf
             {
                 c.rb.EmitPrint(text, crlfRtrue);
             }
+
+            [Builtin("CRLF", HasSideEffect = true)]
+            public static void CrlfVoidOp(VoidCall c)
+            {
+                c.rb.EmitPrintNewLine();
+            }
+
+            #endregion
+
+            #region Variable Opcodes
 
             [Builtin("SET", HasSideEffect = true)]
             public static IOperand SetValueOp(
@@ -1282,11 +1313,9 @@ namespace Zilf
                 return c.resultStorage;
             }
 
-            [Builtin("CRLF", HasSideEffect = true)]
-            public static void CrlfVoidOp(VoidCall c)
-            {
-                c.rb.EmitPrintNewLine();
-            }
+            #endregion
+
+            #region Nullary Opcodes
 
             [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
             [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
@@ -1334,6 +1363,10 @@ namespace Zilf
                 c.rb.EmitQuit();
             }
 
+            #endregion
+
+            #region Input Opcodes
+
             [Builtin("READ", MaxVersion = 3, HasSideEffect = true)]
             public static void ReadOp_V3(VoidCall c, IOperand text, IOperand parse)
             {
@@ -1370,6 +1403,10 @@ namespace Zilf
                 return c.resultStorage;
             }
 
+            #endregion
+
+            #region Sound Opcodes
+
             [Builtin("SOUND", MaxVersion = 4, HasSideEffect = true)]
             public static void SoundOp_V3(VoidCall c, IOperand number,
                 IOperand effect = null, IOperand volume = null)
@@ -1384,6 +1421,10 @@ namespace Zilf
             {
                 c.rb.EmitPlaySound(number, effect, volume, null);
             }
+
+            #endregion
+
+            #region Vocab Opcodes
 
             [Builtin("ZWSTR", MinVersion = 5, HasSideEffect = true)]
             public static void EncodeTextOp(VoidCall c,
@@ -1400,6 +1441,10 @@ namespace Zilf
             {
                 c.rb.EmitTokenize(text, parse, dictionary, flag);
             }
+
+            #endregion
+
+            #region Save/Restore Opcodes
 
             [Builtin("RESTORE", MaxVersion = 3, HasSideEffect = true)]
             public static void RestoreOp_V3(PredCall c)
@@ -1485,6 +1530,10 @@ namespace Zilf
                 }
             }
 
+            #endregion
+
+            #region Routine Opcodes/Builtins
+
             [Builtin("RETURN", HasSideEffect = true)]
             public static void ReturnOp(VoidCall c, IOperand value = null)
             {
@@ -1564,6 +1613,10 @@ namespace Zilf
                 c.rb.EmitCall(routine, args, null);
             }
 
+            #endregion
+
+            #region Table Opcodes
+
             [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
             [return: Table]
             public static void IntblValuePredOp_V4(ValuePredCall c,
@@ -1579,6 +1632,8 @@ namespace Zilf
             {
                 c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
             }
+
+            #endregion
         }
     }
 }
