@@ -1931,6 +1931,12 @@ namespace Zilf
             return PerformSynonym(ctx, args, "PREP-SYNONYM", typeof(PrepSynonym));
         }
 
+        [Subr("ADJ-SYNONYM")]
+        public static ZilObject ADJ_SYNONYM(Context ctx, ZilObject[] args)
+        {
+            return PerformSynonym(ctx, args, "ADJ-SYNONYM", typeof(AdjSynonym));
+        }
+
         [Subr("FREQUENT-WORDS?")]
         public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
         {

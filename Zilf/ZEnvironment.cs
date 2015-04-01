@@ -1180,4 +1180,12 @@ namespace Zilf
         {
         }
     }
+
+    class AdjSynonym : Synonym
+    {
+        public AdjSynonym(Word original, Word synonym)
+            : base(original, synonym)
+        {
+        }
+    }
 }
