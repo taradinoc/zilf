@@ -591,6 +591,7 @@ namespace IntegrationTests
             AssertExpr("<EQUAL? 1 2>").GivesNumber("0");
             AssertExpr("<EQUAL? 1 2 1>").GivesNumber("1");
             AssertExpr("<EQUAL? 1 2 3 4>").GivesNumber("0");
+            AssertExpr("<EQUAL? 1 2 3 4 5 6 7 8 9 0 1>").GivesNumber("1");
 
             // alias
             AssertExpr("<=? 1 1>").GivesNumber("1");
@@ -601,7 +602,6 @@ namespace IntegrationTests
         public void TestEQUAL_P_Error()
         {
             AssertExpr("<EQUAL?>").DoesNotCompile();
-            AssertExpr("<EQUAL? 1 2 3 4 5>").DoesNotCompile();
         }
 
         [TestMethod]
