@@ -148,12 +148,15 @@ namespace Zilf
 
                 if (ctx.RunMode == RunMode.Compiler)
                 {
+                    // TODO: Rely on ZilfCompiler for all this logic.
                     ctx.SetDefaultConstants();
 
                     Compiler c = new Compiler();
                     try
                     {
-                        c.Compile(ctx, new Emit.Zap.GameBuilder(ctx.ZEnvironment.ZVersion, outFile, ctx.WantDebugInfo));
+                        var gameBuilder = new Emit.Zap.GameBuilder(ctx.ZEnvironment.ZVersion, outFile, ctx.WantDebugInfo,
+                            ZilfCompiler.MakeGameOptions(ctx));
+                        c.Compile(ctx, gameBuilder);
                     }
                     catch (ZilError ex)
                     {

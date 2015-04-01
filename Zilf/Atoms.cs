@@ -250,6 +250,7 @@ namespace Zilf
         TABLE,
         TAKE,
         TELL,
+        TIME,
         TO,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,

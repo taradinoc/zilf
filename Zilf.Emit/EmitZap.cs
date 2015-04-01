@@ -52,6 +52,16 @@ namespace Zilf.Emit.Zap
         bool FrequentWordsFileExists { get; }
     }
 
+    public class GameOptions : IGameOptions
+    {
+        public sealed class V3 : GameOptions
+        {
+            public bool TimeStatusLine { get; set; }
+        }
+    }
+
+    internal class DummyGameOptions : IGameOptions { }
+
     public class GameBuilder : IGameBuilder
     {
         private const string INDENT = "\t";
@@ -77,16 +87,17 @@ namespace Zilf.Emit.Zap
         private readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder debug;
+        private readonly GameOptions options;
 
         private Stream stream;
         private TextWriter writer;
 
-        public GameBuilder(int zversion, string outFile, bool wantDebugInfo)
-            : this(zversion, new ZapStreamFactory(outFile), wantDebugInfo)
+        public GameBuilder(int zversion, string outFile, bool wantDebugInfo, GameOptions options = null)
+            : this(zversion, new ZapStreamFactory(outFile), wantDebugInfo, options)
         {
         }
 
-        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo)
+        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo, GameOptions options = null)
         {
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException("zversion", "Unsupported Z-machine version");
@@ -96,12 +107,44 @@ namespace Zilf.Emit.Zap
             this.zversion = zversion;
             this.streamFactory = streamFactory;
 
+            var optionsType = GetOptionsTypeForZVersion(zversion);
+
+            if (options != null)
+            {
+                const string SOptionsNotCompatible = "Options not compatible with this Z-machine version";
+
+                if (optionsType.IsAssignableFrom(optionsType))
+                {
+                    this.options = options;
+                }
+                else
+                {
+                    throw new ArgumentException(SOptionsNotCompatible, "options");
+                }
+            }
+            else
+            {
+                this.options = (GameOptions)Activator.CreateInstance(optionsType);
+            }
+
             debug = wantDebugInfo ? new DebugFileBuilder() : null;
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
 
             Begin();
+        }
+
+        private static Type GetOptionsTypeForZVersion(int zversion)
+        {
+            switch (zversion)
+            {
+                case 3:
+                    return typeof(GameOptions.V3);
+
+                default:
+                    return typeof(GameOptions);
+            }
         }
 
         private static bool IsSupportedZversion(int zversion)
@@ -111,7 +154,14 @@ namespace Zilf.Emit.Zap
 
         private void Begin()
         {
-            if (zversion > 3)
+            if (zversion == 3)
+            {
+                if (((GameOptions.V3)options).TimeStatusLine)
+                {
+                    writer.WriteLine(INDENT + ".TIME");
+                }
+            }
+            else if (zversion > 3)
             {
                 writer.WriteLine(INDENT + ".NEW {0}", zversion);
 
@@ -144,6 +194,11 @@ namespace Zilf.Emit.Zap
         public IDebugFileBuilder DebugFile
         {
             get { return debug; }
+        }
+
+        public IGameOptions Options
+        {
+            get { return options; }
         }
 
         public IOperand DefineConstant(string name, IOperand value)

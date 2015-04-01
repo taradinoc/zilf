@@ -223,8 +223,10 @@ namespace Zilf
                 {
                     var zversion = ctx.ZEnvironment.ZVersion;
                     var streamFactory = new ZapStreamFactory(this, outputFileName);
+                    var options = MakeGameOptions(ctx);
+                    var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
 
-                    c.Compile(ctx, new GameBuilder(zversion, streamFactory, wantDebugInfo));
+                    c.Compile(ctx, gameBuilder);
                 }
                 catch (ZilError ex)
                 {
@@ -235,6 +237,23 @@ namespace Zilf
                 result.WarningCount = ctx.WarningCount;
                 result.Success = (ctx.ErrorCount == 0);
                 return result;
+            }
+        }
+
+        internal static GameOptions MakeGameOptions(Context ctx)
+        {
+            var zenv = ctx.ZEnvironment;
+
+            switch (zenv.ZVersion)
+            {
+                case 3:
+                    return new Zilf.Emit.Zap.GameOptions.V3()
+                    {
+                        TimeStatusLine = zenv.TimeStatusLine,
+                    };
+
+                default:
+                    return null;
             }
         }
     }

@@ -39,6 +39,7 @@ namespace Zilf
         private readonly Context ctx;
 
         public int ZVersion = 3;
+        public bool TimeStatusLine = false;
         public ZilAtom EntryRoutineName;
 
         public readonly List<ZilRoutine> Routines = new List<ZilRoutine>();
@@ -1185,6 +1186,14 @@ namespace Zilf
     class AdjSynonym : Synonym
     {
         public AdjSynonym(Word original, Word synonym)
+            : base(original, synonym)
+        {
+        }
+    }
+
+    class DirSynonym : Synonym
+    {
+        public DirSynonym(Word original, Word synonym)
             : base(original, synonym)
         {
         }
