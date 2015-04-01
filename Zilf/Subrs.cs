@@ -1707,13 +1707,26 @@ namespace Zilf
         [Subr]
         public static ZilObject VERSION(Context ctx, ZilObject[] args)
         {
-            if (args.Length != 1)
-                throw new InterpreterError(null, "VERSION", 1, 1);
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError(null, "VERSION", 1, 2);
 
             int newVersion = ParseZVersion("VERSION", args[0]);
 
             ctx.ZEnvironment.ZVersion = newVersion;
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? ctx.TRUE : ctx.FALSE);
+
+            if (args.Length > 1)
+            {
+                var atom = args[1] as ZilAtom;
+                if (atom == null || atom.StdAtom != StdAtom.TIME)
+                    throw new InterpreterError("VERSION: second arg must be the atom TIME");
+
+                if (ctx.ZEnvironment.ZVersion != 3)
+                    throw new InterpreterError("VERSION: TIME is only meaningful in version 3");
+
+                ctx.ZEnvironment.TimeStatusLine = true;
+            }
+
             return new ZilFix(newVersion);
         }
 
@@ -1944,6 +1957,12 @@ namespace Zilf
         public static ZilObject ADJ_SYNONYM(Context ctx, ZilObject[] args)
         {
             return PerformSynonym(ctx, args, "ADJ-SYNONYM", typeof(AdjSynonym));
+        }
+
+        [Subr("DIR-SYNONYM")]
+        public static ZilObject DIR_SYNONYM(Context ctx, ZilObject[] args)
+        {
+            return PerformSynonym(ctx, args, "DIR-SYNONYM", typeof(DirSynonym));
         }
 
         [Subr("FREQUENT-WORDS?")]

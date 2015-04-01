@@ -160,7 +160,7 @@ namespace IntegrationTests
                            .WithGlobal("<GLOBAL HERE <>>")
                            .WithGlobal("<GLOBAL TOUCHBIT <>>")
                            .WithGlobal("<GLOBAL P?FDESC <>>")
-                           .GeneratesCodeMatching(@"^(?:(?!ZERO I\?).)*PRINT P(?:(?!ZERO\? I).)*$");
+                           .GeneratesCodeMatching(@"\A(?:(?!ZERO I\?).)*PRINT P(?:(?!ZERO\? I).)*\Z");
         }
 
         [TestMethod]
@@ -168,7 +168,7 @@ namespace IntegrationTests
         {
             AssertRoutine("\"AUX\" X", "<OR <EQUAL? .X 123> <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!PUSH|ZERO\?).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!PUSH|ZERO\?).)*\Z");
         }
 
         [TestMethod]
@@ -176,7 +176,7 @@ namespace IntegrationTests
         {
             AssertRoutine("\"AUX\" X Y", "<SET Y <OR <EQUAL? .X 123> <FOO>>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!ZERO\?).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!ZERO\?).)*\Z");
         }
 
         [TestMethod]
@@ -191,7 +191,7 @@ namespace IntegrationTests
         {
             AssertRoutine("\"AUX\" A", "<AND .A <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
         }
 
         [TestMethod]
@@ -200,7 +200,7 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" A", "<AND <OR <0? .A> <FOO>> <BAR>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
                 .WithGlobal("<ROUTINE BAR () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
         }
 
         [TestMethod]
@@ -208,7 +208,7 @@ namespace IntegrationTests
         {
             AssertRoutine("\"AUX\" A", "<OR .A <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
         }
 
         [TestMethod]
@@ -225,7 +225,7 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" A", "<OR <SET A <FOO>> <BAR>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
                 .WithGlobal("<ROUTINE BAR () <>>")
-                .GeneratesCodeMatching(@"^(?:(?!\?TMP).)*$");
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
         }
 
         [TestMethod]
@@ -253,6 +253,14 @@ namespace IntegrationTests
                                     <BIND (X)
                                       <SET X 2>>>>")
                 .GeneratesCodeMatching(@"X\?2");
+        }
+
+        [TestMethod]
+        public void TestTimeHeader_V3()
+        {
+            AssertRoutine("", "<>")
+                .WithVersionDirective("<VERSION ZIP TIME>")
+                .GeneratesCodeMatching(@"^\s*\.TIME\s*$");
         }
     }
 }

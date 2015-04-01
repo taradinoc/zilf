@@ -12,7 +12,7 @@ namespace IntegrationTests
     abstract class AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelper<TThis>
     {
-        protected string zversion = "ZIP";
+        protected string versionDirective = "<VERSION ZIP>";
         protected StringBuilder miscGlobals = new StringBuilder();
         protected StringBuilder input = new StringBuilder();
         protected bool? expectWarnings = null;
@@ -24,37 +24,43 @@ namespace IntegrationTests
 
         public TThis InV3()
         {
-            zversion = "ZIP";
+            versionDirective = "<VERSION ZIP>";
             return (TThis)this;
         }
 
         public TThis InV4()
         {
-            zversion = "EZIP";
+            versionDirective = "<VERSION EZIP>";
             return (TThis)this;
         }
 
         public TThis InV5()
         {
-            zversion = "XZIP";
+            versionDirective = "<VERSION XZIP>";
             return (TThis)this;
         }
 
         public TThis InV6()
         {
-            zversion = "YZIP";
+            versionDirective = "<VERSION YZIP>";
             return (TThis)this;
         }
 
         public TThis InV7()
         {
-            zversion = "7";
+            versionDirective = "<VERSION 7>";
             return (TThis)this;
         }
 
         public TThis InV8()
         {
-            zversion = "8";
+            versionDirective = "<VERSION 8>";
+            return (TThis)this;
+        }
+
+        public TThis WithVersionDirective(string versionStr)
+        {
+            versionDirective = versionStr;
             return (TThis)this;
         }
 
@@ -79,9 +85,7 @@ namespace IntegrationTests
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
-            sb.Append("<VERSION ");
-            sb.Append(zversion);
-            sb.AppendLine(">");
+            sb.Append(versionDirective);
 
             sb.AppendLine("<CONSTANT RELEASEID 1>");
 
@@ -179,7 +183,7 @@ namespace IntegrationTests
             Assert.IsTrue(helper.Compile(), "Failed to compile");
 
             var output = helper.GetZapCode();
-            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline),
+            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
                 "Output did not match. Expected pattern: " + pattern);
 
             if (expectWarnings != null)

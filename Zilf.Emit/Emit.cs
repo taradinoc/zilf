@@ -37,6 +37,11 @@ namespace Zilf.Emit
     public interface IGameBuilder
     {
         /// <summary>
+        /// Gets a target-specific options object.
+        /// </summary>
+        IGameOptions Options { get; }
+
+        /// <summary>
         /// Gets the debug file builder, if one exists.
         /// </summary>
         IDebugFileBuilder DebugFile { get; }
@@ -162,6 +167,10 @@ namespace Zilf.Emit
         /// Writes the final output and closes the game builder.
         /// </summary>
         void Finish();
+    }
+
+    public interface IGameOptions
+    {
     }
 
     public interface IOperand
