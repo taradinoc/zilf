@@ -836,35 +836,98 @@ namespace Zilf
 
         #endregion
 
-            #region Varargs Opcodes
+            #region Equality Opcodes
 
             [Builtin("EQUAL?", "=?", "==?")]
             public static void VarargsEqualityOp(
                 PredCall c, IOperand arg1, IOperand arg2,
-                IOperand arg3 = null, IOperand arg4 = null)
+                params IOperand[] restOfArgs)
             {
-                // TODO: there should really just be one BranchIfEqual with optional params
-                if (arg4 != null)
+                if (restOfArgs.Length <= 2)
                 {
-                    c.rb.BranchIfEqual(arg1, arg2, arg3, arg4, c.label, c.polarity);
-                }
-                else if (arg3 != null)
-                {
-                    c.rb.BranchIfEqual(arg1, arg2, arg3, c.label, c.polarity);
+                    // TODO: there should really just be one BranchIfEqual with optional params
+                    switch (restOfArgs.Length)
+                    {
+                        case 2:
+                            c.rb.BranchIfEqual(arg1, arg2, restOfArgs[0], restOfArgs[1], c.label, c.polarity);
+                            break;
+                        case 1:
+                            c.rb.BranchIfEqual(arg1, arg2, restOfArgs[0], c.label, c.polarity);
+                            break;
+                        default:
+                            c.rb.BranchIfEqual(arg1, arg2, c.label, c.polarity);
+                            break;
+                    }
                 }
                 else
                 {
-                    c.rb.BranchIfEqual(arg1, arg2, c.label, c.polarity);
+                    ILocalBuilder tempLocal = null;
+                    ZilAtom tempAtom = null;
+                    if (arg1 == c.rb.Stack)
+                    {
+                        tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
+                        tempLocal = PushInnerLocal(c.cc, c.rb, tempAtom);
+                        c.rb.EmitStore(tempLocal, arg1);
+                        arg1 = tempLocal;
+                    }
+
+                    var queue = new Queue<IOperand>(1 + restOfArgs.Length);
+                    queue.Enqueue(arg2);
+                    foreach (var arg in restOfArgs)
+                        queue.Enqueue(arg);
+
+                    if (c.polarity)
+                    {
+                        while (queue.Count > 0)
+                        {
+                            switch (queue.Count)
+                            {
+                                case 3:
+                                default:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), c.label, true);
+                                    break;
+                                case 2:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), c.label, true);
+                                    break;
+                                case 1:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), c.label, true);
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // all but the last test has true polarity and just skips the rest of the tests
+                        var skip = c.rb.DefineLabel();
+                        while (queue.Count > 0)
+                        {
+                            switch (queue.Count)
+                            {
+                                case 3:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), skip, true);
+                                    break;
+                                case 2:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), skip, true);
+                                    break;
+                                case 1:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), skip, true);
+                                    break;
+                                default:
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), c.label, false);
+                                    break;
+                            }
+                        }
+                    }
                 }
             }
 
             [Builtin("N=?", "N==?")]
             public static void NegatedVarargsEqualityOp(
                 PredCall c, IOperand arg1, IOperand arg2,
-                IOperand arg3 = null, IOperand arg4 = null)
+                params IOperand[] restOfArgs)
             {
                 c.polarity = !c.polarity;
-                VarargsEqualityOp(c, arg1, arg2, arg3, arg4);
+                VarargsEqualityOp(c, arg1, arg2, restOfArgs);
             }
 
             #endregion
