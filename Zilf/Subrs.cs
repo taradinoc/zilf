@@ -523,6 +523,15 @@ namespace Zilf
         }
 
         [Subr]
+        public static ZilObject BYTE(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "BYTE", 1, 1);
+
+            return ctx.ChangeType(args[0], ctx.GetStdAtom(StdAtom.BYTE));
+        }
+
+        [Subr]
         public static ZilObject CONS(Context ctx, ZilObject[] args)
         {
             if (args.Length != 2)
