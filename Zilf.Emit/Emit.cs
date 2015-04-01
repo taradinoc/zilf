@@ -93,7 +93,7 @@ namespace Zilf.Emit
         /// <returns>A helper object which may be used to refer to the flag as an
         /// operand.</returns>
         IFlagBuilder DefineFlag(string name);
-
+        
         /// <summary>
         /// Gets the maximum allowable length of a property, in bytes.
         /// </summary>
