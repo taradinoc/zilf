@@ -2051,6 +2051,20 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr]
+        public static ZilObject ZSTART(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "ZSTART", 1, 1);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+                throw new InterpreterError("ZSTART: arg must be an atom");
+
+            ctx.ZEnvironment.EntryRoutineName = atom;
+            return args[0];
+        }
+
         #endregion
     }
 }
