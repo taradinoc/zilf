@@ -133,6 +133,7 @@ namespace Zilf
         [Subr("ZSTR-ON")]
         [Subr("ZSTR-OFF")]
         [Subr("ENDLOAD")]
+        [Subr("PUT-PURE-HERE")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
