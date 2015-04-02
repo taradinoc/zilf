@@ -250,6 +250,8 @@ namespace Zilf
         SUBR,
         SYNONYM,
         T,
+        [Atom("T?")]
+        T_P,
         TABLE,
         TAKE,
         TELL,
