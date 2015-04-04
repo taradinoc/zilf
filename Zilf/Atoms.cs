@@ -80,6 +80,8 @@ namespace Zilf
         C,
         CARRIED,
         CHARACTER,
+        [Atom("CLEAN-STACK?")]
+        CLEAN_STACK_P,
         CLEAR,
         COLOR,
         [Atom("COMPACT-SYNTAXES?")]

@@ -37,6 +37,20 @@ namespace Zilf
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
 
+    [Flags]
+    enum RoutineFlags
+    {
+        None = 0,
+        CleanStack = 1,
+    }
+
+    [Flags]
+    enum FileFlags
+    {
+        None = 0,
+        CleanStack = 1,
+    }
+
     class Context
     {
         private class Binding
@@ -93,6 +107,7 @@ namespace Zilf
         private bool ignoreCase, quiet, traceRoutines, wantDebugInfo;
         private List<string> includePaths;
         private string curFile;
+        private FileFlags curFileFlags;
         private ZilForm callingForm;
 
         private ObList rootObList;
@@ -101,6 +116,8 @@ namespace Zilf
         private readonly Dictionary<AssocPair, ZilObject> associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         private readonly ZEnvironment zenv;
+
+        private RoutineFlags nextRoutineFlags;
 
         /// <summary>
         /// Gets a value representing truth (the atom T).
@@ -220,6 +237,18 @@ namespace Zilf
         {
             get { return curFile; }
             set { curFile = value; }
+        }
+
+        public FileFlags CurrentFileFlags
+        {
+            get { return curFileFlags; }
+            set { curFileFlags = value; }
+        }
+
+        public RoutineFlags NextRoutineFlags
+        {
+            get { return nextRoutineFlags; }
+            set { nextRoutineFlags = value; }
         }
 
         public ZilForm CallingForm

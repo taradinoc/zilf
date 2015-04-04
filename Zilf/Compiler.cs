@@ -98,7 +98,6 @@ namespace Zilf
              * they could possibly be used. */
 
             // builders for routines
-            // TODO: respect CLEAN-STACK? in FILE-FLAGS and ROUTINE-FLAGS
             if (ctx.ZEnvironment.EntryRoutineName == null)
                 ctx.ZEnvironment.EntryRoutineName = ctx.GetStdAtom(StdAtom.GO);
 
@@ -106,7 +105,7 @@ namespace Zilf
                 cc.Routines.Add(routine.Name, gb.DefineRoutine(
                     routine.Name.ToString(),
                     routine.Name == ctx.ZEnvironment.EntryRoutineName,
-                    false));
+                    (routine.Flags & RoutineFlags.CleanStack) != 0));
 
             // builders and constants for some properties
             foreach (ZilAtom dir in ctx.ZEnvironment.Directions)
