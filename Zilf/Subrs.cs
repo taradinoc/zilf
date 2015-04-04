@@ -79,8 +79,10 @@ namespace Zilf
             {
                 string oldFile = ctx.CurrentFile;
                 string newFile = ctx.FindIncludeFile(file);
+                var oldFlags = ctx.CurrentFileFlags;
 
                 ctx.CurrentFile = newFile;
+                ctx.CurrentFileFlags = FileFlags.None;
                 try
                 {
                     using (var stream = ctx.OpenFile(newFile, false))
@@ -94,6 +96,7 @@ namespace Zilf
                 finally
                 {
                     ctx.CurrentFile = oldFile;
+                    ctx.CurrentFileFlags = oldFlags;
                 }
             }
             catch (System.IO.FileNotFoundException ex)
@@ -105,6 +108,58 @@ namespace Zilf
                 throw new InterpreterError("INSERT-FILE: error loading file: " +
                     ex.Message, ex);
             }
+        }
+
+        [Subr("FILE-FLAGS")]
+        public static ZilObject FILE_FLAGS(Context ctx, ZilObject[] args)
+        {
+            var newFlags = FileFlags.None;
+
+            foreach (var arg in args)
+            {
+                var atom = arg as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("FILE-FLAGS: all args must be atoms");
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.CLEAN_STACK_P:
+                        newFlags |= FileFlags.CleanStack;
+                        break;
+
+                    default:
+                        throw new InterpreterError("FILE-FLAGS: unrecognized flag: " + atom);
+                }
+            }
+
+            ctx.CurrentFileFlags = newFlags;
+            return ctx.TRUE;
+        }
+
+        [Subr("ROUTINE-FLAGS")]
+        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilObject[] args)
+        {
+            var newFlags = RoutineFlags.None;
+
+            foreach (var arg in args)
+            {
+                var atom = arg as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ROUTINE-FLAGS: all args must be atoms");
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.CLEAN_STACK_P:
+                        newFlags |= RoutineFlags.CleanStack;
+                        break;
+
+                    default:
+                        throw new InterpreterError("ROUTINE-FLAGS: unrecognized flag: " + atom);
+                }
+            }
+
+            ctx.NextRoutineFlags = newFlags;
+            return ctx.TRUE;
         }
 
         [Subr("TIME")]
@@ -1369,13 +1424,27 @@ namespace Zilf
             if (args[1].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 throw new InterpreterError("ROUTINE: second arg must be a list");
 
+            var flags = CombineFlags(ctx.CurrentFileFlags, ctx.NextRoutineFlags);
+            ctx.NextRoutineFlags = RoutineFlags.None;
+
             ZilRoutine rtn = new ZilRoutine(
                 atom,
                 (IEnumerable<ZilObject>)args[1],
-                args.Skip(2));
+                args.Skip(2),
+                flags);
             ctx.SetZVal(atom, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);
             return atom;
+        }
+
+        private static RoutineFlags CombineFlags(FileFlags fileFlags, RoutineFlags routineFlags)
+        {
+            var result = routineFlags;
+
+            if ((fileFlags & FileFlags.CleanStack) != 0)
+                result |= RoutineFlags.CleanStack;
+
+            return result;
         }
 
         [Subr]

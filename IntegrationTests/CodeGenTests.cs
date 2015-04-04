@@ -262,5 +262,43 @@ namespace IntegrationTests
                 .WithVersionDirective("<VERSION ZIP TIME>")
                 .GeneratesCodeMatching(@"^\s*\.TIME\s*$");
         }
+
+        [TestMethod]
+        public void TestCleanStack_V3_NoClean()
+        {
+            AssertRoutine("", "<FOO> 456")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .InV3()
+                .GeneratesCodeMatching(@"\A(?:(?!FSTACK).)*\Z");
+        }
+
+        [TestMethod]
+        public void TestCleanStack_V3_Clean()
+        {
+            AssertRoutine("", "<FOO> 456")
+                .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .InV3()
+                .GeneratesCodeMatching(@"FSTACK");
+        }
+
+        [TestMethod]
+        public void TestCleanStack_V4_NoClean()
+        {
+            AssertRoutine("", "<FOO> 456")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .InV4()
+                .GeneratesCodeMatching(@"\A(?:(?!FSTACK).)*\Z");
+        }
+
+        [TestMethod]
+        public void TestCleanStack_V4_Clean()
+        {
+            AssertRoutine("", "<FOO> 456")
+                .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .InV4()
+                .GeneratesCodeMatching(@"FSTACK");
+        }
     }
 }
