@@ -209,28 +209,25 @@ namespace Zilf
                 Zilf.Program.Evaluate(ctx, charStream);
 
                 // check for evaluation errors
-                if (ctx.ErrorCount > 0)
+                if (ctx.ErrorCount == 0)
                 {
-                    //XXX log message
-                    throw new NotImplementedException("evaluation failed");
-                }
+                    // generate code
+                    ctx.SetDefaultConstants();
 
-                // generate code
-                ctx.SetDefaultConstants();
+                    Compiler c = new Compiler();
+                    try
+                    {
+                        var zversion = ctx.ZEnvironment.ZVersion;
+                        var streamFactory = new ZapStreamFactory(this, outputFileName);
+                        var options = MakeGameOptions(ctx);
+                        var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
 
-                Compiler c = new Compiler();
-                try
-                {
-                    var zversion = ctx.ZEnvironment.ZVersion;
-                    var streamFactory = new ZapStreamFactory(this, outputFileName);
-                    var options = MakeGameOptions(ctx);
-                    var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
-
-                    c.Compile(ctx, gameBuilder);
-                }
-                catch (ZilError ex)
-                {
-                    ctx.HandleError(ex);
+                        c.Compile(ctx, gameBuilder);
+                    }
+                    catch (ZilError ex)
+                    {
+                        ctx.HandleError(ex);
+                    }
                 }
 
                 result.ErrorCount = ctx.ErrorCount;

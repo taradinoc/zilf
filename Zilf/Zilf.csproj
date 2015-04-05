@@ -127,6 +127,7 @@
     <Compile Include="Compiler.cs" />
     <Compile Include="CompilerValues.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="Decl.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="ObList.cs" />
     <Compile Include="Program.cs" />

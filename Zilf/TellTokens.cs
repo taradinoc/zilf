@@ -28,7 +28,7 @@ namespace Zilf
 
         private abstract class Token
         {
-            public abstract bool Match(ZilObject input, MatchResult result);
+            public abstract bool Match(Context ctx, ZilObject input, MatchResult result);
         }
 
         private class AtomToken : Token
@@ -40,7 +40,7 @@ namespace Zilf
                 this.Atoms = new List<ZilAtom>();
             }
 
-            public override bool Match(ZilObject input, MatchResult result)
+            public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
                 foreach (var atom in this.Atoms)
                     if (input == atom)
@@ -52,18 +52,26 @@ namespace Zilf
 
         private class AnyToken : Token
         {
-            public override bool Match(ZilObject input, MatchResult result)
+            public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
                 result.Captures.Add(input);
                 return true;
             }
         }
 
-        private class TypeToken : Token
+        private class DeclToken : Token
         {
-            public override bool Match(ZilObject input, MatchResult result)
+            public ZilObject Pattern { get; set; }
+
+            public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                throw new NotImplementedException();
+                if (Decl.Check(ctx, input, Pattern))
+                {
+                    result.Captures.Add(input);
+                    return true;
+                }
+
+                return false;
             }
         }
 
@@ -71,7 +79,7 @@ namespace Zilf
         {
             public ZilAtom Atom { get; set; }
 
-            public override bool Match(ZilObject input, MatchResult result)
+            public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
                 var form = input as ZilForm;
                 if (form != null)
@@ -98,11 +106,13 @@ namespace Zilf
         public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec, Context ctx)
         {
             var tokensSoFar = new List<Token>();
+            int capturesSoFar = 0;
 
             foreach (var zo in spec)
             {
                 ZilList list;
                 ZilForm form;
+                ZilAdecl adecl;
                 AtomToken atomToken;
 
                 var type = zo.GetTypeAtom(ctx).StdAtom;
@@ -128,6 +138,7 @@ namespace Zilf
                         if (((ZilAtom)zo).StdAtom == StdAtom.Times)
                         {
                             tokensSoFar.Add(new AnyToken());
+                            capturesSoFar++;
                         }
                         else
                         {
@@ -143,13 +154,17 @@ namespace Zilf
 
                     case StdAtom.ADECL:
                         // *:DECL to capture any value that matches the decl
-                        //XXX
-                        throw new NotImplementedException("ADECL in TELL token spec");
+                        adecl = (ZilAdecl)zo;
+                        if (!(adecl.First is ZilAtom) || ((ZilAtom)adecl.First).StdAtom != StdAtom.Times)
+                            throw new InterpreterError("left side of ADECL in TELL token spec must be '*'");
+                        tokensSoFar.Add(new DeclToken { Pattern = adecl.Second });
+                        capturesSoFar++;
+                        break;
 
                     case StdAtom.FORM:
                         // <GVAL atom> to match an exact GVAL, or any other FORM to specify the pattern's output
                         form = (ZilForm)zo;
-                        if (form.First is ZilAtom && ((ZilAtom)form.First).StdAtom == StdAtom.GVAL)
+                        if (IsGVAL(form))
                         {
                             var atom = form.Rest.First as ZilAtom;
                             if (atom == null)
@@ -158,9 +173,27 @@ namespace Zilf
                         }
                         else
                         {
-                            // TODO: validate the number of capturing tokens vs. number of LVALs in the output FORM
+                            // validate the output FORM
+                            int lvalCount = 0;
+                            foreach (var elem in form)
+                            {
+                                if (IsLVAL(elem))
+                                {
+                                    lvalCount++;
+                                }
+                                else if (!IsSimpleOutputElement(elem))
+                                {
+                                    throw new InterpreterError(form, "value too fancy for TELL output template: " + elem.ToStringContext(ctx, false));
+                                }
+                            }
+
+                            if (lvalCount != capturesSoFar)
+                                throw new InterpreterError(form,
+                                    string.Format("expected {0} LVAL(s) in TELL output template but found {1}", capturesSoFar, lvalCount));
+
                             var pattern = new TellPattern(tokensSoFar.ToArray(), form);
                             tokensSoFar.Clear();
+                            capturesSoFar = 0;
                             yield return pattern;
                         }
                         break;
@@ -181,7 +214,7 @@ namespace Zilf
             get { return tokens.Length; }
         }
 
-        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex)
+        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx)
         {
             var result = new MatchResult();
             result.Matched = false;
@@ -193,7 +226,7 @@ namespace Zilf
 
             for (int i = 0; i < tokens.Length; i++)
             {
-                if (!tokens[i].Match(input[startIndex + i], result))
+                if (!tokens[i].Match(ctx, input[startIndex + i], result))
                 {
                     return result;
                 }
@@ -219,6 +252,41 @@ namespace Zilf
             result.Output = new ZilForm(outputElements);
 
             return result;
+        }
+
+        private static bool IsSimpleOutputElement(ZilObject obj)
+        {
+            if (obj is ZilAtom || obj is ZilFix || obj is ZilString)
+                return true;
+
+            if (IsLVAL(obj) || IsGVAL(obj))
+                return true;
+
+            return false;
+        }
+
+        private static bool IsLVAL(ZilObject obj)
+        {
+            if (obj is ZilForm)
+            {
+                var first = ((ZilForm)obj).First;
+                if (first is ZilAtom && ((ZilAtom)first).StdAtom == StdAtom.LVAL)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsGVAL(ZilObject obj)
+        {
+            if (obj is ZilForm)
+            {
+                var first = ((ZilForm)obj).First;
+                if (first is ZilAtom && ((ZilAtom)first).StdAtom == StdAtom.GVAL)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
