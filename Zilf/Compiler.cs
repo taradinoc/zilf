@@ -2721,7 +2721,7 @@ namespace Zilf
                 bool handled = false;
                 foreach (var pattern in cc.Context.ZEnvironment.TellPatterns)
                 {
-                    var result = pattern.Match(args, index);
+                    var result = pattern.Match(args, index, cc.Context);
                     if (result.Matched)
                     {
                         CompileForm(cc, rb, result.Output, false, null);

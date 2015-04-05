@@ -36,13 +36,37 @@ namespace IntegrationTests
         [TestMethod]
         public void Tell_Builtin_Should_Support_New_Tokens()
         {
-            AssertRoutine("", "<TELL DBL 21 CR>")
+            AssertRoutine("", "<TELL DBL 21 CRLF WUTEVA \"hello\" GLOB WUTEVA 45 CR>")
                 .WithGlobal(
                     "<TELL-TOKENS " +
-                    "  (CR CRLF)  <CRLF>" +
-                    "  DBL *      <PRINT-DBL .X>>")
+                    "  (CR CRLF)        <CRLF>" +
+                    "  DBL *            <PRINT-DBL .X>" +
+                    "  WUTEVA *:STRING  <PRINTI .X>" +
+                    "  WUTEVA *:FIX     <PRINTN .X>" +
+                    "  GLOB             <PRINTN ,GLOB>>")
                 .WithGlobal("<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>")
-                .Outputs("42\n");
+                .WithGlobal("<GLOBAL GLOB 123>")
+                .Outputs("42\nhello12345\n");
+        }
+
+        [TestMethod]
+        public void Tell_Builtin_Should_Reject_Complex_Outputs()
+        {
+            AssertRoutine("", "<>")
+                .WithGlobal("<TELL-TOKENS DBL * <PRINTN <* 2 .X>>>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void Tell_Builtin_Should_Reject_Mismatched_Captures()
+        {
+            AssertRoutine("", "<>")
+                .WithGlobal("<TELL-TOKENS DBL * <PRINT-DBL>>")
+                .DoesNotCompile();
+
+            AssertRoutine("", "<>")
+                .WithGlobal("<TELL-TOKENS DBL * <PRINT-DBL .X .Y>>")
+                .DoesNotCompile();
         }
 
         [TestMethod]
