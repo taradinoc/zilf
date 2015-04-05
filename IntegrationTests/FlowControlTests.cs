@@ -118,5 +118,21 @@ namespace IntegrationTests
         }
 
         #endregion
+
+        #region MAP-DIRECTIONS
+
+        [TestMethod]
+        public void TestMAP_DIRECTIONS()
+        {
+            AssertRoutine("", "<MAP-DIRECTIONS (D P ,CENTER) <TELL N .D \" \" D <GETB .P ,REXIT> CR>>")
+                .WithGlobal("<DIRECTIONS NORTH SOUTH EAST WEST>")
+                .WithGlobal("<OBJECT CENTER (NORTH TO N-ROOM) (WEST TO W-ROOM)>")
+                .WithGlobal("<OBJECT N-ROOM (DESC \"north room\")>")
+                .WithGlobal("<OBJECT W-ROOM (DESC \"west room\")>")
+                .InV3()
+                .Outputs("31 north room\n28 west room\n");
+        }
+
+        #endregion
     }
 }
