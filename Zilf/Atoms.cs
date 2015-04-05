@@ -81,6 +81,9 @@ namespace Zilf
         BYTELENGTH,
         C,
         CARRIED,
+        CEXIT,
+        CEXITFLAG,
+        CEXITSTR,
         CHARACTER,
         [Atom("CLEAN-STACK?")]
         CLEAN_STACK_P,
@@ -102,6 +105,9 @@ namespace Zilf
         DEFAULT,
         DEFINED,
         DESC,
+        DEXIT,
+        DEXITOBJ,
+        DEXITSTR,
         DIRIN,
         DIROUT,
         DIV,
@@ -116,6 +122,8 @@ namespace Zilf
         [Atom("FALSE-VALUE")]
         FALSE_VALUE,
         FCLEAR,
+        FEXIT,
+        FEXITFCN,
         FIND,
         FIRST,
         [Atom("FIRST?")]
@@ -182,6 +190,8 @@ namespace Zilf
         N,
         [Atom("NEW-VOC?")]
         NEW_VOC_P,
+        NEXIT,
+        NEXITSTR,
         [Atom("NEXT?")]
         NEXT_P,
         NEXTP,
@@ -232,6 +242,7 @@ namespace Zilf
         RESTART,
         RESTORE,
         RETURN,
+        REXIT,
         RFALSE,
         [Atom("ROOMS-FIRST")]
         ROOMS_FIRST,
@@ -264,6 +275,7 @@ namespace Zilf
         TO,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,
+        UEXIT,
         USL,
         VALUE,
         VECTOR,

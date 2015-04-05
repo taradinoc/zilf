@@ -370,8 +370,30 @@ namespace Zilf
 
         public void SetDefaultConstants()
         {
-            if (GetZVal(GetStdAtom(StdAtom.SERIAL)) == null)
-                AddZConstant(GetStdAtom(StdAtom.SERIAL), new ZilFix(0));
+            var defaults = new[] {
+                new { N=StdAtom.SERIAL, V=0 },
+
+                new { N=StdAtom.REXIT, V=0 },
+                new { N=StdAtom.UEXIT, V=1 },
+                new { N=StdAtom.NEXIT, V=2 },
+                new { N=StdAtom.FEXIT, V=3 },
+                new { N=StdAtom.CEXIT, V=4 },
+                new { N=StdAtom.DEXIT, V=5 },
+
+                new { N=StdAtom.NEXITSTR, V=0 },
+                new { N=StdAtom.FEXITFCN, V=0 },
+                new { N=StdAtom.CEXITFLAG, V=1 },
+                new { N=StdAtom.CEXITSTR, V=1 },
+                new { N=StdAtom.DEXITOBJ, V=1 },
+                new { N=StdAtom.DEXITSTR, V=1 },
+            };
+
+            foreach (var i in defaults)
+            {
+                var atom = GetStdAtom(i.N);
+                if (GetZVal(atom) == null)
+                    AddZConstant(atom, new ZilFix(i.V));
+            }
         }
 
         private void AddZConstant(ZilAtom atom, ZilObject value)
