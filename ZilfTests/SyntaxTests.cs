@@ -28,6 +28,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?ABIDE", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -51,6 +52,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?ABIDE", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -75,6 +77,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?ABIDE", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -99,6 +102,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-TREEHORN", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?TREEHORN", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -124,6 +128,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-SWISS-WATCH", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?SWISS-WATCH", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -149,6 +154,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-SWISS-WATCH", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?SWISS-WATCH", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -173,6 +179,7 @@ namespace ZilfTests
 
             Assert.AreEqual("V-LOOK-AROUND", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?LOOK-AROUND", syntax.ActionName.ToString());
         }
 
         [TestMethod]
@@ -199,6 +206,32 @@ namespace ZilfTests
 
             Assert.AreEqual("V-LOOK-AROUND", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?LOOK-AROUND", syntax.ActionName.ToString());
+        }
+
+        [TestMethod]
+        public void TestCustomActionName()
+        {
+            var ctx = new Context();
+            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK BEHIND OBJECT = V-SEARCH <> LOOK-BEHIND)", true);
+
+            var syntax = Syntax.Parse(null, defn, ctx);
+
+            Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
+            Assert.AreEqual(PartOfSpeech.Verb, syntax.Verb.PartOfSpeech & PartOfSpeech.Verb);
+
+            Assert.AreEqual(1, syntax.NumObjects);
+            Assert.AreEqual("BEHIND", syntax.Preposition1.Atom.ToString());
+            Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
+            Assert.AreEqual(null, syntax.FindFlag1);
+            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(null, syntax.Preposition2);
+            Assert.AreEqual(null, syntax.FindFlag2);
+            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+
+            Assert.AreEqual("V-SEARCH", syntax.Action.ToString());
+            Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?LOOK-BEHIND", syntax.ActionName.ToString());
         }
     }
 }

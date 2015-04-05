@@ -102,6 +102,7 @@
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="TellTests.cs" />
     <Compile Include="FlowControlTests.cs" />
+    <Compile Include="SyntaxTests.cs" />
     <Compile Include="VocabTests.cs" />
     <Compile Include="ZlrHelper.cs" />
   </ItemGroup>
