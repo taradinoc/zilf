@@ -184,6 +184,8 @@ namespace Zilf
         MANY,
         [Atom("MAP-CONTENTS")]
         MAP_CONTENTS,
+        [Atom("MAP-DIRECTIONS")]
+        MAP_DIRECTIONS,
         MOD,
         MOVE,
         MUL,

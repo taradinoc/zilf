@@ -1396,6 +1396,8 @@ namespace Zilf
                         return wantResult ? cc.Game.One : null;
                     case StdAtom.MAP_CONTENTS:
                         return CompileMAP_CONTENTS(cc, rb, form.Rest, form, wantResult, resultStorage);
+                    case StdAtom.MAP_DIRECTIONS:
+                        return CompileMAP_DIRECTIONS(cc, rb, form.Rest, form, wantResult, resultStorage);
 
                     case StdAtom.COND:
                         return CompileCOND(cc, rb, form.Rest, wantResult, resultStorage);
@@ -2459,6 +2461,115 @@ namespace Zilf
             rb.MarkLabel(cc.ReturnLabel);
 
             PopInnerLocal(cc, atom);
+
+            cc.AgainLabel = oldAgain;
+            cc.ReturnLabel = oldReturn;
+            cc.ReturnState = oldReturnState;
+
+            return wantResult ? rb.Stack : null;
+        }
+
+        private static IOperand CompileMAP_DIRECTIONS(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
+            bool wantResult, IVariable resultStorage)
+        {
+            // parse binding list
+            if (args == null || args.First == null ||
+                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            {
+                throw new CompilerError("expected binding list at start of MAP-DIRECTIONS");
+            }
+
+            var spec = (ZilList)args.First;
+            var specLength = ((IStructure)spec).GetLength(3);
+            if (specLength != 3)
+            {
+                throw new CompilerError("MAP-DIRECTIONS: expected 3 elements in binding list");
+            }
+
+            var dirAtom = spec.First as ZilAtom;
+            if (dirAtom == null)
+            {
+                throw new CompilerError("MAP-DIRECTIONS: first element in binding list must be an atom");
+            }
+
+            var ptAtom = spec.Rest.First as ZilAtom;
+            if (ptAtom == null)
+            {
+                throw new CompilerError("MAP-DIRECTIONS: middle element in binding list must be an atom");
+            }
+
+            var room = spec.Rest.Rest.First;
+            if (!room.IsLVAL() && !room.IsGVAL())
+            {
+                throw new CompilerError("MAP-DIRECTIONS: last element in binding list must be an LVAL or GVAL");
+            }
+
+            // look for an end block
+            var body = args.Rest;
+            ZilList endStmts;
+            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            {
+                endStmts = (ZilList)body.First;
+                body = body.Rest;
+            }
+            else
+            {
+                endStmts = null;
+            }
+
+            // create block
+            var oldAgain = cc.AgainLabel;
+            var oldReturn = cc.ReturnLabel;
+            var oldReturnState = cc.ReturnState;
+
+            cc.AgainLabel = rb.DefineLabel();
+            cc.ReturnLabel = rb.DefineLabel();
+            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+
+            var exhaustedLabel = rb.DefineLabel();
+
+            // initialize counter
+            var counter = PushInnerLocal(cc, rb, dirAtom);
+            rb.EmitStore(counter, cc.Game.MakeOperand(cc.Game.MaxProperties + 1));
+
+            rb.MarkLabel(cc.AgainLabel);
+
+            rb.Branch(Condition.DecCheck, counter,
+                cc.Constants[cc.Context.GetStdAtom(StdAtom.LOW_DIRECTION)], exhaustedLabel, true);
+
+            var propTable = PushInnerLocal(cc, rb, ptAtom);
+            var roomOperand = CompileAsOperand(cc, rb, room, src);
+            rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
+            rb.BranchIfZero(propTable, cc.AgainLabel, true);
+
+            // body
+            while (body != null && !body.IsEmpty)
+            {
+                // ignore the results of all statements
+                CompileStmt(cc, rb, body.First, false);
+                body = body.Rest;
+            }
+
+            // loop
+            rb.Branch(cc.AgainLabel);
+
+            // end statements
+            while (endStmts != null && !endStmts.IsEmpty)
+            {
+                CompileStmt(cc, rb, endStmts.First, false);
+                endStmts = endStmts.Rest;
+            }
+
+            // exhausted label, provide a return value if we need one
+            rb.MarkLabel(exhaustedLabel);
+            if (wantResult)
+                rb.EmitStore(rb.Stack, cc.Game.One);
+
+            // clean up block and variables
+            rb.MarkLabel(cc.ReturnLabel);
+
+            PopInnerLocal(cc, ptAtom);
+            PopInnerLocal(cc, dirAtom);
 
             cc.AgainLabel = oldAgain;
             cc.ReturnLabel = oldReturn;

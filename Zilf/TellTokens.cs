@@ -164,7 +164,7 @@ namespace Zilf
                     case StdAtom.FORM:
                         // <GVAL atom> to match an exact GVAL, or any other FORM to specify the pattern's output
                         form = (ZilForm)zo;
-                        if (IsGVAL(form))
+                        if (form.IsGVAL())
                         {
                             var atom = form.Rest.First as ZilAtom;
                             if (atom == null)
@@ -177,7 +177,7 @@ namespace Zilf
                             int lvalCount = 0;
                             foreach (var elem in form)
                             {
-                                if (IsLVAL(elem))
+                                if (elem.IsLVAL())
                                 {
                                     lvalCount++;
                                 }
@@ -259,32 +259,8 @@ namespace Zilf
             if (obj is ZilAtom || obj is ZilFix || obj is ZilString)
                 return true;
 
-            if (IsLVAL(obj) || IsGVAL(obj))
+            if (obj.IsLVAL() || obj.IsGVAL())
                 return true;
-
-            return false;
-        }
-
-        private static bool IsLVAL(ZilObject obj)
-        {
-            if (obj is ZilForm)
-            {
-                var first = ((ZilForm)obj).First;
-                if (first is ZilAtom && ((ZilAtom)first).StdAtom == StdAtom.LVAL)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static bool IsGVAL(ZilObject obj)
-        {
-            if (obj is ZilForm)
-            {
-                var first = ((ZilForm)obj).First;
-                if (first is ZilAtom && ((ZilAtom)first).StdAtom == StdAtom.GVAL)
-                    return true;
-            }
 
             return false;
         }

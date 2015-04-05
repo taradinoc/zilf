@@ -321,6 +321,24 @@ namespace Zilf
         }
 
         /// <summary>
+        /// Gets a value indicating whether this object is a local variable reference (.FOO).
+        /// </summary>
+        /// <returns>True if the object is an LVAL.</returns>
+        public virtual bool IsLVAL()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this object is a global variable reference (,FOO).
+        /// </summary>
+        /// <returns>True if the object is a GVAL.</returns>
+        public virtual bool IsGVAL()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Evaluates a series of expressions, returning the value of the last expression.
         /// </summary>
         /// <param name="ctx">The current context.</param>
@@ -1381,6 +1399,18 @@ namespace Zilf
             }
 
             return this;
+        }
+
+        public override bool IsLVAL()
+        {
+            var atom = First as ZilAtom;
+            return (atom != null && atom.StdAtom == StdAtom.LVAL && Rest.Rest != null && Rest.Rest.First == null);
+        }
+
+        public override bool IsGVAL()
+        {
+            var atom = First as ZilAtom;
+            return (atom != null && atom.StdAtom == StdAtom.GVAL && Rest.Rest != null && Rest.Rest.First == null);
         }
     }
 
