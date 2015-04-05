@@ -333,14 +333,15 @@ namespace Zilf
             public readonly int Index;
             public readonly IOperand Constant;
             public readonly IRoutineBuilder Routine, PreRoutine;
-            public readonly ZilAtom PreRoutineName;
+            public readonly ZilAtom RoutineName, PreRoutineName;
 
             public Action(int index, IOperand constant, IRoutineBuilder routine, IRoutineBuilder preRoutine,
-                ZilAtom preRoutineName)
+                ZilAtom routineName, ZilAtom preRoutineName)
             {
                 this.Index = index;
                 this.Constant = constant;
                 this.Routine = routine;
+                this.RoutineName = routineName;
                 this.PreRoutine = preRoutine;
                 this.PreRoutineName = preRoutineName;
             }
@@ -359,7 +360,7 @@ namespace Zilf
             bool compact = (compactObj != null && compactObj.IsTrue);
 
             // verb table
-            var query = from s in Enumerable.Reverse(cc.Context.ZEnvironment.Syntaxes)
+            var query = from s in cc.Context.ZEnvironment.Syntaxes
                         group s by s.Verb into g
                         orderby g.Key.GetValue(PartOfSpeech.Verb) descending
                         select g;
@@ -376,19 +377,15 @@ namespace Zilf
 
                 stbl.AddByte((byte)verb.Count());
 
+                // make two passes over the syntax line definitions:
+                // first in definition order to create/validate the Actions, second in reverse order to emit the syntax lines
                 foreach (Syntax line in verb)
                 {
                     try
                     {
                         Action act;
-                        if (actions.TryGetValue(line.Action, out act) == false)
+                        if (actions.TryGetValue(line.ActionName, out act) == false)
                         {
-                            string name = line.Action.ToString();
-                            if (name.ToUpper().StartsWith("V-"))
-                                name = "V?" + name.Substring(2);
-                            else
-                                name = "V??" + name;
-
                             IRoutineBuilder routine;
                             if (cc.Routines.TryGetValue(line.Action, out routine) == false)
                                 throw new CompilerError("undefined action routine: " + line.Action);
@@ -398,37 +395,42 @@ namespace Zilf
                                 cc.Routines.TryGetValue(line.Preaction, out preRoutine) == false)
                                 throw new CompilerError("undefined preaction routine: " + line.Preaction);
 
-                            ZilAtom atom = ZilAtom.Parse(name, cc.Context);
+                            ZilAtom actionName = line.ActionName;
                             int index = cc.Context.ZEnvironment.NextAction++;
                             IOperand number = cc.Game.MakeOperand(index);
-                            IOperand constant = cc.Game.DefineConstant(name, number);
-                            cc.Constants.Add(atom, constant);
+                            IOperand constant = cc.Game.DefineConstant(actionName.ToString(), number);
+                            cc.Constants.Add(actionName, constant);
                             if (cc.WantDebugInfo)
                                 cc.Game.DebugFile.MarkAction(constant, line.Action.ToString());
 
-                            act = new Action(index, number, routine, preRoutine, line.Preaction);
-                            actions.Add(line.Action, act);
+                            act = new Action(index, number, routine, preRoutine, line.Action, line.Preaction);
+                            actions.Add(actionName, act);
                         }
                         else
                         {
-                            IRoutineBuilder preRoutine;
-                            bool match = true;
-
-                            if (line.Preaction == null)
-                                match = (act.PreRoutine == null);
-                            else if (act.PreRoutine == null)
-                                match = false;
-                            else
-                                match = (cc.Routines.TryGetValue(line.Preaction, out preRoutine) &&
-                                    preRoutine == act.PreRoutine);
-                            
-                            if (!match)
-                                Errors.CompWarning(cc.Context, line,
-                                    "preaction mismatch for {0}: using {1} as before",
-                                    line.Action,
-                                    act.PreRoutine != null ? act.PreRoutineName.ToString() : "no preaction");
+                            WarnIfActionRoutineDiffers(cc, line, "action routine", line.Action, act.RoutineName);
+                            WarnIfActionRoutineDiffers(cc, line, "preaction", line.Preaction, act.PreRoutineName);
                         }
+                    }
+                    catch (ZilError ex)
+                    {
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = line;
+                        cc.Context.HandleError(ex);
+                    }
+                }
 
+                foreach (Syntax line in verb.Reverse())
+                {
+                    Action act;
+                    if (actions.TryGetValue(line.ActionName, out act) == false)
+                    {
+                        // this can happen if an exception (e.g. undefined action routine) stops us from adding the action during the first pass.
+                        continue;
+                    }
+
+                    try
+                    {
                         if (compact)
                         {
                             if (line.Preposition1 != null)
@@ -494,6 +496,17 @@ namespace Zilf
                 cc.ActionTable.AddShort(act.Routine);
                 cc.PreactionTable.AddShort(act.PreRoutine ?? cc.Game.Zero);
             }
+        }
+
+        private static void WarnIfActionRoutineDiffers(CompileCtx cc, Syntax line,
+            string description, ZilAtom thisRoutineName, ZilAtom lastRoutineName)
+        {
+            if (thisRoutineName != lastRoutineName)
+                Errors.CompWarning(cc.Context, line,
+                    "{0} mismatch for {1}: using {2} as before",
+                    description,
+                    line.ActionName,
+                    lastRoutineName != null ? lastRoutineName.ToString() : "no " + description);
         }
 
         private static IFlagBuilder GetFlag(CompileCtx cc, ZilAtom flag)

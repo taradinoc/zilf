@@ -487,13 +487,13 @@ namespace Zilf
         public readonly Word Verb, Preposition1, Preposition2;
         public readonly ScopeFlags Options1, Options2;
         public readonly ZilAtom FindFlag1, FindFlag2;
-        public readonly ZilAtom Action, Preaction;
+        public readonly ZilAtom Action, Preaction, ActionName;
 
         private readonly ISourceLine src;
 
         public Syntax(ISourceLine src, Word verb, int numObjects, Word prep1, Word prep2,
             ScopeFlags options1, ScopeFlags options2, ZilAtom findFlag1, ZilAtom findFlag2,
-            ZilAtom action, ZilAtom preaction)
+            ZilAtom action, ZilAtom preaction, ZilAtom actionName)
         {
             this.src = src;
 
@@ -507,14 +507,17 @@ namespace Zilf
             this.FindFlag2 = findFlag2;
             this.Action = action;
             this.Preaction = preaction;
+            this.ActionName = actionName;
         }
 
         public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
         {
             int numObjects = 0;
-            ZilAtom verb = null, prep1 = null, prep2 = null, action = null, preaction = null;
+            ZilAtom verb = null, prep1 = null, prep2 = null;
+            ZilAtom action = null, preaction = null, actionName = null;
             ZilList bits1 = null, find1 = null, bits2 = null, find2 = null;
             bool rightSide = false;
+            int rhsCount = 0;
 
             // main parsing
             foreach (ZilObject obj in definition)
@@ -608,22 +611,37 @@ namespace Zilf
                 else
                 {
                     // right side:
-                    //   action [preaction]
+                    //   action [preaction [action-name]]
                     ZilAtom atom = obj as ZilAtom;
                     if (atom != null)
                     {
                         if (atom.StdAtom == StdAtom.Eq)
                             throw new InterpreterError("too many = in syntax definition");
-
-                        if (action == null)
-                            action = atom;
-                        else if (preaction == null)
-                            preaction = atom;
-                        else
-                            throw new InterpreterError("too many atoms after = in syntax definition");
                     }
-                    else
-                        throw new InterpreterError("non-atom after = in syntax definition");
+                    else if (!(obj is ZilFalse))
+                    {
+                        throw new InterpreterError("values after = must be FALSE or atoms");
+                    }
+
+                    switch (rhsCount)
+                    {
+                        case 0:
+                            action = atom;
+                            break;
+
+                        case 1:
+                            preaction = atom;
+                            break;
+
+                        case 2:
+                            actionName = atom;
+                            break;
+
+                        default:
+                            throw new InterpreterError("too many values after = in syntax definition");
+                    }
+
+                    rhsCount++;
                 }
             }
 
@@ -649,11 +667,39 @@ namespace Zilf
             ZilAtom findFlag1 = ParseFindFlag(find1);
             ZilAtom findFlag2 = ParseFindFlag(find2);
 
+            if (action == null)
+            {
+                throw new InterpreterError("action routine must be specified");
+            }
+
+            if (actionName == null)
+            {
+                var sb = new StringBuilder(action.ToString());
+                if (sb.Length > 2 && sb[0] == 'V' && sb[1] == '-')
+                {
+                    sb[1] = '?';
+                }
+                else
+                {
+                    sb.Insert(0, "V?");
+                }
+
+                actionName = ZilAtom.Parse(sb.ToString(), ctx);
+            }
+            else
+            {
+                var actionNameStr = actionName.ToString();
+                if (!actionNameStr.StartsWith("V?"))
+                {
+                    actionName = ZilAtom.Parse("V?" + actionNameStr, ctx);
+                }
+            }
+
             return new Syntax(
                 src,
                 verbWord, numObjects,
                 word1, word2, flags1, flags2, findFlag1, findFlag2,
-                action, preaction);
+                action, preaction, actionName);
         }
 
         private static ZilAtom ParseFindFlag(ZilList list)
