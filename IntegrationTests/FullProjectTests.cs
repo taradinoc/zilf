@@ -44,6 +44,8 @@ namespace IntegrationTests
         [Timeout(30000)]
         public void TestProjects()
         {
+            bool inconclusive = false;
+
             foreach (var dir in Directory.EnumerateDirectories(projectsDir, "*", SearchOption.AllDirectories))
             {
                 var baseName = Path.GetFileName(dir);
@@ -54,10 +56,9 @@ namespace IntegrationTests
                 Console.WriteLine("Testing {0}", dir);
 
                 var outputFile = Path.Combine(dir, baseName + ".output.txt");
-                Assert.IsTrue(File.Exists(outputFile), "Output file is missing: " + outputFile);
-
                 var inputFile = Path.Combine(dir, baseName + ".input.txt");
-                Assert.IsTrue(File.Exists(inputFile), "Input file is missing: " + inputFile);
+
+                bool testExecution = File.Exists(outputFile) && File.Exists(inputFile);
 
                 var helper = new FileBasedZlrHelper(
                     mainZilFile,
@@ -68,43 +69,56 @@ namespace IntegrationTests
                 Assert.IsTrue(helper.Compile(), "Failed to compile");
                 Assert.IsTrue(helper.Assemble(), "Failed to assemble");
 
-                var actualOutput = helper.Execute();
-
-                var massagedActual = MassageText(actualOutput);
-                var massagedExpected = MassageText(File.ReadAllText(outputFile));
-                if (massagedActual != massagedExpected)
+                if (testExecution)
                 {
-                    string[] expectedLines = SplitLines(massagedExpected);
-                    string[] actualLines = SplitLines(massagedActual);
+                    var actualOutput = helper.Execute();
 
-                    var diff = Diff.Calculate(expectedLines, actualLines);
-                    int e = 0, a = 0;
-                    foreach (var change in diff)
+                    var massagedActual = MassageText(actualOutput);
+                    var massagedExpected = MassageText(File.ReadAllText(outputFile));
+                    if (massagedActual != massagedExpected)
                     {
-                        if (!change.Equal)
+                        string[] expectedLines = SplitLines(massagedExpected);
+                        string[] actualLines = SplitLines(massagedActual);
+
+                        var diff = Diff.Calculate(expectedLines, actualLines);
+                        int e = 0, a = 0;
+                        foreach (var change in diff)
                         {
-                            Console.WriteLine("=== At line {0}, {1} ===", e + 1, a + 1);
-
-                            for (int k = e; k < e + change.Length1; k++)
+                            if (!change.Equal)
                             {
-                                Console.WriteLine("-{0}", expectedLines[k]);
+                                Console.WriteLine("=== At line {0}, {1} ===", e + 1, a + 1);
+
+                                for (int k = e; k < e + change.Length1; k++)
+                                {
+                                    Console.WriteLine("-{0}", expectedLines[k]);
+                                }
+
+                                for (int m = a; m < a + change.Length2; m++)
+                                {
+                                    Contract.Assume(m >= 0);        // prevent spurious "Array access might be below lower bound"
+                                    Console.WriteLine("+{0}", actualLines[m]);
+                                }
+
+                                Console.WriteLine();
                             }
 
-                            for (int m = a; m < a + change.Length2; m++)
-                            {
-                                Contract.Assume(m >= 0);        // prevent spurious "Array access might be below lower bound"
-                                Console.WriteLine("+{0}", actualLines[m]);
-                            }
-
-                            Console.WriteLine();
+                            e += change.Length1;
+                            a += change.Length2;
                         }
 
-                        e += change.Length1;
-                        a += change.Length2;
+                        Assert.Fail("Expected output not found (diff written to console)");
                     }
-
-                    Assert.Fail("Expected output not found (diff written to console)");
                 }
+                else
+                {
+                    Console.WriteLine("Expected input and/or output files missing.");
+                    inconclusive = true;
+                }
+            }
+
+            if (inconclusive)
+            {
+                Assert.Inconclusive("One or more projects had no expected input/output files.");
             }
         }
 
