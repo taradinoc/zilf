@@ -1465,10 +1465,7 @@ namespace Zilf
                     throw new InterpreterError("CONSTANT: already defined: " + atom.ToStringContext(ctx, false));
             }
 
-            ZilConstant constant = new ZilConstant(atom, args[1]);
-            ctx.SetZVal(atom, constant);
-            ctx.ZEnvironment.Constants.Add(constant);
-            return constant;
+            return ctx.AddZConstant(atom, args[1]);
         }
 
         [Subr]
