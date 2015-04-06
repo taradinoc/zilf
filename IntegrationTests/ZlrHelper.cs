@@ -260,10 +260,9 @@ namespace IntegrationTests
     // TODO: merge this with ZlrHelper
     class FileBasedZlrHelper
     {
-        private const string SMainZapFileName = "Output.zap";
         private const string SStoryFileNameTemplate = "Output.z#";
 
-        private string codeFile;
+        private string codeFile, zapFileName;
         private string[] includeDirs;
         private string inputFile;
 
@@ -281,6 +280,8 @@ namespace IntegrationTests
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;
             this.inputFile = inputFile;
+
+            this.zapFileName = Path.ChangeExtension(Path.GetFileName(codeFile), ".zap");
         }
 
         public bool WantStatusLine { get; set; }
@@ -344,7 +345,7 @@ namespace IntegrationTests
                     compiler.IncludePaths.Add(dir);
 
                 // run compilation
-                if (compiler.Compile(Path.GetFileName(codeFile), SMainZapFileName).Success)
+                if (compiler.Compile(Path.GetFileName(codeFile), zapFileName).Success)
                 {
                     return true;
                 }
@@ -363,34 +364,70 @@ namespace IntegrationTests
 
         public bool Assemble()
         {
-            // initialize ZapfAssembler
-            var assembler = new ZapfAssembler();
-            assembler.OpeningFile += (sender, e) =>
-            {
-                if (e.Writing)
-                {
-                    //XXX this could potentially be the debug file instead!
+            var codeStreams = new Dictionary<string, Stream>();
 
-                    zapfOutputFile = new MemoryStream();
-                    e.Stream = zapfOutputFile;
-                }
-                else if (zilfOutputFiles.ContainsKey(e.FileName))
-                {
-                    var buffer = zilfOutputFiles[e.FileName].ToArray();
-                    e.Stream = new MemoryStream(buffer, false);
-                }
-                else
-                {
-                    throw new InvalidOperationException("No such ZILF output file: " + e.FileName);
-                }
-            };
-            assembler.CheckingFilePresence += (sender, e) =>
+            try
             {
-                e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
-            };
+                // initialize ZapfAssembler
+                var assembler = new ZapfAssembler();
+                assembler.OpeningFile += (sender, e) =>
+                {
+                    if (e.Writing)
+                    {
+                        //XXX this could potentially be the debug file instead!
 
-            // run assembly
-            return assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
+                        zapfOutputFile = new MemoryStream();
+                        e.Stream = zapfOutputFile;
+                    }
+                    else if (zilfOutputFiles.ContainsKey(e.FileName))
+                    {
+                        var buffer = zilfOutputFiles[e.FileName].ToArray();
+                        e.Stream = new MemoryStream(buffer, false);
+                    }
+                    else
+                    {
+                        foreach (var idir in includeDirs)
+                        {
+                            var path = Path.Combine(idir, e.FileName);
+                            if (File.Exists(path))
+                            {
+                                e.Stream = codeStreams[e.FileName] = new FileStream(path, FileMode.Open, FileAccess.Read);
+                                return;
+                            }
+                        }
+
+                        throw new InvalidOperationException("No such ZILF output file: " + e.FileName);
+                    }
+                };
+                assembler.CheckingFilePresence += (sender, e) =>
+                {
+                    if (zilfOutputFiles.ContainsKey(e.FileName))
+                    {
+                        e.Exists = true;
+                    }
+                    else
+                    {
+                        foreach (var idir in includeDirs)
+                        {
+                            if (File.Exists(Path.Combine(idir, e.FileName)))
+                            {
+                                e.Exists = true;
+                                return;
+                            }
+                        }
+
+                        e.Exists = false;
+                    }
+                };
+
+                // run assembly
+                return assembler.Assemble(zapFileName, SStoryFileNameTemplate);
+            }
+            finally
+            {
+                foreach (var stream in codeStreams.Values)
+                    stream.Dispose();
+            }
         }
 
         public string Execute()

@@ -184,7 +184,7 @@ namespace Zilf
 
             public bool FrequentWordsFileExists
             {
-                get { return owner.CheckFileExists(fwordsFile); }
+                get { return owner.CheckFileExists(fwordsFile) || owner.CheckFileExists(Path.ChangeExtension(fwordsFile, ".xzap")); }
             }
 
             #endregion
