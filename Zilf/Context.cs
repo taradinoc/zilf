@@ -396,11 +396,16 @@ namespace Zilf
             }
         }
 
-        private void AddZConstant(ZilAtom atom, ZilObject value)
+        public ZilConstant AddZConstant(ZilAtom atom, ZilObject value)
         {
             ZilConstant constant = new ZilConstant(atom, value);
             zenv.Constants.Add(constant);
-            globalValues.Add(atom, constant);
+            SetZVal(atom, constant);
+
+            if (!globalValues.ContainsKey(atom))
+                globalValues.Add(atom, constant);
+
+            return constant;
         }
 
         /// <summary>
