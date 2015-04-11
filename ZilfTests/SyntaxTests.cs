@@ -233,5 +233,34 @@ namespace ZilfTests
             Assert.AreEqual(null, syntax.Preaction);
             Assert.AreEqual("V?LOOK-BEHIND", syntax.ActionName.ToString());
         }
+
+        [TestMethod]
+        public void TestSynonyms()
+        {
+            var ctx = new Context();
+            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK (STARE GAZE) AT OBJECT = V-EXAMINE)", true);
+
+            var syntax = Syntax.Parse(null, defn, ctx);
+
+            Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
+            Assert.AreEqual(PartOfSpeech.Verb, syntax.Verb.PartOfSpeech & PartOfSpeech.Verb);
+
+            Assert.AreEqual(1, syntax.NumObjects);
+            Assert.AreEqual("AT", syntax.Preposition1.Atom.ToString());
+            Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
+            Assert.AreEqual(null, syntax.FindFlag1);
+            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(null, syntax.Preposition2);
+            Assert.AreEqual(null, syntax.FindFlag2);
+            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+
+            Assert.AreEqual("V-EXAMINE", syntax.Action.ToString());
+            Assert.AreEqual(null, syntax.Preaction);
+            Assert.AreEqual("V?EXAMINE", syntax.ActionName.ToString());
+
+            Assert.AreEqual(2, syntax.Synonyms.Count);
+            Assert.AreEqual(ZilAtom.Parse("STARE", ctx), syntax.Synonyms[0]);
+            Assert.AreEqual(ZilAtom.Parse("GAZE", ctx), syntax.Synonyms[1]);
+        }
     }
 }

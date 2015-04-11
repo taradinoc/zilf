@@ -489,12 +489,16 @@ namespace Zilf
         public readonly ScopeFlags Options1, Options2;
         public readonly ZilAtom FindFlag1, FindFlag2;
         public readonly ZilAtom Action, Preaction, ActionName;
+        public readonly IList<ZilAtom> Synonyms;
 
         private readonly ISourceLine src;
 
+        private static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
+
         public Syntax(ISourceLine src, Word verb, int numObjects, Word prep1, Word prep2,
             ScopeFlags options1, ScopeFlags options2, ZilAtom findFlag1, ZilAtom findFlag2,
-            ZilAtom action, ZilAtom preaction, ZilAtom actionName)
+            ZilAtom action, ZilAtom preaction, ZilAtom actionName,
+            IEnumerable<ZilAtom> synonyms = null)
         {
             this.src = src;
 
@@ -509,6 +513,11 @@ namespace Zilf
             this.Action = action;
             this.Preaction = preaction;
             this.ActionName = actionName;
+
+            if (synonyms == null)
+                this.Synonyms = EmptySynonyms;
+            else
+                this.Synonyms = new List<ZilAtom>(synonyms).AsReadOnly();
         }
 
         public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
@@ -516,7 +525,7 @@ namespace Zilf
             int numObjects = 0;
             ZilAtom verb = null, prep1 = null, prep2 = null;
             ZilAtom action = null, preaction = null, actionName = null;
-            ZilList bits1 = null, find1 = null, bits2 = null, find2 = null;
+            ZilList bits1 = null, find1 = null, bits2 = null, find2 = null, syns = null;
             bool rightSide = false;
             int rhsCount = 0;
 
@@ -567,16 +576,36 @@ namespace Zilf
                         ZilList list = obj as ZilList;
                         if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                         {
+                            atom = list.First as ZilAtom;
+                            if (atom == null)
+                                throw new InterpreterError("list in syntax definition must start with an atom");
+
                             if (numObjects == 0)
                             {
-                                Errors.TerpWarning(ctx, src, "ignoring list in syntax definition with no preceding OBJECT");
+                                // could be a list of synonyms, but could also be a mistake (scope/find flags in the wrong place)
+                                switch (atom.StdAtom)
+                                {
+                                    case StdAtom.FIND:
+                                    case StdAtom.TAKE:
+                                    case StdAtom.HAVE:
+                                    case StdAtom.MANY:
+                                    case StdAtom.HELD:
+                                    case StdAtom.CARRIED:
+                                    case StdAtom.ON_GROUND:
+                                    case StdAtom.IN_ROOM:
+                                        Errors.TerpWarning(ctx, src, "ignoring list of flags in syntax definition with no preceding OBJECT");
+                                        break;
+
+                                    default:
+                                        if (syns != null)
+                                            throw new InterpreterError("too many synonym lists in syntax definition");
+
+                                        syns = list;
+                                        break;
+                                }
                             }
                             else
                             {
-                                atom = list.First as ZilAtom;
-                                if (atom == null)
-                                    throw new InterpreterError("list in syntax definition must start with an atom");
-
                                 if (atom.StdAtom == StdAtom.FIND)
                                 {
                                     if ((numObjects == 1 && find1 != null) || find2 != null)
@@ -667,6 +696,15 @@ namespace Zilf
             ScopeFlags flags2 = ParseScopeFlags(bits2);
             ZilAtom findFlag1 = ParseFindFlag(find1);
             ZilAtom findFlag2 = ParseFindFlag(find2);
+            IEnumerable<ZilAtom> synAtoms = null;
+
+            if (syns != null)
+            {
+                if (!syns.All(s => s is ZilAtom))
+                    throw new InterpreterError("verb synonyms must be atoms");
+
+                synAtoms = syns.Cast<ZilAtom>();
+            }
 
             if (action == null)
             {
@@ -700,7 +738,7 @@ namespace Zilf
                 src,
                 verbWord, numObjects,
                 word1, word2, flags1, flags2, findFlag1, findFlag2,
-                action, preaction, actionName);
+                action, preaction, actionName, synAtoms);
         }
 
         private static ZilAtom ParseFindFlag(ZilList list)

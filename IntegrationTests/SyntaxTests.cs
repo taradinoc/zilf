@@ -39,5 +39,15 @@ namespace IntegrationTests
                 .WithGlobal("<SYNTAX BAR OBJECT = V-BAR PRE-BAR>")
                 .Outputs("1\n1\n1\n1\n1\n1\n");
         }
+
+        [TestMethod]
+        public void Syntax_Lines_Can_Define_Verb_Synonyms()
+        {
+            AssertRoutine("", "<DO (I 4 6) <PRINTN <=? <GETB ,W?TOSS .I> <GETB ,W?CHUCK .I>>>>")
+                .WithGlobal("<ROUTINE V-TOSS () <>>")
+                .WithGlobal("<SYNTAX TOSS (CHUCK) OBJECT AT OBJECT = V-TOSS>")
+                .InV3()
+                .Outputs("111");
+        }
     }
 }

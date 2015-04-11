@@ -1960,6 +1960,13 @@ namespace Zilf
 
             Syntax syntax = Syntax.Parse(ctx.CallingForm, args, ctx);
             ctx.ZEnvironment.Syntaxes.Add(syntax);
+
+            if (syntax.Synonyms.Count > 0)
+            {
+                var synonymArgs = Enumerable.Repeat(syntax.Verb.Atom, 1).Concat(syntax.Synonyms).ToArray();
+                PerformSynonym(ctx, synonymArgs, "SYNTAX (verb synonyms)", typeof(VerbSynonym));
+            }
+
             return syntax.Verb.Atom;
         }
 
