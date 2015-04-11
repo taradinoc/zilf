@@ -57,6 +57,7 @@ namespace Zilf
         public readonly List<ZilAtom> Directions = new List<ZilAtom>();
         public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
 
+        // TODO: actually use FirstObject, LastObjects, and ObjectOrdering
         public readonly List<ZilAtom> FirstObjects = new List<ZilAtom>();
         public readonly List<ZilAtom> LastObjects = new List<ZilAtom>();
         public ObjectOrdering ObjectOrdering;
