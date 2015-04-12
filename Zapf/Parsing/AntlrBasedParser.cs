@@ -306,20 +306,37 @@ namespace Zapf.Parsing
 
     sealed class DebugActionDirective : DebugDirective
     {
+        public DebugActionDirective(AsmExpr number, string name)
+        {
+            this.Number = number;
+            this.Name = name;
+        }
+
         public AsmExpr Number { get; set; }
         public string Name { get; set; }
     }
 
     sealed class DebugArrayDirective : DebugDirective
     {
+        public DebugArrayDirective(AsmExpr number, string name)
+        {
+            this.Number = number;
+            this.Name = name;
+        }
+
         public AsmExpr Number { get; set; }
         public string Name { get; set; }
     }
 
     sealed class DebugAttrDirective : DebugDirective
     {
-        public AsmExpr Number { get; set; }
+        public DebugAttrDirective(AsmExpr number, string name)
+        {
+            this.Number = number;
+            this.Name = name;
+        }
 
+        public AsmExpr Number { get; set; }
         public string Name { get; set; }
     }
 
@@ -349,26 +366,41 @@ namespace Zapf.Parsing
 
     sealed class DebugFileDirective : DebugDirective
     {
+        public DebugFileDirective(AsmExpr number, string includeName, string actualName)
+        {
+            this.Number = number;
+            this.IncludeName = includeName;
+            this.ActualName = actualName;
+        }
+
         public AsmExpr Number { get; set; }
-
         public string IncludeName { get; set; }
-
         public string ActualName { get; set; }
     }
 
     sealed class DebugGlobalDirective : DebugDirective
     {
-        public AsmExpr Number { get; set; }
+        public DebugGlobalDirective(AsmExpr number, string name)
+        {
+            this.Number = number;
+            this.Name = name;
+        }
 
+        public AsmExpr Number { get; set; }
         public string Name { get; set; }
     }
 
     sealed class DebugLineDirective : DebugDirective
     {
+        public DebugLineDirective(AsmExpr file, AsmExpr line, AsmExpr column)
+        {
+            this.TheFile = file;
+            this.TheLine = line;
+            this.TheColumn = column;
+        }
+
         public AsmExpr TheFile { get; set; }
-
         public AsmExpr TheLine { get; set; }
-
         public AsmExpr TheColumn { get; set; }
     }
 
@@ -381,54 +413,72 @@ namespace Zapf.Parsing
 
     sealed class DebugObjectDirective : DebugDirective
     {
+        public DebugObjectDirective(AsmExpr number, string name,
+            AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
+            AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
+        {
+            this.Number = number;
+            this.Name = name;
+            this.StartFile = startFile;
+            this.StartLine = startLine;
+            this.StartColumn = startColumn;
+            this.EndFile = endFile;
+            this.EndLine = endLine;
+            this.EndColumn = endColumn;
+        }
+
         public AsmExpr Number { get; set; }
-
         public string Name { get; set; }
-
         public AsmExpr StartFile { get; set; }
-
         public AsmExpr StartLine { get; set; }
-
         public AsmExpr StartColumn { get; set; }
-
         public AsmExpr EndFile { get; set; }
-
         public AsmExpr EndLine { get; set; }
-
         public AsmExpr EndColumn { get; set; }
     }
 
     sealed class DebugPropDirective : DebugDirective
     {
-        public AsmExpr Number { get; set; }
+        public DebugPropDirective(AsmExpr number, string name)
+        {
+            this.Number = number;
+            this.Name = name;
+        }
 
+        public AsmExpr Number { get; set; }
         public string Name { get; set; }
     }
 
     sealed class DebugRoutineDirective : DebugDirective
     {
-        public DebugRoutineDirective()
+        public DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
+            string name, IEnumerable<string> locals)
         {
-            this.Locals = new List<string>();
+            this.TheFile = file;
+            this.TheLine = line;
+            this.TheColumn = column;
+            this.Name = name;
+            this.Locals = new List<string>(locals);
         }
 
         public string Name { get; set; }
-
         public IList<string> Locals { get; private set; }
-
         public AsmExpr TheFile { get; set; }
-
         public AsmExpr TheLine { get; set; }
-
         public AsmExpr TheColumn { get; set; }
     }
 
     sealed class DebugRoutineEndDirective : DebugDirective
     {
+        public DebugRoutineEndDirective(AsmExpr file, AsmExpr line, AsmExpr column)
+        {
+            this.TheFile = file;
+            this.TheLine = line;
+            this.TheColumn = column;
+        }
+
         public AsmExpr TheFile { get; set; }
-
         public AsmExpr TheLine { get; set; }
-
         public AsmExpr TheColumn { get; set; }
     }
 
@@ -718,19 +768,54 @@ namespace Zapf.Parsing
                         break;
 
                     case ZapParser.DEBUG_ACTION:
+                        line = new DebugActionDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text);
+                        break;
+
                     case ZapParser.DEBUG_ARRAY:
+                        line = new DebugArrayDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text);
+                        break;
+
                     case ZapParser.DEBUG_ATTR:
+                        line = new DebugAttrDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text);
+                        break;
+
+                    case ZapParser.DEBUG_FILE:
+                        line = new DebugFileDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text, node.GetChild(2).Text);
+                        break;
+
+                    case ZapParser.DEBUG_GLOBAL:
+                        line = new DebugGlobalDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text);
+                        break;
+
+                    case ZapParser.DEBUG_LINE:
+                        line = new DebugLineDirective(ParseAsmExpr(node.GetChild(0)), ParseAsmExpr(node.GetChild(1)), ParseAsmExpr(node.GetChild(2)));
+                        break;
+
+                    case ZapParser.DEBUG_OBJECT:
+                        line = new DebugObjectDirective(
+                            ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text,
+                            ParseAsmExpr(node.GetChild(2)), ParseAsmExpr(node.GetChild(3)), ParseAsmExpr(node.GetChild(4)),
+                            ParseAsmExpr(node.GetChild(5)), ParseAsmExpr(node.GetChild(6)), ParseAsmExpr(node.GetChild(7)));
+                        break;
+
+                    case ZapParser.DEBUG_PROP:
+                        line = new DebugPropDirective(ParseAsmExpr(node.GetChild(0)), node.GetChild(1).Text);
+                        break;
+
+                    case ZapParser.DEBUG_ROUTINE:
+                        line = new DebugRoutineDirective(
+                            ParseAsmExpr(node.GetChild(0)), ParseAsmExpr(node.GetChild(1)), ParseAsmExpr(node.GetChild(2)),
+                            node.GetChild(3).Text,
+                            Enumerable.Range(4, node.ChildCount - 4).Select(i => node.GetChild(i).Text));
+                        break;
+
+                    case ZapParser.DEBUG_ROUTINE_END:
+                        line = new DebugRoutineEndDirective(ParseAsmExpr(node.GetChild(0)), ParseAsmExpr(node.GetChild(1)), ParseAsmExpr(node.GetChild(2)));
+                        break;
+
                     case ZapParser.DEBUG_CLASS:
                     case ZapParser.DEBUG_FAKE_ACTION:
-                    case ZapParser.DEBUG_FILE:
-                    case ZapParser.DEBUG_GLOBAL:
-                    case ZapParser.DEBUG_LINE:
                     case ZapParser.DEBUG_MAP:
-                    case ZapParser.DEBUG_OBJECT:
-                    case ZapParser.DEBUG_PROP:
-                    case ZapParser.DEBUG_ROUTINE:
-                    case ZapParser.DEBUG_ROUTINE_END:
-
                     default:
                         //XXX
                         throw new NotImplementedException();
