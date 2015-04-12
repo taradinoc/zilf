@@ -1360,8 +1360,10 @@ namespace Zilf
                         ZilForm resultForm = result as ZilForm;
                         if (resultForm == null || resultForm == this)
                             return result;
-                        else
-                            return resultForm.Expand(ctx);
+
+                        // set the source info on the expansion to match the macro invocation
+                        resultForm = DeepRewriteSourceInfo(resultForm, this.filename, this.line);
+                        return resultForm.Expand(ctx);
                     }
                     catch (ZilError ex)
                     {
@@ -1399,6 +1401,27 @@ namespace Zilf
             }
 
             return this;
+        }
+
+        private static ZilForm DeepRewriteSourceInfo(ZilForm other, string filename, int line)
+        {
+            return new ZilForm(filename, line, DeepRewriteSourceInfoContents(other, filename, line));
+        }
+
+        private static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
+            IEnumerable<ZilObject> contents, string filename, int line)
+        {
+            foreach (var item in contents)
+            {
+                if (item is ZilForm)
+                {
+                    yield return DeepRewriteSourceInfo((ZilForm)item, filename, line);
+                }
+                else
+                {
+                    yield return item;
+                }
+            }
         }
 
         public override bool IsLVAL()
