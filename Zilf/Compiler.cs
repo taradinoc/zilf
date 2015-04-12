@@ -133,8 +133,11 @@ namespace Zilf
                 DefineFlag(cc, flag);
 
             // builders for objects
+            ZilModelObject lastObject = null;
+
             foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInDefinitionOrder())
             {
+                lastObject = obj;
                 cc.Objects.Add(obj.Name, gb.DefineObject(obj.Name.ToString()));
                 // builders for the rest of the properties and flags,
                 // and vocabulary for names
@@ -177,7 +180,15 @@ namespace Zilf
             // routines, tables, objects, properties, or flags)
             foreach (ZilConstant constant in ctx.ZEnvironment.Constants)
             {
-                IOperand value = CompileConstant(cc, constant.Value);
+                IOperand value;
+                if (constant.Name.StdAtom == StdAtom.LAST_OBJECT && lastObject != null)
+                {
+                    value = cc.Objects[lastObject.Name];
+                }
+                else
+                {
+                    value = CompileConstant(cc, constant.Value);
+                }
                 if (value == null)
                     Errors.CompError(ctx, constant, "invalid constant value");
                 cc.Constants.Add(constant.Name, gb.DefineConstant(constant.Name.ToString(), value));

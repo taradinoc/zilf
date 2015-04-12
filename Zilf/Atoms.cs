@@ -170,6 +170,8 @@ namespace Zilf
         [Atom("L?")]
         L_P,
         LAST,
+        [Atom("LAST-OBJECT")]
+        LAST_OBJECT,
         LENGTH,
         [Atom("L=?")]
         LEq_P,
