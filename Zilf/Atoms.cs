@@ -217,6 +217,8 @@ namespace Zilf
         PREACTIONS,
         PREDGEN,
         PREPOSITIONS,
+        [Atom("PRESERVE-SPACES?")]
+        PRESERVE_SPACES_P,
         PRINT,
         PRINTB,
         PRINTC,
