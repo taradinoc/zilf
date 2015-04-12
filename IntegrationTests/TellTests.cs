@@ -83,5 +83,20 @@ namespace IntegrationTests
                 .WithGlobal("<SETG CRLF-CHARACTER !\\^>")
                 .Outputs("foo\nbar");
         }
+
+        [TestMethod]
+        public void Two_Spaces_After_Period_Should_Collapse_By_Default()
+        {
+            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
+                .Outputs("Hi. Hi.  Hi.\n Hi!  Hi?  \n");
+        }
+
+        [TestMethod]
+        public void Two_Spaces_After_Period_Should_Not_Collapse_With_PRESERVE_SPACES()
+        {
+            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
+                .WithGlobal("<SETG PRESERVE-SPACES? T>")
+                .Outputs("Hi.  Hi.   Hi.\n  Hi!  Hi?  \n");
+        }
     }
 }

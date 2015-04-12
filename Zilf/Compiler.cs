@@ -696,18 +696,43 @@ namespace Zilf
         private static string TranslateString(string str, Context ctx)
         {
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
-            return TranslateString(str, crlfChar == null ? '|' : crlfChar.Char);
+            var preserveSpaces = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PRESERVE_SPACES_P));
+            return TranslateString(
+                str,
+                crlfChar == null ? '|' : crlfChar.Char,
+                preserveSpaces == null ? false : preserveSpaces.IsTrue);
         }
 
-        private static string TranslateString(string str, char crlfChar)
+        private static string TranslateString(string str, char crlfChar, bool preserveSpaces)
         {
-            // strip CR/LF and ensure 1 space afterward; translate '|' to LF
+            // strip CR/LF and ensure 1 space afterward, translate crlfChar to LF,
+            // and collapse two spaces after '.' or crlfChar into one
             StringBuilder sb = new StringBuilder(str);
             char? last = null;
+            bool sawDotSpace = false;
 
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
+
+                if (!preserveSpaces)
+                {
+                    if ((last == '.' || last == crlfChar) && c == ' ')
+                    {
+                        sawDotSpace = true;
+                    }
+                    else if (sawDotSpace && c == ' ')
+                    {
+                        sb.Remove(i--, 1);
+                        sawDotSpace = false;
+                        last = c;
+                        continue;
+                    }
+                    else
+                    {
+                        sawDotSpace = false;
+                    }
+                }
 
                 switch (c)
                 {
