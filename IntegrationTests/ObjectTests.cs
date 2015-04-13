@@ -70,8 +70,16 @@ namespace IntegrationTests
             return result.ToArray();
         }
 
+        /* Default ordering:
+         * 
+         * Objects are numbered in reverse definition-or-mention order.
+         * 
+         * The object tree is traversed in reverse definition order (ignoring mere mentions),
+         * except that the first child defined is the first child traversed (not the last).
+         */
+
         [TestMethod]
-        public void TestContents()
+        public void TestContents_DefaultOrder()
         {
             AssertGlobals(
                 "<OBJECT RAINBOW>",
@@ -85,7 +93,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestHouse()
+        public void TestHouse_DefaultOrder()
         {
             AssertGlobals(
                 "<OBJECT FRIDGE (IN KITCHEN)>",
@@ -104,7 +112,50 @@ namespace IntegrationTests
                     new[] { "ROOMS", "KITCHEN", "BEDROOM" }));
         }
 
-        // TODO: tests for <ORDER-OBJECTS? ...>
+        // TODO: tests for other <ORDER-OBJECTS? ...>
+
+
+        /* <ORDER-TREE? REVERSE-DEFINED>:
+         * 
+         * The object tree is traversed in reverse definition order (with no exception for
+         * the first defined child).
+         */
+
+        [TestMethod]
+        public void TestContents_Tree_ReverseDefined()
+        {
+            AssertGlobals(
+                "<ORDER-TREE? REVERSE-DEFINED>",
+                "<OBJECT RAINBOW>",
+                "<OBJECT RED (IN RAINBOW)>",
+                "<OBJECT YELLOW (IN RAINBOW)>",
+                "<OBJECT GREEN (IN RAINBOW)>",
+                "<OBJECT BLUE (IN RAINBOW)>")
+                .Implies(TreeImplications(
+                    new[] { "BLUE", "GREEN", "YELLOW", "RED", "RAINBOW" },
+                    new[] { "RAINBOW", "BLUE", "GREEN", "YELLOW", "RED" }));
+        }
+
+        [TestMethod]
+        public void TestHouse_Tree_ReverseDefined()
+        {
+            AssertGlobals(
+                "<ORDER-TREE? REVERSE-DEFINED>",
+                "<OBJECT FRIDGE (IN KITCHEN)>",
+                "<OBJECT SINK (IN KITCHEN)>",
+                "<OBJECT MICROWAVE (IN KITCHEN)>",
+                "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT BED (IN BEDROOM)>",
+                "<OBJECT ROOMS>",
+                "<OBJECT FLOOR>",
+                "<OBJECT CEILING>")
+                .Implies(TreeImplications(
+                    new[] { "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
+                    new[] { "KITCHEN", "MICROWAVE", "SINK", "FRIDGE" },
+                    new[] { "BEDROOM", "BED" },
+                    new[] { "ROOMS", "BEDROOM", "KITCHEN" }));
+        }
 
         #endregion
 

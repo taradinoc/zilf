@@ -2143,6 +2143,25 @@ namespace Zilf
             throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-LAST, FIRST, or LAST");
         }
 
+        [Subr("ORDER-TREE?")]
+        public static ZilObject ORDER_TREE_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "ORDER-TREE?", 1, 1);
+
+            if (args[0] is ZilAtom)
+            {
+                switch (((ZilAtom)args[0]).StdAtom)
+                {
+                    case StdAtom.REVERSE_DEFINED:
+                        ctx.ZEnvironment.TreeOrdering = TreeOrdering.ReverseDefined;
+                        return args[0];
+                }
+            }
+
+            throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
+        }
+
         [FSubr("TELL-TOKENS")]
         public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
         {
