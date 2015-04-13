@@ -632,6 +632,18 @@ namespace Zilf
             }
         }
 
+        private struct TableElementOperand
+        {
+            public IOperand Operand;
+            public bool ForceToByte;
+
+            public TableElementOperand(IOperand operand, bool forceToByte)
+            {
+                this.Operand = operand;
+                this.ForceToByte = forceToByte;
+            }
+        }
+
         private static void BuildTable(CompileCtx cc, ZilTable zt, ITableBuilder tb)
         {
             if ((zt.Flags & TableFlags.Lexv) != 0)
@@ -655,40 +667,53 @@ namespace Zilf
                 else if ((zt.Flags & TableFlags.WordLength) != 0)
                     tb.AddShort((short)zt.ElementCount);
 
-                IOperand[] values = new IOperand[zt.ElementCount];
-                Func<ZilObject, IOperand> convertElement = zo =>
+                TableElementOperand?[] values = new TableElementOperand?[zt.ElementCount];
+                Func<ZilObject, TableElementOperand?> convertElement = zo =>
                 {
+                    // #BYTE 123 always compiles as a byte, even in a word table
+                    var forceToByte = (zo.GetTypeAtom(cc.Context).StdAtom == StdAtom.BYTE);
+
                     // it's usually a constant value
                     var constVal = CompileConstant(cc, zo);
                     if (constVal != null)
-                        return constVal;
+                        return new TableElementOperand(constVal, forceToByte);
 
                     // but we'll also allow a global name if the global contains a table
                     IGlobalBuilder global;
                     if (zo is ZilAtom && cc.Globals.TryGetValue((ZilAtom)zo, out global) && global.DefaultValue is ITableBuilder)
-                        return global.DefaultValue;
+                        return new TableElementOperand(global.DefaultValue, forceToByte);
 
                     return null;
                 };
-                zt.CopyTo(values, 0, values.Length, convertElement, cc.Game.Zero);
+                var defaultFiller = new TableElementOperand(cc.Game.Zero, false);
+                zt.CopyTo(values, 0, values.Length, convertElement, defaultFiller);
 
                 for (int i = 0; i < values.Length; i++)
                     if (values[i] == null)
                     {
                         Errors.CompError(cc.Context, (ISourceLine)zt,
                             "non-constant in table initializer at element {0}", i);
-                        values[i] = cc.Game.Zero;
+                        values[i] = defaultFiller;
                     }
 
                 if ((zt.Flags & TableFlags.Byte) != 0)
                 {
                     for (int i = 0; i < values.Length; i++)
-                        tb.AddByte(values[i]);
+                        tb.AddByte(values[i].Value.Operand);
                 }
                 else
                 {
                     for (int i = 0; i < values.Length; i++)
-                        tb.AddShort(values[i]);
+                    {
+                        if (values[i].Value.ForceToByte)
+                        {
+                            tb.AddByte(values[i].Value.Operand);
+                        }
+                        else
+                        {
+                            tb.AddShort(values[i].Value.Operand);
+                        }
+                    }
                 }
             }
         }
