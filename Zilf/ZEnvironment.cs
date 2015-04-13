@@ -32,6 +32,25 @@ namespace Zilf
     }
 
     /// <summary>
+    /// Specifies the order of links in the object tree.
+    /// </summary>
+    /// <remarks>
+    /// These values are named with regard to how the game will traverse the objects (following FIRST? and NEXT?).
+    /// The compiler processes them in the opposite order when inserting them into the tree.
+    /// </remarks>
+    enum TreeOrdering
+    {
+        /// <summary>
+        /// Reverse definition order, except for the first defined child of each parent, which remains the first child linked.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Reverse definition order.
+        /// </summary>
+        ReverseDefined,
+    }
+
+    /// <summary>
     /// Holds the state built up during the load phase for the compiler to use.
     /// </summary>
     class ZEnvironment
@@ -60,7 +79,8 @@ namespace Zilf
         // TODO: actually use FirstObject, LastObjects, and ObjectOrdering
         public readonly List<ZilAtom> FirstObjects = new List<ZilAtom>();
         public readonly List<ZilAtom> LastObjects = new List<ZilAtom>();
-        public ObjectOrdering ObjectOrdering;
+        public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
+        public TreeOrdering TreeOrdering = TreeOrdering.Default;
 
         public readonly List<TellPattern> TellPatterns = new List<TellPattern>();
 
@@ -282,7 +302,7 @@ namespace Zilf
         public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder()
         {
             /* define objects in the reverse of "mentioned in source code" order, where
-             * "mentioned" means either defined or used as the IN/LOC of another object */
+             * "mentioned" means either defined or used as the IN/LOC/GLOBAL of another object */
 
             // the source line is only set for objects created from mentions
             var order = new List<KeyValuePair<ZilAtom, ISourceLine>>(Objects.Count);
@@ -357,26 +377,37 @@ namespace Zilf
 
         public IEnumerable<ZilModelObject> ObjectsInInsertionOrder()
         {
-            /* insert objects in source code order, except that the first
-             * defined child of each parent is inserted last */
-
-            var result = new List<ZilModelObject>(Objects);
-            var objectsByParent = Objects.ToLookup(obj => GetObjectParentName(obj));
-
-            foreach (var obj in Objects)
+            switch (this.TreeOrdering)
             {
-                // find the object's first-defined child and move it after the last-defined child
-                var first = objectsByParent[obj.Name].FirstOrDefault();
-                var last = objectsByParent[obj.Name].LastOrDefault();
+                case TreeOrdering.Default:
+                    /* insert objects in source code order, except that the first
+                     * defined child of each parent is inserted last */
 
-                if (first != last)
-                {
-                    result.Remove(first);
-                    result.Insert(result.IndexOf(last) + 1, first);
-                }
+                    var result = new List<ZilModelObject>(Objects);
+                    var objectsByParent = Objects.ToLookup(obj => GetObjectParentName(obj));
+
+                    foreach (var obj in Objects)
+                    {
+                        // find the object's first-defined child and move it after the last-defined child
+                        var first = objectsByParent[obj.Name].FirstOrDefault();
+                        var last = objectsByParent[obj.Name].LastOrDefault();
+
+                        if (first != last)
+                        {
+                            result.Remove(first);
+                            result.Insert(result.IndexOf(last) + 1, first);
+                        }
+                    }
+
+                    return result;
+
+                case TreeOrdering.ReverseDefined:
+                    // insert objects in source code order, period.
+                    return Objects;
+
+                default:
+                    throw new NotImplementedException();
             }
-
-            return result;
         }
 
         public void MergeVocabulary()

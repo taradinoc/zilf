@@ -248,6 +248,8 @@ namespace Zilf
         RESTART,
         RESTORE,
         RETURN,
+        [Atom("REVERSE-DEFINED")]
+        REVERSE_DEFINED,
         REXIT,
         RFALSE,
         [Atom("ROOMS-FIRST")]
