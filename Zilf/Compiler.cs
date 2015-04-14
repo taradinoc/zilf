@@ -1477,7 +1477,7 @@ namespace Zilf
                         resultStorage = resultStorage ?? rb.Stack;
                         label1 = rb.DefineLabel();
                         label2 = rb.DefineLabel();
-                        CompileCondition(cc, rb, form.Rest.First, label1, head.StdAtom == StdAtom.NOT);
+                        CompileCondition(cc, rb, form.Rest.First, form, label1, head.StdAtom == StdAtom.NOT);
                         rb.EmitStore(resultStorage, cc.Game.One);
                         rb.Branch(label2);
                         rb.MarkLabel(label1);
@@ -1782,14 +1782,35 @@ namespace Zilf
         }
 
         private static void CompileCondition(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
-            ILabel label, bool polarity)
+            ISourceLine src, ILabel label, bool polarity)
         {
             expr = expr.Expand(cc.Context);
-            StdAtom type = expr.GetTypeAtom(cc.Context).StdAtom;
+            var typeAtom = expr.GetTypeAtom(cc.Context);
+            StdAtom type = typeAtom.StdAtom;
 
             if (type == StdAtom.FALSE)
             {
                 if (polarity == false)
+                    rb.Branch(label);
+                return;
+            }
+            else if (type == StdAtom.ATOM)
+            {
+                var atom = (ZilAtom)expr;
+                if (atom.StdAtom != StdAtom.T)
+                {
+                    // could be a missing , or . before variable name
+                    if (cc.Locals.ContainsKey(atom) || cc.Globals.ContainsKey(atom))
+                    {
+                        Errors.CompWarning(cc.Context, src, "bare atom '{0}' treated as true here (did you mean the variable?)", expr);
+                    }
+                    else
+                    {
+                        Errors.CompWarning(cc.Context, src, "bare atom '{0}' treated as true here", expr);
+                    }
+                }
+
+                if (polarity == true)
                     rb.Branch(label);
                 return;
             }
@@ -1802,8 +1823,7 @@ namespace Zilf
             }
             else if (type != StdAtom.FORM)
             {
-                if (polarity == true)
-                    rb.Branch(label);
+                Errors.CompError(cc.Context, (expr as ISourceLine) ?? src, "bad value type for condition: {0}", typeAtom);
                 return;
             }
 
@@ -1867,11 +1887,11 @@ namespace Zilf
             switch (head.StdAtom)
             {
                 case StdAtom.NOT:
-                    CompileCondition(cc, rb, args[0], label, !polarity);
+                    CompileCondition(cc, rb, args[0], form, label, !polarity);
                     break;
 
                 case StdAtom.T_P:
-                    CompileCondition(cc, rb, args[0], label, polarity);
+                    CompileCondition(cc, rb, args[0], form, label, polarity);
                     break;
 
                 case StdAtom.OR:
@@ -1897,14 +1917,14 @@ namespace Zilf
             }
             else if (args.Length == 1)
             {
-                CompileCondition(cc, rb, args[0], label, polarity);
+                CompileCondition(cc, rb, args[0], src, label, polarity);
             }
             else if (and == polarity)
             {
                 // AND or NOR
                 ILabel failure = rb.DefineLabel();
                 for (int i = 0; i < args.Length - 1; i++)
-                    CompileCondition(cc, rb, args[i], failure, !and);
+                    CompileCondition(cc, rb, args[i], src, failure, !and);
 
                 /* Historical note: ZILCH considered <AND ... <SET X 0>> to be true,
                  * even though <SET X 0> is false. We emulate the bug by compiling the
@@ -1917,7 +1937,7 @@ namespace Zilf
                     CompileStmt(cc, rb, last, false);
                 }
                 else
-                    CompileCondition(cc, rb, last, label, and);
+                    CompileCondition(cc, rb, last, src, label, and);
 
                 rb.MarkLabel(failure);
             }
@@ -1925,7 +1945,7 @@ namespace Zilf
             {
                 // NAND or OR
                 for (int i = 0; i < args.Length - 1; i++)
-                    CompileCondition(cc, rb, args[i], label, !and);
+                    CompileCondition(cc, rb, args[i], src, label, !and);
 
                 /* Emulate the aforementioned ZILCH bug. */
                 ZilObject last = args[args.Length - 1];
@@ -1935,7 +1955,7 @@ namespace Zilf
                     CompileStmt(cc, rb, last, false);
                 }
                 else
-                    CompileCondition(cc, rb, last, label, !and);
+                    CompileCondition(cc, rb, last, src, label, !and);
             }
         }
 
@@ -2005,7 +2025,7 @@ namespace Zilf
                     if (and)
                     {
                         // for AND we only need the result of the last expr; otherwise we only care about truth value
-                        CompileCondition(cc, rb, args.First, nextLabel, true);
+                        CompileCondition(cc, rb, args.First, src, nextLabel, true);
                         rb.EmitStore(resultStorage, cc.Game.Zero);
                     }
                     else
@@ -2042,7 +2062,7 @@ namespace Zilf
                 {
                     ILabel nextLabel = rb.DefineLabel();
 
-                    CompileCondition(cc, rb, args.First, nextLabel, and);
+                    CompileCondition(cc, rb, args.First, src, nextLabel, and);
 
                     rb.Branch(lastLabel);
                     rb.MarkLabel(nextLabel);
@@ -2317,7 +2337,7 @@ namespace Zilf
             bool testFirst;
             if (IsNonVariableForm(end))
             {
-                CompileCondition(cc, rb, end, cc.ReturnLabel, true);
+                CompileCondition(cc, rb, end, (ISourceLine)end, cc.ReturnLabel, true);
                 cc.ReturnState |= BlockReturnState.Returned;
                 testFirst = true;
             }
@@ -2669,16 +2689,17 @@ namespace Zilf
                                 new DebugLineRef(
                                     ((ZilForm)condition).SourceFile,
                                     ((ZilForm)condition).SourceLine, 1));
-                        CompileCondition(cc, rb, condition, nextLabel, false);
+                        CompileCondition(cc, rb, condition, (ISourceLine)condition, nextLabel, false);
                         break;
 
                     case StdAtom.FALSE:
                         // never true
-                        //XXX warning message - clause will never be evaluated
+                        // TODO: warning message? clause will never be evaluated
                         continue;
 
                     default:
                         // always true
+                        // TODO: warn if not T or ELSE?
                         elsePart = true;
                         break;
                 }
