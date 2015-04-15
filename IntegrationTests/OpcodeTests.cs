@@ -593,6 +593,11 @@ namespace IntegrationTests
             AssertExpr("<EQUAL? 1 2 3 4>").GivesNumber("0");
             AssertExpr("<EQUAL? 1 2 3 4 5 6 7 8 9 0 1>").GivesNumber("1");
 
+            AssertExpr("<COND (<EQUAL? 1 2 3 4 5 6 1> 99) (T 0)>").GivesNumber("99");
+            AssertRoutine("X", "<COND (<EQUAL? <+ .X 1> 2 4 6 8> 99) (T 0)>")
+                .WhenCalledWith("7")
+                .GivesNumber("99");
+
             // alias
             AssertExpr("<=? 1 1>").GivesNumber("1");
             AssertExpr("<==? 1 1>").GivesNumber("1");
