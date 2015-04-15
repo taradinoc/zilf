@@ -897,27 +897,34 @@ namespace Zilf
                     }
                     else
                     {
-                        // all but the last test has true polarity and just skips the rest of the tests
                         var skip = c.rb.DefineLabel();
+
                         while (queue.Count > 0)
                         {
+                            // the last test (count <= 3) has false polarity and branches to the target label
+                            // the earlier ones (count > 3) have true polarity and just skip the rest of the tests
                             switch (queue.Count)
                             {
                                 case 3:
-                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), skip, true);
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), c.label, false);
                                     break;
                                 case 2:
-                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), skip, true);
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), c.label, false);
                                     break;
                                 case 1:
-                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), skip, true);
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), c.label, false);
                                     break;
                                 default:
-                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), c.label, false);
+                                    c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), skip, true);
                                     break;
                             }
                         }
+
+                        c.rb.MarkLabel(skip);
                     }
+
+                    if (tempAtom != null)
+                        PopInnerLocal(c.cc, tempAtom);
                 }
             }
 
