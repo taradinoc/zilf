@@ -2162,6 +2162,28 @@ namespace Zilf
             throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
         }
 
+        [Subr("ORDER-FLAGS?")]
+        public static ZilObject ORDER_FLAGS_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "ORDER-FLAGS?", 2, 0);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null || atom.StdAtom != StdAtom.LAST)
+                throw new InterpreterError("ORDER-FLAGS?: first arg must be LAST");
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                atom = args[i] as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ORDER-FLAGS?: all args must be atoms");
+
+                ctx.ZEnvironment.FlagsOrderedLast.Add(atom);
+            }
+
+            return args[0];
+        }
+
         [FSubr("TELL-TOKENS")]
         public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
         {

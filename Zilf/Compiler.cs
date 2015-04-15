@@ -120,16 +120,21 @@ namespace Zilf
             foreach (KeyValuePair<ZilAtom, ZilObject> pair in ctx.ZEnvironment.PropertyDefaults)
                 DefineProperty(cc, pair.Key);
 
-            // builders for flags mentioned in syntax
-            var syntaxRelevantFlags = (from syn in ctx.ZEnvironment.Syntaxes
-                                       from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
-                                       where flag != null
-                                       select flag).Distinct().ToList();
+            // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
+            var highestFlags =
+                ctx.ZEnvironment.FlagsOrderedLast
+                    .Concat(
+                        from syn in ctx.ZEnvironment.Syntaxes
+                        from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
+                        where flag != null
+                        select flag)
+                    .Distinct()
+                    .ToList();
 
-            if (syntaxRelevantFlags.Count >= cc.Game.MaxFlags)
-                Errors.CompError(ctx, null, "too many flags mentioned in syntax lines");
+            if (highestFlags.Count >= cc.Game.MaxFlags)
+                Errors.CompError(ctx, null, "too many flags requiring high numbers");
 
-            foreach (var flag in syntaxRelevantFlags)
+            foreach (var flag in highestFlags)
                 DefineFlag(cc, flag);
 
             // builders for objects
