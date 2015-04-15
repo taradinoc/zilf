@@ -69,6 +69,7 @@ namespace Zilf
 
         public readonly Dictionary<ZilAtom, ZilObject> PropertyDefaults = new Dictionary<ZilAtom, ZilObject>();
         public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms = new Dictionary<ZilAtom, ZilAtom>();
+        public readonly List<ZilAtom> FlagsOrderedLast = new List<ZilAtom>();
 
         public readonly List<Syntax> Syntaxes = new List<Syntax>();
         public readonly Dictionary<ZilAtom, Word> Vocabulary = new Dictionary<ZilAtom, Word>();
