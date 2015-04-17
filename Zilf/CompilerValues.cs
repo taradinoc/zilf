@@ -283,15 +283,15 @@ namespace Zilf
     {
         private readonly string filename;
         private readonly int line;
-        private readonly int elements;
+        private readonly int repetitions;
         private readonly ZilObject[] initializer;
         private readonly TableFlags flags;
 
-        public ZilTable(string filename, int line, int elements, ZilObject[] initializer, TableFlags flags)
+        public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags)
         {
             this.filename = filename;
             this.line = line;
-            this.elements = elements;
+            this.repetitions = repetitions;
             this.initializer = initializer;
             this.flags = flags;
         }
@@ -300,7 +300,17 @@ namespace Zilf
 
         public int ElementCount
         {
-            get { return elements; }
+            get
+            {
+                if (initializer != null && initializer.Length > 0)
+                {
+                    return repetitions * initializer.Length;
+                }
+                else
+                {
+                    return repetitions;
+                }
+            }
         }
 
         public TableFlags Flags
@@ -313,18 +323,22 @@ namespace Zilf
             get { return filename + ":" + line.ToString(); }
         }
 
-        public void CopyTo<T>(T[] array, int start, int length,
-            Func<ZilObject, T> convert, T defaultFiller)
+        public void CopyTo<T>(T[] array, Func<ZilObject, T> convert, T defaultFiller)
         {
             if (initializer != null && initializer.Length > 0)
             {
-                for (int i = 0; i < length; i++)
-                    array[start + i] = convert(initializer[i % initializer.Length]);
+                for (int i = 0; i < repetitions; i++)
+                {
+                    for (int j = 0; j < initializer.Length; j++)
+                    {
+                        array[i * initializer.Length + j] = convert(initializer[j]);
+                    }
+                }
             }
             else
             {
-                for (int i = 0; i < length; i++)
-                    array[start + i] = defaultFiller;
+                for (int i = 0; i < repetitions; i++)
+                    array[i] = defaultFiller;
             }
         }
 
@@ -333,7 +347,7 @@ namespace Zilf
             StringBuilder sb = new StringBuilder();
 
             sb.Append("#TABLE (");
-            sb.Append(elements);
+            sb.Append(repetitions);
             sb.Append(" (");
 
             int pos = sb.Length;
@@ -394,7 +408,7 @@ namespace Zilf
             var result = new List<ZilObject>(3);
 
             // element count
-            result.Add(new ZilFix(elements));
+            result.Add(new ZilFix(repetitions));
 
             // flags
             var flagList = new List<ZilObject>(4);

@@ -122,7 +122,7 @@ namespace IntegrationTests
             }
         }
 
-        private static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}");
+        private static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
         private static string MassageText(string text)
         {

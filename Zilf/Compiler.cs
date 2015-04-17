@@ -653,10 +653,10 @@ namespace Zilf
         {
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {
-                IOperand[] values = new IOperand[zt.ElementCount * 3];
-                zt.CopyTo(values, 0, values.Length, zo => CompileConstant(cc, zo), cc.Game.Zero);
+                IOperand[] values = new IOperand[zt.ElementCount];
+                zt.CopyTo(values, zo => CompileConstant(cc, zo), cc.Game.Zero);
 
-                tb.AddByte((byte)zt.ElementCount);
+                tb.AddByte((byte)(zt.ElementCount / 3));
                 tb.AddByte(0);
 
                 for (int i = 0; i < values.Length; i++)
@@ -691,7 +691,7 @@ namespace Zilf
                     return null;
                 };
                 var defaultFiller = new TableElementOperand(cc.Game.Zero, false);
-                zt.CopyTo(values, 0, values.Length, convertElement, defaultFiller);
+                zt.CopyTo(values, convertElement, defaultFiller);
 
                 for (int i = 0; i < values.Length; i++)
                     if (values[i] == null)
