@@ -1565,11 +1565,13 @@ namespace Zilf
         public static ZilObject ITABLE(Context ctx, ZilObject[] args)
         {
             // Syntax:
-            //    <ITABLE [specifier] elements [(flags...)] [init...]>
-            // 'elements' defaults to words unless BYTE/LEXV flag is specified.
+            //    <ITABLE [specifier] count [(flags...)] [init...]>
+            // 'count' is a number of repetitions.
             // 'specifier' controls the length marker. BYTE specifier
             // makes the length marker a byte (but the table is still a
             // word table unless changed with a flag).
+            // 'init' is a sequence of values to be repeated 'count' times.
+            // values are compiled as words unless BYTE/LEXV flag is specified.
 
             if (args.Length < 1)
                 throw new InterpreterError(null, "ITABLE", 1, 0);
@@ -1648,7 +1650,7 @@ namespace Zilf
             }
 
             ZilObject[] initializer;
-            if (i < args.Length)
+            if (i >= args.Length)
             {
                 initializer = null;
             }
@@ -1746,7 +1748,7 @@ namespace Zilf
             }
 
             ZilTable tab = new ZilTable(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
-                values.Count, values.ToArray(), flags);
+                1, values.ToArray(), flags);
             ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }

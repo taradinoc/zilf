@@ -62,6 +62,7 @@
     <Compile Include="Interpreter\ParsingTests.cs" />
     <Compile Include="Interpreter\AssocTests.cs" />
     <Compile Include="SyntaxTests.cs" />
+    <Compile Include="TableTests.cs" />
     <Compile Include="WordTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

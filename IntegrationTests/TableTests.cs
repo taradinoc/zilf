@@ -25,5 +25,20 @@ namespace IntegrationTests
                     "<==? <GETB ,TBL 2> 123>",
                     "<==? <GETB ,TBL 3> 45>");
         }
+
+        [TestMethod]
+        public void ITABLE_Multi_Element_Initializers_Should_Repeat_N_Times()
+        {
+            AssertGlobals(
+                "<GLOBAL TBL1 <ITABLE 2 1 2 3>>",
+                "<GLOBAL TBL2 <ITABLE 3 9 8 7 6>>")
+                .Implies(
+                    "<==? <GET ,TBL1 0> 1>",
+                    "<==? <GET ,TBL1 1> 2>",
+                    "<==? <GET ,TBL1 2> 3>",
+                    "<==? <GET ,TBL1 3> 1>",
+                    "<==? <GET ,TBL1 4> 2>",
+                    "<==? <GET ,TBL1 5> 3>");
+        }
     }
 }
