@@ -341,6 +341,7 @@ namespace Zilf
             globalValues.Add(GetStdAtom(StdAtom.ZIL_VERSION), new ZilString(Program.VERSION));
             globalValues.Add(GetStdAtom(StdAtom.PREDGEN), TRUE);
             globalValues.Add(GetStdAtom(StdAtom.PLUS_MODE), zenv.ZVersion > 3 ? TRUE : FALSE);
+            globalValues.Add(GetStdAtom(StdAtom.SIBREAKS), new ZilString(",.\""));
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);

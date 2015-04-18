@@ -265,6 +265,7 @@ namespace Zilf
         SERIAL,
         SET,
         SETG,
+        SIBREAKS,
         SORRY,
         SOUND,
         SPLIT,

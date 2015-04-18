@@ -81,6 +81,7 @@ namespace Zilf.Emit.Zap
         private List<TableBuilder> impureTables = new List<TableBuilder>(10);
         private List<TableBuilder> pureTables = new List<TableBuilder>(10);
         private List<WordBuilder> vocabulary = new List<WordBuilder>(100);
+        private HashSet<char> siBreaks = new HashSet<char>();
         private Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
         private Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
 
@@ -305,6 +306,11 @@ namespace Zilf.Emit.Zap
             vocabulary.Add(result);
             symbols.Add(name, "word");
             return result;
+        }
+
+        public ICollection<char> SelfInsertingBreaks
+        {
+            get { return siBreaks; }
         }
 
         public static string SanitizeString(string text)
@@ -638,10 +644,19 @@ namespace Zilf.Emit.Zap
             // vocabulary table
             writer.WriteLine();
             writer.WriteLine("VOCAB:: .TABLE");
-            writer.WriteLine(INDENT + ".BYTE 3");
-            writer.WriteLine(INDENT + ".BYTE 46");
-            writer.WriteLine(INDENT + ".BYTE 44");
-            writer.WriteLine(INDENT + ".BYTE 34");
+
+            if (siBreaks.Count > 255)
+                throw new InvalidOperationException("Too many self-inserting breaks");
+
+            writer.WriteLine(INDENT + ".BYTE {0}", siBreaks.Count);
+            foreach (char c in siBreaks)
+            {
+                if ((byte)c != c)
+                    throw new InvalidOperationException(string.Format(
+                        "Self-inserting break character out of range (${0:x4})", (ushort)c));
+
+                writer.WriteLine(INDENT + ".BYTE {0}", (byte)c);
+            }
 
             if (vocabulary.Count == 0)
             {
