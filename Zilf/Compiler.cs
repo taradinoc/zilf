@@ -159,6 +159,15 @@ namespace Zilf
             DefinePunctWord(ctx, cc, "\"", "QUOTE");
             DefinePunctWord(ctx, cc, "'", "APOSTROPHE");
 
+            // self-inserting breaks
+            var siBreaks = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) as ZilString;
+            if (siBreaks != null)
+            {
+                gb.SelfInsertingBreaks.Clear();
+                foreach (var c in siBreaks.Text)
+                    gb.SelfInsertingBreaks.Add(c);
+            }
+
             // builders for vocabulary
             foreach (var pair in ctx.ZEnvironment.Buzzwords)
             {

@@ -162,6 +162,15 @@ namespace Zilf.Emit
         /// be the same size.
         /// </remarks>
         IWordBuilder DefineVocabularyWord(string word);
+        /// <summary>
+        /// Gets the collection of self-inserting word break characters.
+        /// </summary>
+        /// <remarks>
+        /// These characters are split off during lexical analysis by the LEX
+        /// and READ instructions, such that if '.' is in the set, "Mrs. Smith"
+        /// will be lexed as three words: {"mrs", ".", "smith"}.
+        /// </remarks>
+        ICollection<char> SelfInsertingBreaks { get; }
 
         /// <summary>
         /// Writes the final output and closes the game builder.
