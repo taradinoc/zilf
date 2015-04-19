@@ -180,7 +180,8 @@ namespace Zilf
             inFile = null;
             outFile = null;
 
-            bool caseSensitive = false, traceRoutines = false, debugInfo = false;
+            bool traceRoutines = false, debugInfo = false;
+            bool? caseSensitive = null;
             RunMode? mode = null;
             bool? quiet = null;
             List<string> includePaths = new List<string>();
@@ -205,8 +206,12 @@ namespace Zilf
                         quiet = true;
                         break;
 
-                    case "-s":
+                    case "-cs":
                         caseSensitive = true;
+                        break;
+
+                    case "-ci":
+                        caseSensitive = false;
                         break;
 
                     case "-tr":
@@ -283,9 +288,24 @@ namespace Zilf
                     break;
             }
 
-            Context ctx = new Context(!caseSensitive);
+            if (caseSensitive == null)
+            {
+                switch (mode.Value)
+                {
+                    case RunMode.Expression:
+                    case RunMode.Interactive:
+                        caseSensitive = false;
+                        break;
 
-            if (inFile != null)
+                    default:
+                        caseSensitive = true;
+                        break;
+                }
+            }
+
+            Context ctx = new Context(!caseSensitive.Value);
+
+            if (inFile != null && mode.Value != RunMode.Expression)
             {
                 ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
             }
@@ -315,7 +335,8 @@ Modes:
   -i                    interactive mode (default if no filename given)
 General switches:
   -q                    quiet: no banner or prompt
-  -s                    case sensitive
+  -cs                   case sensitive (default for -c, -x)
+  -ci                   case insensitive (default for -e, -i)
   -ip dir               add dir to include path (may be repeated)
 Compiler switches:
   -tr                   trace routine calls at runtime
