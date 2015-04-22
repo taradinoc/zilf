@@ -2332,6 +2332,19 @@ namespace Zilf
             var start = spec.Rest.First;
             var end = spec.Rest.Rest.First;
 
+            // look for an end block
+            var body = args.Rest;
+            ZilList endStmts;
+            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            {
+                endStmts = (ZilList)body.First;
+                body = body.Rest;
+            }
+            else
+            {
+                endStmts = null;
+            }
+
             // create block
             var oldAgain = cc.AgainLabel;
             var oldReturn = cc.ReturnLabel;
@@ -2364,12 +2377,11 @@ namespace Zilf
             }
 
             // body
-            args = args.Rest;
-            while (args != null && !args.IsEmpty)
+            while (body != null && !body.IsEmpty)
             {
                 // ignore the results of all statements
-                CompileStmt(cc, rb, args.First, false);
-                args = args.Rest;
+                CompileStmt(cc, rb, body.First, false);
+                body = body.Rest;
             }
 
             // increment
@@ -2415,8 +2427,15 @@ namespace Zilf
                 rb.Branch(cc.AgainLabel);
             }
 
-            // exhausted label, provide a return value if we need one
+            // exhausted label, end statements, provide a return value if we need one
             rb.MarkLabel(exhaustedLabel);
+
+            while (endStmts != null && !endStmts.IsEmpty)
+            {
+                CompileStmt(cc, rb, endStmts.First, false);
+                endStmts = endStmts.Rest;
+            }
+
             if (wantResult)
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
@@ -2526,13 +2545,6 @@ namespace Zilf
                 rb.EmitStore(counter, next);
                 rb.BranchIfZero(counter, cc.AgainLabel, false);
 
-                // end statements
-                while (endStmts != null && !endStmts.IsEmpty)
-                {
-                    CompileStmt(cc, rb, endStmts.First, false);
-                    endStmts = endStmts.Rest;
-                }
-
                 // clean up next
                 PopInnerLocal(cc, nextAtom);
             }
@@ -2548,17 +2560,17 @@ namespace Zilf
 
                 // next object
                 rb.EmitGetSibling(counter, counter, cc.AgainLabel, true);
-
-                // end statements
-                while (endStmts != null && !endStmts.IsEmpty)
-                {
-                    CompileStmt(cc, rb, endStmts.First, false);
-                    endStmts = endStmts.Rest;
-                }
             }
 
-            // exhausted label, provide a return value if we need one
+            // exhausted label, end statements, provide a return value if we need one
             rb.MarkLabel(exhaustedLabel);
+
+            while (endStmts != null && !endStmts.IsEmpty)
+            {
+                CompileStmt(cc, rb, endStmts.First, false);
+                endStmts = endStmts.Rest;
+            }
+            
             if (wantResult)
                 rb.EmitStore(rb.Stack, cc.Game.One);
 

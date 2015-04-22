@@ -82,6 +82,18 @@ namespace IntegrationTests
                 .GivesNumber("15");
         }
 
+        [TestMethod]
+        public void TestDO_EndClause()
+        {
+            AssertRoutine("",
+                "<DO (I 1 4) " +
+                "  (<TELL \"rock!\">) " +
+                "  <TELL N .I> " +
+                "  <COND (<G=? .I 3> <TELL \" o'clock\">)> " +
+                "  <TELL \", \">>")
+                .Outputs("1, 2, 3 o'clock, 4 o'clock, rock!");
+        }
+
         #endregion
 
         #region MAP-CONTENTS
@@ -121,6 +133,14 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestMAP_CONTENTS_WithEnd_Empty()
+        {
+            AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F ,TABLE) (END <RETURN 42>) <RFALSE>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .GivesNumber("42");
+        }
+
+        [TestMethod]
         public void TestMAP_CONTENTS_WithNextAndEnd()
         {
             AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F N ,TABLE) (END <RETURN .SUM>) <REMOVE .F> <SET SUM <+ .SUM <GETP .F ,P?PRICE>>>>")
@@ -129,6 +149,14 @@ namespace IntegrationTests
                 .WithGlobal("<OBJECT CHERRY (IN TABLE) (PRICE 2)>")
                 .WithGlobal("<OBJECT BANANA (IN TABLE) (PRICE 3)>")
                 .GivesNumber("6");
+        }
+
+        [TestMethod]
+        public void TestMAP_CONTENTS_WithNextAndEnd_Empty()
+        {
+            AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F N ,TABLE) (END <RETURN 42>) <RFALSE>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .GivesNumber("42");
         }
 
         #endregion
