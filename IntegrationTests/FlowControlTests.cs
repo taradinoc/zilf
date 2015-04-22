@@ -68,6 +68,20 @@ namespace IntegrationTests
                 .Outputs("FOO\nBAR\n7\nBAR\n8\nBAR\n9\nBAR\n");
         }
 
+        [TestMethod]
+        public void TestDO_Result()
+        {
+            AssertRoutine("", "<DO (I 1 10) <>>")
+                .GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void TestDO_Result_RETURN()
+        {
+            AssertRoutine("", "<DO (I 1 10) <COND (<==? .I 5> <RETURN <* .I 3>>)>>")
+                .GivesNumber("15");
+        }
+
         #endregion
 
         #region MAP-CONTENTS

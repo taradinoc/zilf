@@ -1467,8 +1467,7 @@ namespace Zilf
                             head.StdAtom == StdAtom.REPEAT, head.StdAtom != StdAtom.BIND);
 
                     case StdAtom.DO:
-                        CompileDO(cc, rb, form.Rest, form);
-                        return wantResult ? cc.Game.One : null;
+                        return CompileDO(cc, rb, form.Rest, form, wantResult, resultStorage);
                     case StdAtom.MAP_CONTENTS:
                         return CompileMAP_CONTENTS(cc, rb, form.Rest, form, wantResult, resultStorage);
                     case StdAtom.MAP_DIRECTIONS:
@@ -2181,7 +2180,7 @@ namespace Zilf
                         if (wantThisResult && result != rb.Stack)
                             rb.EmitStore(rb.Stack, result);
                     }
-                    else if (wantResult)
+                    else if (wantResult)    // TODO: should be wantThisResult?
                     {
                         result = CompileConstant(cc, args.First);
                         if (result == null)
@@ -2305,8 +2304,11 @@ namespace Zilf
             return first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
         }
 
-        private static void CompileDO(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src)
+        private static IOperand CompileDO(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
+            bool wantResult, IVariable resultStorage)
         {
+            // resultStorage is unused here for the same reason as in CompilePROG.
+
             // parse binding list
             if (args == null || args.First == null ||
                 args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
@@ -2337,7 +2339,9 @@ namespace Zilf
 
             cc.AgainLabel = rb.DefineLabel();
             cc.ReturnLabel = rb.DefineLabel();
-            cc.ReturnState = 0;
+            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+
+            var exhaustedLabel = rb.DefineLabel();
 
             // initialize counter
             var counter = PushInnerLocal(cc, rb, atom);
@@ -2351,8 +2355,7 @@ namespace Zilf
             bool testFirst;
             if (IsNonVariableForm(end))
             {
-                CompileCondition(cc, rb, end, (ISourceLine)end, cc.ReturnLabel, true);
-                cc.ReturnState |= BlockReturnState.Returned;
+                CompileCondition(cc, rb, end, (ISourceLine)end, exhaustedLabel, true);
                 testFirst = true;
             }
             else
@@ -2412,6 +2415,11 @@ namespace Zilf
                 rb.Branch(cc.AgainLabel);
             }
 
+            // exhausted label, provide a return value if we need one
+            rb.MarkLabel(exhaustedLabel);
+            if (wantResult)
+                rb.EmitStore(rb.Stack, cc.Game.One);
+
             // clean up block and counter
             if ((cc.ReturnState & BlockReturnState.Returned) != 0)
                 rb.MarkLabel(cc.ReturnLabel);
@@ -2421,6 +2429,8 @@ namespace Zilf
             cc.AgainLabel = oldAgain;
             cc.ReturnLabel = oldReturn;
             cc.ReturnState = oldReturnState;
+
+            return wantResult ? rb.Stack : null;
         }
 
         private static IOperand CompileMAP_CONTENTS(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
