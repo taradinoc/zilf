@@ -140,6 +140,21 @@ namespace ZilfTests
         }
 
         [TestMethod]
+        public void V4_OldVoc_CompactVocab_Verb_Dir_Should_Warn()
+        {
+            Context ctx;
+            Word word;
+            CreateWordInContext(4, false, out ctx, out word);
+            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
+
+            word.SetVerb(ctx, dummySrc, 100);
+            word.SetDirection(ctx, dummySrc, 200);
+
+            word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
+            Assert.AreNotEqual(0, ctx.WarningCount);
+        }
+
+        [TestMethod]
         public void V4_NewVoc_Verb_Prep_Object_Adj_Should_Keep_VP_Values()
         {
             Test_Keep_VP_Values(4, true, (ctx, word, verbValue, prepValue) =>
@@ -245,7 +260,79 @@ namespace ZilfTests
 
             public override string ToString()
             {
- 	            return string.Format("(V{0}-{1}, {2}={3}, {4}={5}, {6}={7})",
+                return string.Format("(V{0}-{1}, {2}={3}, {4}={5}, {6}={7})",
+                    ZVersion, NewVoc ? "New" : "Old",
+                    FirstPart, FirstValue,
+                    SecondPart, SecondValue,
+                    ThirdPart, ThirdValue);
+            }
+        }
+
+        private struct CompactWtwbTestCase
+        {
+            public int ZVersion;
+            public bool NewVoc;
+
+            public PartOfSpeech FirstPart;
+            public byte FirstValue;
+            public PartOfSpeech SecondPart;
+            public byte SecondValue;
+            public PartOfSpeech ThirdPart;
+            public byte ThirdValue;
+
+            public PartOfSpeech ExpectedPartOfSpeech;
+            public byte ExpectedValue1;
+
+            public bool Warn;
+
+            public CompactWtwbTestCase(int zversion, bool newVoc,
+                PartOfSpeech firstPart, byte firstValue,
+                PartOfSpeech expectedPartOfSpeech, byte expectedValue1)
+                : this(zversion, newVoc,
+                    firstPart, firstValue,
+                    0, 0,
+                    0, 0,
+                    expectedPartOfSpeech, expectedValue1)
+            {
+            }
+
+            public CompactWtwbTestCase(int zversion, bool newVoc,
+                PartOfSpeech firstPart, byte firstValue,
+                PartOfSpeech secondPart, byte secondValue,
+                PartOfSpeech expectedPartOfSpeech, byte expectedValue1)
+                : this(zversion, newVoc,
+                    firstPart, firstValue,
+                    secondPart, secondValue,
+                    0, 0,
+                    expectedPartOfSpeech, expectedValue1)
+            {
+            }
+
+            public CompactWtwbTestCase(int zversion, bool newVoc,
+                PartOfSpeech firstPart, byte firstValue,
+                PartOfSpeech secondPart, byte secondValue,
+                PartOfSpeech thirdPart, byte thirdValue,
+                PartOfSpeech expectedPartOfSpeech, byte expectedValue1)
+            {
+                this.ZVersion = zversion;
+                this.NewVoc = newVoc;
+
+                this.FirstPart = firstPart;
+                this.FirstValue = firstValue;
+                this.SecondPart = secondPart;
+                this.SecondValue = secondValue;
+                this.ThirdPart = thirdPart;
+                this.ThirdValue = thirdValue;
+
+                this.ExpectedPartOfSpeech = expectedPartOfSpeech;
+                this.ExpectedValue1 = expectedValue1;
+
+                this.Warn = false;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("(V{0}-{1}-Compact, {2}={3}, {4}={5}, {6}={7})",
                     ZVersion, NewVoc ? "New" : "Old",
                     FirstPart, FirstValue,
                     SecondPart, SecondValue,
@@ -291,7 +378,7 @@ namespace ZilfTests
         }
 
         [TestMethod]
-        public void WriteToWordBuilder_Should_Produce_Expected_Output()
+        public void WriteToWordBuilder_Should_Produce_Expected_Output_NonCompact()
         {
             const int OBJPRESENT = 1, ADJNUM = 2, BUZZNUM = 3, DIRNUM = 4, PREPNUM = 5, VERBNUM = 6;
 
@@ -458,6 +545,187 @@ namespace ZilfTests
                         tc,
                         tc.ExpectedPartOfSpeech, tc.ExpectedValue1, tc.ExpectedValue2,
                         (PartOfSpeech)wb.ActualBytes[0], wb.ActualBytes[1], wb.ActualBytes[2]);
+                }
+
+                if (tc.Warn)
+                {
+                    Assert.AreNotEqual(0, ctx.WarningCount, "For {0}, expected some compiler warnings", tc);
+                }
+                else
+                {
+                    Assert.AreEqual(0, ctx.WarningCount, "For {0}, expected no compiler warnings", tc);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void WriteToWordBuilder_Should_Produce_Expected_Output_Compact()
+        {
+            const int OBJPRESENT = 1, ADJNUM = 2, BUZZNUM = 3, DIRNUM = 4, PREPNUM = 5, VERBNUM = 6;
+
+            CompactWtwbTestCase[] testCases = {
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Object, 0),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Object, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.DirectionFirst, DIRNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.DirectionFirst, DIRNUM),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Adjective, 0),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Adjective, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.Adjective | PartOfSpeech.DirectionFirst, DIRNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Adjective | PartOfSpeech.DirectionFirst, DIRNUM) { Warn = true },
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Adjective, 0),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Object | PartOfSpeech.Adjective, 0),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.Adjective | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Preposition | PartOfSpeech.Verb | PartOfSpeech.Object | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Buzzword, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Direction, DIRNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Direction | PartOfSpeech.Buzzword | PartOfSpeech.DirectionFirst, DIRNUM),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Preposition, PREPNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Preposition | PartOfSpeech.Buzzword, 0),
+                new CompactWtwbTestCase(4, false,
+                    PartOfSpeech.Verb, VERBNUM,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Verb | PartOfSpeech.Buzzword | PartOfSpeech.VerbFirst, VERBNUM),
+                new CompactWtwbTestCase(4, true,
+                    PartOfSpeech.Object, OBJPRESENT,
+                    PartOfSpeech.Buzzword, BUZZNUM,
+                    PartOfSpeech.Adjective, ADJNUM,
+                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
+            };
+
+            foreach (var tc in testCases)
+            {
+                // set up word according to test case
+                Context ctx;
+                Word word;
+                CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
+                ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
+
+                // TODO: catch exceptions in this block to indicate which test failed
+
+                for (int i = 0; i < 3; i++)
+                {
+                    var part = i == 0 ? tc.FirstPart : i == 1 ? tc.SecondPart : tc.ThirdPart;
+                    var value = i == 0 ? tc.FirstValue : i == 1 ? tc.SecondValue : tc.ThirdValue;
+
+                    switch (part)
+                    {
+                        case PartOfSpeech.Adjective:
+                            word.SetAdjective(ctx, dummySrc, value);
+                            break;
+                        case PartOfSpeech.Buzzword:
+                            word.SetBuzzword(ctx, dummySrc, value);
+                            break;
+                        case PartOfSpeech.Direction:
+                            word.SetDirection(ctx, dummySrc, value);
+                            break;
+                        case PartOfSpeech.Object:
+                            word.SetObject(ctx, dummySrc);
+                            break;
+                        case PartOfSpeech.Preposition:
+                            word.SetPreposition(ctx, dummySrc, value);
+                            break;
+                        case PartOfSpeech.Verb:
+                            word.SetVerb(ctx, dummySrc, value);
+                            break;
+                        case PartOfSpeech.None:
+                            // nada
+                            break;
+                        default:
+                            throw new NotImplementedException("BUG");
+                    }
+                }
+
+                // write to wordbuilder
+                var wb = new MockWordBuilder();
+                word.WriteToBuilder(ctx, wb, dir => new MockOperand { Value = dir });
+
+                // verify expected output
+                Assert.AreEqual(2, wb.ActualBytes.Count, "Wrong number of bytes written for {0}", tc);
+
+                if (wb.ActualBytes[0] != (byte)tc.ExpectedPartOfSpeech ||
+                    wb.ActualBytes[1] != tc.ExpectedValue1)
+                {
+                    Assert.Fail("For {0}, expected to write ({1}; {2}) but got ({3}; {4})",
+                        tc,
+                        tc.ExpectedPartOfSpeech, tc.ExpectedValue1,
+                        (PartOfSpeech)wb.ActualBytes[0], wb.ActualBytes[1]);
                 }
 
                 if (tc.Warn)

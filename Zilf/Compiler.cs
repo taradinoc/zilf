@@ -310,47 +310,59 @@ namespace Zilf
             }
 
             // build vocabulary
-            int numPreps = 0;
+            Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
 
-            var query = from p in cc.Vocabulary
-                        select new { Word = p.Key, Builder = p.Value };
-            foreach (var item in query)
+            foreach (var pair in cc.Vocabulary)
             {
-                Word word = item.Word;
-                IWordBuilder wb = item.Builder;
+                Word word = pair.Key;
+                IWordBuilder wb = pair.Value;
 
-                if ((word.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                    numPreps++;
-
-                Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
 
                 word.WriteToBuilder(ctx, wb, dirIndexToPropertyOperand);
             }
 
-            // build preposition table
-            cc.PrepositionTable.AddShort((short)numPreps);
-
-            foreach (KeyValuePair<Word, IWordBuilder> pair in cc.Vocabulary)
-            {
-                if ((pair.Key.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                {
-                    string prname = "PR?" + pair.Key.Atom;
-                    ZilAtom atom = ZilAtom.Parse(prname, ctx);
-                    IOperand constant;
-
-                    if (cc.Constants.TryGetValue(atom, out constant))
-                    {
-                        cc.PrepositionTable.AddShort(pair.Value);
-                        cc.PrepositionTable.AddShort(cc.Constants[atom]);
-                    }
-                }
-            }
+            BuildPrepositionTable(cc);
 
             // build tables
             foreach (KeyValuePair<ZilTable, ITableBuilder> pair in cc.Tables)
                 BuildTable(cc, pair.Key, pair.Value);
 
             gb.Finish();
+        }
+
+        private void BuildPrepositionTable(CompileCtx cc)
+        {
+            var ctx = cc.Context;
+            bool compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
+
+            // map all relevant preposition word builders to the preposition ID constants
+            var query = from pair in cc.Vocabulary
+                        let word = pair.Key
+                        where (word.PartOfSpeech & PartOfSpeech.Preposition) != 0 &&
+                              (compactVocab || !word.IsSynonym(PartOfSpeech.Preposition))
+                        let builder = pair.Value
+                        let prAtom = ZilAtom.Parse("PR?" + word.Atom, ctx)
+                        let prConstant = cc.Constants.ContainsKey(prAtom) ? cc.Constants[prAtom] : null
+                        let prepValue = word.GetValue(PartOfSpeech.Preposition)
+                        group new { builder, prConstant } by prepValue into g
+                        let builders = g.Select(w => w.builder)
+                        let constant = g.First(w => w.prConstant != null).prConstant
+                        from prep in g
+                        select new { prep.builder, constant };
+            var prepositions = query.ToArray();
+
+            // build the table
+            cc.PrepositionTable.AddShort((short)prepositions.Length);
+
+            foreach (var p in prepositions)
+            {
+                cc.PrepositionTable.AddShort(p.builder);
+
+                if (compactVocab)
+                    cc.PrepositionTable.AddByte(p.constant);
+                else
+                    cc.PrepositionTable.AddShort(p.constant);
+            }
         }
 
         private class Action
@@ -380,9 +392,7 @@ namespace Zilf
             cc.PrepositionTable = cc.Game.DefineTable("PRTBL", true);
 
             // compact syntaxes?
-            ZilAtom compactAtom = cc.Context.GetStdAtom(StdAtom.COMPACT_SYNTAXES_P);
-            ZilObject compactObj = cc.Context.GetGlobalVal(compactAtom);
-            bool compact = (compactObj != null && compactObj.IsTrue);
+            bool compact = cc.Context.GetGlobalOption(StdAtom.COMPACT_SYNTAXES_P);
 
             // verb table
             var query = from s in cc.Context.ZEnvironment.Syntaxes
@@ -735,11 +745,10 @@ namespace Zilf
         private static string TranslateString(string str, Context ctx)
         {
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
-            var preserveSpaces = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PRESERVE_SPACES_P));
             return TranslateString(
                 str,
                 crlfChar == null ? '|' : crlfChar.Char,
-                preserveSpaces == null ? false : preserveSpaces.IsTrue);
+                ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P));
         }
 
         private static string TranslateString(string str, char crlfChar, bool preserveSpaces)
