@@ -91,6 +91,8 @@ namespace Zilf
         COLOR,
         [Atom("COMPACT-SYNTAXES?")]
         COMPACT_SYNTAXES_P,
+        [Atom("COMPACT-VOCABULARY?")]
+        COMPACT_VOCABULARY_P,
         COND,
         CONSTANT,
         COPYT,

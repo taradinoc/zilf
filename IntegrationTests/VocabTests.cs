@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.Contracts;
 using Zilf;
+using System.Collections.Generic;
 
 namespace IntegrationTests
 {
@@ -14,6 +15,14 @@ namespace IntegrationTests
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
 
             return new RoutineAssertionHelper(argSpec, body);
+        }
+
+        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        {
+            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+
+            return new GlobalsAssertionHelper(globals);
         }
 
         [TestMethod]
@@ -63,6 +72,67 @@ namespace IntegrationTests
                 .InV3()
                 .WithInput("grant's tomb")
                 .Outputs("59\n4\ngrant\n'\ns\ntomb\n");
+        }
+
+        private static string[] PrepImplications(bool compact, params string[] wordAndIdConstantPairs)
+        {
+            Contract.Requires(wordAndIdConstantPairs != null && wordAndIdConstantPairs.Length % 2 == 0);
+
+            const string SCompactTest =
+                "<==? <GETB <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> {1}>";
+            const string SNonCompactTest =
+                "<==? <GET <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *204*> 1> {1}>";
+
+            string testFormat = compact ? SCompactTest : SNonCompactTest;
+
+            var result = new List<string>();
+            result.Add(string.Format("<==? <GET ,PREPOSITIONS 0> {0}>", wordAndIdConstantPairs.Length / 2));
+
+            for (int i = 0; i + 1 < wordAndIdConstantPairs.Length; i += 2)
+            {
+                var wordConstant = wordAndIdConstantPairs[i];
+                var idConstant = wordAndIdConstantPairs[i + 1];
+
+                result.Add(string.Format(testFormat, wordConstant, idConstant));
+            }
+
+            return result.ToArray();
+        }
+
+        [TestMethod]
+        public void PREPOSITIONS_NonCompact_Should_Use_4_Byte_Entries_And_Not_List_Synonyms()
+        {
+            AssertGlobals(
+                "<ROUTINE V-LOOK () <>>",
+                "<ROUTINE V-PICK-UP-WITH () <>>",
+                "<SYNTAX LOOK THROUGH OBJECT = V-LOOK>",
+                "<PREP-SYNONYM THROUGH THRU>",
+                "<SYNTAX PICK UP OBJECT WITH OBJECT = V-PICK-UP-WITH>")
+                .InV5()
+                .Implies(PrepImplications(
+                    false,
+                    "W?THROUGH", "PR?THROUGH",
+                    "W?UP", "PR?UP",
+                    "W?WITH", "PR?WITH"));
+        }
+
+        [TestMethod]
+        public void PREPOSITIONS_Compact_Should_Use_3_Byte_Entries_And_List_Synonyms()
+        {
+            AssertGlobals(
+                "<SETG COMPACT-VOCABULARY? T>",
+                "<ROUTINE V-LOOK () <>>",
+                "<ROUTINE V-PICK-UP-WITH () <>>",
+                "<SYNTAX LOOK THROUGH OBJECT = V-LOOK>",
+                "<PREP-SYNONYM THROUGH THRU>",
+                "<SYNTAX PICK UP OBJECT WITH OBJECT = V-PICK-UP-WITH>")
+                .InV5()
+                .Implies(PrepImplications(
+                    true,
+                    "W?THROUGH", "PR?THROUGH",
+                    "W?THRU", "PR?THROUGH",
+                    "W?UP", "PR?UP",
+                    "W?WITH", "PR?WITH"));
         }
     }
 }

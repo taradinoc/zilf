@@ -896,6 +896,7 @@ namespace Zilf
     {
         public readonly ZilAtom Atom;
         public PartOfSpeech PartOfSpeech;
+        public PartOfSpeech SynonymTypes;
 
         private Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
         private Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
@@ -966,8 +967,12 @@ namespace Zilf
 
         private bool IsNewVoc(Context ctx)
         {
-            ZilObject value = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_VOC_P));
-            return (value != null && value.IsTrue);
+            return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
+        }
+
+        private bool IsCompactVocab(Context ctx)
+        {
+            return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
         }
 
         /// <summary>
@@ -991,6 +996,8 @@ namespace Zilf
                 pos &= ~Zilf.PartOfSpeech.Adjective;
             if (IsNewVoc(ctx))
                 pos &= ~Zilf.PartOfSpeech.Object;
+            if (IsCompactVocab(ctx))
+                pos &= ~(Zilf.PartOfSpeech.Object | Zilf.PartOfSpeech.Preposition);
 
             return pos == Zilf.PartOfSpeech.None;
         }
@@ -1005,7 +1012,10 @@ namespace Zilf
         /// of speech. However, in V4+, <see cref="PartOfSpeech.Adjective"/> does
         /// not count against this limit; and in any version when the global
         /// atom NEW-VOC? is true, <see cref="PartOfSpeech.Object"/> does not
-        /// count against this limit.
+        /// count against this limit. If the global atom COMPACT-VOCABULARY?
+        /// is true (which should happen on V4+ only), the limit is one instead of
+        /// two, and <see cref="PartOfSpeech.Preposition"/> and
+        /// <see cref="PartOfSpeech.Buzzword"/> also don't count toward it.
         /// </remarks>
         private void CheckTooMany(Context ctx)
         {
@@ -1018,14 +1028,36 @@ namespace Zilf
                 count++;
             }
 
-            bool freeObject = false, freeAdjective = false;
+            bool freeObject = false, freeAdjective = false, freePrep = false, freeBuzz = false;
 
-            // when ,NEW-VOC? is true, Object is free
+            // when ,NEW-VOC? or ,COMPACT-VOCABULARY? are true, Object is free
+            bool newVoc = IsNewVoc(ctx);
+            bool compactVocab = IsCompactVocab(ctx);
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
             {
-                if (IsNewVoc(ctx))
+                if (newVoc || compactVocab)
                 {
                     freeObject = true;
+                    count--;
+                }
+            }
+
+            // when ,COMPACT-VOCABULARY? is true, Preposition is free
+            if ((PartOfSpeech & PartOfSpeech.Preposition) != 0)
+            {
+                if (compactVocab)
+                {
+                    freePrep = true;
+                    count--;
+                }
+            }
+
+            // when ,COMPACT-VOCABULARY? is true, Buzzword is free
+            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
+            {
+                if (compactVocab)
+                {
+                    freeBuzz = true;
                     count--;
                 }
             }
@@ -1040,7 +1072,8 @@ namespace Zilf
                 }
             }
 
-            if (count > 2)
+            int limit = compactVocab ? 1 : 2;
+            if (count > limit)
             {
                 Errors.CompWarning(ctx, null, string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
 
@@ -1049,8 +1082,8 @@ namespace Zilf
                 var partsToTrim = new[] {
                     new { part = PartOfSpeech.Adjective, free = freeAdjective },
                     new { part = PartOfSpeech.Object, free = freeObject },
-                    new { part = PartOfSpeech.Buzzword, free = false },
-                    new { part = PartOfSpeech.Preposition, free = false },
+                    new { part = PartOfSpeech.Buzzword, free = freeBuzz },
+                    new { part = PartOfSpeech.Preposition, free = freePrep },
                     new { part = PartOfSpeech.Verb, free = false },
                     new { part = PartOfSpeech.Direction, free = false },
                 };
@@ -1147,9 +1180,11 @@ namespace Zilf
         {
             if ((PartOfSpeech & Zilf.PartOfSpeech.Buzzword) == 0)
             {
-                // buzzword value comes before everything but preposition
+                // buzzword value comes before everything but preposition, except in CompactVocab
+                if (!IsCompactVocab(ctx))
+                    PartOfSpeech &= ~PartOfSpeech.FirstMask;
+
                 PartOfSpeech |= PartOfSpeech.Buzzword;
-                PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Buzzword] = value;
                 definitions[Zilf.PartOfSpeech.Buzzword] = location;
             }
@@ -1159,9 +1194,11 @@ namespace Zilf
         {
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
-                // preposition value is always first
+                // preposition value is always first, except in CompactVocab
+                if (!IsCompactVocab(ctx))
+                    PartOfSpeech &= ~PartOfSpeech.FirstMask;
+
                 PartOfSpeech |= PartOfSpeech.Preposition;
-                PartOfSpeech &= ~PartOfSpeech.FirstMask;
                 speechValues[Zilf.PartOfSpeech.Preposition] = value;
                 definitions[Zilf.PartOfSpeech.Preposition] = location;
             }
@@ -1236,6 +1273,7 @@ namespace Zilf
 
             var pos = this.PartOfSpeech;
             var partsToWrite = new List<PartOfSpeech>(2);
+            var compactVocab = IsCompactVocab(ctx);
 
             // expand parts of speech, observing the First flags and a few special cases
             if ((pos & Zilf.PartOfSpeech.Adjective) != 0)
@@ -1265,8 +1303,8 @@ namespace Zilf
             }
             if ((pos & Zilf.PartOfSpeech.Object) != 0)
             {
-                // for NewVoc, don't write a value for Object
-                if (!IsNewVoc(ctx))
+                // for CompactVocab and NewVoc, don't write a value for Object
+                if (!compactVocab && !IsNewVoc(ctx))
                 {
                     // there is no ObjectFirst, so keep it first if all other First flags are clear
                     if ((pos & Zilf.PartOfSpeech.FirstMask) == 0)
@@ -1277,21 +1315,30 @@ namespace Zilf
             }
             if ((pos & Zilf.PartOfSpeech.Buzzword) != 0)
             {
-                // there is no BuzzwordFirst: Buzzword comes before everything but Preposition
-                partsToWrite.Insert(0, Zilf.PartOfSpeech.Buzzword);
+                // for CompactVocab, don't write a value for Buzzword
+                if (!compactVocab)
+                {
+                    // there is no BuzzwordFirst: Buzzword comes before everything but Preposition
+                    partsToWrite.Insert(0, Zilf.PartOfSpeech.Buzzword);
+                }
             }
             if ((pos & Zilf.PartOfSpeech.Preposition) != 0)
             {
-                // there is no PrepositionFirst because Preposition always comes first
-                System.Diagnostics.Debug.Assert((pos & Zilf.PartOfSpeech.FirstMask) == 0);
-                partsToWrite.Insert(0, Zilf.PartOfSpeech.Preposition);
+                // for CompactVocab, don't write a value for Preposition
+                if (!compactVocab)
+                {
+                    // there is no PrepositionFirst because Preposition always comes first
+                    System.Diagnostics.Debug.Assert((pos & Zilf.PartOfSpeech.FirstMask) == 0);
+                    partsToWrite.Insert(0, Zilf.PartOfSpeech.Preposition);
+                }
             }
 
             // write part of speech flags
             wb.AddByte((byte)pos);
 
             // write values
-            for (int i = 0; i < 2; i++)
+            int limit = compactVocab ? 1 : 2;
+            for (int i = 0; i < limit; i++)
             {
                 if (i < partsToWrite.Count)
                 {
@@ -1308,6 +1355,16 @@ namespace Zilf
                     wb.AddByte(0);
                 }
             }
+        }
+
+        public void MarkAsSynonym(PartOfSpeech synonymTypes)
+        {
+            this.SynonymTypes |= synonymTypes;
+        }
+
+        public bool IsSynonym(PartOfSpeech synonymTypes)
+        {
+            return (this.SynonymTypes & synonymTypes) != 0;
         }
     }
 
@@ -1341,6 +1398,8 @@ namespace Zilf
 
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Verb) != 0)
                 SynonymWord.SetVerb(ctx, OriginalWord.GetDefinition(PartOfSpeech.Verb), OriginalWord.GetValue(PartOfSpeech.Verb));
+
+            SynonymWord.MarkAsSynonym(OriginalWord.PartOfSpeech & ~PartOfSpeech.FirstMask);
         }
     }
 

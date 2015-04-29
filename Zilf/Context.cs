@@ -578,6 +578,17 @@ namespace Zilf
             PutProp(atom, GetStdAtom(StdAtom.ZVAL), value);
         }
 
+        /// <summary>
+        /// Gets a boolean value indicating whether a global option is enabled.
+        /// </summary>
+        /// <param name="stdAtom">The StdAtom identifying the option.</param>
+        /// <returns><b>true</b> if the GVAL of the specified atom is assigned and true; otherwise <b>false</b>.</returns>
+        public bool GetGlobalOption(StdAtom stdAtom)
+        {
+            var value = GetGlobalVal(GetStdAtom(stdAtom));
+            return value != null && value.IsTrue;
+        }
+
         public bool AllowRedefine
         {
             get
