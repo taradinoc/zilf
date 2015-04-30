@@ -180,6 +180,8 @@ namespace Zilf
         LEXV,
         LIST,
         LOC,
+        [Atom("LOCAL-GLOBALS")]
+        LOCAL_GLOBALS,
         [Atom("LOW-DIRECTION")]
         LOW_DIRECTION,
         LTABLE,
@@ -254,6 +256,9 @@ namespace Zilf
         REVERSE_DEFINED,
         REXIT,
         RFALSE,
+        ROOMS,
+        [Atom("ROOMS-AND-LGS-FIRST")]
+        ROOMS_AND_LGS_FIRST,
         [Atom("ROOMS-FIRST")]
         ROOMS_FIRST,
         [Atom("ROOMS-LAST")]

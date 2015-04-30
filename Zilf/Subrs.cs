@@ -2119,30 +2119,16 @@ namespace Zilf
                     case StdAtom.ROOMS_FIRST:
                         ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsFirst;
                         return args[0];
+                    case StdAtom.ROOMS_AND_LGS_FIRST:
+                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsAndLocalGlobalsFirst;
+                        return args[0];
                     case StdAtom.ROOMS_LAST:
                         ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsLast;
-                        return args[0];
-
-                    case StdAtom.FIRST:
-                        for (int i = 1; i < args.Length; i++)
-                        {
-                            atom = args[i] as ZilAtom;
-                            if (atom != null)
-                                ctx.ZEnvironment.FirstObjects.Add(atom);
-                        }
-                        return args[0];
-                    case StdAtom.LAST:
-                        for (int i = 1; i < args.Length; i++)
-                        {
-                            atom = args[i] as ZilAtom;
-                            if (atom != null)
-                                ctx.ZEnvironment.LastObjects.Add(atom);
-                        }
                         return args[0];
                 }
             }
 
-            throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-LAST, FIRST, or LAST");
+            throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
         }
 
         [Subr("ORDER-TREE?")]
