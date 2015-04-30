@@ -28,6 +28,7 @@ namespace Zilf
         Default,
         Defined,
         RoomsFirst,
+        RoomsAndLocalGlobalsFirst,
         RoomsLast,
     }
 
@@ -77,9 +78,6 @@ namespace Zilf
         public readonly List<ZilAtom> Directions = new List<ZilAtom>();
         public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
 
-        // TODO: actually use FirstObject, LastObjects, and ObjectOrdering
-        public readonly List<ZilAtom> FirstObjects = new List<ZilAtom>();
-        public readonly List<ZilAtom> LastObjects = new List<ZilAtom>();
         public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
         public TreeOrdering TreeOrdering = TreeOrdering.Default;
 
@@ -300,26 +298,54 @@ namespace Zilf
             }
         }
 
+        private class ObjectOrderingEntry
+        {
+            public ZilAtom Name;
+            public ZilModelObject Object;
+            public ISourceLine InitialMention;      // only set for objects created from mentions
+            public int? DefinitionOrder;
+            public int MentionOrder;
+
+            public ObjectOrderingEntry(ZilAtom name, ZilModelObject obj, ISourceLine initialMention,
+                int? definitionOrder, int mentionOrder)
+            {
+                this.Name = name;
+                this.Object = obj;
+                this.InitialMention = initialMention;
+                this.DefinitionOrder = definitionOrder;
+                this.MentionOrder = mentionOrder;
+            }
+        }
+
         public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder()
         {
-            /* define objects in the reverse of "mentioned in source code" order, where
-             * "mentioned" means either defined or used as the IN/LOC/GLOBAL of another object */
+            /* first, collect objects and note the order(s) in which they were defined and mentioned,
+             * where "mentioned" means either defined or used as the IN/LOC/GLOBAL of another object */
 
-            // the source line is only set for objects created from mentions
-            var order = new List<KeyValuePair<ZilAtom, ISourceLine>>(Objects.Count);
-            var used = new HashSet<ZilAtom>();
+            var objectsByName = new Dictionary<ZilAtom, ObjectOrderingEntry>(Objects.Count);
+
+            int definitionOrder = 0, mentionOrder = 0;
 
             foreach (var obj in Objects)
             {
                 var atom = obj.Name;
 
                 // add this object if it hasn't already been added
-                if (!used.Contains(atom))
+                ObjectOrderingEntry entry;
+                if (objectsByName.TryGetValue(atom, out entry) == false)
                 {
                     // add this object
-                    order.Add(new KeyValuePair<ZilAtom, ISourceLine>(atom, null));
-                    used.Add(atom);
+                    entry = new ObjectOrderingEntry(atom, obj, null, definitionOrder, mentionOrder++);
+                    objectsByName.Add(atom, entry);
                 }
+                else
+                {
+                    // it was added by a mention before, set the object and definition order
+                    entry.Object = obj;
+                    entry.DefinitionOrder = definitionOrder;
+                }
+
+                definitionOrder++;
 
                 // same with objects it mentions
                 var mentioned = from p in obj.Properties
@@ -328,34 +354,95 @@ namespace Zilf
 
                 foreach (var m in mentioned)
                 {
-                    if (!used.Contains(m))
+                    if (!objectsByName.ContainsKey(m))
                     {
-                        order.Add(new KeyValuePair<ZilAtom, ISourceLine>(m, obj));
-                        used.Add(m);
+                        objectsByName.Add(m, new ObjectOrderingEntry(m, null, obj, null, mentionOrder++));
                     }
                 }
             }
 
-            order.Reverse();
-            var objectsByName = Objects.ToDictionary(obj => obj.Name);
+            // now, apply the selected object ordering
+            var order = new List<ObjectOrderingEntry>(objectsByName.Count);
 
-            foreach (var pair in order)
+            switch (this.ObjectOrdering)
             {
-                var name = pair.Key;
-                var mention = pair.Value;
+                case Zilf.ObjectOrdering.Defined:
+                    order.AddRange(from e in objectsByName.Values
+                                   orderby e.DefinitionOrder ascending,
+                                           e.MentionOrder ascending
+                                   select e);
+                    break;
 
-                ZilModelObject obj;
-                if (objectsByName.TryGetValue(name, out obj))
+                case Zilf.ObjectOrdering.RoomsFirst:
+                    order.AddRange(from e in objectsByName.Values
+                                   orderby IsRoom(e.Object) descending,
+                                           e.MentionOrder ascending
+                                   select e);
+                    break;
+
+                case Zilf.ObjectOrdering.RoomsAndLocalGlobalsFirst:
+                    order.AddRange(from e in objectsByName.Values
+                                   orderby IsRoom(e.Object) || IsLocalGlobal(e.Object) descending,
+                                           e.MentionOrder ascending
+                                   select e);
+                    break;
+
+                case Zilf.ObjectOrdering.RoomsLast:
+                    order.AddRange(from e in objectsByName.Values
+                                   orderby IsRoom(e.Object) ascending,
+                                           e.MentionOrder ascending
+                                   select e);
+                    break;
+
+                case Zilf.ObjectOrdering.Default:
+                default:
+                    // reverse mention order
+                    order.AddRange(from e in objectsByName.Values
+                                   orderby e.MentionOrder descending
+                                   select e);
+                    break;
+            }
+
+            foreach (var entry in order)
+            {
+                if (entry.Object != null)
                 {
-                    yield return obj;
+                    yield return entry.Object;
                 }
                 else
                 {
-                    System.Diagnostics.Debug.Assert(mention != null);
-                    Errors.CompWarning(ctx, mention, "mentioned object {0} is never defined", name);
-                    yield return new ZilModelObject(name, new ZilList[0], false);
+                    System.Diagnostics.Debug.Assert(entry.InitialMention != null);
+                    Errors.CompWarning(ctx, entry.InitialMention, "mentioned object {0} is never defined", entry.Name);
+                    yield return new ZilModelObject(entry.Name, new ZilList[0], false);
                 }
             }
+        }
+
+        private static bool IsRoom(ZilModelObject obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj.IsRoom)
+                return true;
+
+            var parent = GetObjectParentName(obj);
+            if (parent == null)
+                return false;
+
+            return parent.StdAtom == StdAtom.ROOMS;
+        }
+
+        private static bool IsLocalGlobal(ZilModelObject obj)
+        {
+            if (obj == null)
+                return false;
+
+            var parent = GetObjectParentName(obj);
+            if (parent == null)
+                return false;
+
+            return parent.StdAtom == StdAtom.LOCAL_GLOBALS;
         }
 
         private static ZilAtom GetObjectParentName(ZilModelObject obj)

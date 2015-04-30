@@ -100,16 +100,110 @@ namespace IntegrationTests
                 "<OBJECT SINK (IN KITCHEN)>",
                 "<OBJECT MICROWAVE (IN KITCHEN)>",
                 "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
                 "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
                 "<OBJECT BED (IN BEDROOM)>",
                 "<OBJECT ROOMS>",
-                "<OBJECT FLOOR>",
-                "<OBJECT CEILING>")
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .Implies(TreeImplications(
-                    new[] { "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
+                    new[] { "BED", "BEDROOM", "LOCAL-GLOBALS", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" }));
+                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
+                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+        }
+
+        [TestMethod]
+        public void TestHouse_Objects_RoomsFirst()
+        {
+            AssertGlobals(
+                "<ORDER-OBJECTS? ROOMS-FIRST>",
+                "<OBJECT FRIDGE (IN KITCHEN)>",
+                "<OBJECT SINK (IN KITCHEN)>",
+                "<OBJECT MICROWAVE (IN KITCHEN)>",
+                "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
+                "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT BED (IN BEDROOM)>",
+                "<OBJECT ROOMS>",
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
+                .Implies(TreeImplications(
+                    new[] { "KITCHEN", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED" },
+                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
+                    new[] { "BEDROOM", "BED" },
+                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
+                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+        }
+
+        [TestMethod]
+        public void TestHouse_Objects_RoomsAndLgsFirst()
+        {
+            AssertGlobals(
+                "<ORDER-OBJECTS? ROOMS-AND-LGS-FIRST>",
+                "<OBJECT FRIDGE (IN KITCHEN)>",
+                "<OBJECT SINK (IN KITCHEN)>",
+                "<OBJECT MICROWAVE (IN KITCHEN)>",
+                "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
+                "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT BED (IN BEDROOM)>",
+                "<OBJECT ROOMS>",
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
+                .Implies(TreeImplications(
+                    new[] { "KITCHEN", "FLOOR", "CEILING", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "LOCAL-GLOBALS", "BED" },
+                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
+                    new[] { "BEDROOM", "BED" },
+                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
+                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+        }
+
+        [TestMethod]
+        public void TestHouse_Objects_RoomsLast()
+        {
+            AssertGlobals(
+                "<ORDER-OBJECTS? ROOMS-LAST>",
+                "<OBJECT FRIDGE (IN KITCHEN)>",
+                "<OBJECT SINK (IN KITCHEN)>",
+                "<OBJECT MICROWAVE (IN KITCHEN)>",
+                "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
+                "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT BED (IN BEDROOM)>",
+                "<OBJECT ROOMS>",
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
+                .Implies(TreeImplications(
+                    new[] { "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED", "KITCHEN", "BEDROOM" },
+                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
+                    new[] { "BEDROOM", "BED" },
+                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
+                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+        }
+
+        [TestMethod]
+        public void TestHouse_Objects_Defined()
+        {
+            AssertGlobals(
+                "<ORDER-OBJECTS? DEFINED>",
+                "<OBJECT FRIDGE (IN KITCHEN)>",
+                "<OBJECT SINK (IN KITCHEN)>",
+                "<OBJECT MICROWAVE (IN KITCHEN)>",
+                "<ROOM KITCHEN (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
+                "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
+                "<OBJECT BED (IN BEDROOM)>",
+                "<OBJECT ROOMS>",
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
+                .Implies(TreeImplications(
+                    new[] { "FRIDGE", "SINK", "MICROWAVE", "KITCHEN", "FLOOR", "BEDROOM", "BED", "ROOMS", "LOCAL-GLOBALS", "CEILING" },
+                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
+                    new[] { "BEDROOM", "BED" },
+                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
+                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
         }
 
         // TODO: tests for other <ORDER-OBJECTS? ...>
@@ -148,13 +242,15 @@ namespace IntegrationTests
                 "<ROOM BEDROOM (IN ROOMS) (GLOBAL FLOOR CEILING)>",
                 "<OBJECT BED (IN BEDROOM)>",
                 "<OBJECT ROOMS>",
-                "<OBJECT FLOOR>",
-                "<OBJECT CEILING>")
+                "<OBJECT LOCAL-GLOBALS>",
+                "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
+                "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .Implies(TreeImplications(
-                    new[] { "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
+                    new[] { "LOCAL-GLOBALS", "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
                     new[] { "KITCHEN", "MICROWAVE", "SINK", "FRIDGE" },
                     new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "BEDROOM", "KITCHEN" }));
+                    new[] { "ROOMS", "BEDROOM", "KITCHEN" },
+                    new[] { "LOCAL-GLOBALS", "CEILING", "FLOOR" }));
         }
 
         #endregion
