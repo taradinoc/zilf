@@ -247,6 +247,7 @@ namespace Zilf
                     return new Zilf.Emit.Zap.GameOptions.V3()
                     {
                         TimeStatusLine = zenv.TimeStatusLine,
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
                     };
 
                 default:

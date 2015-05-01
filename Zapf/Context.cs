@@ -33,6 +33,7 @@ namespace Zapf
         public string InFile, OutFile, DebugFile;
         public string Creator = "ZAPF", Serial;
         public byte ZVersion, ZFlags;
+        public ushort ZFlags2;
 
         public int ErrorCount;
 

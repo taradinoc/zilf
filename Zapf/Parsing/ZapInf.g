@@ -79,6 +79,7 @@ PICFILE	:	'.PICFILE';
 PROP	:	'.PROP';
 SEGMENT	:	'.SEGMENT';
 SEQ	:	'.SEQ';
+SOUND	:	'.SOUND';
 STR	:	'.STR';
 STRL	:	'.STRL';
 TABLE	:	'.TABLE';

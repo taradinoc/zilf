@@ -56,6 +56,13 @@ namespace Zapf.Parsing
         }
     }
 
+    sealed class SoundDirective : AsmLine
+    {
+        public SoundDirective()
+        {
+        }
+    }
+
     struct FunctLocal
     {
         public FunctLocal(string name, AsmExpr defaultValue)
@@ -692,6 +699,10 @@ namespace Zapf.Parsing
 
                     case ZapParser.TIME:
                         line = new TimeDirective();
+                        break;
+
+                    case ZapParser.SOUND:
+                        line = new SoundDirective();
                         break;
 
                     case ZapParser.FUNCT:

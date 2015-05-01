@@ -82,6 +82,7 @@ PICFILE	:	'.PICFILE';
 PROP	:	'.PROP';
 SEGMENT	:	'.SEGMENT';
 SEQ	:	'.SEQ';
+SOUND	:	'.SOUND';
 STR	:	'.STR';
 STRL	:	'.STRL';
 TABLE	:	'.TABLE';
@@ -248,6 +249,7 @@ term	:	NUM
 meta_directive
 	:	NEW^ expr?
 	|	TIME
+	|	SOUND
 	|	INSERT^ STRING
 	|	END
 	|	ENDI
