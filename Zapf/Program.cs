@@ -466,6 +466,21 @@ General switches:
                     Errors.ThrowFatal(".TIME is only supported in Z-machine version 3");
                 }
             }
+            else if (node is SoundDirective)
+            {
+                if (ctx.ZVersion == 3)
+                {
+                    ctx.ZFlags2 |= 16;
+                }
+                else if (ctx.ZVersion == 4)
+                {
+                    ctx.ZFlags2 |= 128;
+                }
+                else
+                {
+                    Errors.ThrowFatal(".SOUND is only supported in Z-machine versions 3-4");
+                }
+            }
             else if (node is Instruction)
             {
                 HandleInstruction(ctx, (Instruction)node);
@@ -510,7 +525,7 @@ General switches:
             int impure = GetHeaderValue(ctx, "IMPURE", strict);
             ctx.WriteWord((ushort)impure);
             // flags 2 word
-            ctx.WriteWord(0);   //XXX fill in flags2
+            ctx.WriteWord(ctx.ZFlags2);
             // serial number (6 bytes)
             ctx.WriteWord(0);   // filled in later
             ctx.WriteWord(0);
@@ -940,7 +955,7 @@ General switches:
             if (!(node is DebugLineDirective))
                 ctx.EndReassemblyScope(nodeIndex);
 
-            if (node is NewDirective || node is TimeDirective)
+            if (node is NewDirective || node is TimeDirective || node is SoundDirective)
             {
                 // these are explicitly handled by PassOne
             }

@@ -57,6 +57,7 @@ namespace Zilf.Emit.Zap
         public sealed class V3 : GameOptions
         {
             public bool TimeStatusLine { get; set; }
+            public bool SoundEffects { get; set; }
         }
     }
 
@@ -157,9 +158,14 @@ namespace Zilf.Emit.Zap
         {
             if (zversion == 3)
             {
-                if (((GameOptions.V3)options).TimeStatusLine)
+                var v3options = (GameOptions.V3)options;
+                if (v3options.TimeStatusLine)
                 {
                     writer.WriteLine(INDENT + ".TIME");
+                }
+                if (v3options.SoundEffects)
+                {
+                    writer.WriteLine(INDENT + ".SOUND");
                 }
             }
             else if (zversion > 3)

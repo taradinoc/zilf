@@ -264,6 +264,15 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestSoundHeader_V3()
+        {
+            AssertRoutine("", "<>")
+                .WithGlobal("<SETG SOUND-EFFECTS? T>")
+                .InV3()
+                .GeneratesCodeMatching(@"^\s*\.SOUND\s*$");
+        }
+
+        [TestMethod]
         public void TestCleanStack_V3_NoClean()
         {
             AssertRoutine("", "<FOO> 456")

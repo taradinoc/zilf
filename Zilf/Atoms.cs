@@ -275,6 +275,8 @@ namespace Zilf
         SIBREAKS,
         SORRY,
         SOUND,
+        [Atom("SOUND-EFFECTS?")]
+        SOUND_EFFECTS_P,
         SPLIT,
         STRING,
         STRUCTURED,
