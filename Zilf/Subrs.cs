@@ -2104,8 +2104,6 @@ namespace Zilf
         [Subr("ORDER-OBJECTS?")]
         public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilObject[] args)
         {
-            ZilAtom atom;
-
             if (args.Length < 1)
                 throw new InterpreterError(null, "ORDER-OBJECTS?", 1, 0);
 
@@ -2224,6 +2222,53 @@ namespace Zilf
             }
 
             return first;
+        }
+
+        [Subr("ZIP-OPTIONS")]
+        public static ZilObject ZIP_OPTIONS(Context ctx, ZilObject[] args)
+        {
+            foreach (var arg in args)
+            {
+                var atom = arg as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ZIP-OPTIONS: all args must be atoms");
+
+                StdAtom flag;
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.COLOR:
+                        flag = StdAtom.USE_COLOR_P;
+                        break;
+
+                    case StdAtom.MOUSE:
+                        flag = StdAtom.USE_MOUSE_P;
+                        break;
+
+                    case StdAtom.UNDO:
+                        flag = StdAtom.USE_UNDO_P;
+                        break;
+
+                    case StdAtom.DISPLAY:
+                        flag = StdAtom.DISPLAY_OPS_P;
+                        break;
+
+                    case StdAtom.SOUND:
+                        flag = StdAtom.USE_SOUND_P;
+                        break;
+
+                    case StdAtom.MENU:
+                        flag = StdAtom.USE_MENUS_P;
+                        break;
+
+                    default:
+                        throw new InterpreterError("ZIP-OPTIONS: unrecognized option " + atom);
+                }
+
+                ctx.SetGlobalVal(ctx.GetStdAtom(flag), ctx.TRUE);
+            }
+
+            return ctx.TRUE;
         }
 
         #endregion
