@@ -247,8 +247,30 @@ namespace Zilf
                     return new Zilf.Emit.Zap.GameOptions.V3()
                     {
                         TimeStatusLine = zenv.TimeStatusLine,
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
                     };
+
+                case 4:
+                    return new Zilf.Emit.Zap.GameOptions.V4()
+                    {
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                    };
+
+                case 5:
+                case 7:
+                case 8:
+                    return new Zilf.Emit.Zap.GameOptions.V5()
+                    {
+                        DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P),
+                        Undo = ctx.GetGlobalOption(StdAtom.USE_UNDO_P),
+                        Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P),
+                        Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P),
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                    };
+
+                case 6:
+                    //XXX
+                    return null;
 
                 default:
                     return null;

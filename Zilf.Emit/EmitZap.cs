@@ -59,6 +59,20 @@ namespace Zilf.Emit.Zap
             public bool TimeStatusLine { get; set; }
             public bool SoundEffects { get; set; }
         }
+
+        public sealed class V4 : GameOptions
+        {
+            public bool SoundEffects { get; set; }
+        }
+
+        public sealed class V5 : GameOptions
+        {
+            public bool DisplayOps { get; set; }
+            public bool Undo { get; set; }
+            public bool Mouse { get; set; }
+            public bool Color { get; set; }
+            public bool SoundEffects { get; set; }
+        }
     }
 
     internal class DummyGameOptions : IGameOptions { }
@@ -115,7 +129,7 @@ namespace Zilf.Emit.Zap
             {
                 const string SOptionsNotCompatible = "Options not compatible with this Z-machine version";
 
-                if (optionsType.IsAssignableFrom(optionsType))
+                if (optionsType.IsAssignableFrom(options.GetType()))
                 {
                     this.options = options;
                 }
@@ -172,7 +186,15 @@ namespace Zilf.Emit.Zap
             {
                 writer.WriteLine(INDENT + ".NEW {0}", zversion);
 
-                if (zversion > 4)
+                if (zversion == 4)
+                {
+                    var v4options = (GameOptions.V4)options;
+                    if (v4options.SoundEffects)
+                    {
+                        writer.WriteLine(INDENT + ".SOUND");
+                    }
+                }
+                else if (zversion > 4)
                 {
                     // build the header
                     writer.WriteLine();
@@ -519,7 +541,43 @@ namespace Zilf.Emit.Zap
             // XXX header flags
             writer.WriteLine();
             writer.WriteLine(INDENT + "FLAGS=0");
-            writer.WriteLine(INDENT + "FLAGS2=0");
+
+            ushort flags2 = 0;
+
+            switch (zversion)
+            {
+                case 5:
+                case 7:
+                case 8:
+                    var v5options = (GameOptions.V5)options;
+                    if (v5options.DisplayOps)
+                    {
+                        flags2 |= 8;
+                    }
+                    if (v5options.Undo)
+                    {
+                        flags2 |= 16;
+                    }
+                    if (v5options.Mouse)
+                    {
+                        flags2 |= 32;
+                    }
+                    if (v5options.Color)
+                    {
+                        flags2 |= 64;
+                    }
+                    if (v5options.SoundEffects)
+                    {
+                        flags2 |= 128;
+                    }
+                    break;
+
+                case 6:
+                    //XXX
+                    break;
+            }
+
+            writer.WriteLine(INDENT + "FLAGS2={0}", flags2);
 
             // flags
             if (flags.Count > 0)

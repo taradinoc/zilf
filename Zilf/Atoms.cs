@@ -112,6 +112,9 @@ namespace Zilf
         DEXITSTR,
         DIRIN,
         DIROUT,
+        DISPLAY,
+        [Atom("DISPLAY-OPS?")]
+        DISPLAY_OPS_P,
         DIV,
         [Atom("DLESS?")]
         DLESS_P,
@@ -192,7 +195,9 @@ namespace Zilf
         MAP_CONTENTS,
         [Atom("MAP-DIRECTIONS")]
         MAP_DIRECTIONS,
+        MENU,
         MOD,
+        MOUSE,
         MOVE,
         MUL,
         N,
@@ -294,6 +299,17 @@ namespace Zilf
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,
         UEXIT,
+        UNDO,
+        [Atom("USE-COLOR?")]
+        USE_COLOR_P,
+        [Atom("USE-MENUS?")]
+        USE_MENUS_P,
+        [Atom("USE-MOUSE?")]
+        USE_MOUSE_P,
+        [Atom("USE-SOUND?")]
+        USE_SOUND_P,
+        [Atom("USE-UNDO?")]
+        USE_UNDO_P,
         USL,
         VALUE,
         VECTOR,
