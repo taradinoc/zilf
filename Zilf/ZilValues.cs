@@ -171,64 +171,74 @@ namespace Zilf
         {
             ZilObject[] children;
 
-            switch (tree.Type)
+            try
             {
-                case ZilLexer.ATOM:
-                    return ZilAtom.Parse(tree.Text, ctx);
-                case ZilLexer.CHAR:
-                    return new ZilChar(tree.Text[2]);
-                case ZilLexer.COMMENT:
-                    // ignore comments
-                    return null;
-                case ZilLexer.FORM:
-                    children = ReadChildrenFromAST(tree, ctx);
-                    if (children.Length == 0)
-                        return ctx.FALSE;
-                    else
-                        return new ZilForm(ctx.CurrentFile, tree.Line, children);
-                case ZilLexer.HASH:
-                    return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
-                case ZilLexer.LIST:
-                    return new ZilList(ReadChildrenFromAST(tree, ctx));
-                case ZilLexer.VECTOR:
-                case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
-                    return new ZilVector(ReadChildrenFromAST(tree, ctx));
-                case ZilLexer.ADECL:
-                    children = ReadChildrenFromAST(tree, ctx);
-                    System.Diagnostics.Debug.Assert(children.Length == 2);
-                    return new ZilAdecl(children[0], children[1]);
-                case ZilLexer.MACRO:
-                case ZilLexer.VMACRO:
-                    // expand macros
-                    ZilObject inner = ReadOneFromAST(tree.GetChild(0), ctx);
-                    if (inner == null)
+                switch (tree.Type)
+                {
+                    case ZilLexer.ATOM:
+                        return ZilAtom.Parse(tree.Text, ctx);
+                    case ZilLexer.CHAR:
+                        return new ZilChar(tree.Text[2]);
+                    case ZilLexer.COMMENT:
+                        // ignore comments
                         return null;
-                    try
-                    {
-                        ZilObject result = inner.Eval(ctx);
-                        if (tree.Type == ZilLexer.MACRO)
-                            return result;
+                    case ZilLexer.FORM:
+                        children = ReadChildrenFromAST(tree, ctx);
+                        if (children.Length == 0)
+                            return ctx.FALSE;
                         else
+                            return new ZilForm(ctx.CurrentFile, tree.Line, children);
+                    case ZilLexer.HASH:
+                        return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
+                    case ZilLexer.LIST:
+                        return new ZilList(ReadChildrenFromAST(tree, ctx));
+                    case ZilLexer.VECTOR:
+                    case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
+                        return new ZilVector(ReadChildrenFromAST(tree, ctx));
+                    case ZilLexer.ADECL:
+                        children = ReadChildrenFromAST(tree, ctx);
+                        System.Diagnostics.Debug.Assert(children.Length == 2);
+                        return new ZilAdecl(children[0], children[1]);
+                    case ZilLexer.MACRO:
+                    case ZilLexer.VMACRO:
+                        // expand macros
+                        ZilObject inner = ReadOneFromAST(tree.GetChild(0), ctx);
+                        if (inner == null)
                             return null;
-                    }
-                    catch (ZilError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = inner as ISourceLine;
-                        throw;
-                    }
-                    catch (ControlException ex)
-                    {
-                        throw new InterpreterError(inner as ISourceLine, "misplaced " + ex.Message);
-                    }
-                case ZilLexer.NUM:
-                    return new ZilFix(ParseNumber(tree.Text));
-                case ZilLexer.SEGMENT:
-                    return new ZilSegment(ReadOneFromAST(tree.GetChild(0), ctx));
-                case ZilLexer.STRING:
-                    return ZilString.Parse(tree.Text);
-                default:
-                    throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), "tree");
+                        try
+                        {
+                            ZilObject result = inner.Eval(ctx);
+                            if (tree.Type == ZilLexer.MACRO)
+                                return result;
+                            else
+                                return null;
+                        }
+                        catch (ZilError ex)
+                        {
+                            if (ex.SourceLine == null)
+                                ex.SourceLine = inner as ISourceLine;
+                            throw;
+                        }
+                        catch (ControlException ex)
+                        {
+                            throw new InterpreterError(inner as ISourceLine, "misplaced " + ex.Message);
+                        }
+                    case ZilLexer.NUM:
+                        return new ZilFix(ParseNumber(tree.Text));
+                    case ZilLexer.SEGMENT:
+                        return new ZilSegment(ReadOneFromAST(tree.GetChild(0), ctx));
+                    case ZilLexer.STRING:
+                        return ZilString.Parse(tree.Text);
+                    default:
+                        throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), "tree");
+                }
+            }
+            catch (InterpreterError ex)
+            {
+                if (ex.SourceLine == null)
+                    ex.SourceLine = new StringSourceLine(string.Format("{0}:{1}", ctx.CurrentFile, tree.Line));
+
+                throw;
             }
         }
 
