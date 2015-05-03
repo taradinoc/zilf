@@ -256,7 +256,7 @@ namespace Zilf
 
         private static bool IsSimpleOutputElement(ZilObject obj)
         {
-            if (obj is ZilAtom || obj is ZilFix || obj is ZilString)
+            if (obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse)
                 return true;
 
             if (obj.IsLVAL() || obj.IsGVAL())
