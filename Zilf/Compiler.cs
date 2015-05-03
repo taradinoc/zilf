@@ -668,6 +668,38 @@ namespace Zilf
             }
         }
 
+        private static IEnumerable<int> InterpretTablePattern(ZilObject[] pattern)
+        {
+            foreach (var item in pattern)
+            {
+                var atom = item as ZilAtom;
+                if (atom != null)
+                {
+                    // BYTE or WORD
+                    if (atom.StdAtom == StdAtom.BYTE)
+                        yield return 1;
+                    else
+                        yield return 2;
+                }
+                else
+                {
+                    // [REST {BYTE/WORD}...]
+                    var vector = (ZilVector)item;
+                    while (true)
+                    {
+                        for (int i = 1; i < vector.GetLength(); i++)
+                        {
+                            atom = (ZilAtom)vector[i];
+                            if (atom.StdAtom == StdAtom.BYTE)
+                                yield return 1;
+                            else
+                                yield return 2;
+                        }
+                    }
+                }
+            }
+        }
+
         private static void BuildTable(CompileCtx cc, ZilTable zt, ITableBuilder tb)
         {
             if ((zt.Flags & TableFlags.Lexv) != 0)
@@ -720,7 +752,28 @@ namespace Zilf
                         values[i] = defaultFiller;
                     }
 
-                if ((zt.Flags & TableFlags.Byte) != 0)
+                if (zt.Pattern != null)
+                {
+                    var sequence = InterpretTablePattern(zt.Pattern);
+                    using (var enumerator = sequence.GetEnumerator())
+                    {
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            if (!enumerator.MoveNext())
+                            {
+                                Errors.CompError(cc.Context, (ISourceLine)zt,
+                                    "table pattern is too short");
+                                break;
+                            }
+
+                            if (enumerator.Current == 1)
+                                tb.AddByte(values[i].Value.Operand);
+                            else
+                                tb.AddShort(values[i].Value.Operand);
+                        }
+                    }
+                }
+                else if ((zt.Flags & TableFlags.Byte) != 0)
                 {
                     for (int i = 0; i < values.Length; i++)
                         tb.AddByte(values[i].Value.Operand);

@@ -222,6 +222,7 @@ namespace Zilf
         OPEN,
         OR,
         ORB,
+        PATTERN,
         PER,
         PLTABLE,
         [Atom("PLUS-MODE")]

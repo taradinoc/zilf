@@ -284,16 +284,17 @@ namespace Zilf
         private readonly string filename;
         private readonly int line;
         private readonly int repetitions;
-        private readonly ZilObject[] initializer;
+        private readonly ZilObject[] initializer, pattern;
         private readonly TableFlags flags;
 
-        public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags)
+        public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
         {
             this.filename = filename;
             this.line = line;
             this.repetitions = repetitions;
             this.initializer = initializer;
             this.flags = flags;
+            this.pattern = pattern;
         }
 
         public string Name { get; set; }
@@ -316,6 +317,11 @@ namespace Zilf
         public TableFlags Flags
         {
             get { return flags; }
+        }
+
+        public ZilObject[] Pattern
+        {
+            get { return pattern; }
         }
 
         public string SourceInfo
