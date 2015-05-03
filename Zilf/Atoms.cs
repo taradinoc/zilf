@@ -110,6 +110,8 @@ namespace Zilf
         DEXIT,
         DEXITOBJ,
         DEXITSTR,
+        DIR,
+        DIRECTIONS,
         DIRIN,
         DIROUT,
         DISPLAY,
@@ -127,6 +129,7 @@ namespace Zilf
         [Atom("FALSE-VALUE")]
         FALSE_VALUE,
         FCLEAR,
+        FCN,
         FEXIT,
         FEXITFCN,
         FIND,
@@ -225,6 +228,7 @@ namespace Zilf
         PLUS_MODE,
         PREACTIONS,
         PREDGEN,
+        PREP,
         PREPOSITIONS,
         [Atom("PRESERVE-SPACES?")]
         PRESERVE_SPACES_P,
@@ -236,6 +240,7 @@ namespace Zilf
         PRINTN,
         PRINTR,
         PROG,
+        PROPDEF,
         PROPSPEC,
         PSEUDO,
         PTABLE,
@@ -261,6 +266,7 @@ namespace Zilf
         REVERSE_DEFINED,
         REXIT,
         RFALSE,
+        ROOM,
         ROOMS,
         [Atom("ROOMS-AND-LGS-FIRST")]
         ROOMS_AND_LGS_FIRST,
@@ -313,10 +319,12 @@ namespace Zilf
         USL,
         VALUE,
         VECTOR,
+        VERB,
         VERBS,
         VERIFY,
         [Atom("VERSION?")]
         VERSION_P,
+        VOC,
         WORD,
         WORDLENGTH,
         X,

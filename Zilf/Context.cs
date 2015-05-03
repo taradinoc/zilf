@@ -165,6 +165,7 @@ namespace Zilf
             localValues[olatom] = new Binding(olpath);
 
             InitTellPatterns();
+            InitPropDefs();
         }
 
         public ObList RootObList
@@ -373,20 +374,6 @@ namespace Zilf
         {
             var defaults = new[] {
                 new { N=StdAtom.SERIAL, V=0 },
-
-                new { N=StdAtom.REXIT, V=0 },
-                new { N=StdAtom.UEXIT, V=1 },
-                new { N=StdAtom.NEXIT, V=2 },
-                new { N=StdAtom.FEXIT, V=3 },
-                new { N=StdAtom.CEXIT, V=4 },
-                new { N=StdAtom.DEXIT, V=5 },
-
-                new { N=StdAtom.NEXITSTR, V=0 },
-                new { N=StdAtom.FEXITFCN, V=0 },
-                new { N=StdAtom.CEXITFLAG, V=1 },
-                new { N=StdAtom.CEXITSTR, V=1 },
-                new { N=StdAtom.DEXITOBJ, V=1 },
-                new { N=StdAtom.DEXITSTR, V=1 },
             };
 
             foreach (var i in defaults)
@@ -399,12 +386,13 @@ namespace Zilf
 
         public ZilConstant AddZConstant(ZilAtom atom, ZilObject value)
         {
+            if (GetZVal(atom) != null)
+                Redefine(atom);
+
             ZilConstant constant = new ZilConstant(atom, value);
             zenv.Constants.Add(constant);
             SetZVal(atom, constant);
-
-            if (!globalValues.ContainsKey(atom))
-                globalValues.Add(atom, constant);
+            SetGlobalVal(atom, value);
 
             return constant;
         }
@@ -861,6 +849,94 @@ namespace Zilf
                     }),
                 },
                 this));
+        }
+
+        /// <summary>
+        /// Initializes (or re-initializes) the default PROPDEFs.
+        /// </summary>
+        /// <remarks>
+        /// The PROPDEFs are version-specific, so this should be called again after changing <see cref="ZEnvironment.ZVersion"/>;
+        /// </remarks>
+        public void InitPropDefs()
+        {
+            const string SDirectionsPropDef_V3 = @"'[
+(DIR TO R:ROOM =
+    (UEXIT 1)
+    (REXIT <ROOM .R>))
+(DIR SORRY S:STRING =
+    (NEXIT 2)
+    (NEXITSTR <STRING .S>))
+(DIR PER F:FCN =
+    (FEXIT 3)
+    (FEXITFCN <WORD .F>)
+    <BYTE 0>)
+(DIR TO R:ROOM IF G:GLOBAL ""OPT"" ELSE S:STRING =
+    (CEXIT 4)
+    (REXIT <ROOM .R>)
+    (CEXITFLAG <GLOBAL .G>)
+    (CEXITSTR <STRING .S>))
+(DIR TO R:ROOM IF D:OBJECT IS OPEN ""OPT"" ELSE S:STRING =
+    (DEXIT 5)
+    (REXIT <ROOM .R>)
+    (DEXITOBJ <OBJECT .D>)
+    (DEXITSTR <STRING .S>)
+    <BYTE 0>)
+(DIR R:ROOM =
+    (UEXIT 1)
+    (REXIT <ROOM .R>))
+(DIR S:STRING =
+    (NEXIT 2)
+    (NEXITSTR <STRING .S>))
+]";
+
+            const string SDirectionsPropDef_V4_Etc = @"'[
+(DIR TO R:ROOM =
+    (UEXIT 2)
+    (REXIT <ROOM .R>))
+(DIR SORRY S:STRING =
+    (NEXIT 3)
+    (NEXITSTR <STRING .S>)
+    <BYTE 0>)
+(DIR PER F:FCN =
+    (FEXIT 4)
+    (FEXITFCN <WORD .F>)
+    <WORD 0>)
+(DIR TO R:ROOM IF G:GLOBAL ""OPT"" ELSE S:STRING =
+    (CEXIT 5)
+    (REXIT <ROOM .R>)
+    (CEXITSTR <STRING .S>)
+    (CEXITFLAG <GLOBAL .G>))
+(DIR TO R:ROOM IF D:OBJECT IS OPEN ""OPT"" ELSE S:STRING =
+    (DEXIT 6)
+    (REXIT <ROOM .R>)
+    (DEXITOBJ <OBJECT .D>)
+    (DEXITSTR <STRING .S>))
+(DIR R:ROOM =
+    (UEXIT 2)
+    (REXIT <ROOM .R>))
+(DIR S:STRING =
+    (NEXIT 3)
+    (NEXITSTR <STRING .S>)
+    <BYTE 0>)
+]";
+
+            InitPropDef(StdAtom.DIRECTIONS, zenv.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Etc);
+        }
+
+        private void InitPropDef(StdAtom propName, string def)
+        {
+            var vector = (ZilVector)Program.Evaluate(this, def, true);
+            var pattern = ComplexPropDef.Parse(vector, this);
+            SetPropDef(GetStdAtom(propName), pattern);
+        }
+
+        public void SetPropDef(ZilAtom propName, ComplexPropDef pattern)
+        {
+            foreach (var pair in pattern.GetConstants(this))
+            {
+                AddZConstant(pair.Key, new ZilFix(pair.Value));
+            }
+            PutProp(propName, GetStdAtom(StdAtom.PROPSPEC), pattern);
         }
     }
 

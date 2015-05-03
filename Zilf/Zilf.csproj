@@ -131,6 +131,7 @@
     <Compile Include="Errors.cs" />
     <Compile Include="ObList.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ComplexPropDef.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Subrs.cs" />
     <Compile Include="TellTokens.cs" />

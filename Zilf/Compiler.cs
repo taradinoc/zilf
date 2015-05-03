@@ -3041,6 +3041,10 @@ namespace Zilf
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
         {
+            // for detecting implicitly defined directions
+            var directionPattern = cc.Context.GetProp(
+                cc.Context.GetStdAtom(StdAtom.DIRECTIONS), cc.Context.GetStdAtom(StdAtom.PROPSPEC)) as ComplexPropDef;
+
             try
             {
                 // create property builders for all properties on this object as needed,
@@ -3060,9 +3064,16 @@ namespace Zilf
                     }
 
                     // exclude phony built-in properties
+                    /* we also detect directions here, which are tricky for a few reasons:
+                     * - they can be implicitly defined by a property spec that looks sufficiently direction-like
+                     * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction
+                     * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
+                     *   is a pattern for directions
+                     */
                     bool phony;
-                    if (IsExitToken(cc.Context, prop.Rest.First) ||
-                        cc.Context.ZEnvironment.Directions.Contains(atom))
+                    if (prop.Rest != null && prop.Rest.Rest != null && !prop.Rest.Rest.IsEmpty &&
+                        (cc.Context.ZEnvironment.Directions.Contains(atom) ||
+                         (directionPattern != null && directionPattern.Matches(cc.Context, prop))))
                     {
                         // it's a direction
                         phony = false;
@@ -3072,6 +3083,8 @@ namespace Zilf
                         {
                             cc.Context.ZEnvironment.Directions.Add(atom);
                             cc.Context.ZEnvironment.GetVocabDirection(atom, model);     // TODO: pass prop instead of model as the source location?
+                            if (directionPattern != null)
+                                cc.Context.SetPropDef(atom, directionPattern);
                         }
                     }
                     else
@@ -3191,16 +3204,73 @@ namespace Zilf
 
         private static void BuildObject(CompileCtx cc, ZilModelObject model, IObjectBuilder ob)
         {
+            var elementConverters = new ComplexPropDef.ElementConverters()
+            {
+                CompileConstant = zo => CompileConstant(cc, zo),
+
+                GetAdjectiveValue = atom =>
+                {
+                    var word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                    if (cc.Context.ZEnvironment.ZVersion == 3)
+                    {
+                        return cc.Constants[ZilAtom.Parse("A?" + word.Atom, cc.Context)];
+                    }
+                    else
+                    {
+                        return cc.Vocabulary[word];
+                    }
+                },
+
+                GetGlobalNumber = atom => cc.Globals[atom],
+
+                GetVocabWord = (atom, partOfSpeech) =>
+                {
+                    Word word;
+
+                    switch (partOfSpeech.StdAtom)
+                    {
+                        case StdAtom.ADJ:
+                        case StdAtom.ADJECTIVE:
+                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                            break;
+
+                        case StdAtom.NOUN:
+                        case StdAtom.OBJECT:
+                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
+                            break;
+
+                        case StdAtom.BUZZ:
+                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
+                            break;
+
+                        case StdAtom.PREP:
+                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
+                            break;
+
+                        case StdAtom.DIR:
+                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
+                            break;
+
+                        case StdAtom.VERB:
+                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
+                            break;
+
+                        default:
+                            Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
+                            return cc.Game.Zero;
+                    }
+
+                    return cc.Vocabulary[word];
+                },
+            };
+
             foreach (ZilList prop in model.Properties)
             {
                 IPropertyBuilder pb;
                 ITableBuilder tb;
                 int length = 0;
 
-                // check for a PROPDEF pattern
-                //XXX
-
-                // if no pattern, then the first element must be an atom identifying the property
+                // the first element must be an atom identifying the property
                 ZilAtom atom = prop.First as ZilAtom;
                 if (atom == null)
                 {
@@ -3208,101 +3278,59 @@ namespace Zilf
                     continue;
                 }
 
-                // check for a PUTPROP giving a hand-coded property builder
+                // check for IN/LOC, which can take precedence over PROPSPEC
+                ZilObject value = prop.Rest.First;
+                if (atom.StdAtom == StdAtom.LOC ||
+                    (atom.StdAtom == StdAtom.IN && ((IStructure)prop).GetLength(2) == 2) && value is ZilAtom)
+                {
+                    var valueAtom = value as ZilAtom;
+                    if (valueAtom == null)
+                    {
+                        Errors.CompError(cc.Context, model, "value for IN/LOC property must be an atom");
+                        continue;
+                    }
+                    IObjectBuilder parent;
+                    if (cc.Objects.TryGetValue(valueAtom, out parent) == false)
+                    {
+                        Errors.CompError(cc.Context, model,
+                            "no such object for IN/LOC property: " + valueAtom.ToString());
+                        continue;
+                    }
+                    ob.Parent = parent;
+                    ob.Sibling = parent.Child;
+                    parent.Child = ob;
+                    continue;
+                }
+
+                // check for a PUTPROP giving a PROPDEF pattern or hand-coded property builder
                 ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
                 if (propspec != null)
                 {
-                    //XXX
-                    throw new NotImplementedException();
+                    var complexDef = propspec as ComplexPropDef;
+                    if (complexDef != null)
+                    {
+                        // PROPDEF pattern
+                        if (complexDef.Matches(cc.Context, prop))
+                        {
+                            tb = ob.AddComplexProperty(cc.Properties[atom]);
+                            complexDef.BuildProperty(cc.Context, prop, tb, elementConverters);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // name of a custom property builder function
+                        //XXX
+                        throw new NotImplementedException();
+                    }
                 }
 
                 // built-in property builder, so at least one value has to follow the atom (except for FLAGS)
-                ZilObject value = prop.Rest.First;
                 if (value == null)
                 {
                     if (atom.StdAtom != StdAtom.FLAGS)
                         Errors.CompError(cc.Context, model, "property has no value: " + atom.ToString());
                     continue;
-                }
-
-                // check for directions
-                if (cc.Context.ZEnvironment.Directions.Contains(atom))
-                {
-                    pb = cc.Properties[atom];
-                    ZilObject[] spec = prop.Rest.ToArray();
-                    StdAtom[] pattern = new StdAtom[spec.Length];
-
-                    for (int i = 0; i < spec.Length; i++)
-                        if (spec[i] is ZilAtom)
-                            pattern[i] = ((ZilAtom)spec[i]).StdAtom;
-
-                    if (pattern.Length == 1)
-                    {
-                        if (spec[0].GetTypeAtom(cc.Context).StdAtom == StdAtom.STRING)
-                        {
-                            // NEXIT
-                            BuildNEXIT(cc, ob, pb, spec[0]);
-                            continue;
-                        }
-                    }
-                    else if (pattern.Length == 2)
-                    {
-                        if (pattern[0] == StdAtom.TO)
-                        {
-                            // UEXIT
-                            BuildUEXIT(cc, ob, pb, spec[1]);
-                            continue;
-                        }
-                        else if (pattern[0] == StdAtom.PER)
-                        {
-                            // FEXIT
-                            BuildFEXIT(cc, ob, pb, spec[1]);
-                            continue;
-                        }
-                        else if (pattern[0] == StdAtom.SORRY)
-                        {
-                            // NEXIT
-                            BuildNEXIT(cc, ob, pb, spec[1]);
-                            continue;
-                        }
-                    }
-                    else if (pattern.Length == 4)
-                    {
-                        if (pattern[0] == StdAtom.TO && pattern[2] == StdAtom.IF)
-                        {
-                            // CEXIT
-                            BuildCEXIT(cc, ob, pb, spec[1], spec[3], null);
-                            continue;
-                        }
-                    }
-                    else if (pattern.Length == 6)
-                    {
-                        if (pattern[0] == StdAtom.TO && pattern[2] == StdAtom.IF &&
-                            pattern[4] == StdAtom.IS && pattern[5] == StdAtom.OPEN)
-                        {
-                            // DEXIT
-                            BuildDEXIT(cc, ob, pb, spec[1], spec[3], null);
-                            continue;
-                        }
-                        else if (pattern[0] == StdAtom.TO && pattern[2] == StdAtom.IF &&
-                            pattern[4] == StdAtom.ELSE)
-                        {
-                            // CEXIT
-                            BuildCEXIT(cc, ob, pb, spec[1], spec[3], spec[5]);
-                            continue;
-                        }
-                    }
-                    else if (pattern.Length == 8)
-                    {
-                        if (pattern[0] == StdAtom.TO && pattern[2] == StdAtom.IF &&
-                            pattern[4] == StdAtom.IS && pattern[5] == StdAtom.OPEN &&
-                            pattern[6] == StdAtom.ELSE)
-                        {
-                            // DEXIT
-                            BuildDEXIT(cc, ob, pb, spec[1], spec[3], spec[7]);
-                            continue;
-                        }
-                    }
                 }
 
                 // check for special cases
@@ -3315,26 +3343,6 @@ namespace Zilf
                             continue;
                         }
                         ob.DescriptiveName = value.ToStringContext(cc.Context, true);
-                        continue;
-
-                    case StdAtom.IN:
-                    case StdAtom.LOC:
-                        atom = value as ZilAtom;
-                        if (atom == null)
-                        {
-                            Errors.CompError(cc.Context, model, "value for IN/LOC property must be an atom");
-                            continue;
-                        }
-                        IObjectBuilder parent;
-                        if (cc.Objects.TryGetValue(atom, out parent) == false)
-                        {
-                            Errors.CompError(cc.Context, model,
-                                "no such object for IN/LOC property: " + atom.ToString());
-                            continue;
-                        }
-                        ob.Parent = parent;
-                        ob.Sibling = parent.Child;
-                        parent.Child = ob;
                         continue;
 
                     case StdAtom.FLAGS:
@@ -3493,161 +3501,6 @@ namespace Zilf
             //XXX debug line refs for objects
             if (cc.WantDebugInfo)
                 cc.Game.DebugFile.MarkObject(ob, new DebugLineRef(), new DebugLineRef());
-        }
-
-        private static void BuildCEXIT(CompileCtx cc, IObjectBuilder ob, IPropertyBuilder prop,
-            ZilObject dest, ZilObject global, ZilObject message)
-        {
-            ZilAtom destAtom = dest as ZilAtom;
-            IObjectBuilder destObject;
-            if (destAtom == null || cc.Objects.TryGetValue(destAtom, out destObject) == false)
-                throw new CompilerError("CEXIT must specify an object name");
-
-            ZilAtom globalAtom = global as ZilAtom;
-            IGlobalBuilder gb;
-            if (globalAtom == null || cc.Globals.TryGetValue(globalAtom, out gb) == false)
-                throw new CompilerError("CEXIT must specify a global variable name");
-
-            if (message != null && message.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
-                throw new CompilerError("CEXIT must specify a failure message or omit the ELSE part");
-
-            string msgStr = (message == null) ? null :
-                message.ToStringContext(cc.Context, true);
-
-            ITableBuilder tb = ob.AddComplexProperty(prop);
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-            {
-                tb.AddByte(destObject);
-                tb.AddByte(gb);
-                if (msgStr == null)
-                    tb.AddShort(0);
-                else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
-            }
-            else
-            {
-                tb.AddShort(destObject);
-                if (msgStr == null)
-                    tb.AddShort(0);
-                else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
-                tb.AddByte(gb);
-            }
-        }
-
-        private static void BuildDEXIT(CompileCtx cc, IObjectBuilder ob, IPropertyBuilder prop,
-            ZilObject dest, ZilObject door, ZilObject message)
-        {
-            IObjectBuilder destObject, doorObject;
-            ZilAtom atom = dest as ZilAtom;
-            if (atom == null || cc.Objects.TryGetValue(atom, out destObject) == false)
-                throw new CompilerError("DEXIT must supply a destination object name");
-
-            atom = door as ZilAtom;
-            if (atom == null || cc.Objects.TryGetValue(atom, out doorObject) == false)
-                throw new CompilerError("DEXIT must supply a door object name");
-
-            if (message != null && message.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
-                throw new CompilerError("DEXIT must specify a failure message or omit the ELSE part");
-
-            string msgStr = (message == null) ? null :
-                message.ToStringContext(cc.Context, true);
-
-            ITableBuilder tb = ob.AddComplexProperty(prop);
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-            {
-                tb.AddByte(destObject);
-                tb.AddByte(doorObject);
-                if (msgStr == null)
-                    tb.AddShort(0);
-                else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
-                tb.AddByte(0);
-            }
-            else
-            {
-                tb.AddShort(destObject);
-                tb.AddShort(doorObject);
-                if (msgStr == null)
-                    tb.AddShort(0);
-                else
-                    tb.AddShort(cc.Game.MakeOperand(TranslateString(msgStr, cc.Context)));
-            }
-        }
-
-        private static void BuildFEXIT(CompileCtx cc, IObjectBuilder ob, IPropertyBuilder prop, 
-            ZilObject routine)
-        {
-            ZilAtom atom = routine as ZilAtom;
-            IRoutineBuilder rtn;
-            if (atom == null || cc.Routines.TryGetValue(atom, out rtn) == false)
-                throw new CompilerError("FEXIT must supply a routine name");
-
-            ITableBuilder tb = ob.AddComplexProperty(prop);
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-            {
-                tb.AddShort(rtn);
-                tb.AddByte(0);
-            }
-            else
-            {
-                tb.AddShort(rtn);
-                tb.AddShort(0);
-            }
-        }
-
-        private static void BuildUEXIT(CompileCtx cc, IObjectBuilder ob, IPropertyBuilder prop, 
-            ZilObject dest)
-        {
-            ZilAtom destAtom = dest as ZilAtom;
-            IObjectBuilder destObject;
-            if (destAtom == null || cc.Objects.TryGetValue(destAtom, out destObject) == false)
-                throw new CompilerError("UEXIT must specify an object name");
-
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-            {
-                ob.AddByteProperty(prop, destObject);
-            }
-            else
-            {
-                ob.AddWordProperty(prop, destObject);
-            }
-        }
-
-        private static void BuildNEXIT(CompileCtx cc, IObjectBuilder ob, IPropertyBuilder prop,
-            ZilObject message)
-        {
-            if (message.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
-                throw new CompilerError("NEXIT must specify a string");
-
-            string msgStr = message.ToStringContext(cc.Context, true);
-            IOperand msgOperand = cc.Game.MakeOperand(TranslateString(msgStr, cc.Context));
-
-            if (cc.Context.ZEnvironment.ZVersion < 4)
-            {
-                ob.AddWordProperty(prop, msgOperand);
-            }
-            else
-            {
-                ITableBuilder tb = ob.AddComplexProperty(prop);
-                tb.AddShort(msgOperand);
-                tb.AddByte(0);
-            }
-        }
-
-        private static bool IsExitToken(Context ctx, ZilObject value)
-        {
-            ZilAtom atom = value as ZilAtom;
-            if (atom != null)
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.TO:
-                    case StdAtom.PER:
-                    case StdAtom.SORRY:
-                        return true;
-                }
-
-            return false;
         }
     }
 }
