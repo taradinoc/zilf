@@ -40,5 +40,19 @@ namespace IntegrationTests
                     "<==? <GET ,TBL1 4> 2>",
                     "<==? <GET ,TBL1 5> 3>");
         }
+
+        [TestMethod]
+        public void TABLE_PATTERN_Should_Affect_Element_Sizes()
+        {
+            AssertGlobals(
+                "<GLOBAL TBL <TABLE (PATTERN (BYTE WORD BYTE BYTE [REST WORD])) 1 2 3 4 5 6>>")
+                .Implies(
+                    "<==? <GETB ,TBL 0> 1>",
+                    "<==? <GET <REST ,TBL 1> 0> 2>",
+                    "<==? <GETB ,TBL 3> 3>",
+                    "<==? <GETB ,TBL 4> 4>",
+                    "<==? <GET <REST ,TBL 5> 0> 5>",
+                    "<==? <GET <REST ,TBL 5> 1> 6>");
+        }
     }
 }

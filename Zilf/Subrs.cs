@@ -1700,7 +1700,7 @@ namespace Zilf
             }
 
             ZilTable tab = new ZilTable(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
-                elemCount.Value, initializer, flags);
+                elemCount.Value, initializer, flags, null);
             ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
@@ -1719,6 +1719,7 @@ namespace Zilf
             const int T_BYTES = 1;
             const int T_STRING = 2;
             int type = T_WORDS;
+            ZilObject[] pattern = null;
 
             int i = 0;
             if (args.Length > 0)
@@ -1727,9 +1728,10 @@ namespace Zilf
                 {
                     i++;
 
-                    foreach (ZilObject obj in (ZilList)args[0])
+                    var list = (ZilList)args[0];
+                    while (list != null && !list.IsEmpty)
                     {
-                        ZilAtom flag = obj as ZilAtom;
+                        ZilAtom flag = list.First as ZilAtom;
                         if (flag == null)
                             throw new InterpreterError(name + ": flags must be atoms");
 
@@ -1750,9 +1752,21 @@ namespace Zilf
                             case StdAtom.KERNEL:
                                 // no idea what this one does
                                 break;
+
+                            case StdAtom.PATTERN:
+                                list = list.Rest;
+                                ZilList patternList;
+                                if (list == null || list.IsEmpty || (patternList = list.First as ZilList) == null)
+                                    throw new InterpreterError(name + ": expected a list after PATTERN");
+                                pattern = patternList.ToArray();
+                                ValidateTablePattern(name, pattern);
+                                break;
+
                             default:
                                 throw new InterpreterError(name + ": unrecognized flag: " + flag);
                         }
+
+                        list = list.Rest;
                     }
                 }
             }
@@ -1787,9 +1801,54 @@ namespace Zilf
             }
 
             ZilTable tab = new ZilTable(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
-                1, values.ToArray(), flags);
+                1, values.ToArray(), flags, pattern == null ? null : pattern.ToArray());
             ctx.ZEnvironment.Tables.Add(tab);
             return tab;
+        }
+
+        private static void ValidateTablePattern(string name, ZilObject[] pattern)
+        {
+            if (pattern.Length == 0)
+                throw new InterpreterError(name + ": PATTERN must not be empty");
+
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                if (IsByteOrWordAtom(pattern[i]))
+                {
+                    // OK
+                    continue;
+                }
+
+                var vector = pattern[i] as ZilVector;
+                if (vector != null)
+                {
+                    if (i != pattern.Length - 1)
+                        throw new InterpreterError(name + ": vector may only appear at the end of a PATTERN");
+
+                    if (vector.GetLength() < 2)
+                        throw new InterpreterError(name + ": vector in PATTERN must have at least 2 elements");
+
+                    // first element must be REST
+                    var atom = vector[0] as ZilAtom;
+                    if (atom == null || atom.StdAtom != StdAtom.REST)
+                        throw new InterpreterError(name + ": vector in PATTERN must start with REST");
+
+                    // remaining elements must be BYTE or WORD
+                    if (!vector.Skip(1).All(zo => IsByteOrWordAtom(zo)))
+                        throw new InterpreterError(name + ": following elements of vector in PATTERN must be BYTE or WORD");
+
+                    // OK
+                    continue;
+                }
+
+                throw new InterpreterError(name + ": PATTERN may only contain BYTE, WORD, or a REST vector");
+            }
+        }
+
+        private static bool IsByteOrWordAtom(ZilObject value)
+        {
+            var atom = value as ZilAtom;
+            return atom != null && (atom.StdAtom == StdAtom.BYTE || atom.StdAtom == StdAtom.WORD);
         }
 
         [Subr]
