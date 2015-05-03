@@ -769,6 +769,7 @@ namespace Zilf
             var defaultCustomTypes = new[] {
                 new { Name = "BYTE", PrimType = PrimType.FIX },
                 new { Name = "DECL", PrimType = PrimType.LIST },
+                new { Name = "SEMI", PrimType = PrimType.STRING },
             };
 
             foreach (var ct in defaultCustomTypes)
@@ -777,8 +778,22 @@ namespace Zilf
                 var atom = rootObList[ct.Name];
                 var primType = ct.PrimType;
 
-                ChtypeDelegate chtypeDelegate =
-                    (ctx, zo) => new ZilHash(atom, primType, zo);
+                ChtypeDelegate chtypeDelegate;
+
+                // use ZilStructuredHash for structured primtypes
+                switch (primType)
+                {
+                    case PrimType.LIST:
+                    case PrimType.STRING:
+                    case PrimType.VECTOR:
+                        chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, zo);
+                        break;
+
+                    default:
+                        chtypeDelegate = (ctx, zo) => new ZilHash(atom, primType, zo);
+                        break;
+                }
+                    
 
                 var entry = new TypeMapEntry()
                 {
