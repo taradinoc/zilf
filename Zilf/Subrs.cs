@@ -264,11 +264,22 @@ namespace Zilf
         [Subr]
         public static ZilObject SETG(Context ctx, ZilObject[] args)
         {
+            return PerformSetg(ctx, args, "SETG");
+        }
+
+        [Subr]
+        public static ZilObject SETG20(Context ctx, ZilObject[] args)
+        {
+            return PerformSetg(ctx, args, "SETG20");
+        }
+
+        private static ZilObject PerformSetg(Context ctx, ZilObject[] args, string name)
+        {
             if (args.Length != 2)
-                throw new InterpreterError(null, "SETG", 2, 2);
+                throw new InterpreterError(null, name, 2, 2);
 
             if (!(args[0] is ZilAtom))
-                throw new InterpreterError("SETG: first arg must be an atom");
+                throw new InterpreterError(name + ": first arg must be an atom");
 
             if (args[1] == null)
                 throw new ArgumentNullException();
@@ -403,17 +414,28 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFINE(Context ctx, ZilObject[] args)
         {
+            return PerformDefine(ctx, args, "DEFINE");
+        }
+
+        [FSubr]
+        public static ZilObject DEFINE20(Context ctx, ZilObject[] args)
+        {
+            return PerformDefine(ctx, args, "DEFINE20");
+        }
+
+        private static ZilObject PerformDefine(Context ctx, ZilObject[] args, string name)
+        {
             if (args.Length < 3)
-                throw new InterpreterError(null, "DEFINE", 3, 0);
+                throw new InterpreterError(null, name, 3, 0);
 
             ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
-                throw new InterpreterError("DEFINE: first arg must evaluate to an atom");
+                throw new InterpreterError(name + ": first arg must evaluate to an atom");
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(atom) != null)
-                throw new InterpreterError("DEFINE: already defined: " + atom.ToStringContext(ctx, false));
+                throw new InterpreterError(name + ": already defined: " + atom.ToStringContext(ctx, false));
 
             if (args[1].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("DEFINE: second arg must be a list");
+                throw new InterpreterError(name + ": second arg must be a list");
 
             ZilFunction func = new ZilFunction(atom,
                 (IEnumerable<ZilObject>)args[1],
