@@ -406,9 +406,9 @@ namespace Zilf
 
     class ZilHash : ZilObject
     {
-        private readonly ZilAtom type;
-        private readonly PrimType primtype;
-        private readonly ZilObject primvalue;
+        protected readonly ZilAtom type;
+        protected readonly PrimType primtype;
+        protected readonly ZilObject primvalue;
 
         internal ZilHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
         {
@@ -464,6 +464,55 @@ namespace Zilf
         {
             return this;
         }
+    }
+
+    class ZilStructuredHash : ZilHash, IStructure
+    {
+        public ZilStructuredHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
+            : base(type, primtype, primvalue)
+        {
+        }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return ((IStructure)primvalue).GetFirst();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return ((IStructure)primvalue).GetRest(skip);
+        }
+
+        public bool IsEmpty()
+        {
+            return ((IStructure)primvalue).IsEmpty();
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                return ((IStructure)primvalue)[index];
+            }
+            set
+            {
+                ((IStructure)primvalue)[index] = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return ((IStructure)primvalue).GetLength();
+        }
+
+        public int? GetLength(int limit)
+        {
+            return ((IStructure)primvalue).GetLength(limit);
+        }
+
+        #endregion
     }
 
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]

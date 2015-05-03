@@ -818,6 +818,18 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestCustomType_SEMI()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #SEMI \"hello world\">", ctx.GetStdAtom(StdAtom.SEMI));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #SEMI \"hello world\" STRING>", new ZilString("hello world"));
+
+            TestHelpers.EvalAndCatch<InterpreterError>("#SEMI (foo)");
+
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #SEMI \"hello world\">", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #SEMI \"hello world\">", ctx.FALSE);
+        }
+
+        [TestMethod]
         public void TestApplicableFIX()
         {
             var ctx = new Context();

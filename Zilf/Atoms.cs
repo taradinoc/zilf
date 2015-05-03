@@ -280,6 +280,7 @@ namespace Zilf
         SAVE,
         SCREEN,
         SEGMENT,
+        SEMI,
         SERIAL,
         SET,
         SETG,

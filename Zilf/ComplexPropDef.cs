@@ -55,16 +55,14 @@ namespace Zilf
             public readonly OutputElementType Type;
             public readonly ZilAtom Constant, Variable, PartOfSpeech;
             public readonly ZilFix Fix;
-            public readonly string Comment;
 
-            public OutputElement(OutputElementType type, ZilAtom constant, ZilAtom variable = null, ZilAtom partOfSpeech = null, ZilFix fix = null, string comment = null)
+            public OutputElement(OutputElementType type, ZilAtom constant, ZilAtom variable = null, ZilAtom partOfSpeech = null, ZilFix fix = null)
             {
                 this.Type = type;
                 this.Constant = constant;
                 this.Variable = variable;
                 this.PartOfSpeech = partOfSpeech;
                 this.Fix = fix;
-                this.Comment = comment;
             }
         }
 
@@ -182,6 +180,10 @@ namespace Zilf
                                 outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: (ZilFix)output));
                                 break;
 
+                            case StdAtom.FALSE:
+                                outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: null));
+                                break;
+
                             case StdAtom.FORM:
                                 outputs.Add(ConvertOutputForm((ZilForm)output, constant));
                                 break;
@@ -198,8 +200,12 @@ namespace Zilf
                                 }
                                 break;
 
+                            case StdAtom.SEMI:
+                                // ignore
+                                break;
+
                             default:
-                                throw new InterpreterError("PROPDEF output elements must be FIX, FORM, or STRING");
+                                throw new InterpreterError("PROPDEF output elements must be FIX, FALSE, FORM, STRING, or SEMI");
                         }
                     }
                 }
@@ -212,7 +218,13 @@ namespace Zilf
 
                 if (outputs.Skip(1).Any(e => e.Type == OutputElementType.Length))
                 {
-                    throw new InterpreterError("FIX in PROPDEF output pattern must be at the beginning");
+                    throw new InterpreterError("FIX/FALSE in PROPDEF output pattern must be at the beginning");
+                }
+
+                if (outputs.Count >= 1 && outputs[0].Type == OutputElementType.Length && outputs[0].Fix == null)
+                {
+                    // discard <>
+                    outputs.RemoveAt(0);
                 }
 
                 var capturedVariables = new HashSet<ZilAtom>(from i in inputs
@@ -325,7 +337,7 @@ namespace Zilf
             }
 
             // done
-            return new OutputElement(type, constant, variable: variable, partOfSpeech: partOfSpeech, fix: fix, comment: null);
+            return new OutputElement(type, constant, variable: variable, partOfSpeech: partOfSpeech, fix: fix);
         }
 
         public IEnumerable<KeyValuePair<ZilAtom, int>> GetConstants(Context ctx)
