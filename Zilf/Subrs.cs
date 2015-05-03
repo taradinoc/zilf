@@ -1457,12 +1457,22 @@ namespace Zilf
             if (atom == null)
                 throw new InterpreterError(null, "CONSTANT: first arg must be an atom");
 
-            if (ctx.GetZVal(atom) != null)
+            var previous = ctx.GetZVal(atom);
+            if (previous != null)
             {
                 if (ctx.AllowRedefine)
+                {
                     ctx.Redefine(atom);
+                }
+                else if (previous is ZilConstant && ((ZilConstant)previous).Value.Equals(args[1]))
+                {
+                    // silently ignore duplicate constants as long as the values are equal
+                    return previous;
+                }
                 else
+                {
                     throw new InterpreterError("CONSTANT: already defined: " + atom.ToStringContext(ctx, false));
+                }
             }
 
             return ctx.AddZConstant(atom, args[1]);
@@ -1787,6 +1797,7 @@ namespace Zilf
 
             ctx.ZEnvironment.ZVersion = newVersion;
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? ctx.TRUE : ctx.FALSE);
+            ctx.InitPropDefs();
 
             if (args.Length > 1)
             {
@@ -1884,12 +1895,18 @@ namespace Zilf
             if (!args.All(zo => zo is ZilAtom))
                 throw new InterpreterError("DIRECTIONS: all args must be atoms");
 
+            // if a PROPSPEC is set for DIRECTIONS, it'll be copied to the new direction properties
+            var propspecAtom = ctx.GetStdAtom(StdAtom.PROPSPEC);
+            var propspec = ctx.GetProp(ctx.GetStdAtom(StdAtom.DIRECTIONS), propspecAtom);
+
             ctx.ZEnvironment.Directions.Clear();
             foreach (ZilAtom arg in args)
             {
                 ctx.ZEnvironment.Directions.Add(arg);
                 ctx.ZEnvironment.GetVocabDirection(arg, ctx.CallingForm as ISourceLine);
                 ctx.ZEnvironment.LowDirection = arg;
+
+                ctx.PutProp(arg, propspecAtom, propspec);
             }
 
             return ctx.TRUE;
@@ -1943,6 +1960,18 @@ namespace Zilf
 
                     case StdAtom.BUZZ:
                         word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.CallingForm);
+                        break;
+
+                    case StdAtom.PREP:
+                        word = ctx.ZEnvironment.GetVocabPreposition(atom, ctx.CallingForm);
+                        break;
+
+                    case StdAtom.DIR:
+                        word = ctx.ZEnvironment.GetVocabDirection(atom, ctx.CallingForm);
+                        break;
+
+                    case StdAtom.VERB:
+                        word = ctx.ZEnvironment.GetVocabVerb(atom, ctx.CallingForm);
                         break;
 
                     default:
@@ -2061,13 +2090,13 @@ namespace Zilf
             return args[0];
         }
 
-        [Subr]
+        [FSubr]
         public static ZilObject PROPDEF(Context ctx, ZilObject[] args)
         {
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError(null, "PROPDEF", 2, 3);
+            if (args.Length < 2)
+                throw new InterpreterError(null, "PROPDEF", 2, 0);
 
-            ZilAtom atom = args[0] as ZilAtom;
+            ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
                 throw new InterpreterError("PROPDEF: first arg must be an atom");
 
@@ -2076,11 +2105,14 @@ namespace Zilf
                     "overriding default value for property '{0}'",
                     atom);
 
-            ctx.ZEnvironment.PropertyDefaults[atom] = args[1];
+            ctx.ZEnvironment.PropertyDefaults[atom] = args[1].Eval(ctx);
 
-            //XXX complex property patterns
-            if (args.Length == 3)
-                throw new NotImplementedException();
+            // complex property patterns
+            if (args.Length >= 3)
+            {
+                var pattern = ComplexPropDef.Parse(args.Skip(2), ctx);
+                ctx.SetPropDef(atom, pattern);
+            }
 
             return atom;
         }

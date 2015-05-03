@@ -374,6 +374,7 @@ Compiler switches:
                 ZilObject result = null;
                 bool first = true;
                 foreach (ZilObject node in ztree)
+                {
                     try
                     {
                         if (first)
@@ -381,7 +382,10 @@ Compiler switches:
                             // V4 games can identify themselves this way instead of using <VERSION EZIP>
                             ZilString str = node as ZilString;
                             if (str != null && str.Text.StartsWith("EXTENDED") && ctx.ZEnvironment.ZVersion == 3)
+                            {
                                 ctx.ZEnvironment.ZVersion = 4;
+                                ctx.InitPropDefs();
+                            }
 
                             first = false;
                         }
@@ -406,6 +410,7 @@ Compiler switches:
                         else
                             ctx.HandleError(newEx);
                     }
+                }
 
                 return result;
             }

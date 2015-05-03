@@ -287,5 +287,91 @@ namespace IntegrationTests
         }
 
         #endregion
+
+        #region PROPDEF/PROPSPEC
+
+        [TestMethod]
+        public void PROPDEF_Basic_Pattern_Should_Work()
+        {
+            AssertGlobals(
+                "<PROPDEF HEIGHT <> " +
+                " (HEIGHT FEET:FIX FOOT INCHES:FIX = 2 <WORD .FEET> <BYTE .INCHES>)" +
+                " (HEIGHT FEET:FIX FT INCHES:FIX = 2 <WORD .FEET> <BYTE .INCHES>)>",
+                "<OBJECT GIANT (HEIGHT 10 FT 8)>")
+                .Implies(
+                    "<=? <GET <GETPT ,GIANT ,P?HEIGHT> 0> 10>",
+                    "<=? <GETB <GETPT ,GIANT ,P?HEIGHT> 2> 8>");
+        }
+
+        [TestMethod]
+        public void PROPDEF_OPT_Should_Work()
+        {
+            AssertGlobals(
+                "<PROPDEF HEIGHT <> " +
+                " (HEIGHT FEET:FIX FT \"OPT\" INCHES:FIX = <WORD .FEET> <BYTE .INCHES>)>",
+                "<OBJECT GIANT1 (HEIGHT 100 FT)>",
+                "<OBJECT GIANT2 (HEIGHT 50 FT 11)>")
+                .Implies(
+                    "<=? <PTSIZE <GETPT ,GIANT1 ,P?HEIGHT>> 3>",
+                    "<=? <GET <GETPT ,GIANT1 ,P?HEIGHT> 0> 100>",
+                    "<=? <GETB <GETPT ,GIANT1 ,P?HEIGHT> 2> 0>",
+                    "<=? <PTSIZE <GETPT ,GIANT2 ,P?HEIGHT>> 3>",
+                    "<=? <GET <GETPT ,GIANT2 ,P?HEIGHT> 0> 50>",
+                    "<=? <GETB <GETPT ,GIANT2 ,P?HEIGHT> 2> 11>");
+        }
+
+        [TestMethod]
+        public void PROPDEF_Constants_Should_Work()
+        {
+            AssertGlobals(
+                "<PROPDEF HEIGHT <> " +
+                " (HEIGHT FEET:FIX FT INCHES:FIX = (HEIGHTSIZE 3) (H-FEET <WORD .FEET>) (H-INCHES <BYTE .INCHES>))>")
+                .Implies(
+                    "<=? ,HEIGHTSIZE 3>",
+                    "<=? ,H-FEET 0>",
+                    "<=? ,H-INCHES 2>");
+        }
+
+        [TestMethod]
+        public void PROPDEF_For_DIRECTIONS_Should_Be_Used_For_All_Directions()
+        {
+            AssertGlobals(
+                "<PROPDEF DIRECTIONS <> " +
+                " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
+                "<DIRECTIONS NORTH SOUTH>",
+                "<OBJECT HOUSE (SOUTH GOES TO WOODS)>",
+                "<OBJECT WOODS (NORTH GOES TO HOUSE)>")
+                .Implies(
+                    "<=? <PTSIZE <GETPT ,HOUSE ,P?SOUTH>> ,MY-UEXIT>",
+                    "<=? <GETB <GETPT ,HOUSE ,P?SOUTH> ,MY-REXIT> ,WOODS>");
+        }
+
+        [TestMethod]
+        public void Clearing_PROPDEF_For_DIRECTIONS_Should_Override_Default_Patterns()
+        {
+            AssertGlobals(
+                "<PUTPROP DIRECTIONS PROPSPEC>",
+                "<DIRECTIONS NORTH SOUTH>",
+                "<OBJECT HOUSE (SOUTH TO WOODS)>",
+                "<OBJECT WOODS (NORTH TO HOUSE)>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void PROPDEF_For_DIRECTIONS_Can_Be_Used_For_Implicit_Directions()
+        {
+            AssertGlobals(
+                "<PROPDEF DIRECTIONS <> " +
+                " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
+                "<DIRECTIONS NORTH SOUTH>",
+                "<OBJECT HOUSE (EAST GOES TO WOODS)>",
+                "<OBJECT WOODS (WEST GOES TO HOUSE)>")
+                .Implies(
+                    "<=? <PTSIZE <GETPT ,HOUSE ,P?EAST>> ,MY-UEXIT>",
+                    "<=? <GETB <GETPT ,HOUSE ,P?EAST> ,MY-REXIT> ,WOODS>",
+                    "<BAND <GETB ,W?EAST 4> ,PS?DIRECTION>");
+        }
+
+        #endregion
     }
 }

@@ -257,7 +257,7 @@ namespace IntegrationTests
 
         protected override string Expression()
         {
-            return "";
+            return "<>";
         }
     }
 }
