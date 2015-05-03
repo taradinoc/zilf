@@ -937,6 +937,7 @@ General switches:
             }
             else if (node is AdditionExpr)
             {
+                // TODO: should this be || instead of &&, or even always true?
                 return IsLongConstant(ctx, ((AdditionExpr)node).Left) && IsLongConstant(ctx, ((AdditionExpr)node).Right);
             }
             else if (node is StringLiteral || node is QuoteExpr)
