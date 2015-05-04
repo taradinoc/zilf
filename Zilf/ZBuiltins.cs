@@ -941,7 +941,7 @@ namespace Zilf
 
             #region Ternary Opcodes
 
-            [Builtin("PUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
+            [Builtin("PUT", "ZPUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
             [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
             public static void TernaryTableVoidOp(
                 VoidCall c, [Data] TernaryOp op,
@@ -979,6 +979,29 @@ namespace Zilf
                 ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
             {
                 c.rb.EmitBinary(op, left, right, c.resultStorage);
+                return c.resultStorage;
+            }
+
+            [Builtin("XORB")]
+            public static IOperand BinaryXorOp(ValueCall c, ZilObject left, ZilObject right)
+            {
+                ZilObject value;
+                if (left is ZilFix && ((ZilFix)left).Value == -1)
+                {
+                    value = right;
+                }
+                else if (right is ZilFix && ((ZilFix)right).Value == -1)
+                {
+                    value = left;
+                }
+                else
+                {
+                    Errors.CompError(c.cc.Context, c.form, "XORB: one operand must be -1");
+                    return c.cc.Game.Zero;
+                }
+
+                var storage = CompileAsOperand(c.cc, c.rb, value, c.form, c.resultStorage);
+                c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
                 return c.resultStorage;
             }
 
@@ -1038,8 +1061,8 @@ namespace Zilf
                 }
             }
 
-            [Builtin("REST", Data = BinaryOp.Add)]
-            [Builtin("BACK", Data = BinaryOp.Sub)]
+            [Builtin("REST", "ZREST", Data = BinaryOp.Add)]
+            [Builtin("BACK", "ZBACK", Data = BinaryOp.Sub)]
             public static IOperand RestOrBackOp(
                 ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right = null)
             {
@@ -1128,7 +1151,7 @@ namespace Zilf
                 return c.resultStorage;
             }
 
-            [Builtin("GET", "NTH", Data = BinaryOp.GetWord)]
+            [Builtin("GET", "NTH", "ZGET", Data = BinaryOp.GetWord)]
             [Builtin("GETB", Data = BinaryOp.GetByte)]
             public static IOperand BinaryTableValueOp(
                 ValueCall c, [Data] BinaryOp op, [Table] IOperand left, IOperand right)
@@ -1663,7 +1686,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("APPLY", "CALL", HasSideEffect = true)]
+            [Builtin("APPLY", "CALL", "ZAPPLY", HasSideEffect = true)]
             public static IOperand CallValueOp(ValueCall c,
                 [Routine] IOperand routine, params IOperand[] args)
             {

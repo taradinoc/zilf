@@ -2598,6 +2598,18 @@ namespace IntegrationTests
                 .GeneratesCodeMatching(@"^\s*GET 16,0 >STACK\s*$");
         }
 
+        [TestMethod]
+        public void TestXORB()
+        {
+            AssertRoutine("X", "<XORB .X -1>")
+                .WhenCalledWith("12345")
+                .GivesNumber("-12346");
+
+            AssertRoutine("X", "<XORB -1 .X>")
+                .WhenCalledWith("32767")
+                .GivesNumber("-32768");
+        }
+
         #endregion
     }
 }

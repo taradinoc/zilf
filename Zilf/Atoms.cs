@@ -129,6 +129,8 @@ namespace Zilf
         [Atom("EQUAL?")]
         EQUAL_P,
         EZIP,
+        [Atom("F?")]
+        F_P,
         FALSE,
         [Atom("FALSE-VALUE")]
         FALSE_VALUE,
@@ -337,6 +339,7 @@ namespace Zilf
         WORD,
         WORDLENGTH,
         X,
+        XORB,
         XZIP,
         YZIP,
         [Atom("ZERO?")]

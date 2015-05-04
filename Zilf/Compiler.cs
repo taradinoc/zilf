@@ -1542,6 +1542,7 @@ namespace Zilf
                         return CompileVERSION_P(cc, rb, form.Rest, wantResult, resultStorage);
 
                     case StdAtom.NOT:
+                    case StdAtom.F_P:
                     case StdAtom.T_P:
                         if (form.Rest == null || form.Rest.First == null ||
                             (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
@@ -1552,7 +1553,7 @@ namespace Zilf
                         resultStorage = resultStorage ?? rb.Stack;
                         label1 = rb.DefineLabel();
                         label2 = rb.DefineLabel();
-                        CompileCondition(cc, rb, form.Rest.First, form, label1, head.StdAtom == StdAtom.NOT);
+                        CompileCondition(cc, rb, form.Rest.First, form, label1, head.StdAtom != StdAtom.T_P);
                         rb.EmitStore(resultStorage, cc.Game.One);
                         rb.Branch(label2);
                         rb.MarkLabel(label1);
@@ -1962,6 +1963,7 @@ namespace Zilf
             switch (head.StdAtom)
             {
                 case StdAtom.NOT:
+                case StdAtom.F_P:
                     CompileCondition(cc, rb, args[0], form, label, !polarity);
                     break;
 
