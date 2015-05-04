@@ -1225,6 +1225,30 @@ namespace Zilf
             return PerformComparison(ctx, "G=?", (a, b) => a >= b, args);
         }
 
+        [Subr("0?")]
+        public static ZilObject Zero_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "0?", 1, 1);
+
+            if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 0)
+                return ctx.TRUE;
+            else
+                return ctx.FALSE;
+        }
+
+        [Subr("1?")]
+        public static ZilObject One_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "1?", 1, 1);
+
+            if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 1)
+                return ctx.TRUE;
+            else
+                return ctx.FALSE;
+        }
+
         #endregion
 
         #region Mapping
