@@ -845,8 +845,18 @@ namespace ZilfTests.Interpreter
                 new ZilList(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
             TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
                 new ZilVector(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
+
+            // TODO: this should evaluate to 3 (and check the DECL), not 3:7
             TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:<+ 3 4>",
                 new ZilAdecl(new ZilFix(3), new ZilFix(7)));
+        }
+
+        [TestMethod]
+        public void TestSPLICE()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFMAC FOO () #SPLICE (4 5)>");
+            TestHelpers.EvalAndAssert(ctx, "<+ <FOO>>", new ZilFix(9));
         }
     }
 }

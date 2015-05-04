@@ -396,7 +396,16 @@ namespace Zilf
                 }
                 else
                 {
-                    yield return obj.Eval(ctx);
+                    var result = obj.Eval(ctx);
+                    if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
+                    {
+                        foreach (ZilObject inner in (IEnumerable<ZilObject>)result.GetPrimitive(ctx))
+                            yield return inner;
+                    }
+                    else
+                    {
+                        yield return result;
+                    }
                 }
             }
         }
