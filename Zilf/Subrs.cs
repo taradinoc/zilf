@@ -922,6 +922,72 @@ namespace Zilf
             return list;
         }
 
+        [Subr]
+        public static ZilObject SUBSTRUC(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1 || args.Length > 4)
+                throw new InterpreterError(null, "SUBSTRUC", 1, 4);
+
+            IStructure from = args[0] as IStructure;
+            if (from == null)
+                throw new InterpreterError("SUBSTRUC: first arg must be a structure");
+
+            int rest;
+            if (args.Length >= 2)
+            {
+                var restFix = args[1] as ZilFix;
+                if (restFix == null)
+                    throw new InterpreterError("SUBSTRUC: second arg must be a FIX");
+                rest = restFix.Value;
+            }
+            else
+            {
+                rest = 0;
+            }
+
+            int amount;
+            if (args.Length >= 3)
+            {
+                var amountFix = args[2] as ZilFix;
+                if (amountFix == null)
+                    throw new InterpreterError("SUBSTRUC: third arg must be a FIX");
+                amount = amountFix.Value;
+
+                var max = from.GetLength(rest + amount);
+                if (max != null && max.Value - rest < amount)
+                    throw new InterpreterError(string.Format("SUBSTRUC: {0} element(s) requested but only {1} available", amount, max.Value - rest));
+            }
+            else
+            {
+                amount = from.GetLength() - rest;
+            }
+
+            if (args.Length >= 4)
+            {
+                //XXX copy to existing structure
+                throw new NotImplementedException();
+            }
+            else
+            {
+                var primitive = args[0].GetPrimitive(ctx);
+
+                switch (args[0].PrimType)
+                {
+                    case PrimType.LIST:
+                        return new ZilList(((ZilList)primitive).Skip(rest).Take(amount));
+
+                    case PrimType.STRING:
+                        return new ZilString(((ZilString)primitive).Text.Substring(rest, amount));
+
+                    case PrimType.VECTOR:
+                        return new ZilVector(((ZilVector)primitive).Skip(rest).Take(amount).ToArray());
+
+                    default:
+                        throw new NotImplementedException("unexpected structure primitive");
+                }
+            }
+        }
+
         #endregion
 
         #region Arithmetic
