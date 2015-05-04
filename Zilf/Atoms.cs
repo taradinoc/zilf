@@ -290,6 +290,7 @@ namespace Zilf
         SOUND,
         [Atom("SOUND-EFFECTS?")]
         SOUND_EFFECTS_P,
+        SPLICE,
         SPLIT,
         STRING,
         STRUCTURED,
