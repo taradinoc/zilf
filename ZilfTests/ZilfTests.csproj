@@ -61,6 +61,7 @@
     <Compile Include="Interpreter\TypeTests.cs" />
     <Compile Include="Interpreter\ParsingTests.cs" />
     <Compile Include="Interpreter\AssocTests.cs" />
+    <Compile Include="Interpreter\DefinitionsTests.cs" />
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="WordTests.cs" />
