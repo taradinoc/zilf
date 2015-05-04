@@ -1510,7 +1510,9 @@ namespace Zilf
         [Subr]
         public static ZilObject GLOBAL(Context ctx, ZilObject[] args)
         {
-            if (args.Length != 2)
+            // typical form:  <GLOBAL atom-or-adecl default-value>
+            // quirky form:   <GLOBAL atom-or-adecl default-value dummy1 dummy2>
+            if (args.Length != 2 && args.Length != 4)
                 throw new InterpreterError(null, "GLOBAL", 2, 2);
 
             ZilAtom atom = args[0] as ZilAtom;
