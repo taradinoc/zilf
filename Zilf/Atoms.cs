@@ -105,7 +105,11 @@ namespace Zilf
         D,
         DEC,
         DEFAULT,
+        [Atom("DEFAULT-DEFINITION")]
+        DEFAULT_DEFINITION,
         DEFINED,
+        [Atom("DELAY-DEFINITION")]
+        DELAY_DEFINITION,
         DESC,
         DEXIT,
         DEXITOBJ,
@@ -259,6 +263,8 @@ namespace Zilf
         RELEASEID,
         REMOVE,
         REPEAT,
+        [Atom("REPLACE-DEFINITION")]
+        REPLACE_DEFINITION,
         REST,
         RESTART,
         RESTORE,

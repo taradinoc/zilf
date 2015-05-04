@@ -162,6 +162,102 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr("DELAY-DEFINITION")]
+        public static ZilObject DELAY_DEFINITION(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "DELAY-DEFINITION", 1, 1);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError(null, "DELAY-DEFINITION: first arg must be an atom");
+
+            if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
+                throw new InterpreterError(null, "DELAY-DEFINITION: section has already been referenced: " + name);
+
+            ctx.PutProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION), ctx.GetStdAtom(StdAtom.DELAY_DEFINITION));
+            return name;
+        }
+
+        [FSubr("REPLACE-DEFINITION")]
+        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "REPLACE-DEFINITION", 2, 0);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError(null, "REPLACE-DEFINITION: first arg must be an atom");
+
+            var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
+            var state = ctx.GetProp(name, replaceAtom);
+
+            if (state == null)
+            {
+                // store the replacement now, insert it at the DEFAULT-DEFINITION
+                ctx.PutProp(name, replaceAtom, new ZilVector(args.Skip(1).ToArray()));
+                return name;
+            }
+            else if (state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
+            {
+                // insert the replacement now
+                ctx.PutProp(name, replaceAtom, replaceAtom);
+                return ZilObject.EvalProgram(ctx, args.Skip(1).ToArray());
+            }
+            else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
+            {
+                throw new InterpreterError(null, "REPLACE-DEFINITION: section has already been inserted: " + name);
+            }
+            else if (state is ZilVector)
+            {
+                throw new InterpreterError(null, "REPLACE-DEFINITION: duplicate replacement for section: " + name);
+            }
+            else
+            {
+                throw new InterpreterError(null, "REPLACE-DEFINITION: bad state: " + state);
+            }
+        }
+
+        [FSubr("DEFAULT-DEFINITION")]
+        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "DEFAULT-DEFINITION", 2, 0);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError(null, "DEFAULT-DEFINITION: first arg must be an atom");
+
+            var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
+            var state = ctx.GetProp(name, replaceAtom);
+
+            if (state == null)
+            {
+                // no replacement, insert the default now
+                ctx.PutProp(name, replaceAtom, ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION));
+                return ZilObject.EvalProgram(ctx, args.Skip(1).ToArray());
+            }
+            else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
+            {
+                // ignore the default
+                return name;
+            }
+            else if (state is ZilVector)
+            {
+                // insert the replacement now
+                ctx.PutProp(name, replaceAtom, replaceAtom);
+                return ZilObject.EvalProgram(ctx, ((ZilVector)state).ToArray());
+            }
+            else if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
+            {
+                throw new InterpreterError(null, "DEFAULT-DEFINITION: duplicate default for section: " + name);
+            }
+            else
+            {
+                throw new InterpreterError(null, "DEFAULT-DEFINITION: bad state: " + state);
+            }
+        }
+
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx, ZilObject[] args)
         {
@@ -189,6 +285,7 @@ namespace Zilf
         [Subr("ZSTR-OFF")]
         [Subr("ENDLOAD")]
         [Subr("PUT-PURE-HERE")]
+        [Subr("DEFAULTS-DEFINED")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
