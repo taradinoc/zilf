@@ -2268,6 +2268,7 @@ namespace Zilf
     {
         private readonly ZilAtom name;
         private readonly ZilAtom[] argAtoms;
+        private readonly ZilObject[] argDecls;
         private readonly bool[] argQuoted;
         private readonly ZilObject[] argDefaults;
         private readonly int optArgsStart, auxArgsStart;
@@ -2288,6 +2289,7 @@ namespace Zilf
             auxArgsStart = -1;
 
             List<ZilAtom> argAtoms = new List<ZilAtom>();
+            List<ZilObject> argDecls = new List<ZilObject>();
             List<bool> argQuoted = new List<bool>();
             List<ZilObject> argDefaults = new List<ZilObject>();
 
@@ -2341,7 +2343,7 @@ namespace Zilf
                 cur++;
 
                 bool quoted = false;
-                ZilObject argName, argValue;
+                ZilObject argName, argValue, argDecl;
 
                 // could be an atom or a list: (atom defaultValue)
                 if (arg is ZilList && !(arg is ZilForm))
@@ -2375,6 +2377,18 @@ namespace Zilf
                         throw new InterpreterError("unexpected FORM in arg spec: " + argName.ToString());
                 }
 
+                // could be an ADECL
+                if (argName is ZilAdecl)
+                {
+                    var adecl = (ZilAdecl)argName;
+                    argDecl = adecl.Second;
+                    argName = adecl.First;
+                }
+                else
+                {
+                    argDecl = null;
+                }
+
                 // it'd better be an atom by now
                 if (!(argName is ZilAtom))
                 {
@@ -2382,6 +2396,7 @@ namespace Zilf
                 }
 
                 argAtoms.Add((ZilAtom)argName);
+                argDecls.Add(argDecl);
                 argDefaults.Add(argValue);
                 argQuoted.Add(quoted);
             }
@@ -2392,6 +2407,7 @@ namespace Zilf
                 optArgsStart = auxArgsStart;
 
             this.argAtoms = argAtoms.ToArray();
+            this.argDecls = argDecls.ToArray();
             this.argQuoted = argQuoted.ToArray();
             this.argDefaults = argDefaults.ToArray();
         }
@@ -2492,7 +2508,12 @@ namespace Zilf
             for (int i = 0; i < argAtoms.Length; i++)
             {
                 result ^= argAtoms[i].GetHashCode();
+
+                if (argDecls[i] != null)
+                    result ^= argDecls[i].GetHashCode();
+
                 result ^= argQuoted[i].GetHashCode();
+
                 if (argDefaults[i] != null)
                     result ^= argDefaults[i].GetHashCode();
             }
@@ -2556,6 +2577,7 @@ namespace Zilf
             for (int i = 0; i < argAtoms.Length; i++)
             {
                 // TODO: include "ARGS" or "TUPLE"
+                // TODO: return ADECLs for args with decls
                 if (i == auxArgsStart)
                     yield return new ZilString("AUX");
                 else if (i == optArgsStart)
