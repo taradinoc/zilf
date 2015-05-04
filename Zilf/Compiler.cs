@@ -969,7 +969,7 @@ namespace Zilf
                                 throw new CompilerError(routine, "optional args with non-constant defaults not supported for this target");
 
                             ILabel nextLabel = rb.DefineLabel();
-                            rb.Branch(Condition.ArgProvided, lb.Indirect, null, nextLabel, true);
+                            rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
                             IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine, lb);
                             if (val != lb)
                                 rb.EmitStore(lb, val);
