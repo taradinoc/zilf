@@ -992,6 +992,28 @@ namespace Zilf
         }
 
         [Subr]
+        public static ZilObject MOD(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, "MOD", 2, 2);
+
+            var a = args[0] as ZilFix;
+            var b = args[1] as ZilFix;
+
+            if (a == null || b == null)
+                throw new InterpreterError("MOD: every arg must be a FIX");
+
+            try
+            {
+                return new ZilFix(a.Value % b.Value);
+            }
+            catch (DivideByZeroException)
+            {
+                throw new InterpreterError("division by zero");
+            }
+        }
+
+        [Subr]
         public static ZilObject LSH(Context ctx, ZilObject[] args)
         {
             // "Logical shift", not left shift.
