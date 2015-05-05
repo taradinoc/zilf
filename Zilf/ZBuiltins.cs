@@ -1744,41 +1744,91 @@ namespace Zilf
                 c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
             }
 
+            // TODO: <LOWCORE (FOO 0)> to refer to the lower byte of FOO
             [Builtin("LOWCORE")]
             public static IOperand LowCoreReadOp(ValueCall c, ZilAtom atom)
             {
-                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
-                if (offset == null)
+                var field = LowCoreField.Get(atom);
+                if (field == null)
                 {
                     Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
-                    offset = 0;
+                    return c.cc.Game.Zero;
+                }
+                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field not supported in this Z-machine version: " + atom);
+                    return c.cc.Game.Zero;
                 }
 
-                c.rb.EmitBinary(BinaryOp.GetWord, c.cc.Game.MakeOperand((int)offset), c.cc.Game.Zero, c.resultStorage);
+                var binaryOp = ((field.Flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
+                if ((field.Flags & LowCoreFlags.Extended) != 0)
+                {
+                    //XXX need to ensure the header extension gets written
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    c.rb.EmitBinary(binaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(field.Offset), c.resultStorage);
+                }
+
                 return c.resultStorage;
             }
 
             [Builtin("LOWCORE", HasSideEffect = true)]
             public static void LowCoreWriteOp(VoidCall c, ZilAtom atom, IOperand newValue)
             {
-                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
-                if (offset == null)
+                var field = LowCoreField.Get(atom);
+                if (field == null)
                 {
                     Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
-                    offset = 0;
+                    return;
+                }
+                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field not supported in this Z-machine version: " + atom);
+                    return;
+                }
+                else if ((field.Flags & LowCoreFlags.Writable) == 0)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field is not writable: " + atom);
+                    return;
                 }
 
-                c.rb.EmitTernary(TernaryOp.PutWord, c.cc.Game.MakeOperand((int)offset), c.cc.Game.Zero, newValue, null);
+                var ternaryOp = ((field.Flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
+                if ((field.Flags & LowCoreFlags.Extended) != 0)
+                {
+                    //XXX need to ensure the header extension gets written
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    c.rb.EmitTernary(ternaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(field.Offset), newValue, null);
+                }
             }
 
             [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
             public static void LowCoreTableOp(VoidCall c, ZilAtom atom, int length, ZilAtom handler)
             {
-                var offset = c.cc.Context.ZEnvironment.GetLowCoreOffset(atom);
-                if (offset == null)
+                var field = LowCoreField.Get(atom);
+                if (field == null)
                 {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
-                    offset = 0;
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE-TABLE: unrecognized header field " + atom);
+                    return;
+                }
+                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
+                {
+                    Errors.CompError(c.cc.Context, c.form, "LOWCORE-TABLE: field not supported in this Z-machine version: " + atom);
+                    return;
+                }
+
+                int offset;
+                if ((field.Flags & LowCoreFlags.Byte) != 0)
+                {
+                    offset = field.Offset;
+                }
+                else
+                {
+                    offset = field.Offset * 2;
                 }
 
                 var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
