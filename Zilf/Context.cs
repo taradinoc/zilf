@@ -347,6 +347,7 @@ namespace Zilf
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
             AddZConstant(GetStdAtom(StdAtom.FALSE_VALUE), FALSE);
+            AddZConstant(GetStdAtom(StdAtom.FATAL_VALUE), new ZilFix(2));
 
             // parts of speech
             var parts = new[] {
