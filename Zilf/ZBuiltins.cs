@@ -1449,12 +1449,15 @@ namespace Zilf
 
             [Builtin("RTRUE", Data = 1, HasSideEffect = true)]
             [Builtin("RFALSE", Data = 0, HasSideEffect = true)]
+            [Builtin("RFATAL", Data = 2, HasSideEffect = true)]
             [Builtin("RSTACK", Data = -1, HasSideEffect = true)]
             public static void NullaryReturnOp(VoidCall c, [Data] int what)
             {
                 var operand =
                     (what == 1) ? c.cc.Game.One :
-                    (what == 0) ? c.cc.Game.Zero : c.rb.Stack;
+                    (what == 0) ? c.cc.Game.Zero :
+                    (what == 2) ? c.cc.Game.MakeOperand(2) :
+                    c.rb.Stack;
 
                 c.rb.Return(operand);
             }

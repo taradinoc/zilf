@@ -134,6 +134,8 @@ namespace Zilf
         FALSE,
         [Atom("FALSE-VALUE")]
         FALSE_VALUE,
+        [Atom("FATAL-VALUE")]
+        FATAL_VALUE,
         FCLEAR,
         FCN,
         FEXIT,
