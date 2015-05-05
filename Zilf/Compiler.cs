@@ -3096,6 +3096,44 @@ namespace Zilf
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
         {
+            Action<ZilAtom, ZilAtom> createVocabWord = (atom, partOfSpeech) =>
+            {
+                Word word;
+
+                switch (partOfSpeech.StdAtom)
+                {
+                    case StdAtom.ADJ:
+                    case StdAtom.ADJECTIVE:
+                        word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                        break;
+
+                    case StdAtom.NOUN:
+                    case StdAtom.OBJECT:
+                        word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
+                        break;
+
+                    case StdAtom.BUZZ:
+                        word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
+                        break;
+
+                    case StdAtom.PREP:
+                        word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
+                        break;
+
+                    case StdAtom.DIR:
+                        word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
+                        break;
+
+                    case StdAtom.VERB:
+                        word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
+                        break;
+
+                    default:
+                        Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
+                        break;
+                }
+            };
+
             // for detecting implicitly defined directions
             var directionPattern = cc.Context.GetProp(
                 cc.Context.GetStdAtom(StdAtom.DIRECTIONS), cc.Context.GetStdAtom(StdAtom.PROPSPEC)) as ComplexPropDef;
@@ -3107,10 +3145,7 @@ namespace Zilf
                 // SYNONYM and ADJECTIVE property values, and constants for FLAGS values.
                 foreach (ZilList prop in model.Properties)
                 {
-                    // check for a PROPDEF pattern
-                    //XXX
-
-                    // if no pattern, then the first element must be an atom identifying the property
+                    // the first element must be an atom identifying the property
                     ZilAtom atom = prop.First as ZilAtom;
                     if (atom == null)
                     {
@@ -3161,91 +3196,124 @@ namespace Zilf
                     if (!phony)
                         DefineProperty(cc, atom);
 
-                    switch (atom.StdAtom)
+                    // check for a PROPSPEC
+                    ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
+                    if (propspec != null)
                     {
-                        case StdAtom.SYNONYM:
-                            foreach (ZilObject obj in prop.Rest)
+                        var complexDef = propspec as ComplexPropDef;
+                        if (complexDef != null)
+                        {
+                            // PROPDEF pattern
+                            if (complexDef.Matches(cc.Context, prop))
                             {
-                                atom = obj as ZilAtom;
-                                if (atom == null)
-                                    continue;
-
-                                try
-                                {
-                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, model));  // TODO: pass prop instead of model as the source location?
-                                }
-                                catch (ZilError ex)
-                                {
-                                    if (ex.SourceLine == null)
-                                        ex.SourceLine = model;
-                                    cc.Context.HandleError(ex);
-                                }
+                                complexDef.PreBuildProperty(cc.Context, prop, createVocabWord);
                             }
-                            break;
-
-                        case StdAtom.ADJECTIVE:
-                            foreach (ZilObject obj in prop.Rest)
+                        }
+                        else
+                        {
+                            // name of a custom property builder function
+                            var form = new ZilForm(new ZilObject[] { propspec, prop });
+                            var specOutput = form.Eval(cc.Context);
+                            ZilList propBody;
+                            if (specOutput == null || specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
+                                (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
                             {
-                                atom = obj as ZilAtom;
-                                if (atom == null)
-                                    continue;
-
-                                try
-                                {
-                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, model)); // TODO: pass prop instead of model as the source location?
-                                }
-                                catch (ZilError ex)
-                                {
-                                    if (ex.SourceLine == null)
-                                        ex.SourceLine = model;
-                                    cc.Context.HandleError(ex);
-                                }
+                                Errors.CompError(cc.Context, model, "PROPSPEC for property '{0}' returned a bad value: {1}", atom, specOutput);
+                                continue;
                             }
-                            break;
 
-                        case StdAtom.PSEUDO:
-                            foreach (ZilObject obj in prop.Rest)
-                            {
-                                var str = obj as ZilString;
-                                if (str == null)
-                                    continue;
-
-                                try
+                            // replace the property body with the propspec's output
+                            prop.Rest = propBody;
+                        }
+                    }
+                    else
+                    {
+                        switch (atom.StdAtom)
+                        {
+                            case StdAtom.SYNONYM:
+                                foreach (ZilObject obj in prop.Rest)
                                 {
-                                    DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model));
-                                }
-                                catch (ZilError ex)
-                                {
-                                    if (ex.SourceLine == null)
-                                        ex.SourceLine = model;
-                                    cc.Context.HandleError(ex);
-                                }
-                            }
-                            break;
+                                    atom = obj as ZilAtom;
+                                    if (atom == null)
+                                        continue;
 
-                        case StdAtom.FLAGS:
-                            foreach (ZilObject obj in prop.Rest)
-                            {
-                                atom = obj as ZilAtom;
-                                if (atom == null)
-                                    continue;
-
-                                try
-                                {
-                                    ZilAtom dummy;
-                                    if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                    try
                                     {
-                                        DefineFlag(cc, atom);
+                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, model));  // TODO: pass prop instead of model as the source location?
+                                    }
+                                    catch (ZilError ex)
+                                    {
+                                        if (ex.SourceLine == null)
+                                            ex.SourceLine = model;
+                                        cc.Context.HandleError(ex);
                                     }
                                 }
-                                catch (ZilError ex)
+                                break;
+
+                            case StdAtom.ADJECTIVE:
+                                foreach (ZilObject obj in prop.Rest)
                                 {
-                                    if (ex.SourceLine == null)
-                                        ex.SourceLine = model;
-                                    cc.Context.HandleError(ex);
+                                    atom = obj as ZilAtom;
+                                    if (atom == null)
+                                        continue;
+
+                                    try
+                                    {
+                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, model)); // TODO: pass prop instead of model as the source location?
+                                    }
+                                    catch (ZilError ex)
+                                    {
+                                        if (ex.SourceLine == null)
+                                            ex.SourceLine = model;
+                                        cc.Context.HandleError(ex);
+                                    }
                                 }
-                            }
-                            break;
+                                break;
+
+                            case StdAtom.PSEUDO:
+                                foreach (ZilObject obj in prop.Rest)
+                                {
+                                    var str = obj as ZilString;
+                                    if (str == null)
+                                        continue;
+
+                                    try
+                                    {
+                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model));
+                                    }
+                                    catch (ZilError ex)
+                                    {
+                                        if (ex.SourceLine == null)
+                                            ex.SourceLine = model;
+                                        cc.Context.HandleError(ex);
+                                    }
+                                }
+                                break;
+
+                            case StdAtom.FLAGS:
+                                foreach (ZilObject obj in prop.Rest)
+                                {
+                                    atom = obj as ZilAtom;
+                                    if (atom == null)
+                                        continue;
+
+                                    try
+                                    {
+                                        ZilAtom dummy;
+                                        if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                        {
+                                            DefineFlag(cc, atom);
+                                        }
+                                    }
+                                    catch (ZilError ex)
+                                    {
+                                        if (ex.SourceLine == null)
+                                            ex.SourceLine = model;
+                                        cc.Context.HandleError(ex);
+                                    }
+                                }
+                                break;
+                        }
                     }
                 }
             }
@@ -3325,18 +3393,21 @@ namespace Zilf
                 ITableBuilder tb;
                 int length = 0;
 
+                bool noSpecialCases = false;
+
                 // the first element must be an atom identifying the property
-                ZilAtom atom = prop.First as ZilAtom;
-                if (atom == null)
+                ZilAtom propName = prop.First as ZilAtom;
+                ZilList propBody = prop.Rest;
+                if (propName == null)
                 {
                     Errors.CompError(cc.Context, model, "property specification must start with an atom");
                     continue;
                 }
 
                 // check for IN/LOC, which can take precedence over PROPSPEC
-                ZilObject value = prop.Rest.First;
-                if (atom.StdAtom == StdAtom.LOC ||
-                    (atom.StdAtom == StdAtom.IN && ((IStructure)prop).GetLength(2) == 2) && value is ZilAtom)
+                ZilObject value = propBody.First;
+                if (propName.StdAtom == StdAtom.LOC ||
+                    (propName.StdAtom == StdAtom.IN && ((IStructure)propBody).GetLength(1) == 1) && value is ZilAtom)
                 {
                     var valueAtom = value as ZilAtom;
                     if (valueAtom == null)
@@ -3358,7 +3429,7 @@ namespace Zilf
                 }
 
                 // check for a PUTPROP giving a PROPDEF pattern or hand-coded property builder
-                ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
+                ZilObject propspec = cc.Context.GetProp(propName, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
                 if (propspec != null)
                 {
                     var complexDef = propspec as ComplexPropDef;
@@ -3367,7 +3438,7 @@ namespace Zilf
                         // PROPDEF pattern
                         if (complexDef.Matches(cc.Context, prop))
                         {
-                            tb = ob.AddComplexProperty(cc.Properties[atom]);
+                            tb = ob.AddComplexProperty(cc.Properties[propName]);
                             complexDef.BuildProperty(cc.Context, prop, tb, elementConverters);
                             continue;
                         }
@@ -3375,182 +3446,189 @@ namespace Zilf
                     else
                     {
                         // name of a custom property builder function
-                        //XXX
-                        throw new NotImplementedException();
+                        // PreBuildObject already called the function and replaced the property body
+                        noSpecialCases = true;
                     }
                 }
 
                 // built-in property builder, so at least one value has to follow the atom (except for FLAGS)
                 if (value == null)
                 {
-                    if (atom.StdAtom != StdAtom.FLAGS)
-                        Errors.CompError(cc.Context, model, "property has no value: " + atom.ToString());
+                    if (propName.StdAtom != StdAtom.FLAGS)
+                        Errors.CompError(cc.Context, model, "property has no value: " + propName.ToString());
                     continue;
                 }
 
                 // check for special cases
-                switch (atom.StdAtom)
+                bool handled = false;
+                if (!noSpecialCases)
                 {
-                    case StdAtom.DESC:
-                        if (value.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
-                        {
-                            Errors.CompError(cc.Context, model, "value for DESC property must be a string");
+                    switch (propName.StdAtom)
+                    {
+                        case StdAtom.DESC:
+                            handled = true;
+                            if (value.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
+                            {
+                                Errors.CompError(cc.Context, model, "value for DESC property must be a string");
+                                continue;
+                            }
+                            ob.DescriptiveName = value.ToStringContext(cc.Context, true);
                             continue;
-                        }
-                        ob.DescriptiveName = value.ToStringContext(cc.Context, true);
-                        continue;
 
-                    case StdAtom.FLAGS:
-                        foreach (ZilObject obj in prop.Rest)
-                        {
-                            atom = obj as ZilAtom;
-                            if (atom == null)
+                        case StdAtom.FLAGS:
+                            handled = true;
+                            foreach (ZilObject obj in propBody)
                             {
-                                Errors.CompError(cc.Context, model, "values for FLAGS property must be atoms");
-                                break;
+                                propName = obj as ZilAtom;
+                                if (propName == null)
+                                {
+                                    Errors.CompError(cc.Context, model, "values for FLAGS property must be atoms");
+                                    break;
+                                }
+
+                                ZilAtom original;
+                                if (cc.Context.ZEnvironment.TryGetBitSynonym(propName, out original))
+                                    propName = original;
+
+                                IFlagBuilder fb = cc.Flags[propName];
+                                ob.AddFlag(fb);
                             }
+                            continue;
 
-                            ZilAtom original;
-                            if (cc.Context.ZEnvironment.TryGetBitSynonym(atom, out original))
-                                atom = original;
-
-                            IFlagBuilder fb = cc.Flags[atom];
-                            ob.AddFlag(fb);
-                        }
-                        continue;
-
-                    case StdAtom.SYNONYM:
-                        tb = ob.AddComplexProperty(cc.Properties[atom]);
-                        foreach (ZilObject obj in prop.Rest)
-                        {
-                            atom = obj as ZilAtom;
-                            if (atom == null)
+                        case StdAtom.SYNONYM:
+                            handled = true;
+                            tb = ob.AddComplexProperty(cc.Properties[propName]);
+                            foreach (ZilObject obj in propBody)
                             {
-                                Errors.CompError(cc.Context, model, "values for SYNONYM property must be atoms");
-                                break;
-                            }
+                                propName = obj as ZilAtom;
+                                if (propName == null)
+                                {
+                                    Errors.CompError(cc.Context, model, "values for SYNONYM property must be atoms");
+                                    break;
+                                }
 
-                            Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);  // TODO: pass prop instead of model as the source location?
-                            IWordBuilder wb = cc.Vocabulary[word];
-                            tb.AddShort(wb);
-                            length += 2;
-                        }
-                        break;
-
-                    case StdAtom.ADJECTIVE:
-                        tb = ob.AddComplexProperty(cc.Properties[atom]);
-                        foreach (ZilObject obj in prop.Rest)
-                        {
-                            atom = obj as ZilAtom;
-                            if (atom == null)
-                            {
-                                Errors.CompError(cc.Context, model, "values for ADJECTIVE property must be atoms");
-                                break;
-                            }
-
-                            Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model); // TODO: pass prop instead of model as the source location?
-                            IWordBuilder wb = cc.Vocabulary[word];
-                            if (cc.Context.ZEnvironment.ZVersion == 3)
-                            {
-                                tb.AddByte(cc.Constants[ZilAtom.Parse("A?" + word.Atom, cc.Context)]);
-                                length++;
-                            }
-                            else
-                            {
+                                Word word = cc.Context.ZEnvironment.GetVocabNoun(propName, model);  // TODO: pass prop instead of model as the source location?
+                                IWordBuilder wb = cc.Vocabulary[word];
                                 tb.AddShort(wb);
                                 length += 2;
                             }
-                        }
-                        break;
+                            break;
 
-                    case StdAtom.PSEUDO:
-                        tb = ob.AddComplexProperty(cc.Properties[atom]);
-                        foreach (ZilObject obj in prop.Rest)
-                        {
-                            var str = obj as ZilString;
-
-                            if (str != null)
+                        case StdAtom.ADJECTIVE:
+                            handled = true;
+                            tb = ob.AddComplexProperty(cc.Properties[propName]);
+                            foreach (ZilObject obj in propBody)
                             {
-                                Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model);
+                                propName = obj as ZilAtom;
+                                if (propName == null)
+                                {
+                                    Errors.CompError(cc.Context, model, "values for ADJECTIVE property must be atoms");
+                                    break;
+                                }
+
+                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(propName, model); // TODO: pass prop instead of model as the source location?
                                 IWordBuilder wb = cc.Vocabulary[word];
-                                tb.AddShort(wb);
-                            }
-                            else
-                            {
-                                tb.AddShort(CompileConstant(cc, obj));
-                            }
-                            length += 2;
-                        }
-                        break;
-
-                    case StdAtom.GLOBAL:
-                        if (cc.Context.ZEnvironment.ZVersion == 3)
-                        {
-                            tb = ob.AddComplexProperty(cc.Properties[atom]);
-                            foreach (ZilObject obj in prop.Rest)
-                            {
-                                atom = obj as ZilAtom;
-                                if (atom == null)
+                                if (cc.Context.ZEnvironment.ZVersion == 3)
                                 {
-                                    Errors.CompError(cc.Context, model, "values for GLOBAL property must be atoms");
-                                    break;
+                                    tb.AddByte(cc.Constants[ZilAtom.Parse("A?" + word.Atom, cc.Context)]);
+                                    length++;
                                 }
-
-                                IObjectBuilder ob2;
-                                if (cc.Objects.TryGetValue(atom, out ob2) == false)
+                                else
                                 {
-                                    Errors.CompError(cc.Context, model, "values for GLOBAL property must be object names");
-                                    break;
+                                    tb.AddShort(wb);
+                                    length += 2;
                                 }
-
-                                tb.AddByte(ob2);
-                                length++;
                             }
                             break;
-                        }
-                        else
-                        {
-                            goto default;
-                        }
 
-                    default:
-                        // nothing special, just one or more words
-                        pb = cc.Properties[atom];
-                        if (prop.Rest.Rest.IsEmpty)
+                        case StdAtom.PSEUDO:
+                            handled = true;
+                            tb = ob.AddComplexProperty(cc.Properties[propName]);
+                            foreach (ZilObject obj in propBody)
+                            {
+                                var str = obj as ZilString;
+
+                                if (str != null)
+                                {
+                                    Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model);
+                                    IWordBuilder wb = cc.Vocabulary[word];
+                                    tb.AddShort(wb);
+                                }
+                                else
+                                {
+                                    tb.AddShort(CompileConstant(cc, obj));
+                                }
+                                length += 2;
+                            }
+                            break;
+
+                        case StdAtom.GLOBAL:
+                            if (cc.Context.ZEnvironment.ZVersion == 3)
+                            {
+                                handled = true;
+                                tb = ob.AddComplexProperty(cc.Properties[propName]);
+                                foreach (ZilObject obj in propBody)
+                                {
+                                    propName = obj as ZilAtom;
+                                    if (propName == null)
+                                    {
+                                        Errors.CompError(cc.Context, model, "values for GLOBAL property must be atoms");
+                                        break;
+                                    }
+
+                                    IObjectBuilder ob2;
+                                    if (cc.Objects.TryGetValue(propName, out ob2) == false)
+                                    {
+                                        Errors.CompError(cc.Context, model, "values for GLOBAL property must be object names");
+                                        break;
+                                    }
+
+                                    tb.AddByte(ob2);
+                                    length++;
+                                }
+                            }
+                            break;
+                    }
+                }
+
+                if (!handled)
+                {
+                    // nothing special, just one or more words
+                    pb = cc.Properties[propName];
+                    if (propBody.Rest.IsEmpty)
+                    {
+                        var word = CompileConstant(cc, value);
+                        if (word == null)
                         {
-                            var word = CompileConstant(cc, value);
+                            Errors.CompError(cc.Context, model,
+                                string.Format("non-constant value for property {0}: {1}", propName, value));
+                            word = cc.Game.Zero;
+                        }
+                        ob.AddWordProperty(pb, word);
+                        length = 2;
+                    }
+                    else
+                    {
+                        tb = ob.AddComplexProperty(pb);
+                        foreach (ZilObject obj in propBody)
+                        {
+                            var word = CompileConstant(cc, obj);
                             if (word == null)
                             {
                                 Errors.CompError(cc.Context, model,
-                                    string.Format("non-constant value for property {0}: {1}", atom, value));
+                                    string.Format("non-constant value in initializer for property {0}: {1}", propName, obj));
                                 word = cc.Game.Zero;
                             }
-                            ob.AddWordProperty(pb, word);
-                            length = 2;
+                            tb.AddShort(word);
+                            length += 2;
                         }
-                        else
-                        {
-                            tb = ob.AddComplexProperty(pb);
-                            foreach (ZilObject obj in prop.Rest)
-                            {
-                                var word = CompileConstant(cc, obj);
-                                if (word == null)
-                                {
-                                    Errors.CompError(cc.Context, model,
-                                        string.Format("non-constant value in initializer for property {0}: {1}", atom, obj));
-                                    word = cc.Game.Zero;
-                                }
-                                tb.AddShort(word);
-                                length += 2;
-                            }
-                        }
-                        break;
+                    }
                 }
 
                 // check property length
                 if (length > cc.Game.MaxPropertyLength)
                     Errors.CompError(cc.Context, model, "property '{0}' is too long (max {1} bytes)",
-                        prop.First.ToStringContext(cc.Context, true), cc.Game.MaxPropertyLength);
+                        propName.ToStringContext(cc.Context, true), cc.Game.MaxPropertyLength);
             }
 
             //XXX debug line refs for objects

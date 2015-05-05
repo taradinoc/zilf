@@ -31,6 +31,11 @@ namespace Zilf
                 this.Variable = variable;
                 this.Decl = decl;
             }
+
+            public override string ToString()
+            {
+                return string.Format("Type={0} Variable={1} Decl={2}", Type, Variable, Decl);
+            }
         }
 
         private enum OutputElementType
@@ -63,6 +68,12 @@ namespace Zilf
                 this.Variable = variable;
                 this.PartOfSpeech = partOfSpeech;
                 this.Fix = fix;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Type={0} Constant={1} Variable={2} PartOfSpeech={3} Fix={4}",
+                    Type, Constant, Variable, PartOfSpeech, Fix);
             }
         }
 
@@ -486,32 +497,49 @@ namespace Zilf
             return false;
         }
 
-        public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
+        public void PreBuildProperty(Context ctx, ZilList prop, Action<ZilAtom, ZilAtom> createVocabWord)
         {
+            var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
+
             foreach (var p in patterns)
-                if (ApplyPattern(ctx, prop, tb, p, converters))
+            {
+                // try to match pattern and capture values
+                var propBody = prop.Rest;
+                captures.Clear();
+
+                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
+                {
+                    CreateVocabWords(ctx, captures, createVocabWord, p.Outputs, 0);
                     return;
+                }
+            }
 
             throw new InterpreterError(string.Format("property '{0}' initializer doesn't match any supported patterns", prop.First));
         }
 
-        private bool ApplyPattern(Context ctx, ZilList prop, ITableBuilder tb, Pattern pattern,
-            ElementConverters converters)
+        public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
         {
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
-            // try to match pattern and capture values
-            prop = prop.Rest;
+            foreach (var p in patterns)
+            {
+                // try to match pattern and capture values
+                var propBody = prop.Rest;
+                captures.Clear();
 
-            if (!MatchPartialPattern(ctx, ref prop, pattern.Inputs, 0, captures))
-                return false;
+                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
+                {
+                    // build output
+                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0);
+                    return;
+                }
+            }
 
-            // build output
-            WritePartialOutput(ctx, tb, converters, captures, pattern.Outputs, 0);
-            return true;
+            throw new InterpreterError(string.Format("property '{0}' initializer doesn't match any supported patterns", prop.First));
         }
 
         // may change prop even for an unsuccessful match
+        // may not match the entire property (check prop.IsEmpty on return)
         private bool MatchPartialPattern(Context ctx, ref ZilList prop, InputElement[] inputs, int startIndex,
             Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
@@ -564,7 +592,7 @@ namespace Zilf
                 }
             }
 
-            return prop.IsEmpty;
+            return true;
         }
 
         private bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
@@ -590,6 +618,56 @@ namespace Zilf
             }
 
             return false;
+        }
+
+        private bool CreateVocabWords(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
+            Action<ZilAtom, ZilAtom> createVocabWord, OutputElement[] outputs, int startIndex)
+        {
+            for (int i = startIndex; i < outputs.Length; i++)
+            {
+                var output = outputs[i];
+
+                ZilObject capturedValue;
+                if (output.Variable != null)
+                {
+                    Queue<ZilObject> queue;
+                    if (captures.TryGetValue(output.Variable, out queue))
+                    {
+                        if (queue.Count == 0)
+                            return false;
+
+                        capturedValue = queue.Dequeue();
+                    }
+                    else
+                    {
+                        capturedValue = ctx.FALSE;
+                    }
+                }
+                else
+                {
+                    capturedValue = null;
+                }
+
+                switch (output.Type)
+                {
+                    case OutputElementType.Adjective:
+                        createVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ));
+                        break;
+
+                    case OutputElementType.Noun:
+                        createVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT));
+                        break;
+
+                    case OutputElementType.Voc:
+                        createVocabWord((ZilAtom)capturedValue, output.PartOfSpeech);
+                        break;
+
+                    case OutputElementType.Many:
+                        throw new NotImplementedException();
+                }
+            }
+
+            return true;
         }
 
         private bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,

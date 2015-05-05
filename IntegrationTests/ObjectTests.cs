@@ -347,7 +347,7 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void Clearing_PROPDEF_For_DIRECTIONS_Should_Override_Default_Patterns()
+        public void Clearing_PROPSPEC_For_DIRECTIONS_Should_Override_Default_Patterns()
         {
             AssertGlobals(
                 "<PUTPROP DIRECTIONS PROPSPEC>",
@@ -370,6 +370,28 @@ namespace IntegrationTests
                     "<=? <PTSIZE <GETPT ,HOUSE ,P?EAST>> ,MY-UEXIT>",
                     "<=? <GETB <GETPT ,HOUSE ,P?EAST> ,MY-REXIT> ,WOODS>",
                     "<BAND <GETB ,W?EAST 4> ,PS?DIRECTION>");
+        }
+
+        [TestMethod]
+        public void Vocab_Created_By_PROPDEF_Should_Work_Correctly()
+        {
+            AssertGlobals(
+                "<PROPDEF FOO <> (FOO A:ATOM = <VOC .A PREP>)>",
+                "<DEFINE FOO-PROP (L) (<> <VOC \"FOO\" PREP>)>",
+                "<OBJECT BAR (FOO FOO)>")
+                .Implies(
+                    "<=? <GETP ,BAR ,P?FOO> ,W?FOO>");
+        }
+
+        [TestMethod]
+        public void Vocab_Created_By_PROPSPEC_Should_Work_Correctly()
+        {
+            AssertGlobals(
+                "<PUTPROP FOO PROPSPEC FOO-PROP>",
+                "<DEFINE FOO-PROP (L) (<> <VOC \"FOO\" PREP>)>",
+                "<OBJECT BAR (FOO FOO)>")
+                .Implies(
+                    "<=? <GETP ,BAR ,P?FOO> ,W?FOO>");
         }
 
         #endregion
