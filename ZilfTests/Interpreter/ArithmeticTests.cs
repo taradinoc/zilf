@@ -158,12 +158,54 @@ namespace ZilfTests.Interpreter
             // two or more numbers -> bitwise AND
             TestHelpers.EvalAndAssert("<ANDB 0 16>", new ZilFix(0));
             TestHelpers.EvalAndAssert("<ANDB 64 96>", new ZilFix(64));
-            TestHelpers.EvalAndAssert("<ANDB *05777777776* *32107654321*>", new ZilFix(0x011f58d0));
+            TestHelpers.EvalAndAssert("<ANDB *05777777776* *32107654321*>", new ZilFix(0x11f58d0));
 
             // arguments must be numbers
             TestHelpers.EvalAndCatch<InterpreterError>("<ANDB \"foo\" 1>");
             TestHelpers.EvalAndCatch<InterpreterError>("<ANDB 0 ATOM>");
             TestHelpers.EvalAndCatch<InterpreterError>("<ANDB (1 2 3)>");
+        }
+
+        [TestMethod]
+        public void TestXORB()
+        {
+            // no numbers -> 0
+            TestHelpers.EvalAndAssert("<XORB>", new ZilFix(0));
+
+            // one number -> identity
+            TestHelpers.EvalAndAssert("<XORB 0>", new ZilFix(0));
+            TestHelpers.EvalAndAssert("<XORB 1>", new ZilFix(1));
+
+            // two or more numbers -> bitwise XOR
+            TestHelpers.EvalAndAssert("<XORB 0 16>", new ZilFix(16));
+            TestHelpers.EvalAndAssert("<XORB 64 96>", new ZilFix(32));
+            TestHelpers.EvalAndAssert("<XORB *05777777776* *32107654321*>", new ZilFix(unchecked((int)0xfee0a72f)));
+
+            // arguments must be numbers
+            TestHelpers.EvalAndCatch<InterpreterError>("<XORB \"foo\" 1>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<XORB 0 ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<XORB (1 2 3)>");
+        }
+
+        [TestMethod]
+        public void TestEQVB()
+        {
+            // no numbers -> all bits set
+            TestHelpers.EvalAndAssert("<EQVB>", new ZilFix(-1));
+
+            // one number -> identity
+            TestHelpers.EvalAndAssert("<EQVB 0>", new ZilFix(0));
+            TestHelpers.EvalAndAssert("<EQVB 1>", new ZilFix(1));
+
+            // two or more numbers -> bitwise EQV (inverted XOR)
+            TestHelpers.EvalAndAssert("<EQVB 0 16>", new ZilFix(-17));
+            TestHelpers.EvalAndAssert("<EQVB 64 96>", new ZilFix(-33));
+            TestHelpers.EvalAndAssert("<EQVB *05777777776* *32107654321*>", new ZilFix(0x11f58d0));
+
+            // arguments must be numbers
+            TestHelpers.EvalAndCatch<InterpreterError>("<EQVB \"foo\" 1>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<EQVB 0 ATOM>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<EQVB (1 2 3)>");
         }
 
         [TestMethod]

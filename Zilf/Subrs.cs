@@ -1122,6 +1122,18 @@ namespace Zilf
             return PerformArithmetic(-1, "ANDB", (x, y) => x & y, args);
         }
 
+        [Subr]
+        public static ZilObject XORB(Context ctx, ZilObject[] args)
+        {
+            return PerformArithmetic(0, "XORB", (x, y) => x ^ y, args);
+        }
+
+        [Subr]
+        public static ZilObject EQVB(Context ctx, ZilObject[] args)
+        {
+            return PerformArithmetic(-1, "EQVB", (x, y) => ~(x ^ y), args);
+        }
+
         #endregion
 
         #region Conditions
