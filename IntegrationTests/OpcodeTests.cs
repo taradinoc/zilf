@@ -2595,7 +2595,9 @@ namespace IntegrationTests
         public void TestLOWCORE()
         {
             AssertRoutine("", "<LOWCORE FLAGS>")
-                .GeneratesCodeMatching(@"^\s*GET 16,0 >STACK\s*$");
+                .GeneratesCodeMatching(@"^\s*GET 0,8 >STACK\s*$");
+            AssertRoutine("", "<LOWCORE FLAGS 123>")
+                .GeneratesCodeMatching(@"^\s*PUT 0,8,123");
         }
 
         [TestMethod]

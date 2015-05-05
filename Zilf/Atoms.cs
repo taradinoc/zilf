@@ -353,7 +353,6 @@ namespace Zilf
         ZIP,
         ZORKID,
         ZVAL,
-        ZVERSION,
         ZWSTR,
     }
 }
