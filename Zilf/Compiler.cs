@@ -914,6 +914,12 @@ namespace Zilf
                     }
                     return null;
 
+                case StdAtom.VOC:
+                    atom = ZilAtom.Parse("W?" + (ZilAtom)expr.GetPrimitive(cc.Context), cc.Context);
+                    if (cc.Constants.TryGetValue(atom, out operand))
+                        return operand;
+                    return null;
+
                 default:
                     return null;
             }

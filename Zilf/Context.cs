@@ -772,6 +772,7 @@ namespace Zilf
                 new { Name = "DECL", PrimType = PrimType.LIST },
                 new { Name = "SEMI", PrimType = PrimType.STRING },
                 new { Name = "SPLICE", PrimType = PrimType.LIST },
+                new { Name = "VOC", PrimType = PrimType.ATOM },
             };
 
             foreach (var ct in defaultCustomTypes)

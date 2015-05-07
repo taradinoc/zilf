@@ -830,6 +830,18 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestCustomType_VOC()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #VOC SWORD>", ctx.GetStdAtom(StdAtom.VOC));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #VOC SWORD ATOM>", ZilAtom.Parse("SWORD", ctx));
+
+            TestHelpers.EvalAndCatch<InterpreterError>("#VOC 1");
+
+            TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #VOC SWORD>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #VOC SWORD>", ctx.FALSE);
+        }
+
+        [TestMethod]
         public void TestApplicableFIX()
         {
             var ctx = new Context();

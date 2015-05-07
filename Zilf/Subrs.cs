@@ -2290,8 +2290,7 @@ namespace Zilf
                 }
             }
 
-            return new ZilForm(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
-                new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("W?" + atom, ctx) });
+            return ctx.ChangeType(atom, ctx.GetStdAtom(StdAtom.VOC));
         }
 
         [Subr]
