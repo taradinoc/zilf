@@ -988,6 +988,47 @@ namespace Zilf
             }
         }
 
+        [Subr]
+        public static ZilObject MEMBER(Context ctx, ZilObject[] args)
+        {
+            return PerformMember(ctx, args, "MEMBER", (a, b) => a.Equals(b));
+        }
+
+        [Subr]
+        public static ZilObject MEMQ(Context ctx, ZilObject[] args)
+        {
+            return PerformMember(ctx, args, "MEMQ", (a, b) =>
+            {
+                if (a is IStructure)
+                    return (a == b);
+                else
+                    return a.Equals(b);
+            });
+        }
+
+        private static ZilObject PerformMember(Context ctx, ZilObject[] args, string name,
+            Func<ZilObject, ZilObject, bool> equality)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, name, 2, 2);
+
+            var needle = args[0];
+            var haystack = args[1] as IStructure;
+
+            if (haystack == null)
+                throw new InterpreterError(name + ": second arg must be structured");
+
+            while (!haystack.IsEmpty())
+            {
+                if (equality(needle, haystack.GetFirst()))
+                    return (ZilObject)haystack;
+
+                haystack = haystack.GetRest(1);
+            }
+
+            return ctx.FALSE;
+        }
+
         #endregion
 
         #region Arithmetic
