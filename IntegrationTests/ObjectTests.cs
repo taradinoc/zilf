@@ -392,7 +392,6 @@ namespace IntegrationTests
         {
             AssertGlobals(
                 "<PROPDEF FOO <> (FOO A:ATOM = <VOC .A PREP>)>",
-                "<DEFINE FOO-PROP (L) (<> <VOC \"FOO\" PREP>)>",
                 "<OBJECT BAR (FOO FOO)>")
                 .Implies(
                     "<=? <GETP ,BAR ,P?FOO> ,W?FOO>");
@@ -403,10 +402,10 @@ namespace IntegrationTests
         {
             AssertGlobals(
                 "<PUTPROP FOO PROPSPEC FOO-PROP>",
-                "<DEFINE FOO-PROP (L) (<> <VOC \"FOO\" PREP>)>",
+                "<DEFINE FOO-PROP (L) (<> <EVAL <CHTYPE (TABLE <VOC \"FOO\" PREP>) FORM>>)>",
                 "<OBJECT BAR (FOO FOO)>")
                 .Implies(
-                    "<=? <GETP ,BAR ,P?FOO> ,W?FOO>");
+                    "<=? <GET <GETP ,BAR ,P?FOO> 0> ,W?FOO>");
         }
 
         #endregion
