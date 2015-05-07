@@ -490,7 +490,7 @@ namespace Zilf
             foreach (var p in patterns)
             {
                 var prop2 = prop.Rest;
-                if (MatchPartialPattern(ctx, ref prop2, p.Inputs, 0, null))
+                if (MatchPartialPattern(ctx, ref prop2, p.Inputs, 0, null) && prop2.IsEmpty)
                     return true;
             }
 
@@ -663,7 +663,11 @@ namespace Zilf
                         break;
 
                     case OutputElementType.Many:
-                        throw new NotImplementedException();
+                        while (CreateVocabWords(ctx, captures, createVocabWord, outputs, i + 1))
+                        {
+                            // repeat
+                        }
+                        break;
                 }
             }
 
@@ -768,7 +772,11 @@ namespace Zilf
                         break;
 
                     case OutputElementType.Many:
-                        throw new NotImplementedException();
+                        while (WritePartialOutput(ctx, tb, converters, captures, outputs, i + 1))
+                        {
+                            // repeat
+                        }
+                        break;
                 }
             }
 
