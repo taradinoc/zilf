@@ -544,7 +544,7 @@ namespace Zilf
                         // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
                         ZilAtom atom = arg as ZilAtom;
                         QuirksMode quirks = QuirksMode.None;
-                        if (arg == null)
+                        if (atom == null)
                         {
                             var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
                             quirks = attr.QuirksMode;
@@ -552,9 +552,9 @@ namespace Zilf
                             {
                                 var form = (ZilForm)arg;
                                 var fatom = form.First as ZilAtom;
-                                if (atom != null &&
-                                    (((quirks & QuirksMode.Global) != 0 && atom.StdAtom == StdAtom.GVAL) ||
-                                     ((quirks & QuirksMode.Local) != 0 && atom.StdAtom == StdAtom.LVAL)) &&
+                                if (fatom != null &&
+                                    (((quirks & QuirksMode.Global) != 0 && fatom.StdAtom == StdAtom.GVAL) ||
+                                     ((quirks & QuirksMode.Local) != 0 && fatom.StdAtom == StdAtom.LVAL)) &&
                                     form.Rest.First is ZilAtom &&
                                     form.Rest.Rest.IsEmpty)
                                 {
@@ -1387,7 +1387,7 @@ namespace Zilf
             [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
             [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
             public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
-                [Variable] IVariable victim)
+                [Variable(QuirksMode = QuirksMode.Both)] IVariable victim)
             {
                 c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
                 return victim;

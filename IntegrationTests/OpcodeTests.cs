@@ -495,6 +495,13 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestDEC_Quirks()
+        {
+            AssertRoutine("FOO", "<DEC .FOO> .FOO").WhenCalledWith("200").GivesNumber("199");
+            AssertRoutine("", "<DEC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumber("4");
+        }
+
+        [TestMethod]
         public void TestDEC_Error()
         {
             AssertExpr("<DEC>").DoesNotCompile();
@@ -945,6 +952,13 @@ namespace IntegrationTests
         public void TestINC()
         {
             AssertRoutine("FOO", "<INC FOO> .FOO").WhenCalledWith("200").GivesNumber("201");
+        }
+
+        [TestMethod]
+        public void TestINC_Quirks()
+        {
+            AssertRoutine("FOO", "<INC .FOO> .FOO").WhenCalledWith("200").GivesNumber("201");
+            AssertRoutine("", "<INC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumber("6");
         }
 
         [TestMethod]
@@ -2163,6 +2177,7 @@ namespace IntegrationTests
              * expression: <SET .FOO 1> sets the local FOO, and <SET ,FOO 1> sets the
              * variable whose index is in FOO. */
 
+            // void context
             AssertRoutine("\"AUX\" (FOO 16)", "<SET .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
                 .Outputs("123\n1");
@@ -2178,6 +2193,15 @@ namespace IntegrationTests
             AssertRoutine("\"AUX\" (FOO 16)", "<SET ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
                 .Outputs("123\n1");
+
+            // value context (more limited)
+            AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SET .FOO 123>> <CRLF> <PRINTN ,MYGLOBAL>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("123\n1");
+
+            AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SETG ,MYGLOBAL 123>> <CRLF> <PRINTN .FOO>")
+                .WithGlobal("<GLOBAL MYGLOBAL 1>")
+                .Outputs("123\n16");
         }
 
         [TestMethod]
