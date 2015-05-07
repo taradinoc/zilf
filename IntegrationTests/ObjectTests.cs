@@ -321,6 +321,21 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void PROPDEF_MANY_Should_Work()
+        {
+            AssertGlobals(
+                "<PROPDEF TRANSLATE <> " +
+                " (TRANSLATE \"MANY\" A:ATOM N:FIX = \"MANY\" <VOC .A BUZZ> <WORD .N>)>",
+                "<OBJECT NUMBERS (TRANSLATE ONE 1 TWO 2)>")
+                .Implies(
+                    "<=? <PTSIZE <GETPT ,NUMBERS ,P?TRANSLATE>> 8>",
+                    "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 0> ,W?ONE>",
+                    "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 1> 1>",
+                    "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 2> ,W?TWO>",
+                    "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 3> 2>");
+        }
+
+        [TestMethod]
         public void PROPDEF_Constants_Should_Work()
         {
             AssertGlobals(
