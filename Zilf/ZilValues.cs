@@ -1820,6 +1820,7 @@ namespace Zilf
 
         private class VectorStorage
         {
+            private int baseOffset = 0;
             private ZilObject[] items;
 
             public VectorStorage()
@@ -1834,26 +1835,22 @@ namespace Zilf
 
             public IEnumerable<ZilObject> GetSequence(int offset)
             {
-                // TODO: handle offset
-                return items;
+                return items.Skip(offset - baseOffset);
             }
 
             public int GetLength(int offset)
             {
-                // TODO: handle offset
-                return items.Length;
+                return items.Length - offset - baseOffset;
             }
 
             public ZilObject GetItem(int offset, int index)
             {
-                // TODO: handle offset
-                return items[index];
+                return items[index + offset - baseOffset];
             }
 
             public void PutItem(int offset, int index, ZilObject value)
             {
-                // TODO: handle offset
-                items[index] = value;
+                items[index + offset - baseOffset] = value;
             }
         }
 
@@ -1870,9 +1867,14 @@ namespace Zilf
 
         [ChtypeMethod]
         public ZilVector(ZilVector other)
+            : this(other.storage, other.offset)
         {
-            this.storage = other.storage;
-            this.offset = other.offset;
+        }
+
+        private ZilVector(VectorStorage storage, int offset)
+        {
+            this.storage = storage;
+            this.offset = offset;
         }
 
         public ZilVector(params ZilObject[] items)
@@ -1950,17 +1952,17 @@ namespace Zilf
 
         public ZilObject GetFirst()
         {
-            throw new NotImplementedException();
+            return storage.GetItem(offset, 0);
         }
 
         public IStructure GetRest(int skip)
         {
-            throw new NotImplementedException();
+            return new ZilVector(this.storage, this.offset + skip);
         }
 
         public bool IsEmpty()
         {
-            throw new NotImplementedException();
+            return storage.GetLength(offset) <= 0;
         }
 
         public ZilObject this[int index]

@@ -712,6 +712,12 @@ namespace ZilfTests.Interpreter
                 new ZilFix(2),
                 new ZilFix(3),
             }));
+
+            TestHelpers.EvalAndAssert("<REST [1 2 3]>",
+                new ZilVector(new ZilFix(2), new ZilFix(3)));
+
+            TestHelpers.EvalAndAssert("<SET X [1 2 3]> <SET Y <REST .X>> <1 .Y 0> .X",
+                new ZilVector(new ZilFix(1), new ZilFix(0), new ZilFix(3)));
         }
 
         [TestMethod]
