@@ -2630,6 +2630,16 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TestLOWCORE_Extension()
+        {
+            AssertRoutine("X", "<SET X <LOWCORE MSLOCY>>")
+                .InV5()
+                .Implies(
+                    "<T? <LOWCORE EXTAB>>",
+                    "<G=? <GET <LOWCORE EXTAB> 0> 2>");
+        }
+
+        [TestMethod]
         public void TestXORB()
         {
             AssertRoutine("X", "<XORB .X -1>")

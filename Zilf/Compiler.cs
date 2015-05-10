@@ -327,7 +327,31 @@ namespace Zilf
             foreach (KeyValuePair<ZilTable, ITableBuilder> pair in cc.Tables)
                 BuildTable(cc, pair.Key, pair.Value);
 
+            BuildHeaderExtensionTable(cc);
+
             gb.Finish();
+        }
+
+        private void BuildHeaderExtensionTable(CompileCtx cc)
+        {
+            var size = cc.Context.ZEnvironment.HeaderExtensionWords;
+            if (size > 0)
+            {
+                var v5options = cc.Game.Options as Zilf.Emit.Zap.GameOptions.V5;
+                if (v5options != null)
+                {
+                    var extab = cc.Game.DefineTable("EXTAB", false);
+                    extab.AddShort((short)size);
+                    for (int i = 0; i < size; i++)
+                        extab.AddShort(cc.Game.Zero);
+
+                    v5options.HeaderExtensionTable = extab;
+                }
+                else
+                {
+                    throw new CompilerError("header extensions not supported for this target");
+                }
+            }
         }
 
         private void BuildPrepositionTable(CompileCtx cc)

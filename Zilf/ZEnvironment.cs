@@ -207,6 +207,8 @@ namespace Zilf
 
         public byte NextAction = 0;         // V? (intentions)
 
+        public int HeaderExtensionWords = 0;
+
         public ZEnvironment(Context ctx)
         {
             this.ctx = ctx;
@@ -640,6 +642,11 @@ namespace Zilf
             {
                 ctx.SetZVal(target, zval);
             }
+        }
+
+        public void EnsureMinimumHeaderExtension(int words)
+        {
+            HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
         }
     }
 
