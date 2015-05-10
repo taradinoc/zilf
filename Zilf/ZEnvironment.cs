@@ -192,6 +192,7 @@ namespace Zilf
 
         public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
         public TreeOrdering TreeOrdering = TreeOrdering.Default;
+        public bool GenerateLongWords = false;
 
         public readonly List<TellPattern> TellPatterns = new List<TellPattern>();
 
@@ -612,9 +613,65 @@ namespace Zilf
             }
         }
 
+        private readonly static byte[] DefaultAlphabetZCharCounts = MakeDefaultAlphabetZCharCounts();
+
+        private static byte[] MakeDefaultAlphabetZCharCounts()
+        {
+            // One Z-char: alphabet 0.
+            const string ONE_CHAR = " abcdefghijklmnopqrstuvwxyz";
+            // Two Z-chars: alphabet 1 (not used in dictionary encoding by default) and 2.
+            const string TWO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n0123456789.,!?_#'\"/\\-:()";
+            // Everything else takes 4 Z-chars.
+
+            var result = new byte[256];
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = 4;
+
+            foreach (char c in TWO_CHARS)
+                result[(byte)c] = 2;
+
+            foreach (char c in ONE_CHAR)
+                result[(byte)c] = 1;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Determines how many of the characters in a string will be preserved by vocabulary encoding,
+        /// given the current Z-machine settings.
+        /// </summary>
+        /// <param name="word">The string that will be encoded.</param>
+        /// <returns>The number of significant characters, between 0 and the length of the word (inclusive).</returns>
+        private int CountVocabZCharacters(string word)
+        {
+            // TODO: use the custom alphabet if present
+
+            int result = 0;
+
+            foreach (char c in word)
+            {
+                var zchars = (c <= 255) ? DefaultAlphabetZCharCounts[c] : 4;
+                result += zchars;
+            }
+
+            return result;
+        }
+
         public void MergeVocabulary()
         {
-            // XXX merge words that are indistinguishable because of the vocabulary resolution
+            //XXX merge words that are indistinguishable because of the vocabulary resolution
+
+            /* NOTE: words may end with incomplete multi-ZChar constructs that are still
+             * significant for lexing, so even if the printed forms of two vocab words are
+             * the same, they may still be distinguishable.
+             */
+        }
+
+        public bool IsLongWord(Word word)
+        {
+            var text = word.Atom.Text.ToLower();
+            return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
         }
 
         public bool TryGetBitSynonym(ZilAtom alias, out ZilAtom original)

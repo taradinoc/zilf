@@ -128,7 +128,9 @@ namespace IntegrationTests
             var sb = new StringBuilder();
             foreach (var c in conditions)
             {
-                sb.AppendFormat("<COND ({0}) (T <INC FAILS> <PRINTI \"FAIL: {0}|\">)>\r\n", c);
+                sb.AppendFormat("<COND ({0}) (T <INC FAILS> <PRINTI \"FAIL: {1}|\">)>\r\n",
+                    c,
+                    c.Replace("\\", "\\\\").Replace("\"", "\\\""));
             }
 
             var testCode = string.Format(

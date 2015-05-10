@@ -134,5 +134,17 @@ namespace IntegrationTests
                     "W?UP", "PR?UP",
                     "W?WITH", "PR?WITH"));
         }
+
+        [TestMethod]
+        public void LONG_WORDS_P_Should_Generate_LONG_WORD_TABLE()
+        {
+            AssertGlobals(
+                "<LONG-WORDS?>",
+                "<OBJECT FOO (SYNONYM HEMIDEMISEMIQUAVER)>")
+                .Implies(
+                    "<==? <GET ,LONG-WORD-TABLE 0> 1>",
+                    "<==? <GET ,LONG-WORD-TABLE 1> ,W?HEMIDEMISEMIQUAVER>",
+                    "<==? <GET ,LONG-WORD-TABLE 2> \"hemidemisemiquaver\">");
+        }
     }
 }

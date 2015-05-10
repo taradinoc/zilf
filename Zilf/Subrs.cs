@@ -2432,6 +2432,13 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr("LONG-WORDS?")]
+        public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
+        {
+            ctx.ZEnvironment.GenerateLongWords = true;
+            return ctx.TRUE;
+        }
+
         [Subr]
         public static ZilObject ID(Context ctx, ZilObject[] args)
         {

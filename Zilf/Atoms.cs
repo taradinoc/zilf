@@ -196,6 +196,8 @@ namespace Zilf
         LOC,
         [Atom("LOCAL-GLOBALS")]
         LOCAL_GLOBALS,
+        [Atom("LONG-WORD-TABLE")]
+        LONG_WORD_TABLE,
         [Atom("LOW-DIRECTION")]
         LOW_DIRECTION,
         LTABLE,
