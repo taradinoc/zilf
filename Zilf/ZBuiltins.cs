@@ -594,12 +594,24 @@ namespace Zilf
                     }
                     else if (pi.ParameterType == typeof(IOperand))
                     {
-                        // if marked with [Variable], allow a variable reference
+                        // if marked with [Variable], allow a variable reference and forbid a non-variable bare atom
                         var varAttr = (VariableAttribute)pi.GetCustomAttributes(typeof(VariableAttribute), false).SingleOrDefault();
                         IVariable variable;
-                        if (varAttr != null && (variable = GetVariable(cc, arg, varAttr.QuirksMode)) != null)
+                        if (varAttr != null)
                         {
-                            result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Indirect));
+                            if ((variable = GetVariable(cc, arg, varAttr.QuirksMode)) != null)
+                            {
+                                result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Indirect));
+                            }
+                            else if (arg is ZilAtom)
+                            {
+                                error(i, "bare atom argument must be a variable name");
+                                result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
+                            }
+                            else
+                            {
+                                result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, arg));
+                            }
                         }
                         else
                         {
