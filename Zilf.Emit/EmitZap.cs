@@ -1925,6 +1925,8 @@ namespace Zilf.Emit.Zap
             // write values for optional params and locals for V5+
             if (game.zversion >= 5)
             {
+                // TODO: skip if the default value is 0?
+
                 foreach (LocalBuilder lb in optionalParams)
                     if (lb.DefaultValue != null)
                     {

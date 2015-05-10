@@ -1061,6 +1061,7 @@ namespace Zilf
                 }
             }
 
+            // TODO: REST with a constant table argument should produce a constant operand (<REST MYTABLE 2> -> "MYTABLE+2")
             [Builtin("REST", "ZREST", Data = BinaryOp.Add)]
             [Builtin("BACK", "ZBACK", Data = BinaryOp.Sub)]
             public static IOperand RestOrBackOp(
