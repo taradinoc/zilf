@@ -127,6 +127,10 @@ namespace Zilf
                         newFlags |= FileFlags.CleanStack;
                         break;
 
+                    case StdAtom.MDL_ZIL_P:
+                        newFlags |= FileFlags.MdlZil;
+                        break;
+
                     default:
                         throw new InterpreterError("FILE-FLAGS: unrecognized flag: " + atom);
                 }
@@ -409,7 +413,14 @@ namespace Zilf
         [Subr]
         public static ZilObject SETG(Context ctx, ZilObject[] args)
         {
-            return PerformSetg(ctx, args, "SETG");
+            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
+            {
+                return GLOBAL(ctx, args);
+            }
+            else
+            {
+                return PerformSetg(ctx, args, "SETG");
+            }
         }
 
         [Subr]
@@ -559,7 +570,14 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFINE(Context ctx, ZilObject[] args)
         {
-            return PerformDefine(ctx, args, "DEFINE");
+            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
+            {
+                return ROUTINE(ctx, args);
+            }
+            else
+            {
+                return PerformDefine(ctx, args, "DEFINE");
+            }
         }
 
         [FSubr]
@@ -1777,6 +1795,19 @@ namespace Zilf
                 result |= RoutineFlags.CleanStack;
 
             return result;
+        }
+
+        [Subr]
+        public static ZilObject MSETG(Context ctx, ZilObject[] args)
+        {
+            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
+            {
+                return CONSTANT(ctx, args);
+            }
+            else
+            {
+                throw new InterpreterError("MSETG not supported without MDL-ZIL?");
+            }
         }
 
         [Subr]
