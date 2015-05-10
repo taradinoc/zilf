@@ -208,6 +208,8 @@ namespace Zilf
         MAP_CONTENTS,
         [Atom("MAP-DIRECTIONS")]
         MAP_DIRECTIONS,
+        [Atom("MDL-ZIL?")]
+        MDL_ZIL_P,
         MENU,
         MOD,
         MOUSE,
