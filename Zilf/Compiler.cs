@@ -1354,6 +1354,15 @@ namespace Zilf
                 {
                     form = (ZilForm)expanded;
                 }
+                else if (expanded.GetTypeAtom(cc.Context).StdAtom == StdAtom.SPLICE)
+                {
+                    form = new ZilForm(form.SourceFile, form.SourceLine, Enumerable.Concat(
+                        new ZilObject[] {
+                            cc.Context.GetStdAtom(StdAtom.BIND),
+                            new ZilList(null, null),
+                        },
+                        (ZilList)expanded.GetPrimitive(cc.Context)));
+                }
                 else
                 {
                     if (wantResult)
@@ -2250,7 +2259,7 @@ namespace Zilf
                         if (wantThisResult && result != rb.Stack)
                             rb.EmitStore(rb.Stack, result);
                     }
-                    else if (wantResult)    // TODO: should be wantThisResult?
+                    else if (wantThisResult)
                     {
                         result = CompileConstant(cc, args.First);
                         if (result == null)
