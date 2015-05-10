@@ -170,5 +170,26 @@ namespace ZilfTests.Interpreter
             // argument must be an atom
             TestHelpers.EvalAndCatch<InterpreterError>("<ASSIGNED? \"FOO\">");
         }
+
+        [TestMethod]
+        public void TestLOOKUP()
+        {
+            var ctx = new Context();
+            var fooAtom = ctx.RootObList["FOO"];
+            TestHelpers.EvalAndAssert(ctx, "<LOOKUP \"FOO\" <ROOT>>", fooAtom);
+        }
+
+        [TestMethod]
+        public void TestINSERT()
+        {
+            TestHelpers.EvalAndAssert("<SPNAME <INSERT \"FOO\" <ROOT>>>", new ZilString("FOO"));
+        }
+
+        [TestMethod]
+        public void TestROOT()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<ROOT>", ctx.RootObList);
+        }
     }
 }
