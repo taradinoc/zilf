@@ -332,6 +332,7 @@ namespace Zilf
         #region Atoms and Atom Values
 
         [Subr]
+        [Subr("PNAME")]
         public static ZilObject SPNAME(Context ctx, ZilObject[] args)
         {
             if (args.Length != 1)
@@ -356,6 +357,53 @@ namespace Zilf
                 throw new InterpreterError("PARSE: arg must be a string");
 
             return ZilAtom.Parse(args[0].ToStringContext(ctx, true), ctx);
+        }
+
+        [Subr]
+        public static ZilObject LOOKUP(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, "LOOKUP", 2, 2);
+
+            var str = args[0] as ZilString;
+            if (str == null)
+                throw new InterpreterError("LOOKUP: first arg must be a string");
+
+            var oblist = args[1] as ObList;
+            if (oblist == null)
+                throw new InterpreterError("LOOKUP: second arg must be an OBLIST");
+
+            return oblist.Contains(str.Text) ? oblist[str.Text] : ctx.FALSE;
+        }
+
+        [Subr]
+        public static ZilObject INSERT(Context ctx, ZilObject[] args)
+        {
+            // TODO: support 1-argument form of INSERT?
+            if (args.Length != 2)
+                throw new InterpreterError(null, "INSERT", 2, 2);
+
+            var str = args[0] as ZilString;
+            if (str == null)
+                throw new InterpreterError("INSERT: first arg must be a string");
+
+            var oblist = args[1] as ObList;
+            if (oblist == null)
+                throw new InterpreterError("INSERT: second arg must be an OBLIST");
+
+            if (oblist.Contains(str.Text))
+                throw new InterpreterError(string.Format("INSERT: OBLIST already contains an atom named '{0}'", str.Text));
+
+            return oblist[str.Text];
+        }
+
+        [Subr]
+        public static ZilObject ROOT(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 0)
+                throw new InterpreterError(null, "ROOT", 0, 0);
+
+            return ctx.RootObList;
         }
 
         [Subr]
