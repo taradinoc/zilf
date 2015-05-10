@@ -1776,8 +1776,10 @@ namespace Zilf
                 var binaryOp = ((field.Flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
                 if ((field.Flags & LowCoreFlags.Extended) != 0)
                 {
-                    //XXX need to ensure the header extension gets written
-                    throw new NotImplementedException();
+                    var wordOffset = ((field.Flags & LowCoreFlags.Byte) != 0) ? (field.Offset + 1) / 2 : field.Offset;
+                    c.cc.Context.ZEnvironment.EnsureMinimumHeaderExtension(wordOffset);
+                    c.rb.EmitBinary(BinaryOp.GetWord, c.cc.Game.Zero, c.cc.Game.MakeOperand(27 /* EXTAB */), c.rb.Stack);
+                    c.rb.EmitBinary(binaryOp, c.rb.Stack, c.cc.Game.MakeOperand(field.Offset), c.resultStorage);
                 }
                 else
                 {

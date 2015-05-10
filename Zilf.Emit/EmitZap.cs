@@ -72,6 +72,8 @@ namespace Zilf.Emit.Zap
             public bool Mouse { get; set; }
             public bool Color { get; set; }
             public bool SoundEffects { get; set; }
+
+            public ITableBuilder HeaderExtensionTable { get; set; }
         }
     }
 
@@ -211,8 +213,24 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".BYTE 0,0,0,0,0,0");     // serial
                     writer.WriteLine(INDENT + ".WORD WORDS");
                     writer.WriteLine(INDENT + ".WORD 0,0");             // length, checksum
-                    // pad to 64 bytes
-                    writer.WriteLine(INDENT + ".WORD 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+
+                    writer.WriteLine(INDENT + ".WORD 0");       // $1E interpreter number/version
+                    writer.WriteLine(INDENT + ".WORD 0");       // $20 screen height/width (characters)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $22 screen width (units)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $24 screen height (units)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $26 font width/height (units) (height/width in V6)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $28 routines offset (V6)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $2A strings offset (V6)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $2C default background/foreground color
+                    writer.WriteLine(INDENT + ".WORD 0");       // $2E terminating characters table
+                    writer.WriteLine(INDENT + ".WORD 0");       // $30 output stream 3 width accumulator (V6)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $32 Z-Machine Standard revision number
+                    writer.WriteLine(INDENT + ".WORD 0");       // $34 alphabet table
+                    writer.WriteLine(INDENT + ".WORD EXTAB");   // $36 header extension table
+                    writer.WriteLine(INDENT + ".WORD 0");       // $38 unused
+                    writer.WriteLine(INDENT + ".WORD 0");       // $3A unused
+                    writer.WriteLine(INDENT + ".WORD 0");       // $3C unused (Inform version number part 1)
+                    writer.WriteLine(INDENT + ".WORD 0");       // $3E unused (Inform version number part 2)
                 }
             }
 
@@ -543,6 +561,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + "FLAGS=0");
 
             ushort flags2 = 0;
+            bool defineExtab = true;
 
             switch (zversion)
             {
@@ -570,6 +589,7 @@ namespace Zilf.Emit.Zap
                     {
                         flags2 |= 128;
                     }
+                    defineExtab = v5options.HeaderExtensionTable == null;
                     break;
 
                 case 6:
@@ -578,6 +598,9 @@ namespace Zilf.Emit.Zap
             }
 
             writer.WriteLine(INDENT + "FLAGS2={0}", flags2);
+
+            if (defineExtab)
+                writer.WriteLine(INDENT + "EXTAB=0");
 
             // flags
             if (flags.Count > 0)

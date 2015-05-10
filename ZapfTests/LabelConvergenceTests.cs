@@ -102,7 +102,7 @@ namespace ZapfTests
         }
 
         [TestMethod]
-        public void TestConstantTable()
+        public void TestConstantTable1()
         {
             const string CodeTemplate = @"
 	.NEW 5
@@ -283,6 +283,24 @@ START::
 ?L1:	QUIT
 
 	.END";
+
+            Assert.IsTrue(Assemble(SCode), "Failed to assemble");
+        }
+
+        [TestMethod]
+        public void TestConstantTable3()
+        {
+            const string SCode = @"
+    .NEW 5
+    .WORD EXTAB
+
+    EXTAB=T?EXTAB
+
+T?EXTAB:: .TABLE
+    .WORD 0
+    .ENDT
+
+    .END";
 
             Assert.IsTrue(Assemble(SCode), "Failed to assemble");
         }
