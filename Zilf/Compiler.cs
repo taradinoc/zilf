@@ -208,6 +208,13 @@ namespace Zilf
                 cc.Constants.Add(constant.Name, gb.DefineConstant(constant.Name.ToString(), value));
             }
 
+            ITableBuilder longWordTable = null;
+            if (ctx.ZEnvironment.GenerateLongWords)
+            {
+                longWordTable = cc.Game.DefineTable("LONG-WORD-TABLE", true);
+                cc.Constants.Add(cc.Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
+            }
+
             // builders and values for globals (which may refer to constants)
             IGlobalBuilder glb;
             foreach (ZilGlobal global in ctx.ZEnvironment.Globals)
@@ -311,14 +318,30 @@ namespace Zilf
 
             // build vocabulary
             Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
+            Queue<Word> longWords = (longWordTable == null ? null : new Queue<Word>());
 
             foreach (var pair in cc.Vocabulary)
             {
                 Word word = pair.Key;
                 IWordBuilder wb = pair.Value;
 
-
                 word.WriteToBuilder(ctx, wb, dirIndexToPropertyOperand);
+
+                if (longWords != null && ctx.ZEnvironment.IsLongWord(word))
+                {
+                    longWords.Enqueue(word);
+                }
+            }
+
+            if (longWords != null)
+            {
+                longWordTable.AddShort((short)longWords.Count);
+                while (longWords.Count > 0)
+                {
+                    var word = longWords.Dequeue();
+                    longWordTable.AddShort(cc.Vocabulary[word]);
+                    longWordTable.AddShort(cc.Game.MakeOperand(word.Atom.Text.ToLower()));
+                }
             }
 
             BuildPrepositionTable(cc);
