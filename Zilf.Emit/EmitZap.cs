@@ -873,6 +873,7 @@ namespace Zilf.Emit.Zap
         internal DebugLineRef defnStart, defnEnd;
 
         private PeepholeBuffer<ZapCode> peep;
+        private readonly ILabel routineStartLabel;
         private int nextLabel = 0;
         private string pendingDebugText;
 
@@ -889,6 +890,8 @@ namespace Zilf.Emit.Zap
 
             peep = new PeepholeBuffer<ZapCode>();
             peep.Combiner = new PeepholeCombiner(this);
+
+            this.routineStartLabel = DefineLabel();
         }
 
         public override string ToString()
@@ -955,6 +958,11 @@ namespace Zilf.Emit.Zap
             LocalBuilder local = new LocalBuilder(name);
             locals.Add(local);
             return local;
+        }
+
+        public ILabel RoutineStart
+        {
+            get { return routineStartLabel; }
         }
 
         public ILabel DefineLabel()
@@ -1921,6 +1929,9 @@ namespace Zilf.Emit.Zap
 
             if (entryPoint)
                 game.WriteOutput("START::");
+
+            // TODO: use the peephole buffer for routine start label + arg defaults
+            game.WriteOutput(routineStartLabel + ":");
 
             // write values for optional params and locals for V5+
             if (game.zversion >= 5)
