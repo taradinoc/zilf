@@ -2212,6 +2212,11 @@ namespace IntegrationTests
             AssertRoutine("X", "<SET X>").DoesNotCompile();
             AssertExpr("<SET 1 2>").DoesNotCompile();
             AssertRoutine("X", "<SET Y 1>").DoesNotCompile();
+
+            // if the first arg is a bare atom, it must be a variable
+            AssertRoutine("", "<SETG FOO 1> T")
+                .WithGlobal("<CONSTANT FOO <TABLE 1 2 3>>")
+                .DoesNotCompile();
         }
 
         [TestMethod]
