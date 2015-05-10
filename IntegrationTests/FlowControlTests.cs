@@ -15,6 +15,21 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        #region AGAIN
+
+        [TestMethod]
+        public void AGAIN_Should_Reset_Local_Variable_Defaults()
+        {
+            // TODO: specify what AGAIN should do with local variables in V3-4
+
+            AssertRoutine("\"AUX\" (FOO 1)", "<COND (,GLOB <RETURN .FOO>) (T <INC GLOB> <SET FOO 99> <AGAIN>)>")
+                .WithGlobal("<GLOBAL GLOB 0>")
+                .InV5()
+                .GivesNumber("1");
+        }
+
+        #endregion
+
         #region DO
 
         [TestMethod]

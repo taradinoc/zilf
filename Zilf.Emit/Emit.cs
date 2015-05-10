@@ -516,6 +516,7 @@ namespace Zilf.Emit
         ILocalBuilder DefineOptionalParameter(string name);
         ILocalBuilder DefineLocal(string name);
 
+        ILabel RoutineStart { get; }
         ILabel DefineLabel();
         void MarkLabel(ILabel label);
 

@@ -995,8 +995,7 @@ namespace Zilf
                 rb.EmitPrint("]\n", false);
 
             // define standard labels
-            cc.AgainLabel = rb.DefineLabel();
-            rb.MarkLabel(cc.AgainLabel);
+            cc.AgainLabel = rb.RoutineStart;
 
             // generate code for routine body
             int i = 1;
