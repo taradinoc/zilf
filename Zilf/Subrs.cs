@@ -290,6 +290,14 @@ namespace Zilf
         [Subr("ENDLOAD")]
         [Subr("PUT-PURE-HERE")]
         [Subr("DEFAULTS-DEFINED")]
+        [Subr("ZSECTION")]
+        [Subr("ZZSECTION")]
+        [Subr("ENDSECTION")]
+        [Subr("ZPACKAGE")]
+        [Subr("ZZPACKAGE")]
+        [Subr("ENDPACKAGE")]
+        [Subr("USE")]
+        [Subr("INCLUDE")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
