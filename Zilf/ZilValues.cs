@@ -2059,7 +2059,8 @@ namespace Zilf
 
         public override ZilObject Eval(Context ctx)
         {
-            return new ZilAdecl(First.Eval(ctx), Second.Eval(ctx));
+            // TODO: check decl (Second) after evaluating First
+            return First.Eval(ctx);
         }
 
         #region IStructure Members
