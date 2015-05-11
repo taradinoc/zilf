@@ -379,7 +379,7 @@ namespace Zilf
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <returns>A sequence of evaluation results.</returns>
-        protected static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
+        public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
         {
             foreach (ZilObject obj in sequence)
             {
@@ -2558,7 +2558,7 @@ namespace Zilf
             {
                 var extras = args.Skip(auxArgsStart);
                 if (eval && !varargsQuoted)
-                    extras = extras.Select(x => x.Eval(ctx));
+                    extras = ZilObject.EvalSequence(ctx, extras);
                 ctx.PushLocalVal(varargsAtom, new ZilList(extras));
             }
         }

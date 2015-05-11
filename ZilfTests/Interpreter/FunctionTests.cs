@@ -33,6 +33,20 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFINE_Segments_Can_Be_Used_With_TUPLE_Parameters()
+        {
+            var ctx = new Context();
+
+            var foo = ZilAtom.Parse("FOO", ctx);
+            TestHelpers.EvalAndAssert(ctx, "<SET L '(1 2 3)> <DEFINE FOO (\"TUPLE\" A) .A>", foo);
+
+            TestHelpers.EvalAndAssert(ctx, "<LIST !<FOO !.L>>",
+                new ZilList(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3)
+                }));
+        }
+
+        [TestMethod]
         public void TestDEFMAC()
         {
             var ctx = new Context();
