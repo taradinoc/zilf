@@ -110,7 +110,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-WACKY>", ZilAtom.Parse("WACKY", ctx));
 
             // literals
-            TestHelpers.EvalAndAssert(ctx, "<TYPE 5:FIX>", ctx.GetStdAtom(StdAtom.ADECL));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE '5:FIX>", ctx.GetStdAtom(StdAtom.ADECL));
             TestHelpers.EvalAndAssert(ctx, "<TYPE FOO>", ctx.GetStdAtom(StdAtom.ATOM));
             TestHelpers.EvalAndAssert(ctx, "<TYPE !\\c>", ctx.GetStdAtom(StdAtom.CHARACTER));
             TestHelpers.EvalAndAssert(ctx, "<TYPE <>>", ctx.GetStdAtom(StdAtom.FALSE));
@@ -864,9 +864,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
                 new ZilVector(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
 
-            // TODO: this should evaluate to 3 (and check the DECL), not 3:7
-            TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:<+ 3 4>",
-                new ZilAdecl(new ZilFix(3), new ZilFix(7)));
+            TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:FIX", new ZilFix(3));
         }
 
         [TestMethod]
