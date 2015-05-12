@@ -2044,6 +2044,9 @@ namespace Zilf
                         case StdAtom.LEXV:
                             flags |= TableFlags.Lexv;
                             break;
+                        case StdAtom.PURE:
+                            flags |= TableFlags.Pure;
+                            break;
                         default:
                             throw new InterpreterError("ITABLE: unrecognized flag: " + flag);
                     }
