@@ -54,5 +54,14 @@ namespace IntegrationTests
                     "<==? <GET <REST ,TBL 5> 0> 5>",
                     "<==? <GET <REST ,TBL 5> 1> 6>");
         }
+
+        [TestMethod]
+        public void PURE_ITABLE_Should_Be_In_Pure_Memory()
+        {
+            AssertGlobals(
+                "<GLOBAL TBL <ITABLE 10 (PURE)>>")
+                .Implies(
+                    "<G=? ,TBL <LOWCORE PURBOT>>");
+        }
     }
 }
