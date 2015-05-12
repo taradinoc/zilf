@@ -1779,16 +1779,37 @@ namespace Zilf
                     throw new InterpreterError("ROUTINE: already defined: " + atom.ToStringContext(ctx, false));
             }
 
-            if (args[1].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("ROUTINE: second arg must be a list");
+            ZilAtom activationAtom;
+            ZilList argList;
+            IEnumerable<ZilObject> body;
+
+            if (args[1] is ZilAtom)
+            {
+                activationAtom = (ZilAtom)args[1];
+                argList = args[2] as ZilList;
+                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("ROUTINE: third arg must be a list");
+                body = args.Skip(3);
+            }
+            else if (args[1].GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            {
+                activationAtom = null;
+                argList = (ZilList)args[1];
+                body = args.Skip(2);
+            }
+            else
+            {
+                throw new InterpreterError("ROUTINE: second arg must be an atom or list");
+            }
 
             var flags = CombineFlags(ctx.CurrentFileFlags, ctx.NextRoutineFlags);
             ctx.NextRoutineFlags = RoutineFlags.None;
 
             ZilRoutine rtn = new ZilRoutine(
                 atom,
-                (IEnumerable<ZilObject>)args[1],
-                args.Skip(2),
+                activationAtom,
+                argList,
+                body,
                 flags);
             ctx.SetZVal(atom, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);

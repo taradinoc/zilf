@@ -25,14 +25,15 @@ namespace Zilf
 {
     class ZilRoutine : ZilObject, ISourceLine
     {
-        private readonly ZilAtom name;
+        private readonly ZilAtom name, activationAtom;
         private readonly ArgSpec argspec;
         private readonly ZilObject[] body;
         private readonly RoutineFlags flags;
 
-        public ZilRoutine(ZilAtom name, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
+        public ZilRoutine(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
         {
             this.name = name;
+            this.activationAtom = activationAtom;
             this.argspec = new ArgSpec(name, argspec);
             this.body = body.ToArray();
             this.flags = flags;
@@ -56,6 +57,11 @@ namespace Zilf
         public ZilAtom Name
         {
             get { return name; }
+        }
+
+        public ZilAtom ActivationAtom
+        {
+            get { return activationAtom; }
         }
 
         public RoutineFlags Flags

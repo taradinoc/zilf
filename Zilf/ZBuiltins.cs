@@ -324,7 +324,7 @@ namespace Zilf
                             }
 
                             if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string) || pi.ParameterType == typeof(ZilObject) ||
-                                pi.ParameterType == typeof(ZilAtom) || pi.ParameterType == typeof(int))
+                                pi.ParameterType == typeof(ZilAtom) || pi.ParameterType == typeof(int) || pi.ParameterType == typeof(Block))
                             {
                                 // regular operand: may be optional
                                 max++;
@@ -653,6 +653,26 @@ namespace Zilf
                             result.Add(new BuiltinArg(BuiltinArgType.Operand, args[i++]));
                         }
                         break;
+                    }
+                    else if (pi.ParameterType == typeof(Block))
+                    {
+                        // arg must be an LVAL reference
+                        if (arg.IsLVAL())
+                        {
+                            var atom = (ZilAtom)((ZilForm)arg).Rest.First;
+                            var block = cc.Blocks.First(b => b.Name == atom);
+                            if (block == null)
+                            {
+                                error(i, "argument must be bound to a block");
+                            }
+
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, block));
+                        }
+                        else
+                        {
+                            error(i, "argument must be a local variable reference");
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
+                        }
                     }
                     else
                     {
@@ -1659,9 +1679,14 @@ namespace Zilf
             #region Routine Opcodes/Builtins
 
             [Builtin("RETURN", HasSideEffect = true)]
-            public static void ReturnOp(VoidCall c, IOperand value = null)
+            public static void ReturnOp(VoidCall c, IOperand value = null, Block block = null)
             {
-                if (c.cc.ReturnLabel == null)
+                if (block == null)
+                {
+                    block = c.cc.Blocks.Peek();
+                }
+
+                if (block.ReturnLabel == null)
                 {
                     // return from routine
                     c.rb.Return(value ?? c.cc.Game.One);
@@ -1669,7 +1694,7 @@ namespace Zilf
                 else
                 {
                     // return from enclosing PROG/REPEAT
-                    if ((c.cc.ReturnState & BlockReturnState.WantResult) != 0)
+                    if ((block.ReturnState & BlockReturnState.WantResult) != 0)
                     {
                         if (value == null)
                             c.rb.EmitStore(c.rb.Stack, c.cc.Game.One);
@@ -1681,24 +1706,29 @@ namespace Zilf
                         if (value == c.rb.Stack)
                             c.rb.EmitPopStack();
 
-                        Errors.CompWarning(c.cc.Context, c.form, "RETURN value ignored: enclosing block is in void context");
+                        Errors.CompWarning(c.cc.Context, c.form, "RETURN value ignored: block is in void context");
                     }
 
-                    c.cc.ReturnState |= BlockReturnState.Returned;
-                    c.rb.Branch(c.cc.ReturnLabel);
+                    block.ReturnState |= BlockReturnState.Returned;
+                    c.rb.Branch(block.ReturnLabel);
                 }
             }
 
             [Builtin("AGAIN", HasSideEffect = true)]
-            public static void AgainOp(VoidCall c)
+            public static void AgainOp(VoidCall c, Block block = null)
             {
-                if (c.cc.AgainLabel != null)
+                if (block == null)
                 {
-                    c.rb.Branch(c.cc.AgainLabel);
+                    block = c.cc.Blocks.Peek();
+                }
+
+                if (block.AgainLabel != null)
+                {
+                    c.rb.Branch(block.AgainLabel);
                 }
                 else
                 {
-                    Errors.CompError(c.cc.Context, c.form, "AGAIN requires an enclosing PROG/REPEAT");
+                    Errors.CompError(c.cc.Context, c.form, "AGAIN requires a PROG/REPEAT block or routine");
                 }
             }
 
