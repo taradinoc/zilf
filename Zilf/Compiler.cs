@@ -29,6 +29,8 @@ namespace Zilf
         [Flags]
         private enum BlockReturnState
         {
+            None = 0,
+
             /// <summary>
             /// Indicates that the return label was used.
             /// </summary>
@@ -38,6 +40,27 @@ namespace Zilf
             /// result must be discarded before branching.)
             /// </summary>
             WantResult = 2,
+        }
+
+        private sealed class Block
+        {
+            /// <summary>
+            /// The activation atom identifying the block, or null if it is unnamed.
+            /// </summary>
+            public ZilAtom Name;
+            /// <summary>
+            /// The label to which &lt;AGAIN&gt; should branch.
+            /// </summary>
+            public ILabel AgainLabel;
+            /// <summary>
+            /// The label to which &lt;RETURN&gt; should branch, or null if
+            /// it should return from the routine.
+            /// </summary>
+            public ILabel ReturnLabel;
+            /// <summary>
+            /// The context flags for &lt;RETURN&gt;.
+            /// </summary>
+            public BlockReturnState ReturnState;
         }
 
         private class CompileCtx
@@ -55,35 +78,23 @@ namespace Zilf
             /// wants it and the game builder supports it).
             /// </summary>
             public bool WantDebugInfo;
-            /// <summary>
-            /// The label to which &lt;AGAIN&gt; should branch.
-            /// </summary>
-            public ILabel AgainLabel;
-            /// <summary>
-            /// The label to which &lt;RETURN&gt; should branch, or null if
-            /// it should return from the routine.
-            /// </summary>
-            public ILabel ReturnLabel;
-            /// <summary>
-            /// The context flags for &lt;RETURN&gt;.
-            /// </summary>
-            public BlockReturnState ReturnState;
 
             public ITableBuilder VerbTable, ActionTable, PreactionTable, PrepositionTable;
 
-            public Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
-            public HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
-            public Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
-            public Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
+            public readonly Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
+            public readonly HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
+            public readonly Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
+            public readonly Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
+            public readonly Stack<Block> Blocks = new Stack<Block>();
 
-            public Dictionary<ZilAtom, IGlobalBuilder> Globals = new Dictionary<ZilAtom, IGlobalBuilder>();
-            public Dictionary<ZilAtom, IOperand> Constants = new Dictionary<ZilAtom, IOperand>();
-            public Dictionary<ZilAtom, IRoutineBuilder> Routines = new Dictionary<ZilAtom, IRoutineBuilder>();
-            public Dictionary<ZilAtom, IObjectBuilder> Objects = new Dictionary<ZilAtom, IObjectBuilder>();
-            public Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
-            public Dictionary<Word, IWordBuilder> Vocabulary = new Dictionary<Word, IWordBuilder>();
-            public Dictionary<ZilAtom, IPropertyBuilder> Properties = new Dictionary<ZilAtom, IPropertyBuilder>();
-            public Dictionary<ZilAtom, IFlagBuilder> Flags = new Dictionary<ZilAtom, IFlagBuilder>();
+            public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals = new Dictionary<ZilAtom, IGlobalBuilder>();
+            public readonly Dictionary<ZilAtom, IOperand> Constants = new Dictionary<ZilAtom, IOperand>();
+            public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines = new Dictionary<ZilAtom, IRoutineBuilder>();
+            public readonly Dictionary<ZilAtom, IObjectBuilder> Objects = new Dictionary<ZilAtom, IObjectBuilder>();
+            public readonly Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
+            public readonly Dictionary<Word, IWordBuilder> Vocabulary = new Dictionary<Word, IWordBuilder>();
+            public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties = new Dictionary<ZilAtom, IPropertyBuilder>();
+            public readonly Dictionary<ZilAtom, IFlagBuilder> Flags = new Dictionary<ZilAtom, IFlagBuilder>();
         }
 
         public void Compile(Context ctx, IGameBuilder gb)
@@ -1041,8 +1052,15 @@ namespace Zilf
             if (cc.Context.TraceRoutines)
                 rb.EmitPrint("]\n", false);
 
-            // define standard labels
-            cc.AgainLabel = rb.RoutineStart;
+            // define a block for the routine
+            cc.Blocks.Clear();
+            cc.Blocks.Push(new Block()
+            {
+                Name = routine.ActivationAtom,
+                AgainLabel = rb.RoutineStart,
+                ReturnLabel = null,
+                ReturnState = BlockReturnState.None,
+            });
 
             // generate code for routine body
             int i = 1;
@@ -1062,6 +1080,9 @@ namespace Zilf
             cc.Locals.Clear();
             cc.SpareLocals.Clear();
             cc.OuterLocals.Clear();
+
+            System.Diagnostics.Debug.Assert(cc.Blocks.Count == 1);
+            cc.Blocks.Pop();
         }
 
         private static void CompileStmt(CompileCtx cc, IRoutineBuilder rb, ZilObject stmt, bool wantResult)
@@ -2266,20 +2287,19 @@ namespace Zilf
                 }
             }
 
-            ILabel oldAgain = null, oldReturn = null;
-            BlockReturnState oldReturnState = 0;
+            Block block = null;
 
             if (catchy)
             {
-                oldAgain = cc.AgainLabel;
-                oldReturn = cc.ReturnLabel;
-                oldReturnState = cc.ReturnState;
+                block = new Block()
+                {
+                    AgainLabel = rb.DefineLabel(),
+                    ReturnLabel = rb.DefineLabel(),
+                    ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+                };
 
-                cc.AgainLabel = rb.DefineLabel();
-                cc.ReturnLabel = rb.DefineLabel();
-                cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
-
-                rb.MarkLabel(cc.AgainLabel);
+                rb.MarkLabel(block.AgainLabel);
+                cc.Blocks.Push(block);
             }
 
             try
@@ -2319,11 +2339,13 @@ namespace Zilf
 
                 if (catchy)
                 {
-                    if (repeat)
-                        rb.Branch(cc.AgainLabel);
+                    System.Diagnostics.Debug.Assert(block != null);
 
-                    if ((cc.ReturnState & BlockReturnState.Returned) != 0)
-                        rb.MarkLabel(cc.ReturnLabel);
+                    if (repeat)
+                        rb.Branch(block.AgainLabel);
+
+                    if ((block.ReturnState & BlockReturnState.Returned) != 0)
+                        rb.MarkLabel(block.ReturnLabel);
                 }
 
                 if (wantResult)
@@ -2344,9 +2366,7 @@ namespace Zilf
 
                 if (catchy)
                 {
-                    cc.AgainLabel = oldAgain;
-                    cc.ReturnLabel = oldReturn;
-                    cc.ReturnState = oldReturnState;
+                    cc.Blocks.Pop();
                 }
             }
         }
@@ -2471,13 +2491,14 @@ namespace Zilf
             }
 
             // create block
-            var oldAgain = cc.AgainLabel;
-            var oldReturn = cc.ReturnLabel;
-            var oldReturnState = cc.ReturnState;
+            var block = new Block()
+            {
+                AgainLabel = rb.DefineLabel(),
+                ReturnLabel = rb.DefineLabel(),
+                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+            };
 
-            cc.AgainLabel = rb.DefineLabel();
-            cc.ReturnLabel = rb.DefineLabel();
-            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+            cc.Blocks.Push(block);
 
             var exhaustedLabel = rb.DefineLabel();
 
@@ -2487,7 +2508,7 @@ namespace Zilf
             if (operand != counter)
                 rb.EmitStore(counter, operand);
 
-            rb.MarkLabel(cc.AgainLabel);
+            rb.MarkLabel(block.AgainLabel);
 
             // test and branch before the body, if end is a (non-[GL]VAL) FORM
             bool testFirst;
@@ -2545,11 +2566,11 @@ namespace Zilf
             if (!testFirst)
             {
                 operand = CompileAsOperand(cc, rb, end, src);
-                rb.Branch(down ? Condition.Less : Condition.Greater, counter, operand, cc.AgainLabel, false);
+                rb.Branch(down ? Condition.Less : Condition.Greater, counter, operand, block.AgainLabel, false);
             }
             else
             {
-                rb.Branch(cc.AgainLabel);
+                rb.Branch(block.AgainLabel);
             }
 
             // exhausted label, end statements, provide a return value if we need one
@@ -2565,14 +2586,12 @@ namespace Zilf
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
             // clean up block and counter
-            if ((cc.ReturnState & BlockReturnState.Returned) != 0)
-                rb.MarkLabel(cc.ReturnLabel);
+            if ((block.ReturnState & BlockReturnState.Returned) != 0)
+                rb.MarkLabel(block.ReturnLabel);
 
             PopInnerLocal(cc, atom);
 
-            cc.AgainLabel = oldAgain;
-            cc.ReturnLabel = oldReturn;
-            cc.ReturnState = oldReturnState;
+            cc.Blocks.Pop();
 
             return wantResult ? rb.Stack : null;
         }
@@ -2632,13 +2651,14 @@ namespace Zilf
             }
 
             // create block
-            var oldAgain = cc.AgainLabel;
-            var oldReturn = cc.ReturnLabel;
-            var oldReturnState = cc.ReturnState;
+            var block = new Block()
+            {
+                AgainLabel = rb.DefineLabel(),
+                ReturnLabel = rb.DefineLabel(),
+                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+            };
 
-            cc.AgainLabel = rb.DefineLabel();
-            cc.ReturnLabel = rb.DefineLabel();
-            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+            cc.Blocks.Push(block);
 
             var exhaustedLabel = rb.DefineLabel();
 
@@ -2647,7 +2667,7 @@ namespace Zilf
             IOperand operand = CompileAsOperand(cc, rb, container, src);
             rb.EmitGetChild(operand, counter, exhaustedLabel, false);
 
-            rb.MarkLabel(cc.AgainLabel);
+            rb.MarkLabel(block.AgainLabel);
 
             // loop over the objects using one or two variables
             if (nextAtom != null)
@@ -2668,7 +2688,7 @@ namespace Zilf
 
                 // next object
                 rb.EmitStore(counter, next);
-                rb.BranchIfZero(counter, cc.AgainLabel, false);
+                rb.BranchIfZero(counter, block.AgainLabel, false);
 
                 // clean up next
                 PopInnerLocal(cc, nextAtom);
@@ -2684,7 +2704,7 @@ namespace Zilf
                 }
 
                 // next object
-                rb.EmitGetSibling(counter, counter, cc.AgainLabel, true);
+                rb.EmitGetSibling(counter, counter, block.AgainLabel, true);
             }
 
             // exhausted label, end statements, provide a return value if we need one
@@ -2700,13 +2720,11 @@ namespace Zilf
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
             // clean up block and counter
-            rb.MarkLabel(cc.ReturnLabel);
+            rb.MarkLabel(block.ReturnLabel);
 
             PopInnerLocal(cc, atom);
 
-            cc.AgainLabel = oldAgain;
-            cc.ReturnLabel = oldReturn;
-            cc.ReturnState = oldReturnState;
+            cc.Blocks.Pop();
 
             return wantResult ? rb.Stack : null;
         }
@@ -2760,13 +2778,14 @@ namespace Zilf
             }
 
             // create block
-            var oldAgain = cc.AgainLabel;
-            var oldReturn = cc.ReturnLabel;
-            var oldReturnState = cc.ReturnState;
+            var block = new Block()
+            {
+                AgainLabel = rb.DefineLabel(),
+                ReturnLabel = rb.DefineLabel(),
+                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+            };
 
-            cc.AgainLabel = rb.DefineLabel();
-            cc.ReturnLabel = rb.DefineLabel();
-            cc.ReturnState = wantResult ? BlockReturnState.WantResult : 0;
+            cc.Blocks.Push(block);
 
             var exhaustedLabel = rb.DefineLabel();
 
@@ -2774,7 +2793,7 @@ namespace Zilf
             var counter = PushInnerLocal(cc, rb, dirAtom);
             rb.EmitStore(counter, cc.Game.MakeOperand(cc.Game.MaxProperties + 1));
 
-            rb.MarkLabel(cc.AgainLabel);
+            rb.MarkLabel(block.AgainLabel);
 
             rb.Branch(Condition.DecCheck, counter,
                 cc.Constants[cc.Context.GetStdAtom(StdAtom.LOW_DIRECTION)], exhaustedLabel, true);
@@ -2782,7 +2801,7 @@ namespace Zilf
             var propTable = PushInnerLocal(cc, rb, ptAtom);
             var roomOperand = CompileAsOperand(cc, rb, room, src);
             rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
-            rb.BranchIfZero(propTable, cc.AgainLabel, true);
+            rb.BranchIfZero(propTable, block.AgainLabel, true);
 
             // body
             while (body != null && !body.IsEmpty)
@@ -2793,7 +2812,7 @@ namespace Zilf
             }
 
             // loop
-            rb.Branch(cc.AgainLabel);
+            rb.Branch(block.AgainLabel);
 
             // end statements
             while (endStmts != null && !endStmts.IsEmpty)
@@ -2808,14 +2827,12 @@ namespace Zilf
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
             // clean up block and variables
-            rb.MarkLabel(cc.ReturnLabel);
+            rb.MarkLabel(block.ReturnLabel);
 
             PopInnerLocal(cc, ptAtom);
             PopInnerLocal(cc, dirAtom);
 
-            cc.AgainLabel = oldAgain;
-            cc.ReturnLabel = oldReturn;
-            cc.ReturnState = oldReturnState;
+            cc.Blocks.Pop();
 
             return wantResult ? rb.Stack : null;
         }

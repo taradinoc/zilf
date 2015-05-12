@@ -15,6 +15,26 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        #region RETURN
+
+        [TestMethod]
+        public void RETURN_Without_Activation_Should_Return_From_Block()
+        {
+            AssertRoutine("", "<FOO>")
+                .WithGlobal("<ROUTINE FOO FOO-ACT (\"AUX\" X) <SET X <REPEAT () <RETURN 123>>> 456>")
+                .GivesNumber("456");
+        }
+
+        [TestMethod]
+        public void RETURN_With_Activation_Should_Return_From_Routine()
+        {
+            AssertRoutine("", "<FOO>")
+                .WithGlobal("<ROUTINE FOO FOO-ACT (\"AUX\" X) <SET X <REPEAT () <RETURN 123 .FOO-ACT>>> 456>")
+                .GivesNumber("123");
+        }
+
+        #endregion
+
         #region AGAIN
 
         [TestMethod]
@@ -26,6 +46,24 @@ namespace IntegrationTests
                 .WithGlobal("<GLOBAL GLOB 0>")
                 .InV5()
                 .GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void AGAIN_With_Activation_Should_Repeat_Routine()
+        {
+            AssertRoutine("", "<FOO>")
+                .WithGlobal("<GLOBAL BAR 0>")
+                .WithGlobal("<ROUTINE FOO FOO-ACT () <PRINTI \"Top\"> <PROG () <PRINTN ,BAR> <COND (,BAR <RTRUE>)> <INC BAR> <AGAIN .FOO-ACT>>>")
+                .Outputs("Top0Top1");
+        }
+
+        [TestMethod]
+        public void AGAIN_Without_Activation_Should_Repeat_Block()
+        {
+            AssertRoutine("", "<FOO>")
+                .WithGlobal("<GLOBAL BAR 0>")
+                .WithGlobal("<ROUTINE FOO FOO-ACT () <PRINTI \"Top\"> <PROG () <PRINTN ,BAR> <COND (,BAR <RTRUE>)> <INC BAR> <AGAIN>>>")
+                .Outputs("Top01");
         }
 
         #endregion
