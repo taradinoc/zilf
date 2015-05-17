@@ -140,32 +140,6 @@ namespace Zilf
             return ctx.TRUE;
         }
 
-        [Subr("ROUTINE-FLAGS")]
-        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilObject[] args)
-        {
-            var newFlags = RoutineFlags.None;
-
-            foreach (var arg in args)
-            {
-                var atom = arg as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ROUTINE-FLAGS: all args must be atoms");
-
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.CLEAN_STACK_P:
-                        newFlags |= RoutineFlags.CleanStack;
-                        break;
-
-                    default:
-                        throw new InterpreterError("ROUTINE-FLAGS: unrecognized flag: " + atom);
-                }
-            }
-
-            ctx.NextRoutineFlags = newFlags;
-            return ctx.TRUE;
-        }
-
         [Subr("DELAY-DEFINITION")]
         public static ZilObject DELAY_DEFINITION(Context ctx, ZilObject[] args)
         {
@@ -280,6 +254,24 @@ namespace Zilf
                 Environment.Exit(4);
 
             return ctx.TRUE;
+        }
+
+        [Subr]
+        public static ZilObject ID(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "ID", 1, 1);
+
+            return args[0];
+        }
+
+        [Subr]
+        public static ZilObject SNAME(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "SNAME", 1, 1);
+
+            return args[0];
         }
 
         [Subr("GC-MON")]
@@ -496,6 +488,13 @@ namespace Zilf
                 throw new InterpreterError("GASSIGNED?: arg must be an atom");
 
             return ctx.GetGlobalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
+        }
+
+        [FSubr]
+        public static ZilObject GDECL(Context ctx, ZilObject[] args)
+        {
+            // ignore global declarations
+            return ctx.FALSE;
         }
 
         [Subr]
@@ -2136,7 +2135,33 @@ namespace Zilf
 
         #endregion
 
-        #region Z-Code
+        #region Z-Code: Routines, Objects, Constants, Globals
+
+        [Subr("ROUTINE-FLAGS")]
+        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilObject[] args)
+        {
+            var newFlags = RoutineFlags.None;
+
+            foreach (var arg in args)
+            {
+                var atom = arg as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ROUTINE-FLAGS: all args must be atoms");
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.CLEAN_STACK_P:
+                        newFlags |= RoutineFlags.CleanStack;
+                        break;
+
+                    default:
+                        throw new InterpreterError("ROUTINE-FLAGS: unrecognized flag: " + atom);
+                }
+            }
+
+            ctx.NextRoutineFlags = newFlags;
+            return ctx.TRUE;
+        }
 
         [FSubr]
         public static ZilObject ROUTINE(Context ctx, ZilObject[] args)
@@ -2348,6 +2373,77 @@ namespace Zilf
             ctx.ZEnvironment.Objects.Add(zmo);
             return zmo;
         }
+
+        [FSubr]
+        public static ZilObject PROPDEF(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "PROPDEF", 2, 0);
+
+            ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
+            if (atom == null)
+                throw new InterpreterError("PROPDEF: first arg must be an atom");
+
+            if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
+                Errors.TerpWarning(ctx, null,
+                    "overriding default value for property '{0}'",
+                    atom);
+
+            ctx.ZEnvironment.PropertyDefaults[atom] = args[1].Eval(ctx);
+
+            // complex property patterns
+            if (args.Length >= 3)
+            {
+                var pattern = ComplexPropDef.Parse(args.Skip(2), ctx);
+                ctx.SetPropDef(atom, pattern);
+            }
+
+            return atom;
+        }
+
+        [Subr]
+        public static ZilObject ZSTART(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "ZSTART", 1, 1);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+                throw new InterpreterError("ZSTART: arg must be an atom");
+
+            ctx.ZEnvironment.EntryRoutineName = atom;
+            return args[0];
+        }
+
+        [Subr("BIT-SYNONYM")]
+        public static ZilObject BIT_SYNONYM(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "BIT-SYNONYM", 2, 0);
+
+            if (!args.All(a => a is ZilAtom))
+                throw new InterpreterError("BIT-SYNONYM: all args must be atoms");
+
+            var first = (ZilAtom)args[0];
+            ZilAtom original;
+
+            if (ctx.ZEnvironment.TryGetBitSynonym(first, out original))
+                first = original;
+
+            foreach (var synonym in args.Skip(1).Cast<ZilAtom>())
+            {
+                if (ctx.GetZVal(synonym) != null)
+                    throw new InterpreterError("BIT-SYNONYM: symbol is already defined: " + synonym);
+
+                ctx.ZEnvironment.AddBitSynonym(synonym, first);
+            }
+
+            return first;
+        }
+
+        #endregion
+
+        #region Z-Code: Tables
 
         [Subr]
         public static ZilObject ITABLE(Context ctx, ZilObject[] args)
@@ -2627,6 +2723,10 @@ namespace Zilf
             return PerformTable(ctx, args, true, true);
         }
 
+        #endregion
+
+        #region Z-Code: Version, Options, Capabilities
+
         [Subr]
         public static ZilObject VERSION(Context ctx, ZilObject[] args)
         {
@@ -2725,6 +2825,141 @@ namespace Zilf
 
             return ctx.FALSE;
         }
+
+        [Subr("ORDER-OBJECTS?")]
+        public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1)
+                throw new InterpreterError(null, "ORDER-OBJECTS?", 1, 0);
+
+            if (args[0] is ZilAtom)
+            {
+                switch (((ZilAtom)args[0]).StdAtom)
+                {
+                    case StdAtom.DEFINED:
+                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.Defined;
+                        return args[0];
+                    case StdAtom.ROOMS_FIRST:
+                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsFirst;
+                        return args[0];
+                    case StdAtom.ROOMS_AND_LGS_FIRST:
+                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsAndLocalGlobalsFirst;
+                        return args[0];
+                    case StdAtom.ROOMS_LAST:
+                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsLast;
+                        return args[0];
+                }
+            }
+
+            throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
+        }
+
+        [Subr("ORDER-TREE?")]
+        public static ZilObject ORDER_TREE_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "ORDER-TREE?", 1, 1);
+
+            if (args[0] is ZilAtom)
+            {
+                switch (((ZilAtom)args[0]).StdAtom)
+                {
+                    case StdAtom.REVERSE_DEFINED:
+                        ctx.ZEnvironment.TreeOrdering = TreeOrdering.ReverseDefined;
+                        return args[0];
+                }
+            }
+
+            throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
+        }
+
+        [Subr("ORDER-FLAGS?")]
+        public static ZilObject ORDER_FLAGS_P(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "ORDER-FLAGS?", 2, 0);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null || atom.StdAtom != StdAtom.LAST)
+                throw new InterpreterError("ORDER-FLAGS?: first arg must be LAST");
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                atom = args[i] as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ORDER-FLAGS?: all args must be atoms");
+
+                ctx.ZEnvironment.FlagsOrderedLast.Add(atom);
+            }
+
+            return args[0];
+        }
+
+        [Subr("ZIP-OPTIONS")]
+        public static ZilObject ZIP_OPTIONS(Context ctx, ZilObject[] args)
+        {
+            foreach (var arg in args)
+            {
+                var atom = arg as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("ZIP-OPTIONS: all args must be atoms");
+
+                StdAtom flag;
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.COLOR:
+                        flag = StdAtom.USE_COLOR_P;
+                        break;
+
+                    case StdAtom.MOUSE:
+                        flag = StdAtom.USE_MOUSE_P;
+                        break;
+
+                    case StdAtom.UNDO:
+                        flag = StdAtom.USE_UNDO_P;
+                        break;
+
+                    case StdAtom.DISPLAY:
+                        flag = StdAtom.DISPLAY_OPS_P;
+                        break;
+
+                    case StdAtom.SOUND:
+                        flag = StdAtom.USE_SOUND_P;
+                        break;
+
+                    case StdAtom.MENU:
+                        flag = StdAtom.USE_MENUS_P;
+                        break;
+
+                    default:
+                        throw new InterpreterError("ZIP-OPTIONS: unrecognized option " + atom);
+                }
+
+                ctx.SetGlobalVal(ctx.GetStdAtom(flag), ctx.TRUE);
+            }
+
+            return ctx.TRUE;
+        }
+
+        [Subr("FREQUENT-WORDS?")]
+        public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
+        {
+            // nada - we always generate frequent words
+            return ctx.TRUE;
+        }
+
+        [Subr("LONG-WORDS?")]
+        public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
+        {
+            ctx.ZEnvironment.GenerateLongWords = true;
+            return ctx.TRUE;
+        }
+
+
+        #endregion
+
+        #region Z-Code: Vocabulary and Syntax
 
         [Subr]
         public static ZilObject DIRECTIONS(Context ctx, ZilObject[] args)
@@ -2913,140 +3148,9 @@ namespace Zilf
             return PerformSynonym(ctx, args, "DIR-SYNONYM", typeof(DirSynonym));
         }
 
-        [Subr("FREQUENT-WORDS?")]
-        public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
-        {
-            // nada - we always generate frequent words
-            return ctx.TRUE;
-        }
+        #endregion
 
-        [Subr("LONG-WORDS?")]
-        public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
-        {
-            ctx.ZEnvironment.GenerateLongWords = true;
-            return ctx.TRUE;
-        }
-
-        [Subr]
-        public static ZilObject ID(Context ctx, ZilObject[] args)
-        {
-            if (args.Length != 1)
-                throw new InterpreterError(null, "ID", 1, 1);
-
-            return args[0];
-        }
-
-        [FSubr]
-        public static ZilObject PROPDEF(Context ctx, ZilObject[] args)
-        {
-            if (args.Length < 2)
-                throw new InterpreterError(null, "PROPDEF", 2, 0);
-
-            ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("PROPDEF: first arg must be an atom");
-
-            if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
-                Errors.TerpWarning(ctx, null,
-                    "overriding default value for property '{0}'",
-                    atom);
-
-            ctx.ZEnvironment.PropertyDefaults[atom] = args[1].Eval(ctx);
-
-            // complex property patterns
-            if (args.Length >= 3)
-            {
-                var pattern = ComplexPropDef.Parse(args.Skip(2), ctx);
-                ctx.SetPropDef(atom, pattern);
-            }
-
-            return atom;
-        }
-
-        [Subr]
-        public static ZilObject SNAME(Context ctx, ZilObject[] args)
-        {
-            if (args.Length != 1)
-                throw new InterpreterError(null, "SNAME", 1, 1);
-
-            return args[0];
-        }
-
-        [FSubr]
-        public static ZilObject GDECL(Context ctx, ZilObject[] args)
-        {
-            // ignore global declarations
-            return ctx.FALSE;
-        }
-
-        [Subr("ORDER-OBJECTS?")]
-        public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilObject[] args)
-        {
-            if (args.Length < 1)
-                throw new InterpreterError(null, "ORDER-OBJECTS?", 1, 0);
-
-            if (args[0] is ZilAtom)
-            {
-                switch (((ZilAtom)args[0]).StdAtom)
-                {
-                    case StdAtom.DEFINED:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.Defined;
-                        return args[0];
-                    case StdAtom.ROOMS_FIRST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsFirst;
-                        return args[0];
-                    case StdAtom.ROOMS_AND_LGS_FIRST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsAndLocalGlobalsFirst;
-                        return args[0];
-                    case StdAtom.ROOMS_LAST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsLast;
-                        return args[0];
-                }
-            }
-
-            throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
-        }
-
-        [Subr("ORDER-TREE?")]
-        public static ZilObject ORDER_TREE_P(Context ctx, ZilObject[] args)
-        {
-            if (args.Length != 1)
-                throw new InterpreterError(null, "ORDER-TREE?", 1, 1);
-
-            if (args[0] is ZilAtom)
-            {
-                switch (((ZilAtom)args[0]).StdAtom)
-                {
-                    case StdAtom.REVERSE_DEFINED:
-                        ctx.ZEnvironment.TreeOrdering = TreeOrdering.ReverseDefined;
-                        return args[0];
-                }
-            }
-
-            throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
-        }
-
-        [Subr("ORDER-FLAGS?")]
-        public static ZilObject ORDER_FLAGS_P(Context ctx, ZilObject[] args)
-        {
-            if (args.Length < 2)
-                throw new InterpreterError(null, "ORDER-FLAGS?", 2, 0);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null || atom.StdAtom != StdAtom.LAST)
-                throw new InterpreterError("ORDER-FLAGS?: first arg must be LAST");
-
-            for (int i = 1; i < args.Length; i++)
-            {
-                atom = args[i] as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ORDER-FLAGS?: all args must be atoms");
-
-                ctx.ZEnvironment.FlagsOrderedLast.Add(atom);
-            }
-
-            return args[0];
-        }
+        #region Z-Code: Tell
 
         [FSubr("TELL-TOKENS")]
         public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
@@ -3059,93 +3163,6 @@ namespace Zilf
         public static ZilObject ADD_TELL_TOKENS(Context ctx, ZilObject[] args)
         {
             ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args, ctx));
-            return ctx.TRUE;
-        }
-
-        [Subr]
-        public static ZilObject ZSTART(Context ctx, ZilObject[] args)
-        {
-            if (args.Length != 1)
-                throw new InterpreterError(null, "ZSTART", 1, 1);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("ZSTART: arg must be an atom");
-
-            ctx.ZEnvironment.EntryRoutineName = atom;
-            return args[0];
-        }
-
-        [Subr("BIT-SYNONYM")]
-        public static ZilObject BIT_SYNONYM(Context ctx, ZilObject[] args)
-        {
-            if (args.Length < 2)
-                throw new InterpreterError(null, "BIT-SYNONYM", 2, 0);
-
-            if (!args.All(a => a is ZilAtom))
-                throw new InterpreterError("BIT-SYNONYM: all args must be atoms");
-
-            var first = (ZilAtom)args[0];
-            ZilAtom original;
-
-            if (ctx.ZEnvironment.TryGetBitSynonym(first, out original))
-                first = original;
-
-            foreach (var synonym in args.Skip(1).Cast<ZilAtom>())
-            {
-                if (ctx.GetZVal(synonym) != null)
-                    throw new InterpreterError("BIT-SYNONYM: symbol is already defined: " + synonym);
-
-                ctx.ZEnvironment.AddBitSynonym(synonym, first);
-            }
-
-            return first;
-        }
-
-        [Subr("ZIP-OPTIONS")]
-        public static ZilObject ZIP_OPTIONS(Context ctx, ZilObject[] args)
-        {
-            foreach (var arg in args)
-            {
-                var atom = arg as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ZIP-OPTIONS: all args must be atoms");
-
-                StdAtom flag;
-
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.COLOR:
-                        flag = StdAtom.USE_COLOR_P;
-                        break;
-
-                    case StdAtom.MOUSE:
-                        flag = StdAtom.USE_MOUSE_P;
-                        break;
-
-                    case StdAtom.UNDO:
-                        flag = StdAtom.USE_UNDO_P;
-                        break;
-
-                    case StdAtom.DISPLAY:
-                        flag = StdAtom.DISPLAY_OPS_P;
-                        break;
-
-                    case StdAtom.SOUND:
-                        flag = StdAtom.USE_SOUND_P;
-                        break;
-
-                    case StdAtom.MENU:
-                        flag = StdAtom.USE_MENUS_P;
-                        break;
-
-                    default:
-                        throw new InterpreterError("ZIP-OPTIONS: unrecognized option " + atom);
-                }
-
-                ctx.SetGlobalVal(ctx.GetStdAtom(flag), ctx.TRUE);
-            }
-
             return ctx.TRUE;
         }
 
