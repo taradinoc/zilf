@@ -2723,6 +2723,88 @@ namespace Zilf
             return PerformTable(ctx, args, true, true);
         }
 
+        [Subr]
+        public static ZilObject ZGET(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, "ZGET", 2, 2);
+
+            var table = args[0] as ZilTable;
+            if (table == null)
+                throw new InterpreterError("ZGET: first arg must be a TABLE");
+
+            var index = args[1] as ZilFix;
+            if (index == null)
+                throw new InterpreterError("ZGET: second arg must be a FIX");
+
+            return table.GetWord(ctx, index.Value);
+        }
+
+        [Subr]
+        public static ZilObject ZPUT(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 3)
+                throw new InterpreterError(null, "ZPUT", 3, 3);
+
+            var table = args[0] as ZilTable;
+            if (table == null)
+                throw new InterpreterError("ZPUT: first arg must be a TABLE");
+
+            var index = args[1] as ZilFix;
+            if (index == null)
+                throw new InterpreterError("ZPUT: second arg must be a FIX");
+
+            table.PutWord(ctx, index.Value, args[2]);
+            return args[2];
+        }
+
+        [Subr]
+        public static ZilObject GETB(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, "GETB", 2, 2);
+
+            var table = args[0] as ZilTable;
+            if (table == null)
+                throw new InterpreterError("GETB: first arg must be a TABLE");
+
+            var index = args[1] as ZilFix;
+            if (index == null)
+                throw new InterpreterError("GETB: second arg must be a FIX");
+
+            return table.GetByte(ctx, index.Value);
+        }
+
+        [Subr]
+        public static ZilObject PUTB(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 3)
+                throw new InterpreterError(null, "PUTB", 3, 3);
+
+            var table = args[0] as ZilTable;
+            if (table == null)
+                throw new InterpreterError("PUTB: first arg must be a TABLE");
+
+            var index = args[1] as ZilFix;
+            if (index == null)
+                throw new InterpreterError("PUTB: second arg must be a FIX");
+
+            var value = args[2];
+            switch (value.GetTypeAtom(ctx).StdAtom)
+            {
+                case StdAtom.FIX:
+                case StdAtom.BYTE:
+                    // OK
+                    break;
+
+                default:
+                    throw new InterpreterError("PUTB: third arg must be a FIX or BYTE");
+            }
+
+            table.PutByte(ctx, index.Value, value);
+            return value;
+        }
+
         #endregion
 
         #region Z-Code: Version, Options, Capabilities

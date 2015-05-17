@@ -290,9 +290,12 @@ namespace Zilf
     {
         private readonly string filename;
         private readonly int line;
-        private readonly int repetitions;
-        private readonly ZilObject[] initializer, pattern;
+        private readonly ZilObject[] pattern;
         private readonly TableFlags flags;
+
+        private int repetitions;
+        private ZilObject[] initializer;
+        private int[] elementToByteOffsets;
 
         public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
         {
@@ -308,6 +311,8 @@ namespace Zilf
 
         public int ElementCount
         {
+            // TODO: account for initial length markers?
+
             get
             {
                 if (initializer != null && initializer.Length > 0)
@@ -529,6 +534,148 @@ namespace Zilf
             ZilObject[] initializer = initializerList.IsEmpty ? null : initializerList.ToArray();
 
             return new ZilTable(null, 0, repetitions.Value, initializer, flags, pattern);
+        }
+
+        private bool IsWord(Context ctx, int index)
+        {
+            // TODO: account for initial length markers?
+
+            if (index < 0 || index >= ElementCount)
+                throw new ArgumentOutOfRangeException("index");
+
+            if ((flags & TableFlags.Lexv) != 0)
+            {
+                // word-byte-byte repeating
+                return index % 3 == 0;
+            }
+
+            if (pattern != null && pattern.Length > 0)
+            {
+                ZilAtom atom;
+                ZilVector rest;
+                if (index >= pattern.Length - 1 && (rest = pattern[pattern.Length - 1] as ZilVector) != null)
+                {
+                    index -= pattern.Length - 1;
+                    atom = rest[index % (rest.GetLength() - 1) + 1] as ZilAtom;
+                    return !(atom != null && atom.StdAtom == StdAtom.BYTE);
+                }
+                else if ((atom = pattern[index % pattern.Length] as ZilAtom) != null)
+                {
+                    return atom.StdAtom != StdAtom.BYTE;
+                }
+                else
+                {
+                    throw new NotImplementedException("malformed pattern");
+                }
+            }
+
+            if (initializer != null && initializer.Length > 0 &&
+                initializer[index % initializer.Length].GetTypeAtom(ctx).StdAtom == StdAtom.BYTE)
+            {
+                return false;
+            }
+
+            return (flags & TableFlags.Byte) == 0;
+        }
+
+        private void ExpandInitializer()
+        {
+            //XXX
+            throw new NotImplementedException();
+        }
+
+        private int? ByteOffsetToIndex(Context ctx, int offset)
+        {
+            // TODO: account for initial length markers?
+
+            // initialize cache if necessary
+            if (elementToByteOffsets == null)
+            {
+                elementToByteOffsets = new int[ElementCount];
+                for (int i = 0, nextOffset = 0; i < elementToByteOffsets.Length; i++)
+                {
+                    elementToByteOffsets[i] = nextOffset;
+
+                    if (IsWord(ctx, i))
+                        nextOffset += 2;
+                    else
+                        nextOffset++;
+                }
+            }
+
+            // binary search to find the element
+            var index = Array.BinarySearch(elementToByteOffsets, offset);
+            if (index >= 0)
+                return index;
+            else
+                return null;
+        }
+
+        public ZilObject GetWord(Context ctx, int offset)
+        {
+            // convert word offset to byte offset
+            offset *= 2;
+
+            var index = ByteOffsetToIndex(ctx, offset);
+            if (index == null)
+                throw new ArgumentException(string.Format("No element at offset {0}", offset));
+            if (!IsWord(ctx, index.Value))
+                throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
+
+            if (initializer == null)
+                return null;
+
+            return initializer[index.Value % initializer.Length];
+        }
+
+        public void PutWord(Context ctx, int offset, ZilObject value)
+        {
+            // convert word offset to byte offset
+            offset *= 2;
+
+            var index = ByteOffsetToIndex(ctx, offset);
+            if (index == null)
+                throw new ArgumentException(string.Format("No element at offset {0}", offset));
+            if (!IsWord(ctx, index.Value))
+                throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
+
+            if (initializer == null || repetitions > 1)
+                ExpandInitializer();
+
+            initializer[index.Value] = value;
+        }
+
+        public ZilObject GetByte(Context ctx, int offset)
+        {
+            var index = ByteOffsetToIndex(ctx, offset);
+            if (index == null)
+                throw new ArgumentException(string.Format("No element at offset {0}", offset));
+            if (IsWord(ctx, index.Value))
+                throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
+
+            if (initializer == null)
+                return null;
+
+            return initializer[index.Value % initializer.Length];
+        }
+
+        public void PutByte(Context ctx, int offset, ZilObject value)
+        {
+            var index = ByteOffsetToIndex(ctx, offset);
+            if (index == null)
+                throw new ArgumentException(string.Format("No element at offset {0}", offset));
+            if (IsWord(ctx, index.Value))
+                throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
+
+            if (initializer == null || repetitions > 1)
+                ExpandInitializer();
+
+            if (initializer[index.Value % initializer.Length].GetTypeAtom(ctx).StdAtom == StdAtom.BYTE)
+            {
+                value = ctx.ChangeType(value, ctx.GetStdAtom(StdAtom.BYTE));
+            }
+
+            initializer[index.Value] = value;
         }
     }
 
