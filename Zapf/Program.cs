@@ -366,6 +366,7 @@ General switches:
                 if (ctx.Fixups.Count > 0)
                     ctx.MeasureAgain = true;
 
+                ctx.CheckLimits();
                 ctx.ResetBetweenPasses();
 
                 if (!ctx.Quiet && ctx.MeasureAgain && ctx.ErrorCount == 0)
