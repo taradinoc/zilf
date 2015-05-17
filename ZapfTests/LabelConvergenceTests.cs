@@ -10,44 +10,6 @@ namespace ZapfTests
     [TestClass]
     public class LabelConvergenceTests
     {
-        private static bool Assemble(string code)
-        {
-            const string InputFileName = "Input.zap";
-            const string OutputFileName = "Output.z#";
-            var inputFiles = new Dictionary<string, string>() {
-                { InputFileName, code },
-            };
-            var outputFiles = new Dictionary<string, MemoryStream>();
-
-            // initialize ZapfAssembler
-            var assembler = new ZapfAssembler();
-            assembler.OpeningFile += (sender, e) =>
-            {
-                if (e.Writing)
-                {
-                    var mstr = new MemoryStream();
-                    e.Stream = mstr;
-                    outputFiles.Add(e.FileName, mstr);
-                }
-                else if (inputFiles.ContainsKey(e.FileName))
-                {
-                    var buffer = Encoding.UTF8.GetBytes(inputFiles[e.FileName]);
-                    e.Stream = new MemoryStream(buffer, false);
-                }
-                else
-                {
-                    throw new InvalidOperationException("No such input file: " + e.FileName);
-                }
-            };
-            assembler.CheckingFilePresence += (sender, e) =>
-            {
-                e.Exists = inputFiles.ContainsKey(e.FileName);
-            };
-
-            // run assembly
-            return assembler.Assemble(InputFileName, OutputFileName);
-        }
-
         private static string PaddingWords(int count)
         {
             if (count < 1)
@@ -131,7 +93,7 @@ START::
             for (int i = 0; i <= 256; i++)
             {
                 var code = string.Format(CodeTemplate, PaddingWords(i));
-                if (!Assemble(code))
+                if (!TestHelper.Assemble(code))
                     failures.Add(i);
             }
 
@@ -284,7 +246,7 @@ START::
 
 	.END";
 
-            Assert.IsTrue(Assemble(SCode), "Failed to assemble");
+            Assert.IsTrue(TestHelper.Assemble(SCode), "Failed to assemble");
         }
 
         [TestMethod]
@@ -302,7 +264,7 @@ T?EXTAB:: .TABLE
 
     .END";
 
-            Assert.IsTrue(Assemble(SCode), "Failed to assemble");
+            Assert.IsTrue(TestHelper.Assemble(SCode), "Failed to assemble");
         }
     }
 }

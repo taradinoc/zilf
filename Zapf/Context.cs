@@ -545,6 +545,16 @@ namespace Zapf
                 sym.Phantom = false;
         }
 
+        public void CheckLimits()
+        {
+            if (globalVarCount > 240)
+                Errors.Serious(this, "too many global variables: {0} defined, only 240 allowed", globalVarCount);
+
+            var maxObjects = (ZVersion == 3 ? 255 : 65535);
+            if (objectCount > maxObjects)
+                Errors.Serious(this, "too many objects: {0} defined, only {1} allowed", objectCount, maxObjects);
+        }
+
         public void CheckForUndefinedSymbols()
         {
             var offenders = new HashSet<string>();
