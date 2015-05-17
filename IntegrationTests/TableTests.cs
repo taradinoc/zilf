@@ -63,5 +63,18 @@ namespace IntegrationTests
                 .Implies(
                     "<G=? ,TBL <LOWCORE PURBOT>>");
         }
+
+        [TestMethod]
+        public void TABLE_Should_Be_Mutable_At_Compile_Time()
+        {
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE 0 <BYTE 0>>>",
+                "<ZPUT ,MY-TBL 0 1>",
+                "<PUTB ,MY-TBL 2 2>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? <GET ,TBL 0> 1>",
+                    "<==? <GETB ,TBL 2> 2>");
+        }
     }
 }
