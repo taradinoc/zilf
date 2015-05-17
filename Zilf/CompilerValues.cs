@@ -494,10 +494,23 @@ namespace Zilf
             return (flags & TableFlags.Byte) == 0;
         }
 
-        private void ExpandInitializer()
+        private void ExpandInitializer(ZilObject defaultValue)
         {
-            //XXX
-            throw new NotImplementedException();
+            if (initializer == null || initializer.Length == 0)
+            {
+                initializer = new ZilObject[repetitions];
+                for (int i = 0; i < repetitions; i++)
+                    initializer[i] = defaultValue;
+            }
+            else
+            {
+                var newInitializer = new ZilObject[initializer.Length * repetitions];
+                for (int i = 0; i < newInitializer.Length; i++)
+                    newInitializer[i] = initializer[i % initializer.Length];
+                initializer = newInitializer;
+            }
+
+            repetitions = 1;
         }
 
         private int? ByteOffsetToIndex(Context ctx, int offset)
@@ -561,7 +574,7 @@ namespace Zilf
                     throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
                 if (initializer == null || repetitions > 1)
-                    ExpandInitializer();
+                    ExpandInitializer(ctx.FALSE);
 
                 var newInitializer = new ZilObject[initializer.Length - 1];
                 Array.Copy(initializer, newInitializer, index.Value);
@@ -574,7 +587,7 @@ namespace Zilf
             else
             {
                 if (initializer == null || repetitions > 1)
-                    ExpandInitializer();
+                    ExpandInitializer(ctx.FALSE);
 
                 initializer[index.Value] = value;
             }
@@ -603,7 +616,7 @@ namespace Zilf
                 throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
 
             if (initializer == null || repetitions > 1)
-                ExpandInitializer();
+                ExpandInitializer(ctx.FALSE);
 
             if (initializer[index.Value % initializer.Length].GetTypeAtom(ctx).StdAtom == StdAtom.BYTE)
             {

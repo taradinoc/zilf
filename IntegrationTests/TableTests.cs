@@ -86,6 +86,13 @@ namespace IntegrationTests
                 .Implies(
                     "<==? <GET ,TBL 0> 1>",
                     "<==? <GETB ,TBL 2> 2>");
+
+            AssertGlobals(
+                "<SETG MY-TBL <ITABLE 3 <>>>",
+                "<ZPUT ,MY-TBL 1 1>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? <GET ,TBL 1> 1>");
         }
 
         [TestMethod]
