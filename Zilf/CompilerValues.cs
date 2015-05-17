@@ -285,6 +285,7 @@ namespace Zilf
         Pure = 16,
     }
 
+    [BuiltinType(StdAtom.TABLE, PrimType.LIST)]
     class ZilTable : ZilObject, ISourceLine
     {
         private readonly string filename;
@@ -372,6 +373,15 @@ namespace Zilf
                 sb.Append("LEXV ");
             if ((flags & TableFlags.WordLength) != 0)
                 sb.Append("WORDLENGTH ");
+            if ((flags & TableFlags.Pure) != 0)
+                sb.Append("PURE ");
+
+            if (pattern != null)
+            {
+                sb.Append("PATTERN ");
+                sb.Append(convert(new ZilList(pattern)));
+                sb.Append(' ');
+            }
 
             if (sb.Length > pos)
                 sb.Length--;
@@ -432,6 +442,15 @@ namespace Zilf
                 flagList.Add(ctx.GetStdAtom(StdAtom.LEXV));
             if ((flags & TableFlags.WordLength) != 0)
                 flagList.Add(ctx.GetStdAtom(StdAtom.WORDLENGTH));
+            if ((flags & TableFlags.Pure) != 0)
+                flagList.Add(ctx.GetStdAtom(StdAtom.PURE));
+
+            if (pattern != null)
+            {
+                flagList.Add(ctx.GetStdAtom(StdAtom.PATTERN));
+                flagList.Add(new ZilList(pattern));
+            }
+
             result.Add(new ZilList(flagList));
 
             // initializer
@@ -445,6 +464,71 @@ namespace Zilf
             }
 
             return new ZilList(result);
+        }
+
+        [ChtypeMethod]
+        public static ZilTable FromList(Context ctx, ZilList list)
+        {
+            if (list.IsEmpty || list.Rest.IsEmpty || list.Rest.Rest.IsEmpty || !list.Rest.Rest.Rest.IsEmpty)
+                throw new InterpreterError("list converted to TABLE must have 3 elements");
+
+            var repetitions = list.First as ZilFix;
+            if (repetitions == null)
+                throw new InterpreterError("first element of TABLE must be a FIX");
+
+            var flagList = list.Rest.First as ZilList;
+            if (flagList == null || flagList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                throw new InterpreterError("second element of TABLE must be a list");
+
+            TableFlags flags = 0;
+            ZilObject[] pattern = null;
+
+            while (!flagList.IsEmpty)
+            {
+                var atom = flagList.First as ZilAtom;
+                if (atom == null)
+                    throw new InterpreterError("flags in TABLE must be atoms");
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.BYTE:
+                        flags |= TableFlags.Byte;
+                        break;
+                    case StdAtom.BYTELENGTH:
+                        flags |= TableFlags.ByteLength;
+                        break;
+                    case StdAtom.LEXV:
+                        flags |= TableFlags.Lexv;
+                        break;
+                    case StdAtom.WORDLENGTH:
+                        flags |= TableFlags.WordLength;
+                        break;
+                    case StdAtom.PURE:
+                        flags |= TableFlags.Pure;
+                        break;
+
+                    case StdAtom.PATTERN:
+                        flagList = flagList.Rest;
+                        ZilList patternList;
+                        if (flagList.IsEmpty || (patternList = flagList.First as ZilList) == null ||
+                            patternList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                        {
+                            throw new InterpreterError("PATTERN must be followed by a list");
+                        }
+                        pattern = patternList.ToArray();
+                        break;
+                }
+
+                flagList = flagList.Rest;
+            }
+
+            var initializerList = list.Rest.Rest.First as ZilList;
+            if (initializerList == null || initializerList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                throw new InterpreterError("third element of TABLE must be a list");
+
+            ZilObject[] initializer = initializerList.IsEmpty ? null : initializerList.ToArray();
+
+            return new ZilTable(null, 0, repetitions.Value, initializer, flags, pattern);
         }
     }
 

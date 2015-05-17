@@ -108,6 +108,7 @@ namespace Zilf
         [Atom("DEFAULT-DEFINITION")]
         DEFAULT_DEFINITION,
         DEFINED,
+        DEFSTRUCT,
         [Atom("DELAY-DEFINITION")]
         DELAY_DEFINITION,
         DESC,
@@ -223,12 +224,14 @@ namespace Zilf
         [Atom("NEXT?")]
         NEXT_P,
         NEXTP,
+        NODECL,
         NONE,
         NOT,
         NOUN,
         NTH,
         OBJECT,
         OBLIST,
+        OFFSET,
         [Atom("ON-GROUND")]
         ON_GROUND,
         OPEN,
@@ -306,6 +309,8 @@ namespace Zilf
         SOUND_EFFECTS_P,
         SPLICE,
         SPLIT,
+        [Atom("START-OFFSET")]
+        START_OFFSET,
         STRING,
         STRUCTURED,
         SUB,
