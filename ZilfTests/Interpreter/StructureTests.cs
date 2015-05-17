@@ -114,5 +114,12 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<RPOINT-Y #RPOINT [234 567]>",
                 new ZilFix(234));
         }
+
+        [TestMethod]
+        public void REST_Of_One_Character_String_Should_Be_Empty_String()
+        {
+            TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));
+            TestHelpers.EvalAndAssert("<REST <REST \"xx\">>", new ZilString(""));
+        }
     }
 }
