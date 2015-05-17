@@ -1063,7 +1063,7 @@ namespace Zilf
         /// Gets the remainder of the structure, after skipping the first few elements.
         /// </summary>
         /// <param name="skip">The number of elements to skip.</param>
-        /// <returns>A structure containing the unskipped elements.</returns>
+        /// <returns>A structure containing the unskipped elements, or null if no elements are left.</returns>
         IStructure GetRest(int skip);
 
         /// <summary>
@@ -1648,7 +1648,7 @@ namespace Zilf
 
         IStructure IStructure.GetRest(int skip)
         {
-            if (Text.Length <= skip)
+            if (Text.Length < skip)
                 return null;
             else
                 return new OffsetString(this, skip);
@@ -1788,7 +1788,7 @@ namespace Zilf
 
             IStructure IStructure.GetRest(int skip)
             {
-                if (offset >= orig.Text.Length - skip)
+                if (offset > orig.Text.Length - skip)
                     return null;
                 else
                     return new OffsetString(orig, offset + skip);

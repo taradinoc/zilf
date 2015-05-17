@@ -924,7 +924,10 @@ namespace Zilf
                 skip = fix.Value;
             }
 
-            return (ZilObject)st.GetRest(skip);
+            var result = (ZilObject)st.GetRest(skip);
+            if (result == null)
+                throw new InterpreterError("REST: not enough elements");
+            return result;
         }
 
         [Subr]
@@ -1122,7 +1125,7 @@ namespace Zilf
             if (haystack == null)
                 throw new InterpreterError(name + ": second arg must be structured");
 
-            while (!haystack.IsEmpty())
+            while (haystack != null && !haystack.IsEmpty())
             {
                 if (equality(needle, haystack.GetFirst()))
                     return (ZilObject)haystack;
@@ -1951,6 +1954,7 @@ namespace Zilf
                         loopArgs[i] = (ZilObject)st;
 
                     structs[i] = st.GetRest(1);
+                    System.Diagnostics.Debug.Assert(structs[i] != null);
                 }
 
                 if (i < numStructs)
