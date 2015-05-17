@@ -805,6 +805,8 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #BYTE 0>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #BYTE 0>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<=? #BYTE 255 #BYTE 255>", ctx.TRUE);
         }
 
         [TestMethod]
@@ -821,6 +823,8 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #DECL ((FOO) FIX)>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #DECL ((FOO) FIX)>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<=? #DECL ((FOO) FIX) #DECL ((FOO) FIX)>", ctx.TRUE);
         }
 
         [TestMethod]
@@ -833,6 +837,8 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #SEMI \"hello world\">", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #SEMI \"hello world\">", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<=? #SEMI \"hello\" #SEMI \"hello\">", ctx.TRUE);
         }
 
         [TestMethod]
@@ -845,6 +851,8 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? #VOC SWORD>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLICABLE? #VOC SWORD>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<=? #VOC FOO #VOC FOO>", ctx.TRUE);
         }
 
         [TestMethod]

@@ -782,31 +782,46 @@ namespace Zilf
                 var atom = rootObList[ct.Name];
                 var primType = ct.PrimType;
 
-                ChtypeDelegate chtypeDelegate;
-
-                // use ZilStructuredHash for structured primtypes
-                switch (primType)
-                {
-                    case PrimType.LIST:
-                    case PrimType.STRING:
-                    case PrimType.VECTOR:
-                        chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, zo);
-                        break;
-
-                    default:
-                        chtypeDelegate = (ctx, zo) => new ZilHash(atom, primType, zo);
-                        break;
-                }
-                    
-
-                var entry = new TypeMapEntry()
-                {
-                    PrimType = ct.PrimType,
-                    ChtypeMethod = chtypeDelegate,
-                };
-
-                typeMap.Add(atom, entry);
+                RegisterType(atom, primType);
             }
+        }
+
+        public void RegisterType(ZilAtom atom, PrimType primType)
+        {
+            ChtypeDelegate chtypeDelegate;
+
+            // use ZilStructuredHash for structured primtypes
+            switch (primType)
+            {
+                case PrimType.LIST:
+                case PrimType.STRING:
+                case PrimType.VECTOR:
+                    chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, zo);
+                    break;
+
+                default:
+                    chtypeDelegate = (ctx, zo) => new ZilHash(atom, primType, zo);
+                    break;
+            }
+
+
+            var entry = new TypeMapEntry()
+            {
+                PrimType = primType,
+                ChtypeMethod = chtypeDelegate,
+            };
+
+            typeMap.Add(atom, entry);
+        }
+
+        public bool IsRegisteredType(ZilAtom atom)
+        {
+            return typeMap.ContainsKey(atom);
+        }
+
+        public PrimType GetTypePrim(ZilAtom atom)
+        {
+            return typeMap[atom].PrimType;
         }
 
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)

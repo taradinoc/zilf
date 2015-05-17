@@ -426,6 +426,17 @@ namespace Zilf
             this.primvalue = primvalue;
         }
 
+        public override bool Equals(object obj)
+        {
+            return (obj is ZilHash && ((ZilHash)obj).type == this.type &&
+                    ((ZilHash)obj).primvalue.Equals(this.primvalue));
+        }
+
+        public override int GetHashCode()
+        {
+            return type.GetHashCode() ^ primvalue.GetHashCode();
+        }
+
         public ZilAtom Type
         {
             get { return type; }
@@ -480,6 +491,17 @@ namespace Zilf
         public ZilStructuredHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
             : base(type, primtype, primvalue)
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is ZilStructuredHash && ((ZilStructuredHash)obj).type == this.type &&
+                    ((ZilStructuredHash)obj).primvalue.Equals(this.primvalue));
+        }
+
+        public override int GetHashCode()
+        {
+            return type.GetHashCode() ^ primvalue.GetHashCode();
         }
 
         #region IStructure Members
