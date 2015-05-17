@@ -674,10 +674,11 @@ namespace Zilf
                         from BuiltinTypeAttribute a in t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
                         select new { Type = t, Attr = a };
 
+            Type[] chtypeParamTypes = { typeof(Context), null };
+
             foreach (var r in query)
             {
                 // look up chtype method
-                Type[] chtypeParamTypes = { typeof(Context), null };
                 Func<MethodInfo, ChtypeDelegate> adaptChtypeMethod;
                 Func<ConstructorInfo, ChtypeDelegate> adaptChtypeCtor;
 
@@ -702,6 +703,11 @@ namespace Zilf
                         chtypeParamTypes[1] = typeof(ZilString);
                         adaptChtypeMethod = AdaptChtypeMethod<ZilString>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilString>;
+                        break;
+                    case PrimType.TABLE:
+                        chtypeParamTypes[1] = typeof(ZilTable);
+                        adaptChtypeMethod = AdaptChtypeMethod<ZilTable>;
+                        adaptChtypeCtor = AdaptChtypeCtor<ZilTable>;
                         break;
                     case PrimType.VECTOR:
                         chtypeParamTypes[1] = typeof(ZilVector);
@@ -795,6 +801,7 @@ namespace Zilf
             {
                 case PrimType.LIST:
                 case PrimType.STRING:
+                case PrimType.TABLE:
                 case PrimType.VECTOR:
                     chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, zo);
                     break;

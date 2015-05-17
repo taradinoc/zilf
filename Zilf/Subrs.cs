@@ -1080,6 +1080,9 @@ namespace Zilf
                     case PrimType.STRING:
                         return new ZilString(((ZilString)primitive).Text.Substring(rest, amount));
 
+                    case PrimType.TABLE:
+                        throw new InterpreterError("SUBSTRUCT: primtype TABLE not supported");
+
                     case PrimType.VECTOR:
                         return new ZilVector(((ZilVector)primitive).Skip(rest).Take(amount).ToArray());
 

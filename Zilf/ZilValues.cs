@@ -49,6 +49,10 @@ namespace Zilf
         /// </summary>
         LIST,
         /// <summary>
+        /// The primitive type is <see cref="ZilTable"/>.
+        /// </summary>
+        TABLE,
+        /// <summary>
         /// The primitive type is <see cref="ZilVector"/>.
         /// </summary>
         VECTOR,
