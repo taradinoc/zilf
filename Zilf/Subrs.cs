@@ -2048,6 +2048,10 @@ namespace Zilf
             {
                 foreach (ZilObject b in bindings)
                 {
+                    ZilAtom atom;
+                    ZilList list;
+                    ZilObject value;
+
                     switch (b.GetTypeAtom(ctx).StdAtom)
                     {
                         case StdAtom.ATOM:
@@ -2055,15 +2059,29 @@ namespace Zilf
                             boundAtoms.Enqueue((ZilAtom)b);
                             break;
 
+                        case StdAtom.ADECL:
+                            atom = ((ZilAdecl)b).First as ZilAtom;
+                            if (atom == null)
+                                throw new InterpreterError(name + ": invalid atom binding: " + b);
+                            ctx.PushLocalVal(atom, null);
+                            boundAtoms.Enqueue(atom);
+                            break;
+
                         case StdAtom.LIST:
-                            ZilList list = (ZilList)b;
+                            list = (ZilList)b;
                             if (list.First == null || list.Rest == null ||
                                 list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
                                 throw new InterpreterError(name + ": binding with value must be a 2-element list");
-                            ZilAtom atom = list.First as ZilAtom;
-                            ZilObject value = list.Rest.First;
+                            atom = list.First as ZilAtom;
+                            if (atom == null)
+                            {
+                                var adecl = list.First as ZilAdecl;
+                                if (adecl != null)
+                                    atom = adecl.First as ZilAtom;
+                            }
+                            value = list.Rest.First;
                             if (atom == null || value == null)
-                                throw new InterpreterError(name + ": invalid atom binding");
+                                throw new InterpreterError(name + ": invalid atom binding: " + b);
                             ctx.PushLocalVal(atom, value.Eval(ctx));
                             boundAtoms.Enqueue(atom);
                             break;
