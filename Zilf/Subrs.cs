@@ -2732,15 +2732,16 @@ namespace Zilf
             if (args.Length != 2)
                 throw new InterpreterError(null, "ZGET", 2, 2);
 
-            var table = args[0] as ZilTable;
-            if (table == null)
-                throw new InterpreterError("ZGET: first arg must be a TABLE");
+            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
+                throw new InterpreterError("ZGET: first arg must be a TABLE or derived type");
+
+            var table = args[0].GetPrimitive(ctx) as ZilTable;
 
             var index = args[1] as ZilFix;
             if (index == null)
                 throw new InterpreterError("ZGET: second arg must be a FIX");
 
-            return table.GetWord(ctx, index.Value);
+            return table.GetWord(ctx, index.Value) ?? ctx.FALSE;
         }
 
         [Subr]
@@ -2749,9 +2750,10 @@ namespace Zilf
             if (args.Length != 3)
                 throw new InterpreterError(null, "ZPUT", 3, 3);
 
-            var table = args[0] as ZilTable;
-            if (table == null)
-                throw new InterpreterError("ZPUT: first arg must be a TABLE");
+            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
+                throw new InterpreterError("ZPUT: first arg must be a TABLE or derived type");
+
+            var table = args[0].GetPrimitive(ctx) as ZilTable;
 
             var index = args[1] as ZilFix;
             if (index == null)
@@ -2767,15 +2769,16 @@ namespace Zilf
             if (args.Length != 2)
                 throw new InterpreterError(null, "GETB", 2, 2);
 
-            var table = args[0] as ZilTable;
-            if (table == null)
-                throw new InterpreterError("GETB: first arg must be a TABLE");
+            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
+                throw new InterpreterError("GETB: first arg must be a TABLE or derived type");
+
+            var table = args[0].GetPrimitive(ctx) as ZilTable;
 
             var index = args[1] as ZilFix;
             if (index == null)
                 throw new InterpreterError("GETB: second arg must be a FIX");
 
-            return table.GetByte(ctx, index.Value);
+            return table.GetByte(ctx, index.Value) ?? ctx.FALSE;
         }
 
         [Subr]
@@ -2784,9 +2787,10 @@ namespace Zilf
             if (args.Length != 3)
                 throw new InterpreterError(null, "PUTB", 3, 3);
 
-            var table = args[0] as ZilTable;
-            if (table == null)
-                throw new InterpreterError("PUTB: first arg must be a TABLE");
+            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
+                throw new InterpreterError("PUTB: first arg must be a TABLE or derived type");
+
+            var table = args[0].GetPrimitive(ctx) as ZilTable;
 
             var index = args[1] as ZilFix;
             if (index == null)

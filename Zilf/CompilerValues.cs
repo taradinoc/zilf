@@ -477,10 +477,18 @@ namespace Zilf
                 }
             }
 
-            if (initializer != null && initializer.Length > 0 &&
-                initializer[index % initializer.Length].GetTypeAtom(ctx).StdAtom == StdAtom.BYTE)
+            if (initializer != null && initializer.Length > 0)
             {
-                return false;
+                switch (initializer[index % initializer.Length].GetTypeAtom(ctx).StdAtom)
+                {
+                    case StdAtom.BYTE:
+                        return false;
+
+                    case StdAtom.WORD:
+                        return true;
+
+                    // no default, fall through
+                }
             }
 
             return (flags & TableFlags.Byte) == 0;
@@ -544,13 +552,32 @@ namespace Zilf
             var index = ByteOffsetToIndex(ctx, offset);
             if (index == null)
                 throw new ArgumentException(string.Format("No element at offset {0}", offset));
+
             if (!IsWord(ctx, index.Value))
-                throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
+            {
+                // we may be able to replace 2 bytes with a word
+                var index2 = ByteOffsetToIndex(ctx, offset + 1);
+                if (index2 == null || IsWord(ctx, index2.Value))
+                    throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
-            if (initializer == null || repetitions > 1)
-                ExpandInitializer();
+                if (initializer == null || repetitions > 1)
+                    ExpandInitializer();
 
-            initializer[index.Value] = value;
+                var newInitializer = new ZilObject[initializer.Length - 1];
+                Array.Copy(initializer, newInitializer, index.Value);
+                Array.Copy(initializer, index.Value + 2, newInitializer, index.Value + 1, initializer.Length - index.Value - 2);
+                initializer = newInitializer;
+                elementToByteOffsets = null;
+
+                initializer[index.Value] = new ZilWord(value);
+            }
+            else
+            {
+                if (initializer == null || repetitions > 1)
+                    ExpandInitializer();
+
+                initializer[index.Value] = value;
+            }
         }
 
         public ZilObject GetByte(Context ctx, int offset)
@@ -661,6 +688,56 @@ namespace Zilf
         public string SourceInfo
         {
             get { return "object '" + name.ToString() + "'"; }
+        }
+    }
+
+    [BuiltinType(StdAtom.WORD, Zilf.PrimType.LIST)]
+    sealed class ZilWord : ZilObject
+    {
+        private readonly ZilObject value;
+
+        public ZilWord(ZilObject value)
+        {
+            this.value = value;
+        }
+
+        [ChtypeMethod]
+        public static ZilWord FromList(Context ctx, ZilList list)
+        {
+            if (list.First == null || list.Rest == null || !list.Rest.IsEmpty)
+                throw new InterpreterError("list must have length 1");
+
+            return new ZilWord(list.First);
+        }
+
+        public ZilObject Value
+        {
+            get { return value; }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("#WORD ({0})", value);
+        }
+
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            return string.Format("#WORD ({0})", value.ToStringContext(ctx, friendly));
+        }
+
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            return ctx.GetStdAtom(StdAtom.WORD);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilList(value, new ZilList(null, null));
         }
     }
 }

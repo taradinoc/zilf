@@ -714,15 +714,22 @@ namespace Zilf
             }
         }
 
+        private enum OperandSize
+        {
+            Any,
+            Byte,
+            Word,
+        }
+
         private struct TableElementOperand
         {
             public IOperand Operand;
-            public bool ForceToByte;
+            public OperandSize ForceSize;
 
-            public TableElementOperand(IOperand operand, bool forceToByte)
+            public TableElementOperand(IOperand operand, OperandSize forceSize)
             {
                 this.Operand = operand;
-                this.ForceToByte = forceToByte;
+                this.ForceSize = forceSize;
             }
         }
 
@@ -785,21 +792,33 @@ namespace Zilf
                 Func<ZilObject, TableElementOperand?> convertElement = zo =>
                 {
                     // #BYTE 123 always compiles as a byte, even in a word table
-                    var forceToByte = (zo.GetTypeAtom(cc.Context).StdAtom == StdAtom.BYTE);
+                    OperandSize forceSize;
+                    switch (zo.GetTypeAtom(cc.Context).StdAtom)
+                    {
+                        case StdAtom.BYTE:
+                            forceSize = OperandSize.Byte;
+                            break;
+                        case StdAtom.WORD:
+                            forceSize = OperandSize.Word;
+                            break;
+                        default:
+                            forceSize = OperandSize.Any;
+                            break;
+                    }
 
                     // it's usually a constant value
                     var constVal = CompileConstant(cc, zo);
                     if (constVal != null)
-                        return new TableElementOperand(constVal, forceToByte);
+                        return new TableElementOperand(constVal, forceSize);
 
                     // but we'll also allow a global name if the global contains a table
                     IGlobalBuilder global;
                     if (zo is ZilAtom && cc.Globals.TryGetValue((ZilAtom)zo, out global) && global.DefaultValue is ITableBuilder)
-                        return new TableElementOperand(global.DefaultValue, forceToByte);
+                        return new TableElementOperand(global.DefaultValue, forceSize);
 
                     return null;
                 };
-                var defaultFiller = new TableElementOperand(cc.Game.Zero, false);
+                var defaultFiller = new TableElementOperand(cc.Game.Zero, OperandSize.Any);
                 zt.CopyTo(values, convertElement, defaultFiller);
 
                 for (int i = 0; i < values.Length; i++)
@@ -834,13 +853,22 @@ namespace Zilf
                 else if ((zt.Flags & TableFlags.Byte) != 0)
                 {
                     for (int i = 0; i < values.Length; i++)
-                        tb.AddByte(values[i].Value.Operand);
+                    {
+                        if (values[i].Value.ForceSize == OperandSize.Word)
+                        {
+                            tb.AddShort(values[i].Value.Operand);
+                        }
+                        else
+                        {
+                            tb.AddByte(values[i].Value.Operand);
+                        }
+                    }
                 }
                 else
                 {
                     for (int i = 0; i < values.Length; i++)
                     {
-                        if (values[i].Value.ForceToByte)
+                        if (values[i].Value.ForceSize == OperandSize.Byte)
                         {
                             tb.AddByte(values[i].Value.Operand);
                         }
@@ -929,6 +957,9 @@ namespace Zilf
 
                 case StdAtom.BYTE:
                     return cc.Game.MakeOperand(((ZilFix)((ZilHash)expr).GetPrimitive(cc.Context)).Value);
+
+                case StdAtom.WORD:
+                    return CompileConstant(cc, ((ZilWord)expr).Value);
 
                 case StdAtom.STRING:
                     return cc.Game.MakeOperand(TranslateString(((ZilString)expr).Text, cc.Context));

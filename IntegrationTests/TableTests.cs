@@ -27,6 +27,17 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void WORD_Elements_Should_Compile_As_Words()
+        {
+            AssertGlobals(
+                "<GLOBAL TBL <TABLE (BYTE) #WORD (12345) 123 45>>")
+                .Implies(
+                    "<==? <GET ,TBL 0> 12345>",
+                    "<==? <GETB ,TBL 2> 123>",
+                    "<==? <GETB ,TBL 3> 45>");
+        }
+
+        [TestMethod]
         public void ITABLE_Multi_Element_Initializers_Should_Repeat_N_Times()
         {
             AssertGlobals(
@@ -75,6 +86,21 @@ namespace IntegrationTests
                 .Implies(
                     "<==? <GET ,TBL 0> 1>",
                     "<==? <GETB ,TBL 2> 2>");
+        }
+
+        [TestMethod]
+        public void TABLE_With_Adjacent_Bytes_Can_Be_Overwritten_With_Words()
+        {
+            // this doesn't change the length of the table (in bytes)
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE (BYTE) 0 0 67 0>>",
+                "<ZPUT ,MY-TBL 0 12345>",
+                "<PUTB ,MY-TBL 3 89>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? <GET ,TBL 0> 12345>",
+                    "<==? <GETB ,TBL 2> 67>",
+                    "<==? <GETB ,TBL 3> 89>");
         }
     }
 }
