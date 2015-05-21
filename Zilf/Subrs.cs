@@ -765,6 +765,12 @@ namespace Zilf
         }
 
         [Subr]
+        public static ZilObject VECTOR(Context ctx, ZilObject[] args)
+        {
+            return new ZilVector(args);
+        }
+        
+        [Subr]
         public static ZilObject ILIST(Context ctx, ZilObject[] args)
         {
             if (args.Length < 1 || args.Length > 2)
@@ -774,8 +780,16 @@ namespace Zilf
             if (count == null || count.Value < 0)
                 throw new InterpreterError("ILIST: first arg must be a non-negative FIX");
 
-            return new ZilList(
-                Enumerable.Repeat(args.Length >= 1 ? args[1] : ctx.FALSE, count.Value));
+            var contents = new List<ZilObject>(count.Value);
+            for (int i = 0; i < count.Value; i++)
+            {
+                if (args.Length >= 1)
+                    contents.Add(args[1].Eval(ctx));
+                else
+                    contents.Add(ctx.FALSE);
+            }
+
+            return new ZilList(contents);
         }
 
         [Subr]
@@ -788,14 +802,16 @@ namespace Zilf
             if (count == null || count.Value < 0)
                 throw new InterpreterError("IVECTOR: first arg must be a non-negative FIX");
 
-            return new ZilVector(
-                Enumerable.Repeat(args.Length >= 1 ? args[1] : ctx.FALSE, count.Value).ToArray());
-        }
+            var contents = new List<ZilObject>(count.Value);
+            for (int i = 0; i < count.Value; i++)
+            {
+                if (args.Length >= 1)
+                    contents.Add(args[1].Eval(ctx));
+                else
+                    contents.Add(ctx.FALSE);
+            }
 
-        [Subr]
-        public static ZilObject VECTOR(Context ctx, ZilObject[] args)
-        {
-            return new ZilVector(args);
+            return new ZilVector(contents.ToArray());
         }
 
         [Subr]
@@ -856,6 +872,33 @@ namespace Zilf
             }
 
             return new ZilString(sb.ToString());
+        }
+
+        [Subr]
+        public static ZilObject ISTRING(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError(null, "STRING", 1, 2);
+
+            var count = args[0] as ZilFix;
+            if (count == null || count.Value < 0)
+                throw new InterpreterError("ISTRING: first arg must be a non-negative FIX");
+
+            var contents = new List<char>(count.Value);
+            for (int i = 0; i < count.Value; i++)
+            {
+                if (args.Length >= 2)
+                {
+                    var ch = args[1].Eval(ctx) as ZilChar;
+                    if (ch == null)
+                        throw new InterpreterError("ISTRING: iterated values must be CHARACTERs");
+                    contents.Add(ch.Char);
+                }
+                else
+                    contents.Add('\0');
+            }
+
+            return new ZilString(new string(contents.ToArray()));
         }
 
         [Subr]

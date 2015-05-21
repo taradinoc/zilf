@@ -121,5 +121,30 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));
             TestHelpers.EvalAndAssert("<REST <REST \"xx\">>", new ZilString(""));
         }
+
+        [TestMethod]
+        public void ILIST_Should_Evaluate_Initializer_Each_Time()
+        {
+            TestHelpers.EvalAndAssert("<SET X 0> <ILIST 3 '<SET X <+ .X 1>>>",
+                new ZilList(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3)
+                }));
+        }
+
+        [TestMethod]
+        public void IVECTOR_Should_Evaluate_Initializer_Each_Time()
+        {
+            TestHelpers.EvalAndAssert("<SET X 0> <IVECTOR 3 '<SET X <+ .X 1>>>",
+                new ZilVector(new ZilObject[] {
+                    new ZilFix(1), new ZilFix(2), new ZilFix(3)
+                }));
+        }
+
+        [TestMethod]
+        public void ISTRING_Should_Evaluate_Initializer_Each_Time()
+        {
+            TestHelpers.EvalAndAssert("<SET X 64> <ISTRING 3 '<ASCII <SET X <+ .X 1>>>>",
+                new ZilString("ABC"));
+        }
     }
 }
