@@ -2354,6 +2354,100 @@ namespace Zilf
             return g;
         }
 
+        [Subr("DEFINE-GLOBALS")]
+        public static ZilObject DEFINE_GLOBALS(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 2)
+                throw new InterpreterError(null, "DEFINE-GLOBALS", 2, 0);
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                var spec = args[i] as ZilList;
+                if (spec == null || spec.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("DEFINE-GLOBALS: following arguments must be lists");
+
+                var length = ((IStructure)spec).GetLength(3);
+                if (length == null || length < 1)
+                    throw new InterpreterError("DEFINE-GLOBALS: global spec must have 1 to 3 elements");
+
+                var name = spec.First as ZilAtom;
+                if (name == null)
+                {
+                    var nameAdecl = spec.First as ZilAdecl;
+                    if (nameAdecl != null)
+                        name = nameAdecl.First as ZilAtom;
+
+                    if (name == null)
+                        throw new InterpreterError("DEFINE-GLOBALS: global names must be atoms or ADECLs");
+                }
+
+                spec = spec.Rest;
+
+                // BYTE/WORD (before default value)
+                ZilAtom sizeAtom = null;
+                if (!spec.IsEmpty)
+                {
+                    sizeAtom = spec.First as ZilAtom;
+                    if (sizeAtom != null && (sizeAtom.StdAtom == StdAtom.BYTE || sizeAtom.StdAtom == StdAtom.WORD))
+                    {
+                        spec = spec.Rest;
+                    }
+                    else
+                    {
+                        sizeAtom = null;
+                    }
+                }
+
+                // default value
+                ZilObject defaultValue = null;
+                if (!spec.IsEmpty)
+                {
+                    defaultValue = spec.First;
+                    spec = spec.Rest;
+                }
+
+                // BYTE/WORD (after default value)
+                if (sizeAtom == null && !spec.IsEmpty)
+                {
+                    sizeAtom = spec.First as ZilAtom;
+                    if (sizeAtom != null && (sizeAtom.StdAtom == StdAtom.BYTE || sizeAtom.StdAtom == StdAtom.WORD))
+                    {
+                        spec = spec.Rest;
+                    }
+                    else
+                    {
+                        sizeAtom = null;
+                    }
+                }
+
+                // create global and macros
+                var globalAtom = ZilAtom.Parse("G?" + name, ctx);
+                ZilGlobal g = new ZilGlobal(globalAtom, defaultValue ?? ctx.FALSE);
+                if (sizeAtom != null && sizeAtom.StdAtom == StdAtom.BYTE)
+                {
+                    g.IsWord = false;
+                }
+                ctx.SetZVal(globalAtom, g);
+                ctx.ZEnvironment.Globals.Add(g);
+
+                // TODO: correct the source locations in the macro
+                // {0} = name
+                // {1} = globalAtom
+                const string SMacroTemplate = @"
+<DEFMAC {0} (""OPT"" 'NV)
+    <COND (<ASSIGNED? NV> <FORM SETG {1} .NV>)
+          (T <CHTYPE {1} GVAL>)>>
+";
+
+                Program.Evaluate(ctx, string.Format(SMacroTemplate, name, globalAtom), true);
+            }
+
+            // enable FUNNY-GLOBALS?
+            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P), ctx.TRUE);
+
+            return ctx.TRUE;
+        }
+
         [Subr]
         public static ZilObject OBJECT(Context ctx, ZilObject[] args)
         {

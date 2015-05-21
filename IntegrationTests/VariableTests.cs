@@ -166,5 +166,19 @@ namespace IntegrationTests
                 .WithGlobal(string.Join("\n", myGlobals))
                 .GeneratesCodeMatching(@"\.GVAR MY-GLOBAL-400=");
         }
+
+        [TestMethod]
+        public void DEFINE_GLOBALS_Should_Work()
+        {
+            AssertRoutine("",
+                "<PRINTN <MY-WORD>> <CRLF> " +
+                "<PRINTN <MY-BYTE>> <CRLF> " +
+                "<MY-WORD 12345> " +
+                "<MY-BYTE 67> " +
+                "<PRINTN <MY-WORD>> <CRLF> " +
+                "<PRINTN <MY-BYTE>> <CRLF> ")
+                .WithGlobal("<DEFINE-GLOBALS TEST-GLOBALS (MY-WORD 32767) (MY-BYTE BYTE 255)>")
+                .Outputs("32767\n255\n12345\n67\n");
+        }
     }
 }
