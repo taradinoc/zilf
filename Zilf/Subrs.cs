@@ -18,8 +18,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Zilf
 {
@@ -300,7 +302,7 @@ namespace Zilf
 
         #endregion
 
-        #region Output
+        #region Channels and Output
 
         [Subr]
         public static ZilObject PRINC(Context ctx, ZilObject[] args)
@@ -331,6 +333,117 @@ namespace Zilf
 
             Console.Write((char)ch.Value);
             return ch;
+        }
+
+        private static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
+
+        [Subr]
+        public static ZilObject OPEN(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 2)
+                throw new InterpreterError(null, "OPEN", 2, 2);
+
+            var mode = args[0] as ZilString;
+            if (mode == null || mode.Text != "READ")
+                throw new InterpreterError("OPEN: first arg must be \"READ\"");
+
+            var path = args[1] as ZilString;
+            if (path == null)
+                throw new InterpreterError("OPEN: second arg must be a STRING");
+
+            var result = new ZilChannel(ConvertPath(path.Text), FileAccess.Read);
+            result.Open(ctx);
+            return result;
+        }
+
+        private static string ConvertPath(string retroPath)
+        {
+            var match = RetroPathRE.Match(retroPath);
+            if (match.Success)
+                return match.Groups["filename"].Value;
+            else
+                return retroPath;
+        }
+
+        [Subr]
+        public static ZilObject CLOSE(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "CLOSE", 1, 1);
+
+            var channel = args[0] as ZilChannel;
+            if (channel == null)
+                throw new InterpreterError("CLOSE: arg must be a CHANNEL");
+
+            channel.Close(ctx);
+            return channel;
+        }
+
+        [Subr("FILE-LENGTH")]
+        public static ZilObject FILE_LENGTH(Context ctx, ZilObject[] args)
+        {
+            if (args.Length != 1)
+                throw new InterpreterError(null, "FILE-LENGTH", 1, 1);
+
+            var chan = args[0] as ZilChannel;
+            if (chan == null)
+                throw new InterpreterError("FILE-LENGTH: arg must be a CHANNEL");
+
+            var length = chan.GetFileLength();
+            return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
+        }
+
+        [Subr]
+        public static ZilObject READSTRING(Context ctx, ZilObject[] args)
+        {
+            // TODO: support 1- and 4-argument forms?
+            if (args.Length < 2 || args.Length > 3)
+                throw new InterpreterError(null, "READSTRING", 2, 3);
+
+            var dest = args[0] as ZilString;
+            if (dest == null)
+                throw new InterpreterError("READSTRING: first arg must be a STRING");
+
+            var channel = args[1] as ZilChannel;
+            if (channel == null)
+                throw new InterpreterError("READSTRING: second arg must be a CHANNEL");
+
+            int maxLength = dest.Text.Length;
+            ZilString stopChars = null;
+
+            if (args.Length >= 3)
+            {
+                var maxLengthFix = args[2] as ZilFix;
+                stopChars = args[2] as ZilString;
+
+                if (maxLengthFix == null && stopChars == null)
+                    throw new InterpreterError("READSTRING: third arg must be a FIX or STRING");
+
+                if (maxLengthFix != null)
+                    maxLength = Math.Min(maxLengthFix.Value, maxLength);
+            }
+
+            var buffer = new StringBuilder(maxLength);
+            bool reading;
+            do
+            {
+                reading = false;
+                if (buffer.Length < maxLength)
+                {
+                    char? c = channel.ReadChar();
+                    if (c != null &&
+                        (stopChars == null || stopChars.Text.IndexOf(c.Value) < 0))
+                    {
+                        buffer.Append(c.Value);
+                        reading = true;
+                    }
+                }
+            } while (reading);
+
+            var readCount = buffer.Length;
+            buffer.Append(dest.Text.Substring(readCount));
+            dest.Text = buffer.ToString();
+            return new ZilFix(readCount);
         }
 
         #endregion
@@ -1111,15 +1224,56 @@ namespace Zilf
                 amount = from.GetLength() - rest;
             }
 
+            var primitive = args[0].GetPrimitive(ctx);
+
             if (args.Length >= 4)
             {
-                //XXX copy to existing structure
-                throw new NotImplementedException();
+                var dest = args[3];
+                if (dest.PrimType != args[0].PrimType)
+                    throw new InterpreterError("SUBSTRUC: fourth arg must have same primtype as first");
+
+                int i;
+
+                switch (dest.GetTypeAtom(ctx).StdAtom)
+                {
+                    case StdAtom.LIST:
+                        var list = (ZilList)dest;
+                        foreach (var item in ((ZilList)primitive).Skip(rest).Take(amount))
+                        {
+                            if (list == null || list.IsEmpty)
+                                throw new InterpreterError("SUBSTRUC: destination too short");
+
+                            list.First = item;
+                            list = list.Rest;
+                        }
+                        break;
+
+                    case StdAtom.STRING:
+                        // this is crazy inefficient, but works with ZilString and OffsetString
+                        for (i = 0; i < amount; i++)
+                            ((IStructure)dest)[i] = ((IStructure)primitive)[i + rest];
+                        break;
+
+                    case StdAtom.VECTOR:
+                        var vector = (ZilVector)dest;
+                        i = 0;
+                        foreach (var item in ((ZilVector)primitive).Skip(rest).Take(amount))
+                        {
+                            if (i >= vector.GetLength())
+                                throw new InterpreterError("SUBSTRUC: destination too short");
+
+                            vector[i++] = item;
+                        }
+                        break;
+
+                    default:
+                        throw new InterpreterError("SUBSTRUC: destination type not supported: " + dest.GetTypeAtom(ctx));
+                }
+
+                return dest;
             }
             else
             {
-                var primitive = args[0].GetPrimitive(ctx);
-
                 switch (args[0].PrimType)
                 {
                     case PrimType.LIST:
@@ -1129,7 +1283,7 @@ namespace Zilf
                         return new ZilString(((ZilString)primitive).Text.Substring(rest, amount));
 
                     case PrimType.TABLE:
-                        throw new InterpreterError("SUBSTRUCT: primtype TABLE not supported");
+                        throw new InterpreterError("SUBSTRUC: primtype TABLE not supported");
 
                     case PrimType.VECTOR:
                         return new ZilVector(((ZilVector)primitive).Skip(rest).Take(amount).ToArray());

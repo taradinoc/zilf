@@ -84,6 +84,7 @@ namespace Zilf
         CEXIT,
         CEXITFLAG,
         CEXITSTR,
+        CHANNEL,
         CHARACTER,
         [Atom("CLEAN-STACK?")]
         CLEAN_STACK_P,
