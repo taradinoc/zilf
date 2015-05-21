@@ -187,6 +187,8 @@ namespace Zilf
 
                     MinVersion = 1;
                     MaxVersion = 6;
+
+                    Priority = 1;
                 }
 
                 private readonly string name;
@@ -210,6 +212,12 @@ namespace Zilf
                 public int MinVersion { get; set; }
                 public int MaxVersion { get; set; }
                 public bool HasSideEffect { get; set; }
+
+                /// <summary>
+                /// Gets or sets a priority value used to disambiguate when more than one method matches the call.
+                /// Lower values indicate a better match. Defaults to 1.
+                /// </summary>
+                public int Priority { get; set; }
             }
 
             /// <summary>
@@ -333,11 +341,11 @@ namespace Zilf
                                 continue;
                             }
 
-                            if (pi.ParameterType == typeof(IVariable))
+                            if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
                             {
                                 // indirect variable operand: must have [Variable]
                                 if (!pattrs.Any(a => a is VariableAttribute))
-                                    throw new ArgumentException("IVariable parameter must be marked [Variable]");
+                                    throw new ArgumentException("IVariable/SoftGlobal parameter must be marked [Variable]");
 
                                 max++;
                                 min++;
@@ -539,7 +547,7 @@ namespace Zilf
                     var arg = args[i];
                     var pi = builtinParamInfos[j];
 
-                    if (pi.ParameterType == typeof(IVariable))
+                    if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
                     {
                         // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
                         ZilAtom atom = arg as ZilAtom;
@@ -566,17 +574,24 @@ namespace Zilf
                         if (atom == null)
                         {
                             error(i, "argument must be a variable");
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
                         }
-                        else
+                        else if (pi.ParameterType == typeof(IVariable))
                         {
-                            ILocalBuilder local;
-                            IGlobalBuilder global;
-
-                            if (!cc.Locals.TryGetValue(atom, out local) && !cc.Globals.TryGetValue(atom, out global))
+                            if (!cc.Locals.ContainsKey(atom) && !cc.Globals.ContainsKey(atom))
                                 error(i, "no such variable: " + atom.ToString());
-                        }
 
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, GetVariable(cc, arg, quirks)));
+                            var variableRef = GetVariable(cc, arg, quirks);
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Hard));
+                        }
+                        else // if (pi.ParameterType == typeof(SoftGlobal))
+                        {
+                            if (!cc.SoftGlobals.ContainsKey(atom))
+                                error(i, "no such variable: " + atom.ToString());
+
+                            var variableRef = GetVariable(cc, arg, quirks);
+                            result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Soft));
+                        }
                     }
                     else if (pi.ParameterType == typeof(string))
                     {
@@ -596,12 +611,20 @@ namespace Zilf
                     {
                         // if marked with [Variable], allow a variable reference and forbid a non-variable bare atom
                         var varAttr = (VariableAttribute)pi.GetCustomAttributes(typeof(VariableAttribute), false).SingleOrDefault();
-                        IVariable variable;
+                        VariableRef? variable;
                         if (varAttr != null)
                         {
                             if ((variable = GetVariable(cc, arg, varAttr.QuirksMode)) != null)
                             {
-                                result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Indirect));
+                                if (!variable.Value.IsHard)
+                                {
+                                    error(i, "soft variable may not be used here");
+                                    result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
+                                }
+                                else
+                                {
+                                    result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Value.Hard.Indirect));
+                                }
                             }
                             else if (arg is ZilAtom)
                             {
@@ -684,7 +707,30 @@ namespace Zilf
                 return result;
             }
 
-            private static IVariable GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
+            private struct VariableRef
+            {
+                public readonly IVariable Hard;
+                public readonly SoftGlobal Soft;
+
+                public VariableRef(IVariable hard)
+                {
+                    this.Hard = hard;
+                    this.Soft = null;
+                }
+
+                public VariableRef(SoftGlobal soft)
+                {
+                    this.Soft = soft;
+                    this.Hard = null;
+                }
+
+                public bool IsHard
+                {
+                    get { return Hard != null; }
+                }
+            }
+
+            private static VariableRef? GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
             {
                 ZilAtom atom = expr as ZilAtom;
 
@@ -717,11 +763,14 @@ namespace Zilf
 
                 ILocalBuilder lb;
                 IGlobalBuilder gb;
+                SoftGlobal sg;
 
                 if (cc.Locals.TryGetValue(atom, out lb))
-                    return lb;
+                    return new VariableRef(lb);
                 if (cc.Globals.TryGetValue(atom, out gb))
-                    return gb;
+                    return new VariableRef(gb);
+                if (cc.SoftGlobals.TryGetValue(atom, out sg))
+                    return new VariableRef(sg);
 
                 return null;
             }
@@ -801,7 +850,26 @@ namespace Zilf
                 int zversion = cc.Context.ZEnvironment.ZVersion;
                 var argList = form.Rest;
                 var args = argList.ToArray();
-                var spec = builtins[name].Single(s => s.AppliesTo(zversion, args.Length, typeof(TCall)));
+                var candidateSpecs = builtins[name].Where(s => s.AppliesTo(zversion, args.Length, typeof(TCall))).ToArray();
+                System.Diagnostics.Debug.Assert(candidateSpecs.Length >= 1);
+
+                // find the best matching spec, if there's more than one
+                BuiltinSpec spec;
+                if (candidateSpecs.Length > 1)
+                {
+                    // choose the one with the fewest validation errors
+                    spec = candidateSpecs.OrderBy(s =>
+                    {
+                        int errors = 0;
+                        var pis = s.Method.GetParameters();
+                        ValidateArguments(cc, s, pis, args, delegate { errors++; });
+                        return errors;
+                    }).ThenBy(s => s.Attr.Priority).First();
+                }
+                else
+                {
+                    spec = candidateSpecs[0];
+                }
                 var builtinParamInfos = spec.Method.GetParameters();
 
                 // validate arguments
@@ -1137,6 +1205,39 @@ namespace Zilf
                 c.rb.Branch(cond, left, right, c.label, c.polarity);
             }
 
+            [Builtin("DLESS?", Data = Condition.Less, HasSideEffect = true)]
+            [Builtin("IGRTR?", Data = Condition.Greater, HasSideEffect = true)]
+            public static void BinaryVariablePredOp(
+                PredCall c, [Data] Condition cond, [Variable] SoftGlobal left, IOperand right)
+            {
+                var offset = c.cc.Game.MakeOperand(left.Offset);
+
+                // increment and leave the new value on the stack
+                c.rb.EmitBinary(
+                    left.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack);
+                c.rb.EmitBinary(
+                    cond == Condition.Greater ? BinaryOp.Add : BinaryOp.Sub,
+                    c.rb.Stack,
+                    c.cc.Game.One,
+                    c.rb.Stack);
+                c.rb.EmitUnary(
+                    UnaryOp.LoadIndirect,
+                    c.rb.Stack.Indirect,
+                    c.rb.Stack);
+                c.rb.EmitTernary(
+                    left.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack,
+                    null);
+
+                // this works even if right == Stack, since the new value will be popped first
+                c.rb.Branch(cond, c.rb.Stack, right, c.label, c.polarity);
+            }
+
             [Builtin("GETP", Data = BinaryOp.GetProperty)]
             [Builtin("NEXTP", Data = BinaryOp.GetNextProp)]
             public static IOperand BinaryObjectValueOp(
@@ -1275,6 +1376,14 @@ namespace Zilf
                 c.rb.Branch(cond, var, null, c.label, c.polarity);
             }
 
+            [Builtin("ASSIGNED?", MinVersion = 5)]
+            public static void SoftGlobalAssignedOp(PredCall c, [Variable] SoftGlobal var)
+            {
+                // globals are never "assigned" in this sense
+                if (!c.polarity)
+                    c.rb.Branch(c.label);
+            }
+
             [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
             public static void UnaryTableVoidOp(
                 VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
@@ -1347,9 +1456,38 @@ namespace Zilf
                 return dest;
             }
 
+            [Builtin("SET", HasSideEffect = true)]
+            public static IOperand SetValueOp(
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] SoftGlobal dest, ZilObject value)
+            {
+                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, c.rb.Stack);
+
+                if (storage == c.rb.Stack)
+                {
+                    // duplicate the value
+                    c.rb.EmitUnary(UnaryOp.LoadIndirect, c.rb.Stack, c.rb.Stack);
+                }
+
+                c.rb.EmitTernary(
+                    dest.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
+                    c.cc.SoftGlobalsTable,
+                    c.cc.Game.MakeOperand(dest.Offset),
+                    storage,
+                    null);
+
+                return storage;
+            }
+
             [Builtin("SETG", HasSideEffect = true)]
             public static IOperand SetgValueOp(
                 ValueCall c, [Variable(QuirksMode = QuirksMode.Global)] IVariable dest, ZilObject value)
+            {
+                return SetValueOp(c, dest, value);
+            }
+
+            [Builtin("SETG", HasSideEffect = true)]
+            public static IOperand SetgValueOp(
+                ValueCall c, [Variable(QuirksMode = QuirksMode.Global)] SoftGlobal dest, ZilObject value)
             {
                 return SetValueOp(c, dest, value);
             }
@@ -1395,9 +1533,28 @@ namespace Zilf
                 }
             }
 
+            [Builtin("SET")]
+            public static void SetVoidOp(
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Local)] SoftGlobal dest, ZilObject value)
+            {
+                c.rb.EmitTernary(
+                    dest.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
+                    c.cc.SoftGlobalsTable,
+                    c.cc.Game.MakeOperand(dest.Offset),
+                    CompileAsOperand(c.cc, c.rb, value, c.form),
+                    null);
+            }
+
             [Builtin("SETG")]
             public static void SetgVoidOp(
                 VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] IOperand dest, ZilObject value)
+            {
+                SetVoidOp(c, dest, value);
+            }
+            
+            [Builtin("SETG")]
+            public static void SetgVoidOp(
+                VoidCall c, [Variable(QuirksMode = QuirksMode.Global)] SoftGlobal dest, ZilObject value)
             {
                 SetVoidOp(c, dest, value);
             }
@@ -1426,13 +1583,63 @@ namespace Zilf
                 return victim;
             }
 
+            [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
+            [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+            public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
+                [Variable(QuirksMode = QuirksMode.Both)] SoftGlobal victim)
+            {
+                var offset = c.cc.Game.MakeOperand(victim.Offset);
+                c.rb.EmitBinary(
+                    victim.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack);
+                c.rb.EmitBinary(op, c.rb.Stack, c.cc.Game.One, c.rb.Stack);
+                c.rb.EmitUnary(UnaryOp.LoadIndirect, c.rb.Stack.Indirect, c.rb.Stack);
+                c.rb.EmitTernary(
+                    victim.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack,
+                    null);
+                return c.rb.Stack;
+            }
+
+            [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
+            [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+            public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
+                [Variable(QuirksMode = QuirksMode.Both)] IVariable victim)
+            {
+                c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
+            }
+
+            [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
+            [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+            public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
+                [Variable(QuirksMode = QuirksMode.Both)] SoftGlobal victim)
+            {
+                var offset = c.cc.Game.MakeOperand(victim.Offset);
+                c.rb.EmitBinary(
+                    victim.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack);
+                c.rb.EmitBinary(op, c.rb.Stack, c.cc.Game.One, c.rb.Stack);
+                c.rb.EmitTernary(
+                    victim.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
+                    c.cc.SoftGlobalsTable,
+                    offset,
+                    c.rb.Stack,
+                    null);
+            }
+
             [Builtin("PUSH", HasSideEffect = true)]
             public static void PushVoidOp(VoidCall c, IOperand value)
             {
                 c.rb.EmitStore(c.rb.Stack, value);
             }
 
-            // TODO: support the IVariable and IOperand versions side by side? that way we can skip emitting an instruction for <VALUE VARNAME>
+            // TODO: support the IVariable, SoftGlobal, and IOperand versions side by side? that way we can skip emitting an instruction for <VALUE VARNAME>
             /*[Builtin("VALUE")]
             public static IOperand ValueOp_Variable(ValueCall c, [Variable] IVariable var)
             {

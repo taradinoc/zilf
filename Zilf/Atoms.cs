@@ -126,6 +126,8 @@ namespace Zilf
         [Atom("DLESS?")]
         DLESS_P,
         DO,
+        [Atom("DO-FUNNY-GLOBALS?")]
+        DO_FUNNY_GLOBALS_P,
         ELSE,
         [Atom("EQUAL?")]
         EQUAL_P,
@@ -162,10 +164,13 @@ namespace Zilf
         GETP,
         GETPT,
         GLOBAL,
+        [Atom("GLOBAL-VARS-TABLE")]
+        GLOBAL_VARS_TABLE,
         GO,
         GVAL,
         HAVE,
         HELD,
+        HERE,
         HLIGHT,
         IF,
         [Atom("IGRTR?")]
@@ -215,6 +220,7 @@ namespace Zilf
         MOD,
         MOUSE,
         MOVE,
+        MOVES,
         MUL,
         N,
         [Atom("NEW-VOC?")]
@@ -296,6 +302,7 @@ namespace Zilf
         RSTACK,
         RTRUE,
         SAVE,
+        SCORE,
         SCREEN,
         SEGMENT,
         SEMI,

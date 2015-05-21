@@ -477,6 +477,12 @@ namespace Zilf
             throw new NotImplementedException();
         }
 
+        public struct ElementPreBuilders
+        {
+            public Action<ZilAtom, ZilAtom> CreateVocabWord;
+            public Action<ZilAtom> ReserveGlobal;
+        }
+
         public struct ElementConverters
         {
             public Func<ZilObject, IOperand> CompileConstant;
@@ -497,7 +503,7 @@ namespace Zilf
             return false;
         }
 
-        public void PreBuildProperty(Context ctx, ZilList prop, Action<ZilAtom, ZilAtom> createVocabWord)
+        public void PreBuildProperty(Context ctx, ZilList prop, ElementPreBuilders preBuilders)
         {
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
@@ -509,7 +515,7 @@ namespace Zilf
 
                 if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
                 {
-                    CreateVocabWords(ctx, captures, createVocabWord, p.Outputs, 0);
+                    PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0);
                     return;
                 }
             }
@@ -620,8 +626,8 @@ namespace Zilf
             return false;
         }
 
-        private bool CreateVocabWords(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
-            Action<ZilAtom, ZilAtom> createVocabWord, OutputElement[] outputs, int startIndex)
+        private bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
+            ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex)
         {
             for (int i = startIndex; i < outputs.Length; i++)
             {
@@ -651,19 +657,23 @@ namespace Zilf
                 switch (output.Type)
                 {
                     case OutputElementType.Adjective:
-                        createVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ));
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ));
                         break;
 
                     case OutputElementType.Noun:
-                        createVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT));
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT));
                         break;
 
                     case OutputElementType.Voc:
-                        createVocabWord((ZilAtom)capturedValue, output.PartOfSpeech);
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, output.PartOfSpeech);
+                        break;
+
+                    case OutputElementType.Global:
+                        preBuilders.ReserveGlobal((ZilAtom)capturedValue);
                         break;
 
                     case OutputElementType.Many:
-                        while (CreateVocabWords(ctx, captures, createVocabWord, outputs, i + 1))
+                        while (PartialPreBuild(ctx, captures, preBuilders, outputs, i + 1))
                         {
                             // repeat
                         }

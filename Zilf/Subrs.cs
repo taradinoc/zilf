@@ -3067,6 +3067,12 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr("FUNNY-GLOBALS?")]
+        public static ZilObject FUNNY_GLOBALS_P(Context ctx, ZilObject[] args)
+        {
+            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P), ctx.TRUE);
+            return ctx.TRUE;
+        }
 
         #endregion
 
