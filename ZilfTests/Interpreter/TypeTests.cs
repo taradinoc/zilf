@@ -110,7 +110,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TYPE .A-WACKY>", ZilAtom.Parse("WACKY", ctx));
 
             // literals
-            TestHelpers.EvalAndAssert(ctx, "<TYPE '5:FIX>", ctx.GetStdAtom(StdAtom.ADECL));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE <QUOTE 5:FIX>>", ctx.GetStdAtom(StdAtom.ADECL));
             TestHelpers.EvalAndAssert(ctx, "<TYPE FOO>", ctx.GetStdAtom(StdAtom.ATOM));
             TestHelpers.EvalAndAssert(ctx, "<TYPE !\\c>", ctx.GetStdAtom(StdAtom.CHARACTER));
             TestHelpers.EvalAndAssert(ctx, "<TYPE <>>", ctx.GetStdAtom(StdAtom.FALSE));
