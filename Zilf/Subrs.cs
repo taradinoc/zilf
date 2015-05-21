@@ -257,6 +257,7 @@ namespace Zilf
         }
 
         [Subr]
+        [Subr("STACK")]
         public static ZilObject ID(Context ctx, ZilObject[] args)
         {
             if (args.Length != 1)
@@ -290,6 +291,7 @@ namespace Zilf
         [Subr("ENDPACKAGE")]
         [Subr("USE")]
         [Subr("INCLUDE")]
+        [Subr("CHECKPOINT")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
