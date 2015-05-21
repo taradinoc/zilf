@@ -148,9 +148,9 @@ comment_or_expr
 
 form	:	h=LANGLE comment_or_expr* RANGLE
 					-> ^(FORM[$h] comment_or_expr*)
-	|	h=DOT expr		-> ^(FORM[$h] ATOM["LVAL"] expr)
-	|	h=COMMA expr		-> ^(FORM[$h] ATOM["GVAL"] expr)
-	|	h=APOS expr		-> ^(FORM[$h] ATOM["QUOTE"] expr)
+	|	h=DOT non_adecl_expr		-> ^(FORM[$h] ATOM["LVAL"] non_adecl_expr)
+	|	h=COMMA non_adecl_expr		-> ^(FORM[$h] ATOM["GVAL"] non_adecl_expr)
+	|	h=APOS non_adecl_expr		-> ^(FORM[$h] ATOM["QUOTE"] non_adecl_expr)
 	;
 
 segment	:	BANG form		-> ^(SEGMENT form)
