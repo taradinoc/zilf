@@ -229,5 +229,20 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<G=? 4 4>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<G=? 4 3>", ctx.TRUE);
         }
+
+        [TestMethod]
+        public void TestMIN_MAX()
+        {
+            TestHelpers.EvalAndAssert("<MIN 1>", new ZilFix(1));
+            TestHelpers.EvalAndAssert("<MAX 4>", new ZilFix(4));
+
+            TestHelpers.EvalAndAssert("<MIN -5 2 0 12>", new ZilFix(-5));
+            TestHelpers.EvalAndAssert("<MAX -5 2 0 12>", new ZilFix(12));
+
+            TestHelpers.EvalAndCatch<InterpreterError>("<MIN>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<MAX>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<MIN APPLE>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<MIN '(1 2 3)>");
+        }
     }
 }

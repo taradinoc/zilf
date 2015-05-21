@@ -1676,6 +1676,30 @@ namespace Zilf
             return PerformArithmetic(-1, "EQVB", (x, y) => ~(x ^ y), args);
         }
 
+        [Subr]
+        public static ZilObject MIN(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1)
+                throw new InterpreterError(null, "MIN", 1, 0);
+
+            if (!args.All(zo => zo is ZilFix))
+                throw new InterpreterError("MIN: all args must be FIXes");
+
+            return args.OrderBy(zo => ((ZilFix)zo).Value).First();
+        }
+
+        [Subr]
+        public static ZilObject MAX(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1)
+                throw new InterpreterError(null, "MAX", 1, 0);
+
+            if (!args.All(zo => zo is ZilFix))
+                throw new InterpreterError("MAX: all args must be FIXes");
+
+            return args.OrderByDescending(zo => ((ZilFix)zo).Value).First();
+        }
+
         #endregion
 
         #region Conditions
