@@ -1186,7 +1186,8 @@ namespace Zilf
         {
             ZilAtom atom;
 
-            switch (expr.GetTypeAtom(cc.Context).StdAtom)
+            var exprTypeAtom = expr.GetTypeAtom(cc.Context);
+            switch (exprTypeAtom.StdAtom)
             {
                 case StdAtom.FIX:
                     return cc.Game.MakeOperand(((ZilFix)expr).Value);
@@ -1246,7 +1247,11 @@ namespace Zilf
                     return null;
 
                 default:
-                    return null;
+                    var primitive = expr.GetPrimitive(cc.Context);
+                    if (primitive != expr && primitive.GetTypeAtom(cc.Context) != exprTypeAtom)
+                        return CompileConstant(cc, primitive);
+                    else
+                        return null;
             }
         }
 
