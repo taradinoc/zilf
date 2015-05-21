@@ -110,6 +110,7 @@ namespace Zilf
         private string curFile;
         private FileFlags curFileFlags;
         private ZilForm callingForm;
+        private Func<string, FileAccess, Stream> streamOpener;
 
         private ObList rootObList;
         private Dictionary<ZilAtom, Binding> localValues;
@@ -257,6 +258,12 @@ namespace Zilf
         {
             get { return callingForm; }
             set { callingForm = value; }
+        }
+
+        public Func<string, FileAccess, Stream> StreamOpener
+        {
+            get { return streamOpener; }
+            set { streamOpener = value; }
         }
 
         public OpenFileDelegate InterceptOpenFile;
@@ -978,6 +985,34 @@ namespace Zilf
                 AddZConstant(pair.Key, new ZilFix(pair.Value));
             }
             PutProp(propName, GetStdAtom(StdAtom.PROPSPEC), pattern);
+        }
+
+        public Stream OpenChannelStream(string path, FileAccess fileAccess)
+        {
+            if (callingForm != null && callingForm.SourceFile != null)
+                path = Path.Combine(Path.GetDirectoryName(callingForm.SourceFile), path);
+
+            if (streamOpener != null)
+                return streamOpener(path, fileAccess);
+
+            FileMode mode;
+            switch (fileAccess)
+            {
+                case FileAccess.ReadWrite:
+                    mode = FileMode.OpenOrCreate;
+                    break;
+
+                case FileAccess.Write:
+                    mode = FileMode.Create;
+                    break;
+
+                case FileAccess.Read:
+                default:
+                    mode = FileMode.Open;
+                    break;
+            }
+
+            return new FileStream(path, mode, fileAccess);
         }
     }
 
