@@ -204,15 +204,33 @@ namespace Zilf
         }
     }
 
+    enum GlobalStorageType
+    {
+        /// <summary>
+        /// The global can be stored in a Z-machine global or a table.
+        /// </summary>
+        Any,
+        /// <summary>
+        /// The global is (or must be) stored in a Z-machine global.
+        /// </summary>
+        Hard,
+        /// <summary>
+        /// The global is stored in a table.
+        /// </summary>
+        Soft,
+    }
+
     class ZilGlobal : ZilObject, ISourceLine
     {
         private readonly ZilAtom name;
         private readonly ZilObject value;
 
-        public ZilGlobal(ZilAtom name, ZilObject value)
+        public ZilGlobal(ZilAtom name, ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
         {
             this.name = name;
             this.value = value;
+            this.StorageType = storageType;
+            this.IsWord = true;
         }
 
         public ZilAtom Name
@@ -224,6 +242,10 @@ namespace Zilf
         {
             get { return value; }
         }
+
+        public GlobalStorageType StorageType { get; set; }
+
+        public bool IsWord { get; set; }
 
         public override string ToString()
         {

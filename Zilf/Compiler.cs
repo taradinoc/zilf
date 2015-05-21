@@ -63,6 +63,19 @@ namespace Zilf
             public BlockReturnState ReturnState;
         }
 
+        private sealed class SoftGlobal
+        {
+            /// <summary>
+            /// True if the global is a word; false if it's a byte.
+            /// </summary>
+            public bool IsWord;
+            /// <summary>
+            /// The word index (if <see cref="IsWord"/> is true) or byte index (otherwise)
+            /// of the global, relative to <see cref="CompileCtx.SoftGlobalsTable"/>.
+            /// </summary>
+            public int Offset;
+        }
+
         private class CompileCtx
         {
             /// <summary>
@@ -95,6 +108,9 @@ namespace Zilf
             public readonly Dictionary<Word, IWordBuilder> Vocabulary = new Dictionary<Word, IWordBuilder>();
             public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties = new Dictionary<ZilAtom, IPropertyBuilder>();
             public readonly Dictionary<ZilAtom, IFlagBuilder> Flags = new Dictionary<ZilAtom, IFlagBuilder>();
+
+            public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>();
+            public IOperand SoftGlobalsTable;
         }
 
         public void Compile(Context ctx, IGameBuilder gb)
@@ -201,6 +217,25 @@ namespace Zilf
             foreach (var pair in ctx.ZEnvironment.BitSynonyms)
                 DefineFlagAlias(cc, pair.Key, pair.Value);
 
+            // FUNNY-GLOBALS?
+            const int ReservedGlobalCount = 4;
+            if (ctx.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
+            {
+                // this sets StorageType for all variables, and creates the table and global if needed
+                DoFunnyGlobals(cc, ReservedGlobalCount);
+            }
+            else
+            {
+                foreach (var g in ctx.ZEnvironment.Globals)
+                    g.StorageType = GlobalStorageType.Hard;
+
+                if (ctx.ZEnvironment.Globals.Count > 240 - ReservedGlobalCount)
+                    Errors.CompError(cc.Context, null,
+                        "too many globals: {0} defined, only {1} allowed",
+                        ctx.ZEnvironment.Globals.Count,
+                        240 - ReservedGlobalCount);
+            }
+
             // builders and values for constants (which may refer to vocabulary,
             // routines, tables, objects, properties, or flags)
             foreach (ZilConstant constant in ctx.ZEnvironment.Constants)
@@ -230,25 +265,16 @@ namespace Zilf
             IGlobalBuilder glb;
             foreach (ZilGlobal global in ctx.ZEnvironment.Globals)
             {
-                glb = gb.DefineGlobal(global.Name.ToString());
-                if (global.Value != null)
+                if (global.StorageType == GlobalStorageType.Hard)
                 {
-                    try
-                    {
-                        glb.DefaultValue = CompileConstant(cc, global.Value);
-                        if (glb.DefaultValue == null)
-                            Errors.CompError(ctx, global, "default value must be constant");
-                    }
-                    catch (ZilError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = global;
-                        ctx.HandleError(ex);
-                    }
+                    glb = gb.DefineGlobal(global.Name.ToString());
+                    glb.DefaultValue = GetGlobalDefaultValue(cc, global);
+                    cc.Globals.Add(global.Name, glb);
                 }
-                cc.Globals.Add(global.Name, glb);
             }
 
+            // implicitly defined globals
+            // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
             glb = cc.Game.DefineGlobal("PREPOSITIONS");
             glb.DefaultValue = cc.PrepositionTable;
             cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.PREPOSITIONS), glb);
@@ -366,6 +392,187 @@ namespace Zilf
             gb.Finish();
         }
 
+        private static IOperand GetGlobalDefaultValue(CompileCtx cc, ZilGlobal global)
+        {
+            IOperand result = null;
+
+            if (global.Value != null)
+            {
+                try
+                {
+                    result = CompileConstant(cc, global.Value);
+                    if (result == null)
+                        Errors.CompError(cc.Context, global, "default value must be constant");
+                }
+                catch (ZilError ex)
+                {
+                    if (ex.SourceLine == null)
+                        ex.SourceLine = global;
+                    cc.Context.HandleError(ex);
+                }
+            }
+
+            return result;
+        }
+
+        private void DoFunnyGlobals(CompileCtx cc, int reservedGlobals)
+        {
+            // if all the globals fit into Z-machine globals, no need for a table
+            int remaining = 240 - reservedGlobals;
+
+            if (cc.Context.ZEnvironment.Globals.Count <= remaining)
+            {
+                foreach (var g in cc.Context.ZEnvironment.Globals)
+                    g.StorageType = GlobalStorageType.Hard;
+
+                return;
+            }
+
+            // reserve one slot for GLOBAL-VARS-TABLE
+            remaining--;
+
+            // in V3, the status line variables need to be Z-machine globals
+            if (cc.Context.ZEnvironment.ZVersion < 4)
+            {
+                foreach (var g in cc.Context.ZEnvironment.Globals)
+                {
+                    switch (g.Name.StdAtom)
+                    {
+                        case StdAtom.HERE:
+                        case StdAtom.SCORE:
+                        case StdAtom.MOVES:
+                            g.StorageType = GlobalStorageType.Hard;
+                            break;
+                    }
+                }
+            }
+
+            // variables used as operands need to be Z-machine globals too
+            var globalsByName = cc.Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
+            foreach (var r in cc.Context.ZEnvironment.Routines)
+            {
+                WalkRoutineForms(r, f =>
+                {
+                    var args = f.Rest;
+                    if (args != null && !args.IsEmpty)
+                    {
+                        // skip the first argument to operations that operate on a variable
+                        var firstAtom = f.First as ZilAtom;
+                        if (firstAtom != null)
+                        {
+                            switch (firstAtom.StdAtom)
+                            {
+                                case StdAtom.SET:
+                                case StdAtom.SETG:
+                                case StdAtom.VALUE:
+                                case StdAtom.GVAL:
+                                case StdAtom.LVAL:
+                                case StdAtom.INC:
+                                case StdAtom.DEC:
+                                case StdAtom.IGRTR_P:
+                                case StdAtom.DLESS_P:
+                                    args = args.Rest;
+                                    break;
+                            }
+                        }
+
+                        while (args != null && !args.IsEmpty)
+                        {
+                            var atom = args.First as ZilAtom;
+                            ZilGlobal g;
+                            if (atom != null && globalsByName.TryGetValue(atom, out g))
+                            {
+                                g.StorageType = GlobalStorageType.Hard;
+                            }
+
+                            args = args.Rest;
+                        }
+                    }
+                });
+            }
+
+            // determine which others to keep in Z-machine globals
+            var lookup = cc.Context.ZEnvironment.Globals.ToLookup(g => g.StorageType);
+
+            var hardGlobals = new List<ZilGlobal>(remaining);
+            if (lookup.Contains(GlobalStorageType.Hard))
+            {
+                hardGlobals.AddRange(lookup[GlobalStorageType.Hard]);
+
+                if (hardGlobals.Count > remaining)
+                    throw new CompilerError("too many hard globals: {0} defined, only {1} allowed",
+                        hardGlobals.Count, remaining);
+            }
+
+            var softGlobals = new Queue<ZilGlobal>(cc.Context.ZEnvironment.Globals.Count - hardGlobals.Count);
+
+            if (lookup.Contains(GlobalStorageType.Any))
+                foreach (var g in lookup[GlobalStorageType.Any])
+                    softGlobals.Enqueue(g);
+
+            if (lookup.Contains(GlobalStorageType.Soft))
+                foreach (var g in lookup[GlobalStorageType.Soft])
+                    softGlobals.Enqueue(g);
+
+            while (hardGlobals.Count < remaining && softGlobals.Count > 0)
+                hardGlobals.Add(softGlobals.Dequeue());
+
+            // assign final StorageTypes
+            foreach (var g in hardGlobals)
+                g.StorageType = GlobalStorageType.Hard;
+
+            foreach (var g in softGlobals)
+                g.StorageType = GlobalStorageType.Soft;
+
+            // create SoftGlobals entries, fill table, and assign offsets
+            int byteOffset = 0;
+            var table = cc.Game.DefineTable("T?GLOBAL-VARS-TABLE", false);
+
+            var tableGlobal = cc.Game.DefineGlobal("GLOBAL-VARS-TABLE");
+            tableGlobal.DefaultValue = table;
+            cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.GLOBAL_VARS_TABLE), tableGlobal);
+            cc.SoftGlobalsTable = tableGlobal;
+
+            foreach (var g in softGlobals)
+            {
+                if (!g.IsWord)
+                {
+                    var entry = new SoftGlobal()
+                    {
+                        IsWord = false,
+                        Offset = byteOffset,
+                    };
+                    cc.SoftGlobals.Add(g.Name, entry);
+
+                    table.AddByte(GetGlobalDefaultValue(cc, g) ?? cc.Game.Zero);
+
+                    byteOffset++;
+                }
+            }
+
+            if (byteOffset % 2 != 0)
+            {
+                byteOffset++;
+                table.AddByte(cc.Game.Zero);
+            }
+
+            foreach (var g in softGlobals)
+            {
+                if (g.IsWord)
+                {
+                    var entry = new SoftGlobal()
+                    {
+                        IsWord = true,
+                        Offset = byteOffset / 2,
+                    };
+                    cc.SoftGlobals.Add(g.Name, entry);
+
+                    table.AddShort(GetGlobalDefaultValue(cc, g) ?? cc.Game.Zero);
+                    byteOffset += 2;
+                }
+            }
+        }
+
         private void BuildHeaderExtensionTable(CompileCtx cc)
         {
             var size = cc.Context.ZEnvironment.HeaderExtensionWords;
@@ -384,6 +591,35 @@ namespace Zilf
                 else
                 {
                     throw new CompilerError("header extensions not supported for this target");
+                }
+            }
+        }
+
+        private static void WalkRoutineForms(ZilRoutine routine, Action<ZilForm> action)
+        {
+            var children =
+                routine.ArgSpec.Select(ai => ai.DefaultValue)
+                .Concat(routine.Body);
+
+            foreach (var form in children.OfType<ZilForm>())
+            {
+                action(form);
+                WalkChildren(form, action);
+            }
+        }
+
+        private static void WalkChildren(ZilObject obj, Action<ZilForm> action)
+        {
+            var enumerable = obj as IEnumerable<ZilObject>;
+
+            if (enumerable != null)
+            {
+                foreach (var child in enumerable)
+                {
+                    if (child is ZilForm)
+                        action((ZilForm)child);
+
+                    WalkChildren(child, action);
                 }
             }
         }
@@ -1549,6 +1785,7 @@ namespace Zilf
                 // built-in statements handled specially
                 ZilAtom atom;
                 IGlobalBuilder global;
+                SoftGlobal softGlobal;
                 ILocalBuilder local;
                 IObjectBuilder objbld;
                 IRoutineBuilder routine;
@@ -1572,6 +1809,25 @@ namespace Zilf
                             return objbld;
                         if (cc.Routines.TryGetValue(atom, out routine))
                             return routine;
+
+                        // soft global
+                        if (cc.SoftGlobals.TryGetValue(atom, out softGlobal))
+                        {
+                            if (wantResult)
+                            {
+                                resultStorage = resultStorage ?? rb.Stack;
+                                rb.EmitBinary(
+                                    softGlobal.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
+                                    cc.SoftGlobalsTable,
+                                    cc.Game.MakeOperand(softGlobal.Offset),
+                                    resultStorage);
+                                return resultStorage;
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
 
                         // quirks: local
                         if (cc.Locals.TryGetValue(atom, out local))
@@ -1781,8 +2037,16 @@ namespace Zilf
                             "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
                         return cc.Globals[atom].Indirect;
                     }
-                    Errors.CompError(cc.Context, expr as ISourceLine ?? src,
-                        "bare atom used as operand is not a global variable: {0}", atom);
+                    if (cc.SoftGlobals.ContainsKey(atom))
+                    {
+                        Errors.CompError(cc.Context, expr as ISourceLine ?? src,
+                            "soft variable '{0}' may not be used here", atom);
+                    }
+                    else
+                    {
+                        Errors.CompError(cc.Context, expr as ISourceLine ?? src,
+                            "bare atom used as operand is not a global variable: {0}", atom);
+                    }
                     return cc.Game.Zero;
 
                 default:
@@ -3205,42 +3469,54 @@ namespace Zilf
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
         {
-            Action<ZilAtom, ZilAtom> createVocabWord = (atom, partOfSpeech) =>
+            var globalsByName = cc.Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
+
+            var preBuilders = new ComplexPropDef.ElementPreBuilders()
             {
-                Word word;
-
-                switch (partOfSpeech.StdAtom)
+                CreateVocabWord = (atom, partOfSpeech) =>
                 {
-                    case StdAtom.ADJ:
-                    case StdAtom.ADJECTIVE:
-                        word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
-                        break;
+                    Word word;
 
-                    case StdAtom.NOUN:
-                    case StdAtom.OBJECT:
-                        word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
-                        break;
+                    switch (partOfSpeech.StdAtom)
+                    {
+                        case StdAtom.ADJ:
+                        case StdAtom.ADJECTIVE:
+                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                            break;
 
-                    case StdAtom.BUZZ:
-                        word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
-                        break;
+                        case StdAtom.NOUN:
+                        case StdAtom.OBJECT:
+                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
+                            break;
 
-                    case StdAtom.PREP:
-                        word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
-                        break;
+                        case StdAtom.BUZZ:
+                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
+                            break;
 
-                    case StdAtom.DIR:
-                        word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
-                        break;
+                        case StdAtom.PREP:
+                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
+                            break;
 
-                    case StdAtom.VERB:
-                        word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
-                        break;
+                        case StdAtom.DIR:
+                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
+                            break;
 
-                    default:
-                        Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
-                        break;
-                }
+                        case StdAtom.VERB:
+                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
+                            break;
+
+                        default:
+                            Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
+                            break;
+                    }
+                },
+
+                ReserveGlobal = atom =>
+                {
+                    ZilGlobal g;
+                    if (globalsByName.TryGetValue(atom, out g))
+                        g.StorageType = GlobalStorageType.Hard;
+                },
             };
 
             // for detecting implicitly defined directions
@@ -3315,7 +3591,7 @@ namespace Zilf
                             // PROPDEF pattern
                             if (complexDef.Matches(cc.Context, prop))
                             {
-                                complexDef.PreBuildProperty(cc.Context, prop, createVocabWord);
+                                complexDef.PreBuildProperty(cc.Context, prop, preBuilders);
                             }
                         }
                         else
