@@ -1299,7 +1299,7 @@ namespace Zilf
             #region Unary Opcodes
 
             [Builtin("BCOM", Data = UnaryOp.Not)]
-            [Builtin("RANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
+            [Builtin("RANDOM", "ZRANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
             [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true)]
             [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5)]
             public static IOperand UnaryValueOp(
@@ -1311,7 +1311,7 @@ namespace Zilf
 
             [Builtin("DIRIN", Data = UnaryOp.DirectInput, HasSideEffect = true)]
             [Builtin("DIROUT", Data = UnaryOp.DirectOutput, HasSideEffect = true)]
-            [Builtin("BUFOUT", Data = UnaryOp.OutputBuffer, MinVersion = 4, HasSideEffect = true)]
+            [Builtin("BUFOUT", "ZBUFOUT", Data = UnaryOp.OutputBuffer, MinVersion = 4, HasSideEffect = true)]
             [Builtin("HLIGHT", Data = UnaryOp.OutputStyle, HasSideEffect = true)]
             [Builtin("CLEAR", Data = UnaryOp.ClearWindow, MinVersion = 4, HasSideEffect = true)]
             [Builtin("SCREEN", Data = UnaryOp.SelectWindow, HasSideEffect = true)]
@@ -1396,7 +1396,7 @@ namespace Zilf
             #region Print Opcodes
 
             [Builtin("PRINT", Data = PrintOp.PackedAddr, HasSideEffect = true)]
-            [Builtin("PRINTB", Data = PrintOp.Address, HasSideEffect = true)]
+            [Builtin("PRINTB", "ZPRINTB", Data = PrintOp.Address, HasSideEffect = true)]
             [Builtin("PRINTC", Data = PrintOp.Character, HasSideEffect = true)]
             [Builtin("PRINTD", Data = PrintOp.Object, HasSideEffect = true)]
             [Builtin("PRINTN", Data = PrintOp.Number, HasSideEffect = true)]
@@ -1423,7 +1423,7 @@ namespace Zilf
                 c.rb.EmitPrint(text, crlfRtrue);
             }
 
-            [Builtin("CRLF", HasSideEffect = true)]
+            [Builtin("CRLF", "ZCRLF", HasSideEffect = true)]
             public static void CrlfVoidOp(VoidCall c)
             {
                 c.rb.EmitPrintNewLine();
