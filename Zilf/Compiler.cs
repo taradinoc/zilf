@@ -2054,6 +2054,10 @@ namespace Zilf
                     }
                     return cc.Game.Zero;
 
+                case StdAtom.ADECL:
+                    // TODO: verify DECL
+                    return CompileAsOperand(cc, rb, ((ZilAdecl)expr).First, src, suggestion ?? rb.Stack);
+
                 default:
                     throw new NotImplementedException();
             }
