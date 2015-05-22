@@ -309,5 +309,39 @@ namespace IntegrationTests
                 .InV4()
                 .GeneratesCodeMatching(@"FSTACK");
         }
+
+        [TestMethod]
+        public void TestReuseTemp()
+        {
+            // the first G? allocates one temp var, then releases it afterward
+            // the BIND consumes the same temp var and binds it to a new atom
+            // the second G? allocates a new temp var, which must not collide with the first
+            AssertRoutine("",
+                "<COND (<G? <FOO> <BAR>> <RTRUE>)> " +
+                "<BIND ((Z 0)) <COND (<G? <BAR> <FOO>> <RFALSE>)>>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .WithGlobal("<ROUTINE BAR () 456>")
+                .Compiles();
+        }
+
+        [TestMethod]
+        public void TestNoTempForSet()
+        {
+            // this shouldn't use any temp vars, since the expressions are going into named variables
+            AssertRoutine("\"AUX\" X Y",
+                "<COND (<G? <SET X <FOO>> <SET Y <BAR>>> <RTRUE>)> " +
+                "<BIND ((Z 0)) <COND (<G? <SET X <BAR>> <SET Y <FOO>>> <RFALSE>)>>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .WithGlobal("<ROUTINE BAR () 456>")
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+
+            // this one should, since X is modified in a subsequent arg
+            AssertRoutine("\"AUX\" X Y",
+                "<COND (<G? <SET X <FOO>> <SET Y <SET X <BAR>>>> <RTRUE>)> " +
+                "<BIND ((Z 0)) <COND (<G? <SET X <BAR>> <SET Y <SET X <FOO>>>> <RFALSE>)>>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .WithGlobal("<ROUTINE BAR () 456>")
+                .GeneratesCodeMatching(@"\?TMP");
+        }
     }
 }
