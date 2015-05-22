@@ -1994,93 +1994,154 @@ namespace Zilf
                 c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
             }
 
-            // TODO: <LOWCORE (FOO 0)> to refer to the lower byte of FOO
-            [Builtin("LOWCORE")]
-            public static IOperand LowCoreReadOp(ValueCall c, ZilAtom atom)
+            private static bool GetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
+                out int offset, out LowCoreFlags flags, out int minVersion)
             {
-                var field = LowCoreField.Get(atom);
-                if (field == null)
+                offset = 0;
+                flags = LowCoreFlags.None;
+                minVersion = 0;
+
+                var atom = fieldSpec as ZilAtom;
+                if (atom != null)
                 {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
-                    return c.cc.Game.Zero;
-                }
-                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field not supported in this Z-machine version: " + atom);
-                    return c.cc.Game.Zero;
+                    var field = LowCoreField.Get(atom);
+                    if (field == null)
+                    {
+                        Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
+                        return false;
+                    }
+                    else if (field.MinVersion > ctx.ZEnvironment.ZVersion)
+                    {
+                        Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
+                        return false;
+                    }
+                    else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
+                    {
+                        Errors.CompError(ctx, src, name + ": field is not writable: " + atom);
+                        return false;
+                    }
+
+                    offset = field.Offset;
+                    flags = field.Flags;
+                    minVersion = field.MinVersion;
+                    return true;
                 }
 
-                var binaryOp = ((field.Flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
-                if ((field.Flags & LowCoreFlags.Extended) != 0)
+                var list = fieldSpec as ZilList;
+                if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                 {
-                    var wordOffset = ((field.Flags & LowCoreFlags.Byte) != 0) ? (field.Offset + 1) / 2 : field.Offset;
+                    if (((IStructure)list).GetLength(2) != 2)
+                    {
+                        Errors.CompError(ctx, src, name + ": list must have 2 elements");
+                        return false;
+                    }
+
+                    atom = list.First as ZilAtom;
+                    if (atom == null)
+                    {
+                        Errors.CompError(ctx, src, name + ": first list element must be an atom");
+                        return false;
+                    }
+
+                    var fix = list.Rest.First as ZilFix;
+                    if (fix == null || fix.Value < 0 || fix.Value > 1)
+                    {
+                        Errors.CompError(ctx, src, name + ": second list element must be 0 or 1");
+                        return false;
+                    }
+
+                    var field = LowCoreField.Get(atom);
+                    if (field == null)
+                    {
+                        Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
+                        return false;
+                    }
+                    else if (field.MinVersion > ctx.ZEnvironment.ZVersion)
+                    {
+                        Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
+                        return false;
+                    }
+                    else if ((field.Flags & LowCoreFlags.Byte) != 0)
+                    {
+                        Errors.CompError(ctx, src, name + ": not a word field: " + atom);
+                        return false;
+                    }
+                    else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
+                    {
+                        Errors.CompError(ctx, src, name + ": field is not writable: " + atom);
+                        return false;
+                    }
+
+                    offset = field.Offset * 2 + fix.Value;
+                    flags = field.Flags | LowCoreFlags.Byte;
+                    minVersion = field.MinVersion;
+                    return true;
+                }
+
+                Errors.CompError(ctx, src, name + ": first arg must be an atom or list");
+                return false;
+            }
+
+            [Builtin("LOWCORE")]
+            public static IOperand LowCoreReadOp(ValueCall c, ZilObject fieldSpec)
+            {
+                int offset, minVersion;
+                LowCoreFlags flags;
+
+                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form, fieldSpec, false, out offset, out flags, out minVersion))
+                    return c.cc.Game.Zero;
+
+                var binaryOp = ((flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
+                if ((flags & LowCoreFlags.Extended) != 0)
+                {
+                    var wordOffset = ((flags & LowCoreFlags.Byte) != 0) ? (offset + 1) / 2 : offset;
                     c.cc.Context.ZEnvironment.EnsureMinimumHeaderExtension(wordOffset);
                     c.rb.EmitBinary(BinaryOp.GetWord, c.cc.Game.Zero, c.cc.Game.MakeOperand(27 /* EXTAB */), c.rb.Stack);
-                    c.rb.EmitBinary(binaryOp, c.rb.Stack, c.cc.Game.MakeOperand(field.Offset), c.resultStorage);
+                    c.rb.EmitBinary(binaryOp, c.rb.Stack, c.cc.Game.MakeOperand(offset), c.resultStorage);
                 }
                 else
                 {
-                    c.rb.EmitBinary(binaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(field.Offset), c.resultStorage);
+                    c.rb.EmitBinary(binaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(offset), c.resultStorage);
                 }
 
                 return c.resultStorage;
             }
 
             [Builtin("LOWCORE", HasSideEffect = true)]
-            public static void LowCoreWriteOp(VoidCall c, ZilAtom atom, IOperand newValue)
+            public static void LowCoreWriteOp(VoidCall c, ZilObject fieldSpec, IOperand newValue)
             {
-                var field = LowCoreField.Get(atom);
-                if (field == null)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: unrecognized header field " + atom);
-                    return;
-                }
-                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field not supported in this Z-machine version: " + atom);
-                    return;
-                }
-                else if ((field.Flags & LowCoreFlags.Writable) == 0)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE: field is not writable: " + atom);
-                    return;
-                }
+                int offset, minVersion;
+                LowCoreFlags flags;
 
-                var ternaryOp = ((field.Flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
-                if ((field.Flags & LowCoreFlags.Extended) != 0)
+                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form, fieldSpec, true, out offset, out flags, out minVersion))
+                    return;
+
+                var ternaryOp = ((flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
+                if ((flags & LowCoreFlags.Extended) != 0)
                 {
-                    //XXX need to ensure the header extension gets written
-                    throw new NotImplementedException();
+                    var wordOffset = ((flags & LowCoreFlags.Byte) != 0) ? (offset + 1) / 2 : offset;
+                    c.cc.Context.ZEnvironment.EnsureMinimumHeaderExtension(wordOffset);
+                    c.rb.EmitBinary(BinaryOp.GetWord, c.cc.Game.Zero, c.cc.Game.MakeOperand(27 /* EXTAB */), c.rb.Stack);
+                    c.rb.EmitTernary(ternaryOp, c.rb.Stack, c.cc.Game.MakeOperand(offset), newValue, null);
                 }
                 else
                 {
-                    c.rb.EmitTernary(ternaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(field.Offset), newValue, null);
+                    c.rb.EmitTernary(ternaryOp, c.cc.Game.Zero, c.cc.Game.MakeOperand(offset), newValue, null);
                 }
             }
 
             [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
-            public static void LowCoreTableOp(VoidCall c, ZilAtom atom, int length, ZilAtom handler)
+            public static void LowCoreTableOp(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
             {
-                var field = LowCoreField.Get(atom);
-                if (field == null)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE-TABLE: unrecognized header field " + atom);
-                    return;
-                }
-                else if (field.MinVersion > c.cc.Context.ZEnvironment.ZVersion)
-                {
-                    Errors.CompError(c.cc.Context, c.form, "LOWCORE-TABLE: field not supported in this Z-machine version: " + atom);
-                    return;
-                }
+                int offset, minVersion;
+                LowCoreFlags flags;
 
-                int offset;
-                if ((field.Flags & LowCoreFlags.Byte) != 0)
+                if (!GetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form, fieldSpec, false, out offset, out flags, out minVersion))
+                    return;
+
+                if ((flags & LowCoreFlags.Byte) == 0)
                 {
-                    offset = field.Offset;
-                }
-                else
-                {
-                    offset = field.Offset * 2;
+                    offset *= 2;
                 }
 
                 var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
