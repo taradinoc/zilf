@@ -1362,7 +1362,7 @@ namespace Zilf
                 return c.resultStorage;
             }
 
-            [Builtin("REMOVE", Data = UnaryOp.RemoveObject, HasSideEffect = true)]
+            [Builtin("REMOVE", "ZREMOVE", Data = UnaryOp.RemoveObject, HasSideEffect = true)]
             public static void UnaryObjectVoidOp(
                 VoidCall c, [Data] UnaryOp op, [Object] IOperand value)
             {
@@ -1395,7 +1395,7 @@ namespace Zilf
 
             #region Print Opcodes
 
-            [Builtin("PRINT", Data = PrintOp.PackedAddr, HasSideEffect = true)]
+            [Builtin("PRINT", "ZPRINT", Data = PrintOp.PackedAddr, HasSideEffect = true)]
             [Builtin("PRINTB", "ZPRINTB", Data = PrintOp.Address, HasSideEffect = true)]
             [Builtin("PRINTC", Data = PrintOp.Character, HasSideEffect = true)]
             [Builtin("PRINTD", Data = PrintOp.Object, HasSideEffect = true)]
@@ -1718,20 +1718,20 @@ namespace Zilf
 
             #region Input Opcodes
 
-            [Builtin("READ", MaxVersion = 3, HasSideEffect = true)]
+            [Builtin("READ", "ZREAD", MaxVersion = 3, HasSideEffect = true)]
             public static void ReadOp_V3(VoidCall c, IOperand text, IOperand parse)
             {
                 c.rb.EmitRead(text, parse, null, null, null);
             }
 
-            [Builtin("READ", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
+            [Builtin("READ", "ZREAD", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
             public static void ReadOp_V4(VoidCall c, IOperand text, IOperand parse,
                 IOperand time = null, [Routine] IOperand routine = null)
             {
                 c.rb.EmitRead(text, parse, time, routine, null);
             }
 
-            [Builtin("READ", MinVersion = 5, HasSideEffect = true)]
+            [Builtin("READ", "ZREAD", MinVersion = 5, HasSideEffect = true)]
             public static IOperand ReadOp_V5(ValueCall c, IOperand text,
                 IOperand parse = null, IOperand time = null,
                 [Routine] IOperand routine = null)
@@ -1797,7 +1797,7 @@ namespace Zilf
 
             #region Save/Restore Opcodes
 
-            [Builtin("RESTORE", MaxVersion = 3, HasSideEffect = true)]
+            [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true)]
             public static void RestoreOp_V3(PredCall c)
             {
                 if (c.rb.HasBranchSave)
@@ -1810,7 +1810,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RESTORE", MinVersion = 4, HasSideEffect = true)]
+            [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true)]
             public static IOperand RestoreOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -1824,7 +1824,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("RESTORE", MinVersion = 5, HasSideEffect = true)]
+            [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
             public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
                 IOperand bytes, [Table] IOperand name)
             {
@@ -1839,7 +1839,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MaxVersion = 3, HasSideEffect = true)]
+            [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true)]
             public static void SaveOp_V3(PredCall c)
             {
                 if (c.rb.HasBranchSave)
@@ -1852,7 +1852,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MinVersion = 4, HasSideEffect = true)]
+            [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true)]
             public static IOperand SaveOp_V4(ValueCall c)
             {
                 if (c.rb.HasStoreSave)
@@ -1866,7 +1866,7 @@ namespace Zilf
                 }
             }
 
-            [Builtin("SAVE", MinVersion = 5, HasSideEffect = true)]
+            [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
             public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
                 IOperand bytes, [Table] IOperand name)
             {
