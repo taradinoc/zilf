@@ -1448,6 +1448,7 @@ namespace Zilf
                         // not a constant
                         value = CompileAsOperand(cc, rb, exprs[i], src);
 
+                        // XXX TODO: expand defs of *VariableRef and *Modified to include SET/SETG as well as LVAL/GVAL
                         if (IsLocalVariableRef(exprs[i]))
                         {
                             needTemp = LocalIsLaterModified(exprs, i);
@@ -1511,12 +1512,12 @@ namespace Zilf
                     throw new ArgumentException("not a FORM");
 
                 ZilAtom atom = form.First as ZilAtom;
-                if (atom == null || atom.StdAtom != StdAtom.LVAL)
-                    throw new ArgumentException("not an LVAL FORM");
+                if (atom == null || (atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET))
+                    throw new ArgumentException("not an LVAL/SET FORM");
 
                 ZilAtom localAtom = form.Rest.First as ZilAtom;
                 if (atom == null)
-                    throw new ArgumentException("LVAL not followed by an atom");
+                    throw new ArgumentException("LVAL/SET not followed by an atom");
 
                 for (int i = localIdx + 1; i < exprs.Length; i++)
                     if (ModifiesLocal(exprs[i], localAtom))
@@ -1556,12 +1557,12 @@ namespace Zilf
                     throw new ArgumentException("not a FORM");
 
                 ZilAtom atom = form.First as ZilAtom;
-                if (atom == null || atom.StdAtom != StdAtom.GVAL)
-                    throw new ArgumentException("not a GVAL FORM");
+                if (atom == null || (atom.StdAtom != StdAtom.GVAL && atom.StdAtom != StdAtom.SETG))
+                    throw new ArgumentException("not a GVAL/SETG FORM");
 
                 ZilAtom globalAtom = form.Rest.First as ZilAtom;
                 if (atom == null)
-                    throw new ArgumentException("GVAL not followed by an atom");
+                    throw new ArgumentException("GVAL/SETG not followed by an atom");
 
                 for (int i = localIdx + 1; i < exprs.Length; i++)
                     if (CouldModifyGlobal(cc, exprs[i], globalAtom))
@@ -1608,7 +1609,20 @@ namespace Zilf
                 if (atom == null)
                     return false;
 
-                return atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.LVAL;
+                if (form.Rest == null || !(form.Rest.First is ZilAtom))
+                    return false;
+
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.LVAL:
+                    case StdAtom.GVAL:
+                    case StdAtom.SET:
+                    case StdAtom.SETG:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
 
             private static bool IsLocalVariableRef(ZilObject expr)
@@ -1621,7 +1635,10 @@ namespace Zilf
                 if (atom == null)
                     return false;
 
-                return atom.StdAtom == StdAtom.LVAL;
+                if (form.Rest == null || !(form.Rest.First is ZilAtom))
+                    return false;
+
+                return atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET;
             }
 
             private static bool IsGlobalVariableRef(ZilObject expr)
@@ -1634,7 +1651,10 @@ namespace Zilf
                 if (atom == null)
                     return false;
 
-                return atom.StdAtom == StdAtom.GVAL;
+                if (form.Rest == null || !(form.Rest.First is ZilAtom))
+                    return false;
+
+                return atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG;
             }
 
             public void Dispose()
@@ -2713,6 +2733,10 @@ namespace Zilf
                     } while (cc.Locals.ContainsKey(newAtom) || cc.TempLocalNames.Contains(newAtom));
 
                     cc.TempLocalNames.Add(newAtom);
+                }
+                else
+                {
+                    cc.TempLocalNames.Add(atom);
                 }
 
                 result = rb.DefineLocal(name);
