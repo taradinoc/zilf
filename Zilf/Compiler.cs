@@ -2590,15 +2590,29 @@ namespace Zilf
                         PushInnerLocal(cc, rb, atom);
                         break;
 
+                    case StdAtom.ADECL:
+                        atom = ((ZilAdecl)obj).First as ZilAtom;
+                        if (atom == null)
+                            throw new CompilerError("invalid atom binding");
+                        innerLocals.Enqueue(atom);
+                        PushInnerLocal(cc, rb, atom);
+                        break;
+
                     case StdAtom.LIST:
                         ZilList list = (ZilList)obj;
                         if (list.First == null || list.Rest == null ||
                             list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
                             throw new CompilerError("binding with value must be a 2-element list");
                         atom = list.First as ZilAtom;
+                        if (atom == null)
+                        {
+                            var adecl = list.First as ZilAdecl;
+                            if (adecl != null)
+                                atom = adecl.First as ZilAtom;
+                        }
                         ZilObject value = list.Rest.First;
                         if (atom == null || value == null)
-                            throw new InterpreterError("invalid atom binding");
+                            throw new CompilerError("invalid atom binding");
                         innerLocals.Enqueue(atom);
                         ILocalBuilder lb = PushInnerLocal(cc, rb, atom);
                         IOperand loc = CompileAsOperand(cc, rb, value, src, lb);
