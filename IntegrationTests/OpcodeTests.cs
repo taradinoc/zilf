@@ -2632,11 +2632,21 @@ namespace IntegrationTests
         [TestMethod]
         public void TestLOWCORE_Extension()
         {
-            AssertRoutine("X", "<SET X <LOWCORE MSLOCY>>")
+            AssertRoutine("\"AUX\" X", "<SET X <LOWCORE MSLOCY>> <LOWCORE MSETBL 12345>")
                 .InV5()
                 .Implies(
                     "<T? <LOWCORE EXTAB>>",
                     "<G=? <GET <LOWCORE EXTAB> 0> 2>");
+        }
+
+        [TestMethod]
+        public void TestLOWCORE_SubField()
+        {
+            AssertRoutine("\"AUX\" X", "<SET X <LOWCORE (ZVERSION 1)>>")
+                .Compiles();
+
+            AssertRoutine("", "<LOWCORE (FLAGS 1) 123>")
+                .Compiles();
         }
 
         [TestMethod]
