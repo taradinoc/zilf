@@ -85,6 +85,7 @@ namespace Zilf.Emit.Zap
 
         internal static readonly LiteralOperand ZERO = new LiteralOperand("0");
         internal static readonly LiteralOperand ONE = new LiteralOperand("1");
+        internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
 
         // all global names go in here
         private Dictionary<string, string> symbols = new Dictionary<string, string>(250);
@@ -459,6 +460,11 @@ namespace Zilf.Emit.Zap
         public IOperand One
         {
             get { return ONE; }
+        }
+
+        public IOperand VocabularyTable
+        {
+            get { return VOCAB; }
         }
 
         public void Finish()

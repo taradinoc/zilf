@@ -261,6 +261,8 @@ namespace Zilf
                 cc.Constants.Add(cc.Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
             }
 
+            cc.Constants.Add(cc.Context.GetStdAtom(StdAtom.VOCAB), cc.Game.VocabularyTable);
+
             // builders and values for globals (which may refer to constants)
             IGlobalBuilder glb;
             foreach (ZilGlobal global in ctx.ZEnvironment.Globals)
