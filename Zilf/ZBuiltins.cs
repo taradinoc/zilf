@@ -2114,6 +2114,13 @@ namespace Zilf
             }
 
             #endregion
+
+            [Builtin("CHTYPE")]
+            public static IOperand ChtypeValueOp(ValueCall c, IOperand value, ZilAtom type)
+            {
+                // TODO: check type?
+                return value;
+            }
         }
     }
 }
