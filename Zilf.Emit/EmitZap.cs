@@ -949,6 +949,8 @@ namespace Zilf.Emit.Zap
 
         public ILocalBuilder DefineRequiredParameter(string name)
         {
+            name = GameBuilder.SanitizeSymbol(name);
+
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
             if (LocalExists(name))
@@ -961,6 +963,8 @@ namespace Zilf.Emit.Zap
 
         public ILocalBuilder DefineOptionalParameter(string name)
         {
+            name = GameBuilder.SanitizeSymbol(name);
+
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
             if (LocalExists(name))
@@ -973,6 +977,8 @@ namespace Zilf.Emit.Zap
 
         public ILocalBuilder DefineLocal(string name)
         {
+            name = GameBuilder.SanitizeSymbol(name);
+
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have local variables");
             if (LocalExists(name))
