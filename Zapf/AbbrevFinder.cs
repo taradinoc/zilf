@@ -18,6 +18,9 @@
 
 using System;
 using System.Collections.Generic;
+#if DEBUG_ABBREV
+using System.Diagnostics;
+#endif
 using System.Linq;
 using System.Text;
 
@@ -38,8 +41,14 @@ namespace Zapf
             }
         }
 
-        private readonly Dictionary<string, int> words = new Dictionary<string, int>();
-        private readonly StringBuilder allText = new StringBuilder();
+        private struct WordRecord
+        {
+            public int Savings;
+            public Horspool Pattern;
+        }
+
+        private readonly Dictionary<string, WordRecord> words = new Dictionary<string, WordRecord>();
+        private StringBuilder allText = new StringBuilder();
         private readonly StringEncoder encoder = new StringEncoder();
 
         /// <summary>
@@ -52,8 +61,16 @@ namespace Zapf
             allText.Append('\0');
 
             foreach (string word in FindWords(text))
+            {
                 if (!words.ContainsKey(word))
-                    words.Add(word, CountSavings(word));
+                {
+                    var savings = CountSavings(word);
+                    if (savings <= 0)
+                        continue;
+
+                    words.Add(word, new WordRecord { Savings = savings, Pattern = new Horspool(word) });
+                }
+            }
         }
 
         /// <summary>
@@ -133,6 +150,11 @@ namespace Zapf
 
         private int CountAppearances(Horspool pattern)
         {
+#if DEBUG_ABBREV
+            var stopw = new Stopwatch();
+            stopw.Start();
+#endif
+
             int count = 0, index = -1;
             while (true)
             {
@@ -141,6 +163,12 @@ namespace Zapf
                     break;
                 count++;
             }
+
+#if DEBUG_ABBREV
+            stopw.Stop();
+            Console.Error.WriteLine("CountAppearances('{0}') took {1}", pattern.Text, stopw.Elapsed);
+#endif
+
             return count;
         }
 
@@ -157,48 +185,64 @@ namespace Zapf
                     yield break;
 
                 var query =
-                    from p in words
-                    where p.Value > 0
-                    let hp = new Horspool(p.Key)
-                    let count = CountAppearances(hp)
-                    where count > 1
-                    let overallSavings = (count - 1) * p.Value - 2
-                    where overallSavings > 0
+                    from p in words.AsParallel()
+                    let count = CountAppearances(p.Value.Pattern)
+                    let overallSavings = (count - 1) * p.Value.Savings - 2
                     orderby overallSavings descending
                     select new
                     {
                         Savings = overallSavings,
                         Count = count,
-                        Pattern = hp
+                        Pattern = p.Value.Pattern
                     };
 
                 int numResults = 0;
                 while (numResults < max)
                 {
-                    using (var enumerator = query.GetEnumerator())
+#if DEBUG_ABBREV
+                    var stopw = new Stopwatch();
+                    Console.Error.WriteLine("Querying {0} words in {1} chars of text", words.Count, allText.Length);
+                    stopw.Start();
+#endif
+
+                    var queryResults = query.ToList();
+
+#if DEBUG_ABBREV
+                    stopw.Stop();
+                    Console.Error.WriteLine("Query time: {0}", stopw.Elapsed);
+#endif
+
+                    foreach (var qr in queryResults)
                     {
-                        if (enumerator.MoveNext())
+                        if (qr.Savings <= 0)
                         {
-                            var r = enumerator.Current;
-                            string word = r.Pattern.Text;
-                            yield return new Result(r.Savings, r.Count, word);
-
-                            numResults++;
-                            if (numResults >= max)
-                                yield break;
-
-                            int idx;
-                            while ((idx = r.Pattern.FindIn(allText)) >= 0)
-                            {
-                                allText.Remove(idx, word.Length);
-                                allText.Insert(idx, '\0');
-                            }
-
-                            words.Remove(word);
+                            words.Remove(qr.Pattern.Text);
                         }
-                        else
-                            break;
                     }
+
+                    if (words.Count == 0 || queryResults.Count == 0)
+                        break;
+
+                    var r = queryResults[0];
+                    string word = r.Pattern.Text;
+                    yield return new Result(r.Savings, r.Count, word);
+
+                    numResults++;
+                    if (numResults >= max)
+                        yield break;
+
+                    int idx;
+                    while ((idx = r.Pattern.FindIn(allText)) >= 0)
+                    {
+                        allText.Remove(idx, word.Length);
+                        allText.Insert(idx, '\0');
+                    }
+
+                    var newText = new StringBuilder(allText.Length);
+                    newText.Append(allText.ToString());
+                    allText = newText;
+
+                    words.Remove(word);
                 }
             }
             finally
