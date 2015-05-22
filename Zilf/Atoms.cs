@@ -355,6 +355,7 @@ namespace Zilf
         [Atom("VERSION?")]
         VERSION_P,
         VOC,
+        VOCAB,
         WORD,
         WORDLENGTH,
         X,

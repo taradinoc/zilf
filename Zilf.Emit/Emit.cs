@@ -171,6 +171,10 @@ namespace Zilf.Emit
         /// will be lexed as three words: {"mrs", ".", "smith"}.
         /// </remarks>
         ICollection<char> SelfInsertingBreaks { get; }
+        /// <summary>
+        /// Gets a predefined operand representing the vocabulary table.
+        /// </summary>
+        IOperand VocabularyTable { get; }
 
         /// <summary>
         /// Writes the final output and closes the game builder.
