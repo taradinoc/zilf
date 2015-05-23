@@ -2214,6 +2214,14 @@ namespace Zilf.Emit.Zap
                         return Combine2to1(a.Substring(0, a.Length - 5) + b.Substring(5));
                     }
 
+                    if (Match(a => a.Code.Text.StartsWith("PUSH "), b => b.Code.Text.StartsWith("POP '")))
+                    {
+                        // PUSH + POP 'dest => SET 'dest
+                        var a = matches[0].Code.Text;
+                        var b = matches[1].Code.Text;
+                        return Combine2to1("SET '" + b.Substring(5) + "," + a.Substring(5));
+                    }
+
                     if (Match(a => a.Code.Text.StartsWith("INC '"), b => b.Code.Text.StartsWith("GRTR? ")))
                     {
                         string str;
