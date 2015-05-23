@@ -92,6 +92,20 @@ namespace Zapf
             ZVersion = Program.DEFAULT_ZVERSION;
         }
 
+        public void Restart()
+        {
+            LocalSymbols.Clear();
+            GlobalSymbols.Clear();
+            Fixups.Clear();
+            DebugFileMap.Clear();
+
+            fileStack.Clear();
+            reassemblyLabels.Clear();
+
+            string stackName = InformMode ? "sp" : "STACK";
+            GlobalSymbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0));
+        }
+
         public void WriteByte(byte b)
         {
             position++;
@@ -519,13 +533,27 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Variable, num);
                 GlobalSymbols.Add(name, sym);
             }
-            else if (!sym.Phantom)
-                Errors.ThrowSerious("global redefined: " + name);
-            else if (sym.Value != num)
-                Errors.ThrowSerious("global {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
-            else
+            else if (sym.Phantom && sym.Type == SymbolType.Variable)
+            {
+                if (sym.Value != num)
+                {
+                    Errors.ThrowSerious("global {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
+                }
+
                 sym.Phantom = false;
+            }
+            else if (sym.Type == SymbolType.Unknown)
+            {
+                sym.Type = SymbolType.Variable;
+                sym.Value = num;
+                MeasureAgain = true;
+            }
+            else
+            {
+                Errors.ThrowSerious("global redefined: " + name);
+            }
         }
+        
 
         public void AddObject(string name)
         {
@@ -537,12 +565,25 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Object, num);
                 GlobalSymbols.Add(name, sym);
             }
-            else if (!sym.Phantom)
-                Errors.ThrowSerious("object redefined: " + name);
-            else if (sym.Value != num)
-                Errors.ThrowFatal("object {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
-            else
+            else if (sym.Phantom && sym.Type == SymbolType.Object)
+            {
+                if (sym.Value != num)
+                {
+                    Errors.ThrowFatal("object {0} seems to have moved: was {1}, now {2}", name, sym.Value, num);
+                }
+
                 sym.Phantom = false;
+            }
+            else if (sym.Type == SymbolType.Unknown)
+            {
+                sym.Type = SymbolType.Object;
+                sym.Value = num;
+                MeasureAgain = true;
+            }
+            else
+            {
+                Errors.ThrowSerious("object redefined: " + name);
+            }
         }
 
         public void CheckLimits()

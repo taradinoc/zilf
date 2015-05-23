@@ -55,8 +55,7 @@ namespace Zapf
 
             // set up for the target version
             ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
-            string stackName = ctx.InformMode ? "sp" : "STACK";
-            ctx.GlobalSymbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0));
+            ctx.Restart();
 
             try
             {
@@ -74,6 +73,7 @@ namespace Zapf
                         if (!ctx.Quiet)
                             Console.Error.WriteLine("\nRestarting");
 
+                        ctx.Restart();
                         restart = true;
                     }
                     catch (FatalError fer)
@@ -795,13 +795,21 @@ General switches:
             else if (node is SymbolExpr)
             {
                 Symbol result;
-                if (ctx.LocalSymbols.TryGetValue(node.Text, out result))
-                    return result;
-                if (ctx.GlobalSymbols.TryGetValue(node.Text, out result))
-                    return result;
-                if (ctx.FinalPass)
-                    Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
-                return new Symbol(null, SymbolType.Unknown, 0);
+                if (!ctx.LocalSymbols.TryGetValue(node.Text, out result) &&
+                    !ctx.GlobalSymbols.TryGetValue(node.Text, out result))
+                {
+                    if (ctx.FinalPass)
+                    {
+                        Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
+                    }
+                    else
+                    {
+                        result = new Symbol(node.Text, SymbolType.Unknown, 0);
+                        ctx.GlobalSymbols.Add(node.Text, result);
+                    }
+                }
+
+                return result;
             }
             else if (node is AdditionExpr)
             {
@@ -1344,12 +1352,13 @@ General switches:
                 sym = new Symbol(name, SymbolType.Function, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
             }
-            else if (!sym.Phantom || sym.Type != SymbolType.Function)
+            else if (sym.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.Function))
             {
                 Errors.ThrowSerious("function redefined: " + name);
             }
             else
             {
+                sym.Type = SymbolType.Function;
                 sym.Phantom = false;
                 if (sym.Value != paddr)
                 {
@@ -1392,12 +1401,13 @@ General switches:
                 sym = new Symbol(name, SymbolType.String, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
             }
-            else if (!sym.Phantom || sym.Type != SymbolType.String)
+            else if (sym.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.String))
             {
                 Errors.ThrowSerious("string redefined: " + name);
             }
             else
             {
+                sym.Type = SymbolType.String;
                 sym.Phantom = false;
                 if (sym.Value != paddr)
                 {
@@ -1664,7 +1674,7 @@ General switches:
                 {
                     // we don't require it to be a phantom because a global label might be
                     // defined inside a routine, and reassembly could cause it to be defined twice
-                    if (sym.Type != SymbolType.Label /*|| !sym.Phantom*/)
+                    if (sym.Type != SymbolType.Label && sym.Type != SymbolType.Unknown /*|| !sym.Phantom*/)
                         Errors.ThrowSerious(node, "redefining global label");
 
                     if (ctx.InVocab)
@@ -1684,6 +1694,7 @@ General switches:
                         sym.Value = ctx.Position;
                     }
 
+                    sym.Type = SymbolType.Label;
                     sym.Phantom = false;
                 }
                 else
