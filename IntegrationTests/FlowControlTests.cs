@@ -33,6 +33,22 @@ namespace IntegrationTests
                 .GivesNumber("123");
         }
 
+        [TestMethod]
+        public void RETURN_With_Activation_Can_Return_From_Outer_Block()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<SET X <PROG OUTER () <PROG () <RETURN 123 .OUTER> 456> 789>> <PRINTN .X>")
+                .Outputs("123");
+        }
+
+        [TestMethod]
+        public void RETURN_Inside_BIND_Should_Return_From_Outer_Block()
+        {
+            AssertRoutine("",
+                "<PROG () <+ 3 <PROG () <BIND () <RETURN 120>> 456>>>")
+                .GivesNumber("123");
+        }
+
         #endregion
 
         #region AGAIN

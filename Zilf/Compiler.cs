@@ -27,7 +27,7 @@ namespace Zilf
     partial class Compiler
     {
         [Flags]
-        private enum BlockReturnState
+        private enum BlockFlags
         {
             None = 0,
 
@@ -40,6 +40,11 @@ namespace Zilf
             /// result must be discarded before branching.)
             /// </summary>
             WantResult = 2,
+            /// <summary>
+            /// Indicates that &lt;RETURN&gt; and &lt;AGAIN&gt; should not act on this block
+            /// unless explicitly given its activation atom.
+            /// </summary>
+            ExplicitOnly = 4,
         }
 
         private sealed class Block
@@ -60,7 +65,7 @@ namespace Zilf
             /// <summary>
             /// The context flags for &lt;RETURN&gt;.
             /// </summary>
-            public BlockReturnState ReturnState;
+            public BlockFlags Flags;
         }
 
         private sealed class SoftGlobal
@@ -1333,7 +1338,7 @@ namespace Zilf
                 Name = routine.ActivationAtom,
                 AgainLabel = rb.RoutineStart,
                 ReturnLabel = null,
-                ReturnState = BlockReturnState.None,
+                Flags = BlockFlags.None,
             });
 
             // generate code for routine body
@@ -1919,10 +1924,11 @@ namespace Zilf
                         return CompileImpromptuTable(cc, rb, form, wantResult, resultStorage);
 
                     case StdAtom.PROG:
+                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "PROG", false, true);
                     case StdAtom.REPEAT:
+                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "REPEAT", true, true);
                     case StdAtom.BIND:
-                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage,
-                            head.StdAtom == StdAtom.REPEAT, head.StdAtom != StdAtom.BIND);
+                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "BIND", false, false);
 
                     case StdAtom.DO:
                         return CompileDO(cc, rb, form.Rest, form, wantResult, resultStorage);
@@ -2565,17 +2571,28 @@ namespace Zilf
         }
 
         private static IOperand CompilePROG(CompileCtx cc, IRoutineBuilder rb, ZilList args,
-            ISourceLine src, bool wantResult, IVariable resultStorage, bool repeat, bool catchy)
+            ISourceLine src, bool wantResult, IVariable resultStorage, string name, bool repeat, bool catchy)
         {
             // NOTE: resultStorage is unused here, because PROG's result could come from
             // a RETURN statement (and REPEAT's result can *only* come from RETURN).
             // thus we have to return the result on the stack, because RETURN doesn't have
             // the context needed to put its result in the right place.
 
+            if (args == null || args.First == null)
+            {
+                throw new CompilerError(name + ": first arg must be an activation atom or binding list");
+            }
+
+            var activationAtom = args.First as ZilAtom;
+            if (activationAtom != null)
+            {
+                args = args.Rest;
+            }
+
             if (args == null || args.First == null ||
                 args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
-                throw new CompilerError("expected binding list at start of PROG/REPEAT/BIND");
+                throw new CompilerError(name + ": missing binding list");
             }
 
             // add new locals, if any
@@ -2627,20 +2644,20 @@ namespace Zilf
                 }
             }
 
-            Block block = null;
-
-            if (catchy)
+            var block = new Block()
             {
-                block = new Block()
-                {
-                    AgainLabel = rb.DefineLabel(),
-                    ReturnLabel = rb.DefineLabel(),
-                    ReturnState = wantResult ? BlockReturnState.WantResult : 0,
-                };
+                Name = activationAtom,
+                AgainLabel = rb.DefineLabel(),
+                ReturnLabel = rb.DefineLabel(),
+            };
 
-                rb.MarkLabel(block.AgainLabel);
-                cc.Blocks.Push(block);
-            }
+            if (wantResult)
+                block.Flags |= BlockFlags.WantResult;
+            if (!catchy)
+                block.Flags |= BlockFlags.ExplicitOnly;
+
+            rb.MarkLabel(block.AgainLabel);
+            cc.Blocks.Push(block);
 
             try
             {
@@ -2677,16 +2694,11 @@ namespace Zilf
                     args = args.Rest as ZilList;
                 }
 
-                if (catchy)
-                {
-                    System.Diagnostics.Debug.Assert(block != null);
+                if (repeat)
+                    rb.Branch(block.AgainLabel);
 
-                    if (repeat)
-                        rb.Branch(block.AgainLabel);
-
-                    if ((block.ReturnState & BlockReturnState.Returned) != 0)
-                        rb.MarkLabel(block.ReturnLabel);
-                }
+                if ((block.Flags & BlockFlags.Returned) != 0)
+                    rb.MarkLabel(block.ReturnLabel);
 
                 if (wantResult)
                 {
@@ -2704,10 +2716,7 @@ namespace Zilf
                 while (innerLocals.Count > 0)
                     PopInnerLocal(cc, innerLocals.Dequeue());
 
-                if (catchy)
-                {
-                    cc.Blocks.Pop();
-                }
+                cc.Blocks.Pop();
             }
         }
 
@@ -2839,7 +2848,7 @@ namespace Zilf
             {
                 AgainLabel = rb.DefineLabel(),
                 ReturnLabel = rb.DefineLabel(),
-                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+                Flags = wantResult ? BlockFlags.WantResult : 0,
             };
 
             cc.Blocks.Push(block);
@@ -2930,7 +2939,7 @@ namespace Zilf
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
             // clean up block and counter
-            if ((block.ReturnState & BlockReturnState.Returned) != 0)
+            if ((block.Flags & BlockFlags.Returned) != 0)
                 rb.MarkLabel(block.ReturnLabel);
 
             PopInnerLocal(cc, atom);
@@ -2999,7 +3008,7 @@ namespace Zilf
             {
                 AgainLabel = rb.DefineLabel(),
                 ReturnLabel = rb.DefineLabel(),
-                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+                Flags = wantResult ? BlockFlags.WantResult : 0,
             };
 
             cc.Blocks.Push(block);
@@ -3126,7 +3135,7 @@ namespace Zilf
             {
                 AgainLabel = rb.DefineLabel(),
                 ReturnLabel = rb.DefineLabel(),
-                ReturnState = wantResult ? BlockReturnState.WantResult : 0,
+                Flags = wantResult ? BlockFlags.WantResult : 0,
             };
 
             cc.Blocks.Push(block);
