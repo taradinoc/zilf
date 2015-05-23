@@ -1890,7 +1890,7 @@ namespace Zilf
             {
                 if (block == null)
                 {
-                    block = c.cc.Blocks.Peek();
+                    block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
                 }
 
                 if (block.ReturnLabel == null)
@@ -1901,7 +1901,7 @@ namespace Zilf
                 else
                 {
                     // return from enclosing PROG/REPEAT
-                    if ((block.ReturnState & BlockReturnState.WantResult) != 0)
+                    if ((block.Flags & BlockFlags.WantResult) != 0)
                     {
                         if (value == null)
                             c.rb.EmitStore(c.rb.Stack, c.cc.Game.One);
@@ -1916,7 +1916,7 @@ namespace Zilf
                         Errors.CompWarning(c.cc.Context, c.form, "RETURN value ignored: block is in void context");
                     }
 
-                    block.ReturnState |= BlockReturnState.Returned;
+                    block.Flags |= BlockFlags.Returned;
                     c.rb.Branch(block.ReturnLabel);
                 }
             }
@@ -1926,7 +1926,7 @@ namespace Zilf
             {
                 if (block == null)
                 {
-                    block = c.cc.Blocks.Peek();
+                    block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
                 }
 
                 if (block.AgainLabel != null)
