@@ -105,8 +105,7 @@ namespace Zapf
 
             // set up OpcodeDict and GlobalSymbols for the target version
             ctx.OpcodeDict = Program.MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
-            string stackName = ctx.InformMode ? "sp" : "STACK";
-            ctx.GlobalSymbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0));
+            ctx.Restart();
 
             // perform assembly
             try
@@ -121,6 +120,7 @@ namespace Zapf
                     }
                     catch (RestartException)
                     {
+                        ctx.Restart();
                         restart = true;
                     }
                     catch (FatalError fer)
