@@ -223,7 +223,7 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".WORD 0");       // $28 routines offset (V6)
                     writer.WriteLine(INDENT + ".WORD 0");       // $2A strings offset (V6)
                     writer.WriteLine(INDENT + ".WORD 0");       // $2C default background/foreground color
-                    writer.WriteLine(INDENT + ".WORD 0");       // $2E terminating characters table
+                    writer.WriteLine(INDENT + ".WORD TCHARS");  // $2E terminating characters table
                     writer.WriteLine(INDENT + ".WORD 0");       // $30 output stream 3 width accumulator (V6)
                     writer.WriteLine(INDENT + ".WORD 0");       // $32 Z-Machine Standard revision number
                     writer.WriteLine(INDENT + ".WORD 0");       // $34 alphabet table
@@ -567,7 +567,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + "FLAGS=0");
 
             ushort flags2 = 0;
-            bool defineExtab = true;
+            bool defineExtab = true, defineTchars = true;
 
             switch (zversion)
             {
@@ -596,6 +596,7 @@ namespace Zilf.Emit.Zap
                         flags2 |= 128;
                     }
                     defineExtab = v5options.HeaderExtensionTable == null;
+                    defineTchars = !symbols.ContainsKey("TCHARS");
                     break;
 
                 case 6:
@@ -607,6 +608,8 @@ namespace Zilf.Emit.Zap
 
             if (defineExtab)
                 writer.WriteLine(INDENT + "EXTAB=0");
+            if (defineTchars)
+                writer.WriteLine(INDENT + "TCHARS=0");
 
             // flags
             if (flags.Count > 0)
