@@ -329,6 +329,7 @@ namespace Zilf
         T_P,
         TABLE,
         TAKE,
+        TCHARS,
         TELL,
         TIME,
         TO,

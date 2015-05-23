@@ -74,6 +74,18 @@ namespace IntegrationTests
                 .Outputs("59\n4\ngrant\n'\ns\ntomb\n");
         }
 
+        [TestMethod]
+        public void TCHARS_Should_Affect_Header()
+        {
+            AssertGlobals(
+                "<CONSTANT F12 144>",
+                "<CONSTANT TCHARS <TABLE (BYTE) F12 0>>")
+                .InV5()
+                .Implies(
+                    "<==? <LOWCORE TCHARS> ,TCHARS>",
+                    "<==? <GETB ,TCHARS 0> 144>");
+        }
+
         private static string[] PrepImplications(bool compact, params string[] wordAndIdConstantPairs)
         {
             Contract.Requires(wordAndIdConstantPairs != null && wordAndIdConstantPairs.Length % 2 == 0);
