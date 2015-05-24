@@ -258,6 +258,56 @@ namespace Zilf.Emit
         }
 
         /// <summary>
+        /// Inserts the contents of another buffer at the beginning of this buffer.
+        /// </summary>
+        /// <param name="other">The other buffer.</param>
+        /// <exception cref="InvalidOperationException">
+        /// One of the labels in the other buffer's <see cref="aliases"/> also exists in this buffer's <see cref="aliases"/>.
+        /// </exception>
+        public void InsertBufferFirst(PeepholeBuffer<TCode> other)
+        {
+            // turn pending label into a label on our first line, or copy it if we have no lines
+            if (other.pendingLabel != null)
+            {
+                var firstLine = this.lines.First;
+                if (firstLine == null)
+                {
+                    this.pendingLabel = other.pendingLabel;
+                }
+                else if (firstLine.Value.Label == null)
+                {
+                    firstLine.Value.Label = other.pendingLabel;
+                }
+                else
+                {
+                    aliases.Add(other.pendingLabel, firstLine.Value.Label);
+                }
+            }
+
+            // copy lines
+            if (other.lines.Count > 0)
+            {
+                var prev = lines.AddFirst(other.lines.First.Value);
+                var src = other.lines.First.Next;
+
+                while (src != null)
+                {
+                    prev = lines.AddAfter(prev, src.Value);
+                    src = src.Next;
+                }
+            }
+
+            // merge aliases
+            foreach (var pair in other.aliases)
+            {
+                if (aliases.ContainsKey(pair.Key) || aliases.ContainsKey(pair.Value))
+                    throw new InvalidOperationException("The same label was emitted in both buffers");
+
+                aliases.Add(pair.Key, pair.Value);
+            }
+        }
+
+        /// <summary>
         /// Marks a label at the current position.
         /// </summary>
         /// <param name="label">The label to mark.</param>

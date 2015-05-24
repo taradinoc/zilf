@@ -1968,8 +1968,9 @@ namespace Zilf.Emit.Zap
             if (entryPoint)
                 game.WriteOutput("START::");
 
-            // TODO: use the peephole buffer for routine start label + arg defaults
-            game.WriteOutput(routineStartLabel + ":");
+            // write preamble
+            var preamble = new PeepholeBuffer<ZapCode>();
+            preamble.MarkLabel(routineStartLabel);
 
             // write values for optional params and locals for V5+
             if (game.zversion >= 5)
@@ -1977,18 +1978,32 @@ namespace Zilf.Emit.Zap
                 // TODO: skip if the default value is 0?
 
                 foreach (LocalBuilder lb in optionalParams)
+                {
                     if (lb.DefaultValue != null)
                     {
                         ILabel nextLabel = DefineLabel();
-                        game.WriteOutput(string.Format(INDENT + "ASSIGNED? '{0} /{1}", lb, nextLabel));
-                        game.WriteOutput(string.Format(INDENT + "SET '{0},{1}", lb, lb.DefaultValue));
-                        game.WriteOutput(nextLabel + ":");
+
+                        preamble.AddLine(
+                            new ZapCode { Text = string.Format("ASSIGNED? '{0}", lb) },
+                            nextLabel,
+                            PeepholeLineType.BranchPositive);
+                        preamble.AddLine(
+                            new ZapCode { Text = string.Format("SET '{0},{1}", lb, lb.DefaultValue) },
+                            null,
+                            PeepholeLineType.Plain);
+                        preamble.MarkLabel(nextLabel);
                     }
+                }
 
                 foreach (LocalBuilder lb in locals)
                     if (lb.DefaultValue != null)
-                        game.WriteOutput(string.Format(INDENT + "SET '{0},{1}", lb, lb.DefaultValue));
+                        preamble.AddLine(
+                            new ZapCode { Text = string.Format("SET '{0},{1}", lb, lb.DefaultValue) },
+                            null,
+                            PeepholeLineType.Plain);
             }
+
+            peep.InsertBufferFirst(preamble);
 
             // write routine body
             peep.Finish((label, code, dest, type) =>
