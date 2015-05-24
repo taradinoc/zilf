@@ -97,7 +97,6 @@ namespace IntegrationTests
         private List<string> zilfLogMessages;
 
         private MemoryStream zapfOutputFile;
-        private List<string> zapfLogMessages;
 
         public int WarningCount { get; private set; }
 
@@ -270,7 +269,6 @@ namespace IntegrationTests
         private List<string> zilfLogMessages;
 
         private MemoryStream zapfOutputFile;
-        private List<string> zapfLogMessages;
 
         public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
         {

@@ -71,12 +71,12 @@ namespace ZilFormat
                 /*if (token.Type == ZilLexer.WS)
                     continue;*/
 
-                bool brokeLine = false;
+                //bool brokeLine = false;
 
                 if (NeedBreakBetween(last, token.Type, nesting))
                 {
                     output.WriteLine();
-                    brokeLine = true;
+                    //brokeLine = true;
 
                     width = 0;
                     for (int i = 1; i < nesting.Count; i++)
