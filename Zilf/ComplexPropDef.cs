@@ -181,7 +181,12 @@ namespace Zilf
                                 throw new InterpreterError("list in PROPDEF output pattern must have length 2");
                             }
 
-                            constant = (ZilAtom)elemList.First;     //XXX check before cast and raise error
+                            constant = elemList.First as ZilAtom;
+                            if (constant == null)
+                            {
+                                throw new InterpreterError("first item of list in PROPDEF output pattern must be an atom");
+                            }
+
                             output = elemList.Rest.First;
                         }
 

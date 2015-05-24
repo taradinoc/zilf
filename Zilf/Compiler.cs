@@ -1455,7 +1455,6 @@ namespace Zilf
                         // not a constant
                         value = CompileAsOperand(cc, rb, exprs[i], src);
 
-                        // XXX TODO: expand defs of *VariableRef and *Modified to include SET/SETG as well as LVAL/GVAL
                         if (IsLocalVariableRef(exprs[i]))
                         {
                             needTemp = LocalIsLaterModified(exprs, i);
@@ -1938,10 +1937,10 @@ namespace Zilf
                         return CompileMAP_DIRECTIONS(cc, rb, form.Rest, form, wantResult, resultStorage);
 
                     case StdAtom.COND:
-                        return CompileCOND(cc, rb, form.Rest, wantResult, resultStorage);
+                        return CompileCOND(cc, rb, form.Rest, form, wantResult, resultStorage);
 
                     case StdAtom.VERSION_P:
-                        return CompileVERSION_P(cc, rb, form.Rest, wantResult, resultStorage);
+                        return CompileVERSION_P(cc, rb, form.Rest, form, wantResult, resultStorage);
 
                     case StdAtom.NOT:
                     case StdAtom.F_P:
@@ -3191,7 +3190,7 @@ namespace Zilf
         }
 
         private static IOperand CompileCOND(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
-            bool wantResult, IVariable resultStorage)
+            ISourceLine src, bool wantResult, IVariable resultStorage)
         {
             ILabel nextLabel = rb.DefineLabel();
             ILabel endLabel = rb.DefineLabel();
@@ -3280,7 +3279,7 @@ namespace Zilf
                 {
                     if (!clauses.IsEmpty)
                     {
-                        //XXX warning message - following clauses will never be evaluated
+                        Errors.CompWarning(cc.Context, src, "COND: clauses after else part will never be evaluated");
                     }
 
                     break;
@@ -3297,7 +3296,7 @@ namespace Zilf
         }
 
         private static IOperand CompileVERSION_P(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
-            bool wantResult, IVariable resultStorage)
+            ISourceLine src, bool wantResult, IVariable resultStorage)
         {
             if (resultStorage == null)
                 resultStorage = rb.Stack;
@@ -3390,7 +3389,7 @@ namespace Zilf
 
                     if (condVersion == 0 && !clauses.IsEmpty)
                     {
-                        //XXX warning message - following clauses will never be evaluated
+                        Errors.CompWarning(cc.Context, src, "VERSION?: clauses after else part will never be evaluated");
                     }
 
                     return wantResult ? resultStorage : null;
