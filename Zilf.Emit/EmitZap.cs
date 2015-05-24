@@ -562,9 +562,10 @@ namespace Zilf.Emit.Zap
 
         private void FinishSymbols()
         {
-            // XXX header flags
             writer.WriteLine();
-            writer.WriteLine(INDENT + "FLAGS=0");
+
+            if (zversion >= 5)
+                writer.WriteLine(INDENT + "FLAGS=0");
 
             ushort flags2 = 0;
             bool defineExtab = true, defineTchars = true;

@@ -245,5 +245,32 @@ namespace IntegrationTests
         }
 
         #endregion
+
+        #region COND
+
+        [TestMethod]
+        public void COND_With_Parts_After_T_Should_Warn()
+        {
+            AssertRoutine("",
+                "<COND (<=? 0 1> <TELL \"nope\">) (T <TELL \"ok\">) (<=? 0 0> <TELL \"too late\">)>")
+                .WithWarnings()
+                .Compiles();
+        }
+
+        #endregion
+
+        #region VERSION?
+
+        [TestMethod]
+        public void VERSION_P_With_Parts_After_T_Should_Warn()
+        {
+            AssertRoutine("",
+                "<VERSION? (ZIP <TELL \"classic\">) (T <TELL \"extended\">) (XZIP <TELL \"too late\">)>")
+                .InV5()
+                .WithWarnings()
+                .Compiles();
+        }
+
+        #endregion
     }
 }

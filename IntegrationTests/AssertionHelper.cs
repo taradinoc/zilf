@@ -168,7 +168,14 @@ namespace IntegrationTests
                 "Failed to compile");
             if (expectWarnings != null)
             {
-                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+                if (expectWarnings.Value)
+                {
+                    Assert.AreNotEqual(0, result.WarningCount, "Expected at least one warning.");
+                }
+                else
+                {
+                    Assert.AreEqual(0, result.WarningCount, "Expected no warnings.");
+                }
             }
         }
 
