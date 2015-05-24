@@ -157,6 +157,11 @@ fragment SPACE
 	:	' ' | '\t' | '\f'
 	;
 
+// suppress warnings - these are defined in ZapInf
+fragment QUEST : ;
+fragment TILDE : ;
+fragment ARROW : ;
+
 WS	:	SPACE+				{ $channel = Hidden; }
 	;
 
