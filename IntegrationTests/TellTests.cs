@@ -77,6 +77,13 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Tell_Builtin_Should_Support_Characters()
+        {
+            AssertRoutine("", @"<TELL !\A !\B !\C>")
+                .Outputs("ABC");
+        }
+
+        [TestMethod]
         public void CRLF_CHARACTER_Should_Affect_String_Translation()
         {
             AssertRoutine("", "<TELL \"foo^bar\">")
