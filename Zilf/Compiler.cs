@@ -3478,6 +3478,14 @@ namespace Zilf
                     continue;
                 }
 
+                // literal character -> PRINTC
+                if (args[index] is ZilChar)
+                {
+                    rb.EmitPrint(PrintOp.Character, cc.Game.MakeOperand((int)((ZilChar)args[index]).Char));
+                    index++;
+                    continue;
+                }
+
                 // <QUOTE foo> -> <PRINTD ,foo>
                 if (args[index] is ZilForm)
                 {
