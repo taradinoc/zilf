@@ -300,6 +300,12 @@ namespace Zilf
             return ctx.FALSE;
         }
 
+        [Subr]
+        public static ZilObject ERROR(Context ctx, ZilObject[] args)
+        {
+            throw new InterpreterError("ERROR: " + string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
+        }
+
         #endregion
 
         #region Channels and Output
