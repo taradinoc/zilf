@@ -2477,19 +2477,7 @@ namespace Zilf
         }
 
         [Subr]
-        public static ZilObject MSETG(Context ctx, ZilObject[] args)
-        {
-            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
-            {
-                return CONSTANT(ctx, args);
-            }
-            else
-            {
-                throw new InterpreterError("MSETG not supported without MDL-ZIL?");
-            }
-        }
-
-        [Subr]
+        [Subr("MSETG")]
         public static ZilObject CONSTANT(Context ctx, ZilObject[] args)
         {
             if (args.Length != 2)
