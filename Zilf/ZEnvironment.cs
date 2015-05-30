@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
@@ -96,9 +97,19 @@ namespace Zilf
 
         private LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3)
         {
+            Contract.Requires(offset >= 0);
+            Contract.Requires(minVersion >= 1);
+
             this.Offset = offset;
             this.Flags = flags;
             this.MinVersion = minVersion;
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(Offset >= 0);
+            Contract.Invariant(MinVersion >= 1);
         }
 
         private static readonly Dictionary<string, LowCoreField> allFields = new Dictionary<string, LowCoreField>()
@@ -157,6 +168,8 @@ namespace Zilf
 
         public static LowCoreField Get(ZilAtom atom)
         {
+            Contract.Requires(atom != null);
+
             LowCoreField result;
             allFields.TryGetValue(atom.Text, out result);
             return result;
@@ -415,11 +428,11 @@ namespace Zilf
 
         private class ObjectOrderingEntry
         {
-            public ZilAtom Name;
+            public readonly ZilAtom Name;
             public ZilModelObject Object;
-            public ISourceLine InitialMention;      // only set for objects created from mentions
+            public readonly ISourceLine InitialMention;      // only set for objects created from mentions
             public int? DefinitionOrder;
-            public int MentionOrder;
+            public readonly int MentionOrder;
 
             public ObjectOrderingEntry(ZilAtom name, ZilModelObject obj, ISourceLine initialMention,
                 int? definitionOrder, int mentionOrder)
@@ -526,7 +539,7 @@ namespace Zilf
                 }
                 else
                 {
-                    System.Diagnostics.Debug.Assert(entry.InitialMention != null);
+                    Contract.Assume(entry.InitialMention != null);
                     Errors.CompWarning(ctx, entry.InitialMention, "mentioned object {0} is never defined", entry.Name);
                     yield return new ZilModelObject(entry.Name, new ZilList[0], false);
                 }
@@ -562,6 +575,8 @@ namespace Zilf
 
         private static ZilAtom GetObjectParentName(ZilModelObject obj)
         {
+            Contract.Requires(obj != null);
+
             foreach (var p in obj.Properties)
             {
                 var name = p.First as ZilAtom;
@@ -645,6 +660,8 @@ namespace Zilf
         /// <returns>The number of significant characters, between 0 and the length of the word (inclusive).</returns>
         private int CountVocabZCharacters(string word)
         {
+            Contract.Requires(word != null);
+
             // TODO: use the custom alphabet if present
 
             int result = 0;
@@ -660,6 +677,8 @@ namespace Zilf
 
         public void MergeVocabulary()
         {
+            Contract.Ensures(Vocabulary.Count <= Contract.OldValue(Vocabulary.Count));
+
             //XXX merge words that are indistinguishable because of the vocabulary resolution
 
             /* NOTE: words may end with incomplete multi-ZChar constructs that are still
@@ -670,17 +689,25 @@ namespace Zilf
 
         public bool IsLongWord(Word word)
         {
+            Contract.Requires(word != null);
+
             var text = word.Atom.Text.ToLower();
             return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
         }
 
         public bool TryGetBitSynonym(ZilAtom alias, out ZilAtom original)
         {
+            Contract.Requires(alias != null);
+            Contract.Ensures(Contract.ValueAtReturn(out original) != null || Contract.Result<bool>() == false);
+
             return BitSynonyms.TryGetValue(alias, out original);
         }
 
         public void AddBitSynonym(ZilAtom alias, ZilAtom target)
         {
+            Contract.Requires(alias != null);
+            Contract.Requires(target != null);
+
             if (ctx.GetZVal(alias) != null)
             {
                 throw new InterpreterError(string.Format("{0} is already defined", alias, target));
@@ -703,6 +730,10 @@ namespace Zilf
 
         public void EnsureMinimumHeaderExtension(int words)
         {
+            Contract.Requires(words >= 0);
+            Contract.Ensures(HeaderExtensionWords >= Contract.OldValue(HeaderExtensionWords));
+            Contract.Ensures(HeaderExtensionWords >= words);
+
             HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
         }
     }
@@ -763,6 +794,10 @@ namespace Zilf
             ZilAtom action, ZilAtom preaction, ZilAtom actionName,
             IEnumerable<ZilAtom> synonyms = null)
         {
+            Contract.Requires(verb != null);
+            Contract.Requires(numObjects >= 0 & numObjects <= 2);
+            Contract.Requires(action != null);
+
             this.src = src;
 
             this.Verb = verb;
@@ -785,6 +820,10 @@ namespace Zilf
 
         public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
         {
+            Contract.Requires(definition != null);
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<Syntax>() != null);
+
             int numObjects = 0;
             ZilAtom verb = null, prep1 = null, prep2 = null;
             ZilAtom action = null, preaction = null, actionName = null;
@@ -939,6 +978,7 @@ namespace Zilf
             }
 
             // validation
+            Contract.Assume(numObjects <= 2);
             if (numObjects < 1)
             {
                 prep1 = null;
@@ -1129,8 +1169,8 @@ namespace Zilf
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;
 
-        private Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
-        private Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
+        private readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
+        private readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
         public Word(ZilAtom atom)
         {
@@ -1198,11 +1238,13 @@ namespace Zilf
 
         private bool IsNewVoc(Context ctx)
         {
+            Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
         }
 
         private bool IsCompactVocab(Context ctx)
         {
+            Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
         }
 
@@ -1213,6 +1255,8 @@ namespace Zilf
         /// <returns>true if the new part of speech should set the First flag.</returns>
         private bool ShouldSetFirst(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             // if no parts of speech are set yet, this is easy
             if (this.PartOfSpeech == Zilf.PartOfSpeech.None)
                 return true;
@@ -1250,6 +1294,8 @@ namespace Zilf
         /// </remarks>
         private void CheckTooMany(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             byte b = (byte)(PartOfSpeech & ~PartOfSpeech.FirstMask);
             byte count = 0;
 
@@ -1358,6 +1404,9 @@ namespace Zilf
 
         public void SetObject(Context ctx, ISourceLine location)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Object) != 0);
+
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
             {
                 // there is no PartOfSpeech.ObjectFirst, so don't change the First flags
@@ -1370,6 +1419,9 @@ namespace Zilf
 
         public void SetVerb(Context ctx, ISourceLine location, byte value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Verb) != 0);
+
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -1383,6 +1435,9 @@ namespace Zilf
 
         public void SetAdjective(Context ctx, ISourceLine location, byte value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Adjective) != 0);
+
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
                 if (ctx.ZEnvironment.ZVersion < 4 && ShouldSetFirst(ctx))
@@ -1396,6 +1451,9 @@ namespace Zilf
 
         public void SetDirection(Context ctx, ISourceLine location, byte value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Direction) != 0);
+
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -1409,6 +1467,9 @@ namespace Zilf
 
         public void SetBuzzword(Context ctx, ISourceLine location, byte value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Buzzword) != 0);
+
             if ((PartOfSpeech & Zilf.PartOfSpeech.Buzzword) == 0)
             {
                 // buzzword value comes before everything but preposition, except in CompactVocab
@@ -1423,6 +1484,9 @@ namespace Zilf
 
         public void SetPreposition(Context ctx, ISourceLine location, byte value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & Zilf.PartOfSpeech.Preposition) != 0);
+
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
                 // preposition value is always first, except in CompactVocab
@@ -1437,6 +1501,9 @@ namespace Zilf
 
         private void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures((PartOfSpeech & part) == 0);
+
             var query = from pair in speechValues
                         where pair.Key != part
                         orderby pair.Key
@@ -1499,6 +1566,10 @@ namespace Zilf
 
         public void WriteToBuilder(Context ctx, Emit.IWordBuilder wb, Func<byte, Emit.IOperand> dirIndexToPropertyOperand)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(wb != null);
+            Contract.Requires(dirIndexToPropertyOperand != null);
+
             // discard excess parts of speech if needed
             CheckTooMany(ctx);
 
@@ -1559,7 +1630,7 @@ namespace Zilf
                 if (!compactVocab)
                 {
                     // there is no PrepositionFirst because Preposition always comes first
-                    System.Diagnostics.Debug.Assert((pos & Zilf.PartOfSpeech.FirstMask) == 0);
+                    Contract.Assume((pos & Zilf.PartOfSpeech.FirstMask) == 0);
                     partsToWrite.Insert(0, Zilf.PartOfSpeech.Preposition);
                 }
             }
@@ -1606,12 +1677,24 @@ namespace Zilf
 
         public Synonym(Word original, Word synonym)
         {
+            Contract.Requires(original != null);
+            Contract.Requires(synonym != null);
+
             this.OriginalWord = original;
             this.SynonymWord = synonym;
         }
 
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(OriginalWord != null);
+            Contract.Invariant(SynonymWord != null);
+        }
+
         public virtual void Apply(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             if ((OriginalWord.PartOfSpeech & PartOfSpeech.Adjective) != 0)
                 SynonymWord.SetAdjective(ctx, OriginalWord.GetDefinition(PartOfSpeech.Adjective), OriginalWord.GetValue(PartOfSpeech.Adjective));
 
@@ -1639,6 +1722,8 @@ namespace Zilf
         public VerbSynonym(Word original, Word synonym)
             : base(original, synonym)
         {
+            Contract.Requires(original != null);
+            Contract.Requires(synonym != null);
         }
     }
 
@@ -1647,6 +1732,8 @@ namespace Zilf
         public PrepSynonym(Word original, Word synonym)
             : base(original, synonym)
         {
+            Contract.Requires(original != null);
+            Contract.Requires(synonym != null);
         }
     }
 
@@ -1655,6 +1742,8 @@ namespace Zilf
         public AdjSynonym(Word original, Word synonym)
             : base(original, synonym)
         {
+            Contract.Requires(original != null);
+            Contract.Requires(synonym != null);
         }
     }
 
@@ -1663,6 +1752,8 @@ namespace Zilf
         public DirSynonym(Word original, Word synonym)
             : base(original, synonym)
         {
+            Contract.Requires(original != null);
+            Contract.Requires(synonym != null);
         }
     }
 }

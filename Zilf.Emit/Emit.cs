@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit
 {
@@ -34,6 +35,7 @@ namespace Zilf.Emit
         }
     }
 
+    [ContractClass(typeof(IGameBuilderContracts))]
     public interface IGameBuilder
     {
         /// <summary>
@@ -56,7 +58,7 @@ namespace Zilf.Emit
         /// <summary>
         /// Defines a new table.
         /// </summary>
-        /// <param name="name">The name of the table.</param>
+        /// <param name="name">The name of the table, or null to generate a new name.</param>
         /// <param name="pure">true if the table should be stored in read-only memory.</param>
         /// <returns>A helper object which may be used to add values to the table or refer
         /// to the table as an operand.</returns>
@@ -182,6 +184,145 @@ namespace Zilf.Emit
         void Finish();
     }
 
+    [ContractClassFor(typeof(IGameBuilder))]
+    abstract class IGameBuilderContracts : IGameBuilder
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(Options != null);
+            Contract.Invariant(MaxPropertyLength > 0);
+            Contract.Invariant(MaxProperties > 0);
+            Contract.Invariant(MaxFlags > 0);
+            Contract.Invariant(MaxCallArguments > 0);
+            Contract.Invariant(Zero != null);
+            Contract.Invariant(One != null);
+            Contract.Invariant(SelfInsertingBreaks != null);
+            Contract.Invariant(VocabularyTable != null);
+        }
+
+        public IGameOptions Options
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IDebugFileBuilder DebugFile
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IGlobalBuilder DefineGlobal(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<IGlobalBuilder>() != null);
+            return default(IGlobalBuilder);
+        }
+
+        public ITableBuilder DefineTable(string name, bool pure)
+        {
+            Contract.Ensures(Contract.Result<ITableBuilder>() != null);
+            return default(ITableBuilder);
+        }
+
+        public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<IRoutineBuilder>() != null);
+            return default(IRoutineBuilder);
+        }
+
+        public IObjectBuilder DefineObject(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            return default(IObjectBuilder);
+        }
+
+        public IPropertyBuilder DefineProperty(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            return default(IPropertyBuilder);
+        }
+
+        public IFlagBuilder DefineFlag(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            return default(IFlagBuilder);
+        }
+
+        public int MaxPropertyLength
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public int MaxProperties
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public int MaxFlags
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public int MaxCallArguments
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IOperand Zero
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IOperand One
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IOperand MakeOperand(int value)
+        {
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+            return default(IOperand);
+        }
+
+        public IOperand MakeOperand(string value)
+        {
+            Contract.Requires(value != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+            return default(IOperand);
+        }
+
+        public IOperand DefineConstant(string name, IOperand value)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(value != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+            return default(IOperand);
+        }
+
+        public IWordBuilder DefineVocabularyWord(string word)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(word));
+            Contract.Ensures(Contract.Result<IWordBuilder>() != null);
+            return default(IWordBuilder);
+        }
+
+        public ICollection<char> SelfInsertingBreaks
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IOperand VocabularyTable
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void Finish()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
     public interface IGameOptions
     {
     }
@@ -190,14 +331,46 @@ namespace Zilf.Emit
     {
     }
 
+    [ContractClass(typeof(IVariableContracts))]
     public interface IVariable : IOperand
     {
         IIndirectOperand Indirect { get; }
     }
 
+    [ContractClassFor(typeof(IVariable))]
+    abstract class IVariableContracts : IVariable
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(Indirect != null);
+        }
+
+        public IIndirectOperand Indirect
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+    }
+
+    [ContractClass(typeof(IIndirectOperandContracts))]
     public interface IIndirectOperand : IOperand
     {
         IVariable Variable { get; }
+    }
+
+    [ContractClassFor(typeof(IIndirectOperand))]
+    abstract class IIndirectOperandContracts : IIndirectOperand
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(Variable != null);
+        }
+
+        public IVariable Variable
+        {
+            get { throw new System.NotImplementedException(); }
+        }
     }
 
     public enum Condition
@@ -503,6 +676,7 @@ namespace Zilf.Emit
         Unicode,
     }
 
+    [ContractClass(typeof(IRoutineBuilderContracts))]
     public interface IRoutineBuilder : IOperand
     {
         /// <summary>
@@ -608,6 +782,326 @@ namespace Zilf.Emit
         void Finish();
     }
 
+    [ContractClassFor(typeof(IRoutineBuilder))]
+    abstract class IRoutineBuilderContracts : IRoutineBuilder
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(RTrue != null);
+            Contract.Invariant(RFalse != null);
+            Contract.Invariant(Stack != null);
+            Contract.Invariant(RTrue != RFalse && RTrue != Stack && RFalse != Stack);
+            Contract.Invariant(RoutineStart != null);
+        }
+
+        public bool CleanStack
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public ILabel RTrue
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public ILabel RFalse
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public IVariable Stack
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public ILocalBuilder DefineRequiredParameter(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
+            return default(ILocalBuilder);
+        }
+
+        public ILocalBuilder DefineOptionalParameter(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
+            return default(ILocalBuilder);
+        }
+
+        public ILocalBuilder DefineLocal(string name)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
+            return default(ILocalBuilder);
+        }
+
+        public ILabel RoutineStart
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public ILabel DefineLabel()
+        {
+            Contract.Ensures(Contract.Result<ILabel>() != null);
+            return default(ILabel);
+        }
+
+        public void MarkLabel(ILabel label)
+        {
+            Contract.Requires(label != null);
+        }
+
+        public bool HasArgCount
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void Branch(ILabel label)
+        {
+            Contract.Requires(label != null);
+        }
+
+        public void Branch(Condition cond, IOperand left, IOperand right, ILabel label, bool polarity)
+        {
+            Contract.Requires(left != null || (cond == Condition.Verify || cond == Condition.Original));
+            Contract.Requires(right != null || (cond == Condition.Verify || cond == Condition.Original || cond == Condition.ArgProvided));
+            Contract.Requires(label != null);
+        }
+
+        public void BranchIfZero(IOperand operand, ILabel label, bool polarity)
+        {
+            Contract.Requires(operand != null);
+            Contract.Requires(label != null);
+        }
+
+        public void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(option1 != null);
+            Contract.Requires(label != null);
+        }
+
+        public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(option1 != null);
+            Contract.Requires(option2 != null);
+            Contract.Requires(label != null);
+        }
+
+        public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(option1 != null);
+            Contract.Requires(option2 != null);
+            Contract.Requires(option3 != null);
+            Contract.Requires(label != null);
+        }
+
+        public void Return(IOperand result)
+        {
+            Contract.Requires(result != null);
+        }
+
+        public void EmitRestart()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void EmitQuit()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool HasBranchSave
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void EmitSave(ILabel label, bool polarity)
+        {
+            Contract.Requires(HasBranchSave);
+            Contract.Requires(label != null);
+        }
+
+        public void EmitRestore(ILabel label, bool polarity)
+        {
+            Contract.Requires(HasBranchSave);
+            Contract.Requires(label != null);
+        }
+
+        public bool HasStoreSave
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void EmitSave(IVariable result)
+        {
+            Contract.Requires(HasStoreSave);
+            Contract.Requires(result != null);
+        }
+
+        public void EmitRestore(IVariable result)
+        {
+            Contract.Requires(HasStoreSave);
+            Contract.Requires(result != null);
+        }
+
+        public bool HasExtendedSave
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void EmitSave(IOperand table, IOperand size, IOperand name, IVariable result)
+        {
+            Contract.Requires(HasExtendedSave);
+            Contract.Requires(table != null);
+            Contract.Requires(size != null);
+            Contract.Requires(name != null);
+            Contract.Requires(result != null);
+        }
+
+        public void EmitRestore(IOperand table, IOperand size, IOperand name, IVariable result)
+        {
+            Contract.Requires(HasExtendedSave);
+            Contract.Requires(table != null);
+            Contract.Requires(size != null);
+            Contract.Requires(name != null);
+            Contract.Requires(result != null);
+        }
+
+        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(table != null);
+            Contract.Requires(length != null);
+            Contract.Requires(result != null);
+            Contract.Requires(label != null);
+        }
+
+        public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(result != null);
+            Contract.Requires(label != null);
+        }
+
+        public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(result != null);
+            Contract.Requires(label != null);
+        }
+
+        public bool HasUndo
+        {
+            get { throw new System.NotImplementedException(); }
+        }
+
+        public void EmitNullary(NullaryOp op, IVariable result)
+        {
+            Contract.Requires(HasUndo || (op != NullaryOp.RestoreUndo && op != NullaryOp.SaveUndo));
+        }
+
+        public void EmitUnary(UnaryOp op, IOperand value, IVariable result)
+        {
+            Contract.Requires(value != null);
+        }
+
+        public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable result)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(right != null);
+        }
+
+        public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable result)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(center != null);
+            Contract.Requires(right != null);
+        }
+
+        public void EmitPrint(string text, bool crlfRtrue)
+        {
+            Contract.Requires(text != null);
+        }
+
+        public void EmitPrint(PrintOp op, IOperand value)
+        {
+            Contract.Requires(value != null);
+        }
+
+        public void EmitPrintTable(IOperand table, IOperand width, IOperand height, IOperand skip)
+        {
+            Contract.Requires(table != null);
+            Contract.Requires(width != null);
+            Contract.Requires(height != null || skip == null);
+        }
+
+        public void EmitPrintNewLine()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void EmitRead(IOperand chrbuf, IOperand lexbuf, IOperand interval, IOperand routine, IVariable result)
+        {
+            Contract.Requires(chrbuf != null);
+            Contract.Requires(lexbuf != null || interval == null);
+            Contract.Requires(interval != null || routine == null);
+        }
+
+        public void EmitReadChar(IOperand interval, IOperand routine, IVariable result)
+        {
+            Contract.Requires(interval != null || routine == null);
+            Contract.Requires(result != null);
+        }
+
+        public void EmitPlaySound(IOperand number, IOperand effect, IOperand volume, IOperand routine)
+        {
+            Contract.Requires(number != null);
+            Contract.Requires(effect != null || volume == null);
+            Contract.Requires(volume != null || routine == null);
+        }
+
+        public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest)
+        {
+            Contract.Requires(src != null);
+            Contract.Requires(length != null);
+            Contract.Requires(srcOffset != null);
+            Contract.Requires(dest != null);
+        }
+
+        public void EmitTokenize(IOperand text, IOperand parse, IOperand dictionary, IOperand flag)
+        {
+            Contract.Requires(text != null);
+            Contract.Requires(parse != null);
+            Contract.Requires(dictionary != null || flag == null);
+        }
+
+        public void EmitCall(IOperand routine, IOperand[] args, IVariable result)
+        {
+            Contract.Requires(routine != null);
+            Contract.Requires(args != null);
+        }
+
+        public void EmitStore(IVariable dest, IOperand src)
+        {
+            Contract.Requires(dest != null);
+            Contract.Requires(src != null);
+        }
+
+        public void EmitPopStack()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Finish()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
     public interface ILocalBuilder : IVariable
     {
         IOperand DefaultValue { get; set; }
@@ -627,6 +1121,7 @@ namespace Zilf.Emit
     {
     }
 
+    [ContractClass(typeof(IObjectBuilderContracts))]
     public interface IObjectBuilder : IOperand
     {
         string DescriptiveName { get; set; }
@@ -641,12 +1136,70 @@ namespace Zilf.Emit
         void AddFlag(IFlagBuilder flag);
     }
 
+    [ContractClassFor(typeof(IObjectBuilder))]
+    abstract class IObjectBuilderContracts : IObjectBuilder
+    {
+        public string DescriptiveName { get; set; }
+        public IObjectBuilder Parent { get; set; }
+        public IObjectBuilder Child { get; set; }
+        public IObjectBuilder Sibling { get; set; }
+
+        public void AddByteProperty(IPropertyBuilder prop, IOperand value)
+        {
+            Contract.Requires(prop != null);
+            Contract.Requires(value != null);
+        }
+
+        public void AddWordProperty(IPropertyBuilder prop, IOperand value)
+        {
+            Contract.Requires(prop != null);
+            Contract.Requires(value != null);
+        }
+
+        public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
+        {
+            Contract.Requires(prop != null);
+            Contract.Ensures(Contract.Result<ITableBuilder>() != null);
+            return default(ITableBuilder);
+        }
+
+        public void AddFlag(IFlagBuilder flag)
+        {
+            Contract.Requires(flag != null);
+        }
+    }
+
+    [ContractClass(typeof(ITableBuilderContracts))]
     public interface ITableBuilder : IOperand
     {
         void AddByte(byte value);
         void AddByte(IOperand value);
         void AddShort(short value);
         void AddShort(IOperand value);
+    }
+
+    [ContractClassFor(typeof(ITableBuilder))]
+    abstract class ITableBuilderContracts : ITableBuilder
+    {
+        public void AddByte(byte value)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void AddByte(IOperand value)
+        {
+            Contract.Requires(value != null);
+        }
+
+        public void AddShort(short value)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void AddShort(IOperand value)
+        {
+            Contract.Requires(value != null);
+        }
     }
 
     public interface IWordBuilder : ITableBuilder
@@ -657,6 +1210,7 @@ namespace Zilf.Emit
     {
     }
 
+    [ContractClass(typeof(IDebugFileBuilderContracts))]
     public interface IDebugFileBuilder
     {
         /// <summary>
@@ -686,5 +1240,30 @@ namespace Zilf.Emit
         /// <param name="point">The position corresponding to the next
         /// instruction emitted.</param>
         void MarkSequencePoint(IRoutineBuilder routine, DebugLineRef point);
+    }
+
+    [ContractClassFor(typeof(IDebugFileBuilder))]
+    abstract class IDebugFileBuilderContracts : IDebugFileBuilder
+    {
+        public void MarkAction(IOperand action, string name)
+        {
+            Contract.Requires(action != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+        }
+
+        public void MarkObject(IObjectBuilder obj, DebugLineRef start, DebugLineRef end)
+        {
+            Contract.Requires(obj != null);
+        }
+
+        public void MarkRoutine(IRoutineBuilder routine, DebugLineRef start, DebugLineRef end)
+        {
+            Contract.Requires(routine != null);
+        }
+
+        public void MarkSequencePoint(IRoutineBuilder routine, DebugLineRef point)
+        {
+            Contract.Requires(routine != null);
+        }
     }
 }

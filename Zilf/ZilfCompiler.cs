@@ -19,6 +19,7 @@
 using Antlr.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -239,6 +240,8 @@ namespace Zilf
 
         internal static GameOptions MakeGameOptions(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             var zenv = ctx.ZEnvironment;
 
             switch (zenv.ZVersion)

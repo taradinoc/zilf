@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using Zilf.Emit;
@@ -98,6 +99,10 @@ namespace Zilf
 
         public static ComplexPropDef Parse(IEnumerable<ZilObject> spec, Context ctx)
         {
+            Contract.Requires(spec != null);
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ComplexPropDef>() != null);
+
             var inputs = new List<InputElement>();
             var outputs = new List<OutputElement>();
             var patterns = new List<Pattern>();
@@ -188,6 +193,7 @@ namespace Zilf
                             }
 
                             output = elemList.Rest.First;
+                            Contract.Assert(output != null);
                         }
 
                         switch (output.GetTypeAtom(ctx).StdAtom)
@@ -264,6 +270,8 @@ namespace Zilf
 
         private static OutputElement ConvertOutputForm(ZilForm form, ZilAtom constant)
         {
+            Contract.Requires(form != null);
+
             // validate and parse
             var atom = form.First as ZilAtom;
             if (atom == null)
@@ -510,6 +518,9 @@ namespace Zilf
 
         public void PreBuildProperty(Context ctx, ZilList prop, ElementPreBuilders preBuilders)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(prop != null);
+            
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
             foreach (var p in patterns)
@@ -530,6 +541,10 @@ namespace Zilf
 
         public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(prop != null);
+            Contract.Requires(tb != null);
+
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
             foreach (var p in patterns)
@@ -554,6 +569,12 @@ namespace Zilf
         private bool MatchPartialPattern(Context ctx, ref ZilList prop, InputElement[] inputs, int startIndex,
             Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(prop != null);
+            Contract.Requires(inputs != null);
+            Contract.Requires(startIndex >= 0 && startIndex < inputs.Length);
+            Contract.Ensures(Contract.ValueAtReturn(out prop) != null);
+
             for (int i = startIndex; i < inputs.Length; i++)
             {
                 var input = inputs[i];
@@ -579,6 +600,7 @@ namespace Zilf
                                 queue = new Queue<ZilObject>(1);
                                 captures.Add(atom, queue);
                             }
+                            Contract.Assume(queue != null);
                             queue.Enqueue(prop.First);
                         }
 
@@ -634,6 +656,12 @@ namespace Zilf
         private bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
             ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(captures != null);
+            Contract.Requires(outputs != null);
+            Contract.Requires(startIndex >= 0);
+            Contract.Requires(startIndex <= outputs.Length);
+
             for (int i = startIndex; i < outputs.Length; i++)
             {
                 var output = outputs[i];
@@ -692,6 +720,13 @@ namespace Zilf
         private bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
             Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(tb != null);
+            Contract.Requires(captures != null);
+            Contract.Requires(outputs != null);
+            Contract.Requires(startIndex >= 0);
+            Contract.Requires(startIndex <= outputs.Length);
+
             ZilFix length;
 
             for (int i = startIndex; i < outputs.Length; i++)

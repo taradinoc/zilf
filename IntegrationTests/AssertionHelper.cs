@@ -19,7 +19,7 @@ namespace IntegrationTests
 
         protected AbstractAssertionHelper()
         {
-            System.Diagnostics.Debug.Assert(this.GetType() == typeof(TThis));
+            Contract.Assume(this.GetType() == typeof(TThis));
         }
 
         public TThis InV3()

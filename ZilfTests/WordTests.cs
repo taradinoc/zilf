@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 
 namespace ZilfTests
 {
@@ -46,7 +47,7 @@ namespace ZilfTests
 
             // set parts of speech
             const byte VERB_VALUE = 115, PREPOSITION_VALUE = 200;
-            System.Diagnostics.Debug.Assert(VERB_VALUE != PREPOSITION_VALUE);
+            Contract.Assume(VERB_VALUE != PREPOSITION_VALUE);
 
             setPartsOfSpeech(ctx, word, VERB_VALUE, PREPOSITION_VALUE);
 

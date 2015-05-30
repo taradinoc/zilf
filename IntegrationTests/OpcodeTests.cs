@@ -2024,6 +2024,7 @@ namespace IntegrationTests
             // V1 to V6
             // 0 to 0 operands
             AssertExpr("<RFALSE 0>").InV3().DoesNotCompile();
+            AssertExpr("<RFALSE 0 0>").InV3().DoesNotCompile();
         }
 
         [TestMethod]

@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
@@ -474,7 +475,7 @@ namespace Zilf.Emit
                         if (line.TargetLine != null)
                         {
                             LinkedListNode<Line> targetNode = lines.Find(line.TargetLine);
-                            System.Diagnostics.Debug.Assert(targetNode != null);
+                            Contract.Assume(targetNode != null);
                             queue.Enqueue(targetNode);
                         }
                     }
@@ -552,7 +553,7 @@ namespace Zilf.Emit
 
                             var originalTarget = line.TargetLine;
                             var targetNode = lines.Find(originalTarget);
-                            System.Diagnostics.Debug.Assert(targetNode != null && targetNode.Next != null);
+                            Contract.Assume(targetNode != null && targetNode.Next != null);
 
                             var lineAfterTarget = targetNode.Next.Value;
 
@@ -797,8 +798,10 @@ namespace Zilf.Emit
                         /* if the line is labeled, update references to it. we assume the
                          * optimization rules will never delete the labeled last line of
                          * the function unless it's unreachable. */
-                        if (line.Label != null && next != null)
+                        if (line.Label != null /*&& next != null*/)
                         {
+                            Contract.Assert(next != null);
+
                             // update references to this label
                             if (next.Value.Label == null)
                             {

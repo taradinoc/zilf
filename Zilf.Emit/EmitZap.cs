@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -37,6 +38,7 @@ namespace Zilf.Emit.Zap
         }
     }
 
+    [ContractClass(typeof(IZapStreamFactoryContracts))]
     public interface IZapStreamFactory
     {
         Stream CreateMainStream();
@@ -50,6 +52,59 @@ namespace Zilf.Emit.Zap
         string GetStringFileName(bool withExt);
 
         bool FrequentWordsFileExists { get; }
+    }
+
+    [ContractClassFor(typeof(IZapStreamFactory))]
+    abstract class IZapStreamFactoryContracts : IZapStreamFactory
+    {
+        public Stream CreateMainStream()
+        {
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            return default(Stream);
+        }
+
+        public Stream CreateFrequentWordsStream()
+        {
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            return default(Stream);
+        }
+
+        public Stream CreateDataStream()
+        {
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            return default(Stream);
+        }
+
+        public Stream CreateStringStream()
+        {
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            return default(Stream);
+        }
+
+        public string GetMainFileName(bool withExt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetDataFileName(bool withExt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetFrequentWordsFileName(bool withExt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetStringFileName(bool withExt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool FrequentWordsFileExists
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 
     public class GameOptions : IGameOptions
@@ -88,20 +143,20 @@ namespace Zilf.Emit.Zap
         internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
 
         // all global names go in here
-        private Dictionary<string, string> symbols = new Dictionary<string, string>(250);
+        private readonly Dictionary<string, string> symbols = new Dictionary<string, string>(250);
 
-        private List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
-        private List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
-        private Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
-        private Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
-        private Dictionary<string, IOperand> constants = new Dictionary<string, IOperand>(100);
-        private List<GlobalBuilder> globals = new List<GlobalBuilder>(100);
-        private List<TableBuilder> impureTables = new List<TableBuilder>(10);
-        private List<TableBuilder> pureTables = new List<TableBuilder>(10);
-        private List<WordBuilder> vocabulary = new List<WordBuilder>(100);
-        private HashSet<char> siBreaks = new HashSet<char>();
-        private Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
-        private Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
+        private readonly List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
+        private readonly List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
+        private readonly Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
+        private readonly Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
+        private readonly Dictionary<string, IOperand> constants = new Dictionary<string, IOperand>(100);
+        private readonly List<GlobalBuilder> globals = new List<GlobalBuilder>(100);
+        private readonly List<TableBuilder> impureTables = new List<TableBuilder>(10);
+        private readonly List<TableBuilder> pureTables = new List<TableBuilder>(10);
+        private readonly List<WordBuilder> vocabulary = new List<WordBuilder>(100);
+        private readonly HashSet<char> siBreaks = new HashSet<char>();
+        private readonly Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
+        private readonly Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
 
         private readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
@@ -197,7 +252,7 @@ namespace Zilf.Emit.Zap
                         writer.WriteLine(INDENT + ".SOUND");
                     }
                 }
-                else if (zversion > 4)
+                else
                 {
                     // build the header
                     writer.WriteLine();
@@ -869,6 +924,12 @@ namespace Zilf.Emit.Zap
             this.Variable = variable;
         }
 
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(Variable != null);
+        }
+
         public IVariable Variable { get; private set; }
 
         public override string ToString()
@@ -905,14 +966,14 @@ namespace Zilf.Emit.Zap
 
         internal DebugLineRef defnStart, defnEnd;
 
-        private PeepholeBuffer<ZapCode> peep;
+        private readonly PeepholeBuffer<ZapCode> peep;
         private readonly ILabel routineStartLabel;
         private int nextLabel = 0;
         private string pendingDebugText;
 
-        private List<LocalBuilder> requiredParams = new List<LocalBuilder>();
-        private List<LocalBuilder> optionalParams = new List<LocalBuilder>();
-        private List<LocalBuilder> locals = new List<LocalBuilder>();
+        private readonly List<LocalBuilder> requiredParams = new List<LocalBuilder>();
+        private readonly List<LocalBuilder> optionalParams = new List<LocalBuilder>();
+        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
 
         public RoutineBuilder(GameBuilder game, string name, bool entryPoint, bool cleanStack)
         {
@@ -1113,11 +1174,12 @@ namespace Zilf.Emit.Zap
                     throw new ArgumentException("Expected two operands for binary condition", "right");
             }
 
+            Contract.Assert(leftVar || !unary);
             AddLine(
                 nullary ?
                     opcode :
                 unary ?
-                    string.Format("{0} {1}{2}", opcode, leftVar ? "'" : "", left) :
+                    string.Format("{0} '{1}", opcode, left) :       // see assert above
                     string.Format("{0} {1}{2},{3}", opcode, leftVar ? "'" : "", left, right),
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
@@ -1732,11 +1794,8 @@ namespace Zilf.Emit.Zap
                 }
             }
 
-            if (result != null)
-            {
-                sb.Append(" >");
-                sb.Append(result);
-            }
+            sb.Append(" >");
+            sb.Append(result);
 
             AddLine(sb.ToString(), null, PeepholeLineType.Plain);
         }
@@ -2205,6 +2264,7 @@ namespace Zilf.Emit.Zap
                     if (Match(a => (rm = equalZeroRegex.Match(a.Code.Text)).Success))
                     {
                         // EQUAL? x,0 | EQUAL? 0,x => ZERO? x
+                        Contract.Assume(rm != null);
                         return Combine1to1("ZERO? " + rm.Groups["var"]);
                     }
 
@@ -2507,9 +2567,6 @@ namespace Zilf.Emit.Zap
 
         public void AddByte(IOperand value)
         {
-            if (value == null)
-                throw new ArgumentNullException();
-
             types.Add(T_OP_BYTE);
             operandValues.Add(value);
             size++;
@@ -2524,9 +2581,6 @@ namespace Zilf.Emit.Zap
 
         public void AddShort(IOperand value)
         {
-            if (value == null)
-                throw new ArgumentNullException();
-
             types.Add(T_OP_WORD);
             operandValues.Add(value);
             size += 2;
@@ -2596,9 +2650,9 @@ namespace Zilf.Emit.Zap
             public const byte WORD = 1;
             public const byte TABLE = 2;
 
-            public PropertyBuilder Property;
-            public IOperand Value;
-            public byte Kind;
+            public readonly PropertyBuilder Property;
+            public readonly IOperand Value;
+            public readonly byte Kind;
 
             public PropertyEntry(PropertyBuilder prop, IOperand value, byte kind)
             {
@@ -2812,8 +2866,8 @@ namespace Zilf.Emit.Zap
 
     class DebugFileBuilder : IDebugFileBuilder
     {
-        private Dictionary<string, int> files = new Dictionary<string, int>();
-        private List<string> storedLines = new List<string>();
+        private readonly Dictionary<string, int> files = new Dictionary<string, int>();
+        private readonly List<string> storedLines = new List<string>();
         
         public int GetFileNumber(string filename)
         {
