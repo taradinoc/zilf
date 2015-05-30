@@ -27,6 +27,7 @@ using Antlr.Runtime.Tree;
 using Zilf.Emit;
 using Zilf.Lexing;
 using Zilf.Parsing;
+using System.Diagnostics.Contracts;
 
 namespace Zilf
 {
@@ -177,6 +178,8 @@ namespace Zilf
 
         private static Context ParseArgs(string[] args, out string inFile, out string outFile)
         {
+            Contract.Requires(args != null);
+
             inFile = null;
             outFile = null;
 
@@ -345,12 +348,18 @@ Compiler switches:
 
         public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+
             ICharStream charStream = new ANTLRStringStream(str);
             return Evaluate(ctx, charStream, wantExceptions);
         }
 
         public static ZilObject Evaluate(Context ctx, ICharStream charStream, bool wantExceptions = false)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(charStream != null);
+
             ZilLexer lexer = new ZilLexer(charStream);
 
             ITokenStream tokenStream = new CommonTokenStream(lexer);

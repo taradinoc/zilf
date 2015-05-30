@@ -18,6 +18,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using Zilf.Emit;
@@ -86,16 +88,33 @@ namespace Zilf
             /// <summary>
             /// The ZIL context that resulted from loading the source code.
             /// </summary>
-            public Context Context;
+            public Context Context { get; private set; }
             /// <summary>
             /// The game being built.
             /// </summary>
-            public IGameBuilder Game;
+            public IGameBuilder Game { get; private set; }
             /// <summary>
             /// True if debug information should be generated (i.e. if the user
             /// wants it and the game builder supports it).
             /// </summary>
-            public bool WantDebugInfo;
+            public bool WantDebugInfo { get; private set; }
+
+            public CompileCtx(Context ctx, IGameBuilder game, bool wantDebugInfo)
+            {
+                Contract.Requires(ctx != null);
+                Contract.Requires(game != null);
+
+                this.Context = ctx;
+                this.Game = game;
+                this.WantDebugInfo = wantDebugInfo;
+            }
+
+            [ContractInvariantMethod]
+            private void ObjectInvariant()
+            {
+                Contract.Invariant(Context != null);
+                Contract.Invariant(Game != null);
+            }
 
             public ITableBuilder VerbTable, ActionTable, PreactionTable, PrepositionTable;
 
@@ -120,10 +139,7 @@ namespace Zilf
 
         public void Compile(Context ctx, IGameBuilder gb)
         {
-            CompileCtx cc = new CompileCtx();
-            cc.Context = ctx;
-            cc.Game = gb;
-            cc.WantDebugInfo = gb.DebugFile != null && ctx.WantDebugInfo;
+            CompileCtx cc = new CompileCtx(ctx, gb, gb.DebugFile != null && ctx.WantDebugInfo);
 
             /* the various structures need to be defined in the right order so
              * that symbols like P?FOO, V?FOO, etc. are always defined before
@@ -186,10 +202,10 @@ namespace Zilf
                 cc.Tables.Add(table, gb.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0));
 
             // vocabulary for punctuation
-            DefinePunctWord(ctx, cc, ".", "PERIOD");
-            DefinePunctWord(ctx, cc, ",", "COMMA");
-            DefinePunctWord(ctx, cc, "\"", "QUOTE");
-            DefinePunctWord(ctx, cc, "'", "APOSTROPHE");
+            DefinePunctWord(cc, ".", "PERIOD");
+            DefinePunctWord(cc, ",", "COMMA");
+            DefinePunctWord(cc, "\"", "QUOTE");
+            DefinePunctWord(cc, "'", "APOSTROPHE");
 
             // self-inserting breaks
             var siBreaks = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) as ZilString;
@@ -401,6 +417,9 @@ namespace Zilf
 
         private static IOperand GetGlobalDefaultValue(CompileCtx cc, ZilGlobal global)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(global != null);
+
             IOperand result = null;
 
             if (global.Value != null)
@@ -424,6 +443,10 @@ namespace Zilf
 
         private void DoFunnyGlobals(CompileCtx cc, int reservedGlobals)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(reservedGlobals >= 0);
+            Contract.Ensures(Contract.ForAll(cc.Context.ZEnvironment.Globals, g => g.StorageType != GlobalStorageType.Any));
+
             // if all the globals fit into Z-machine globals, no need for a table
             int remaining = 240 - reservedGlobals;
 
@@ -582,6 +605,8 @@ namespace Zilf
 
         private void BuildHeaderExtensionTable(CompileCtx cc)
         {
+            Contract.Requires(cc != null);
+
             var size = cc.Context.ZEnvironment.HeaderExtensionWords;
             if (size > 0)
             {
@@ -604,6 +629,9 @@ namespace Zilf
 
         private static void WalkRoutineForms(ZilRoutine routine, Action<ZilForm> action)
         {
+            Contract.Requires(routine != null);
+            Contract.Requires(action != null);
+
             var children =
                 routine.ArgSpec.Select(ai => ai.DefaultValue)
                 .Concat(routine.Body);
@@ -633,6 +661,8 @@ namespace Zilf
 
         private void BuildPrepositionTable(CompileCtx cc)
         {
+            Contract.Requires(cc != null);
+
             var ctx = cc.Context;
             bool compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
 
@@ -687,6 +717,12 @@ namespace Zilf
 
         private void BuildSyntaxTables(CompileCtx cc)
         {
+            Contract.Requires(cc != null);
+            Contract.Ensures(cc.VerbTable != null);
+            Contract.Ensures(cc.ActionTable != null);
+            Contract.Ensures(cc.PreactionTable != null);
+            Contract.Ensures(cc.PrepositionTable != null);
+
             cc.VerbTable = cc.Game.DefineTable("VTBL", true);
             cc.ActionTable = cc.Game.DefineTable("ATBL", true);
             cc.PreactionTable = cc.Game.DefineTable("PATBL", true);
@@ -837,6 +873,10 @@ namespace Zilf
         private static void WarnIfActionRoutineDiffers(CompileCtx cc, Syntax line,
             string description, ZilAtom thisRoutineName, ZilAtom lastRoutineName)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(line != null);
+            Contract.Requires(description != null);
+
             if (thisRoutineName != lastRoutineName)
                 Errors.CompWarning(cc.Context, line,
                     "{0} mismatch for {1}: using {2} as before",
@@ -847,6 +887,8 @@ namespace Zilf
 
         private static IFlagBuilder GetFlag(CompileCtx cc, ZilAtom flag)
         {
+            Contract.Requires(cc != null);
+
             if (flag == null)
                 return null;
 
@@ -856,6 +898,9 @@ namespace Zilf
 
         private static IOperand GetPreposition(CompileCtx cc, Word word)
         {
+            Contract.Requires(cc != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || word == null);
+
             if (word == null)
                 return null;
 
@@ -866,6 +911,9 @@ namespace Zilf
 
         private static void DefineProperty(CompileCtx cc, ZilAtom prop)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(prop != null);
+
             if (!cc.Properties.ContainsKey(prop))
             {
                 // create property builder
@@ -881,6 +929,9 @@ namespace Zilf
 
         private static void DefineFlag(CompileCtx cc, ZilAtom flag)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(flag != null);
+
             if (!cc.Flags.ContainsKey(flag))
             {
                 // create flag builder
@@ -894,6 +945,11 @@ namespace Zilf
 
         private static void DefineFlagAlias(CompileCtx cc, ZilAtom alias, ZilAtom original)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(alias != null);
+            Contract.Requires(original != null);
+            Contract.Ensures(cc.Constants.ContainsKey(alias));
+
             if (!cc.Flags.ContainsKey(alias))
             {
                 var fb = cc.Flags[original];
@@ -901,9 +957,13 @@ namespace Zilf
             }
         }
 
-        private static void DefinePunctWord(Context ctx, CompileCtx cc, string punct, string name)
+        private static void DefinePunctWord(CompileCtx cc, string punct, string name)
         {
-            ZilAtom atom = ZilAtom.Parse(punct, ctx);
+            Contract.Requires(cc != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(punct));
+            Contract.Requires(name != null);
+
+            ZilAtom atom = ZilAtom.Parse(punct, cc.Context);
             Word pword = new Word(atom);
             cc.Context.ZEnvironment.Vocabulary.Add(atom, pword);
 
@@ -915,6 +975,10 @@ namespace Zilf
         
         private static void DefineWord(CompileCtx cc, Word word)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(word != null);
+            Contract.Ensures(cc.Vocabulary.ContainsKey(word));
+
             string rawWord = word.Atom.ToString();
 
             if (!cc.Vocabulary.ContainsKey(word))
@@ -966,8 +1030,8 @@ namespace Zilf
 
         private struct TableElementOperand
         {
-            public IOperand Operand;
-            public OperandSize ForceSize;
+            public readonly IOperand Operand;
+            public readonly OperandSize ForceSize;
 
             public TableElementOperand(IOperand operand, OperandSize forceSize)
             {
@@ -1010,6 +1074,10 @@ namespace Zilf
 
         private static void BuildTable(CompileCtx cc, ZilTable zt, ITableBuilder tb)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(zt != null);
+            Contract.Requires(tb != null);
+
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {
                 IOperand[] values = new IOperand[zt.ElementCount];
@@ -1126,6 +1194,8 @@ namespace Zilf
 
         private static string TranslateString(string str, Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
                 str,
@@ -1191,6 +1261,9 @@ namespace Zilf
 
         private static IOperand CompileConstant(CompileCtx cc, ZilObject expr)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(expr != null);
+
             ZilAtom atom;
 
             var exprTypeAtom = expr.GetTypeAtom(cc.Context);
@@ -1265,6 +1338,11 @@ namespace Zilf
         private static void BuildRoutine(CompileCtx cc, ZilRoutine routine,
             IGameBuilder gb, IRoutineBuilder rb, bool entryPoint)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(routine != null);
+            Contract.Requires(gb != null);
+            Contract.Requires(rb != null);
+
             // set up arguments and locals
             cc.Locals.Clear();
             cc.TempLocalNames.Clear();
@@ -1360,7 +1438,7 @@ namespace Zilf
             cc.SpareLocals.Clear();
             cc.OuterLocals.Clear();
 
-            System.Diagnostics.Debug.Assert(cc.Blocks.Count == 1);
+            Contract.Assume(cc.Blocks.Count == 1);
             cc.Blocks.Pop();
         }
 
@@ -1409,6 +1487,15 @@ namespace Zilf
 
             private Operands(CompileCtx cc, IOperand[] values, bool[] temps, ZilAtom tempAtom)
             {
+                Contract.Requires(cc != null);
+                Contract.Requires(values != null);
+                Contract.Requires(temps != null);
+                Contract.Requires(tempAtom != null);
+                Contract.Ensures(this.cc == cc);
+                Contract.Ensures(this.values == values);
+                Contract.Ensures(this.temps == temps);
+                Contract.Ensures(this.tempAtom == tempAtom);
+
                 this.cc = cc;
                 this.values = values;
                 this.temps = temps;
@@ -1417,6 +1504,11 @@ namespace Zilf
 
             public static Operands Compile(CompileCtx cc, IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
             {
+                Contract.Requires(cc != null);
+                Contract.Requires(rb != null);
+                Contract.Requires(src != null);
+                Contract.Requires(exprs != null);
+
                 int length = exprs.Length;
                 IOperand[] values = new IOperand[length];
                 bool[] temps = new bool[length];
@@ -1513,6 +1605,11 @@ namespace Zilf
 
             private static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
             {
+                Contract.Requires(exprs != null);
+                Contract.Requires(exprs.Length > 0);
+                Contract.Requires(localIdx >= 0);
+                Contract.Requires(localIdx < exprs.Length);
+
                 ZilForm form = exprs[localIdx] as ZilForm;
                 if (form == null)
                     throw new ArgumentException("not a FORM");
@@ -1522,7 +1619,7 @@ namespace Zilf
                     throw new ArgumentException("not an LVAL/SET FORM");
 
                 ZilAtom localAtom = form.Rest.First as ZilAtom;
-                if (atom == null)
+                if (localAtom == null)
                     throw new ArgumentException("LVAL/SET not followed by an atom");
 
                 for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -1558,6 +1655,12 @@ namespace Zilf
 
             private static bool GlobalCouldBeLaterModified(CompileCtx cc, ZilObject[] exprs, int localIdx)
             {
+                Contract.Requires(cc != null);
+                Contract.Requires(exprs != null);
+                Contract.Requires(exprs.Length > 0);
+                Contract.Requires(localIdx >= 0);
+                Contract.Requires(localIdx < exprs.Length);
+
                 ZilForm form = exprs[localIdx] as ZilForm;
                 if (form == null)
                     throw new ArgumentException("not a FORM");
@@ -1567,7 +1670,7 @@ namespace Zilf
                     throw new ArgumentException("not a GVAL/SETG FORM");
 
                 ZilAtom globalAtom = form.Rest.First as ZilAtom;
-                if (atom == null)
+                if (globalAtom == null)
                     throw new ArgumentException("GVAL/SETG not followed by an atom");
 
                 for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -1579,6 +1682,10 @@ namespace Zilf
 
             private static bool CouldModifyGlobal(CompileCtx cc, ZilObject expr, ZilAtom globalAtom)
             {
+                Contract.Requires(cc != null);
+                Contract.Requires(expr != null);
+                Contract.Requires(globalAtom != null);
+
                 ZilList list = expr as ZilList;
                 if (list == null)
                     return false;
@@ -1607,6 +1714,8 @@ namespace Zilf
 
             private static bool IsVariableRef(ZilObject expr)
             {
+                Contract.Requires(expr != null);
+
                 ZilForm form = expr as ZilForm;
                 if (form == null)
                     return false;
@@ -1633,6 +1742,8 @@ namespace Zilf
 
             private static bool IsLocalVariableRef(ZilObject expr)
             {
+                Contract.Requires(expr != null);
+
                 ZilForm form = expr as ZilForm;
                 if (form == null)
                     return false;
@@ -1649,6 +1760,8 @@ namespace Zilf
 
             private static bool IsGlobalVariableRef(ZilObject expr)
             {
+                Contract.Requires(expr != null);
+
                 ZilForm form = expr as ZilForm;
                 if (form == null)
                     return false;
@@ -1672,21 +1785,36 @@ namespace Zilf
 
             public int Count
             {
-                get { return values.Length; }
+                [Pure]
+                get
+                {
+                    Contract.Ensures(Contract.Result<int>() >= 0);
+                    return values.Length;
+                }
             }
 
             public IOperand this[int index]
             {
-                get { return values[index]; }
+                get
+                {
+                    Contract.Requires(index >= 0);
+                    Contract.Requires(index < Count);
+                    Contract.Ensures(Contract.Result<IOperand>() != null);
+                    return values[index];
+                }
             }
 
             public IOperand[] ToArray()
             {
+                Contract.Ensures(Contract.Result<IOperand[]>() != null);
                 return values;
             }
 
             public IEnumerable<IOperand> Skip(int count)
             {
+                Contract.Requires(count >= 0);
+                //Contract.Ensures(Contract.Result<IEnumerable<IOperand>>() != null);
+
                 for (int i = count; i < values.Length; i++)
                     yield return values[i];
             }
@@ -1708,6 +1836,11 @@ namespace Zilf
         private static IOperand CompileForm(CompileCtx cc, IRoutineBuilder rb, ZilForm form,
             bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(form != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             ILabel label1, label2;
             IOperand operand;
 
@@ -1945,8 +2078,7 @@ namespace Zilf
                     case StdAtom.NOT:
                     case StdAtom.F_P:
                     case StdAtom.T_P:
-                        if (form.Rest == null || form.Rest.First == null ||
-                            (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
+                        if (form.Rest.First == null || (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
                         {
                             Errors.CompError(cc.Context, form, string.Format("{0} requires exactly 1 argument", head));
                             return cc.Game.Zero;
@@ -2052,6 +2184,12 @@ namespace Zilf
         private static IOperand CompileAsOperand(CompileCtx cc, IRoutineBuilder rb, ZilObject expr, ISourceLine src,
             IVariable suggestion = null)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(expr != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+
             IOperand constant = CompileConstant(cc, expr);
             if (constant != null)
                 return constant;
@@ -2110,8 +2248,13 @@ namespace Zilf
         private static IOperand CompileAsOperandWithBranch(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
             IVariable resultStorage, ILabel label, bool polarity, Func<IVariable> tempVarProvider = null)
         {
-            System.Diagnostics.Debug.Assert(resultStorage != rb.Stack);
-            System.Diagnostics.Debug.Assert(resultStorage != null || tempVarProvider != null);
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(expr != null);
+            Contract.Requires(label != null);
+            Contract.Requires(resultStorage != rb.Stack);
+            Contract.Requires(resultStorage != null || tempVarProvider != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
 
             expr = expr.Expand(cc.Context);
             StdAtom type = expr.GetTypeAtom(cc.Context).StdAtom;
@@ -2273,6 +2416,12 @@ namespace Zilf
         private static void CompileCondition(CompileCtx cc, IRoutineBuilder rb, ZilObject expr,
             ISourceLine src, ILabel label, bool polarity)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(expr != null);
+            Contract.Requires(src != null);
+            Contract.Requires(label != null);
+
             expr = expr.Expand(cc.Context);
             var typeAtom = expr.GetTypeAtom(cc.Context);
             StdAtom type = typeAtom.StdAtom;
@@ -2399,6 +2548,12 @@ namespace Zilf
         private static void CompileBoolean(CompileCtx cc, IRoutineBuilder rb, ZilObject[] args,
             ISourceLine src, bool and, ILabel label, bool polarity)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(args != null);
+            Contract.Requires(src != null);
+            Contract.Requires(label != null);
+
             if (args.Length == 0)
             {
                 // <AND> is true, <OR> is false
@@ -2472,6 +2627,12 @@ namespace Zilf
         private static IOperand CompileBoolean(CompileCtx cc, IRoutineBuilder rb, ZilList args,
             ISourceLine src, bool and, bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(args != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             if (args.IsEmpty)
                 return and ? cc.Game.One : cc.Game.Zero;
 
@@ -2496,6 +2657,8 @@ namespace Zilf
 
                 if (resultStorage == null)
                     resultStorage = rb.Stack;
+
+                Contract.Assert(resultStorage != null);
 
                 IVariable nonStackResultStorage = (resultStorage != rb.Stack) ? resultStorage : null;
                 Func<IVariable> tempVarProvider = () =>
@@ -2572,6 +2735,10 @@ namespace Zilf
         private static IOperand CompilePROG(CompileCtx cc, IRoutineBuilder rb, ZilList args,
             ISourceLine src, bool wantResult, IVariable resultStorage, string name, bool repeat, bool catchy)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(src != null);
+
             // NOTE: resultStorage is unused here, because PROG's result could come from
             // a RETURN statement (and REPEAT's result can *only* come from RETURN).
             // thus we have to return the result on the stack, because RETURN doesn't have
@@ -2629,7 +2796,7 @@ namespace Zilf
                                 atom = adecl.First as ZilAtom;
                         }
                         ZilObject value = list.Rest.First;
-                        if (atom == null || value == null)
+                        if (atom == null)
                             throw new CompilerError("invalid atom binding");
                         innerLocals.Enqueue(atom);
                         ILocalBuilder lb = PushInnerLocal(cc, rb, atom);
@@ -2663,7 +2830,7 @@ namespace Zilf
                 // generate code for prog body
                 args = args.Rest as ZilList;
                 bool empty = (args.Rest == null);
-                while (args != null && !args.IsEmpty)
+                while (!args.IsEmpty)
                 {
                     // only want the result of the last statement (if any)
                     bool wantThisResult = wantResult && !repeat && args.Rest.IsEmpty;
@@ -2721,6 +2888,10 @@ namespace Zilf
 
         private static ILocalBuilder PushInnerLocal(CompileCtx cc, IRoutineBuilder rb, ZilAtom atom)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(atom != null);
+
             string name = atom.Text;
 
             ILocalBuilder prev;
@@ -2772,6 +2943,9 @@ namespace Zilf
 
         private static void PopInnerLocal(CompileCtx cc, ZilAtom atom)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(atom != null);
+
             cc.SpareLocals.Push(cc.Locals[atom]);
 
             Stack<ILocalBuilder> stk;
@@ -2801,14 +2975,20 @@ namespace Zilf
             return first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
         }
 
+        [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
         private static IOperand CompileDO(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
             bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(args != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (args == null || args.First == null ||
-                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
                 throw new CompilerError("expected binding list at start of DO");
             }
@@ -2938,7 +3118,7 @@ namespace Zilf
                 rb.EmitStore(rb.Stack, cc.Game.One);
 
             // clean up block and counter
-            if ((block.Flags & BlockFlags.Returned) != 0)
+            if ((block.Flags & BlockFlags.Returned) != 0)   // Code Contracts message is suppressed on this line (see attribute)
                 rb.MarkLabel(block.ReturnLabel);
 
             PopInnerLocal(cc, atom);
@@ -2951,9 +3131,14 @@ namespace Zilf
         private static IOperand CompileMAP_CONTENTS(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
             bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(args != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             // parse binding list
-            if (args == null || args.First == null ||
-                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
                 throw new CompilerError("expected binding list at start of MAP-CONTENTS");
             }
@@ -2988,6 +3173,7 @@ namespace Zilf
                 nextAtom = null;
                 container = spec.Rest.First;
             }
+            Contract.Assume(container != null);
 
             // look for an end block
             var body = args.Rest;
@@ -3084,9 +3270,14 @@ namespace Zilf
         private static IOperand CompileMAP_DIRECTIONS(CompileCtx cc, IRoutineBuilder rb, ZilList args, ISourceLine src,
             bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(args != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             // parse binding list
-            if (args == null || args.First == null ||
-                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
                 throw new CompilerError("expected binding list at start of MAP-DIRECTIONS");
             }
@@ -3192,12 +3383,20 @@ namespace Zilf
         private static IOperand CompileCOND(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
             ISourceLine src, bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(clauses != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             ILabel nextLabel = rb.DefineLabel();
             ILabel endLabel = rb.DefineLabel();
             bool elsePart = false;
 
             if (resultStorage == null)
                 resultStorage = rb.Stack;
+
+            Contract.Assert(resultStorage != null);
 
             while (!clauses.IsEmpty)
             {
@@ -3298,8 +3497,16 @@ namespace Zilf
         private static IOperand CompileVERSION_P(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
             ISourceLine src, bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(clauses != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
             if (resultStorage == null)
                 resultStorage = rb.Stack;
+
+            Contract.Assert(resultStorage != null);
 
             while (!clauses.IsEmpty)
             {
@@ -3406,6 +3613,10 @@ namespace Zilf
         private static IOperand CompileImpromptuTable(CompileCtx cc, IRoutineBuilder rb, ZilForm form,
             bool wantResult, IVariable resultStorage)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(form != null);
+
             var type = ((ZilAtom)form.First).StdAtom;
             var args = form.Rest;
 
@@ -3448,6 +3659,11 @@ namespace Zilf
 
         private static IOperand CompileTell(CompileCtx cc, IRoutineBuilder rb, ZilForm form)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(form != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+
             var args = form.Rest.ToArray();
 
             int index = 0;
@@ -3534,6 +3750,9 @@ namespace Zilf
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(model != null);
+
             var globalsByName = cc.Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
 
             var preBuilders = new ComplexPropDef.ElementPreBuilders()
@@ -3665,7 +3884,7 @@ namespace Zilf
                             var form = new ZilForm(new ZilObject[] { propspec, prop });
                             var specOutput = form.Eval(cc.Context);
                             ZilList propBody;
-                            if (specOutput == null || specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
+                            if (specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
                                 (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
                             {
                                 Errors.CompError(cc.Context, model, "PROPSPEC for property '{0}' returned a bad value: {1}", atom, specOutput);
@@ -3777,6 +3996,10 @@ namespace Zilf
 
         private static void BuildObject(CompileCtx cc, ZilModelObject model, IObjectBuilder ob)
         {
+            Contract.Requires(cc != null);
+            Contract.Requires(model != null);
+            Contract.Requires(ob != null);
+
             var elementConverters = new ComplexPropDef.ElementConverters()
             {
                 CompileConstant = zo => CompileConstant(cc, zo),
@@ -3929,18 +4152,18 @@ namespace Zilf
                             handled = true;
                             foreach (ZilObject obj in propBody)
                             {
-                                propName = obj as ZilAtom;
-                                if (propName == null)
+                                var atom = obj as ZilAtom;
+                                if (atom == null)
                                 {
                                     Errors.CompError(cc.Context, model, "values for FLAGS property must be atoms");
                                     break;
                                 }
 
                                 ZilAtom original;
-                                if (cc.Context.ZEnvironment.TryGetBitSynonym(propName, out original))
-                                    propName = original;
+                                if (cc.Context.ZEnvironment.TryGetBitSynonym(atom, out original))
+                                    atom = original;
 
-                                IFlagBuilder fb = cc.Flags[propName];
+                                IFlagBuilder fb = cc.Flags[atom];
                                 ob.AddFlag(fb);
                             }
                             continue;
@@ -3950,14 +4173,14 @@ namespace Zilf
                             tb = ob.AddComplexProperty(cc.Properties[propName]);
                             foreach (ZilObject obj in propBody)
                             {
-                                propName = obj as ZilAtom;
-                                if (propName == null)
+                                var atom = obj as ZilAtom;
+                                if (atom == null)
                                 {
                                     Errors.CompError(cc.Context, model, "values for SYNONYM property must be atoms");
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabNoun(propName, model);  // TODO: pass prop instead of model as the source location?
+                                Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);  // TODO: pass prop instead of model as the source location?
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 tb.AddShort(wb);
                                 length += 2;
@@ -3969,14 +4192,14 @@ namespace Zilf
                             tb = ob.AddComplexProperty(cc.Properties[propName]);
                             foreach (ZilObject obj in propBody)
                             {
-                                propName = obj as ZilAtom;
-                                if (propName == null)
+                                var atom = obj as ZilAtom;
+                                if (atom == null)
                                 {
                                     Errors.CompError(cc.Context, model, "values for ADJECTIVE property must be atoms");
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(propName, model); // TODO: pass prop instead of model as the source location?
+                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model); // TODO: pass prop instead of model as the source location?
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 if (cc.Context.ZEnvironment.ZVersion == 3)
                                 {
@@ -4019,15 +4242,15 @@ namespace Zilf
                                 tb = ob.AddComplexProperty(cc.Properties[propName]);
                                 foreach (ZilObject obj in propBody)
                                 {
-                                    propName = obj as ZilAtom;
-                                    if (propName == null)
+                                    var atom = obj as ZilAtom;
+                                    if (atom == null)
                                     {
                                         Errors.CompError(cc.Context, model, "values for GLOBAL property must be atoms");
                                         break;
                                     }
 
                                     IObjectBuilder ob2;
-                                    if (cc.Objects.TryGetValue(propName, out ob2) == false)
+                                    if (cc.Objects.TryGetValue(atom, out ob2) == false)
                                     {
                                         Errors.CompError(cc.Context, model, "values for GLOBAL property must be object names");
                                         break;
@@ -4045,6 +4268,7 @@ namespace Zilf
                 {
                     // nothing special, just one or more words
                     pb = cc.Properties[propName];
+                    Contract.Assume(pb != null);
                     if (propBody.Rest.IsEmpty)
                     {
                         var word = CompileConstant(cc, value);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
@@ -216,6 +217,11 @@ namespace Zilf
 
         public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx)
         {
+            Contract.Requires(input != null);
+            Contract.Requires(startIndex >= 0 && startIndex < input.Count);
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ITellPatternMatchResult>() != null);
+
             var result = new MatchResult();
             result.Matched = false;
 
@@ -256,6 +262,8 @@ namespace Zilf
 
         private static bool IsSimpleOutputElement(ZilObject obj)
         {
+            Contract.Requires(obj != null);
+
             if (obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse)
                 return true;
 

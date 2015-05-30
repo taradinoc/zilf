@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
@@ -32,6 +33,10 @@ namespace Zilf
 
         public ZilRoutine(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(argspec != null);
+            Contract.Requires(body != null);
+
             this.name = name;
             this.activationAtom = activationAtom;
             this.argspec = new ArgSpec(name, argspec);
@@ -321,10 +326,13 @@ namespace Zilf
 
         public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
         {
+            Contract.Requires(repetitions >= 0);
+            Contract.Requires(repetitions > 0 || initializer == null || initializer.Length == 0);
+            
             this.filename = filename;
             this.line = line;
             this.repetitions = repetitions;
-            this.initializer = initializer;
+            this.initializer = (initializer != null && initializer.Length > 0) ? initializer : null;
             this.flags = flags;
             this.pattern = pattern;
         }
@@ -336,6 +344,15 @@ namespace Zilf
                    other.flags,
                    other.pattern == null ? null : (ZilObject[])other.pattern.Clone())
         {
+            Contract.Requires(other != null);
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(repetitions >= 0);
+            Contract.Invariant(repetitions > 0 || initializer == null);
+            Contract.Invariant(initializer == null || initializer.Length > 0);
         }
 
         public string Name { get; set; }
@@ -344,9 +361,12 @@ namespace Zilf
         {
             // TODO: account for initial length markers?
 
+            [Pure]
             get
             {
-                if (initializer != null && initializer.Length > 0)
+                Contract.Ensures(Contract.Result<int>() >= 0);
+
+                if (initializer != null)
                 {
                     return repetitions * initializer.Length;
                 }
@@ -374,7 +394,11 @@ namespace Zilf
 
         public void CopyTo<T>(T[] array, Func<ZilObject, T> convert, T defaultFiller)
         {
-            if (initializer != null && initializer.Length > 0)
+            Contract.Requires(array != null);
+            Contract.Requires(array.Length >= ElementCount);
+            Contract.Requires(convert != null);
+
+            if (initializer != null)
             {
                 for (int i = 0; i < repetitions; i++)
                 {
@@ -499,7 +523,7 @@ namespace Zilf
                 }
             }
 
-            if (initializer != null && initializer.Length > 0)
+            if (initializer != null)
             {
                 switch (initializer[index % initializer.Length].GetTypeAtom(ctx).StdAtom)
                 {
@@ -518,11 +542,21 @@ namespace Zilf
 
         private void ExpandInitializer(ZilObject defaultValue)
         {
-            if (initializer == null || initializer.Length == 0)
+            Contract.Requires(defaultValue != null);
+            Contract.Ensures(repetitions >= 0 && repetitions <= 1);
+            Contract.Ensures(initializer == null || initializer.Length > 0);
+            Contract.Ensures(ElementCount == Contract.OldValue(ElementCount));
+
+            if (repetitions == 0)
+            {
+                initializer = null;
+            }
+            else if (initializer == null)
             {
                 initializer = new ZilObject[repetitions];
                 for (int i = 0; i < repetitions; i++)
                     initializer[i] = defaultValue;
+                repetitions = 1;
             }
             else
             {
@@ -530,13 +564,16 @@ namespace Zilf
                 for (int i = 0; i < newInitializer.Length; i++)
                     newInitializer[i] = initializer[i % initializer.Length];
                 initializer = newInitializer;
+                repetitions = 1;
             }
-
-            repetitions = 1;
         }
 
         private int? ByteOffsetToIndex(Context ctx, int offset)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(offset >= 0);
+            Contract.Ensures(Contract.Result<int?>() == null || (Contract.Result<int?>().Value >= 0 && Contract.Result<int?>().Value < ElementCount));
+
             // TODO: account for initial length markers?
 
             // initialize cache if necessary
@@ -564,6 +601,9 @@ namespace Zilf
 
         public ZilObject GetWord(Context ctx, int offset)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(offset >= 0);
+
             // convert word offset to byte offset
             offset *= 2;
 
@@ -581,6 +621,10 @@ namespace Zilf
 
         public void PutWord(Context ctx, int offset, ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(offset >= 0);
+            Contract.Requires(value != null);
+
             // convert word offset to byte offset
             offset *= 2;
 
@@ -617,6 +661,9 @@ namespace Zilf
 
         public ZilObject GetByte(Context ctx, int offset)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(offset >= 0);
+
             var index = ByteOffsetToIndex(ctx, offset);
             if (index == null)
                 throw new ArgumentException(string.Format("No element at offset {0}", offset));
@@ -631,6 +678,10 @@ namespace Zilf
 
         public void PutByte(Context ctx, int offset, ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(offset >= 0);
+            Contract.Requires(value != null);
+
             var index = ByteOffsetToIndex(ctx, offset);
             if (index == null)
                 throw new ArgumentException(string.Format("No element at offset {0}", offset));
@@ -689,6 +740,9 @@ namespace Zilf
 
         private string ToString(Func<ZilObject, string> convert)
         {
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             StringBuilder sb = new StringBuilder("#OBJECT (");
             sb.Append(convert(name));
 
@@ -733,12 +787,18 @@ namespace Zilf
 
         public ZilWord(ZilObject value)
         {
+            Contract.Requires(value != null);
+
             this.value = value;
         }
 
         [ChtypeMethod]
         public static ZilWord FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilWord>() != null);
+
             if (list.First == null || list.Rest == null || !list.Rest.IsEmpty)
                 throw new InterpreterError("list must have length 1");
 
@@ -747,7 +807,12 @@ namespace Zilf
 
         public ZilObject Value
         {
-            get { return value; }
+            get
+            {
+                Contract.Ensures(Contract.Result<ZilObject>() != null);
+
+                return value;
+            }
         }
 
         public override string ToString()

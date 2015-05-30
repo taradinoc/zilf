@@ -25,6 +25,7 @@ using Antlr.Runtime.Tree;
 using Zilf.Lexing;
 using System.Reflection;
 using System.IO;
+using System.Diagnostics.Contracts;
 
 namespace Zilf
 {
@@ -100,6 +101,7 @@ namespace Zilf
         }
     }
 
+    [ContractClass(typeof(ZilObjectContracts))]
     abstract class ZilObject
     {
         /// <summary>
@@ -116,6 +118,11 @@ namespace Zilf
         /// expressions.</returns>
         public static IEnumerable<ZilObject> ReadFromAST(ITree tree, Context ctx)
         {
+            Contract.Requires(tree != null);
+            Contract.Requires(ctx != null);
+            //Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+            //Contract.Ensures(Contract.ForAll(Contract.Result<IEnumerable<ZilObject>>(), r => r != null));
+
             if (tree == null)
                 yield break;
 
@@ -153,6 +160,11 @@ namespace Zilf
         /// <returns>The array of translated child objects.</returns>
         private static ZilObject[] ReadChildrenFromAST(ITree tree, Context ctx)
         {
+            Contract.Requires(tree != null);
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject[]>() != null);
+            Contract.Ensures(Contract.ForAll(Contract.Result<ZilObject[]>(), r => r != null));
+
             if (tree.ChildCount == 0)
                 return new ZilObject[0];
 
@@ -171,9 +183,12 @@ namespace Zilf
         /// </summary>
         /// <param name="tree">The tree node.</param>
         /// <param name="ctx">The current context.</param>
-        /// <returns>The translated object.</returns>
+        /// <returns>The translated object, or null if it was untranslatable.</returns>
         private static ZilObject ReadOneFromAST(ITree tree, Context ctx)
         {
+            Contract.Requires(tree != null);
+            Contract.Requires(ctx != null);
+
             ZilObject[] children;
 
             try
@@ -183,6 +198,7 @@ namespace Zilf
                     case ZilLexer.ATOM:
                         return ZilAtom.Parse(tree.Text, ctx);
                     case ZilLexer.CHAR:
+                        Contract.Assume(tree.Text.Length >= 3);
                         return new ZilChar(tree.Text[2]);
                     case ZilLexer.COMMENT:
                         // ignore comments
@@ -202,7 +218,7 @@ namespace Zilf
                         return new ZilVector(ReadChildrenFromAST(tree, ctx));
                     case ZilLexer.ADECL:
                         children = ReadChildrenFromAST(tree, ctx);
-                        System.Diagnostics.Debug.Assert(children.Length == 2);
+                        Contract.Assume(children.Length == 2);
                         return new ZilAdecl(children[0], children[1]);
                     case ZilLexer.MACRO:
                     case ZilLexer.VMACRO:
@@ -233,6 +249,7 @@ namespace Zilf
                     case ZilLexer.SEGMENT:
                         return new ZilSegment(ReadOneFromAST(tree.GetChild(0), ctx));
                     case ZilLexer.STRING:
+                        Contract.Assume(tree.Text.Length >= 2);
                         return ZilString.Parse(tree.Text);
                     default:
                         throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), "tree");
@@ -249,6 +266,8 @@ namespace Zilf
 
         private static int ParseNumber(string text)
         {
+            Contract.Requires(!string.IsNullOrEmpty(text));
+
             // decimal: -?[0-9]+
             // octal: \*[0-7]+\*
             // binary: #2\s+[01]+
@@ -284,6 +303,9 @@ namespace Zilf
         /// <returns>A string representation of the object.</returns>
         public virtual string ToStringContext(Context ctx, bool friendly)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             return ToString();
         }
 
@@ -313,6 +335,9 @@ namespace Zilf
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
         public virtual ZilObject Eval(Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             return this;
         }
 
@@ -324,6 +349,9 @@ namespace Zilf
         /// not a macro invocation.</returns>
         public virtual ZilObject Expand(Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             return this;
         }
 
@@ -361,6 +389,11 @@ namespace Zilf
         /// <returns>The value of the last expression evaluated.</returns>
         public static ZilObject EvalProgram(Context ctx, ZilObject[] prog)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(prog != null);
+            Contract.Requires(Contract.ForAll(prog, p => p != null));
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             try
             {
                 for (int i = 0; i < prog.Length; i++)
@@ -386,6 +419,10 @@ namespace Zilf
         /// <returns>A sequence of evaluation results.</returns>
         public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(sequence != null);
+            //Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
             foreach (ZilObject obj in sequence)
             {
                 if (obj is ZilSegment)
@@ -413,6 +450,22 @@ namespace Zilf
                     }
                 }
             }
+        }
+    }
+
+    [ContractClassFor(typeof(ZilObject))]
+    abstract class ZilObjectContracts : ZilObject
+    {
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            Contract.Ensures(Contract.Result<ZilAtom>() != null);
+            return default(ZilAtom);
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return default(ZilObject);
         }
     }
 
@@ -449,8 +502,9 @@ namespace Zilf
 
         public static ZilObject Parse(Context ctx, ZilObject[] initializer)
         {
-            if (initializer == null)
-                throw new ArgumentNullException();
+            Contract.Requires(ctx != null);
+            Contract.Requires(initializer != null);
+
             if (initializer.Length != 2 || !(initializer[0] is ZilAtom) || initializer[1] == null)
                 throw new ArgumentException("Expected 2 objects, the first a ZilAtom");
 
@@ -554,14 +608,22 @@ namespace Zilf
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]
     class ZilSegment : ZilObject, IStructure
     {
-        private ZilForm form;
+        private readonly ZilForm form;
 
         public ZilSegment(ZilObject obj)
         {
+            Contract.Requires(obj != null);
+
             if (obj is ZilForm)
                 this.form = (ZilForm)obj;
             else
                 throw new ArgumentException("Segment must be based on a FORM");
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(form != null);
         }
 
         [ChtypeMethod]
@@ -811,6 +873,9 @@ namespace Zilf
         /// <returns>The parsed atom.</returns>
         public static ZilAtom Parse(string text, Context ctx)
         {
+            Contract.Requires(text != null);
+            Contract.Requires(ctx != null);
+
             ObList list;
             ZilAtom result;
             int idx = text.IndexOf("!-");
@@ -931,6 +996,9 @@ namespace Zilf
         [ChtypeMethod]
         public static ZilChar FromFix(Context ctx, ZilFix fix)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(fix != null);
+
             return new ZilChar(fix.Value);
         }
 
@@ -982,12 +1050,19 @@ namespace Zilf
     [BuiltinType(StdAtom.FALSE, PrimType.LIST)]
     class ZilFalse : ZilObject, IStructure
     {
-        private ZilList value;
+        private readonly ZilList value;
 
         [ChtypeMethod]
         public ZilFalse(ZilList value)
         {
+            Contract.Requires(value != null);
             this.value = value;
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(value != null);
         }
 
         public override string ToString()
@@ -1082,6 +1157,7 @@ namespace Zilf
         public ZilFix(ZilFix other)
             : this(other.value)
         {
+            Contract.Requires(other != null);
         }
 
         public int Value
@@ -1147,6 +1223,7 @@ namespace Zilf
     /// <summary>
     /// Provides methods common to structured types (LIST, STRING, possibly others).
     /// </summary>
+    [ContractClass(typeof(IStructureContracts))]
     interface IStructure
     {
         /// <summary>
@@ -1165,6 +1242,7 @@ namespace Zilf
         /// Determines whether the structure is empty.
         /// </summary>
         /// <returns>true if the structure has no elements; false if it has any elements.</returns>
+        [Pure]
         bool IsEmpty();
 
         /// <summary>
@@ -1191,7 +1269,52 @@ namespace Zilf
         /// <param name="limit">The maximum length to allow.</param>
         /// <returns>The number of elements in the structure, or null if the structure
         /// contains more than <paramref name="limit"/> elements.</returns>
+        [Pure]
         int? GetLength(int limit);
+    }
+
+    [ContractClassFor(typeof(IStructure))]
+    abstract class IStructureContracts : IStructure
+    {
+        public ZilObject GetFirst()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            Contract.Requires(skip >= 0);
+            return default(IStructure);
+        }
+        
+        public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public int GetLength()
+        {
+            Contract.Ensures(Contract.Result<int>() > 0 || IsEmpty());
+            return default(int);
+        }
+
+        public int? GetLength(int limit)
+        {
+            Contract.Ensures(Contract.Result<int?>() == null || Contract.Result<int?>().Value <= limit);
+            return default(int?);
+        }
     }
 
     // TODO: ZilList should be sealed; the other list-based types should derive from an abstract base
@@ -1203,6 +1326,8 @@ namespace Zilf
 
         public ZilList(IEnumerable<ZilObject> sequence)
         {
+            Contract.Requires(sequence != null);
+
             using (IEnumerator<ZilObject> tor = sequence.GetEnumerator())
             {
                 if (tor.MoveNext())
@@ -1220,18 +1345,34 @@ namespace Zilf
 
         public ZilList(ZilObject current, ZilList rest)
         {
+            Contract.Requires((current == null && rest == null) || (current != null && rest != null));
+            Contract.Ensures(First == current);
+            Contract.Ensures(Rest == rest);
+
             this.First = current;
             this.Rest = rest;
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
         }
 
         [ChtypeMethod]
         public static ZilList FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+
             return new ZilList(list.First, list.Rest);
         }
 
         private ZilList MakeRest(IEnumerator<ZilObject> tor)
         {
+            Contract.Requires(tor != null);
+            Contract.Ensures(Contract.Result<ZilList>() != null);
+
             if (tor.MoveNext())
             {
                 ZilObject cur = tor.Current;
@@ -1244,12 +1385,24 @@ namespace Zilf
 
         public bool IsEmpty
         {
-            get { return First == null && Rest == null; }
+            get
+            {
+                Contract.Ensures(
+                    (Contract.Result<bool>() == false && First != null && Rest != null) ||
+                    (Contract.Result<bool>() == true && First == null && Rest == null));
+                return First == null && Rest == null;
+            }
         }
 
         public static string SequenceToString(IEnumerable<ZilObject> items,
             string start, string end, Func<ZilObject, string> convert)
         {
+            Contract.Requires(items != null);
+            Contract.Requires(start != null);
+            Contract.Requires(end != null);
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             StringBuilder sb = new StringBuilder(2);
             sb.Append(start);
 
@@ -1404,11 +1557,14 @@ namespace Zilf
         public ZilForm(IEnumerable<ZilObject> sequence)
             : this(null, 0, sequence)
         {
+            Contract.Requires(sequence != null);
         }
 
         public ZilForm(string filename, int line, IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
+            Contract.Requires(sequence != null);
+
             this.filename = filename;
             this.line = line;
         }
@@ -1416,6 +1572,10 @@ namespace Zilf
         protected ZilForm(ZilObject first, ZilList rest)
             : base(first, rest)
         {
+            Contract.Requires((first == null && rest == null) || (first != null && rest != null));
+            Contract.Ensures(First == first);
+            Contract.Ensures(Rest == rest);
+
             this.filename = null;
             this.line = 0;
         }
@@ -1423,6 +1583,9 @@ namespace Zilf
         [ChtypeMethod]
         public static new ZilForm FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+
             return new ZilForm(list.First, list.Rest);
         }
 
@@ -1510,8 +1673,7 @@ namespace Zilf
                 ctx.CallingForm = this;
                 try
                 {
-                    return ((IApplicable)target).Apply(ctx,
-                        Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
+                    return ((IApplicable)target).Apply(ctx, ((ZilList)Rest).ToArray());
                 }
                 catch (ZilError ex)
                 {
@@ -1568,9 +1730,9 @@ namespace Zilf
             }
             else if (First is ZilFix)
             {
-                if (Rest != null && Rest.First != null)
+                if (Rest.First != null)
                 {
-                    if (Rest.Rest == null || Rest.Rest.First == null)
+                    if (Rest.Rest.First == null)
                     {
                         // <1 FOO> => <GET FOO 1>
                         Rest = new ZilList(Rest.First,
@@ -1640,10 +1802,14 @@ namespace Zilf
         public ZilString(ZilString other)
             : this(other.Text)
         {
+            Contract.Requires(other != null);
         }
 
         public static ZilString Parse(string str)
         {
+            Contract.Requires(str != null);
+            Contract.Requires(str.Length >= 2);
+
             StringBuilder sb = new StringBuilder(str.Length - 2);
 
             for (int i = 1; i < str.Length - 1; i++)
@@ -1671,6 +1837,9 @@ namespace Zilf
 
         public static string Quote(string text)
         {
+            Contract.Requires(text != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             StringBuilder sb = new StringBuilder(text.Length + 2);
             sb.Append('"');
 
@@ -1942,7 +2111,7 @@ namespace Zilf
         private class VectorStorage
         {
             private int baseOffset = 0;
-            private ZilObject[] items;
+            private readonly ZilObject[] items;
 
             public VectorStorage()
                 : this(new ZilObject[0])
@@ -1951,7 +2120,15 @@ namespace Zilf
 
             public VectorStorage(ZilObject[] items)
             {
+                Contract.Requires(items != null);
+
                 this.items = items;
+            }
+
+            [ContractInvariantMethod]
+            private void ObjectInvariant()
+            {
+                Contract.Invariant(items != null);
             }
 
             public IEnumerable<ZilObject> GetSequence(int offset)
@@ -1990,16 +2167,21 @@ namespace Zilf
         public ZilVector(ZilVector other)
             : this(other.storage, other.offset)
         {
+            Contract.Requires(other != null);
         }
 
         private ZilVector(VectorStorage storage, int offset)
         {
+            Contract.Requires(storage != null);
+
             this.storage = storage;
             this.offset = offset;
         }
 
         public ZilVector(params ZilObject[] items)
         {
+            Contract.Requires(items != null);
+
             storage = new VectorStorage(items);
             offset = 0;
         }
@@ -2118,6 +2300,8 @@ namespace Zilf
         [ChtypeMethod]
         public ZilAdecl(ZilVector vector)
         {
+            Contract.Requires(vector != null);
+
             if (vector.GetLength() != 2)
                 throw new InterpreterError("vector coerced to ADECL must have length 2");
 
@@ -2234,6 +2418,7 @@ namespace Zilf
     /// Provides a method to apply a <see cref="ZilObject"/>, such as a SUBR or FUNCTION,
     /// to a set of arguments.
     /// </summary>
+    [ContractClass(typeof(IApplicableContracts))]
     interface IApplicable
     {
         /// <summary>
@@ -2256,6 +2441,28 @@ namespace Zilf
         ZilObject ApplyNoEval(Context ctx, ZilObject[] args);
     }
 
+    [ContractClassFor(typeof(IApplicable))]
+    abstract class IApplicableContracts : IApplicable
+    {
+        public ZilObject Apply(Context ctx, ZilObject[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Requires(Contract.ForAll(args, a => a != null));
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return default(ZilObject);
+        }
+
+        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Requires(Contract.ForAll(args, a => a != null));
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return default(ZilObject);
+        }
+    }
+
     [BuiltinType(StdAtom.SUBR, PrimType.STRING)]
     class ZilSubr : ZilObject, IApplicable
     {
@@ -2269,6 +2476,9 @@ namespace Zilf
         [ChtypeMethod]
         public static ZilSubr FromString(Context ctx, ZilString str)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+
             var name = str.ToStringContext(ctx, true);
             MethodInfo mi = typeof(Subrs).GetMethod(name, BindingFlags.Static | BindingFlags.Public);
             if (mi != null)
@@ -2307,12 +2517,16 @@ namespace Zilf
 
         public virtual ZilObject Apply(Context ctx, ZilObject[] args)
         {
-            return handler(ctx, EvalSequence(ctx, args).ToArray());
+            var result = handler(ctx, EvalSequence(ctx, args).ToArray());
+            Contract.Assume(result != null);
+            return result;
         }
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            return handler(ctx, args);
+            var result = handler(ctx, args);
+            Contract.Assume(result != null);
+            return result;
         }
 
         public override bool Equals(object obj)
@@ -2338,6 +2552,10 @@ namespace Zilf
         [ChtypeMethod]
         public static new ZilFSubr FromString(Context ctx, ZilString str)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+            Contract.Ensures(Contract.Result<ZilFSubr>() != null);
+
             var name = str.ToStringContext(ctx, true);
             MethodInfo mi = typeof(Subrs).GetMethod(name, BindingFlags.Static | BindingFlags.Public);
             if (mi != null)
@@ -2374,10 +2592,10 @@ namespace Zilf
     {
         public enum ArgType { Required, Optional, Auxiliary }
 
-        public ZilAtom Atom;
-        public bool Quoted;
-        public ZilObject DefaultValue;
-        public ArgType Type;
+        public readonly ZilAtom Atom;
+        public readonly bool Quoted;
+        public readonly ZilObject DefaultValue;
+        public readonly ArgType Type;
 
         public ArgItem(ZilAtom atom, bool quoted, ZilObject defaultValue, ArgType type)
         {
@@ -2403,10 +2621,14 @@ namespace Zilf
         public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
             : this(prev.name, argspec)
         {
+            Contract.Requires(prev != null);
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
         }
 
         public ArgSpec(ZilAtom name, IEnumerable<ZilObject> argspec)
         {
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
+
             this.name = name;
 
             optArgsStart = -1;
@@ -2536,6 +2758,21 @@ namespace Zilf
             this.argDefaults = argDefaults.ToArray();
         }
 
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(argAtoms != null && Contract.ForAll(argAtoms, a => a != null));
+            Contract.Invariant(argDecls != null && argDecls.Length == argAtoms.Length);
+            Contract.Invariant(argDefaults != null && argDefaults.Length == argAtoms.Length);
+            Contract.Invariant(argQuoted != null && argQuoted.Length == argAtoms.Length);
+            Contract.Invariant(argDefaults != null && argDefaults.Length == argAtoms.Length);
+            Contract.Invariant(optArgsStart >= 0 && optArgsStart <= argAtoms.Length);
+            Contract.Invariant(auxArgsStart >= optArgsStart && auxArgsStart <= argAtoms.Length);
+            Contract.Invariant(varargsAtom != null || !varargsQuoted);
+            Contract.Invariant(MinArgCount >= 0);
+            Contract.Invariant(MaxArgCount == 0 || MaxArgCount >= MinArgCount);
+        }
+
         public int MinArgCount
         {
             get { return optArgsStart; }
@@ -2647,6 +2884,9 @@ namespace Zilf
 
         public void BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
+
             if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
                 throw new InterpreterError(null,
                     name == null ? "user-defined function" : name.ToString(),
@@ -2687,12 +2927,16 @@ namespace Zilf
 
         public void EndApply(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             foreach (ZilAtom atom in argAtoms)
                 ctx.PopLocalVal(atom);
         }
 
         public ZilList ToZilList()
         {
+            Contract.Ensures(Contract.Result<ZilList>() != null);
+
             return new ZilList(this.AsZilListBody());
         }
 
@@ -2734,13 +2978,28 @@ namespace Zilf
 
         public ZilFunction(ZilAtom name, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body)
         {
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
+            Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
+
             this.argspec = new ArgSpec(name, argspec);
             this.body = body.ToArray();
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(argspec != null);
+            Contract.Invariant(body != null);
+            Contract.Invariant(Contract.ForAll(body, b => b != null));
         }
 
         [ChtypeMethod]
         public static ZilFunction FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilFunction>() != null);
+
             if (list.First != null && list.First.GetTypeAtom(ctx).StdAtom == StdAtom.LIST &&
                 list.Rest != null && list.Rest.First != null)
             {
@@ -2755,6 +3014,9 @@ namespace Zilf
 
         private string ToString(Func<ZilObject, string> convert)
         {
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             StringBuilder sb = new StringBuilder();
 
             sb.Append("#FUNCTION (");
@@ -2917,6 +3179,10 @@ namespace Zilf
         [ChtypeMethod]
         public static ZilEvalMacro FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilEvalMacro>() != null);
+
             if (list.First != null && list.First is IApplicable &&
                 list.Rest != null && list.Rest.First == null)
             {
@@ -2928,6 +3194,9 @@ namespace Zilf
 
         private string ToString(Func<ZilObject, string> convert)
         {
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             return "#MACRO (" + convert(value) + ")";
         }
 
@@ -2970,12 +3239,20 @@ namespace Zilf
 
         public ZilObject Expand(Context ctx, ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             Context expandCtx = ctx.CloneWithNewLocals();
             return ((IApplicable)value).Apply(expandCtx, args);
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             Context expandCtx = ctx.CloneWithNewLocals();
             return ((IApplicable)value).ApplyNoEval(expandCtx, args);
         }

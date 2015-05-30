@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -62,12 +63,23 @@ namespace Zilf
             }
         }
 
+        [ContractAbbreviator]
+        private static void SubrContracts(Context ctx, ZilObject[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            //Contract.Requires(args.Length == 0 || Contract.ForAll(args, a => a != null));
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+        }
+
         #region Meta
 
         [Subr("INSERT-FILE")]
         [Subr("FLOAD")]
         public static ZilObject INSERT_FILE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+            
             // we ignore arguments after the first
             if (args.Length == 0)
                 throw new InterpreterError(null, "INSERT-FILE", 1, 0);
@@ -115,6 +127,8 @@ namespace Zilf
         [Subr("FILE-FLAGS")]
         public static ZilObject FILE_FLAGS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             var newFlags = FileFlags.None;
 
             foreach (var arg in args)
@@ -145,6 +159,8 @@ namespace Zilf
         [Subr("DELAY-DEFINITION")]
         public static ZilObject DELAY_DEFINITION(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args); 
+            
             if (args.Length != 1)
                 throw new InterpreterError(null, "DELAY-DEFINITION", 1, 1);
 
@@ -162,6 +178,8 @@ namespace Zilf
         [FSubr("REPLACE-DEFINITION")]
         public static ZilObject REPLACE_DEFINITION(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "REPLACE-DEFINITION", 2, 0);
 
@@ -201,6 +219,8 @@ namespace Zilf
         [FSubr("DEFAULT-DEFINITION")]
         public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "DEFAULT-DEFINITION", 2, 0);
 
@@ -241,6 +261,8 @@ namespace Zilf
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // TODO: measure actual CPU time
             return new ZilFix(1);
         }
@@ -248,6 +270,8 @@ namespace Zilf
         [Subr("QUIT")]
         public static ZilObject QUIT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 Environment.Exit(0);
             else if (args[0] is ZilFix)
@@ -262,6 +286,8 @@ namespace Zilf
         [Subr("STACK")]
         public static ZilObject ID(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "ID", 1, 1);
 
@@ -271,6 +297,8 @@ namespace Zilf
         [Subr]
         public static ZilObject SNAME(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "SNAME", 1, 1);
 
@@ -296,6 +324,8 @@ namespace Zilf
         [Subr("CHECKPOINT")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+            
             // nada
             return ctx.FALSE;
         }
@@ -313,6 +343,8 @@ namespace Zilf
         [Subr]
         public static ZilObject PRINC(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "PRINC", 1, 1);
 
@@ -323,6 +355,8 @@ namespace Zilf
         [Subr]
         public static ZilObject CRLF(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             Console.WriteLine();
             return ctx.TRUE;
         }
@@ -330,6 +364,8 @@ namespace Zilf
         [Subr]
         public static ZilObject IMAGE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "IMAGE", 1, 1);
 
@@ -346,6 +382,8 @@ namespace Zilf
         [Subr]
         public static ZilObject OPEN(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "OPEN", 2, 2);
 
@@ -364,6 +402,8 @@ namespace Zilf
 
         private static string ConvertPath(string retroPath)
         {
+            Contract.Requires(retroPath != null);
+
             var match = RetroPathRE.Match(retroPath);
             if (match.Success)
                 return match.Groups["filename"].Value;
@@ -374,6 +414,8 @@ namespace Zilf
         [Subr]
         public static ZilObject CLOSE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "CLOSE", 1, 1);
 
@@ -388,6 +430,8 @@ namespace Zilf
         [Subr("FILE-LENGTH")]
         public static ZilObject FILE_LENGTH(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "FILE-LENGTH", 1, 1);
 
@@ -402,6 +446,8 @@ namespace Zilf
         [Subr]
         public static ZilObject READSTRING(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // TODO: support 1- and 4-argument forms?
             if (args.Length < 2 || args.Length > 3)
                 throw new InterpreterError(null, "READSTRING", 2, 3);
@@ -460,6 +506,8 @@ namespace Zilf
         [Subr("PNAME")]
         public static ZilObject SPNAME(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "SPNAME", 1, 1);
 
@@ -473,6 +521,8 @@ namespace Zilf
         [Subr]
         public static ZilObject PARSE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
 
             if (args.Length != 1)
@@ -487,6 +537,8 @@ namespace Zilf
         [Subr]
         public static ZilObject LOOKUP(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "LOOKUP", 2, 2);
 
@@ -504,6 +556,8 @@ namespace Zilf
         [Subr]
         public static ZilObject INSERT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // TODO: support 1-argument form of INSERT?
             if (args.Length != 2)
                 throw new InterpreterError(null, "INSERT", 2, 2);
@@ -525,6 +579,8 @@ namespace Zilf
         [Subr]
         public static ZilObject ROOT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 0)
                 throw new InterpreterError(null, "ROOT", 0, 0);
 
@@ -534,6 +590,8 @@ namespace Zilf
         [Subr]
         public static ZilObject SETG(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
             {
                 return GLOBAL(ctx, args);
@@ -547,11 +605,16 @@ namespace Zilf
         [Subr]
         public static ZilObject SETG20(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSetg(ctx, args, "SETG20");
         }
 
         private static ZilObject PerformSetg(Context ctx, ZilObject[] args, string name)
         {
+            SubrContracts(ctx, args);
+            Contract.Requires(name != null);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, name, 2, 2);
 
@@ -568,6 +631,8 @@ namespace Zilf
         [Subr]
         public static ZilObject SET(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "SET", 2, 2);
 
@@ -584,6 +649,8 @@ namespace Zilf
         [Subr]
         public static ZilObject GVAL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "GVAL", 1, 1);
 
@@ -601,6 +668,8 @@ namespace Zilf
         [Subr("GASSIGNED?")]
         public static ZilObject GASSIGNED_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "GASSIGNED?", 1, 1);
 
@@ -614,6 +683,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject GDECL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // ignore global declarations
             return ctx.FALSE;
         }
@@ -621,6 +692,8 @@ namespace Zilf
         [Subr]
         public static ZilObject LVAL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "LVAL", 1, 1);
 
@@ -638,6 +711,8 @@ namespace Zilf
         [Subr("ASSIGNED?")]
         public static ZilObject ASSIGNED_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "ASSIGNED?", 1, 1);
 
@@ -651,6 +726,8 @@ namespace Zilf
         [Subr]
         public static ZilObject GETPROP(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2 || args.Length > 3)
                 throw new InterpreterError(null, "GETPROP", 2, 3);
 
@@ -673,6 +750,8 @@ namespace Zilf
         [Subr]
         public static ZilObject PUTPROP(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2 || args.Length > 3)
                 throw new InterpreterError(null, "PUTPROP", 2, 3);
 
@@ -698,6 +777,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFINE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
             {
                 return ROUTINE(ctx, args);
@@ -711,11 +792,16 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFINE20(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformDefine(ctx, args, "DEFINE20");
         }
 
         private static ZilObject PerformDefine(Context ctx, ZilObject[] args, string name)
         {
+            SubrContracts(ctx, args);
+            Contract.Requires(name != null);
+
             if (args.Length < 3)
                 throw new InterpreterError(null, name, 3, 0);
 
@@ -738,6 +824,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFMAC(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 3)
                 throw new InterpreterError(null, "DEFMAC", 3, 0);
 
@@ -761,6 +849,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject QUOTE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "QUOTE", 1, 1);
 
@@ -770,6 +860,8 @@ namespace Zilf
         [Subr]
         public static ZilObject EVAL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "EVAL", 1, 1);
 
@@ -779,6 +871,8 @@ namespace Zilf
         [Subr]
         public static ZilObject EXPAND(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "EXPAND", 1, 1);
 
@@ -788,6 +882,8 @@ namespace Zilf
         [Subr]
         public static ZilObject APPLY(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new InterpreterError(null, "APPLY", 1, 0);
 
@@ -797,6 +893,7 @@ namespace Zilf
 
             ZilObject[] newArgs = new ZilObject[args.Length - 1];
             Array.Copy(args, 1, newArgs, 0, args.Length - 1);
+            Contract.Assume(Contract.ForAll(newArgs, a => a != null));
             return ap.ApplyNoEval(ctx, newArgs);
         }
 
@@ -807,6 +904,8 @@ namespace Zilf
         [Subr]
         public static ZilObject TYPE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "TYPE", 1, 1);
 
@@ -816,6 +915,8 @@ namespace Zilf
         [Subr("TYPE?")]
         public static ZilObject TYPE_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "TYPE?", 2, 0);
 
@@ -830,6 +931,8 @@ namespace Zilf
         [Subr]
         public static ZilObject CHTYPE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "CHTYPE", 2, 2);
 
@@ -843,6 +946,8 @@ namespace Zilf
         [Subr("MAKE-GVAL")]
         public static ZilObject MAKE_GVAL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "MAKE-GVAL", 1, 1);
 
@@ -852,6 +957,8 @@ namespace Zilf
         [Subr("APPLICABLE?")]
         public static ZilObject APPLICABLE_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "APPLICABLE?", 1, 1);
 
@@ -861,6 +968,8 @@ namespace Zilf
         [Subr("STRUCTURED?")]
         public static ZilObject STRUCTURED_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "STRUCTURED?", 1, 1);
 
@@ -870,6 +979,8 @@ namespace Zilf
         [Subr]
         public static ZilObject FORM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new InterpreterError(null, "FORM", 1, 0);
 
@@ -882,18 +993,24 @@ namespace Zilf
         [Subr]
         public static ZilObject LIST(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return new ZilList(args);
         }
 
         [Subr]
         public static ZilObject VECTOR(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return new ZilVector(args);
         }
         
         [Subr]
         public static ZilObject ILIST(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "ILIST", 1, 2);
 
@@ -904,7 +1021,7 @@ namespace Zilf
             var contents = new List<ZilObject>(count.Value);
             for (int i = 0; i < count.Value; i++)
             {
-                if (args.Length >= 1)
+                if (args.Length >= 2)
                     contents.Add(args[1].Eval(ctx));
                 else
                     contents.Add(ctx.FALSE);
@@ -916,6 +1033,8 @@ namespace Zilf
         [Subr]
         public static ZilObject IVECTOR(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "IVECTOR", 1, 2);
 
@@ -926,7 +1045,7 @@ namespace Zilf
             var contents = new List<ZilObject>(count.Value);
             for (int i = 0; i < count.Value; i++)
             {
-                if (args.Length >= 1)
+                if (args.Length >= 2)
                     contents.Add(args[1].Eval(ctx));
                 else
                     contents.Add(ctx.FALSE);
@@ -938,6 +1057,8 @@ namespace Zilf
         [Subr]
         public static ZilObject BYTE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "BYTE", 1, 1);
 
@@ -947,6 +1068,8 @@ namespace Zilf
         [Subr]
         public static ZilObject CONS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "CONS", 2, 2);
 
@@ -963,6 +1086,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject FUNCTION(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "FUNCTION", 2, 0);
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
@@ -976,6 +1101,8 @@ namespace Zilf
         [Subr]
         public static ZilObject STRING(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             StringBuilder sb = new StringBuilder();
 
             foreach (ZilObject arg in args)
@@ -998,6 +1125,8 @@ namespace Zilf
         [Subr]
         public static ZilObject ISTRING(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "STRING", 1, 2);
 
@@ -1025,6 +1154,8 @@ namespace Zilf
         [Subr]
         public static ZilObject ASCII(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "ASCII", 1, 1);
 
@@ -1046,6 +1177,8 @@ namespace Zilf
         [Subr("EMPTY?")]
         public static ZilObject EMPTY_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "EMPTY?", 1, 1);
 
@@ -1072,6 +1205,8 @@ namespace Zilf
         [Subr]
         public static ZilObject REST(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "REST", 1, 2);
 
@@ -1097,6 +1232,8 @@ namespace Zilf
         [Subr]
         public static ZilObject NTH(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "NTH", 2, 2);
 
@@ -1118,6 +1255,8 @@ namespace Zilf
         [Subr]
         public static ZilObject PUT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 3)
                 throw new InterpreterError(null, "PUT", 3, 3);
 
@@ -1136,6 +1275,8 @@ namespace Zilf
         [Subr]
         public static ZilObject LENGTH(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "LENGTH", 1, 1);
 
@@ -1149,6 +1290,8 @@ namespace Zilf
         [Subr("LENGTH?")]
         public static ZilObject LENGTH_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "LENGTH?", 2, 2);
 
@@ -1170,6 +1313,8 @@ namespace Zilf
         [Subr]
         public static ZilObject PUTREST(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "PUTREST", 2, 2);
 
@@ -1193,6 +1338,8 @@ namespace Zilf
         [Subr]
         public static ZilObject SUBSTRUC(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 4)
                 throw new InterpreterError(null, "SUBSTRUC", 1, 4);
 
@@ -1230,6 +1377,9 @@ namespace Zilf
                 amount = from.GetLength() - rest;
             }
 
+            if (amount < 0)
+                throw new InterpreterError("SUBSTRUC: negative element count");
+
             var primitive = args[0].GetPrimitive(ctx);
 
             if (args.Length >= 4)
@@ -1246,7 +1396,7 @@ namespace Zilf
                         var list = (ZilList)dest;
                         foreach (var item in ((ZilList)primitive).Skip(rest).Take(amount))
                         {
-                            if (list == null || list.IsEmpty)
+                            if (list.IsEmpty)
                                 throw new InterpreterError("SUBSTRUC: destination too short");
 
                             list.First = item;
@@ -1303,12 +1453,16 @@ namespace Zilf
         [Subr]
         public static ZilObject MEMBER(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformMember(ctx, args, "MEMBER", (a, b) => a.Equals(b));
         }
 
         [Subr]
         public static ZilObject MEMQ(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformMember(ctx, args, "MEMQ", (a, b) =>
             {
                 if (a is IStructure)
@@ -1321,6 +1475,10 @@ namespace Zilf
         private static ZilObject PerformMember(Context ctx, ZilObject[] args, string name,
             Func<ZilObject, ZilObject, bool> equality)
         {
+            SubrContracts(ctx, args);
+            Contract.Requires(name != null);
+            Contract.Requires(equality != null);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, name, 2, 2);
 
@@ -1348,6 +1506,8 @@ namespace Zilf
         [FSubr("SET-DEFSTRUCT-FILE-DEFAULTS")]
         public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             var defaults = new ZilList(args);
             ctx.PutProp(ctx.GetStdAtom(StdAtom.DEFSTRUCT), ctx.GetStdAtom(StdAtom.DEFAULT), defaults);
             return defaults;
@@ -1371,6 +1531,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject DEFSTRUCT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 3)
                 throw new InterpreterError(null, "DEFSTRUCT", 3, 0);
 
@@ -1445,6 +1607,10 @@ namespace Zilf
 
         private static string MakeDefstructCtorMacro(ZilAtom name, ZilAtom baseType, List<DefStructField> fields)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(baseType != null);
+            Contract.Requires(fields != null);
+
             // TODO: correct the source locations in the returned macro
 
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
@@ -1519,6 +1685,8 @@ namespace Zilf
 
         private static string MakeDefstructAccessMacro(ZilAtom structName, DefStructField field)
         {
+            Contract.Requires(structName != null);
+
             // TODO: correct the source locations in the returned macro
 
             // {0} = field name
@@ -1545,6 +1713,9 @@ namespace Zilf
 
         private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, int offset, ZilObject fieldSpec)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(fieldSpec != null);
+
             var fieldList = fieldSpec as ZilList;
 
             if (fieldList == null || fieldList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
@@ -1631,6 +1802,9 @@ namespace Zilf
 
         private static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(fileDefaults != null);
+
             ZilAtom tag;
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
@@ -1697,6 +1871,10 @@ namespace Zilf
         private static ZilObject PerformArithmetic(int init, string name, Func<int, int, int> op,
             ZilObject[] args)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(op != null);
+            Contract.Requires(args != null);
+
             const string STypeError = "every arg must be a FIX";
 
             switch (args.Length)
@@ -1731,24 +1909,32 @@ namespace Zilf
         [Subr("+")]
         public static ZilObject Plus(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(0, "+", (x, y) => x + y, args);
         }
 
         [Subr("-")]
         public static ZilObject Minus(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(0, "-", (x, y) => x - y, args);
         }
 
         [Subr("*")]
         public static ZilObject Times(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(1, "*", (x, y) => x * y, args);
         }
 
         [Subr("/")]
         public static ZilObject Divide(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             try
             {
                 return PerformArithmetic(1, "/", (x, y) => x / y, args);
@@ -1762,6 +1948,8 @@ namespace Zilf
         [Subr]
         public static ZilObject MOD(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "MOD", 2, 2);
 
@@ -1784,6 +1972,8 @@ namespace Zilf
         [Subr]
         public static ZilObject LSH(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // "Logical shift", not left shift.
             // Positive shifts left, negative shifts right.
             
@@ -1815,30 +2005,40 @@ namespace Zilf
         [Subr]
         public static ZilObject ORB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(0, "ORB", (x, y) => x | y, args);
         }
 
         [Subr]
         public static ZilObject ANDB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(-1, "ANDB", (x, y) => x & y, args);
         }
 
         [Subr]
         public static ZilObject XORB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(0, "XORB", (x, y) => x ^ y, args);
         }
 
         [Subr]
         public static ZilObject EQVB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformArithmetic(-1, "EQVB", (x, y) => ~(x ^ y), args);
         }
 
         [Subr]
         public static ZilObject MIN(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, "MIN", 1, 0);
 
@@ -1851,6 +2051,8 @@ namespace Zilf
         [Subr]
         public static ZilObject MAX(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, "MAX", 1, 0);
 
@@ -1867,6 +2069,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject COND(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, "COND", 1, 0);
 
@@ -1897,6 +2101,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject OR(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ZilObject result = ctx.FALSE;
 
             foreach (ZilObject arg in args)
@@ -1912,6 +2118,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject AND(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ZilObject result = ctx.TRUE;
 
             foreach (ZilObject arg in args)
@@ -1927,6 +2135,8 @@ namespace Zilf
         [Subr("OR?")]
         public static ZilObject OR_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ZilObject result = ctx.FALSE;
 
             foreach (ZilObject arg in args)
@@ -1942,6 +2152,8 @@ namespace Zilf
         [Subr("AND?")]
         public static ZilObject AND_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ZilObject result = ctx.TRUE;
 
             foreach (ZilObject arg in args)
@@ -1957,6 +2169,8 @@ namespace Zilf
         [Subr]
         public static ZilObject NOT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "NOT", 1, 1);
 
@@ -1966,6 +2180,8 @@ namespace Zilf
         [Subr("=?")]
         public static ZilObject Eq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "=?", 2, 2);
 
@@ -1975,6 +2191,8 @@ namespace Zilf
         [Subr("N=?")]
         public static ZilObject NEq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "N=?", 2, 2);
 
@@ -1984,6 +2202,8 @@ namespace Zilf
         [Subr("==?")]
         public static ZilObject Eeq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "==?", 2, 2);
 
@@ -1999,6 +2219,8 @@ namespace Zilf
         [Subr("N==?")]
         public static ZilObject NEeq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "N==?", 2, 2);
 
@@ -2013,6 +2235,11 @@ namespace Zilf
 
         private static ZilObject PerformComparison(Context ctx, string name, Func<int, int, bool> op, ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(op != null);
+            Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
+
             const string STypeError = "every arg must be a FIX";
 
             if (args.Length != 2)
@@ -2030,30 +2257,40 @@ namespace Zilf
         [Subr("L?")]
         public static ZilObject L_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformComparison(ctx, "L?", (a, b) => a < b, args);
         }
 
         [Subr("L=?")]
         public static ZilObject LEq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformComparison(ctx, "L=?", (a, b) => a <= b, args);
         }
 
         [Subr("G?")]
         public static ZilObject G_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformComparison(ctx, "G?", (a, b) => a > b, args);
         }
 
         [Subr("G=?")]
         public static ZilObject GEq_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformComparison(ctx, "G=?", (a, b) => a >= b, args);
         }
 
         [Subr("0?")]
         public static ZilObject Zero_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "0?", 1, 1);
 
@@ -2066,6 +2303,8 @@ namespace Zilf
         [Subr("1?")]
         public static ZilObject One_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "1?", 1, 1);
 
@@ -2082,12 +2321,16 @@ namespace Zilf
         [Subr]
         public static ZilObject MAPF(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformMap(ctx, args, true);
         }
 
         [Subr]
         public static ZilObject MAPR(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformMap(ctx, args, false);
         }
 
@@ -2098,18 +2341,30 @@ namespace Zilf
             public MapRetException(ZilObject[] values)
                 : base("MAPRET")
             {
+                Contract.Requires(values != null);
                 this.values = values;
+            }
+
+            [ContractInvariantMethod]
+            private void ObjectInvariant()
+            {
+                Contract.Invariant(values != null);
             }
 
             protected MapRetException(string name, ZilObject[] values)
                 : base(name)
             {
+                Contract.Requires(values != null);
                 this.values = values;
             }
 
             public ZilObject[] Values
             {
-                get { return values; }
+                get
+                {
+                    Contract.Ensures(Contract.Result<ZilObject[]>() != null);
+                    return values;
+                }
             }
         }
 
@@ -2118,6 +2373,7 @@ namespace Zilf
             public MapStopException(ZilObject[] values)
                 : base("MAPSTOP", values)
             {
+                Contract.Requires(values != null);
             }
         }
 
@@ -2139,6 +2395,8 @@ namespace Zilf
 
         private static ZilObject PerformMap(Context ctx, ZilObject[] args, bool first)
         {
+            SubrContracts(ctx, args);
+
             string name = first ? "MAPF" : "MAPR";
 
             if (args.Length < 2)
@@ -2183,7 +2441,7 @@ namespace Zilf
                         loopArgs[i] = (ZilObject)st;
 
                     structs[i] = st.GetRest(1);
-                    System.Diagnostics.Debug.Assert(structs[i] != null);
+                    Contract.Assume(structs[i] != null);
                 }
 
                 if (i < numStructs)
@@ -2225,18 +2483,24 @@ namespace Zilf
         [Subr]
         public static ZilObject MAPRET(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             throw new MapRetException(args);
         }
 
         [Subr]
         public static ZilObject MAPSTOP(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             throw new MapStopException(args);
         }
 
         [Subr]
         public static ZilObject MAPLEAVE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length > 1)
                 throw new InterpreterError(null, "MAPLEAVE", 0, 1);
 
@@ -2250,23 +2514,32 @@ namespace Zilf
         [FSubr]
         public static ZilObject PROG(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformProg(ctx, args, "PROG", false, true);
         }
 
         [FSubr]
         public static ZilObject REPEAT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformProg(ctx, args, "REPEAT", true, true);
         }
 
         [FSubr]
         public static ZilObject BIND(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformProg(ctx, args, "BIND", false, false);
         }
 
         private static ZilObject PerformProg(Context ctx, ZilObject[] args, string name, bool repeat, bool catchy)
         {
+            SubrContracts(ctx, args);
+            Contract.Requires(name != null);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, name, 2, 0);
 
@@ -2312,9 +2585,9 @@ namespace Zilf
                                 if (adecl != null)
                                     atom = adecl.First as ZilAtom;
                             }
-                            value = list.Rest.First;
-                            if (atom == null || value == null)
+                            if (atom == null)
                                 throw new InterpreterError(name + ": invalid atom binding: " + b);
+                            value = list.Rest.First;
                             ctx.PushLocalVal(atom, value.Eval(ctx));
                             boundAtoms.Enqueue(atom);
                             break;
@@ -2348,6 +2621,8 @@ namespace Zilf
                             }
                         }
                     } while (repeat || again);
+
+                    Contract.Assert(result != null);
                 }
                 else
                 {
@@ -2356,6 +2631,8 @@ namespace Zilf
                         for (int i = 1; i < args.Length; i++)
                             result = args[i].Eval(ctx);
                     } while (repeat);
+
+                    Contract.Assert(result != null);
                 }
 
                 return result;
@@ -2370,6 +2647,8 @@ namespace Zilf
         [Subr]
         public static ZilObject RETURN(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new ReturnException(ctx.TRUE);
             else if (args.Length == 1)
@@ -2381,6 +2660,8 @@ namespace Zilf
         [Subr]
         public static ZilObject AGAIN(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new AgainException();
             else
@@ -2394,6 +2675,8 @@ namespace Zilf
         [Subr("ROUTINE-FLAGS")]
         public static ZilObject ROUTINE_FLAGS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             var newFlags = RoutineFlags.None;
 
             foreach (var arg in args)
@@ -2420,6 +2703,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject ROUTINE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 3)
                 throw new InterpreterError(null, "ROUTINE", 3, 0);
 
@@ -2486,6 +2771,8 @@ namespace Zilf
         [Subr("MSETG")]
         public static ZilObject CONSTANT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "CONSTANT", 2, 2);
 
@@ -2524,6 +2811,8 @@ namespace Zilf
         [Subr]
         public static ZilObject GLOBAL(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // typical form:  <GLOBAL atom-or-adecl default-value>
             // quirky form:   <GLOBAL atom-or-adecl default-value dummy1 dummy2>
             if (args.Length != 2 && args.Length != 4)
@@ -2574,6 +2863,8 @@ namespace Zilf
         [Subr("DEFINE-GLOBALS")]
         public static ZilObject DEFINE_GLOBALS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "DEFINE-GLOBALS", 2, 0);
 
@@ -2668,17 +2959,23 @@ namespace Zilf
         [Subr]
         public static ZilObject OBJECT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformObject(ctx, args, false);
         }
 
         [Subr]
         public static ZilObject ROOM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformObject(ctx, args, true);
         }
 
         private static ZilObject PerformObject(Context ctx, ZilObject[] args, bool isRoom)
         {
+            SubrContracts(ctx, args);
+
             string name = isRoom ? "ROOM" : "OBJECT";
 
             if (args.Length < 1)
@@ -2713,6 +3010,8 @@ namespace Zilf
         [FSubr]
         public static ZilObject PROPDEF(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "PROPDEF", 2, 0);
 
@@ -2740,6 +3039,8 @@ namespace Zilf
         [Subr]
         public static ZilObject ZSTART(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "ZSTART", 1, 1);
 
@@ -2754,6 +3055,8 @@ namespace Zilf
         [Subr("BIT-SYNONYM")]
         public static ZilObject BIT_SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "BIT-SYNONYM", 2, 0);
 
@@ -2784,6 +3087,8 @@ namespace Zilf
         [Subr]
         public static ZilObject ITABLE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // Syntax:
             //    <ITABLE [specifier] count [(flags...)] [init...]>
             // 'count' is a number of repetitions.
@@ -2892,6 +3197,8 @@ namespace Zilf
         private static ZilTable PerformTable(Context ctx, ZilObject[] args,
             bool pure, bool wantLength)
         {
+            SubrContracts(ctx, args);
+
             // syntax:
             //    <[P][L]TABLE [(flags...)] values...>
 
@@ -2913,7 +3220,7 @@ namespace Zilf
                     i++;
 
                     var list = (ZilList)args[0];
-                    while (list != null && !list.IsEmpty)
+                    while (!list.IsEmpty)
                     {
                         ZilAtom flag = list.First as ZilAtom;
                         if (flag == null)
@@ -2940,7 +3247,7 @@ namespace Zilf
                             case StdAtom.PATTERN:
                                 list = list.Rest;
                                 ZilList patternList;
-                                if (list == null || list.IsEmpty || (patternList = list.First as ZilList) == null)
+                                if (list.IsEmpty || (patternList = list.First as ZilList) == null)
                                     throw new InterpreterError(name + ": expected a list after PATTERN");
                                 pattern = patternList.ToArray();
                                 ValidateTablePattern(name, pattern);
@@ -2992,6 +3299,9 @@ namespace Zilf
 
         private static void ValidateTablePattern(string name, ZilObject[] pattern)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(pattern != null && Contract.ForAll(pattern, p => p != null));
+
             if (pattern.Length == 0)
                 throw new InterpreterError(name + ": PATTERN must not be empty");
 
@@ -3038,37 +3348,47 @@ namespace Zilf
         [Subr]
         public static ZilObject TABLE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformTable(ctx, args, false, false);
         }
 
         [Subr]
         public static ZilObject LTABLE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformTable(ctx, args, false, true);
         }
 
         [Subr]
         public static ZilObject PTABLE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformTable(ctx, args, true, false);
         }
 
         [Subr]
         public static ZilObject PLTABLE(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformTable(ctx, args, true, true);
         }
 
         [Subr]
         public static ZilObject ZGET(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "ZGET", 2, 2);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("ZGET: first arg must be a TABLE or derived type");
 
-            var table = args[0].GetPrimitive(ctx) as ZilTable;
+            var table = (ZilTable)args[0].GetPrimitive(ctx);
 
             var index = args[1] as ZilFix;
             if (index == null)
@@ -3080,13 +3400,15 @@ namespace Zilf
         [Subr]
         public static ZilObject ZPUT(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 3)
                 throw new InterpreterError(null, "ZPUT", 3, 3);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("ZPUT: first arg must be a TABLE or derived type");
 
-            var table = args[0].GetPrimitive(ctx) as ZilTable;
+            var table = (ZilTable)args[0].GetPrimitive(ctx);
 
             var index = args[1] as ZilFix;
             if (index == null)
@@ -3099,13 +3421,15 @@ namespace Zilf
         [Subr]
         public static ZilObject GETB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 2)
                 throw new InterpreterError(null, "GETB", 2, 2);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("GETB: first arg must be a TABLE or derived type");
 
-            var table = args[0].GetPrimitive(ctx) as ZilTable;
+            var table = (ZilTable)args[0].GetPrimitive(ctx);
 
             var index = args[1] as ZilFix;
             if (index == null)
@@ -3117,13 +3441,15 @@ namespace Zilf
         [Subr]
         public static ZilObject PUTB(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 3)
                 throw new InterpreterError(null, "PUTB", 3, 3);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("PUTB: first arg must be a TABLE or derived type");
 
-            var table = args[0].GetPrimitive(ctx) as ZilTable;
+            var table = (ZilTable)args[0].GetPrimitive(ctx);
 
             var index = args[1] as ZilFix;
             if (index == null)
@@ -3152,6 +3478,8 @@ namespace Zilf
         [Subr]
         public static ZilObject VERSION(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "VERSION", 1, 2);
 
@@ -3178,6 +3506,10 @@ namespace Zilf
 
         private static int ParseZVersion(string name, ZilObject expr)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(expr != null);
+            Contract.Ensures(Contract.Result<int>() >= 1 && Contract.Result<int>() <= 8);
+
             int newVersion;
             if (expr is ZilAtom)
             {
@@ -3213,6 +3545,8 @@ namespace Zilf
         [Subr("CHECK-VERSION?")]
         public static ZilObject CHECK_VERSION_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "CHECK-VERSION?", 1, 1);
 
@@ -3223,6 +3557,8 @@ namespace Zilf
         [FSubr("VERSION?")]
         public static ZilObject VERSION_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, "VERSION?", 1, 0);
 
@@ -3251,6 +3587,8 @@ namespace Zilf
         [Subr("ORDER-OBJECTS?")]
         public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, "ORDER-OBJECTS?", 1, 0);
 
@@ -3279,6 +3617,8 @@ namespace Zilf
         [Subr("ORDER-TREE?")]
         public static ZilObject ORDER_TREE_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length != 1)
                 throw new InterpreterError(null, "ORDER-TREE?", 1, 1);
 
@@ -3298,6 +3638,8 @@ namespace Zilf
         [Subr("ORDER-FLAGS?")]
         public static ZilObject ORDER_FLAGS_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 2)
                 throw new InterpreterError(null, "ORDER-FLAGS?", 2, 0);
 
@@ -3320,6 +3662,8 @@ namespace Zilf
         [Subr("ZIP-OPTIONS")]
         public static ZilObject ZIP_OPTIONS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             foreach (var arg in args)
             {
                 var atom = arg as ZilAtom;
@@ -3367,6 +3711,8 @@ namespace Zilf
         [Subr("FREQUENT-WORDS?")]
         public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // nada - we always generate frequent words
             return ctx.TRUE;
         }
@@ -3374,6 +3720,8 @@ namespace Zilf
         [Subr("LONG-WORDS?")]
         public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ctx.ZEnvironment.GenerateLongWords = true;
             return ctx.TRUE;
         }
@@ -3381,6 +3729,8 @@ namespace Zilf
         [Subr("FUNNY-GLOBALS?")]
         public static ZilObject FUNNY_GLOBALS_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P), ctx.TRUE);
             return ctx.TRUE;
         }
@@ -3392,6 +3742,8 @@ namespace Zilf
         [Subr]
         public static ZilObject DIRECTIONS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new InterpreterError(null, "DIRECTIONS", 1, 0);
 
@@ -3418,6 +3770,8 @@ namespace Zilf
         [Subr]
         public static ZilObject BUZZ(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length == 0)
                 throw new InterpreterError(null, "BUZZ", 1, 0);
 
@@ -3433,6 +3787,8 @@ namespace Zilf
         [Subr]
         public static ZilObject VOC(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 1 || args.Length > 2)
                 throw new InterpreterError(null, "VOC", 1, 2);
 
@@ -3488,6 +3844,8 @@ namespace Zilf
         [Subr]
         public static ZilObject SYNTAX(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             if (args.Length < 3)
                 throw new InterpreterError(null, "SYNTAX", 3, 0);
 
@@ -3506,6 +3864,10 @@ namespace Zilf
         private static ZilObject PerformSynonym(Context ctx, ZilObject[] args,
             string name, Type synonymType)
         {
+            SubrContracts(ctx, args);
+            Contract.Requires(name != null);
+            Contract.Requires(synonymType != null);
+
             if (args.Length < 1)
                 throw new InterpreterError(null, name, 1, 0);
 
@@ -3549,30 +3911,40 @@ namespace Zilf
         [Subr]
         public static ZilObject SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSynonym(ctx, args, "SYNONYM", typeof(Synonym));
         }
 
         [Subr("VERB-SYNONYM")]
         public static ZilObject VERB_SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSynonym(ctx, args, "VERB-SYNONYM", typeof(VerbSynonym));
         }
 
         [Subr("PREP-SYNONYM")]
         public static ZilObject PREP_SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSynonym(ctx, args, "PREP-SYNONYM", typeof(PrepSynonym));
         }
 
         [Subr("ADJ-SYNONYM")]
         public static ZilObject ADJ_SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSynonym(ctx, args, "ADJ-SYNONYM", typeof(AdjSynonym));
         }
 
         [Subr("DIR-SYNONYM")]
         public static ZilObject DIR_SYNONYM(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             return PerformSynonym(ctx, args, "DIR-SYNONYM", typeof(DirSynonym));
         }
 
@@ -3583,6 +3955,8 @@ namespace Zilf
         [FSubr("TELL-TOKENS")]
         public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ctx.ZEnvironment.TellPatterns.Clear();
             return ADD_TELL_TOKENS(ctx, args);
         }
@@ -3590,6 +3964,8 @@ namespace Zilf
         [FSubr("ADD-TELL-TOKENS")]
         public static ZilObject ADD_TELL_TOKENS(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args, ctx));
             return ctx.TRUE;
         }

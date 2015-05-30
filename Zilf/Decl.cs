@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
@@ -9,6 +10,10 @@ namespace Zilf
     {
         public static bool Check(Context ctx, ZilObject value, ZilObject pattern)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
+
             ZilAtom atom;
 
             switch (pattern.GetTypeAtom(ctx).StdAtom)
