@@ -24,7 +24,7 @@ using System.Text;
 
 namespace Zilf
 {
-    class ZilRoutine : ZilObject, ISourceLine
+    class ZilRoutine : ZilObject
     {
         private readonly ZilAtom name, activationAtom;
         private readonly ArgSpec argspec;
@@ -72,11 +72,6 @@ namespace Zilf
         public RoutineFlags Flags
         {
             get { return flags; }
-        }
-
-        public string SourceInfo
-        {
-            get { return "routine '" + name + "'"; }
         }
 
         private string ToString(Func<ZilObject, string> convert)
@@ -154,7 +149,7 @@ namespace Zilf
         }
     }
 
-    class ZilConstant : ZilObject, ISourceLine
+    class ZilConstant : ZilObject
     {
         private readonly ZilAtom name;
         private readonly ZilObject value;
@@ -202,11 +197,6 @@ namespace Zilf
                 new ZilList(value,
                     new ZilList(null, null)));
         }
-
-        public string SourceInfo
-        {
-            get { return "constant '" + name.ToString() + "'"; }
-        }
     }
 
     enum GlobalStorageType
@@ -225,7 +215,7 @@ namespace Zilf
         Soft,
     }
 
-    class ZilGlobal : ZilObject, ISourceLine
+    class ZilGlobal : ZilObject
     {
         private readonly ZilAtom name;
         private readonly ZilObject value;
@@ -279,11 +269,6 @@ namespace Zilf
                 new ZilList(value,
                     new ZilList(null, null)));
         }
-
-        public string SourceInfo
-        {
-            get { return "global '" + name.ToString() + "'"; }
-        }
     }
 
     [Flags]
@@ -313,10 +298,8 @@ namespace Zilf
     }
 
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
-    class ZilTable : ZilObject, ISourceLine
+    class ZilTable : ZilObject
     {
-        private readonly string filename;
-        private readonly int line;
         private readonly ZilObject[] pattern;
         private readonly TableFlags flags;
 
@@ -324,13 +307,11 @@ namespace Zilf
         private ZilObject[] initializer;
         private int[] elementToByteOffsets;
 
-        public ZilTable(string filename, int line, int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
+        public ZilTable(int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
         {
             Contract.Requires(repetitions >= 0);
             Contract.Requires(repetitions > 0 || initializer == null || initializer.Length == 0);
             
-            this.filename = filename;
-            this.line = line;
             this.repetitions = repetitions;
             this.initializer = (initializer != null && initializer.Length > 0) ? initializer : null;
             this.flags = flags;
@@ -339,12 +320,14 @@ namespace Zilf
 
         [ChtypeMethod]
         public ZilTable(ZilTable other)
-            : this(other.filename, other.line, other.repetitions,
+            : this(other.repetitions,
                    other.initializer == null ? null : (ZilObject[])other.initializer.Clone(),
                    other.flags,
                    other.pattern == null ? null : (ZilObject[])other.pattern.Clone())
         {
             Contract.Requires(other != null);
+
+            this.SourceLine = other.SourceLine;
         }
 
         [ContractInvariantMethod]
@@ -385,11 +368,6 @@ namespace Zilf
         public ZilObject[] Pattern
         {
             get { return pattern; }
-        }
-
-        public string SourceInfo
-        {
-            get { return filename + ":" + line.ToString(); }
         }
 
         public void CopyTo<T>(T[] array, Func<ZilObject, T> convert, T defaultFiller)
@@ -700,7 +678,7 @@ namespace Zilf
         }
     }
 
-    class ZilModelObject : ZilObject, ISourceLine
+    class ZilModelObject : ZilObject
     {
         private readonly ZilAtom name;
         private readonly ZilList[] props;
@@ -772,11 +750,6 @@ namespace Zilf
             result.Add(name);
             result.AddRange(props);
             return new ZilList(result);
-        }
-
-        public string SourceInfo
-        {
-            get { return "object '" + name.ToString() + "'"; }
         }
     }
 

@@ -409,5 +409,23 @@ namespace IntegrationTests
         }
 
         #endregion
+
+        [TestMethod]
+        public void Non_Constants_As_Property_Values_Should_Be_Rejected()
+        {
+            AssertGlobals(
+                "<GLOBAL FOO 123>",
+                "<OBJECT BAR (BAZ FOO)>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void Non_Constants_In_Property_Initializers_Should_Be_Rejected()
+        {
+            AssertGlobals(
+                "<GLOBAL FOO 123>",
+                "<OBJECT BAR (BAZ 4 5 FOO)>")
+                .DoesNotCompile();
+        }
     }
 }

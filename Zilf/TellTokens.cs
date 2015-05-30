@@ -125,7 +125,7 @@ namespace Zilf
 
                         list = (ZilList)zo;
                         if (list.First == null || !list.All(e => e is ZilAtom))
-                            throw new InterpreterError(zo as ISourceLine, "lists in TELL token specs must contain atoms");
+                            throw new InterpreterError(zo.SourceLine, "lists in TELL token specs must contain atoms");
                         foreach (ZilAtom atom in list)
                             atomToken.Atoms.Add(atom);
 
@@ -169,7 +169,7 @@ namespace Zilf
                         {
                             var atom = form.Rest.First as ZilAtom;
                             if (atom == null)
-                                throw new InterpreterError(form, "malformed GVAL in TELL token spec");
+                                throw new InterpreterError(form.SourceLine, "malformed GVAL in TELL token spec");
                             tokensSoFar.Add(new GvalToken { Atom = atom });
                         }
                         else
@@ -200,7 +200,7 @@ namespace Zilf
                         break;
 
                     default:
-                        throw new InterpreterError(zo as ISourceLine, "unexpected type in TELL token spec: " + zo.GetTypeAtom(ctx));
+                        throw new InterpreterError(zo.SourceLine, "unexpected type in TELL token spec: " + zo.GetTypeAtom(ctx));
                 }
             }
 
@@ -215,11 +215,12 @@ namespace Zilf
             get { return tokens.Length; }
         }
 
-        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx)
+        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx, ISourceLine src)
         {
             Contract.Requires(input != null);
             Contract.Requires(startIndex >= 0 && startIndex < input.Count);
             Contract.Requires(ctx != null);
+            Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<ITellPatternMatchResult>() != null);
 
             var result = new MatchResult();
@@ -255,7 +256,7 @@ namespace Zilf
 
                 outputElements.Add(element);
             }
-            result.Output = new ZilForm(outputElements);
+            result.Output = new ZilForm(outputElements) { SourceLine = src };
 
             return result;
         }

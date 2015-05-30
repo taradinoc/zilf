@@ -180,7 +180,7 @@ namespace Zilf
                     .ToList();
 
             if (highestFlags.Count >= cc.Game.MaxFlags)
-                Errors.CompError(ctx, null, "too many flags requiring high numbers");
+                Errors.CompError(ctx, "too many flags requiring high numbers");
 
             foreach (var flag in highestFlags)
                 DefineFlag(cc, flag);
@@ -251,7 +251,7 @@ namespace Zilf
                     g.StorageType = GlobalStorageType.Hard;
 
                 if (ctx.ZEnvironment.Globals.Count > 240 - ReservedGlobalCount)
-                    Errors.CompError(cc.Context, null,
+                    Errors.CompError(cc.Context,
                         "too many globals: {0} defined, only {1} allowed",
                         ctx.ZEnvironment.Globals.Count,
                         240 - ReservedGlobalCount);
@@ -348,7 +348,7 @@ namespace Zilf
                 {
                     // could be a compiler error, or an interpreter error thrown by macro evaluation
                     if (ex.SourceLine == null)
-                        ex.SourceLine = routine;
+                        ex.SourceLine = routine.SourceLine;
                     ctx.HandleError(ex);
                 }
                 rb.Finish();
@@ -371,7 +371,7 @@ namespace Zilf
                 catch (ZilError ex)
                 {
                     if (ex.SourceLine == null)
-                        ex.SourceLine = obj;
+                        ex.SourceLine = obj.SourceLine;
                     ctx.HandleError(ex);
                 }
             }
@@ -433,7 +433,7 @@ namespace Zilf
                 catch (ZilError ex)
                 {
                     if (ex.SourceLine == null)
-                        ex.SourceLine = global;
+                        ex.SourceLine = global.SourceLine;
                     cc.Context.HandleError(ex);
                 }
             }
@@ -787,7 +787,7 @@ namespace Zilf
                     catch (ZilError ex)
                     {
                         if (ex.SourceLine == null)
-                            ex.SourceLine = line;
+                            ex.SourceLine = line.SourceLine;
                         cc.Context.HandleError(ex);
                     }
                 }
@@ -853,7 +853,7 @@ namespace Zilf
                     catch (ZilError ex)
                     {
                         if (ex.SourceLine == null)
-                            ex.SourceLine = line;
+                            ex.SourceLine = line.SourceLine;
                         cc.Context.HandleError(ex);
                     }
                 }
@@ -878,7 +878,7 @@ namespace Zilf
             Contract.Requires(description != null);
 
             if (thisRoutineName != lastRoutineName)
-                Errors.CompWarning(cc.Context, line,
+                Errors.CompWarning(cc.Context, line.SourceLine,
                     "{0} mismatch for {1}: using {2} as before",
                     description,
                     line.ActionName,
@@ -1135,7 +1135,7 @@ namespace Zilf
                 for (int i = 0; i < values.Length; i++)
                     if (values[i] == null)
                     {
-                        Errors.CompError(cc.Context, (ISourceLine)zt,
+                        Errors.CompError(cc.Context, zt.SourceLine,
                             "non-constant in table initializer at element {0}", i);
                         values[i] = defaultFiller;
                     }
@@ -1149,7 +1149,7 @@ namespace Zilf
                         {
                             if (!enumerator.MoveNext())
                             {
-                                Errors.CompError(cc.Context, (ISourceLine)zt,
+                                Errors.CompError(cc.Context, zt.SourceLine,
                                     "table pattern is too short");
                                 break;
                             }
@@ -1387,18 +1387,18 @@ namespace Zilf
                         if (arg.Type == ArgItem.ArgType.Optional)
                         {
                             if (!rb.HasArgCount)
-                                throw new CompilerError(routine, "optional args with non-constant defaults not supported for this target");
+                                throw new CompilerError(routine.SourceLine, "optional args with non-constant defaults not supported for this target");
 
                             ILabel nextLabel = rb.DefineLabel();
                             rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
-                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine, lb);
+                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine.SourceLine, lb);
                             if (val != lb)
                                 rb.EmitStore(lb, val);
                             rb.MarkLabel(nextLabel);
                         }
                         else
                         {
-                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine, lb);
+                            IOperand val = CompileAsOperand(cc, rb, arg.DefaultValue, routine.SourceLine, lb);
                             if (val != lb)
                                 rb.EmitStore(lb, val);
                         }
@@ -1467,14 +1467,29 @@ namespace Zilf
             }
             else
             {
-                if (cc.WantDebugInfo)
-                    cc.Game.DebugFile.MarkSequencePoint(rb,
-                        new DebugLineRef(form.SourceFile, form.SourceLine, 1));
+                MarkSequencePoint(cc, rb, form);
                 
                 IOperand result = CompileForm(cc, rb, form, wantResult, null);
 
                 if (wantResult)
                     rb.Return(result);
+            }
+        }
+
+        private static void MarkSequencePoint(CompileCtx cc, IRoutineBuilder rb, ZilObject node)
+        {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(node != null);
+
+            if (cc.WantDebugInfo)
+            {
+                var fileSourceLine = node.SourceLine as FileSourceLine;
+                if (fileSourceLine != null)
+                {
+                    cc.Game.DebugFile.MarkSequencePoint(rb,
+                        new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
+                }
             }
         }
 
@@ -1854,17 +1869,19 @@ namespace Zilf
                 }
                 else if (expanded.GetTypeAtom(cc.Context).StdAtom == StdAtom.SPLICE)
                 {
-                    form = new ZilForm(form.SourceFile, form.SourceLine, Enumerable.Concat(
+                    var src = form.SourceLine;
+                    form = new ZilForm(Enumerable.Concat(
                         new ZilObject[] {
                             cc.Context.GetStdAtom(StdAtom.BIND),
                             new ZilList(null, null),
                         },
                         (ZilList)expanded.GetPrimitive(cc.Context)));
+                    form.SourceLine = src;
                 }
                 else
                 {
                     if (wantResult)
-                        return CompileAsOperand(cc, rb, expanded, form, resultStorage);
+                        return CompileAsOperand(cc, rb, expanded, form.SourceLine, resultStorage);
                     else
                         return null;
                 }
@@ -2056,24 +2073,24 @@ namespace Zilf
                         return CompileImpromptuTable(cc, rb, form, wantResult, resultStorage);
 
                     case StdAtom.PROG:
-                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "PROG", false, true);
+                        return CompilePROG(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage, "PROG", false, true);
                     case StdAtom.REPEAT:
-                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "REPEAT", true, true);
+                        return CompilePROG(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage, "REPEAT", true, true);
                     case StdAtom.BIND:
-                        return CompilePROG(cc, rb, form.Rest, form, wantResult, resultStorage, "BIND", false, false);
+                        return CompilePROG(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage, "BIND", false, false);
 
                     case StdAtom.DO:
-                        return CompileDO(cc, rb, form.Rest, form, wantResult, resultStorage);
+                        return CompileDO(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
                     case StdAtom.MAP_CONTENTS:
-                        return CompileMAP_CONTENTS(cc, rb, form.Rest, form, wantResult, resultStorage);
+                        return CompileMAP_CONTENTS(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
                     case StdAtom.MAP_DIRECTIONS:
-                        return CompileMAP_DIRECTIONS(cc, rb, form.Rest, form, wantResult, resultStorage);
+                        return CompileMAP_DIRECTIONS(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
 
                     case StdAtom.COND:
-                        return CompileCOND(cc, rb, form.Rest, form, wantResult, resultStorage);
+                        return CompileCOND(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
 
                     case StdAtom.VERSION_P:
-                        return CompileVERSION_P(cc, rb, form.Rest, form, wantResult, resultStorage);
+                        return CompileVERSION_P(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
 
                     case StdAtom.NOT:
                     case StdAtom.F_P:
@@ -2086,7 +2103,7 @@ namespace Zilf
                         resultStorage = resultStorage ?? rb.Stack;
                         label1 = rb.DefineLabel();
                         label2 = rb.DefineLabel();
-                        CompileCondition(cc, rb, form.Rest.First, form, label1, head.StdAtom != StdAtom.T_P);
+                        CompileCondition(cc, rb, form.Rest.First, form.SourceLine, label1, head.StdAtom != StdAtom.T_P);
                         rb.EmitStore(resultStorage, cc.Game.One);
                         rb.Branch(label2);
                         rb.MarkLabel(label1);
@@ -2096,7 +2113,7 @@ namespace Zilf
 
                     case StdAtom.OR:
                     case StdAtom.AND:
-                        return CompileBoolean(cc, rb, form.Rest, form, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
+                        return CompileBoolean(cc, rb, form.Rest, form.SourceLine, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
 
                     case StdAtom.TELL:
                         return CompileTell(cc, rb, form);
@@ -2122,7 +2139,7 @@ namespace Zilf
 
                     // compile routine call
                     result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                    using (Operands argOperands = Operands.Compile(cc, rb, form, args))
+                    using (Operands argOperands = Operands.Compile(cc, rb, form.SourceLine, args))
                     {
                         rb.EmitCall(cc.Routines[head], argOperands.ToArray(), result);
                     }
@@ -2145,7 +2162,7 @@ namespace Zilf
             catch (ZilError ex)
             {
                 if (ex.SourceLine == null)
-                    ex.SourceLine = form;
+                    ex.SourceLine = form.SourceLine;
                 throw;
             }
         }
@@ -2203,18 +2220,18 @@ namespace Zilf
                     ZilAtom atom = (ZilAtom)expr;
                     if (cc.Globals.ContainsKey(atom))
                     {
-                        Errors.CompWarning(cc.Context, expr as ISourceLine ?? src,
+                        Errors.CompWarning(cc.Context, expr.SourceLine ?? src,
                             "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
                         return cc.Globals[atom].Indirect;
                     }
                     if (cc.SoftGlobals.ContainsKey(atom))
                     {
-                        Errors.CompError(cc.Context, expr as ISourceLine ?? src,
+                        Errors.CompError(cc.Context, expr.SourceLine ?? src,
                             "soft variable '{0}' may not be used here", atom);
                     }
                     else
                     {
-                        Errors.CompError(cc.Context, expr as ISourceLine ?? src,
+                        Errors.CompError(cc.Context, expr.SourceLine ?? src,
                             "bare atom used as operand is not a global variable: {0}", atom);
                     }
                     return cc.Game.Zero;
@@ -2396,7 +2413,7 @@ namespace Zilf
             }
 
             // for anything more complicated, treat it as a value
-            result = CompileAsOperand(cc, rb, form, form, resultStorage);
+            result = CompileAsOperand(cc, rb, form, form.SourceLine, resultStorage);
             if (resultStorage != null && resultStorage != result)
             {
                 rb.EmitStore(resultStorage, result);
@@ -2461,7 +2478,7 @@ namespace Zilf
             }
             else if (type != StdAtom.FORM)
             {
-                Errors.CompError(cc.Context, (expr as ISourceLine) ?? src, "bad value type for condition: {0}", typeAtom);
+                Errors.CompError(cc.Context, (expr.SourceLine) ?? src, "bad value type for condition: {0}", typeAtom);
                 return;
             }
 
@@ -2526,20 +2543,20 @@ namespace Zilf
             {
                 case StdAtom.NOT:
                 case StdAtom.F_P:
-                    CompileCondition(cc, rb, args[0], form, label, !polarity);
+                    CompileCondition(cc, rb, args[0], form.SourceLine, label, !polarity);
                     break;
 
                 case StdAtom.T_P:
-                    CompileCondition(cc, rb, args[0], form, label, polarity);
+                    CompileCondition(cc, rb, args[0], form.SourceLine, label, polarity);
                     break;
 
                 case StdAtom.OR:
                 case StdAtom.AND:
-                    CompileBoolean(cc, rb, args, form, head.StdAtom == StdAtom.AND, label, polarity);
+                    CompileBoolean(cc, rb, args, form.SourceLine, head.StdAtom == StdAtom.AND, label, polarity);
                     break;
 
                 default:
-                    op1 = CompileAsOperand(cc, rb, form, form);
+                    op1 = CompileAsOperand(cc, rb, form, form.SourceLine);
                     rb.BranchIfZero(op1, label, !polarity);
                     break;
             }
@@ -2578,7 +2595,7 @@ namespace Zilf
                 ZilObject last = args[args.Length - 1];
                 if (and && IsSetToZeroForm(last))
                 {
-                    Errors.CompWarning(cc.Context, (ISourceLine)last, "treating SET to 0 as true here");
+                    Errors.CompWarning(cc.Context, last.SourceLine, "treating SET to 0 as true here");
                     CompileStmt(cc, rb, last, false);
                 }
                 else
@@ -2596,7 +2613,7 @@ namespace Zilf
                 ZilObject last = args[args.Length - 1];
                 if (and && IsSetToZeroForm(last))
                 {
-                    Errors.CompWarning(cc.Context, (ISourceLine)last, "treating SET to 0 as true here");
+                    Errors.CompWarning(cc.Context, last.SourceLine, "treating SET to 0 as true here");
                     CompileStmt(cc, rb, last, false);
                 }
                 else
@@ -2838,9 +2855,7 @@ namespace Zilf
                     IOperand result;
                     if (form != null)
                     {
-                        if (cc.WantDebugInfo)
-                            cc.Game.DebugFile.MarkSequencePoint(rb,
-                                new DebugLineRef(form.SourceFile, form.SourceLine, 1));
+                        MarkSequencePoint(cc, rb, form);
 
                         result = CompileForm(cc, rb, form,
                             wantThisResult,
@@ -3046,7 +3061,7 @@ namespace Zilf
             bool testFirst;
             if (IsNonVariableForm(end))
             {
-                CompileCondition(cc, rb, end, (ISourceLine)end, exhaustedLabel, true);
+                CompileCondition(cc, rb, end, end.SourceLine, exhaustedLabel, true);
                 testFirst = true;
             }
             else
@@ -3413,12 +3428,8 @@ namespace Zilf
                 {
                     case StdAtom.FORM:
                         // must be evaluated
-                        if (cc.WantDebugInfo)
-                            cc.Game.DebugFile.MarkSequencePoint(rb,
-                                new DebugLineRef(
-                                    ((ZilForm)condition).SourceFile,
-                                    ((ZilForm)condition).SourceLine, 1));
-                        CompileCondition(cc, rb, condition, (ISourceLine)condition, nextLabel, false);
+                        MarkSequencePoint(cc, rb, condition);
+                        CompileCondition(cc, rb, condition, condition.SourceLine, nextLabel, false);
                         break;
 
                     case StdAtom.FALSE:
@@ -3446,9 +3457,7 @@ namespace Zilf
                     IOperand result;
                     if (form != null)
                     {
-                        if (cc.WantDebugInfo)
-                            cc.Game.DebugFile.MarkSequencePoint(rb,
-                                new DebugLineRef(form.SourceFile, form.SourceLine, 1));
+                        MarkSequencePoint(cc, rb, form);
                         
                         result = CompileForm(cc, rb, form,
                             wantThisResult,
@@ -3572,9 +3581,7 @@ namespace Zilf
                         IOperand result;
                         if (form != null)
                         {
-                            if (cc.WantDebugInfo)
-                                cc.Game.DebugFile.MarkSequencePoint(rb,
-                                    new DebugLineRef(form.SourceFile, form.SourceLine, 1));
+                            MarkSequencePoint(cc, rb, form);
 
                             result = CompileForm(cc, rb, form,
                                 wantThisResult,
@@ -3662,6 +3669,7 @@ namespace Zilf
             Contract.Requires(cc != null);
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
+            Contract.Requires(form.SourceLine != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             var args = form.Rest.ToArray();
@@ -3673,7 +3681,7 @@ namespace Zilf
                 bool handled = false;
                 foreach (var pattern in cc.Context.ZEnvironment.TellPatterns)
                 {
-                    var result = pattern.Match(args, index, cc.Context);
+                    var result = pattern.Match(args, index, cc.Context, form.SourceLine);
                     if (result.Matched)
                     {
                         CompileForm(cc, rb, result.Output, false, null);
@@ -3711,8 +3719,8 @@ namespace Zilf
                         var transformed = new ZilForm(new ZilObject[] {
                             cc.Context.GetStdAtom(StdAtom.GVAL),
                             innerForm.Rest.First,
-                        });
-                        var obj = CompileAsOperand(cc, rb, transformed, innerForm);
+                        }) { SourceLine = form.SourceLine };
+                        var obj = CompileAsOperand(cc, rb, transformed, innerForm.SourceLine);
                         rb.EmitPrint(PrintOp.Object, obj);
                         index++;
                         continue;
@@ -3730,16 +3738,16 @@ namespace Zilf
                             new ZilForm(new ZilObject[] {
                                 cc.Context.GetStdAtom(StdAtom.GVAL),
                                 args[index],
-                            }),
-                        }),
-                    });
+                            }) { SourceLine = form.SourceLine },
+                        }) { SourceLine = form.SourceLine },
+                    }) { SourceLine = form.SourceLine };
                     CompileForm(cc, rb, transformed, false, null);
                     index += 2;
                     continue;
                 }
 
                 // otherwise, treat it as a packed string
-                var str = CompileAsOperand(cc, rb, args[index], (args[index] as ISourceLine) ?? form);
+                var str = CompileAsOperand(cc, rb, args[index], args[index].SourceLine ?? form.SourceLine);
                 rb.EmitPrint(PrintOp.PackedAddr, str);
                 index++;
                 continue;
@@ -3757,7 +3765,7 @@ namespace Zilf
 
             var preBuilders = new ComplexPropDef.ElementPreBuilders()
             {
-                CreateVocabWord = (atom, partOfSpeech) =>
+                CreateVocabWord = (atom, partOfSpeech, src) =>
                 {
                     Word word;
 
@@ -3765,28 +3773,28 @@ namespace Zilf
                     {
                         case StdAtom.ADJ:
                         case StdAtom.ADJECTIVE:
-                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, src);
                             break;
 
                         case StdAtom.NOUN:
                         case StdAtom.OBJECT:
-                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, src);
                             break;
 
                         case StdAtom.BUZZ:
-                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, src);
                             break;
 
                         case StdAtom.PREP:
-                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, src);
                             break;
 
                         case StdAtom.DIR:
-                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, src);
                             break;
 
                         case StdAtom.VERB:
-                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, src);
                             break;
 
                         default:
@@ -3814,182 +3822,191 @@ namespace Zilf
                 // SYNONYM and ADJECTIVE property values, and constants for FLAGS values.
                 foreach (ZilList prop in model.Properties)
                 {
-                    // the first element must be an atom identifying the property
-                    ZilAtom atom = prop.First as ZilAtom;
-                    if (atom == null)
+                    try
                     {
-                        Errors.CompError(cc.Context, model, "property specification must start with an atom");
-                        continue;
-                    }
-
-                    // exclude phony built-in properties
-                    /* we also detect directions here, which are tricky for a few reasons:
-                     * - they can be implicitly defined by a property spec that looks sufficiently direction-like
-                     * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction
-                     * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
-                     *   is a pattern for directions
-                     */
-                    bool phony;
-                    if (prop.Rest != null && prop.Rest.Rest != null && !prop.Rest.Rest.IsEmpty &&
-                        (cc.Context.ZEnvironment.Directions.Contains(atom) ||
-                         (directionPattern != null && directionPattern.Matches(cc.Context, prop))))
-                    {
-                        // it's a direction
-                        phony = false;
-
-                        // could be a new implicitly defined direction
-                        if (!cc.Context.ZEnvironment.Directions.Contains(atom))
+                        // the first element must be an atom identifying the property
+                        ZilAtom atom = prop.First as ZilAtom;
+                        if (atom == null)
                         {
-                            cc.Context.ZEnvironment.Directions.Add(atom);
-                            cc.Context.ZEnvironment.GetVocabDirection(atom, model);     // TODO: pass prop instead of model as the source location?
-                            if (directionPattern != null)
-                                cc.Context.SetPropDef(atom, directionPattern);
+                            Errors.CompError(cc.Context, model, "property specification must start with an atom");
+                            continue;
                         }
-                    }
-                    else
-                    {
-                        switch (atom.StdAtom)
-                        {
-                            case StdAtom.DESC:
-                            case StdAtom.IN:
-                            case StdAtom.LOC:
-                            case StdAtom.FLAGS:
-                                phony = true;
-                                break;
-                            default:
-                                phony = false;
-                                break;
-                        }
-                    }
 
-                    if (!phony)
-                        DefineProperty(cc, atom);
-
-                    // check for a PROPSPEC
-                    ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
-                    if (propspec != null)
-                    {
-                        var complexDef = propspec as ComplexPropDef;
-                        if (complexDef != null)
+                        // exclude phony built-in properties
+                        /* we also detect directions here, which are tricky for a few reasons:
+                         * - they can be implicitly defined by a property spec that looks sufficiently direction-like
+                         * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction
+                         * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
+                         *   is a pattern for directions
+                         */
+                        bool phony;
+                        if (prop.Rest != null && prop.Rest.Rest != null && !prop.Rest.Rest.IsEmpty &&
+                            (cc.Context.ZEnvironment.Directions.Contains(atom) ||
+                             (directionPattern != null && directionPattern.Matches(cc.Context, prop))))
                         {
-                            // PROPDEF pattern
-                            if (complexDef.Matches(cc.Context, prop))
+                            // it's a direction
+                            phony = false;
+
+                            // could be a new implicitly defined direction
+                            if (!cc.Context.ZEnvironment.Directions.Contains(atom))
                             {
-                                complexDef.PreBuildProperty(cc.Context, prop, preBuilders);
+                                cc.Context.ZEnvironment.Directions.Add(atom);
+                                cc.Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine);
+                                if (directionPattern != null)
+                                    cc.Context.SetPropDef(atom, directionPattern);
                             }
                         }
                         else
                         {
-                            // name of a custom property builder function
-                            var form = new ZilForm(new ZilObject[] { propspec, prop });
-                            var specOutput = form.Eval(cc.Context);
-                            ZilList propBody;
-                            if (specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
-                                (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
+                            switch (atom.StdAtom)
                             {
-                                Errors.CompError(cc.Context, model, "PROPSPEC for property '{0}' returned a bad value: {1}", atom, specOutput);
-                                continue;
+                                case StdAtom.DESC:
+                                case StdAtom.IN:
+                                case StdAtom.LOC:
+                                case StdAtom.FLAGS:
+                                    phony = true;
+                                    break;
+                                default:
+                                    phony = false;
+                                    break;
                             }
-
-                            // replace the property body with the propspec's output
-                            prop.Rest = propBody;
                         }
-                    }
-                    else
-                    {
-                        switch (atom.StdAtom)
+
+                        if (!phony)
+                            DefineProperty(cc, atom);
+
+                        // check for a PROPSPEC
+                        ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
+                        if (propspec != null)
                         {
-                            case StdAtom.SYNONYM:
-                                foreach (ZilObject obj in prop.Rest)
+                            var complexDef = propspec as ComplexPropDef;
+                            if (complexDef != null)
+                            {
+                                // PROPDEF pattern
+                                if (complexDef.Matches(cc.Context, prop))
                                 {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
-                                    try
-                                    {
-                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, model));  // TODO: pass prop instead of model as the source location?
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        if (ex.SourceLine == null)
-                                            ex.SourceLine = model;
-                                        cc.Context.HandleError(ex);
-                                    }
+                                    complexDef.PreBuildProperty(cc.Context, prop, preBuilders);
                                 }
-                                break;
-
-                            case StdAtom.ADJECTIVE:
-                                foreach (ZilObject obj in prop.Rest)
+                            }
+                            else
+                            {
+                                // name of a custom property builder function
+                                var form = new ZilForm(new ZilObject[] { propspec, prop }) { SourceLine = prop.SourceLine };
+                                var specOutput = form.Eval(cc.Context);
+                                ZilList propBody;
+                                if (specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
+                                    (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
                                 {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
-                                    try
-                                    {
-                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, model)); // TODO: pass prop instead of model as the source location?
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        if (ex.SourceLine == null)
-                                            ex.SourceLine = model;
-                                        cc.Context.HandleError(ex);
-                                    }
+                                    Errors.CompError(cc.Context, model, "PROPSPEC for property '{0}' returned a bad value: {1}", atom, specOutput);
+                                    continue;
                                 }
-                                break;
 
-                            case StdAtom.PSEUDO:
-                                foreach (ZilObject obj in prop.Rest)
-                                {
-                                    var str = obj as ZilString;
-                                    if (str == null)
-                                        continue;
-
-                                    try
+                                // replace the property body with the propspec's output
+                                prop.Rest = propBody;
+                            }
+                        }
+                        else
+                        {
+                            switch (atom.StdAtom)
+                            {
+                                case StdAtom.SYNONYM:
+                                    foreach (ZilObject obj in prop.Rest)
                                     {
-                                        DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model));
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        if (ex.SourceLine == null)
-                                            ex.SourceLine = model;
-                                        cc.Context.HandleError(ex);
-                                    }
-                                }
-                                break;
+                                        atom = obj as ZilAtom;
+                                        if (atom == null)
+                                            continue;
 
-                            case StdAtom.FLAGS:
-                                foreach (ZilObject obj in prop.Rest)
-                                {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
-                                    try
-                                    {
-                                        ZilAtom dummy;
-                                        if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                        try
                                         {
-                                            DefineFlag(cc, atom);
+                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine));
+                                        }
+                                        catch (ZilError ex)
+                                        {
+                                            if (ex.SourceLine == null)
+                                                ex.SourceLine = prop.SourceLine;
+                                            cc.Context.HandleError(ex);
                                         }
                                     }
-                                    catch (ZilError ex)
+                                    break;
+
+                                case StdAtom.ADJECTIVE:
+                                    foreach (ZilObject obj in prop.Rest)
                                     {
-                                        if (ex.SourceLine == null)
-                                            ex.SourceLine = model;
-                                        cc.Context.HandleError(ex);
+                                        atom = obj as ZilAtom;
+                                        if (atom == null)
+                                            continue;
+
+                                        try
+                                        {
+                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine));
+                                        }
+                                        catch (ZilError ex)
+                                        {
+                                            if (ex.SourceLine == null)
+                                                ex.SourceLine = prop.SourceLine;
+                                            cc.Context.HandleError(ex);
+                                        }
                                     }
-                                }
-                                break;
+                                    break;
+
+                                case StdAtom.PSEUDO:
+                                    foreach (ZilObject obj in prop.Rest)
+                                    {
+                                        var str = obj as ZilString;
+                                        if (str == null)
+                                            continue;
+
+                                        try
+                                        {
+                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine));
+                                        }
+                                        catch (ZilError ex)
+                                        {
+                                            if (ex.SourceLine == null)
+                                                ex.SourceLine = prop.SourceLine;
+                                            cc.Context.HandleError(ex);
+                                        }
+                                    }
+                                    break;
+
+                                case StdAtom.FLAGS:
+                                    foreach (ZilObject obj in prop.Rest)
+                                    {
+                                        atom = obj as ZilAtom;
+                                        if (atom == null)
+                                            continue;
+
+                                        try
+                                        {
+                                            ZilAtom dummy;
+                                            if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                            {
+                                                DefineFlag(cc, atom);
+                                            }
+                                        }
+                                        catch (ZilError ex)
+                                        {
+                                            if (ex.SourceLine == null)
+                                                ex.SourceLine = prop.SourceLine;
+                                            cc.Context.HandleError(ex);
+                                        }
+                                    }
+                                    break;
+                            }
                         }
+                    }
+                    catch (ZilError ex)
+                    {
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = prop.SourceLine;
+                        throw;
                     }
                 }
             }
             catch (ZilError ex)
             {
                 if (ex.SourceLine == null)
-                    ex.SourceLine = model;
+                    ex.SourceLine = model.SourceLine;
                 throw;
             }
         }
@@ -4004,9 +4021,9 @@ namespace Zilf
             {
                 CompileConstant = zo => CompileConstant(cc, zo),
 
-                GetAdjectiveValue = atom =>
+                GetAdjectiveValue = (atom, src) =>
                 {
-                    var word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                    var word = cc.Context.ZEnvironment.GetVocabAdjective(atom, src);
                     if (cc.Context.ZEnvironment.ZVersion == 3)
                     {
                         return cc.Constants[ZilAtom.Parse("A?" + word.Atom, cc.Context)];
@@ -4019,7 +4036,7 @@ namespace Zilf
 
                 GetGlobalNumber = atom => cc.Globals[atom],
 
-                GetVocabWord = (atom, partOfSpeech) =>
+                GetVocabWord = (atom, partOfSpeech, src) =>
                 {
                     Word word;
 
@@ -4027,28 +4044,28 @@ namespace Zilf
                     {
                         case StdAtom.ADJ:
                         case StdAtom.ADJECTIVE:
-                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabAdjective(atom, src);
                             break;
 
                         case StdAtom.NOUN:
                         case StdAtom.OBJECT:
-                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabNoun(atom, src);
                             break;
 
                         case StdAtom.BUZZ:
-                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabBuzzword(atom, src);
                             break;
 
                         case StdAtom.PREP:
-                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabPreposition(atom, src);
                             break;
 
                         case StdAtom.DIR:
-                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabDirection(atom, src);
                             break;
 
                         case StdAtom.VERB:
-                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, model);
+                            word = cc.Context.ZEnvironment.GetVocabVerb(atom, src);
                             break;
 
                         default:
@@ -4180,7 +4197,7 @@ namespace Zilf
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, model);  // TODO: pass prop instead of model as the source location?
+                                Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 tb.AddShort(wb);
                                 length += 2;
@@ -4199,7 +4216,7 @@ namespace Zilf
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, model); // TODO: pass prop instead of model as the source location?
+                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 if (cc.Context.ZEnvironment.ZVersion == 3)
                                 {
@@ -4223,7 +4240,7 @@ namespace Zilf
 
                                 if (str != null)
                                 {
-                                    Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), model);
+                                    Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine);
                                     IWordBuilder wb = cc.Vocabulary[word];
                                     tb.AddShort(wb);
                                 }
@@ -4274,7 +4291,7 @@ namespace Zilf
                         var word = CompileConstant(cc, value);
                         if (word == null)
                         {
-                            Errors.CompError(cc.Context, model,
+                            Errors.CompError(cc.Context, prop,
                                 string.Format("non-constant value for property {0}: {1}", propName, value));
                             word = cc.Game.Zero;
                         }
@@ -4289,7 +4306,7 @@ namespace Zilf
                             var word = CompileConstant(cc, obj);
                             if (word == null)
                             {
-                                Errors.CompError(cc.Context, model,
+                                Errors.CompError(cc.Context, prop,
                                     string.Format("non-constant value in initializer for property {0}: {1}", propName, obj));
                                 word = cc.Game.Zero;
                             }
@@ -4301,7 +4318,7 @@ namespace Zilf
 
                 // check property length
                 if (length > cc.Game.MaxPropertyLength)
-                    Errors.CompError(cc.Context, model, "property '{0}' is too long (max {1} bytes)",
+                    Errors.CompError(cc.Context, prop, "property '{0}' is too long (max {1} bytes)",
                         propName.ToStringContext(cc.Context, true), cc.Game.MaxPropertyLength);
             }
 
