@@ -33,7 +33,48 @@ namespace Zilf
         string SourceInfo { get; }
     }
 
-    class StringSourceLine : ISourceLine
+    interface IProvideSourceLine
+    {
+        ISourceLine SourceLine { get; }
+    }
+
+    sealed class FileSourceLine : ISourceLine
+    {
+        private readonly string filename;
+        private readonly int line;
+
+        public FileSourceLine(string filename, int line)
+        {
+            Contract.Requires(filename != null);
+
+            this.filename = filename;
+            this.line = line;
+        }
+
+        public string SourceInfo
+        {
+            get { return string.Format("{0}:{1}", filename, line); }
+        }
+
+        public string FileName
+        {
+            get { return filename; }
+        }
+
+        public int Line
+        {
+            get { return line; }
+        }
+    }
+
+    static class SourceLines
+    {
+        public static readonly ISourceLine Unknown = new StringSourceLine("<internally created FORM>");
+        public static readonly ISourceLine Chtyped = new StringSourceLine("<result of CHTYPE>");
+        public static readonly ISourceLine MakeGval = new StringSourceLine("<result of MAKE-GVAL>");
+    }
+
+    sealed class StringSourceLine : ISourceLine
     {
         private readonly string info;
 
@@ -123,8 +164,33 @@ namespace Zilf
             Contract.Requires(message != null);
         }
 
+        public InterpreterError(IProvideSourceLine node, string message)
+            : base(node.SourceLine, message)
+        {
+            Contract.Requires(node != null);
+        }
+
         public InterpreterError(ISourceLine src, string func, int minArgs, int maxArgs)
             : base(src, func, minArgs, maxArgs)
+        {
+            Contract.Requires(func != null);
+            Contract.Requires(minArgs >= 0);
+            Contract.Requires(maxArgs >= 0);
+            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
+        }
+
+        public InterpreterError(IProvideSourceLine node, string func, int minArgs, int maxArgs)
+            : base(node.SourceLine, func, minArgs, maxArgs)
+        {
+            Contract.Requires(node != null);
+            Contract.Requires(func != null);
+            Contract.Requires(minArgs >= 0);
+            Contract.Requires(maxArgs >= 0);
+            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
+        }
+
+        public InterpreterError(string func, int minArgs, int maxArgs)
+            : base(null, func, minArgs, maxArgs)
         {
             Contract.Requires(func != null);
             Contract.Requires(minArgs >= 0);
@@ -136,7 +202,7 @@ namespace Zilf
     class SyntaxError : InterpreterError
     {
         public SyntaxError(string filename, int line, string message)
-            : base(new StringSourceLine(string.Format("{0}:{1}", filename, line)), "syntax error: " + message)
+            : base(new FileSourceLine(filename, line), "syntax error: " + message)
         {
             Contract.Requires(filename != null);
             Contract.Requires(message != null);
@@ -203,6 +269,23 @@ namespace Zilf
             ctx.HandleWarning(node, message, true);
         }
 
+        public static void CompWarning(Context ctx, IProvideSourceLine node, string message)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(node != null);
+            Contract.Requires(message != null);
+
+            CompWarning(ctx, node.SourceLine, message);
+        }
+
+        public static void CompWarning(Context ctx, string message)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(message != null);
+
+            CompWarning(ctx, (ISourceLine)null, message);
+        }
+
         public static void CompWarning(Context ctx, ISourceLine node, string format, params object[] args)
         {
             Contract.Requires(ctx != null);
@@ -210,6 +293,25 @@ namespace Zilf
             Contract.Requires(args != null);
 
             CompWarning(ctx, node, string.Format(format, args));
+        }
+
+        public static void CompWarning(Context ctx, IProvideSourceLine node, string format, params object[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(node != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+
+            CompWarning(ctx, node.SourceLine, format, args);
+        }
+
+        public static void CompWarning(Context ctx, string format, params object[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+
+            CompWarning(ctx, (ISourceLine)null, format, args);
         }
 
         // CompError: emit a compiler error message but don't stop compilation
@@ -221,6 +323,23 @@ namespace Zilf
             ctx.HandleError(new CompilerError(node, message));
         }
 
+        public static void CompError(Context ctx, IProvideSourceLine node, string message)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(node != null);
+            Contract.Requires(message != null);
+
+            CompError(ctx, node.SourceLine, message);
+        }
+
+        public static void CompError(Context ctx, string message)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(message != null);
+
+            CompError(ctx, (ISourceLine)null, message);
+        }
+
         public static void CompError(Context ctx, ISourceLine node, string format, params object[] args)
         {
             Contract.Requires(ctx != null);
@@ -228,6 +347,25 @@ namespace Zilf
             Contract.Requires(args != null);
 
             CompError(ctx, node, string.Format(format, args));
+        }
+
+        public static void CompError(Context ctx, IProvideSourceLine node, string format, params object[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(node != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+
+            CompError(ctx, node.SourceLine, format, args);
+        }
+
+        public static void CompError(Context ctx, string format, params object[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+
+            CompError(ctx, (ISourceLine)null, format, args);
         }
     }
 }

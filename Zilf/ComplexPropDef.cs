@@ -492,7 +492,7 @@ namespace Zilf
 
         public struct ElementPreBuilders
         {
-            public Action<ZilAtom, ZilAtom> CreateVocabWord;
+            public Action<ZilAtom, ZilAtom, ISourceLine> CreateVocabWord;
             public Action<ZilAtom> ReserveGlobal;
         }
 
@@ -500,8 +500,8 @@ namespace Zilf
         {
             public Func<ZilObject, IOperand> CompileConstant;
             public Func<ZilAtom, IOperand> GetGlobalNumber;
-            public Func<ZilAtom, IOperand> GetAdjectiveValue;       // word => A?constant or word builder
-            public Func<ZilAtom, ZilAtom, IOperand> GetVocabWord;   // (word, part of speech) => word builder
+            public Func<ZilAtom, ISourceLine, IOperand> GetAdjectiveValue;       // (word, src) => A?constant or word builder
+            public Func<ZilAtom, ZilAtom, ISourceLine, IOperand> GetVocabWord;   // (word, part of speech, src) => word builder
         }
 
         public bool Matches(Context ctx, ZilList prop)
@@ -531,7 +531,7 @@ namespace Zilf
 
                 if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
                 {
-                    PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0);
+                    PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0, prop.SourceLine);
                     return;
                 }
             }
@@ -556,7 +556,7 @@ namespace Zilf
                 if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
                 {
                     // build output
-                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0);
+                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, prop.SourceLine);
                     return;
                 }
             }
@@ -654,7 +654,7 @@ namespace Zilf
         }
 
         private bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
-            ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex)
+            ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex, ISourceLine src)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(captures != null);
@@ -690,15 +690,15 @@ namespace Zilf
                 switch (output.Type)
                 {
                     case OutputElementType.Adjective:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ));
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ), src);
                         break;
 
                     case OutputElementType.Noun:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT));
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT), src);
                         break;
 
                     case OutputElementType.Voc:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, output.PartOfSpeech);
+                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, output.PartOfSpeech, src);
                         break;
 
                     case OutputElementType.Global:
@@ -706,7 +706,7 @@ namespace Zilf
                         break;
 
                     case OutputElementType.Many:
-                        while (PartialPreBuild(ctx, captures, preBuilders, outputs, i + 1))
+                        while (PartialPreBuild(ctx, captures, preBuilders, outputs, i + 1, src))
                         {
                             // repeat
                         }
@@ -718,7 +718,8 @@ namespace Zilf
         }
 
         private bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
-            Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex)
+            Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex,
+            ISourceLine src)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(tb != null);
@@ -805,24 +806,24 @@ namespace Zilf
                     case OutputElementType.Adjective:
                         if (OutputElementSize(output, ctx) == 1)
                         {
-                            tb.AddByte(converters.GetAdjectiveValue((ZilAtom)capturedValue));
+                            tb.AddByte(converters.GetAdjectiveValue((ZilAtom)capturedValue, src));
                         }
                         else
                         {
-                            tb.AddShort(converters.GetAdjectiveValue((ZilAtom)capturedValue));
+                            tb.AddShort(converters.GetAdjectiveValue((ZilAtom)capturedValue, src));
                         }
                         break;
 
                     case OutputElementType.Noun:
-                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT)));
+                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT), src));
                         break;
 
                     case OutputElementType.Voc:
-                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, output.PartOfSpeech));
+                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, output.PartOfSpeech, src));
                         break;
 
                     case OutputElementType.Many:
-                        while (WritePartialOutput(ctx, tb, converters, captures, outputs, i + 1))
+                        while (WritePartialOutput(ctx, tb, converters, captures, outputs, i + 1, src))
                         {
                             // repeat
                         }

@@ -102,8 +102,13 @@ namespace Zilf
     }
 
     [ContractClass(typeof(ZilObjectContracts))]
-    abstract class ZilObject
+    abstract class ZilObject : IProvideSourceLine
     {
+        /// <summary>
+        /// Gets or sets a value indicating the object's source code location.
+        /// </summary>
+        public virtual ISourceLine SourceLine { get; set; }
+
         /// <summary>
         /// Translates a syntax tree (from the Antlr parser) to ZIL objects.
         /// </summary>
@@ -208,14 +213,14 @@ namespace Zilf
                         if (children.Length == 0)
                             return ctx.FALSE;
                         else
-                            return new ZilForm(ctx.CurrentFile, tree.Line, children);
+                            return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
                     case ZilLexer.HASH:
                         return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
                     case ZilLexer.LIST:
-                        return new ZilList(ReadChildrenFromAST(tree, ctx));
+                        return new ZilList(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
                     case ZilLexer.VECTOR:
                     case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
-                        return new ZilVector(ReadChildrenFromAST(tree, ctx));
+                        return new ZilVector(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
                     case ZilLexer.ADECL:
                         children = ReadChildrenFromAST(tree, ctx);
                         Contract.Assume(children.Length == 2);
@@ -237,12 +242,12 @@ namespace Zilf
                         catch (ZilError ex)
                         {
                             if (ex.SourceLine == null)
-                                ex.SourceLine = inner as ISourceLine;
+                                ex.SourceLine = inner.SourceLine;
                             throw;
                         }
                         catch (ControlException ex)
                         {
-                            throw new InterpreterError(inner as ISourceLine, "misplaced " + ex.Message);
+                            throw new InterpreterError(inner.SourceLine, "misplaced " + ex.Message);
                         }
                     case ZilLexer.NUM:
                         return new ZilFix(ParseNumber(tree.Text));
@@ -258,7 +263,7 @@ namespace Zilf
             catch (InterpreterError ex)
             {
                 if (ex.SourceLine == null)
-                    ex.SourceLine = new StringSourceLine(string.Format("{0}:{1}", ctx.CurrentFile, tree.Line));
+                    ex.SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line);
 
                 throw;
             }
@@ -631,7 +636,10 @@ namespace Zilf
         {
             ZilForm form = list as ZilForm;
             if (form == null)
+            {
                 form = new ZilForm(list);
+                form.SourceLine = SourceLines.Chtyped;
+            }
 
             return new ZilSegment(form);
         }
@@ -1448,7 +1456,7 @@ namespace Zilf
 
         public override ZilObject Eval(Context ctx)
         {
-            return new ZilList(EvalSequence(ctx, this));
+            return new ZilList(EvalSequence(ctx, this)) { SourceLine = this.SourceLine };
         }
 
         public IEnumerator<ZilObject> GetEnumerator()
@@ -1549,24 +1557,12 @@ namespace Zilf
     }
 
     [BuiltinType(StdAtom.FORM, PrimType.LIST)]
-    class ZilForm : ZilList, ISourceLine
+    class ZilForm : ZilList
     {
-        private readonly string filename;
-        private readonly int line;
-
         public ZilForm(IEnumerable<ZilObject> sequence)
-            : this(null, 0, sequence)
-        {
-            Contract.Requires(sequence != null);
-        }
-
-        public ZilForm(string filename, int line, IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
             Contract.Requires(sequence != null);
-
-            this.filename = filename;
-            this.line = line;
         }
 
         protected ZilForm(ZilObject first, ZilList rest)
@@ -1575,9 +1571,20 @@ namespace Zilf
             Contract.Requires((first == null && rest == null) || (first != null && rest != null));
             Contract.Ensures(First == first);
             Contract.Ensures(Rest == rest);
+        }
 
-            this.filename = null;
-            this.line = 0;
+        public override ISourceLine SourceLine
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<ISourceLine>() != null);
+
+                return base.SourceLine ?? SourceLines.Unknown;
+            }
+            set
+            {
+                base.SourceLine = value;
+            }
         }
 
         [ChtypeMethod]
@@ -1587,27 +1594,6 @@ namespace Zilf
             Contract.Requires(list != null);
 
             return new ZilForm(list.First, list.Rest);
-        }
-
-        public string SourceInfo
-        {
-            get
-            {
-                if (filename == null)
-                    return null;
-
-                return filename + ":" + line.ToString();
-            }
-        }
-
-        public string SourceFile
-        {
-            get { return filename; }
-        }
-
-        public int SourceLine
-        {
-            get { return line; }
         }
 
         private string ToString(Func<ZilObject, string> convert)
@@ -1678,7 +1664,7 @@ namespace Zilf
                 catch (ZilError ex)
                 {
                     if (ex.SourceLine == null)
-                        ex.SourceLine = this;
+                        ex.SourceLine = this.SourceLine;
                     throw;
                 }
                 finally
@@ -1713,13 +1699,13 @@ namespace Zilf
                             return result;
 
                         // set the source info on the expansion to match the macro invocation
-                        resultForm = DeepRewriteSourceInfo(resultForm, this.filename, this.line);
+                        resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
                         return resultForm.Expand(ctx);
                     }
                     catch (ZilError ex)
                     {
                         if (ex.SourceLine == null)
-                            ex.SourceLine = this;
+                            ex.SourceLine = this.SourceLine;
                         throw;
                     }
                     finally
@@ -1754,19 +1740,19 @@ namespace Zilf
             return this;
         }
 
-        private static ZilForm DeepRewriteSourceInfo(ZilForm other, string filename, int line)
+        private static ZilForm DeepRewriteSourceInfo(ZilForm other, ISourceLine src)
         {
-            return new ZilForm(filename, line, DeepRewriteSourceInfoContents(other, filename, line));
+            return new ZilForm(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
         }
 
         private static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
-            IEnumerable<ZilObject> contents, string filename, int line)
+            IEnumerable<ZilObject> contents, ISourceLine src)
         {
             foreach (var item in contents)
             {
                 if (item is ZilForm)
                 {
-                    yield return DeepRewriteSourceInfo((ZilForm)item, filename, line);
+                    yield return DeepRewriteSourceInfo((ZilForm)item, src);
                 }
                 else
                 {
@@ -2230,7 +2216,7 @@ namespace Zilf
 
         public override ZilObject Eval(Context ctx)
         {
-            return new ZilVector(EvalSequence(ctx, this).ToArray());
+            return new ZilVector(EvalSequence(ctx, this).ToArray()) { SourceLine = this.SourceLine };
         }
 
         #region IEnumerable<ZilObject> Members
@@ -2888,7 +2874,7 @@ namespace Zilf
             Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
 
             if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
-                throw new InterpreterError(null,
+                throw new InterpreterError(
                     name == null ? "user-defined function" : name.ToString(),
                     optArgsStart, auxArgsStart);
 

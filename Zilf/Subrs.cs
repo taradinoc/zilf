@@ -82,7 +82,7 @@ namespace Zilf
             
             // we ignore arguments after the first
             if (args.Length == 0)
-                throw new InterpreterError(null, "INSERT-FILE", 1, 0);
+                throw new InterpreterError("INSERT-FILE", 1, 0);
 
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
                 throw new InterpreterError("INSERT-FILE: first arg must be a string");
@@ -162,14 +162,14 @@ namespace Zilf
             SubrContracts(ctx, args); 
             
             if (args.Length != 1)
-                throw new InterpreterError(null, "DELAY-DEFINITION", 1, 1);
+                throw new InterpreterError("DELAY-DEFINITION", 1, 1);
 
             var name = args[0] as ZilAtom;
             if (name == null)
-                throw new InterpreterError(null, "DELAY-DEFINITION: first arg must be an atom");
+                throw new InterpreterError("DELAY-DEFINITION: first arg must be an atom");
 
             if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
-                throw new InterpreterError(null, "DELAY-DEFINITION: section has already been referenced: " + name);
+                throw new InterpreterError("DELAY-DEFINITION: section has already been referenced: " + name);
 
             ctx.PutProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION), ctx.GetStdAtom(StdAtom.DELAY_DEFINITION));
             return name;
@@ -181,11 +181,11 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "REPLACE-DEFINITION", 2, 0);
+                throw new InterpreterError("REPLACE-DEFINITION", 2, 0);
 
             var name = args[0] as ZilAtom;
             if (name == null)
-                throw new InterpreterError(null, "REPLACE-DEFINITION: first arg must be an atom");
+                throw new InterpreterError("REPLACE-DEFINITION: first arg must be an atom");
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
             var state = ctx.GetProp(name, replaceAtom);
@@ -204,15 +204,15 @@ namespace Zilf
             }
             else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
             {
-                throw new InterpreterError(null, "REPLACE-DEFINITION: section has already been inserted: " + name);
+                throw new InterpreterError("REPLACE-DEFINITION: section has already been inserted: " + name);
             }
             else if (state is ZilVector)
             {
-                throw new InterpreterError(null, "REPLACE-DEFINITION: duplicate replacement for section: " + name);
+                throw new InterpreterError("REPLACE-DEFINITION: duplicate replacement for section: " + name);
             }
             else
             {
-                throw new InterpreterError(null, "REPLACE-DEFINITION: bad state: " + state);
+                throw new InterpreterError("REPLACE-DEFINITION: bad state: " + state);
             }
         }
 
@@ -222,11 +222,11 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "DEFAULT-DEFINITION", 2, 0);
+                throw new InterpreterError("DEFAULT-DEFINITION", 2, 0);
 
             var name = args[0] as ZilAtom;
             if (name == null)
-                throw new InterpreterError(null, "DEFAULT-DEFINITION: first arg must be an atom");
+                throw new InterpreterError("DEFAULT-DEFINITION: first arg must be an atom");
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
             var state = ctx.GetProp(name, replaceAtom);
@@ -250,11 +250,11 @@ namespace Zilf
             }
             else if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
             {
-                throw new InterpreterError(null, "DEFAULT-DEFINITION: duplicate default for section: " + name);
+                throw new InterpreterError("DEFAULT-DEFINITION: duplicate default for section: " + name);
             }
             else
             {
-                throw new InterpreterError(null, "DEFAULT-DEFINITION: bad state: " + state);
+                throw new InterpreterError("DEFAULT-DEFINITION: bad state: " + state);
             }
         }
 
@@ -289,7 +289,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "ID", 1, 1);
+                throw new InterpreterError("ID", 1, 1);
 
             return args[0];
         }
@@ -300,7 +300,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "SNAME", 1, 1);
+                throw new InterpreterError("SNAME", 1, 1);
 
             return args[0];
         }
@@ -346,7 +346,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "PRINC", 1, 1);
+                throw new InterpreterError("PRINC", 1, 1);
 
             Console.Write(args[0].ToStringContext(ctx, true));
             return args[0];
@@ -367,7 +367,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "IMAGE", 1, 1);
+                throw new InterpreterError("IMAGE", 1, 1);
 
             ZilFix ch = args[0] as ZilFix;
             if (ch == null)
@@ -385,7 +385,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "OPEN", 2, 2);
+                throw new InterpreterError("OPEN", 2, 2);
 
             var mode = args[0] as ZilString;
             if (mode == null || mode.Text != "READ")
@@ -417,7 +417,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "CLOSE", 1, 1);
+                throw new InterpreterError("CLOSE", 1, 1);
 
             var channel = args[0] as ZilChannel;
             if (channel == null)
@@ -433,7 +433,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "FILE-LENGTH", 1, 1);
+                throw new InterpreterError("FILE-LENGTH", 1, 1);
 
             var chan = args[0] as ZilChannel;
             if (chan == null)
@@ -450,7 +450,7 @@ namespace Zilf
 
             // TODO: support 1- and 4-argument forms?
             if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError(null, "READSTRING", 2, 3);
+                throw new InterpreterError("READSTRING", 2, 3);
 
             var dest = args[0] as ZilString;
             if (dest == null)
@@ -509,7 +509,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "SPNAME", 1, 1);
+                throw new InterpreterError("SPNAME", 1, 1);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -526,7 +526,7 @@ namespace Zilf
             // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "PARSE", 1, 1);
+                throw new InterpreterError("PARSE", 1, 1);
 
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
                 throw new InterpreterError("PARSE: arg must be a string");
@@ -540,7 +540,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "LOOKUP", 2, 2);
+                throw new InterpreterError("LOOKUP", 2, 2);
 
             var str = args[0] as ZilString;
             if (str == null)
@@ -560,7 +560,7 @@ namespace Zilf
 
             // TODO: support 1-argument form of INSERT?
             if (args.Length != 2)
-                throw new InterpreterError(null, "INSERT", 2, 2);
+                throw new InterpreterError("INSERT", 2, 2);
 
             var str = args[0] as ZilString;
             if (str == null)
@@ -582,7 +582,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 0)
-                throw new InterpreterError(null, "ROOT", 0, 0);
+                throw new InterpreterError("ROOT", 0, 0);
 
             return ctx.RootObList;
         }
@@ -616,7 +616,7 @@ namespace Zilf
             Contract.Requires(name != null);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, name, 2, 2);
+                throw new InterpreterError(name, 2, 2);
 
             if (!(args[0] is ZilAtom))
                 throw new InterpreterError(name + ": first arg must be an atom");
@@ -634,7 +634,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "SET", 2, 2);
+                throw new InterpreterError("SET", 2, 2);
 
             if (!(args[0] is ZilAtom))
                 throw new InterpreterError("SET: first arg must be an atom");
@@ -652,7 +652,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "GVAL", 1, 1);
+                throw new InterpreterError("GVAL", 1, 1);
 
             if (!(args[0] is ZilAtom))
                 throw new InterpreterError("GVAL: arg must be an atom");
@@ -671,7 +671,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "GASSIGNED?", 1, 1);
+                throw new InterpreterError("GASSIGNED?", 1, 1);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -695,7 +695,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "LVAL", 1, 1);
+                throw new InterpreterError("LVAL", 1, 1);
 
             if (!(args[0] is ZilAtom))
                 throw new InterpreterError("LVAL: arg must be an atom");
@@ -714,7 +714,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "ASSIGNED?", 1, 1);
+                throw new InterpreterError("ASSIGNED?", 1, 1);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -729,7 +729,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError(null, "GETPROP", 2, 3);
+                throw new InterpreterError("GETPROP", 2, 3);
 
             var result = ctx.GetProp(args[0], args[1]);
 
@@ -753,7 +753,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError(null, "PUTPROP", 2, 3);
+                throw new InterpreterError("PUTPROP", 2, 3);
 
             if (args.Length == 2)
             {
@@ -803,7 +803,7 @@ namespace Zilf
             Contract.Requires(name != null);
 
             if (args.Length < 3)
-                throw new InterpreterError(null, name, 3, 0);
+                throw new InterpreterError(name, 3, 0);
 
             ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
@@ -827,7 +827,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 3)
-                throw new InterpreterError(null, "DEFMAC", 3, 0);
+                throw new InterpreterError("DEFMAC", 3, 0);
 
             ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
@@ -852,7 +852,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "QUOTE", 1, 1);
+                throw new InterpreterError("QUOTE", 1, 1);
 
             return args[0];
         }
@@ -863,7 +863,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "EVAL", 1, 1);
+                throw new InterpreterError("EVAL", 1, 1);
 
             return args[0].Eval(ctx);
         }
@@ -874,7 +874,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "EXPAND", 1, 1);
+                throw new InterpreterError("EXPAND", 1, 1);
 
             return args[0].Expand(ctx);
         }
@@ -885,7 +885,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length == 0)
-                throw new InterpreterError(null, "APPLY", 1, 0);
+                throw new InterpreterError("APPLY", 1, 0);
 
             IApplicable ap = args[0] as IApplicable;
             if (ap == null)
@@ -907,7 +907,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "TYPE", 1, 1);
+                throw new InterpreterError("TYPE", 1, 1);
 
             return args[0].GetTypeAtom(ctx);
         }
@@ -918,7 +918,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "TYPE?", 2, 0);
+                throw new InterpreterError("TYPE?", 2, 0);
 
             ZilAtom type = args[0].GetTypeAtom(ctx);
             for (int i = 1; i < args.Length; i++)
@@ -934,7 +934,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "CHTYPE", 2, 2);
+                throw new InterpreterError("CHTYPE", 2, 2);
 
             ZilAtom atom = args[1] as ZilAtom;
             if (atom == null)
@@ -949,9 +949,9 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "MAKE-GVAL", 1, 1);
+                throw new InterpreterError("MAKE-GVAL", 1, 1);
 
-            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), args[0] });
+            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), args[0] }) { SourceLine = SourceLines.MakeGval };
         }
 
         [Subr("APPLICABLE?")]
@@ -960,7 +960,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "APPLICABLE?", 1, 1);
+                throw new InterpreterError("APPLICABLE?", 1, 1);
 
             return (args[0] is IApplicable) ? ctx.TRUE : ctx.FALSE;
         }
@@ -971,7 +971,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "STRUCTURED?", 1, 1);
+                throw new InterpreterError("STRUCTURED?", 1, 1);
 
             return (args[0] is IStructure) ? ctx.TRUE : ctx.FALSE;
         }
@@ -982,12 +982,12 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length == 0)
-                throw new InterpreterError(null, "FORM", 1, 0);
+                throw new InterpreterError("FORM", 1, 0);
 
-            if (ctx.CallingForm == null)
-                return new ZilForm(args);
-            else
-                return new ZilForm(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine, args);
+            var result = new ZilForm(args);
+            if (ctx.CallingForm != null)
+                result.SourceLine = ctx.CallingForm.SourceLine;
+            return result;
         }
 
         [Subr]
@@ -1012,7 +1012,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "ILIST", 1, 2);
+                throw new InterpreterError("ILIST", 1, 2);
 
             var count = args[0] as ZilFix;
             if (count == null || count.Value < 0)
@@ -1036,7 +1036,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "IVECTOR", 1, 2);
+                throw new InterpreterError("IVECTOR", 1, 2);
 
             var count = args[0] as ZilFix;
             if (count == null || count.Value < 0)
@@ -1060,7 +1060,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "BYTE", 1, 1);
+                throw new InterpreterError("BYTE", 1, 1);
 
             return ctx.ChangeType(args[0], ctx.GetStdAtom(StdAtom.BYTE));
         }
@@ -1071,7 +1071,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "CONS", 2, 2);
+                throw new InterpreterError("CONS", 2, 2);
 
             ZilList list = args[1] as ZilList;
             if (list == null)
@@ -1089,7 +1089,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "FUNCTION", 2, 0);
+                throw new InterpreterError("FUNCTION", 2, 0);
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 throw new InterpreterError("FUNCTION: first arg must be a list");
 
@@ -1128,7 +1128,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "STRING", 1, 2);
+                throw new InterpreterError("STRING", 1, 2);
 
             var count = args[0] as ZilFix;
             if (count == null || count.Value < 0)
@@ -1157,7 +1157,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "ASCII", 1, 1);
+                throw new InterpreterError("ASCII", 1, 1);
 
             ZilChar ch = args[0] as ZilChar;
             if (ch != null)
@@ -1180,7 +1180,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "EMPTY?", 1, 1);
+                throw new InterpreterError("EMPTY?", 1, 1);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1193,7 +1193,7 @@ namespace Zilf
         public static ZilObject FIRST(Context ctx, ZilObject[] args)
         {
             if (args.Length != 1)
-                throw new InterpreterError(null, "FIRST", 1, 1);
+                throw new InterpreterError("FIRST", 1, 1);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1208,7 +1208,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "REST", 1, 2);
+                throw new InterpreterError("REST", 1, 2);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1235,7 +1235,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "NTH", 2, 2);
+                throw new InterpreterError("NTH", 2, 2);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1258,7 +1258,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 3)
-                throw new InterpreterError(null, "PUT", 3, 3);
+                throw new InterpreterError("PUT", 3, 3);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1278,7 +1278,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "LENGTH", 1, 1);
+                throw new InterpreterError("LENGTH", 1, 1);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1293,7 +1293,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "LENGTH?", 2, 2);
+                throw new InterpreterError("LENGTH?", 2, 2);
 
             IStructure st = args[0] as IStructure;
             if (st == null)
@@ -1316,7 +1316,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "PUTREST", 2, 2);
+                throw new InterpreterError("PUTREST", 2, 2);
 
             ZilList list = args[0] as ZilList;
             if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
@@ -1341,7 +1341,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 4)
-                throw new InterpreterError(null, "SUBSTRUC", 1, 4);
+                throw new InterpreterError("SUBSTRUC", 1, 4);
 
             IStructure from = args[0] as IStructure;
             if (from == null)
@@ -1480,7 +1480,7 @@ namespace Zilf
             Contract.Requires(equality != null);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, name, 2, 2);
+                throw new InterpreterError(name, 2, 2);
 
             var needle = args[0];
             var haystack = args[1] as IStructure;
@@ -1534,7 +1534,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 3)
-                throw new InterpreterError(null, "DEFSTRUCT", 3, 0);
+                throw new InterpreterError("DEFSTRUCT", 3, 0);
 
             // new type name
             var name = args[0] as ZilAtom;
@@ -1951,7 +1951,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "MOD", 2, 2);
+                throw new InterpreterError("MOD", 2, 2);
 
             var a = args[0] as ZilFix;
             var b = args[1] as ZilFix;
@@ -1978,7 +1978,7 @@ namespace Zilf
             // Positive shifts left, negative shifts right.
             
             if (args.Length != 2)
-                throw new InterpreterError(null, "LSH", 2, 2);
+                throw new InterpreterError("LSH", 2, 2);
 
             var a = args[0] as ZilFix;
             var b = args[1] as ZilFix;
@@ -2040,7 +2040,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "MIN", 1, 0);
+                throw new InterpreterError("MIN", 1, 0);
 
             if (!args.All(zo => zo is ZilFix))
                 throw new InterpreterError("MIN: all args must be FIXes");
@@ -2054,7 +2054,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "MAX", 1, 0);
+                throw new InterpreterError("MAX", 1, 0);
 
             if (!args.All(zo => zo is ZilFix))
                 throw new InterpreterError("MAX: all args must be FIXes");
@@ -2072,7 +2072,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "COND", 1, 0);
+                throw new InterpreterError("COND", 1, 0);
 
             ZilObject result = null;
 
@@ -2172,7 +2172,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "NOT", 1, 1);
+                throw new InterpreterError("NOT", 1, 1);
 
             return args[0].IsTrue ? ctx.FALSE : ctx.TRUE;
         }
@@ -2183,7 +2183,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "=?", 2, 2);
+                throw new InterpreterError("=?", 2, 2);
 
             return args[0].Equals(args[1]) ? ctx.TRUE : ctx.FALSE;
         }
@@ -2194,7 +2194,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "N=?", 2, 2);
+                throw new InterpreterError("N=?", 2, 2);
 
             return args[0].Equals(args[1]) ? ctx.FALSE : ctx.TRUE;
         }
@@ -2205,7 +2205,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "==?", 2, 2);
+                throw new InterpreterError("==?", 2, 2);
 
             bool equal;
             if (args[0] is IStructure)
@@ -2222,7 +2222,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "N==?", 2, 2);
+                throw new InterpreterError("N==?", 2, 2);
 
             bool equal;
             if (args[0] is IStructure)
@@ -2243,7 +2243,7 @@ namespace Zilf
             const string STypeError = "every arg must be a FIX";
 
             if (args.Length != 2)
-                throw new InterpreterError(null, name, 2, 2);
+                throw new InterpreterError(name, 2, 2);
 
             if (!(args[0] is ZilFix && args[1] is ZilFix))
                 throw new InterpreterError(name + ": " + STypeError);
@@ -2292,7 +2292,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "0?", 1, 1);
+                throw new InterpreterError("0?", 1, 1);
 
             if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 0)
                 return ctx.TRUE;
@@ -2306,7 +2306,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "1?", 1, 1);
+                throw new InterpreterError("1?", 1, 1);
 
             if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 1)
                 return ctx.TRUE;
@@ -2502,7 +2502,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length > 1)
-                throw new InterpreterError(null, "MAPLEAVE", 0, 1);
+                throw new InterpreterError("MAPLEAVE", 0, 1);
 
             throw new MapLeaveException(args.Length == 0 ? ctx.TRUE : args[0]);
         }
@@ -2541,7 +2541,7 @@ namespace Zilf
             Contract.Requires(name != null);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, name, 2, 0);
+                throw new InterpreterError(name, 2, 0);
 
             // bind atoms
             ZilList bindings = args[0] as ZilList;
@@ -2654,7 +2654,7 @@ namespace Zilf
             else if (args.Length == 1)
                 throw new ReturnException(args[0]);
             else
-                throw new InterpreterError(null, "RETURN", 0, 1);
+                throw new InterpreterError("RETURN", 0, 1);
         }
 
         [Subr]
@@ -2665,7 +2665,7 @@ namespace Zilf
             if (args.Length == 0)
                 throw new AgainException();
             else
-                throw new InterpreterError(null, "AGAIN", 0, 0);
+                throw new InterpreterError("AGAIN", 0, 0);
         }
 
         #endregion
@@ -2706,7 +2706,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 3)
-                throw new InterpreterError(null, "ROUTINE", 3, 0);
+                throw new InterpreterError("ROUTINE", 3, 0);
 
             ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
@@ -2752,6 +2752,8 @@ namespace Zilf
                 argList,
                 body,
                 flags);
+            if (ctx.CallingForm != null)
+                rtn.SourceLine = ctx.CallingForm.SourceLine;
             ctx.SetZVal(atom, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);
             return atom;
@@ -2774,7 +2776,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "CONSTANT", 2, 2);
+                throw new InterpreterError("CONSTANT", 2, 2);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -2784,7 +2786,7 @@ namespace Zilf
                     atom = adecl.First as ZilAtom;
 
                 if (atom == null)
-                    throw new InterpreterError(null, "CONSTANT: first arg must be an atom (or ADECL'd atom)");
+                    throw new InterpreterError("CONSTANT: first arg must be an atom (or ADECL'd atom)");
             }
 
             var previous = ctx.GetZVal(atom);
@@ -2816,7 +2818,7 @@ namespace Zilf
             // typical form:  <GLOBAL atom-or-adecl default-value>
             // quirky form:   <GLOBAL atom-or-adecl default-value dummy1 dummy2>
             if (args.Length != 2 && args.Length != 4)
-                throw new InterpreterError(null, "GLOBAL", 2, 2);
+                throw new InterpreterError("GLOBAL", 2, 2);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -2826,7 +2828,7 @@ namespace Zilf
                     atom = adecl.First as ZilAtom;
 
                 if (atom == null)
-                    throw new InterpreterError(null, "GLOBAL: first arg must be an atom (or ADECL'd atom)");
+                    throw new InterpreterError("GLOBAL: first arg must be an atom (or ADECL'd atom)");
             }
 
             var oldVal = ctx.GetZVal(atom);
@@ -2866,7 +2868,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "DEFINE-GLOBALS", 2, 0);
+                throw new InterpreterError("DEFINE-GLOBALS", 2, 0);
 
             for (int i = 1; i < args.Length; i++)
             {
@@ -2979,7 +2981,7 @@ namespace Zilf
             string name = isRoom ? "ROOM" : "OBJECT";
 
             if (args.Length < 1)
-                throw new InterpreterError(null, name, 1, 0);
+                throw new InterpreterError(name, 1, 0);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
@@ -3002,6 +3004,8 @@ namespace Zilf
             }
 
             ZilModelObject zmo = new ZilModelObject(atom, props, isRoom);
+            if (ctx.CallingForm != null)
+                zmo.SourceLine = ctx.CallingForm.SourceLine;
             ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
             return zmo;
@@ -3013,7 +3017,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "PROPDEF", 2, 0);
+                throw new InterpreterError("PROPDEF", 2, 0);
 
             ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
             if (atom == null)
@@ -3042,7 +3046,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "ZSTART", 1, 1);
+                throw new InterpreterError("ZSTART", 1, 1);
 
             var atom = args[0] as ZilAtom;
             if (atom == null)
@@ -3058,7 +3062,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "BIT-SYNONYM", 2, 0);
+                throw new InterpreterError("BIT-SYNONYM", 2, 0);
 
             if (!args.All(a => a is ZilAtom))
                 throw new InterpreterError("BIT-SYNONYM: all args must be atoms");
@@ -3099,7 +3103,7 @@ namespace Zilf
             // values are compiled as words unless BYTE/LEXV flag is specified.
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "ITABLE", 1, 0);
+                throw new InterpreterError("ITABLE", 1, 0);
 
             int i = 0;
             TableFlags flags = 0;
@@ -3130,7 +3134,7 @@ namespace Zilf
             if (i >= args.Length || (elemCount = args[i] as ZilFix) == null)
                 throw new InterpreterError("ITABLE: missing element count");
             if (elemCount.Value < 1)
-                throw new InterpreterError(null, "ITABLE: invalid table size");
+                throw new InterpreterError("ITABLE: invalid table size");
             i++;
 
             // optional flags
@@ -3188,8 +3192,9 @@ namespace Zilf
                 Array.Copy(args, i, initializer, 0, initializer.Length);
             }
 
-            ZilTable tab = new ZilTable(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
-                elemCount.Value, initializer, flags, null);
+            ZilTable tab = new ZilTable(elemCount.Value, initializer, flags, null);
+            if (ctx.CallingForm != null)
+                tab.SourceLine = ctx.CallingForm.SourceLine;
             ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
@@ -3291,8 +3296,10 @@ namespace Zilf
                 i++;
             }
 
-            ZilTable tab = new ZilTable(ctx.CallingForm.SourceFile, ctx.CallingForm.SourceLine,
+            ZilTable tab = new ZilTable(
                 1, values.ToArray(), flags, pattern == null ? null : pattern.ToArray());
+            if (ctx.CallingForm != null)
+                tab.SourceLine = ctx.CallingForm.SourceLine;
             ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
@@ -3383,7 +3390,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "ZGET", 2, 2);
+                throw new InterpreterError("ZGET", 2, 2);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("ZGET: first arg must be a TABLE or derived type");
@@ -3403,7 +3410,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 3)
-                throw new InterpreterError(null, "ZPUT", 3, 3);
+                throw new InterpreterError("ZPUT", 3, 3);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("ZPUT: first arg must be a TABLE or derived type");
@@ -3424,7 +3431,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 2)
-                throw new InterpreterError(null, "GETB", 2, 2);
+                throw new InterpreterError("GETB", 2, 2);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("GETB: first arg must be a TABLE or derived type");
@@ -3444,7 +3451,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 3)
-                throw new InterpreterError(null, "PUTB", 3, 3);
+                throw new InterpreterError("PUTB", 3, 3);
 
             if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
                 throw new InterpreterError("PUTB: first arg must be a TABLE or derived type");
@@ -3481,7 +3488,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "VERSION", 1, 2);
+                throw new InterpreterError("VERSION", 1, 2);
 
             int newVersion = ParseZVersion("VERSION", args[0]);
 
@@ -3548,7 +3555,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "CHECK-VERSION?", 1, 1);
+                throw new InterpreterError("CHECK-VERSION?", 1, 1);
 
             int version = ParseZVersion("CHECK-VERSION?", args[0]);
             return ctx.ZEnvironment.ZVersion == version ? ctx.TRUE : ctx.FALSE;
@@ -3560,7 +3567,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "VERSION?", 1, 0);
+                throw new InterpreterError("VERSION?", 1, 0);
 
             ZilAtom tAtom = ctx.GetStdAtom(StdAtom.T);
             ZilAtom elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
@@ -3590,7 +3597,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, "ORDER-OBJECTS?", 1, 0);
+                throw new InterpreterError("ORDER-OBJECTS?", 1, 0);
 
             if (args[0] is ZilAtom)
             {
@@ -3620,7 +3627,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length != 1)
-                throw new InterpreterError(null, "ORDER-TREE?", 1, 1);
+                throw new InterpreterError("ORDER-TREE?", 1, 1);
 
             if (args[0] is ZilAtom)
             {
@@ -3641,7 +3648,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 2)
-                throw new InterpreterError(null, "ORDER-FLAGS?", 2, 0);
+                throw new InterpreterError("ORDER-FLAGS?", 2, 0);
 
             var atom = args[0] as ZilAtom;
             if (atom == null || atom.StdAtom != StdAtom.LAST)
@@ -3745,7 +3752,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length == 0)
-                throw new InterpreterError(null, "DIRECTIONS", 1, 0);
+                throw new InterpreterError("DIRECTIONS", 1, 0);
 
             if (!args.All(zo => zo is ZilAtom))
                 throw new InterpreterError("DIRECTIONS: all args must be atoms");
@@ -3758,7 +3765,7 @@ namespace Zilf
             foreach (ZilAtom arg in args)
             {
                 ctx.ZEnvironment.Directions.Add(arg);
-                ctx.ZEnvironment.GetVocabDirection(arg, ctx.CallingForm as ISourceLine);
+                ctx.ZEnvironment.GetVocabDirection(arg, ctx.CallingForm.SourceLine);
                 ctx.ZEnvironment.LowDirection = arg;
 
                 ctx.PutProp(arg, propspecAtom, propspec);
@@ -3773,13 +3780,13 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length == 0)
-                throw new InterpreterError(null, "BUZZ", 1, 0);
+                throw new InterpreterError("BUZZ", 1, 0);
 
             if (!args.All(zo => zo is ZilAtom))
                 throw new InterpreterError("BUZZ: all args must be atoms");
 
             foreach (ZilAtom arg in args)
-                ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.CallingForm));
+                ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.CallingForm.SourceLine));
 
             return ctx.TRUE;
         }
@@ -3790,7 +3797,7 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError(null, "VOC", 1, 2);
+                throw new InterpreterError("VOC", 1, 2);
 
             var text = args[0] as ZilString;
             if (text == null)
@@ -3809,28 +3816,28 @@ namespace Zilf
                 {
                     case StdAtom.ADJ:
                     case StdAtom.ADJECTIVE:
-                        word = ctx.ZEnvironment.GetVocabAdjective(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabAdjective(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     case StdAtom.NOUN:
                     case StdAtom.OBJECT:
-                        word = ctx.ZEnvironment.GetVocabNoun(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabNoun(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     case StdAtom.BUZZ:
-                        word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     case StdAtom.PREP:
-                        word = ctx.ZEnvironment.GetVocabPreposition(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabPreposition(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     case StdAtom.DIR:
-                        word = ctx.ZEnvironment.GetVocabDirection(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabDirection(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     case StdAtom.VERB:
-                        word = ctx.ZEnvironment.GetVocabVerb(atom, ctx.CallingForm);
+                        word = ctx.ZEnvironment.GetVocabVerb(atom, ctx.CallingForm.SourceLine);
                         break;
 
                     default:
@@ -3847,9 +3854,9 @@ namespace Zilf
             SubrContracts(ctx, args);
 
             if (args.Length < 3)
-                throw new InterpreterError(null, "SYNTAX", 3, 0);
+                throw new InterpreterError("SYNTAX", 3, 0);
 
-            Syntax syntax = Syntax.Parse(ctx.CallingForm, args, ctx);
+            Syntax syntax = Syntax.Parse(ctx.CallingForm.SourceLine, args, ctx);
             ctx.ZEnvironment.Syntaxes.Add(syntax);
 
             if (syntax.Synonyms.Count > 0)
@@ -3869,7 +3876,7 @@ namespace Zilf
             Contract.Requires(synonymType != null);
 
             if (args.Length < 1)
-                throw new InterpreterError(null, name, 1, 0);
+                throw new InterpreterError(name, 1, 0);
 
             const string STypeError = ": args must be atoms";
 

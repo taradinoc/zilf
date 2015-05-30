@@ -1029,7 +1029,7 @@ namespace Zilf
                 var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
                 // generate code for arguments
-                using (var operands = Operands.Compile(cc, rb, form, needEvalExprs))
+                using (var operands = Operands.Compile(cc, rb, form.SourceLine, needEvalExprs))
                 {
                     // update validatedArgs with the evaluated operands
                     for (int i = 0; i < operands.Count; i++)
@@ -1284,7 +1284,7 @@ namespace Zilf
                     return c.cc.Game.Zero;
                 }
 
-                var storage = CompileAsOperand(c.cc, c.rb, value, c.form, c.resultStorage);
+                var storage = CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.resultStorage);
                 c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
                 return c.resultStorage;
             }
@@ -1715,7 +1715,7 @@ namespace Zilf
                  *   return STACK       ;value is left on stack
                  */
 
-                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, dest);
+                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, dest);
                 if (storage != dest)
                     c.rb.EmitStore(dest, storage);
                 return dest;
@@ -1729,7 +1729,7 @@ namespace Zilf
                 Contract.Requires(value != null);
                 Contract.Ensures(Contract.Result<IOperand>() != null);
 
-                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, c.rb.Stack);
+                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.rb.Stack);
 
                 if (storage == c.rb.Stack)
                 {
@@ -1782,13 +1782,13 @@ namespace Zilf
                 if (dest is IIndirectOperand)
                 {
                     var destVar = ((IIndirectOperand)dest).Variable;
-                    var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form, destVar);
+                    var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, destVar);
                     if (storage != destVar)
                         c.rb.EmitStore(destVar, storage);
                 }
                 else
                 {
-                    using (var operands = Operands.Compile(c.cc, c.rb, c.form, value))
+                    using (var operands = Operands.Compile(c.cc, c.rb, c.form.SourceLine, value))
                     {
                         if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                         {
@@ -1826,7 +1826,7 @@ namespace Zilf
                     dest.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
                     c.cc.SoftGlobalsTable,
                     c.cc.Game.MakeOperand(dest.Offset),
-                    CompileAsOperand(c.cc, c.rb, value, c.form),
+                    CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine),
                     null);
             }
 
@@ -2467,7 +2467,7 @@ namespace Zilf
                 int offset, minVersion;
                 LowCoreFlags flags;
 
-                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form, fieldSpec, false, out offset, out flags, out minVersion))
+                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
                     return c.cc.Game.Zero;
 
                 var binaryOp = ((flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
@@ -2495,7 +2495,7 @@ namespace Zilf
                 int offset, minVersion;
                 LowCoreFlags flags;
 
-                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form, fieldSpec, true, out offset, out flags, out minVersion))
+                if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out offset, out flags, out minVersion))
                     return;
 
                 var ternaryOp = ((flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
@@ -2521,7 +2521,7 @@ namespace Zilf
                 int offset, minVersion;
                 LowCoreFlags flags;
 
-                if (!GetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form, fieldSpec, false, out offset, out flags, out minVersion))
+                if (!GetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
                     return;
 
                 if ((flags & LowCoreFlags.Byte) == 0)
@@ -2549,6 +2549,7 @@ namespace Zilf
                             }),
                         }),
                     });
+                    form.SourceLine = c.form.SourceLine;
                     CompileForm(c.cc, c.rb, form, false, null);
 
                     c.rb.Branch(Condition.IncCheck, lb, c.cc.Game.MakeOperand((int)offset + length - 1), label, false);

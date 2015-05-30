@@ -403,7 +403,7 @@ Compiler switches:
                     catch (InterpreterError ex)
                     {
                         if (ex.SourceLine == null)
-                            ex.SourceLine = node as ISourceLine;
+                            ex.SourceLine = node.SourceLine;
 
                         if (wantExceptions)
                             throw;
@@ -412,7 +412,7 @@ Compiler switches:
                     }
                     catch (ControlException ex)
                     {
-                        var newEx = new InterpreterError(node as ISourceLine, "misplaced " + ex.Message);
+                        var newEx = new InterpreterError(node.SourceLine, "misplaced " + ex.Message);
 
                         if (wantExceptions)
                             throw newEx;

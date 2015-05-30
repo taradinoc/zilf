@@ -484,7 +484,7 @@ namespace Zilf
                 {
                     if (!objectsByName.ContainsKey(m))
                     {
-                        objectsByName.Add(m, new ObjectOrderingEntry(m, null, obj, null, mentionOrder++));
+                        objectsByName.Add(m, new ObjectOrderingEntry(m, null, obj.SourceLine, null, mentionOrder++));
                     }
                 }
             }
@@ -776,7 +776,7 @@ namespace Zilf
         Default = OnGround | InRoom | Carried | Held,
     }
 
-    class Syntax : ISourceLine
+    class Syntax : IProvideSourceLine
     {
         public readonly int NumObjects;
         public readonly Word Verb, Preposition1, Preposition2;
@@ -784,8 +784,6 @@ namespace Zilf
         public readonly ZilAtom FindFlag1, FindFlag2;
         public readonly ZilAtom Action, Preaction, ActionName;
         public readonly IList<ZilAtom> Synonyms;
-
-        private readonly ISourceLine src;
 
         private static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
@@ -798,7 +796,7 @@ namespace Zilf
             Contract.Requires(numObjects >= 0 & numObjects <= 2);
             Contract.Requires(action != null);
 
-            this.src = src;
+            this.SourceLine = src;
 
             this.Verb = verb;
             this.NumObjects = numObjects;
@@ -1151,16 +1149,7 @@ namespace Zilf
             return sb.ToString();
         }
 
-        public string SourceInfo
-        {
-            get
-            {
-                if (src != null)
-                    return src.SourceInfo;
-                else
-                    return "syntax for " + Verb.Atom;
-            }
-        }
+        public ISourceLine SourceLine { get; set; }
     }
 
     class Word
@@ -1352,7 +1341,7 @@ namespace Zilf
             int limit = compactVocab ? 1 : 2;
             if (count > limit)
             {
-                Errors.CompWarning(ctx, null, string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
+                Errors.CompWarning(ctx, string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
 
                 /* The order we trim is mostly arbitrary, except that adjective and object are first
                  * since they can sometimes be recognized without the part-of-speech flags. */

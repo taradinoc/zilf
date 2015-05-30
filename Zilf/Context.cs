@@ -142,6 +142,7 @@ namespace Zilf
         public Context(bool ignoreCase)
         {
             this.ignoreCase = ignoreCase;
+            this.CurrentFile = "<internal>";        // so we can create FileSourceInfos for default PROPDEFs
 
             rootObList = new ObList(ignoreCase);
             localValues = new Dictionary<ZilAtom, Binding>();
@@ -977,7 +978,7 @@ namespace Zilf
                 if (value.PrimType != PrimType.ATOM)
                     throw new InterpreterError("CHTYPE to GVAL or LVAL requires ATOM");
 
-                return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) });
+                return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
             }
 
             // look it up in the typemap
@@ -1124,8 +1125,8 @@ namespace Zilf
             Contract.Requires(path != null);
             Contract.Ensures(Contract.Result<Stream>() != null);
 
-            if (callingForm != null && callingForm.SourceFile != null)
-                path = Path.Combine(Path.GetDirectoryName(callingForm.SourceFile), path);
+            if (callingForm != null && callingForm.SourceLine is FileSourceLine)
+                path = Path.Combine(Path.GetDirectoryName(((FileSourceLine)callingForm.SourceLine).FileName), path);
 
             if (streamOpener != null)
                 return streamOpener(path, fileAccess);
