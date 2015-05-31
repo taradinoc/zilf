@@ -15,6 +15,14 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        {
+            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+
+            return new GlobalsAssertionHelper(globals);
+        }
+
         [TestMethod]
         public void TestAddToVariable()
         {
@@ -342,6 +350,15 @@ namespace IntegrationTests
                 .WithGlobal("<ROUTINE FOO () 123>")
                 .WithGlobal("<ROUTINE BAR () 456>")
                 .GeneratesCodeMatching(@"\?TMP");
+        }
+
+        [TestMethod]
+        public void CHRSET_Should_Generate_Directive()
+        {
+            AssertGlobals(
+                "<CHRSET 0 \"zyxwvutsrqponmlkjihgfedcba\">")
+                .InV5()
+                .GeneratesCodeMatching(@"\.CHRSET 0,122,121,120,119,118,117,116,115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100,99,98,97");
         }
     }
 }

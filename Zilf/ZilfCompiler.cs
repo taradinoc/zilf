@@ -262,6 +262,10 @@ namespace Zilf
                 case 5:
                 case 7:
                 case 8:
+                    var doCharset =
+                        zenv.Charset0 != ZEnvironment.DefaultCharset0 ||
+                        zenv.Charset1 != ZEnvironment.DefaultCharset1 ||
+                        zenv.Charset2 != ZEnvironment.DefaultCharset2;
                     return new Zilf.Emit.Zap.GameOptions.V5()
                     {
                         DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P),
@@ -269,6 +273,9 @@ namespace Zilf
                         Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P),
                         Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P),
                         SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                        Charset0 = doCharset ? zenv.Charset0 : null,
+                        Charset1 = doCharset ? zenv.Charset1 : null,
+                        Charset2 = doCharset ? zenv.Charset2 : null,
                     };
 
                 case 6:
