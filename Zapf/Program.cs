@@ -967,7 +967,35 @@ General switches:
 
             if (node is NewDirective || node is TimeDirective || node is SoundDirective)
             {
-                // these are explicitly handled by PassOne
+                // these are explicitly handled by PassOne or PassTwo
+            }
+            else if (node is ChrsetDirective)
+            {
+                var chrsetNode = (ChrsetDirective)node;
+
+                if (ctx.ZVersion >= 5)
+                {
+                    int charsetNum = EvalExpr(ctx, chrsetNode.CharsetNum).Value;
+
+                    switch (charsetNum)
+                    {
+                        case 0:
+                        case 1:
+                        case 2:
+                            ctx.StringEncoder.SetCharset(
+                                charsetNum,
+                                chrsetNode.Characters.Select(e => (byte)EvalExpr(ctx, e).Value));
+                            break;
+
+                        default:
+                            Errors.ThrowFatal("no such character set");
+                            break;
+                    }
+                }
+                else
+                {
+                    Errors.ThrowFatal(".CHRSET is only supported in Z-machine versions 5-8");
+                }
             }
             else if (node is FunctDirective)
             {
@@ -1427,7 +1455,7 @@ General switches:
 
         private static void AddAbbreviation(Context ctx, FstrDirective node)
         {
-            if (ctx.StringEncoder.AbbrevsFrozen)
+            if (ctx.StringEncoder.Frozen)
                 Errors.ThrowSerious(node, "abbreviations must be defined before strings");
 
             string name = node.Name;

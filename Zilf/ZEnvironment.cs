@@ -223,9 +223,36 @@ namespace Zilf
 
         public int HeaderExtensionWords = 0;
 
+        private byte[] zcharCountCache;   // char -> # of Z-chars
+        private string charset0, charset1, charset2;
+
+        public const string DefaultCharset0 = "abcdefghijklmnopqrstuvwxyz";     // 26 chars
+        public const string DefaultCharset1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";     // 26 chars
+        public const string DefaultCharset2 = "0123456789.,!?_#'\"/\\-:()";     // 24 chars(!)
+
+        public string Charset0
+        {
+            get { return charset0; }
+            set { charset0 = value; zcharCountCache = null; }
+        }
+        public string Charset1
+        {
+            get { return charset1; }
+            set { charset1 = value; zcharCountCache = null; }
+        }
+        public string Charset2
+        {
+            get { return charset2; }
+            set { charset2 = value; zcharCountCache = null; }
+        }
+
         public ZEnvironment(Context ctx)
         {
             this.ctx = ctx;
+
+            Charset0 = DefaultCharset0;
+            Charset1 = DefaultCharset1;
+            Charset2 = DefaultCharset2;
         }
 
         public Word GetVocab(ZilAtom text)
@@ -628,28 +655,28 @@ namespace Zilf
             }
         }
 
-        private readonly static byte[] DefaultAlphabetZCharCounts = MakeDefaultAlphabetZCharCounts();
-
-        private static byte[] MakeDefaultAlphabetZCharCounts()
+        private void MakeZcharCountCache()
         {
-            // One Z-char: alphabet 0.
-            const string ONE_CHAR = " abcdefghijklmnopqrstuvwxyz";
-            // Two Z-chars: alphabet 1 (not used in dictionary encoding by default) and 2.
-            const string TWO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n0123456789.,!?_#'\"/\\-:()";
-            // Everything else takes 4 Z-chars.
+            if (zcharCountCache == null)
+            {
+                // Charset 0 takes one Z-char.
+                // Charset 1 and 2 take two Z-chars.
+                // Everything else takes 4 Z-chars.
 
-            var result = new byte[256];
+                zcharCountCache = new byte[256];
 
-            for (int i = 0; i < result.Length; i++)
-                result[i] = 4;
+                for (int i = 0; i < zcharCountCache.Length; i++)
+                    zcharCountCache[i] = 4;
 
-            foreach (char c in TWO_CHARS)
-                result[(byte)c] = 2;
+                foreach (char c in charset2)
+                    zcharCountCache[(byte)c] = 2;
 
-            foreach (char c in ONE_CHAR)
-                result[(byte)c] = 1;
+                foreach (char c in charset1)
+                    zcharCountCache[(byte)c] = 2;
 
-            return result;
+                foreach (char c in charset0)
+                    zcharCountCache[(byte)c] = 1;
+            }
         }
 
         /// <summary>
@@ -662,13 +689,13 @@ namespace Zilf
         {
             Contract.Requires(word != null);
 
-            // TODO: use the custom alphabet if present
+            MakeZcharCountCache();
 
             int result = 0;
 
             foreach (char c in word)
             {
-                var zchars = (c <= 255) ? DefaultAlphabetZCharCounts[c] : 4;
+                var zchars = (c <= 255) ? zcharCountCache[c] : 4;
                 result += zchars;
             }
 

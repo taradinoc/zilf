@@ -3742,6 +3742,67 @@ namespace Zilf
             return ctx.TRUE;
         }
 
+        [Subr]
+        public static ZilObject CHRSET(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2)
+                throw new InterpreterError("CHRSET", 2, 0);
+
+            var fix = args[0] as ZilFix;
+            if (fix == null)
+                throw new InterpreterError("CHRSET: first arg must be a FIX");
+
+            var alphabetNum = fix.Value;
+            if (alphabetNum < 0 || alphabetNum > 2)
+                throw new InterpreterError("CHRSET: alphabet number must be between 0 and 2");
+
+            var sb = new StringBuilder(26);
+
+            foreach (var item in args.Skip(1))
+            {
+                var primitive = item.GetPrimitive(ctx);
+                switch (item.GetTypeAtom(ctx).StdAtom)
+                {
+                    case StdAtom.STRING:
+                        sb.Append(((ZilString)primitive).Text);
+                        break;
+
+                    case StdAtom.CHARACTER:
+                    case StdAtom.FIX:
+                    case StdAtom.BYTE:
+                        sb.Append((char)((ZilFix)primitive).Value);
+                        break;
+
+                    default:
+                        throw new InterpreterError("CHRSET: alphabet components must be STRING, CHARACTER, FIX, or BYTE");
+                }
+            }
+
+            var alphabetStr = sb.ToString();
+            int requiredLen = (alphabetNum == 2) ? 24 : 26;
+            if (alphabetStr.Length != requiredLen)
+                throw new InterpreterError(string.Format("CHRSET: alphabet {0} needs {1} characters", alphabetNum, requiredLen));
+
+            switch (alphabetNum)
+            {
+                case 0:
+                    ctx.ZEnvironment.Charset0 = alphabetStr;
+                    break;
+
+                case 1:
+                    ctx.ZEnvironment.Charset1 = alphabetStr;
+                    break;
+
+                case 2:
+                    ctx.ZEnvironment.Charset2 = alphabetStr;
+                    break;
+            }
+
+            return new ZilString(alphabetStr);
+        }
+
         #endregion
 
         #region Z-Code: Vocabulary and Syntax

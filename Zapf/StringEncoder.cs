@@ -49,22 +49,24 @@ namespace Zapf
             }
         }
 
-        private string charset0 = "abcdefghijklmnopqrstuvwxyz";
-        private string charset1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        private string charset2 = "\n0123456789.,!?_#'\"/\\-:()";   // 1 char omitted at the beginning
+        private string[] charset = {
+                                       "abcdefghijklmnopqrstuvwxyz",
+                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                                       "\n0123456789.,!?_#'\"/\\-:()",   // 1 char omitted at the beginning
+                                   };
 
         private List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
         private static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
-        private bool abbrevsFrozen;
+        private bool frozen;
 
-        public bool AbbrevsFrozen
+        public bool Frozen
         {
-            get { return abbrevsFrozen; }
+            get { return frozen; }
         }
 
         public void AddAbbreviation(string str)
         {
-            if (abbrevsFrozen)
+            if (frozen)
                 throw new InvalidOperationException("Too late to add abbreviations");
             if (abbrevs.Count >= 96)
                 throw new InvalidOperationException("Too many abbreviations");
@@ -98,7 +100,7 @@ namespace Zapf
         public byte[] Encode(string str, int? size, bool noAbbrevs, out int zchars)
         {
             if (!noAbbrevs)
-                abbrevsFrozen = true;
+                frozen = true;
 
             List<byte> temp = new List<byte>();
             StringBuilder sb = new StringBuilder(str);
@@ -132,16 +134,16 @@ namespace Zapf
                     temp.Add((byte)(1 + abbrNum / 32));
                     temp.Add((byte)(abbrNum % 32));
                 }
-                else if ((idx = charset0.IndexOf(c)) >= 0)
+                else if ((idx = charset[0].IndexOf(c)) >= 0)
                 {
                     temp.Add((byte)(idx + 6));
                 }
-                else if ((idx = charset1.IndexOf(c)) >= 0)
+                else if ((idx = charset[1].IndexOf(c)) >= 0)
                 {
                     temp.Add(4);
                     temp.Add((byte)(idx + 6));
                 }
-                else if ((idx = charset2.IndexOf(c)) >= 0)
+                else if ((idx = charset[2].IndexOf(c)) >= 0)
                 {
                     temp.Add(5);
                     temp.Add((byte)(idx + 7));
@@ -189,6 +191,23 @@ namespace Zapf
             if (result.Length >= 2)
                 result[result.Length - 2] |= 0x80;
             return result;
+        }
+
+        public void SetCharset(int charsetNum, IEnumerable<byte> characters)
+        {
+            if (frozen)
+                throw new InvalidOperationException("Too late to change charset");
+
+            var sb = new StringBuilder();
+
+            foreach (var b in characters)
+                sb.Append((char)b);
+
+            int requiredLength = (charsetNum == 2) ? 24 : 26;
+            while (sb.Length < requiredLength)
+                sb.Insert(0, ' ');
+
+            charset[charsetNum] = sb.ToString();
         }
     }
 }

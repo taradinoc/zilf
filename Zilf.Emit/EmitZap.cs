@@ -109,6 +109,10 @@ namespace Zilf.Emit.Zap
 
     public class GameOptions : IGameOptions
     {
+        private GameOptions()
+        {
+        }
+
         public sealed class V3 : GameOptions
         {
             public bool TimeStatusLine { get; set; }
@@ -129,6 +133,10 @@ namespace Zilf.Emit.Zap
             public bool SoundEffects { get; set; }
 
             public ITableBuilder HeaderExtensionTable { get; set; }
+
+            public string Charset0 { get; set; }
+            public string Charset1 { get; set; }
+            public string Charset2 { get; set; }
         }
     }
 
@@ -216,8 +224,17 @@ namespace Zilf.Emit.Zap
                 case 3:
                     return typeof(GameOptions.V3);
 
+                case 4:
+                    return typeof(GameOptions.V4);
+
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    return typeof(GameOptions.V5);
+
                 default:
-                    return typeof(GameOptions);
+                    throw new ArgumentOutOfRangeException("zversion");
             }
         }
 
@@ -254,6 +271,15 @@ namespace Zilf.Emit.Zap
                 }
                 else
                 {
+                    // character set
+                    var v5options = (GameOptions.V5)options;
+                    if (v5options.Charset0 != null || v5options.Charset1 != null || v5options.Charset2 != null)
+                    {
+                        writer.WriteLine(INDENT + ".CHRSET 0," + ExpandChrSet(v5options.Charset0));
+                        writer.WriteLine(INDENT + ".CHRSET 1," + ExpandChrSet(v5options.Charset1));
+                        writer.WriteLine(INDENT + ".CHRSET 2," + ExpandChrSet(v5options.Charset2));
+                    }
+
                     // build the header
                     writer.WriteLine();
                     writer.WriteLine(INDENT + ".BYTE {0}", zversion);
@@ -281,7 +307,7 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".WORD TCHARS");  // $2E terminating characters table
                     writer.WriteLine(INDENT + ".WORD 0");       // $30 output stream 3 width accumulator (V6)
                     writer.WriteLine(INDENT + ".WORD 0");       // $32 Z-Machine Standard revision number
-                    writer.WriteLine(INDENT + ".WORD 0");       // $34 alphabet table
+                    writer.WriteLine(INDENT + ".WORD CHRSET");  // $34 alphabet table
                     writer.WriteLine(INDENT + ".WORD EXTAB");   // $36 header extension table
                     writer.WriteLine(INDENT + ".WORD 0");       // $38 unused
                     writer.WriteLine(INDENT + ".WORD 0");       // $3A unused
@@ -292,6 +318,29 @@ namespace Zilf.Emit.Zap
 
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetFrequentWordsFileName(false));
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
+        }
+
+        private static string ExpandChrSet(string alphabet)
+        {
+            var sb = new StringBuilder(100);
+            if (alphabet == null)
+                alphabet = "";
+
+            for (int i = 26; i > alphabet.Length; i--)
+            {
+                sb.Append("32,");
+            }
+
+            foreach (char c in alphabet)
+            {
+                //XXX translate non-ASCII Unicode characters to ZSCII
+
+                sb.Append((byte)c);
+                sb.Append(',');
+            }
+
+            sb.Remove(sb.Length - 1, 1);
+            return sb.ToString();
         }
 
         public IDebugFileBuilder DebugFile
@@ -623,7 +672,7 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + "FLAGS=0");
 
             ushort flags2 = 0;
-            bool defineExtab = true, defineTchars = true;
+            bool defineExtab = true, defineTchars = true, defineChrset = false;
 
             switch (zversion)
             {
@@ -653,6 +702,7 @@ namespace Zilf.Emit.Zap
                     }
                     defineExtab = v5options.HeaderExtensionTable == null;
                     defineTchars = !symbols.ContainsKey("TCHARS");
+                    defineChrset = v5options.Charset0 == null && v5options.Charset1 == null && v5options.Charset2 == null;
                     break;
 
                 case 6:
@@ -666,6 +716,8 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + "EXTAB=0");
             if (defineTchars)
                 writer.WriteLine(INDENT + "TCHARS=0");
+            if (defineChrset)
+                writer.WriteLine(INDENT + "CHRSET=0");
 
             // flags
             if (flags.Count > 0)
@@ -838,6 +890,20 @@ namespace Zilf.Emit.Zap
 
         private void FinishPureTables()
         {
+            if (zversion >= 5)
+            {
+                var v5options = (GameOptions.V5)options;
+                if (v5options.Charset0 != null || v5options.Charset1 != null || v5options.Charset2 != null)
+                {
+                    writer.WriteLine();
+                    writer.WriteLine("CHRSET:: .TABLE 78");
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset0));
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset1));
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset2));
+                    writer.WriteLine(INDENT + ".ENDT");
+                }
+            }
+
             // pure user tables
             foreach (TableBuilder tb in pureTables)
             {

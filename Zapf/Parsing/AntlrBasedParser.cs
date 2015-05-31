@@ -63,6 +63,18 @@ namespace Zapf.Parsing
         }
     }
 
+    sealed class ChrsetDirective : AsmLine
+    {
+        public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
+        {
+            this.CharsetNum = alphabetNum;
+            this.Characters = new List<AsmExpr>(characters);
+        }
+
+        public AsmExpr CharsetNum { get; set; }
+        public IList<AsmExpr> Characters { get; private set; }
+    }
+
     struct FunctLocal
     {
         public FunctLocal(string name, AsmExpr defaultValue)
@@ -703,6 +715,12 @@ namespace Zapf.Parsing
 
                     case ZapParser.SOUND:
                         line = new SoundDirective();
+                        break;
+
+                    case ZapParser.CHRSET:
+                        line = new ChrsetDirective(
+                            ParseAsmExpr(node.GetChild(0)),
+                            Enumerable.Range(1, node.ChildCount - 1).Select(i => ParseAsmExpr(node.GetChild(i))));
                         break;
 
                     case ZapParser.FUNCT:

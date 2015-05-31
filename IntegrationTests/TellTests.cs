@@ -105,5 +105,35 @@ namespace IntegrationTests
                 .WithGlobal("<SETG PRESERVE-SPACES? T>")
                 .Outputs("Hi.  Hi.   Hi.\n  Hi!  Hi?  \n");
         }
+
+        [TestMethod]
+        public void CHRSET_Should_Affect_Text_Decoding()
+        {
+            /*     1         2         3 
+             * 67890123456789012345678901
+             * zyxwvutsrqponmlkjihgfedcba
+             * 
+             *   z=6   i=23  l=20
+             * 1 00110 10111 10100
+             */
+            AssertRoutine("", "<PRINTB ,MYTEXT>")
+                .WithGlobal("<CHRSET 0 \"zyxwvutsrqponmlkjihgfedcba\">")
+                .WithGlobal("<CONSTANT MYTEXT <TABLE #2 1001101011110100>>")
+                .InV5()
+                .Outputs("zil");
+        }
+
+        [TestMethod]
+        public void CHRSET_Should_Affect_Text_Encoding()
+        {
+            AssertRoutine("",
+                "<PRINT ,MYTEXT> <CRLF> " +
+                "<PRINTN <- <GET <* 4 ,MYTEXT> 0> ,ENCODED-TEXT>>")
+                .WithGlobal("<CHRSET 0 \"zyxwvutsrqponmlkjihgfedcba\">")
+                .WithGlobal("<CONSTANT MYTEXT \"zil\">")
+                .WithGlobal("<CONSTANT ENCODED-TEXT #2 1001101011110100>")
+                .InV5()
+                .Outputs("zil\n0");
+        }
     }
 }
