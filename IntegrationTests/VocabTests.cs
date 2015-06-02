@@ -158,5 +158,20 @@ namespace IntegrationTests
                     "<==? <GET ,LONG-WORD-TABLE 1> ,W?HEMIDEMISEMIQUAVER>",
                     "<==? <GET ,LONG-WORD-TABLE 2> \"hemidemisemiquaver\">");
         }
+
+        [TestMethod]
+        public void LANGUAGE_Should_Affect_Lexing()
+        {
+            AssertRoutine("",
+                "<READ ,INBUF ,LEXBUF> " +
+                @"<==? <GET ,LEXBUF 1> ,W?AU\%SER>")
+                .WithGlobal("<LANGUAGE GERMAN>")
+                .WithGlobal(@"<BUZZ AU\%SER>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 59 (LEXV) 0 #BYTE 0 #BYTE 0>>")
+                .WithGlobal("<GLOBAL INBUF <ITABLE 80 (BYTE LENGTH) 0>>")
+                .InV5()
+                .WithInput("außer")
+                .GivesNumber("1");
+        }
     }
 }

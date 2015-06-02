@@ -176,6 +176,86 @@ namespace Zilf
         }
     }
 
+    sealed class Language
+    {
+        public int Id { get; private set; }
+        public string Charset0 { get; private set; }
+        public string Charset1 { get; private set; }
+        public string Charset2 { get; private set; }
+        public IReadOnlyDictionary<char, char> SpecialChars { get; private set; }
+
+        private Language(int id, string charset0, string charset1, string charset2, params char[] specialChars)
+        {
+            Contract.Requires(id >= 0);
+            Contract.Requires(charset0 != null && charset0.Length == 26);
+            Contract.Requires(charset1 != null && charset1.Length == 26);
+            Contract.Requires(charset2 != null && charset2.Length == 24);
+            Contract.Requires(specialChars != null && specialChars.Length % 2 == 0);
+
+            this.Id = id;
+            this.Charset0 = charset0;
+            this.Charset1 = charset1;
+            this.Charset2 = charset2;
+
+            var specialCharDict = new Dictionary<char, char>(specialChars.Length / 2);
+            for (int i = 0; i < specialChars.Length - 1; i += 2)
+            {
+                specialCharDict.Add(specialChars[i], specialChars[i + 1]);
+            }
+
+            this.SpecialChars = specialCharDict;
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(Id >= 0);
+            Contract.Invariant(Charset0 != null && Charset0.Length == 26);
+            Contract.Invariant(Charset1 != null && Charset1.Length == 26);
+            Contract.Invariant(Charset2 != null && Charset2.Length == 24);
+            Contract.Invariant(SpecialChars != null);
+        }
+
+        private static readonly Dictionary<string, Language> allLanguages = new Dictionary<string, Language>()
+        {
+            { "DEFAULT", new Language(
+                0,
+                "abcdefghijklmnopqrstuvwxyz",
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                "0123456789.,!?_#'\"/\\-:()") },
+            { "GERMAN", new Language(
+                1,
+                "abcdefghiklmnoprstuwzäöü.,",
+                "ABCDEFGHIKLMNOPRSTUWZjqvxy",
+                "0123456789!?'-:()JÄÖÜß«»",
+                'a', 'ä',
+                'o', 'ö',
+                'u', 'ü',
+                's', 'ß',
+                'A', 'Ä',
+                'O', 'Ö',
+                'U', 'Ü',
+                '<', '«',
+                '>', '»') },
+        };
+
+        public static Language Get(string name)
+        {
+            Contract.Requires(name != null);
+
+            Language result;
+            allLanguages.TryGetValue(name, out result);
+            return result;
+        }
+
+        public static Language Get(ZilAtom atom)
+        {
+            Contract.Requires(atom != null);
+
+            return Get(atom.Text);
+        }
+    }
+
     /// <summary>
     /// Holds the state built up during the load phase for the compiler to use.
     /// </summary>
@@ -226,33 +306,88 @@ namespace Zilf
         private byte[] zcharCountCache;   // char -> # of Z-chars
         private string charset0, charset1, charset2;
 
-        public const string DefaultCharset0 = "abcdefghijklmnopqrstuvwxyz";     // 26 chars
-        public const string DefaultCharset1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";     // 26 chars
-        public const string DefaultCharset2 = "0123456789.,!?_#'\"/\\-:()";     // 24 chars(!)
-
         public string Charset0
         {
-            get { return charset0; }
-            set { charset0 = value; zcharCountCache = null; }
+            get
+            {
+                Contract.Ensures(Contract.Result<string>() != null);
+                return charset0;
+            }
+            set
+            {
+                Contract.Requires(value != null);
+                Contract.Ensures(zcharCountCache == null);
+
+                charset0 = value;
+                zcharCountCache = null;
+            }
         }
+
         public string Charset1
         {
-            get { return charset1; }
-            set { charset1 = value; zcharCountCache = null; }
+            get
+            {
+                Contract.Ensures(Contract.Result<string>() != null);
+                return charset1;
+            }
+            set
+            {
+                Contract.Requires(value != null);
+                Contract.Ensures(zcharCountCache == null);
+
+                charset1 = value;
+                zcharCountCache = null;
+            }
         }
+
         public string Charset2
         {
-            get { return charset2; }
-            set { charset2 = value; zcharCountCache = null; }
+            get
+            {
+                Contract.Ensures(Contract.Result<string>() != null);
+                return charset2;
+            }
+            set
+            {
+                Contract.Requires(value != null);
+                Contract.Ensures(zcharCountCache == null);
+
+                charset2 = value;
+                zcharCountCache = null;
+            }
         }
+
+        /// <summary>
+        /// Gets or sets the language used for special character encodings.
+        /// Setting this does not automatically update the charsets.
+        /// </summary>
+        public Language Language { get; set; }
+
+        /// <summary>
+        /// Gets or sets the character used for language-specific character
+        /// escapes. If null, language-specific characters are not decoded.
+        /// </summary>
+        public char? LanguageEscapeChar { get; set; }
 
         public ZEnvironment(Context ctx)
         {
+            Contract.Requires(ctx != null);
+
             this.ctx = ctx;
 
-            Charset0 = DefaultCharset0;
-            Charset1 = DefaultCharset1;
-            Charset2 = DefaultCharset2;
+            var defaultLang = Language.Get("DEFAULT");
+            Contract.Assume(defaultLang != null);
+
+            this.Language = defaultLang;
+            this.Charset0 = defaultLang.Charset0;
+            this.Charset1 = defaultLang.Charset1;
+            this.Charset2 = defaultLang.Charset2;
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.Language != null);
         }
 
         public Word GetVocab(ZilAtom text)
@@ -657,6 +792,8 @@ namespace Zilf
 
         private void MakeZcharCountCache()
         {
+            Contract.Ensures(zcharCountCache != null);
+
             if (zcharCountCache == null)
             {
                 // Charset 0 takes one Z-char.

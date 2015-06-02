@@ -65,6 +65,9 @@ namespace Zapf
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
 
+        public char? LanguageEscapeChar { get; private set; }
+        public IDictionary<char, char> LanguageSpecialChars { get; private set; }
+
         private Stream stream;
         private Stream prevStream;
         private int position;
@@ -90,6 +93,8 @@ namespace Zapf
             reassemblyLabels = new Dictionary<string, bool>();
 
             ZVersion = Program.DEFAULT_ZVERSION;
+
+            LanguageSpecialChars = new Dictionary<char, char>();
         }
 
         public void Restart()
@@ -104,6 +109,9 @@ namespace Zapf
 
             string stackName = InformMode ? "sp" : "STACK";
             GlobalSymbols.Add(stackName, new Symbol(stackName, SymbolType.Variable, 0));
+
+            LanguageEscapeChar = null;
+            LanguageSpecialChars.Clear();
         }
 
         public void WriteByte(byte b)
@@ -168,6 +176,9 @@ namespace Zapf
 
         public void WriteZString(string str, bool withLength, bool noAbbrevs)
         {
+            if (LanguageEscapeChar != null && str.IndexOf((char)LanguageEscapeChar) >= 0)
+                str = ProcessEscapeChars(str);
+
             byte[] zstr = StringEncoder.Encode(str, noAbbrevs);
             if (FinalPass && AbbreviateMode)
                 AbbrevFinder.AddText(str);
@@ -178,6 +189,41 @@ namespace Zapf
             position += zstr.Length;
             if (stream != null)
                 stream.Write(zstr, 0, zstr.Length);
+        }
+
+        private string ProcessEscapeChars(string str)
+        {
+            var sb = new StringBuilder(str);
+            var escape = (char)LanguageEscapeChar;
+
+            for (int i = 0; i < sb.Length - 1; i++)
+            {
+                if (sb[i] == escape)
+                {
+                    var next = sb[i + 1];
+                    if (next == escape)
+                    {
+                        // %% => %
+                        sb.Remove(i, 1);
+                    }
+                    else
+                    {
+                        // translate according to LanguageSpecialChars
+                        char translation;
+                        if (LanguageSpecialChars.TryGetValue(next, out translation))
+                        {
+                            sb.Remove(i, 1);
+                            sb[i] = translation;
+                        }
+                        else
+                        {
+                            // leave it untranslated
+                        }
+                    }
+                }
+            }
+
+            return sb.ToString();
         }
 
         public void WriteZStringLength(string str)
@@ -193,6 +239,9 @@ namespace Zapf
 
         public void WriteZWord(string str)
         {
+            if (LanguageEscapeChar != null && str.IndexOf((char)LanguageEscapeChar) >= 0)
+                str = ProcessEscapeChars(str);
+            
             byte[] zstr = StringEncoder.Encode(str, ZWordChars, true);
             position += zstr.Length;
 
@@ -675,6 +724,28 @@ namespace Zapf
                 return search;
 
             return null;
+        }
+
+        public void SetLanguage(int langId, int escapeChar)
+        {
+            this.LanguageEscapeChar = (char)escapeChar;
+
+            LanguageSpecialChars.Clear();
+            switch (langId)
+            {
+                case 1:
+                    // German
+                    LanguageSpecialChars.Add('a', 'ä');
+                    LanguageSpecialChars.Add('o', 'ö');
+                    LanguageSpecialChars.Add('u', 'ü');
+                    LanguageSpecialChars.Add('s', 'ß');
+                    LanguageSpecialChars.Add('A', 'Ä');
+                    LanguageSpecialChars.Add('O', 'Ö');
+                    LanguageSpecialChars.Add('U', 'Ü');
+                    LanguageSpecialChars.Add('<', '«');
+                    LanguageSpecialChars.Add('>', '»');
+                    break;
+            }
         }
     }
 

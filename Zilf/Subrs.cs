@@ -3803,6 +3803,57 @@ namespace Zilf
             return new ZilString(alphabetStr);
         }
 
+        [Subr]
+        public static ZilObject LANGUAGE(Context ctx, ZilObject[] args)
+        {
+            if (args.Length < 1 || args.Length > 3)
+                throw new InterpreterError("LANGUAGE", 1, 3);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError("LANGUAGE: first arg must be an atom");
+
+            var language = Language.Get(name.Text);
+            if (language == null)
+                throw new InterpreterError("LANGUAGE: unrecognized language: " + name.Text);
+
+            char escapeChar;
+            if (args.Length >= 2)
+            {
+                var ch = args[1] as ZilChar;
+                if (ch == null)
+                    throw new InterpreterError("LANGUAGE: second arg must be a CHARACTER");
+                escapeChar = ch.Char;
+            }
+            else
+            {
+                escapeChar = '%';
+            }
+
+            bool changeChrset;
+            if (args.Length >= 3)
+            {
+                changeChrset = args[2].IsTrue;
+            }
+            else
+            {
+                changeChrset = true;
+            }
+
+            // update language, escape char, and possibly charset
+            ctx.ZEnvironment.Language = language;
+            ctx.ZEnvironment.LanguageEscapeChar = escapeChar;
+
+            if (changeChrset)
+            {
+                ctx.ZEnvironment.Charset0 = language.Charset0;
+                ctx.ZEnvironment.Charset1 = language.Charset1;
+                ctx.ZEnvironment.Charset2 = language.Charset2;
+            }
+
+            return args[0];
+        }
+
         #endregion
 
         #region Z-Code: Vocabulary and Syntax
