@@ -63,6 +63,18 @@ namespace Zapf.Parsing
         }
     }
 
+    sealed class LangDirective : AsmLine
+    {
+        public LangDirective(AsmExpr langId, AsmExpr escapeChar)
+        {
+            this.LanguageId = langId;
+            this.EscapeChar = escapeChar;
+        }
+
+        public AsmExpr LanguageId { get; set; }
+        public AsmExpr EscapeChar { get; set; }
+    }
+
     sealed class ChrsetDirective : AsmLine
     {
         public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
@@ -715,6 +727,10 @@ namespace Zapf.Parsing
 
                     case ZapParser.SOUND:
                         line = new SoundDirective();
+                        break;
+
+                    case ZapParser.LANG:
+                        line = new LangDirective(ParseAsmExpr(node.GetChild(0)), ParseAsmExpr(node.GetChild(1)));
                         break;
 
                     case ZapParser.CHRSET:

@@ -255,6 +255,7 @@ meta_directive
 	:	NEW^ expr?
 	|	TIME
 	|	SOUND
+	|	LANG^ expr COMMA! expr
 	|	CHRSET^ expr (COMMA! expr)*
 	|	INSERT^ STRING
 	|	END

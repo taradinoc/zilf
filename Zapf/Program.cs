@@ -969,6 +969,11 @@ General switches:
             {
                 // these are explicitly handled by PassOne or PassTwo
             }
+            else if (node is LangDirective)
+            {
+                var langNode = (LangDirective)node;
+                ctx.SetLanguage(EvalExpr(ctx, langNode.LanguageId).Value, EvalExpr(ctx, langNode.EscapeChar).Value);
+            }
             else if (node is ChrsetDirective)
             {
                 var chrsetNode = (ChrsetDirective)node;
@@ -1061,7 +1066,7 @@ General switches:
                     Symbol sym = EvalExpr(ctx, elements[i]);
                     if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                     {
-                        Errors.ThrowFatal(elements[i], "unrecognized symbol");
+                        Errors.ThrowFatal(elements[i], "unrecognized symbol: " + elements[i].Text);
                     }
                     if (node is ByteDirective)
                     {

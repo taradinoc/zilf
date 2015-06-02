@@ -49,15 +49,110 @@ namespace Zapf
             }
         }
 
-        private string[] charset = {
-                                       "abcdefghijklmnopqrstuvwxyz",
-                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                                       "\n0123456789.,!?_#'\"/\\-:()",   // 1 char omitted at the beginning
-                                   };
+        private static readonly string[] DefaultCharset = {
+            "abcdefghijklmnopqrstuvwxyz",
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "0123456789.,!?_#'\"/\\-:()",   // 2 chars omitted at the beginning
+        };
+        private byte[][] charset;
 
         private List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
         private static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
         private bool frozen;
+
+        private readonly Dictionary<char, byte> unicodeTranslations;
+
+        public StringEncoder()
+        {
+            // TODO: share unicode translation table with Zilf.Emit
+            unicodeTranslations = new Dictionary<char, byte>(69)
+            {
+                { 'ä', 155 },
+                { 'ö', 156 },
+                { 'ü', 157 },
+                { 'Ä', 158 },
+                { 'Ö', 159 },
+                { 'Ü', 160 },
+                { 'ß', 161 },
+                { '»', 162 },
+                { '«', 163 },
+                { 'ë', 164 },
+                { 'ï', 165 },
+                { 'ÿ', 166 },
+                { 'Ë', 167 },
+                { 'Ï', 168 },
+                { 'á', 169 },
+                { 'é', 170 },
+                { 'í', 171 },
+                { 'ó', 172 },
+                { 'ú', 173 },
+                { 'ý', 174 },
+                { 'Á', 175 },
+                { 'É', 176 },
+                { 'Í', 177 },
+                { 'Ó', 178 },
+                { 'Ú', 179 },
+                { 'Ý', 180 },
+                { 'à', 181 },
+                { 'è', 182 },
+                { 'ì', 183 },
+                { 'ò', 184 },
+                { 'ù', 185 },
+                { 'À', 186 },
+                { 'È', 187 },
+                { 'Ì', 188 },
+                { 'Ò', 189 },
+                { 'Ù', 190 },
+                { 'â', 191 },
+                { 'ê', 192 },
+                { 'î', 193 },
+                { 'ô', 194 },
+                { 'û', 195 },
+                { 'Â', 196 },
+                { 'Ê', 197 },
+                { 'Î', 198 },
+                { 'Ô', 199 },
+                { 'Û', 200 },
+                { 'å', 201 },
+                { 'Å', 202 },
+                { 'ø', 203 },
+                { 'Ø', 204 },
+                { 'ã', 205 },
+                { 'ñ', 206 },
+                { 'õ', 207 },
+                { 'Ã', 208 },
+                { 'Ñ', 209 },
+                { 'Õ', 210 },
+                { 'æ', 211 },
+                { 'Æ', 212 },
+                { 'ç', 213 },
+                { 'Ç', 214 },
+                { 'þ', 215 },
+                { 'ð', 216 },
+                { 'Þ', 217 },
+                { 'Ð', 218 },
+                { '£', 219 },
+                { 'œ', 220 },
+                { 'Œ', 221 },
+                { '¡', 222 },
+                { '¿', 223 },
+            };
+
+            // convert characters in DefaultCharset through unicode mapping and into bytes
+            charset = DefaultCharset.Select(
+                s => s.Select(c =>
+                {
+                    byte b;
+                    if (unicodeTranslations.TryGetValue(c, out b))
+                    {
+                        return b;
+                    }
+                    else
+                    {
+                        return (byte)c;
+                    }
+                }).ToArray()).ToArray();
+        }
 
         public bool Frozen
         {
@@ -128,32 +223,46 @@ namespace Zapf
                 {
                     temp.Add(0);
                 }
+                else if (c == '\n')
+                {
+                    temp.Add(5);
+                    temp.Add(7);
+                }
                 else if (!noAbbrevs && c >= '\ue000' && c < '\ue060')
                 {
                     int abbrNum = c - '\ue000';
                     temp.Add((byte)(1 + abbrNum / 32));
                     temp.Add((byte)(abbrNum % 32));
                 }
-                else if ((idx = charset[0].IndexOf(c)) >= 0)
-                {
-                    temp.Add((byte)(idx + 6));
-                }
-                else if ((idx = charset[1].IndexOf(c)) >= 0)
-                {
-                    temp.Add(4);
-                    temp.Add((byte)(idx + 6));
-                }
-                else if ((idx = charset[2].IndexOf(c)) >= 0)
-                {
-                    temp.Add(5);
-                    temp.Add((byte)(idx + 7));
-                }
                 else
                 {
-                    temp.Add(5);
-                    temp.Add(6);
-                    temp.Add((byte)((c >> 5) & 31));
-                    temp.Add((byte)(c & 31));
+                    byte b;
+                    if (unicodeTranslations.TryGetValue(c, out b) == false)
+                    {
+                        b = (byte)c;
+                    }
+
+                    if ((idx = Array.IndexOf(charset[0], b)) >= 0)
+                    {
+                        temp.Add((byte)(idx + 6));
+                    }
+                    else if ((idx = Array.IndexOf(charset[1], b)) >= 0)
+                    {
+                        temp.Add(4);
+                        temp.Add((byte)(idx + 6));
+                    }
+                    else if ((idx = Array.IndexOf(charset[2], b)) >= 0)
+                    {
+                        temp.Add(5);
+                        temp.Add((byte)(idx + 8));
+                    }
+                    else
+                    {
+                        temp.Add(5);
+                        temp.Add(6);
+                        temp.Add((byte)((b >> 5) & 31));
+                        temp.Add((byte)(b & 31));
+                    }
                 }
             }
 
@@ -198,16 +307,18 @@ namespace Zapf
             if (frozen)
                 throw new InvalidOperationException("Too late to change charset");
 
-            var sb = new StringBuilder();
+            var cs = new List<byte>(26);
 
             foreach (var b in characters)
-                sb.Append((char)b);
+                cs.Add(b);
 
-            int requiredLength = (charsetNum == 2) ? 24 : 26;
-            while (sb.Length < requiredLength)
-                sb.Insert(0, ' ');
+            while (cs.Count < 26)
+                cs.Insert(0, (byte)' ');
 
-            charset[charsetNum] = sb.ToString();
+            if (charsetNum == 2)
+                cs.RemoveRange(0, 2);
+
+            charset[charsetNum] = cs.ToArray();
         }
     }
 }

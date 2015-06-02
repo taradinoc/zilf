@@ -260,12 +260,17 @@ namespace Zilf
                     };
 
                 case 5:
+                case 6:
                 case 7:
                 case 8:
+                    var defaultLang = Language.Get("DEFAULT");
                     var doCharset =
-                        zenv.Charset0 != ZEnvironment.DefaultCharset0 ||
-                        zenv.Charset1 != ZEnvironment.DefaultCharset1 ||
-                        zenv.Charset2 != ZEnvironment.DefaultCharset2;
+                        zenv.Charset0 != defaultLang.Charset0 ||
+                        zenv.Charset1 != defaultLang.Charset1 ||
+                        zenv.Charset2 != defaultLang.Charset2;
+
+                    var doLang = zenv.LanguageEscapeChar != null;
+
                     return new Zilf.Emit.Zap.GameOptions.V5()
                     {
                         DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P),
@@ -276,11 +281,9 @@ namespace Zilf
                         Charset0 = doCharset ? zenv.Charset0 : null,
                         Charset1 = doCharset ? zenv.Charset1 : null,
                         Charset2 = doCharset ? zenv.Charset2 : null,
+                        LanguageId = doLang ? zenv.Language.Id : 0,
+                        LanguageEscapeChar = doLang ? zenv.LanguageEscapeChar : null,
                     };
-
-                case 6:
-                    //XXX
-                    return null;
 
                 default:
                     return null;

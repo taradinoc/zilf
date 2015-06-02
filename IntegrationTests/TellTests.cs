@@ -135,5 +135,25 @@ namespace IntegrationTests
                 .InV5()
                 .Outputs("zil\n0");
         }
+
+        [TestMethod]
+        public void LANGUAGE_Should_Affect_Text_Encoding()
+        {
+            AssertRoutine("",
+                "<TELL \"%>M%obeltr%agerf%u%se%<\">")
+                .WithGlobal("<LANGUAGE GERMAN>")
+                .InV5()
+                .Outputs("»Möbelträgerfüße«");
+        }
+
+        [TestMethod]
+        public void LANGUAGE_Should_Affect_Vocabulary_Encoding()
+        {
+            AssertRoutine("", @"<PRINTB ,W?\%A\%S>")
+                .WithGlobal("<LANGUAGE GERMAN>")
+                .WithGlobal(@"<OBJECT FOO (SYNONYM \%A\%S)>")
+                .InV5()
+                .Outputs("äß");
+        }
     }
 }
