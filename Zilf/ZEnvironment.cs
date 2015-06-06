@@ -1024,14 +1024,26 @@ namespace Zilf
                                 break;
 
                             default:
-                                if ((numObjects == 0 && prep1 != null) ||
-                                    (numObjects == 1 && prep2 != null) ||
-                                    numObjects == 2)
-                                    throw new InterpreterError("too many prepositions in syntax definition");
+                                var numPreps = prep2 != null ? 2 : prep1 != null ? 1 : 0;
+                                if (numPreps == 2 || numPreps > numObjects)
+                                {
+                                    if (numObjects < 2)
+                                    {
+                                        throw new InterpreterError("too many prepositions in syntax definition (try defining another object)");
+                                    }
+                                    else
+                                    {
+                                        throw new InterpreterError("too many prepositions in syntax definition");
+                                    }
+                                }
                                 else if (numObjects == 0)
+                                {
                                     prep1 = atom;
+                                }
                                 else
+                                {
                                     prep2 = atom;
+                                }
                                 break;
                         }
                     }
