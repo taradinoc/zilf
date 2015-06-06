@@ -723,6 +723,7 @@ namespace Zilf
             Contract.Ensures(cc.PreactionTable != null);
             Contract.Ensures(cc.PrepositionTable != null);
 
+            // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
             cc.VerbTable = cc.Game.DefineTable("VTBL", true);
             cc.ActionTable = cc.Game.DefineTable("ATBL", true);
             cc.PreactionTable = cc.Game.DefineTable("PATBL", true);
