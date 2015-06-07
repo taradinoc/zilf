@@ -2245,6 +2245,10 @@ namespace Zilf
                 if (zo.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                 {
                     ZilList zl = (ZilList)zo;
+
+                    if (zl.IsEmpty)
+                        throw new InterpreterError("COND: lists must be non-empty");
+
                     result = zl.First.Eval(ctx);
 
                     if (result.IsTrue)
@@ -2256,7 +2260,7 @@ namespace Zilf
                     }
                 }
                 else
-                    throw new InterpreterError("COND: every arg must be a list");
+                    throw new InterpreterError("COND: args must be lists");
             }
 
             return result;
@@ -3741,6 +3745,9 @@ namespace Zilf
                 ZilList list = clause as ZilList;
                 if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     throw new InterpreterError("VERSION?: args must be lists");
+
+                if (list.IsEmpty)
+                    throw new InterpreterError("VERSION?: lists must be non-empty");
 
                 if (list.First == tAtom || list.First == elseAtom ||
                     ParseZVersion("VERSION?", list.First) == ctx.ZEnvironment.ZVersion)
