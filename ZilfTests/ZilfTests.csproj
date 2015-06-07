@@ -57,6 +57,9 @@
   <ItemGroup>
     <Compile Include="Interpreter\ArithmeticTests.cs" />
     <Compile Include="Interpreter\AtomTests.cs" />
+    <Compile Include="Interpreter\FlowControlTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Interpreter\TestHelpers.cs" />
     <Compile Include="Interpreter\FunctionTests.cs" />
     <Compile Include="Interpreter\TypeTests.cs" />
