@@ -83,6 +83,11 @@
       <Name>Zilf</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Zilf.licenseheader">
+      <Link>Zilf.licenseheader</Link>
+    </None>
+  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

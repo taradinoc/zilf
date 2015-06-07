@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2012 Jesse McGrew
+﻿/* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -23,7 +23,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
 {

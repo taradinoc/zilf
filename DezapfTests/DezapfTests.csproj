@@ -91,6 +91,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Zilf.licenseheader">
+      <Link>Zilf.licenseheader</Link>
+    </None>
     <None Include="Resources\hello.z3" />
     <None Include="Resources\name.z3" />
   </ItemGroup>

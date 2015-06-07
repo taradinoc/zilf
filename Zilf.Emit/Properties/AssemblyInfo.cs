@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2012 Jesse McGrew
+﻿/* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 

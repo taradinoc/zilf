@@ -65,6 +65,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Zilf.licenseheader">
+      <Link>Zilf.licenseheader</Link>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Choose>
