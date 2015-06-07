@@ -1,0 +1,154 @@
+using System;
+using System.Diagnostics.Contracts;
+using Zilf.Language;
+
+namespace Zilf.Interpreter.Values
+{
+    [BuiltinType(StdAtom.MACRO, PrimType.LIST)]
+    class ZilEvalMacro : ZilObject, IApplicable, IStructure
+    {
+        private ZilObject value;
+
+        public ZilEvalMacro(ZilObject value)
+        {
+            if (!(value is IApplicable))
+                throw new ArgumentException("Arg must be an applicable object");
+
+            this.value = value;
+        }
+
+        [ChtypeMethod]
+        public static ZilEvalMacro FromList(Context ctx, ZilList list)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilEvalMacro>() != null);
+
+            if (list.First != null && list.First is IApplicable &&
+                list.Rest != null && list.Rest.First == null)
+            {
+                return new ZilEvalMacro(list.First);
+            }
+
+            throw new InterpreterError("List does not match MACRO pattern");
+        }
+
+        private string ToString(Func<ZilObject, string> convert)
+        {
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
+            return "#MACRO (" + convert(value) + ")";
+        }
+
+        public override string ToString()
+        {
+            return ToString(zo => zo.ToString());
+        }
+
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            return ToString(zo => zo.ToStringContext(ctx, friendly));
+        }
+
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            return ctx.GetStdAtom(StdAtom.MACRO);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return PrimType.LIST; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilList(value, new ZilList(null, null));
+        }
+
+        public ZilObject Apply(Context ctx, ZilObject[] args)
+        {
+            ZilObject expanded = Expand(ctx, args);
+            return expanded.Eval(ctx);
+        }
+
+        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        {
+            ZilObject expanded = ExpandNoEval(ctx, args);
+            return expanded.Eval(ctx);
+        }
+
+        public ZilObject Expand(Context ctx, ZilObject[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
+            Context expandCtx = ctx.CloneWithNewLocals();
+            return ((IApplicable)value).Apply(expandCtx, args);
+        }
+
+        public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
+            Context expandCtx = ctx.CloneWithNewLocals();
+            return ((IApplicable)value).ApplyNoEval(expandCtx, args);
+        }
+
+        public override bool Equals(object obj)
+        {
+            ZilEvalMacro other = obj as ZilEvalMacro;
+            return other != null && other.value.Equals(this.value);
+        }
+
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
+
+        #region IStructure Members
+
+        public ZilObject GetFirst()
+        {
+            return value;
+        }
+
+        public IStructure GetRest(int skip)
+        {
+            return null;
+        }
+
+        public bool IsEmpty()
+        {
+            return false;
+        }
+
+        public ZilObject this[int index]
+        {
+            get
+            {
+                return index == 0 ? value : null;
+            }
+            set
+            {
+                if (index == 0)
+                    this.value = value;
+            }
+        }
+
+        public int GetLength()
+        {
+            return 1;
+        }
+
+        public int? GetLength(int limit)
+        {
+            return limit >= 1 ? 1 : (int?)null;
+        }
+
+        #endregion
+    }
+}

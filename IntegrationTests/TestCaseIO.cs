@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using ZLR.VM;
-using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace IntegrationTests
 {

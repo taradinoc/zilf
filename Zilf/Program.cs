@@ -16,18 +16,19 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-
 using Antlr.Runtime;
 using Antlr.Runtime.Tree;
-using Zilf.Emit;
-using Zilf.Lexing;
-using Zilf.Parsing;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.IO;
+using System.Text;
+using Zilf.Compiler;
+using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
+using Zilf.Language;
+using Zilf.Language.Lexing;
+using Zilf.Language.Parsing;
 
 namespace Zilf
 {
@@ -152,12 +153,11 @@ namespace Zilf
                     // TODO: Rely on ZilfCompiler for all this logic.
                     ctx.SetDefaultConstants();
 
-                    Compiler c = new Compiler();
                     try
                     {
                         var gameBuilder = new Emit.Zap.GameBuilder(ctx.ZEnvironment.ZVersion, outFile, ctx.WantDebugInfo,
                             ZilfCompiler.MakeGameOptions(ctx));
-                        c.Compile(ctx, gameBuilder);
+                        Zilf.Compiler.Compiler.Compile(ctx, gameBuilder);
                     }
                     catch (ZilError ex)
                     {

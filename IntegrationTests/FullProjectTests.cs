@@ -1,9 +1,9 @@
-﻿using System;
+﻿using DiffLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
-using DiffLib;
-using System.Text.RegularExpressions;
+using System;
 using System.Diagnostics.Contracts;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace IntegrationTests
 {

@@ -1,8 +1,8 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Diagnostics.Contracts;
-using Zilf;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using Zilf.ZModel;
+using Zilf.ZModel.Vocab;
 
 namespace IntegrationTests
 {
