@@ -86,15 +86,52 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Emit.cs" />
-    <Compile Include="EmitZap.cs" />
+    <Compile Include="DebugLineRef.cs" />
+    <Compile Include="IDebugFileBuilder.cs" />
+    <Compile Include="IFlagBuilder.cs" />
+    <Compile Include="IGameBuilder.cs" />
+    <Compile Include="IGameOptions.cs" />
+    <Compile Include="IGlobalBuilder.cs" />
+    <Compile Include="IIndirectOperand.cs" />
+    <Compile Include="ILabel.cs" />
+    <Compile Include="ILocalBuilder.cs" />
+    <Compile Include="IObjectBuilder.cs" />
+    <Compile Include="IOperand.cs" />
+    <Compile Include="IPropertyBuilder.cs" />
+    <Compile Include="IRoutineBuilder.cs" />
+    <Compile Include="ITableBuilder.cs" />
+    <Compile Include="IVariable.cs" />
+    <Compile Include="IWordBuilder.cs" />
+    <Compile Include="Zap\DebugFileBuilder.cs" />
+    <Compile Include="Zap\DummyGameOptions.cs" />
+    <Compile Include="Zap\ZapCode.cs" />
     <Compile Include="Peephole.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Zap\FlagBuilder.cs" />
+    <Compile Include="Zap\GameBuilder.cs" />
+    <Compile Include="Zap\GameOptions.cs" />
+    <Compile Include="Zap\GlobalBuilder.cs" />
+    <Compile Include="Zap\IndirectOperand.cs" />
+    <Compile Include="Zap\IZapStreamFactory.cs" />
+    <Compile Include="Zap\Label.cs" />
+    <Compile Include="Zap\LiteralOperand.cs" />
+    <Compile Include="Zap\LocalBuilder.cs" />
+    <Compile Include="Zap\NumericOperand.cs" />
+    <Compile Include="Zap\ObjectBuilder.cs" />
+    <Compile Include="Zap\PropertyBuilder.cs" />
+    <Compile Include="Zap\RoutineBuilder.cs" />
+    <Compile Include="Zap\TableBuilder.cs" />
+    <Compile Include="Zap\VariableOperand.cs" />
+    <Compile Include="Zap\WordBuilder.cs" />
+    <Compile Include="Zap\ZapStreamFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Peephole\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
