@@ -258,6 +258,172 @@ namespace Zilf
             }
         }
 
+        [Subr("COMPILATION-FLAG")]
+        public static ZilObject COMPILATION_FLAG(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError("COMPILATION-FLAG", 1, 2);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+            {
+                var str = args[0] as ZilString;
+                if (str != null)
+                {
+                    atom = ZilAtom.Parse(str.Text, ctx);
+                }
+                else
+                {
+                    throw new InterpreterError("COMPILATION-FLAG: flag name must be an atom or string");
+                }
+            }
+
+            var value = (args.Length >= 2) ? args[1] : ctx.TRUE;
+
+            ctx.DefineCompilationFlag(atom, value, redefine: true);
+            return atom;
+        }
+
+        [Subr("COMPILATION-FLAG-DEFAULT")]
+        public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 2)
+                throw new InterpreterError("COMPILATION-FLAG-DEFAULT", 2, 2);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+            {
+                var str = args[0] as ZilString;
+                if (str != null)
+                {
+                    atom = ZilAtom.Parse(str.Text, ctx);
+                }
+                else
+                {
+                    throw new InterpreterError("COMPILATION-FLAG: flag name must be an atom or string");
+                }
+            }
+
+            ctx.DefineCompilationFlag(atom, args[1], redefine: false);
+            return atom;
+        }
+
+        [Subr("COMPILATION-FLAG-VALUE")]
+        public static ZilObject COMPILATION_FLAG_VALUE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("COMPILATION-FLAG-VALUE", 1, 1);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+            {
+                var str = args[0] as ZilString;
+                if (str != null)
+                {
+                    atom = ZilAtom.Parse(str.Text, ctx);
+                }
+                else
+                {
+                    throw new InterpreterError("COMPILATION-FLAG-VALUE: flag name must be an atom or string");
+                }
+            }
+
+            var result = ctx.GetCompilationFlagValue(atom);
+
+            if (result == null)
+                throw new InterpreterError("COMPILATION-FLAG-VALUE: no such flag: " + atom);
+
+            return result;
+        }
+
+        [FSubr("IFFLAG")]
+        public static ZilObject IFFLAG(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 1)
+                throw new InterpreterError("IFFLAG", 1, 0);
+
+            foreach (var clause in args)
+            {
+                var list = clause as ZilList;
+                if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("IFFLAG: args must be lists");
+
+                if (list.IsEmpty)
+                    throw new InterpreterError("IFFLAG: lists must be non-empty");
+
+                bool match;
+
+                ZilAtom atom;
+                ZilForm form;
+                ZilObject value;
+
+                if ((atom = list.First as ZilAtom) != null &&
+                    (value = ctx.GetCompilationFlagValue(atom)) != null)
+                {
+                    // name of a defined compilation flag
+                    match = value.IsTrue;
+                }
+                else if ((form = list.First as ZilForm) != null)
+                {
+                    form = SubstituteIfflagForm(ctx, form);
+                    match = form.Eval(ctx).IsTrue;
+                }
+                else
+                {
+                    match = true;
+                }
+
+                if (match)
+                {
+                    var result = list.First;
+                    foreach (var expr in list.Rest)
+                        result = expr.Eval(ctx);
+                    return result;
+                }
+            }
+
+            // no match
+            return ctx.FALSE;
+        }
+
+        /// <summary>
+        /// Copies a form, replacing any direct children that are atoms naming compilation
+        /// flags with the corresponding values.
+        /// </summary>
+        /// <param name="ctx">The context containing the compilation flags.</param>
+        /// <param name="form">The original form.</param>
+        /// <returns>A new form, containing elements from the original and/or
+        /// the values of compilation flags.</returns>
+        internal static ZilForm SubstituteIfflagForm(Context ctx, ZilForm form)
+        {
+            var result = new ZilForm(
+                form.Select(zo =>
+                {
+                    ZilAtom atom;
+                    ZilObject value;
+                    if ((atom = zo as ZilAtom) != null &&
+                        (value = ctx.GetCompilationFlagValue(atom)) != null)
+                    {
+                        return value;
+                    }
+                    else
+                    {
+                        return zo;
+                    }
+                }));
+
+            result.SourceLine = form.SourceLine;
+            return result;
+        }
+
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx, ZilObject[] args)
         {
@@ -1594,12 +1760,14 @@ namespace Zilf
             // define constructor macro
             var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields);
             Program.Evaluate(ctx, ctorMacroDef, true);
+            // TODO: correct the source locations in the macro
 
             // define field access macros
             foreach (var field in fields)
             {
                 var accessMacroDef = MakeDefstructAccessMacro(name, field);
                 Program.Evaluate(ctx, accessMacroDef, true);
+                // TODO: correct the source locations in the macro
             }
 
             return name;
@@ -1610,8 +1778,6 @@ namespace Zilf
             Contract.Requires(name != null);
             Contract.Requires(baseType != null);
             Contract.Requires(fields != null);
-
-            // TODO: correct the source locations in the returned macro
 
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
@@ -1686,8 +1852,6 @@ namespace Zilf
         private static string MakeDefstructAccessMacro(ZilAtom structName, DefStructField field)
         {
             Contract.Requires(structName != null);
-
-            // TODO: correct the source locations in the returned macro
 
             // {0} = field name
             // {1} = struct name

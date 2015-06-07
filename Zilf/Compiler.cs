@@ -2092,6 +2092,8 @@ namespace Zilf
 
                     case StdAtom.VERSION_P:
                         return CompileVERSION_P(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
+                    case StdAtom.IFFLAG:
+                        return CompileIFFLAG(cc, rb, form.Rest, form.SourceLine, wantResult, resultStorage);
 
                     case StdAtom.NOT:
                     case StdAtom.F_P:
@@ -3616,6 +3618,12 @@ namespace Zilf
                 rb.EmitStore(resultStorage, cc.Game.Zero);
 
             return wantResult ? resultStorage : null;
+        }
+
+        private static IOperand CompileIFFLAG(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
+            ISourceLine src, bool wantResult, IVariable resultStorage)
+        {
+            throw new NotImplementedException();
         }
 
         private static IOperand CompileImpromptuTable(CompileCtx cc, IRoutineBuilder rb, ZilForm form,

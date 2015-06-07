@@ -171,6 +171,7 @@ namespace Zilf
 
             InitTellPatterns();
             InitPropDefs();
+            InitCompilationFlags();
         }
 
         [ContractInvariantMethod]
@@ -518,6 +519,7 @@ namespace Zilf
         /// <param name="first">The first object in the pair.</param>
         /// <param name="second">The second object in the pair.</param>
         /// <returns>The associated value, or null if no value is associated with the pair.</returns>
+        [Pure]
         public ZilObject GetProp(ZilObject first, ZilObject second)
         {
             Contract.Requires(first != null);
@@ -1000,7 +1002,7 @@ namespace Zilf
 
         private void InitTellPatterns()
         {
-            ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(
+            zenv.TellPatterns.AddRange(TellPattern.Parse(
                 new ZilObject[] {
                     // (CR CRLF) <CRLF>
                     new ZilList(new ZilObject[] { GetStdAtom(StdAtom.CR), GetStdAtom(StdAtom.CRLF) }),
@@ -1025,6 +1027,46 @@ namespace Zilf
                     }),
                 },
                 this));
+        }
+
+        private void InitCompilationFlags()
+        {
+            DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), TRUE);
+        }
+
+        public void DefineCompilationFlag(ZilAtom name, ZilObject value, bool redefine = false)
+        {
+            Contract.Requires(name != null);
+            Contract.Requires(value != null);
+            Contract.Ensures(GetCompilationFlagValue(name) != null);
+
+            if (GetCompilationFlagValue(name) == null)
+            {
+                SetCompilationFlagValue(name, value);
+
+                // define IF and IFN macros
+                const string MacrosTemplate = @"
+<DEFMAC IF-{0} (""ARGS"" A) <IFFLAG ({0} <FORM BIND '() !.A>)>>
+<DEFMAC IFN-{0} (""ARGS"" A) <IFFLAG ({0} <>) (T <FORM BIND '() !.A>)>>";
+
+                Program.Evaluate(this, string.Format(MacrosTemplate, name.Text), true);
+                // TODO: correct the source locations in the macros
+            }
+            else if (redefine)
+            {
+                SetCompilationFlagValue(name, value);
+            }
+        }
+
+        [Pure]
+        public ZilObject GetCompilationFlagValue(ZilAtom name)
+        {
+            return GetProp(name, GetStdAtom(StdAtom.COMPILATION_FLAG_VALUE));
+        }
+
+        private void SetCompilationFlagValue(ZilAtom name, ZilObject value)
+        {
+            PutProp(name, GetStdAtom(StdAtom.COMPILATION_FLAG_VALUE), value);
         }
 
         /// <summary>
