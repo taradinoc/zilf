@@ -94,6 +94,8 @@ namespace Zilf
         COMPACT_SYNTAXES_P,
         [Atom("COMPACT-VOCABULARY?")]
         COMPACT_VOCABULARY_P,
+        [Atom("COMPILATION-FLAG-VALUE")]
+        COMPILATION_FLAG_VALUE,
         COND,
         CONSTANT,
         COPYT,
@@ -174,6 +176,7 @@ namespace Zilf
         HERE,
         HLIGHT,
         IF,
+        IFFLAG,
         [Atom("IGRTR?")]
         IGRTR_P,
         IN,
@@ -181,6 +184,8 @@ namespace Zilf
         IN_P,
         [Atom("IN-ROOM")]
         IN_ROOM,
+        [Atom("IN-ZILCH")]
+        IN_ZILCH,
         INC,
         INPUT,
         [Atom("INTBL?")]
