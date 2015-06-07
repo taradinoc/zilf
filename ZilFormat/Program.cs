@@ -22,7 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Antlr.Runtime;
-using Zilf.Lexing;
+using Zilf.Language.Lexing;
 
 namespace ZilFormat
 {

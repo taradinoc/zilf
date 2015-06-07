@@ -1,6 +1,7 @@
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zilf;
+using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {

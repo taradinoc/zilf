@@ -5,10 +5,8 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Zapf;
-using Zilf;
-using ZLR;
+using Zilf.Compiler;
 using ZLR.VM;
 
 namespace IntegrationTests

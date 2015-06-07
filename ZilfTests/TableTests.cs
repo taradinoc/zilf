@@ -1,6 +1,8 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf;
+using Zilf.Interpreter;
+using Zilf.ZModel;
+using Zilf.ZModel.Values;
 
 namespace ZilfTests
 {

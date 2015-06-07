@@ -1,0 +1,74 @@
+using System.Diagnostics.Contracts;
+using Zilf.Language;
+
+namespace Zilf.Interpreter.Values
+{
+    [BuiltinType(StdAtom.CHARACTER, PrimType.FIX)]
+    class ZilChar : ZilObject
+    {
+        private readonly int value;
+
+        public ZilChar(char ch)
+            : this((int)ch)
+        {
+        }
+
+        private ZilChar(int value)
+        {
+            this.value = value;
+        }
+
+        [ChtypeMethod]
+        public static ZilChar FromFix(Context ctx, ZilFix fix)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(fix != null);
+
+            return new ZilChar(fix.Value);
+        }
+
+        public char Char
+        {
+            get { return (char)value; }
+        }
+
+        public override string ToString()
+        {
+            return "!\\" + Char;
+        }
+
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            if (friendly)
+                return Char.ToString();
+            else
+                return ToString();
+        }
+
+        public override ZilAtom GetTypeAtom(Context ctx)
+        {
+            return ctx.GetStdAtom(StdAtom.CHARACTER);
+        }
+
+        public override PrimType PrimType
+        {
+            get { return PrimType.FIX; }
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilFix(value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            ZilChar other = obj as ZilChar;
+            return other != null && other.value == this.value;
+        }
+
+        public override int GetHashCode()
+        {
+            return value;
+        }
+    }
+}
