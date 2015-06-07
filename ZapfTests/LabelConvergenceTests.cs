@@ -1,9 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿/* Copyright 2010, 2015 Jesse McGrew
+ * 
+ * This file is part of ZILF.
+ * 
+ * ZILF is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * ZILF is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zapf;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ZapfTests
 {
@@ -67,26 +82,26 @@ namespace ZapfTests
         public void TestConstantTable1()
         {
             const string CodeTemplate = @"
-	.NEW 5
+    .NEW 5
 
-	TABLE2=MYTABLE
+    TABLE2=MYTABLE
 
 {0}
 
 MYTABLE::
-	.WORD 0
+    .WORD 0
 
-	.FUNCT TEST-ROUTINE
-	COPYT TABLE2,TABLE2,6
-	RTRUE
+    .FUNCT TEST-ROUTINE
+    COPYT TABLE2,TABLE2,6
+    RTRUE
 
-	.FUNCT GO
+    .FUNCT GO
 START::
-	CALL1 TEST-ROUTINE >STACK
-	PRINTN STACK
-	QUIT
+    CALL1 TEST-ROUTINE >STACK
+    PRINTN STACK
+    QUIT
 
-	.END";
+    .END";
 
             var failures = new List<int>();
 
@@ -108,143 +123,143 @@ START::
         public void TestConstantTable2()
         {
             const string SCode = @"
-	.FSTR FSTR?DUMMY,""""
+    .FSTR FSTR?DUMMY,""""
 WORDS::
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
-	FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
+    FSTR?DUMMY
 
-	TBL=T?0
+    TBL=T?0
 
 GLOBAL:: .TABLE
-	.ENDT
+    .ENDT
 
 OBJECT:: .TABLE
-	.ENDT
+    .ENDT
 
 T?0:: .TABLE 6
-	.WORD 12345,123,45
-	.ENDT
+    .WORD 12345,123,45
+    .ENDT
 
 IMPURE::
 
 VOCAB:: .TABLE
-	.ENDT
+    .ENDT
 
 ENDLOD::
 
-	.FUNCT TEST-IMPLIES,FAILS
-	GET TBL,0 >STACK
-	EQUAL? STACK,12345 /?L3
-	INC 'FAILS
+    .FUNCT TEST-IMPLIES,FAILS
+    GET TBL,0 >STACK
+    EQUAL? STACK,12345 /?L3
+    INC 'FAILS
 ?L3:	GETB TBL,2 >STACK
-	EQUAL? STACK,123 /?L6
-	INC 'FAILS
+    EQUAL? STACK,123 /?L6
+    INC 'FAILS
 ?L6:	GETB TBL,3 >STACK
-	EQUAL? STACK,45 /?L9
-	INC 'FAILS
+    EQUAL? STACK,45 /?L9
+    INC 'FAILS
 ?L9:	RETURN FAILS
 
-	.FUNCT GO
+    .FUNCT GO
 START::
-	CALL TEST-IMPLIES >STACK
-	ZERO? STACK \?L1
+    CALL TEST-IMPLIES >STACK
+    ZERO? STACK \?L1
 ?L1:	QUIT
 
-	.END";
+    .END";
 
             Assert.IsTrue(TestHelper.Assemble(SCode), "Failed to assemble");
         }

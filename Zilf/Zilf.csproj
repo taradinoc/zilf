@@ -283,6 +283,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Zilf.licenseheader">
+      <Link>Zilf.licenseheader</Link>
+    </None>
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup />

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2012 Jesse McGrew
+﻿/* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 namespace Zilf.Language
 {
