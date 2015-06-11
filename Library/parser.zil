@@ -945,28 +945,44 @@ other versions. These macros let us write the same code for all versions."
     <SETG PRSI .OI>
     .WON>
 
-;"Handler order: player's ACTION, location's ACTION (M-BEG),
-verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
+;"Handler order:
+   player's ACTION,
+   location's ACTION (M-BEG),
+   verb preaction,
+   PRSI's location's CONTFCN,
+   PRSI's ACTION,
+   PRSO's location's CONTFCN,
+   PRSO's ACTION,
+   verb action."
 
 <ROUTINE PERFORM-CALL-HANDLERS (PRTN RTN "AUX" AC RM)
     <COND (<AND <SET AC <GETP ,WINNER ,P?ACTION>>
-            <APPLY .AC>>
-                <RTRUE>)
-        (<AND <SET RM <LOC ,WINNER>>
-            <SET AC <GETP .RM ,P?ACTION>>
-            <APPLY .AC ,M-BEG>>
-                <RTRUE>)
-        (<AND .PRTN <APPLY .PRTN>>
-            <RTRUE>)
-        (<AND ,PRSI
-            <SET AC <GETP ,PRSI ,P?ACTION>>
-            <APPLY .AC>>
-                <RTRUE>)
-        (<AND <NOT ,PRSO-DIR> ,PRSO
-            <SET AC <GETP ,PRSO ,P?ACTION>>
-            <APPLY .AC>>
-                <RTRUE>)
-        (ELSE <APPLY .RTN>)>>
+                <APPLY .AC>>
+           <RTRUE>)
+          (<AND <SET RM <LOC ,WINNER>>
+                <SET AC <GETP .RM ,P?ACTION>>
+                <APPLY .AC ,M-BEG>>
+           <RTRUE>)
+          (<AND .PRTN <APPLY .PRTN>>
+           <RTRUE>)
+          (<AND ,PRSI 
+                <SET AC <GETP <LOC ,PRSI> ,P?CONTFCN>>
+                <APPLY .AC>>
+           <RTRUE>)
+          (<AND ,PRSI 
+                <SET AC <GETP ,PRSI ,P?ACTION>>
+                <APPLY .AC>>
+           <RTRUE>)
+          (<AND ,PRSO
+                <SET AC <GETP <LOC ,PRSO> ,P?CONTFCN>>
+                <APPLY .AC>>
+           <RTRUE>)    
+          (<AND ,PRSO
+                <NOT ,PRSO-DIR>
+                <SET AC <GETP ,PRSO ,P?ACTION>>
+                <APPLY .AC>>
+           <RTRUE>)
+          (ELSE <APPLY .RTN>)>>
 
 <DEFMAC OBJECTLOOP ('VAR 'LOC "ARGS" BODY)
     <FORM REPEAT <LIST <LIST .VAR <FORM FIRST? .LOC>>>
