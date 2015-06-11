@@ -6,13 +6,13 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 140520 / ZILF 0.5 lib J1
+Release 1 / Serial number 150611 / ZILF 0.5 lib J1
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 0                                                                               You are carrying:
-   cloak (worn)
+   a cloak (worn)
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 0                                                                               The cloak is unnaturally dark.
 
@@ -30,10 +30,10 @@ It is pitch black. You are likely to be eaten by a grue.
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 5                                                                               You grope around clumsily in the dark. Better be careful.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 6                                                                               Foyer of the Opera House
-You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 7                                                                               Cloakroom
 The walls of this small room were clearly once lined with hooks, though now only one remains. The exit is a door to the east.
+
 A small brass hook is on the wall.
 
 >  Cloakroom                                                 Score: 0                                                                 Moves: 8                                                                               You see nothing special about the small brass hook.
@@ -43,20 +43,17 @@ A small brass hook is on the wall.
 >  Cloakroom                                                 Score: 0                                                                 Moves: 10                                                                               You put the cloak on the small brass hook.
 
 >  Cloakroom                                                 Score: 0                                                                 Moves: 11                                                                               Foyer of the Opera House
-You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 12                                                                               Foyer Bar
-The bar, much rougher than you'd have guessed after the opulence of the foyer to the north, is completely empty.
+
 There seems to be some sort of message scrawled in the sawdust on the floor.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               The message simply reads: "You win."
-Are you sure you want to quit?
- (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               
+Are you sure you want to quit? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               
 OK - not quitting.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               Are you sure you want to restart?
  (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               
-
 
 Hurrying through the rainswept November night, you're glad to see the bright lights of the Opera House. It's surprising that there aren't more people about but, hey, what do you expect in a cheap demo game...?
 
@@ -64,7 +61,7 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 140520 / ZILF 0.5 lib J1
+Release 1 / Serial number 150611 / ZILF 0.5 lib J1
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
@@ -77,22 +74,20 @@ It is pitch black. You are likely to be eaten by a grue.
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 2                                                                               You grope around clumsily in the dark. Better be careful.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 3                                                                               Foyer of the Opera House
-You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 4                                                                               Cloakroom
 The walls of this small room were clearly once lined with hooks, though now only one remains. The exit is a door to the east.
+
 A small brass hook is on the wall.
 
 >  Cloakroom                                                 Score: 0                                                                 Moves: 5                                                                               You put the cloak on the small brass hook.
 
 >  Cloakroom                                                 Score: 0                                                                 Moves: 6                                                                               Foyer of the Opera House
-You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 7                                                                               Foyer Bar
-The bar, much rougher than you'd have guessed after the opulence of the foyer to the north, is completely empty.
+
 There seems to be some sort of message scrawled in the sawdust on the floor.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 8                                                                               The message simply reads: "You lose."
-Are you sure you want to quit?
- (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 8                                                                               
+Are you sure you want to quit? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 8                                                                               
 Thanks for playing.
