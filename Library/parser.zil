@@ -781,7 +781,7 @@ other versions. These macros let us write the same code for all versions."
 
 <VERSION?
     (ZIP
-    ;"V3 has no INTBL? opcode"
+        ;"V3 has no INTBL? opcode"
         <ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- </ <PTSIZE .PT> 2> 1>>
@@ -797,9 +797,22 @@ other versions. These macros let us write the same code for all versions."
                 <COND
                     (<==? <GETB .PT .I> .V> <RTRUE>)
                     (<IGRTR? I .MAX> <RFALSE>)>>>)
-            
+    (EZIP
+        ;"V4 only has the 3-argument (word) form of INTBL?"
+        <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+            <SET LEN </ <PTSIZE .PT> 2>>
+            <AND <INTBL? .V .PT .LEN> <RTRUE>>>
+
+        <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
+            <OR <SET PT <GETPT .O .P>> <RFALSE>>
+            <SET MAX <- <PTSIZE .PT> 1>>
+            <REPEAT ((I 0))
+                <COND
+                    (<==? <GETB .PT .I> .V> <RTRUE>)
+                    (<IGRTR? I .MAX> <RFALSE>)>>>)
     (T
-    ;"use built-in INTBL? in V4+"
+        ;"use built-in INTBL? in V5+"
         <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
         <SET LEN </ <PTSIZE .PT> 2>>
