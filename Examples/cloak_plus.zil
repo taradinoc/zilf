@@ -16,19 +16,20 @@ Additional material added for testing ZILF library by Josh Lawrence">
 <ROUTINE GO ()
     <CRLF> <CRLF>
     <TELL "Hurrying through the rainswept November night, you're glad to see the
-    bright lights of the Opera House. It's surprising that there aren't more
-    people about but, hey, what do you expect in a cheap demo game...?" CR CR>
+bright lights of the Opera House. It's surprising that there aren't more
+people about but, hey, what do you expect in a cheap demo game...?" CR CR>
+    <INIT-STATUS-LINE>
     <V-VERSION> <CRLF>
     <SETG HERE ,FOYER>
     <MOVE ,PLAYER ,HERE>
     <V-LOOK>
     <REPEAT ()
         <COND (<PARSER>
-                <PERFORM ,PRSA ,PRSO ,PRSI>
-                ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
-                those routines if WAIT ran this turn"
-                <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-                <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>)>
+               <PERFORM ,PRSA ,PRSO ,PRSI>
+               ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
+               those routines if WAIT ran this turn"
+               <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+               <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>)>
         <SETG HERE <LOC ,WINNER>>
         ;"backup inputbuffers"
         ;<DUMPBUF>
@@ -195,12 +196,12 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (DESC "Foyer of the Opera House")
     (IN ROOMS)
     (LDESC "You are standing in a spacious hall, splendidly decorated in red
-        and gold, with glittering chandeliers overhead. The entrance from
-        the street is to the north, and there are doorways south and west.")
+and gold, with glittering chandeliers overhead. The entrance from
+the street is to the north, and there are doorways south and west.")
     (SOUTH TO BAR)
     (WEST TO CLOAKROOM)
     (NORTH SORRY "You've only just arrived, and besides, the weather outside
-        seems to be getting worse.")
+seems to be getting worse.")
     (GLOBAL RUG)
     (FLAGS LIGHTBIT)
     (ACTION FOYER-R)>
@@ -220,7 +221,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (DESC "Foyer Bar")
     (IN ROOMS)
     (LDESC "The bar, much rougher than you'd have guessed after the opulence
-        of the foyer to the north, is completely empty.")
+of the foyer to the north, is completely empty.")
     (NORTH TO FOYER)
     (GLOBAL RUG)
     (ACTION BAR-R)>
