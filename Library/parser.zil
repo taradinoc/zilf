@@ -2365,14 +2365,13 @@ other versions. These macros let us write the same code for all versions."
      ;<DUMPLEX>
      <COND (<NOT <EQUAL? <GET ,READBUF 1> 0>>
             <COND (<PARSER>
-                    ;<TELL "Doing PERFORM within V-AGAIN" CR>
-                    <PERFORM ,PRSA ,PRSO ,PRSI>
-                    <OR <META-VERB?>  <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-                            <OR <META-VERB?> <CLOCKER>>)>
-      <SETG HERE <LOC ,WINNER>>
-      )
-      (ELSE <TELL "Nothing to repeat." CR>)>
-     >
+                   ;<TELL "Doing PERFORM within V-AGAIN" CR>
+                   <PERFORM ,PRSA ,PRSO ,PRSI>
+                   <COND (<NOT <META-VERB?>>
+                          <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+                          <CLOCKER>)>
+                   <SETG HERE <LOC ,WINNER>>)>)
+           (ELSE <TELL "Nothing to repeat." CR>)>>
 
 <ROUTINE V-READ ("AUX" T)
      <COND (<NOT <FSET? ,PRSO ,READBIT>>
