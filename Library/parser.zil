@@ -4,11 +4,7 @@
 
 "Debugging"
 
-<SETG DEBUG <>>
-
-<DEFMAC IF-DEBUG ("ARGS" A)
-    <FORM PROG '()
-        !<COND (,DEBUG .A) (ELSE '(<>))>>>
+<COMPILATION-FLAG-DEFAULT DEBUG <>>
 
 "In V3, we need these globals for the status line. In V5, we could
 call them something else, but we'll continue the tradition anyway."
