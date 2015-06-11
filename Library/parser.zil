@@ -2316,6 +2316,8 @@ other versions. These macros let us write the same code for all versions."
             <PRINTR "That's not something you can open.">) 			
         (<FSET? ,PRSO ,OPENBIT>
             <PRINTR "It's already open.">)
+        (<FSET? ,PRSO ,LOCKEDBIT>
+            <TELL "You'll have to unlock it first." CR>)
         (ELSE
             <FSET ,PRSO ,TOUCHBIT>
             <FSET ,PRSO ,OPENBIT>
