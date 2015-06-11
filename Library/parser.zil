@@ -309,15 +309,23 @@ other versions. These macros let us write the same code for all versions."
 >
 
 
-<ROUTINE COPY-TABLE (T C S "AUX" N W)  
-        <SET N 1>
-        <REPEAT ()
-              <SET W <GETB .T .N>>
-              <PUTB .C .N .W> 
-              <SET N <+ .N 1>>
-              <COND (<G? .N .S> <RETURN>)>
-         >
->
+<VERSION?
+    (ZIP
+        <ROUTINE COPY-TABLE (SRC DEST LEN)
+            <SET LEN <- .LEN 1>>
+            <DO (I 0 .LEN)
+                <PUT .DEST .I <GET .SRC .I>>>>)
+    (EZIP
+        <ROUTINE COPY-TABLE (SRC DEST LEN)
+            <SET LEN <- .LEN 1>>
+            <DO (I 0 .LEN)
+                <PUT .DEST .I <GET .SRC .I>>>>)
+    (ELSE
+        <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
+            ;"someday the compiler should do this optimization on its own..."
+            <COND (<TYPE? .LEN FIX> <SET BYTES <* .LEN 2>>)
+                  (ELSE <SET BYTES <FORM * .LEN 2>>)>
+            <FORM COPYT .SRC .DEST .BYTES>>)>
 
 
 <ROUTINE STARTS-CLAUSE? (W)
@@ -897,7 +905,7 @@ other versions. These macros let us write the same code for all versions."
                <PUTB ,READBUF 1 0>
                <UPDATE-STATUS-LINE>)>
     <READ ,READBUF ,LEXBUF>>
-    
+
 
 "Action framework"
 
