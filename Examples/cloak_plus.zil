@@ -29,7 +29,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
                 those routines if WAIT ran this turn"
                 <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
                 <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>)>
-		<SETG HERE <LOC ,WINNER>>
+        <SETG HERE <LOC ,WINNER>>
         ;"backup inputbuffers"
         ;<DUMPBUF>
         ;<DUMPLEX>
@@ -48,14 +48,14 @@ Additional material added for testing ZILF library by Josh Lawrence">
 "Objects"
 
 <OBJECT CEILING
-	(DESC "ceiling")
-	(SYNONYM CEILING)
-	(IN GLOBAL-OBJECTS)
-	(ACTION CEILING-R)>
-	
+    (DESC "ceiling")
+    (SYNONYM CEILING)
+    (IN GLOBAL-OBJECTS)
+    (ACTION CEILING-R)>
+    
 <ROUTINE CEILING-R ()
     <COND (<VERB? EXAMINE> <TELL "Nothing really noticeable about the ceiling." CR>)>>
-	
+    
 <OBJECT CLOAK
     (DESC "cloak")
     (SYNONYM CLOAK)
@@ -75,15 +75,15 @@ Additional material added for testing ZILF library by Josh Lawrence">
 
 <ROUTINE APPLE-R ()
     <COND (<VERB? EXAMINE> 
-    			<TELL "The apple is green and tasty-looking." CR>
-    			<QUEUE I-APPLE-FUN 3>)
-    	  (<VERB? EAT> 
-    			<JIGS-UP "Oh no! It was actually a poison apple (mostly so we could test JIGS-UP).">)>	
-    			>
+                <TELL "The apple is green and tasty-looking." CR>
+                <QUEUE I-APPLE-FUN 3>)
+          (<VERB? EAT> 
+                <JIGS-UP "Oh no! It was actually a poison apple (mostly so we could test JIGS-UP).">)>	
+                >
 
 <ROUTINE I-APPLE-FUN ()
-	<TELL "You looked at an apple 2 turns ago!" CR>>
-	
+    <TELL "You looked at an apple 2 turns ago!" CR>>
+    
 <OBJECT GRAPES
     (DESC "grapes")
     (SYNONYM GRAPES)
@@ -100,14 +100,14 @@ Additional material added for testing ZILF library by Josh Lawrence">
 
 <ROUTINE GRIME-R ()
     <COND (<VERB? EXAMINE> <TELL "A small but disgusting collection of crud." CR>
-		;<COND (<INTBL? "Phil Collins." SIGN-READS 3> <TELL "By the way, Phil Collins is one of the elements of the SIGN-READS table." CR>)>
-		;<COND (<INTBL? "Deerhoof." SIGN-READS 3> <TELL "By the way, Deerhoof is one of the elements of the SIGN-READS table." CR>)>
+        ;<COND (<INTBL? "Phil Collins." SIGN-READS 3> <TELL "By the way, Phil Collins is one of the elements of the SIGN-READS table." CR>)>
+        ;<COND (<INTBL? "Deerhoof." SIGN-READS 3> <TELL "By the way, Deerhoof is one of the elements of the SIGN-READS table." CR>)>
     <QUEUE I-GRIME-FUN 2>)>>
     
 <ROUTINE I-GRIME-FUN ()
-	<TELL "You looked at grime 1 turn ago!" CR>
-	<RTRUE>>
-	
+    <TELL "You looked at grime 1 turn ago!" CR>
+    <RTRUE>>
+    
 <OBJECT CUBE
     (DESC "cube")
     (SYNONYM cube)
@@ -118,7 +118,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
 <ROUTINE CUBE-R ()
     <COND (<VERB? EXAMINE> <TELL "As you inspect the cube you realize time around you speeds by." CR>
     <WAIT-TURNS 10>)>>
-	
+    
 
 
 <OBJECT FOYERTABLE
@@ -129,14 +129,14 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (ACTION TABLE-R)>
 
 <ROUTINE TABLE-R ()
-	<COND (<VERB? EXAMINE> 
-    			<TELL "Tatty but functional." CR>
-    			<COND (<AND <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
-    			<QUEUE I-TABLE-FUN -1>)>>
-    			
+    <COND (<VERB? EXAMINE> 
+                <TELL "Tatty but functional." CR>
+                <COND (<AND <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
+                <QUEUE I-TABLE-FUN -1>)>>
+                
 <ROUTINE I-TABLE-FUN ()
-	<TELL "You examined a table and now this event will run every turn, until you examine the brass hook, which will dequeue it." CR>>
-	
+    <TELL "You examined a table and now this event will run every turn, until you examine the brass hook, which will dequeue it." CR>>
+    
 <OBJECT CHANGING-PAINTING
        (DESC "painting")
        (SYNONYM PAINTING)
@@ -179,8 +179,8 @@ Additional material added for testing ZILF library by Josh Lawrence">
                "Ace of Spades."
                "The Hermit."
                "The Weeping Joker.">>
-	
-	
+    
+    
 <OBJECT DARKNESS
     (DESC "darkness")
     (SYNONYM DARKNESS DARK)
@@ -206,14 +206,14 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (ACTION FOYER-R)>
     
 <ROUTINE FOYER-R (RARG)
-	<COND
+    <COND
         (<==? .RARG ,M-END>
-        		;<TELL "In the FOYER-R routine" CR>
-        		;<TELL "PRSO is currently " D ,PRSO CR>
-        		<COND (<RUNNING? I-APPLE-FUN> <TELL "The Foyer routine detects that the Apple event will run this turn!" CR>)>
-        		<COND  (<RUNNING? I-TABLE-FUN> <TELL "The Foyer routine detects that the Table event will run this turn!" CR>)>
-        		;<COND (<NOT <FSET? ,PRSO ,CONTBIT>> <TELL "Yup, the " D ,PRSO " does not have contbit." CR>)>
-        		
+                ;<TELL "In the FOYER-R routine" CR>
+                ;<TELL "PRSO is currently " D ,PRSO CR>
+                <COND (<RUNNING? I-APPLE-FUN> <TELL "The Foyer routine detects that the Apple event will run this turn!" CR>)>
+                <COND  (<RUNNING? I-TABLE-FUN> <TELL "The Foyer routine detects that the Table event will run this turn!" CR>)>
+                ;<COND (<NOT <FSET? ,PRSO ,CONTBIT>> <TELL "Yup, the " D ,PRSO " does not have contbit." CR>)>
+                
         )>>
 
 <ROOM BAR
@@ -269,18 +269,18 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (ACTION CLOAKROOM-R)>
     
 <ROUTINE CLOAKROOM-R (RARG)
-		<COND
+        <COND
         (<==? .RARG ,M-ENTER>
-        		;<TELL "In the CLOARKROOM-R routine" CR>
-        		<COND (<GLOBAL-IN? RUG FOYER> <TELL "Did you know that the rug is a local-global object in the Foyer and the Bar?" CR>)>
-        		<COND (<GLOBAL-IN? RUG CLOAKROOM> <TELL "We should not see this because the rug is not a local-global in the Cloakroom." CR>)>
+                ;<TELL "In the CLOARKROOM-R routine" CR>
+                <COND (<GLOBAL-IN? RUG FOYER> <TELL "Did you know that the rug is a local-global object in the Foyer and the Bar?" CR>)>
+                <COND (<GLOBAL-IN? RUG CLOAKROOM> <TELL "We should not see this because the rug is not a local-global in the Cloakroom." CR>)>
         )>>
         
 <ROUTINE CLOAK-CHECK ()
-		<COND
-		(<FSET? ,CLOAK ,WORNBIT> <TELL "You cannot enter the opening to the west while in possession of your cloak." CR> <RFALSE>)
-		(ELSE <GOTO ,HALL-TO-STUDY> <RFALSE>)
-		>
+        <COND
+        (<FSET? ,CLOAK ,WORNBIT> <TELL "You cannot enter the opening to the west while in possession of your cloak." CR> <RFALSE>)
+        (ELSE <GOTO ,HALL-TO-STUDY> <RFALSE>)
+        >
 > 
 
 <OBJECT BENTLEY
@@ -293,7 +293,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     
     
 <OBJECT STELLA
-	(DESC "Stella")
+    (DESC "Stella")
     (SYNONYM STELLA DOG CORGI)
     (ADJECTIVE BROWN)
     (LDESC "Stella is a brown corgi. She is in a deep sleep.")
@@ -312,11 +312,11 @@ Additional material added for testing ZILF library by Josh Lawrence">
     >
     
 <ROUTINE HOOK-R ()
-	<COND (<VERB? EXAMINE>
-				<TELL "Test: Normal examine replaced by a dequeue of the Table event." CR>
-				<DEQUEUE I-TABLE-FUN>)>>
-	
-				
+    <COND (<VERB? EXAMINE>
+                <TELL "Test: Normal examine replaced by a dequeue of the Table event." CR>
+                <DEQUEUE I-TABLE-FUN>)>>
+    
+                
 <ROOM HALL-TO-STUDY
     (DESC "Hallway to Study")
     (IN ROOMS)
@@ -327,11 +327,11 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (ACTION HALL-TO-STUDY-R)>
     
 <ROUTINE HALL-TO-STUDY-R (RARG)
-	<COND
+    <COND
         (<==? .RARG ,M-ENTER>
-        	<TELL "Oof - it's cramped in here." CR>)
+            <TELL "Oof - it's cramped in here." CR>)
         (<==? .RARG ,M-END>
-        	<TELL "A spider scuttles across your feet and then disappears into a crack." CR>
+            <TELL "A spider scuttles across your feet and then disappears into a crack." CR>
         )
      >>
     
@@ -340,10 +340,10 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (IN ROOMS)
     (LDESC "A small room with a worn stand in the middle.  A hallway lies east of here, a closet off to the west.")
     (EAST TO HALL-TO-STUDY)
-	(WEST TO CLOSET)
+    (WEST TO CLOSET)
     (FLAGS LIGHTBIT)
     (ACTION STUDY-R)>
-	
+    
 <ROOM CLOSET
     (DESC "Closet")
     (IN ROOMS)
@@ -351,88 +351,88 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (EAST TO STUDY)
     (ACTION CLOSET-R)
 >
-	
+    
 <ROUTINE CLOSET-R (RARG)
          <COND
         (<==? .RARG ,M-ENTER>
-			<COND (<FSET? ,LSWITCH ,ONBIT>
-							<FSET ,CLOSET ,LIGHTBIT>)
-				  (ELSE
-							<FCLEAR ,CLOSET ,LIGHTBIT>)>
-		)>>
-	
+            <COND (<FSET? ,LSWITCH ,ONBIT>
+                            <FSET ,CLOSET ,LIGHTBIT>)
+                  (ELSE
+                            <FCLEAR ,CLOSET ,LIGHTBIT>)>
+        )>>
+    
 <OBJECT LSWITCH
-	(DESC "light switch")
-	(IN STUDY)
-	(SYNONYM SWITCH)
-	(ADJECTIVE LIGHT)
-	(LDESC "An ordinary light switch set in the wall beside the entrance to the closet.")
-	(FLAGS DEVICEBIT)
-	(ACTION LSWITCH-R)>
-	
+    (DESC "light switch")
+    (IN STUDY)
+    (SYNONYM SWITCH)
+    (ADJECTIVE LIGHT)
+    (LDESC "An ordinary light switch set in the wall beside the entrance to the closet.")
+    (FLAGS DEVICEBIT)
+    (ACTION LSWITCH-R)>
+    
 <ROUTINE LSWITCH-R ()
-	<COND (<VERB? EXAMINE> 
-				<TELL "An ordinary light switch set in the wall to the left of the entrance to the 
-				closet.  It is currently ">
-				<COND (<FSET? ,LSWITCH ,ONBIT>
-							<TELL "on." CR>)
-					  (ELSE
-							<TELL "off." CR>)>
-		   )
+    <COND (<VERB? EXAMINE> 
+                <TELL "An ordinary light switch set in the wall to the left of the entrance to the 
+                closet.  It is currently ">
+                <COND (<FSET? ,LSWITCH ,ONBIT>
+                            <TELL "on." CR>)
+                      (ELSE
+                            <TELL "off." CR>)>
+           )
      >
 >
 
 <OBJECT FLASHLIGHT
-	(DESC "flashlight")
-	(IN STUDY)
-	(SYNONYM FLASHLIGHT)
-	(ADJECTIVE CHEAP PLASTIC)
-	(LDESC "A cheap plastic flashlight.")
-	(FLAGS DEVICEBIT TAKEBIT)
-	(ACTION FLASHLIGHT-R)>
-	
+    (DESC "flashlight")
+    (IN STUDY)
+    (SYNONYM FLASHLIGHT)
+    (ADJECTIVE CHEAP PLASTIC)
+    (LDESC "A cheap plastic flashlight.")
+    (FLAGS DEVICEBIT TAKEBIT)
+    (ACTION FLASHLIGHT-R)>
+    
 <ROUTINE FLASHLIGHT-R ()
-	<COND (<VERB? EXAMINE> 
-				<TELL "A cheap plastic flashlight.  It is currently ">
-				<COND (<FSET? ,PRSO ,ONBIT>
-							<TELL "on." CR>)
-					  (ELSE
-							<TELL "off." CR>)>
-		   )
-		   (<VERB? TURN-ON>
-     	   		<COND (<FSET? ,PRSO ,ONBIT>
-							<TELL "It's already on." CR>)
-     	   				(ELSE
-     	   		 			<FSET ,PRSO ,ONBIT>
-				 			<TELL "You switch on the flashlight." CR>
-							<NOW-LIT>
-							;"you must always set the LIGHTBIT *after* the call to NOW-LIT"
-							<FSET ,PRSO ,LIGHTBIT>)>
-			<RTRUE>)
-		(<VERB? TURN-OFF>
-     	   		<COND (<NOT <FSET? ,PRSO ,ONBIT>>
-								<TELL "It's already off." CR>)
-     	   			  (ELSE
-     	   		 			<FCLEAR ,PRSO ,ONBIT>
-     	   		 			<FCLEAR ,PRSO ,LIGHTBIT>
-				 			<TELL "You switch off the " D ,PRSO "." CR>
-							<NOW-DARK>)>
-				<RTRUE>)
-		(<VERB? FLIP>
-				<COND (<FSET? ,PRSO ,ONBIT>
-							<FCLEAR ,PRSO ,ONBIT>
-							<FCLEAR ,PRSO ,LIGHTBIT>
-							<TELL "You switch off the " D ,PRSO "." CR>
-							<NOW-DARK>
-							<RTRUE>)
-						(ELSE
-							<FSET ,PRSO ,ONBIT>
-							<TELL "You switch on the " D ,PRSO "." CR>
-							<NOW-LIT>
-							;"you must always set the LIGHTBIT *after* the call to NOW-LIT"
-							<FSET ,PRSO ,LIGHTBIT>
-							)>
-							<RTRUE>)
+    <COND (<VERB? EXAMINE> 
+                <TELL "A cheap plastic flashlight.  It is currently ">
+                <COND (<FSET? ,PRSO ,ONBIT>
+                            <TELL "on." CR>)
+                      (ELSE
+                            <TELL "off." CR>)>
+           )
+           (<VERB? TURN-ON>
+                <COND (<FSET? ,PRSO ,ONBIT>
+                            <TELL "It's already on." CR>)
+                        (ELSE
+                            <FSET ,PRSO ,ONBIT>
+                            <TELL "You switch on the flashlight." CR>
+                            <NOW-LIT>
+                            ;"you must always set the LIGHTBIT *after* the call to NOW-LIT"
+                            <FSET ,PRSO ,LIGHTBIT>)>
+            <RTRUE>)
+        (<VERB? TURN-OFF>
+                <COND (<NOT <FSET? ,PRSO ,ONBIT>>
+                                <TELL "It's already off." CR>)
+                      (ELSE
+                            <FCLEAR ,PRSO ,ONBIT>
+                            <FCLEAR ,PRSO ,LIGHTBIT>
+                            <TELL "You switch off the " D ,PRSO "." CR>
+                            <NOW-DARK>)>
+                <RTRUE>)
+        (<VERB? FLIP>
+                <COND (<FSET? ,PRSO ,ONBIT>
+                            <FCLEAR ,PRSO ,ONBIT>
+                            <FCLEAR ,PRSO ,LIGHTBIT>
+                            <TELL "You switch off the " D ,PRSO "." CR>
+                            <NOW-DARK>
+                            <RTRUE>)
+                        (ELSE
+                            <FSET ,PRSO ,ONBIT>
+                            <TELL "You switch on the " D ,PRSO "." CR>
+                            <NOW-LIT>
+                            ;"you must always set the LIGHTBIT *after* the call to NOW-LIT"
+                            <FSET ,PRSO ,LIGHTBIT>
+                            )>
+                            <RTRUE>)
      >
 >
     
@@ -447,15 +447,15 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (FLAGS READBIT)>
     
 <ROUTINE STUDY-R (RARG "AUX" R)
-	<COND
+    <COND
         (<==? .RARG ,M-END>
-        	;"The following should not interrupt a wait, since it has a RFALSE"
-        	<SET R <RANDOM 4>>
-        	<COND
-        	 	(<==? .R 1> <TELL "A mouse zips across the floor and into a hole." CR>)
-        	 	(<==? .R 2> <TELL "A faint scratching sound can be heard from the ceiling." CR>)
-        	>
-        	<RFALSE>
+            ;"The following should not interrupt a wait, since it has a RFALSE"
+            <SET R <RANDOM 4>>
+            <COND
+                (<==? .R 1> <TELL "A mouse zips across the floor and into a hole." CR>)
+                (<==? .R 2> <TELL "A faint scratching sound can be heard from the ceiling." CR>)
+            >
+            <RFALSE>
          )
      >>
 
@@ -560,13 +560,13 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (IN SAFE)
     (SIZE 1)
     (FLAGS TAKEBIT)>
-				
+                
 <OBJECT RUG
-	(DESC "rug")
-	(IN LOCAL-GLOBALS)
-	(SYNONYM RUG)
-	(ACTION RUG-R)>
-	
+    (DESC "rug")
+    (IN LOCAL-GLOBALS)
+    (SYNONYM RUG)
+    (ACTION RUG-R)>
+    
 <ROUTINE RUG-R ()
-	<COND (<VERB? PUT-ON>
-			<TELL "You don't want to place anything on that tatty rug." CR>)>>
+    <COND (<VERB? PUT-ON>
+            <TELL "You don't want to place anything on that tatty rug." CR>)>>

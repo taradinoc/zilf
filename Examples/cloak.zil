@@ -29,9 +29,9 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
                 <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>
                 ;"backup inputbuffers"
                 <COPY-READBUF>
-        		<COPY-LEXBUF>
-        		<SETG AGAINCALL 0>)>
-		<SETG HERE <LOC ,WINNER>>>>
+                <COPY-LEXBUF>
+                <SETG AGAINCALL 0>)>
+        <SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
 
