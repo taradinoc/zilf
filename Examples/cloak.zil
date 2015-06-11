@@ -26,8 +26,9 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
                <PERFORM ,PRSA ,PRSO ,PRSI>
                ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
                those routines if WAIT ran this turn"
-               <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-               <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>
+               <COND (<NOT <OR ,AGAINCALL <META-VERB?>>>
+                      <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+                      <CLOCKER>)>
                ;"backup inputbuffers"
                <COPY-READBUF>
                <COPY-LEXBUF>
