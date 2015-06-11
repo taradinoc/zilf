@@ -504,7 +504,7 @@ other versions. These macros let us write the same code for all versions."
 ;"This seems really inefficient - mostly repeating FIND-ONE-OBJ & CONTAINER-SEARCH - can't think of better right now"
 <ROUTINE SEARCH-FOR-LIGHT ("AUX" F G H GMAX X)
        ;<TELL "search inventory for light source">
-        <OBJECTLOOP I ,WINNER
+        <MAP-CONTENTS (I ,WINNER)
         ;<TELL "I is currently " D . I  CR>
         <COND (<FSET? .I ,LIGHTBIT>
                 <SET F .I>
@@ -532,7 +532,7 @@ other versions. These macros let us write the same code for all versions."
         >>
         <AND .F <RTRUE>>
         ;"check location"
-        <OBJECTLOOP I ,HERE
+        <MAP-CONTENTS (I ,HERE)
         ;<TELL "Room Loop object is currently " D .I CR>
             <COND (<FSET? .I ,LIGHTBIT>
                 <SET F .I>
@@ -559,13 +559,13 @@ other versions. These macros let us write the same code for all versions."
         >
         <AND .F <RTRUE>>
         ;"check global objects"
-        <OBJECTLOOP I ,GLOBAL-OBJECTS
+        <MAP-CONTENTS (I ,GLOBAL-OBJECTS)
             <COND (<FSET? .I ,LIGHTBIT>
                 <SET F .I>
                 <RETURN>)>>
         <AND .F <RETURN .F>>
         ;"check local-globals"
-        <OBJECTLOOP I ,LOCAL-GLOBALS
+        <MAP-CONTENTS (I ,LOCAL-GLOBALS)
             <COND (<AND <FSET? .I ,LIGHTBIT> <GLOBAL-IN? .I ,HERE>>
                 ;"room has an object that matches this global with LIGHTBIT"
                 <SET F .I>
@@ -586,7 +586,7 @@ other versions. These macros let us write the same code for all versions."
 >
 
 <ROUTINE CONTAINER-LIGHT-SEARCH (I "AUX" J F)
-            <OBJECTLOOP J .I
+            <MAP-CONTENTS (J .I)
                     ;<TELL "Searching contents of " D .I " for light source" CR>
                     ;<TELL "Current object is " D .J CR>
                     <COND (<FSET? .J ,LIGHTBIT>
@@ -619,7 +619,7 @@ other versions. These macros let us write the same code for all versions."
     <SET N <GET .YTBL 2>>
     <IF-DEBUG <TELL "[FIND-ONE-OBJ: adj=" N .A " noun=" N .N "]" CR>>
     ;"check abstract/generic objects"
-    <OBJECTLOOP I ,GENERIC-OBJECTS
+    <MAP-CONTENTS (I ,GENERIC-OBJECTS)
         <COND (<REFERS? .A .N .I>
                 <SET F .I>
                 <RETURN>)>>
@@ -630,7 +630,7 @@ other versions. These macros let us write the same code for all versions."
                             <TELL "It's too dark to see anything here." CR>
                             <RFALSE>)>)>
     ;"check location"
-    <OBJECTLOOP I ,HERE
+    <MAP-CONTENTS (I ,HERE)
         ;<TELL "Room Loop object is currently " D .I CR>
         <COND (<REFERS? .A .N .I>
                 <SET F .I>
@@ -661,7 +661,7 @@ other versions. These macros let us write the same code for all versions."
     >
     <AND .F <RETURN .F>>       
     ;"check inventory"
-    <OBJECTLOOP I ,WINNER
+    <MAP-CONTENTS (I ,WINNER)
         <COND (<REFERS? .A .N .I>
                 <SET F .I>
                 <RETURN>)
@@ -689,21 +689,21 @@ other versions. These macros let us write the same code for all versions."
         >>
     <AND .F <RETURN .F>>
     ;"check global objects"
-     <OBJECTLOOP I ,GLOBAL-OBJECTS
+     <MAP-CONTENTS (I ,GLOBAL-OBJECTS)
         <COND (<REFERS? .A .N .I>
                 <SET F .I>
                 <RETURN>)>>
     <AND .F <RETURN .F>>
     ;"check local-globals"
-    <OBJECTLOOP I ,LOCAL-GLOBALS
+    <MAP-CONTENTS (I ,LOCAL-GLOBALS)
         <COND (<AND <REFERS? .A .N .I> <GLOBAL-IN? .I ,HERE>>
                 <SET F .I>
                 <RETURN>)>>
     <AND .F <RETURN .F>> 
     ;"no match"
     ;"TO DO - Search through containers in rooms to see if I-matching NPC is there for 'does not seem to be here' message"
-    <OBJECTLOOP I ROOMS
-            <OBJECTLOOP J .I
+    <MAP-CONTENTS (I ROOMS)
+            <MAP-CONTENTS (J .I)
                     <COND (<REFERS? .A .N .J>
                             <SET P .J>
                             ;<TELL "No match - P is " D .P CR>
@@ -715,7 +715,7 @@ other versions. These macros let us write the same code for all versions."
     <RFALSE>>
     
 <ROUTINE CONTAINER-SEARCH (I A N "AUX" J F)
-            <OBJECTLOOP J .I
+            <MAP-CONTENTS (J .I)
                     ;<TELL "Searching contents of " D .I CR>
                     ;<TELL "Current object is " D .J CR>
                     <COND (<REFERS? .A .N .J>
@@ -959,14 +959,6 @@ other versions. These macros let us write the same code for all versions."
            <RTRUE>)
           (ELSE <APPLY .RTN>)>>
 
-<DEFMAC OBJECTLOOP ('VAR 'LOC "ARGS" BODY)
-    <FORM REPEAT <LIST <LIST .VAR <FORM FIRST? .LOC>>>
-        <FORM COND
-            <LIST <FORM LVAL .VAR>
-                !.BODY
-                <FORM SET .VAR <FORM NEXT? <FORM LVAL .VAR>>>>
-            '(ELSE <RETURN>)>>>
-
 <ROUTINE GOTO (RM)
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
@@ -975,13 +967,12 @@ other versions. These macros let us write the same code for all versions."
     <COND
      (<DESCRIBE-ROOM ,HERE>
         <DESCRIBE-OBJECTS ,HERE>)>
-    <FSET ,HERE ,TOUCHBIT>
->
+    <FSET ,HERE ,TOUCHBIT>>
 
 "Misc Routines"
 
 <ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W)
-    <OBJECTLOOP I .C
+    <MAP-CONTENTS (I .C)
         <COND (<FSET? .I  .BIT>
                <SET N <+ .N 1>>
                <SET W .I>)>>
@@ -1616,7 +1607,7 @@ other versions. These macros let us write the same code for all versions."
 >
    
 <ROUTINE DESCRIBE-OBJECTS ( RM "AUX" P F N S)
-    <OBJECTLOOP I .RM
+    <MAP-CONTENTS (I .RM)
         <COND
             ;"objects with DESCFNs"
             ( <SET P <GETP .I ,P?DESCFCN>>
@@ -1634,7 +1625,7 @@ other versions. These macros let us write the same code for all versions."
                                             <TELL CR .P CR>)>
     >
             ;"use N add up all non fdesc, ndescbit, personbit objects in room"
-            <OBJECTLOOP I .RM
+            <MAP-CONTENTS (I .RM)
                      <COND
                             (<NOT <OR <FSET? .I ,NDESCBIT>
                                           <SET P <GETP .I ,P?DESCFCN>>
@@ -1661,7 +1652,7 @@ other versions. These macros let us write the same code for all versions."
                     (<==? .N 1> <TELL A .F>)
                     (<==? .N 2> <TELL A .F " and " A .S>)
                     (ELSE
-                        <OBJECTLOOP I .RM
+                        <MAP-CONTENTS (I .RM)
                                  <COND
                                     (<NOT <OR <FSET? .I ,NDESCBIT> 
                                                 <==? .I ,WINNER>
@@ -1680,7 +1671,7 @@ other versions. These macros let us write the same code for all versions."
                         >)>
                   <TELL " here." CR>)>
             ;"describe visible contents of containers and surfaces"
-            <OBJECTLOOP I .RM
+            <MAP-CONTENTS (I .RM)
                         <COND 
                                 (<AND 
                                       <NOT <FSET? .I ,INVISIBLE>>
@@ -1696,7 +1687,7 @@ other versions. These macros let us write the same code for all versions."
             >
             ;"Re-use N to add up NPCs"
             <SET N 0>
-            <OBJECTLOOP I .RM
+            <MAP-CONTENTS (I .RM)
                      <COND
                             (<AND <FSET? .I ,PERSONBIT>
                                      <NOT <OR <==? .I ,WINNER>
@@ -1722,7 +1713,7 @@ other versions. These macros let us write the same code for all versions."
                     (<==? .N 2>
                      <TELL CT .F " and " T .S " are">)
                     (ELSE
-                     <OBJECTLOOP I .RM
+                     <MAP-CONTENTS (I .RM)
                                  <COND
                                     (<AND <FSET? .I ,PERSONBIT>
                                      <NOT <OR <==? .I ,WINNER>
@@ -1781,12 +1772,12 @@ other versions. These macros let us write the same code for all versions."
     <SET F <FIRST? .OBJ>>
     <COND (<NOT .F>
             <TELL "nothing)"> <RETURN>)>
-    <OBJECTLOOP I .OBJ <SET N <+ .N 1>>>
+    <MAP-CONTENTS (I .OBJ) <SET N <+ .N 1>>>
     <COND
         (<==? .N 1> <TELL A .F>)
         (<==? .N 2> <TELL A .F " and " A <NEXT? .F>>)
         (ELSE
-            <OBJECTLOOP I .OBJ
+            <MAP-CONTENTS (I .OBJ)
                 <TELL A .I>
                 <SET N <- .N 1>>
                 <COND
@@ -1803,7 +1794,7 @@ other versions. These macros let us write the same code for all versions."
     <SET F <FIRST? .O>>
     <COND (<NOT .F>
             <TELL "is nothing"> <RETURN>)>
-    <OBJECTLOOP I .O <SET N <+ .N 1>>>
+    <MAP-CONTENTS (I .O) <SET N <+ .N 1>>>
     <COND
         (<==? .N 1>
          <COND (<FSET? .F ,PLURALBIT>
@@ -1814,7 +1805,7 @@ other versions. These macros let us write the same code for all versions."
          <TELL "are " A .F " and " A <NEXT? .F>>)
         (ELSE
             <TELL "are ">
-            <OBJECTLOOP I .O
+            <MAP-CONTENTS (I .O)
                 <TELL A .I>
                 <SET N <- .N 1>>
                 <COND
@@ -1948,7 +1939,7 @@ other versions. These macros let us write the same code for all versions."
                 <COND
                 (<FIRST? ,WINNER>
                     <TELL "You are carrying:" CR>
-                    <OBJECTLOOP I ,WINNER
+                    <MAP-CONTENTS (I ,WINNER)
                         <TELL "   " A .I>
                         <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
                         <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
@@ -2024,7 +2015,7 @@ other versions. These macros let us write the same code for all versions."
                  
                  
  <ROUTINE TAKE-CONT-SEARCH (A "AUX" H)  	
-            <OBJECTLOOP I .A
+            <MAP-CONTENTS (I .A)
                         ;<TELL "Looping to check containers.  I is currently " D .I CR>
                         <COND (<OR <FSET? .I ,CONTBIT>
                                    <==? .I ,WINNER>
@@ -2189,7 +2180,7 @@ other versions. These macros let us write the same code for all versions."
             
   <ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
             ;"add size of objects inside container - does not recurse through containers withink this container"
-            <OBJECTLOOP I .O
+            <MAP-CONTENTS (I .O)
                         ;<TELL "Content-weight loop for " D .O ", which contains " D .I CR>
                         <COND (<SET X <GETPT .I ,P?SIZE>>
                                     <SET X <GETP .I ,P?SIZE>>
@@ -2209,7 +2200,7 @@ other versions. These macros let us write the same code for all versions."
                                     <SET W <GETP .O ,P?SIZE>>)
                         (ELSE <SET W <+ .W 5>>)>
             ;"add size of objects inside container"
-            <OBJECTLOOP I .O
+            <MAP-CONTENTS (I .O)
                         <TELL "Looping to set weight.  I is currently " D .I CR>
                         <COND (<SET X <GETPT .I ,P?SIZE>>
                                     <SET X <GETP .I ,P?SIZE>>
@@ -2448,7 +2439,7 @@ other versions. These macros let us write the same code for all versions."
     >
     
 <ROUTINE V-DOBJL ()
-    <OBJECTLOOP I ,PRSO
+    <MAP-CONTENTS (I ,PRSO)
         <TELL "The objects in " T ,PRSO " include " D .I CR>>
     >
 
