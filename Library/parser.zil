@@ -599,7 +599,16 @@ other versions. These macros let us write the same code for all versions."
         ;<TELL "no light source found" CR>
         <RFALSE>>      
 
-
+<ROUTINE SEE-INSIDE? (OBJ)
+    <COND
+        (<OR <FSET? .OBJ ,SURFACEBIT>
+        <AND <FSET? .OBJ ,CONTBIT>
+        <OR <FSET? .OBJ ,OPENBIT> <FSET? .OBJ ,TRANSBIT>>>
+         >
+         <RTRUE>)
+    >
+         <RFALSE>	 
+>
 
 <ROUTINE CONTAINER-LIGHT-SEARCH (I "AUX" J F)
             <OBJECTLOOP J .I
@@ -964,6 +973,42 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 
 "Misc Routines"
 
+<ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W P)
+    <OBJECTLOOP I .C
+        <COND
+            (<FSET? .I  .BIT>
+            <SET N <+ .N 1>>
+            <SET W .I>)
+        >
+    >
+    <COND
+    ;"If less or more than one match, we return false."
+        (<NOT <EQUAL? .N 1>>
+        <RFALSE>)
+    ;"if the routine was given the optional word, print [<word> the object]"
+        (.WORD
+        <TELL "[" .WORD " the " D .W "]" CR>
+    ;	<ARTICLE .W>
+    ;	<TELL D .W "]" CR>)
+    >
+    ;"set P to W (the object with the right bit) so the routine returns that object"
+    <SET P .W>
+>
+
+<VERSION? (ZIP)
+          (T
+           <CONSTANT H-NORMAL 0>
+           <CONSTANT H-INVERSE 1>
+           <CONSTANT H-BOLD 2>
+           <CONSTANT H-ITALIC 4>
+           <CONSTANT H-MONO 8>)>
+
+<ROUTINE ITALICIZE (STR "AUX" A)
+    <VERSION? (ZIP)
+              (T <HLIGHT ,H-ITALIC>)>
+    <TELL .STR>
+    <VERSION? (ZIP)
+              (T <HLIGHT ,H-NORMAL>)>>
 
 <ROUTINE PICK-ONE (TABL "AUX" LENGTH CNT RND S MSG)
        <SET LENGTH <GET .TABL 0>>
@@ -992,6 +1037,40 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
       <SET MSG <GET .TABL .RND>>
       <RETURN .MSG>>
       
+<VERSION?
+    (ZIP)
+    (T
+        <ROUTINE INIT-STATUS-LINE (T)
+            <COND (<0? .T> <CLEAR 0>)>
+            <SPLIT 1>
+            <CLEAR 1>>
+
+        <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
+            <SCREEN 1>
+            <HLIGHT 1>   ;"reverses the fg and bg colors"
+            <FAKE-ERASE>
+            <TELL " " D ,HERE>
+            <SET WIDTH <GETB 33 0>>
+            <CURSET 1 <- .WIDTH 22>>
+            <TELL "Score: ">
+            <PRINTN ,SCORE>
+            <CURSET 1 <- .WIDTH 10>>
+            <TELL "Moves: ">
+            <PRINTN ,TURNS>
+            <SCREEN 0>
+            <HLIGHT 0>>
+
+        <ROUTINE FAKE-ERASE ("AUX" CNT WIDTH)
+            <SET WIDTH <GETB 33 0>>
+            <CURSET 1 1>
+            <REPEAT ()
+                <SET CNT <+ .CNT 1>>
+                <COND (<EQUAL? .CNT <+ .WIDTH 2>>
+                       <CURSET 1 1>
+                       <RETURN>)
+                      (T
+                       <TELL " ">)>>>
+    )>
 
 <ROUTINE WAIT-TURNS (TURNS "AUX" T INTERRUPT ENDACT BACKUP-WAIT)
     <SET BACKUP-WAIT ,STANDARD-WAIT>
