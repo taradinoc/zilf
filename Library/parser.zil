@@ -1,6 +1,6 @@
 "Library header"
 
-<CONSTANT ZILLIB-VERSION "J1">
+<SETG ZILLIB-VERSION "J1">
 
 "Debugging"
 
@@ -917,7 +917,10 @@ other versions. These macros let us write the same code for all versions."
                     <RETURN>)>
     <TELL CR "> ">
     <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
-    <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
+    <VERSION? (ZIP <>)
+              (ELSE
+               <PUTB ,READBUF 1 0>
+               <UPDATE-STATUS-LINE>)>
     <READ ,READBUF ,LEXBUF>>
     
 
@@ -1051,10 +1054,12 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
       <RETURN .MSG>>
       
 <VERSION?
-    (ZIP)
+    (ZIP
+        <DEFMAC INIT-STATUS-LINE () <>>
+        <DEFMAC UPDATE-STATUS-LINE () '<USL>>
+    )
     (T
-        <ROUTINE INIT-STATUS-LINE (T)
-            <COND (<0? .T> <CLEAR 0>)>
+        <ROUTINE INIT-STATUS-LINE ()
             <SPLIT 1>
             <CLEAR 1>>
 
@@ -1063,7 +1068,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
             <HLIGHT 1>   ;"reverses the fg and bg colors"
             <FAKE-ERASE>
             <TELL " " D ,HERE>
-            <SET WIDTH <GETB 33 0>>
+            <SET WIDTH <LOWCORE SCRH>>
             <CURSET 1 <- .WIDTH 22>>
             <TELL "Score: ">
             <PRINTN ,SCORE>
@@ -1074,15 +1079,9 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
             <HLIGHT 0>>
 
         <ROUTINE FAKE-ERASE ("AUX" CNT WIDTH)
-            <SET WIDTH <GETB 33 0>>
             <CURSET 1 1>
-            <REPEAT ()
-                <SET CNT <+ .CNT 1>>
-                <COND (<EQUAL? .CNT <+ .WIDTH 2>>
-                       <CURSET 1 1>
-                       <RETURN>)
-                      (T
-                       <TELL " ">)>>>
+            <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
+            <CURSET 1 1>>
     )>
 
 <ROUTINE WAIT-TURNS (TURNS "AUX" T INTERRUPT ENDACT BACKUP-WAIT)
@@ -2275,16 +2274,12 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                       (ELSE <TELL "You're not holding that." CR>)>)	
           (ELSE <TELL "That's hardly edible." CR>)>>
 
-<ROUTINE V-VERSION ("AUX" (CNT 17))
+<ROUTINE V-VERSION ()
      <TELL ,GAME-BANNER "|Release ">
-     <PRINTN <BAND <GET 0 1> *3777*>>
+     <PRINTN <BAND <LOWCORE RELEASEID> *3777*>>
      <TELL " / Serial number ">
-     <REPEAT ()
-         <COND (<IGRTR? CNT 23>
-            <RETURN>)
-               (T
-            <PRINTC <GETB 0 .CNT>>)>>
-     <TELL " / " %,ZIL-VERSION " lib " ,ZILLIB-VERSION>
+     <LOWCORE-TABLE SERIAL 6 PRINTC>
+     <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
      <CRLF>>
      
 <ROUTINE V-THINK-ABOUT ()

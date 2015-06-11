@@ -16,21 +16,22 @@ ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence">
     <TELL "Hurrying through the rainswept November night, you're glad to see the
 bright lights of the Opera House. It's surprising that there aren't more
 people about but, hey, what do you expect in a cheap demo game...?" CR CR>
+    <INIT-STATUS-LINE>
     <V-VERSION> <CRLF>
     <SETG HERE ,FOYER>
     <MOVE ,PLAYER ,HERE>
     <V-LOOK>
     <REPEAT ()
         <COND (<PARSER>
-                <PERFORM ,PRSA ,PRSO ,PRSI>
-                ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
-                those routines if WAIT ran this turn"
-                <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-                <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>
-                ;"backup inputbuffers"
-                <COPY-READBUF>
-                <COPY-LEXBUF>
-                <SETG AGAINCALL 0>)>
+               <PERFORM ,PRSA ,PRSO ,PRSI>
+               ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
+               those routines if WAIT ran this turn"
+               <OR <META-VERB?> <AND ,AGAINCALL> <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+               <OR <META-VERB?> <AND ,AGAINCALL> <CLOCKER>>
+               ;"backup inputbuffers"
+               <COPY-READBUF>
+               <COPY-LEXBUF>
+               <SETG AGAINCALL 0>)>
         <SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
