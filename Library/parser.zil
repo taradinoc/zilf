@@ -27,6 +27,10 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL NLITSET <>>
 <GLOBAL DBCONT <>>
 <GLOBAL DTURNS <>>
+<GLOBAL MODE 1>
+<CONSTANT SUPERBRIEF 0>
+<CONSTANT BRIEF 1>
+<CONSTANT VERBOSE 2>
 
 <DEFMAC TELL ("ARGS" A "AUX" O P)
     <SET O <MAPF ,LIST
@@ -443,6 +447,7 @@ other versions. These macros let us write the same code for all versions."
                 <SETG PRSA <GETB .PTR ,SYN-ACTION>>
                 <RTRUE>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>>
+
 
 <ROUTINE FIND-OBJECTS ("AUX" X)
     <COND (<G=? ,P-NOBJ 1>
@@ -949,10 +954,13 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 <ROUTINE GOTO (RM)
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
-    <FSET ,HERE ,TOUCHBIT>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
     ;"moved V-LOOK into GOTO so descriptors will be called when you call GOTO from a PER routine, etc"
-    <V-LOOK>>
+    <COND
+     (<DESCRIBE-ROOM ,HERE>
+        <DESCRIBE-OBJECTS ,HERE>)>
+    <FSET ,HERE ,TOUCHBIT>
+>
 
 "Misc Routines"
 
@@ -1453,6 +1461,10 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 <SYNTAX RESTORE = V-RESTORE>
 <SYNTAX RESTART = V-RESTART>
 
+<SYNTAX BRIEF = V-BRIEF>
+<SYNTAX SUPERBRIEF = V-SUPERBRIEF>
+<SYNTAX VERBOSE = V-VERBOSE>
+
 ;"debugging verbs - remove"
 <IF-DEBUG
     <SYNTAX DROB OBJECT = V-DROB>
@@ -1473,33 +1485,89 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 <CONSTANT M-ENTER 3>
 <CONSTANT M-LOOK 4>
 
-<ROUTINE V-LOOK ("AUX" P F N S)
+<ROUTINE V-BRIEF ()
+    <TELL "Brief descriptions." CR>
+    <SETG MODE ,BRIEF>
+>
+
+<ROUTINE V-VERBOSE ()
+    <TELL "Verbose descriptions." CR>
+    <SETG MODE ,VERBOSE>
+    <V-LOOK>
+>
+
+<ROUTINE V-SUPERBRIEF ()
+    <TELL "Superbrief descriptions." CR>
+    <SETG MODE ,SUPERBRIEF>
+>
+
+<ROUTINE V-LOOK ()
+    <COND
+     (<DESCRIBE-ROOM ,HERE 1>
+        <DESCRIBE-OBJECTS ,HERE>)>
+>
+
+<ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         ;"check for light, unless running LOOK from NOW-LIT (which sets NLITSET to 1)"
-        (<OR <FSET? ,HERE ,LIGHTBIT>
+        (<NOT <OR <FSET? .RM ,LIGHTBIT>
         <AND <SEARCH-FOR-LIGHT>>
-              <EQUAL? ,NLITSET 1>>
-
-             ;"print the room's real name"
-             <TELL D ,HERE CR>
+              <EQUAL? ,NLITSET 1>>>
+          <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
+          <RFALSE>)
+          (ELSE 
+                ;"print the room's real name"
+                <TELL D .RM CR>
+                <COND
+                    (<EQUAL? ,MODE ,SUPERBRIEF>
+                        <RFALSE>)
+                    (
+                        <AND <NOT .LONG>
+                            <FSET? .RM ,TOUCHBIT>
+                            <NOT <EQUAL? ,MODE ,VERBOSE>>>
+                    <RETURN>)>
+                <FSET .RM ,TOUCHBIT>	
             ;"either print the room's LDESC or call its ACTION with M-LOOK"
             <COND
-                (<SET P <GETP ,HERE ,P?LDESC>>
+                (<SET P <GETP .RM ,P?LDESC>>
                     <TELL .P CR>)
                 (ELSE
-                    <APPLY <GETP ,HERE ,P?ACTION> ,M-LOOK>)>
-            ;"describe contents"
-            ;"do any FDESC objects"
-            <OBJECTLOOP I ,HERE
-                <COND (<AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
-                                            <TELL .P CR>)>>
+                    <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)
+            >
+         )
+     >
+     <RETURN>
+>
+   
+<ROUTINE DESCRIBE-OBJECTS ( RM "AUX" P F N S)
+    <OBJECTLOOP I .RM
+        <COND
+            ;"objects with DESCFNs"
+            ( <SET P <GETP .I ,P?DESCFCN>>
+                <CRLF>
+                <APPLY .P>
+                <CRLF>
+            )
+            ;"un-moved objects with FDESCs"	
+           (<AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
+                                            <TELL CR .P CR>
+           )
+           ;"objects with LDESCs"
+           (
+           <SET P <GETP .I ,P?LDESC>>
+                                            <TELL CR .P CR>)>
+    >
             ;"use N add up all non fdesc, ndescbit, personbit objects in room"
-            <OBJECTLOOP I ,HERE
+            <OBJECTLOOP I .RM
                      <COND
-                            (<NOT <OR <FSET? .I ,NDESCBIT> 
-                                        <==? .I ,WINNER> 
-                                        <FSET? .I ,PERSONBIT> 
-                                        <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >>>
+                            (<NOT <OR <FSET? .I ,NDESCBIT>
+                                          <SET P <GETP .I ,P?DESCFCN>>
+                                           <==? .I ,WINNER> 
+                                           <FSET? .I ,PERSONBIT> 
+                                           <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
+                                           <SET P <GETP .I ,P?LDESC>>
+                                       >
+                                  >
                                                 
                                                 <SET N <+ .N 1>>
                                                 <COND (<==? .N 1>
@@ -1508,7 +1576,8 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                                                             <SET S .I>)>		
                             )>>
             ;"go through the N objects"
-            <COND (<G? .N 0> 
+            <COND (<G? .N 0>
+                <TELL CR>
                 <COND (<FSET? .F ,PLURALBIT>
                             <TELL "There are">)
                       (ELSE <TELL "There is">)>
@@ -1522,12 +1591,16 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                         <ARTICLE .S>
                         <TELL D .S>)
                     (ELSE
-                        <OBJECTLOOP I ,HERE
+                        <OBJECTLOOP I .RM
                                  <COND
                                     (<NOT <OR <FSET? .I ,NDESCBIT> 
-                                            <==? .I ,WINNER> 
-                                            <FSET? .I ,PERSONBIT> 
-                                            <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >>>
+                                                <==? .I ,WINNER>
+                                                <SET P <GETP .I ,P?LDESC>>
+                                                <FSET? .I ,PERSONBIT> 
+                                                <SET P <GETP .I ,P?DESCFCN>>
+                                                <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
+                                            >
+                                     >
                                                 <ARTICLE .I> 
                                                 <TELL D .I>
                                                 <SET N <- .N 1>>
@@ -1538,22 +1611,33 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                         >)>
                   <TELL " here." CR>)>
             ;"describe visible contents of containers and surfaces"
-            <OBJECTLOOP I ,HERE
+            <OBJECTLOOP I .RM
                         <COND 
-                                (<AND <FSET? .I ,CONTBIT> 
-                                      <AND <FIRST? .I>>
+                                (<AND 
+                                      <NOT <FSET? .I ,INVISIBLE>>
+                                      <FIRST? .I>
                                       <OR <FSET? .I ,SURFACEBIT>
-                                          <FSET? .I ,OPENBIT>>
-                                 >
+                                      <AND <FSET? .I ,CONTBIT> 
+                                          <FSET? .I ,OPENBIT>
+                                      >
+                                  >
+                              >
                                             <DESCRIBE-CONTENTS .I>)
                         >
             >
             ;"Re-use N to add up NPCs"
             <SET N 0>
-            <OBJECTLOOP I ,HERE
+            <OBJECTLOOP I .RM
                      <COND
                             (<AND <FSET? .I ,PERSONBIT>
-                                  <NOT <==? .I ,WINNER>>> 
+                                     <NOT <OR <==? .I ,WINNER>
+                                          <FSET? .I ,NDESCBIT>
+                                          <SET P <GETP .I ,P?DESCFCN>>
+                                                 <SET P <GETP .I ,P?LDESC>>
+                                             <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
+                                             >
+                                     >
+                                > 
                                         <SET N <+ .N 1>>
                                         <COND (<==? .N 1>
                                                     <SET F .I>)
@@ -1572,10 +1656,17 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                         <TELL D .S>
                         <TELL " are">)
                     (ELSE
-                        <OBJECTLOOP I ,HERE
+                        <OBJECTLOOP I .RM
                                  <COND
                                     (<AND <FSET? .I ,PERSONBIT>
-                                          <NOT <==? .I ,WINNER>>> 
+                                     <NOT <OR <==? .I ,WINNER>
+                                          <FSET? .I ,NDESCBIT>
+                                          <SET P <GETP .I ,P?DESCFCN>>
+                                                 <SET P <GETP .I ,P?LDESC>>
+                                             <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
+                                             >
+                                     >
+                                     > 
                                                 <TELL D .I>
                                                 <SET N <- .N 1>>
                                                 <COND
@@ -1586,10 +1677,8 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                         <TELL " are">)>
                   <TELL " here." CR>)>
             <SETG NLITSET 0>
-              )
-          (ELSE 
-                    <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>)>>
-                    
+>
+                  
 <ROUTINE ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT> <TELL " ">)
               (<FSET? .OBJ ,VOWELBIT> <TELL " an ">)
@@ -1695,7 +1784,8 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
         <CONSTANT DEXIT-MSG 2>)>
 
 <DEFMAC META-VERB? ()
-    '<OR <VERB? QUIT VERSION WAIT> <VERB? SAVE RESTORE INVENTORY> <VERB? ;DLIGHT UNDO ;DSEND>>>
+    '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
+            SUPERBRIEF BRIEF VERBOSE>>
 
 <ROUTINE V-WALK ("AUX" PT PTS RM)
     <COND (<NOT ,PRSO-DIR>
@@ -2407,8 +2497,9 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 
 ;"This has all the flags, just in case other objects don't define them."
 <OBJECT ROOMS
-    (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT WORNBIT LIGHTBIT
+    (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT LOCKEDBIT
            SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT PLURALBIT)>
+
          
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
@@ -2419,6 +2510,8 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     (FDESC <>)
     (GLOBAL NULLTHANG)
     (TEXT <>)
+    (CONTFCN <>)
+    (DESCFCN <>)
     (TEXT-HELD <>)
     (CAPACITY 10)>
     
