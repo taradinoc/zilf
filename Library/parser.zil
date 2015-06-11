@@ -32,36 +32,11 @@ call them something else, but we'll continue the tradition anyway."
 <CONSTANT BRIEF 1>
 <CONSTANT VERBOSE 2>
 
-<DEFMAC TELL ("ARGS" A "AUX" O P)
-    <SET O <MAPF ,LIST
-        <FUNCTION ("AUX" I)
-            <COND (<EMPTY? .A> <MAPSTOP>)>
-            <SET I <NTH .A 1>>
-            <SET A <REST .A>>
-            <COND
-                (<TYPE? .I STRING>
-                    <COND
-                        (<LENGTH? .I 0>
-                            <MAPRET>)
-                        (<LENGTH? .I 1>
-                            <FORM PRINTC <NTH .I 1>>)
-                        (ELSE
-                            <FORM PRINTI .I>)>)
-                (<==? .I CR>
-                    <FORM CRLF>)
-                (<TYPE? .I ATOM>
-                    <SET P <1 .A>>
-                    <SET A <REST .A>>
-                    <COND
-                        (<==? .I N> <FORM PRINTN .P>)
-                        (<==? .I D> <FORM PRINTD .P>)
-                        (<==? .I B> <FORM PRINTB .P>)>)
-                (ELSE
-                    <FORM PRINT .I>)>>>>
-    <COND
-        (<LENGTH? .O 0> <>)
-        (<LENGTH? .O 1> <1 .O>)
-        (ELSE <FORM PROG '() !.O>)>>
+<ADD-TELL-TOKENS
+    T *     <PRINT-DEF .X>
+    A *     <PRINT-INDEF .X>
+    CT *    <PRINT-CDEF .X>
+    CA *    <PRINT-CINDEF .X>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
@@ -733,7 +708,7 @@ other versions. These macros let us write the same code for all versions."
                             <SET P .J>
                             ;<TELL "No match - P is " D .P CR>
                             <COND (<FSET? .P ,PERSONBIT>
-                                    <TELL D .P " does not seem to be here." CR > <RFALSE>)>
+                                    <TELL CT .P " does not seem to be here." CR > <RFALSE>)>
                             )>>>
 
     <TELL "You don't see that here." CR>
@@ -1005,27 +980,19 @@ other versions. These macros let us write the same code for all versions."
 
 "Misc Routines"
 
-<ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W P)
+<ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W)
     <OBJECTLOOP I .C
-        <COND
-            (<FSET? .I  .BIT>
-            <SET N <+ .N 1>>
-            <SET W .I>)
-        >
-    >
+        <COND (<FSET? .I  .BIT>
+               <SET N <+ .N 1>>
+               <SET W .I>)>>
     <COND
-    ;"If less or more than one match, we return false."
+        ;"If less or more than one match, we return false."
         (<NOT <EQUAL? .N 1>>
-        <RFALSE>)
-    ;"if the routine was given the optional word, print [<word> the object]"
+         <RFALSE>)
+        ;"if the routine was given the optional word, print [<word> the object]"
         (.WORD
-        <TELL "[" .WORD " the " D .W "]" CR>
-    ;	<ARTICLE .W>
-    ;	<TELL D .W "]" CR>)
-    >
-    ;"set P to W (the object with the right bit) so the routine returns that object"
-    <SET P .W>
->
+         <TELL "[" .WORD " " T .W "]" CR>)>
+    .W>
 
 <VERSION? (ZIP)
           (T
@@ -1688,17 +1655,11 @@ other versions. These macros let us write the same code for all versions."
             <COND (<G? .N 0>
                 <TELL CR>
                 <COND (<FSET? .F ,PLURALBIT>
-                            <TELL "There are">)
-                      (ELSE <TELL "There is">)>
+                       <TELL "There are ">)
+                      (ELSE <TELL "There is ">)>
                 <COND
-                    (<==? .N 1>
-                        <ARTICLE .F>
-                        <TELL D .F>)
-                    (<==? .N 2>
-                        <ARTICLE .F> 
-                        <TELL D .F " and">
-                        <ARTICLE .S>
-                        <TELL D .S>)
+                    (<==? .N 1> <TELL A .F>)
+                    (<==? .N 2> <TELL A .F " and " A .S>)
                     (ELSE
                         <OBJECTLOOP I .RM
                                  <COND
@@ -1710,13 +1671,12 @@ other versions. These macros let us write the same code for all versions."
                                                 <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
                                             >
                                      >
-                                                <ARTICLE .I> 
-                                                <TELL D .I>
+                                                <TELL A .I>
                                                 <SET N <- .N 1>>
                                                 <COND
                                                     (<0? .N>)
-                                                    (<==? .N 1> <TELL ", and">)
-                                                    (ELSE <TELL ",">)>)>            
+                                                    (<==? .N 1> <TELL ", and ">)
+                                                    (ELSE <TELL ", ">)>)>
                         >)>
                   <TELL " here." CR>)>
             ;"describe visible contents of containers and surfaces"
@@ -1758,14 +1718,11 @@ other versions. These macros let us write the same code for all versions."
                 ;<TELL CR>
                 <COND
                     (<==? .N 1>
-                        <TELL D .F>
-                        <TELL " is">)
+                     <TELL CT .F " is">)
                     (<==? .N 2>
-                        <TELL D .F " and ">
-                        <TELL D .S>
-                        <TELL " are">)
+                     <TELL CT .F " and " T .S " are">)
                     (ELSE
-                        <OBJECTLOOP I .RM
+                     <OBJECTLOOP I .RM
                                  <COND
                                     (<AND <FSET? .I ,PERSONBIT>
                                      <NOT <OR <==? .I ,WINNER>
@@ -1776,7 +1733,7 @@ other versions. These macros let us write the same code for all versions."
                                              >
                                      >
                                      > 
-                                                <TELL D .I>
+                                                <COND (<==? .I .F> <TELL CT .I>) (ELSE <TELL T .I>)>
                                                 <SET N <- .N 1>>
                                                 <COND
                                                     (<0? .N>)
@@ -1787,45 +1744,55 @@ other versions. These macros let us write the same code for all versions."
                   <TELL " here." CR>)>
             <SETG NLITSET 0>
 >
-                  
-<ROUTINE ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT> <TELL " ">)
-              (<FSET? .OBJ ,VOWELBIT> <TELL " an ">)
-              (ELSE
-        <TELL " a ">)>>
+
+<ROUTINE INDEF-ARTICLE (OBJ)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
+          (ELSE <TELL "a ">)>>
+
+<ROUTINE DEF-ARTICLE (OBJ)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (ELSE <TELL "the ">)>>
+
+<ROUTINE CINDEF-ARTICLE (OBJ)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
+          (ELSE <TELL "A ">)>>
+
+<ROUTINE CDEF-ARTICLE (OBJ)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (ELSE <TELL "The ">)>>
+
+<ROUTINE PRINT-INDEF (OBJ) <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-DEF (OBJ) <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-CINDEF (OBJ) <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-CDEF (OBJ) <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
         (ELSE <TELL "In">)>
-    <TELL " the " D .OBJ " ">
+    <TELL " " T .OBJ " ">
     <ISARE-LIST .OBJ>
     <TELL "." CR>>
     
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
-    <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding">)
-        (ELSE <TELL " (containing">)>
+    <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding ">)
+        (ELSE <TELL " (containing ">)>
     <SET F <FIRST? .OBJ>>
     <COND (<NOT .F>
-            <TELL " nothing)"> <RETURN>)>
+            <TELL "nothing)"> <RETURN>)>
     <OBJECTLOOP I .OBJ <SET N <+ .N 1>>>
     <COND
-        (<==? .N 1>
-            <ARTICLE .F>
-            <TELL D .F>)
-        (<==? .N 2>
-            <ARTICLE .F> 
-            <TELL D .F " and">
-            <ARTICLE <NEXT? .F>>
-            <TELL D <NEXT? .F>>)
+        (<==? .N 1> <TELL A .F>)
+        (<==? .N 2> <TELL A .F " and " A <NEXT? .F>>)
         (ELSE
             <OBJECTLOOP I .OBJ
-                <ARTICLE .I> 
-                <TELL D .I>
+                <TELL A .I>
                 <SET N <- .N 1>>
                 <COND
                     (<0? .N>)
-                    (<==? .N 1> <TELL ", and">)
-                    (ELSE <TELL ",">)>
+                    (<==? .N 1> <TELL ", and ">)
+                    (ELSE <TELL ", ">)>
              >)
        >
     <TELL ")">
@@ -1839,27 +1806,21 @@ other versions. These macros let us write the same code for all versions."
     <OBJECTLOOP I .O <SET N <+ .N 1>>>
     <COND
         (<==? .N 1>
-            <COND (<FSET? .F ,PLURALBIT>
-                    <TELL "are">)
-                  (ELSE <TELL "is">)>
-            <ARTICLE .F>
-            <TELL D .F>)
+         <COND (<FSET? .F ,PLURALBIT>
+                <TELL "are ">)
+               (ELSE <TELL "is ">)>
+         <TELL A .F>)
         (<==? .N 2>
-            <TELL "are">
-        <ARTICLE .F> 
-            <TELL D .F " and">
-        <ARTICLE <NEXT? .F>>
-            <TELL D <NEXT? .F>>)
+         <TELL "are " A .F " and " A <NEXT? .F>>)
         (ELSE
-            <TELL "are">
+            <TELL "are ">
             <OBJECTLOOP I .O
-                <ARTICLE .I> 
-                <TELL D .I>
+                <TELL A .I>
                 <SET N <- .N 1>>
                 <COND
                     (<0? .N>)
-                    (<==? .N 1> <TELL ", and">)
-                    (ELSE <TELL ",">)>>)>>
+                    (<==? .N 1> <TELL ", and ">)
+                    (ELSE <TELL ", ">)>>)>>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
@@ -1948,13 +1909,13 @@ other versions. These macros let us write the same code for all versions."
         (<AND <FSET? ,PRSO ,OPENABLEBIT> 
               <NOT <FSET? ,PRSO ,OPENBIT>>
          >
-                <TELL "The " D ,PRSO " is closed." CR>
+                <TELL CT ,PRSO " is closed." CR>
                 <COND (<AND <FSET? ,PRSO ,TRANSBIT> <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
                 <SET N 1>)
         (<AND <FSET? ,PRSO ,OPENABLEBIT> 
               <FSET? ,PRSO ,OPENBIT>
          >
-                <TELL "The " D ,PRSO " is open. ">
+                <TELL CT ,PRSO " is open. ">
                 <DESCRIBE-CONTENTS ,PRSO>
                 <SET N 1>)
         (<AND 	<AND <FSET? ,PRSO ,CONTBIT> 
@@ -1974,7 +1935,7 @@ other versions. These macros let us write the same code for all versions."
                 <SET N 1>)
      >
      <COND (<0? .N>
-              <TELL "You see nothing special about the " D ,PRSO "." CR>)
+              <TELL "You see nothing special about " T ,PRSO "." CR>)
     >
 >
 
@@ -1988,7 +1949,7 @@ other versions. These macros let us write the same code for all versions."
                 (<FIRST? ,WINNER>
                     <TELL "You are carrying:" CR>
                     <OBJECTLOOP I ,WINNER
-                        <TELL "   " D .I>
+                        <TELL "   " A .I>
                         <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
                         <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
                         <COND (<FSET? .I ,CONTBIT>
@@ -2027,7 +1988,7 @@ other versions. These macros let us write the same code for all versions."
 <ROUTINE V-TAKE ("AUX" HOLDER S X)
     <COND
         (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
+            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
         (<NOT <FSET? ,PRSO ,TAKEBIT>>
             <PRINTR "That's not something you can pick up.">)
         (<IN? ,PRSO ,WINNER>
@@ -2035,7 +1996,7 @@ other versions. These macros let us write the same code for all versions."
         (ELSE
             <COND
                 (<FSET? ,PRSO ,WEARBIT>
-                    <TELL "You wear the " D ,PRSO "." CR>
+                    <TELL "You wear " T ,PRSO "." CR>
                     <FSET ,PRSO ,WORNBIT>
                     <MOVE ,PRSO ,WINNER>
                     <FSET ,PRSO ,TOUCHBIT>)
@@ -2045,17 +2006,17 @@ other versions. These macros let us write the same code for all versions."
                     ;<TELL "HOLDER is currently " D .HOLDER CR>
                     <COND (<AND .HOLDER>
                                 <COND (<FSET? .HOLDER ,SURFACEBIT>
-                                            <TELL "You pick up the " D ,PRSO "." CR>
+                                            <TELL "You pick up " T ,PRSO "." CR>
                                             <FSET ,PRSO ,TOUCHBIT>
                                             <MOVE ,PRSO ,WINNER>)
                                        (<FSET? .HOLDER ,OPENBIT>
-                                            <TELL "You reach in the " D .HOLDER " and take the " D ,PRSO "." CR>
+                                            <TELL "You reach in " T .HOLDER " and take " T ,PRSO "." CR>
                                             <FSET ,PRSO ,TOUCHBIT>
                                             <MOVE ,PRSO ,WINNER>)
                                       (ELSE
-                                            <TELL "The enclosing " D .HOLDER " prevents you from taking the " D ,PRSO "." CR>)
+                                            <TELL "The enclosing " D .HOLDER " prevents you from taking " T ,PRSO "." CR>)
                                 >)
-                          (ELSE <TELL "You pick up the " D ,PRSO "." CR>
+                          (ELSE <TELL "You pick up " T ,PRSO "." CR>
                           <FSET ,PRSO ,TOUCHBIT>
                           <MOVE ,PRSO ,WINNER>)
                     >
@@ -2094,7 +2055,7 @@ other versions. These macros let us write the same code for all versions."
             <MOVE ,PRSO ,HERE>
             <FSET ,PRSO ,TOUCHBIT>
             <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You drop the " D ,PRSO "." CR>)>>
+            <TELL "You drop " T ,PRSO "." CR>)>>
 
 <ROUTINE INDIRECTLY-IN? (OBJ CONT)
     <REPEAT ()
@@ -2104,9 +2065,9 @@ other versions. These macros let us write the same code for all versions."
 <ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
     <COND
         (<FSET? ,PRSI ,PERSONBIT>
-            <TELL "I don't think " D ,PRSI " would appreciate that." CR>)
+            <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
         (<NOT <AND <FSET? ,PRSI ,CONTBIT> <FSET? ,PRSI ,SURFACEBIT>>>
-            <TELL "The " D ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things on." CR>)
+            <TELL CT ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things on." CR>)
         (<NOT <IN? ,PRSO ,WINNER>>
             <PRINTR "You don't have that.">)
         (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
@@ -2138,7 +2099,7 @@ other versions. These macros let us write the same code for all versions."
                         ;(ELSE <TELL "infinite" CR>)>
             <COND (<OR <G? .S .CCAP>
                        <G? .S .CSIZE>>
-                            <TELL "That won't fit on the " D ,PRSI "." CR>
+                            <TELL "That won't fit on " T ,PRSI "." CR>
                             <RETURN>)>
             <COND (<0? .B>
                         ;"Determine weight of contents of IO"
@@ -2146,7 +2107,7 @@ other versions. These macros let us write the same code for all versions."
                         ;<TELL "Back from Contents-weight loop" CR>
                         <SET X <+ .W .S>>
                         <COND (<G? .X .CCAP> 
-                            <TELL "There's not enough room on the " D ,PRSI "." CR>
+                            <TELL "There's not enough room on " T ,PRSI "." CR>
                             ;<TELL D ,PRSO " of size " N .S " can't fit, since current weight of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
                             <RETURN>)>
                        ; <TELL D ,PRSO " of size " N .S " can fit, since current weight of of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
@@ -2154,27 +2115,27 @@ other versions. These macros let us write the same code for all versions."
             <MOVE ,PRSO ,PRSI>
             <FSET ,PRSO ,TOUCHBIT>
             <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You put the " D ,PRSO " on the " D ,PRSI "." CR>
+            <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>
     )>>
             
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
     ;<TELL "In the PUT-IN routine" CR>
     <COND 
         (<FSET? ,PRSI ,PERSONBIT>
-                <TELL "I don't think " D ,PRSI " would appreciate that." CR>)
+                <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
         (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
              <FSET? ,PRSI ,SURFACEBIT>
          >
-                <TELL "The " D ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things in." CR>)
+                <TELL CT ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things in." CR>)
     (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
                   <FSET? ,PRSI ,OPENABLEBIT>
          >
-                <TELL "The " D ,PRSI " is closed." CR>)
+                <TELL CT ,PRSI " is closed." CR>)
     ;"always closed case"
     (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
            <FSET? ,PRSI ,CONTBIT>
          >
-                <TELL "You see no way to put things into the " D ,PRSI  "." CR>)
+                <TELL "You see no way to put things into " T ,PRSI  "." CR>)
         (<NOT <IN? ,PRSO ,WINNER>>
             <PRINTR "You aren't holding that.">)
         (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
@@ -2206,7 +2167,7 @@ other versions. These macros let us write the same code for all versions."
                         ;(ELSE <TELL "infinite" CR>)>
             <COND (<OR <G? .S .CCAP>
                        <G? .S .CSIZE>>
-                            <TELL "That won't fit in the " D ,PRSI "." CR>
+                            <TELL "That won't fit in " T ,PRSI "." CR>
                             <RETURN>)>
             <COND (<0? .B>
                         ;"Determine weight of contents of IO"
@@ -2214,7 +2175,7 @@ other versions. These macros let us write the same code for all versions."
                         ;<TELL "Back from Contents-weight loop" CR>
                         <SET X <+ .W .S>>
                         <COND (<G? .X .CCAP> 
-                            <TELL "There's not enough room in the " D ,PRSI "." CR>
+                            <TELL "There's not enough room in " T ,PRSI "." CR>
                             <COND (<AND ,DBCONT> <TELL D ,PRSO " can't fit, since current bulk of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>)>
                             <RETURN>)>
                         <COND (<AND ,DBCONT> <TELL D ,PRSO " can fit, since current bulk of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>)>
@@ -2222,7 +2183,7 @@ other versions. These macros let us write the same code for all versions."
             <MOVE ,PRSO ,PRSI>
             <FSET ,PRSO ,TOUCHBIT>
             <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You put the " D ,PRSO " in the " D ,PRSI "." CR>
+            <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>
     )>>
             
             
@@ -2286,7 +2247,7 @@ other versions. These macros let us write the same code for all versions."
     <COND (<FSET? ,PRSO ,EDIBLEBIT>
                 ;"TO DO: improve this check will a real, drilling-down HELD? routine"
                 <COND (<IN? ,PRSO ,WINNER>
-                        <TELL "You devour the " D ,PRSO CR>
+                        <TELL "You devour " T ,PRSO CR>
                         <REMOVE ,PRSO>
                         )
                       (ELSE <TELL "You're not holding that." CR>)>)	
@@ -2301,17 +2262,12 @@ other versions. These macros let us write the same code for all versions."
      <CRLF>>
      
 <ROUTINE V-THINK-ABOUT ()
-    <TELL "You contemplate">
-    <COND (<OR <FSET? ,PRSO ,NARTICLEBIT> 
-               <FSET? ,PRSO ,PERSONBIT>>
-                    <TELL " ">)
-          (ELSE <TELL " the ">)>
-    <TELL D ,PRSO " for a bit, but nothing fruitful comes to mind." CR>>
+    <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>>
     
 <ROUTINE V-OPEN ()
     <COND
         (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
+            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
         (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
             <PRINTR "That's not something you can open.">) 			
         (<FSET? ,PRSO ,OPENBIT>
@@ -2321,14 +2277,14 @@ other versions. These macros let us write the same code for all versions."
         (ELSE
             <FSET ,PRSO ,TOUCHBIT>
             <FSET ,PRSO ,OPENBIT>
-            <TELL "You open the " D ,PRSO "." CR>
+            <TELL "You open " T ,PRSO "." CR>
             <DESCRIBE-CONTENTS ,PRSO>
         )>>
         
  <ROUTINE V-CLOSE ()
     <COND
         (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
+            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
         (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
                     <PRINTR "That's not something you can close.">)
         ;(<FSET? ,PRSO ,SURFACEBIT>
@@ -2338,7 +2294,7 @@ other versions. These macros let us write the same code for all versions."
         (ELSE
             <FSET ,PRSO ,TOUCHBIT>
             <FCLEAR ,PRSO ,OPENBIT>
-            <TELL "You close the " D ,PRSO "." CR>
+            <TELL "You close " T ,PRSO "." CR>
         )>>
 
 <ROUTINE V-WAIT ("AUX" T INTERRUPT ENDACT)
@@ -2401,7 +2357,7 @@ other versions. These macros let us write the same code for all versions."
                 <TELL "It's already on." CR>)
            (ELSE
                  <FSET ,PRSO ,ONBIT>
-                 <TELL "You switch on the " D ,PRSO "." CR>)
+                 <TELL "You switch on " T ,PRSO "." CR>)
      >
 >
 
@@ -2415,7 +2371,7 @@ other versions. These macros let us write the same code for all versions."
                 <TELL "It's already off." CR>)
            (ELSE
                  <FCLEAR ,PRSO ,ONBIT>
-                 <TELL "You switch off the " D ,PRSO "." CR>)
+                 <TELL "You switch off " T ,PRSO "." CR>)
      >
 >
 
@@ -2427,19 +2383,19 @@ other versions. These macros let us write the same code for all versions."
                 <TELL "That's not something you can switch on and off." CR>)
            (<FSET? ,PRSO ,ONBIT>
                 <FCLEAR ,PRSO ,ONBIT>
-                <TELL "You switch off the " D ,PRSO "." CR>)
+                <TELL "You switch off " T ,PRSO "." CR>)
            (<NOT <FSET? ,PRSO ,ONBIT>>
                  <FSET ,PRSO ,ONBIT>
-                 <TELL "You switch on the " D ,PRSO "." CR>)
+                 <TELL "You switch on " T ,PRSO "." CR>)
      >
 >
 
 <ROUTINE V-PUSH ()
      <COND
         (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
+            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
         (ELSE
-             <TELL "Pushing the " D ,PRSO " doesn't seem to accomplish much." CR>)>
+             <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>
 >
 
 
@@ -2493,7 +2449,7 @@ other versions. These macros let us write the same code for all versions."
     
 <ROUTINE V-DOBJL ()
     <OBJECTLOOP I ,PRSO
-        <TELL "The objects in " D ,PRSO " include " D .I CR>>
+        <TELL "The objects in " T ,PRSO " include " D .I CR>>
     >
 
 ;<ROUTINE V-DVIS ("AUX" P)
