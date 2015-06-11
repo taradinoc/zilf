@@ -531,12 +531,12 @@ other versions. These macros let us write the same code for all versions."
                 <RTRUE>)
               ;"if any items are surfaces or open containers, search their contents"
               (<COND (<OR <FSET? .I ,SURFACEBIT>
-                          <AND  <FSET? .I ,OPENABLE>
+                          <AND  <FSET? .I ,OPENABLEBIT>
                                 <FSET? .I ,OPENBIT>
                           >
                           ;"the always-open case"
                           <AND  <FSET? .I ,CONTBIT> 
-                                <NOT <FSET? .I ,OPENABLE>>
+                                <NOT <FSET? .I ,OPENABLEBIT>>
                           >
                           ;"transparent container"
                           <AND  <FSET? .I ,CONTBIT> 
@@ -565,7 +565,7 @@ other versions. These macros let us write the same code for all versions."
                           <AND  <FSET? .I ,CONTBIT> 
                                 <FSET? .I ,TRANSBIT>>
                           <AND  <FSET? .I ,CONTBIT> 
-                                <NOT <FSET? .I ,OPENABLE>>
+                                <NOT <FSET? .I ,OPENABLEBIT>>
                           >
                       >
                                 ;<TELL D .I " is a container." CR>
@@ -605,12 +605,12 @@ other versions. These macros let us write the same code for all versions."
                             ;<TELL "Light source match found in container search, F is now " D .F CR>
                             <RETURN>)
                           (<OR 	<FSET? .J ,SURFACEBIT>
-                                <AND  <FSET? .J ,OPENABLE>
+                                <AND  <FSET? .J ,OPENABLEBIT>
                                       <FSET? .J ,OPENBIT>
                                 >
                                 ;"the always-open case"
                                 <AND  <FSET? .J ,CONTBIT> 
-                                      <NOT <FSET? .J ,OPENABLE>>
+                                      <NOT <FSET? .J ,OPENABLEBIT>>
                                 >
                            >                      				
                       ;<TELL "Found another container - about to search through " D .J CR>
@@ -650,12 +650,12 @@ other versions. These macros let us write the same code for all versions."
               ;"if any items are surfaces, open containers, or transparent containers, search their contents"
               (<COND (<OR <FSET? .I ,SURFACEBIT>
                           ;"open container"
-                          <AND  <FSET? .I ,OPENABLE>
+                          <AND  <FSET? .I ,OPENABLEBIT>
                                 <FSET? .I ,OPENBIT>
                           >
                           ;"always open container"
                           <AND  <FSET? .I ,CONTBIT> 
-                                <NOT <FSET? .I ,OPENABLE>>
+                                <NOT <FSET? .I ,OPENABLEBIT>>
                           >
                           ;"transparent container"
                           <AND  <FSET? .I ,CONTBIT> 
@@ -679,12 +679,12 @@ other versions. These macros let us write the same code for all versions."
               ;"if any items are surfaces or open containers, search their contents"
               (<COND (<OR <FSET? .I ,SURFACEBIT>
                           ;"open container"
-                          <AND  <FSET? .I ,OPENABLE>
+                          <AND  <FSET? .I ,OPENABLEBIT>
                                 <FSET? .I ,OPENBIT>
                           >
                           ;"always open container"
                           <AND  <FSET? .I ,CONTBIT> 
-                                <NOT <FSET? .I ,OPENABLE>>
+                                <NOT <FSET? .I ,OPENABLEBIT>>
                           >
                           ;"transparent container"
                           <AND  <FSET? .I ,CONTBIT> 
@@ -734,12 +734,12 @@ other versions. These macros let us write the same code for all versions."
                             ;<TELL "Match found in container search, F is now " D .F CR>
                             <RETURN>)
                           (<OR 	<FSET? .I ,SURFACEBIT>
-                                <AND  <FSET? .I ,OPENABLE>
+                                <AND  <FSET? .I ,OPENABLEBIT>
                                       <FSET? .I ,OPENBIT>
                                 >
                                 ;"the always-open case"
                                 <AND  <FSET? .I ,CONTBIT> 
-                                      <NOT <FSET? .I ,OPENABLE>>
+                                      <NOT <FSET? .I ,OPENABLEBIT>>
                                 >
                                  ;"transparent container"
                                 <AND  <FSET? .I ,CONTBIT> 
@@ -1746,13 +1746,13 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                 <TELL .P CR>
                 <SET N 1>)>
     <COND
-        (<AND <FSET? ,PRSO ,OPENABLE> 
+        (<AND <FSET? ,PRSO ,OPENABLEBIT> 
               <NOT <FSET? ,PRSO ,OPENBIT>>
          >
                 <TELL "The " D ,PRSO " is closed." CR>
                 <COND (<AND <FSET? ,PRSO ,TRANSBIT> <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
                 <SET N 1>)
-        (<AND <FSET? ,PRSO ,OPENABLE> 
+        (<AND <FSET? ,PRSO ,OPENABLEBIT> 
               <FSET? ,PRSO ,OPENBIT>
          >
                 <TELL "The " D ,PRSO " is open. ">
@@ -1764,10 +1764,10 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                 <OR <FSET? ,PRSO ,TRANSBIT>
                     <FSET? ,PRSO ,SURFACEBIT>
                     <AND <FSET? ,PRSO ,OPENBIT>
-                         <FSET? ,PRSO ,OPENABLE>
+                         <FSET? ,PRSO ,OPENABLEBIT>
                     >
                     <AND <FSET? ,PRSO ,CONTBIT>
-                         <NOT <FSET? ,PRSO ,OPENABLE>>
+                         <NOT <FSET? ,PRSO ,OPENABLEBIT>>
                     >
                 >
      >
@@ -1793,14 +1793,14 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                         <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
                         <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
                         <COND (<FSET? .I ,CONTBIT>
-                                    <COND (<AND <FSET? .I ,OPENABLE>
+                                    <COND (<AND <FSET? .I ,OPENABLEBIT>
                                                 <FSET? .I ,OPENBIT>
                                             >
                                                     <TELL " (open) ">
                                                     <INV-DESCRIBE-CONTENTS .I>
                                           )
                                           (<AND    
-                                                <FSET? .I ,OPENABLE>
+                                                <FSET? .I ,OPENABLEBIT>
                                                 <NOT <FSET? .I ,OPENBIT>>
                                            >
                                                     <TELL " (closed)">
@@ -1810,7 +1810,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
                                                 <OR <FSET? .I ,SURFACEBIT>
                                                     <FSET? .I ,OPENBIT>
                                                     <AND <FSET? .I ,CONTBIT>
-                                                         <NOT <FSET? .I ,OPENABLE>>
+                                                         <NOT <FSET? .I ,OPENABLEBIT>>
                                                     >
                                                 >
                                             >
@@ -1968,7 +1968,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
          >
                 <TELL "The " D ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things in." CR>)
     (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
-                  <FSET? ,PRSI ,OPENABLE>
+                  <FSET? ,PRSI ,OPENABLEBIT>
          >
                 <TELL "The " D ,PRSI " is closed." CR>)
     ;"always closed case"
@@ -2117,7 +2117,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     <COND
         (<FSET? ,PRSO ,PERSONBIT>
             <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
-        (<NOT <FSET? ,PRSO ,OPENABLE>>
+        (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
             <PRINTR "That's not something you can open.">) 			
         (<FSET? ,PRSO ,OPENBIT>
             <PRINTR "It's already open.">)
@@ -2132,7 +2132,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
     <COND
         (<FSET? ,PRSO ,PERSONBIT>
             <TELL "I don't think " D ,PRSO " would appreciate that." CR>)
-        (<NOT <FSET? ,PRSO ,OPENABLE>>
+        (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
                     <PRINTR "That's not something you can close.">)
         ;(<FSET? ,PRSO ,SURFACEBIT>
             <PRINTR "That's not something you can close.">)
@@ -2408,7 +2408,7 @@ verb preaction, PRSI's ACTION, PRSO's ACTION, verb action."
 ;"This has all the flags, just in case other objects don't define them."
 <OBJECT ROOMS
     (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT WORNBIT LIGHTBIT
-           SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT OPENABLE READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT PLURALBIT)>
+           SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT PLURALBIT)>
          
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
