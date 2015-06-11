@@ -481,7 +481,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (SYNONYM SAFE)
     (ADJECTIVE SMALL)
     (IN STUDY)
-    (FLAGS CONTBIT OPENABLE)>
+    (FLAGS CONTBIT OPENABLEBIT)>
     
 <OBJECT CASE
     (DESC "case")
@@ -523,7 +523,7 @@ Additional material added for testing ZILF library by Josh Lawrence">
     (SYNONYM WALLET)
     (IN STUDY)
     (CAPACITY 2)
-    (FLAGS CONTBIT TAKEBIT OPENABLE)>
+    (FLAGS CONTBIT TAKEBIT OPENABLEBIT)>
     
 <OBJECT JAR
     (DESC "jar")
