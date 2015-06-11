@@ -1125,8 +1125,9 @@ other versions. These macros let us write the same code for all versions."
     >>
     
 <ROUTINE JIGS-UP (TEXT "AUX" RESP (Y 0) (X <>) R)
-    <TELL .TEXT CR>
-     <TELL "***** The game is over *****" CR CR>
+    <TELL .TEXT CR CR>
+     <TELL "    ****  The game is over  ****" CR CR>
+     ;"<TELL "    ****  You have died  ****" CR CR>"
      <VERSION?
             (ZIP <>)
             (EZIP <>)
@@ -1170,7 +1171,7 @@ other versions. These macros let us write the same code for all versions."
                     (T
                         <JIGS-UP "">)>)
           (<=? .Y 3>
-              <TELL "Thanks for playing." CR>
+              <TELL CR "Thanks for playing." CR>
               <QUIT>)
          (<=? .Y 4>
                <COND (<AND .X>
@@ -1208,13 +1209,14 @@ other versions. These macros let us write the same code for all versions."
      <PRINTI " (y/n) >">
      <REPEAT ()
          <SET RESP <GETONECHAR>>
-         <CRLF>
          <COND (<EQUAL? .RESP !\Y !\y>
                     <RTRUE>)
                (<EQUAL? .RESP !\N !\n>
                     <RFALSE>)
                (T
-                    <TELL "(Please type y or n) >" >)>>>
+                        "<CRLF>"
+                    <TELL "(Please type y or n) >" >)>
+                 >>
 
 <VERSION?
     (ZIP
@@ -1927,12 +1929,12 @@ other versions. These macros let us write the same code for all versions."
     ;<V-LOOK>>
 
 <ROUTINE V-QUIT ()
-    <TELL "Are you sure you want to quit?" CR>
+    <TELL "Are you sure you want to quit?">
     <COND (<YES?>
-                <TELL "Thanks for playing." CR>
+                <TELL CR "Thanks for playing." CR>
                 <QUIT>)
           (ELSE
-                <TELL "OK - not quitting." CR>)>>
+                <TELL CR "OK - not quitting." CR>)>>
 
 <ROUTINE V-EXAMINE ("AUX" P N)
     <SET N 0>
