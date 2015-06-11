@@ -953,6 +953,7 @@ other versions. These macros let us write the same code for all versions."
                 <APPLY .AC>>
            <RTRUE>)
           (<AND ,PRSO
+                <NOT ,PRSO-DIR>
                 <SET AC <GETP <LOC ,PRSO> ,P?CONTFCN>>
                 <APPLY .AC>>
            <RTRUE>)    
@@ -2593,7 +2594,7 @@ other versions. These macros let us write the same code for all versions."
 <OBJECT PLAYER
     (DESC "you")
     (SYNONYM ME MYSELF)
-    (FLAGS PERSONBIT TOUCHBIT)
+    (FLAGS NARTICLEBIT PERSONBIT TOUCHBIT)
     (ACTION PLAYER-R)>
 
 <ROUTINE PLAYER-R ()
