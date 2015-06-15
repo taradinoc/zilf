@@ -1,0 +1,306 @@
+# JOE syntax highlight file for MDL/ZIL
+# Based on lisp.jsf
+
+# Needs more work...
+
+=Mystery
+
+:begin Mystery
+	*		begin	noeat call=.expr()
+
+.subr expr
+
+.ifdef COMMENT
+=Idle		green
+=Comment 	green
+=ZString	green
+=Quote		green
+=Escape 	green
+=Atom		green
+=AtomSpace	inverse green
+=ZConstant	green
+=ZConstantSpace	inverse green
+=List		green
+=Form		green
+=Vector		green
+=Macro		green
+=Local		green
+=Global		green
+=Segment	green
+=Hash		green
+.else
+.ifdef QUOTED
+=Idle		cyan
+=Comment 	cyan
+=ZString	cyan
+=Quote		cyan
+=Escape 	cyan
+=Atom		cyan
+=AtomSpace	inverse cyan
+=ZConstant	cyan
+=ZConstantSpace	inverse cyan
+=List		cyan
+=Form		cyan
+=Vector		cyan
+=Macro		cyan
+=Local		cyan
+=Global		cyan
+=Segment	cyan
+=Hash		cyan
+.else
+.ifdef MACRO
+=Idle		bold green
+=Comment 	bold green
+=ZString	bold green
+=Quote		bold green
+=Escape 	bold green
+=Atom		bold green
+=AtomSpace	inverse bold green
+=ZConstant	bold green
+=ZConstantSpace	inverse bold green
+=List		bold green
+=Form		bold green
+=Vector		bold green
+=Macro		bold green
+=Local		bold green
+=Global		bold green
+=Segment	bold green
+=Hash		bold green
+.else
+.ifdef SEGMENT
+=Idle		bold red
+=Comment 	bold red
+=ZString	bold red
+=Quote		bold red
+=Escape 	bold red
+=Atom		bold red
+=AtomSpace	inverse bold red
+=ZConstant	bold red
+=ZConstantSpace	inverse bold red
+=List		bold red
+=Form		bold red
+=Vector		bold red
+=Macro		bold red
+=Local		bold red
+=Global		bold red
+=Segment	bold red
+=Hash		bold red
+.else
+.ifdef HASH
+=Idle		red
+=Comment 	red
+=ZString	red
+=Quote		red
+=Escape 	red
+=Atom		red
+=AtomSpace	inverse red
+=ZConstant	red
+=ZConstantSpace	inverse red
+=List		red
+=Form		red
+=Vector		red
+=Macro		red
+=Local		red
+=Global		red
+=Segment	red
+=Hash		red
+.else
+=Idle
+=Comment 	green
+=ZString 	cyan
+=Quote		cyan
+=Escape 	bold cyan
+=Atom
+=AtomSpace	inverse
+=ZConstant	red
+=ZConstantSpace	inverse red
+=List		bold yellow
+=Form		magenta
+=Vector		yellow
+=Macro		bold green
+=Local		bold magenta
+=Global		blue
+=Segment	bold red
+=Hash		red
+.endif
+.endif
+.endif
+.endif
+.endif
+
+:idle Idle
+	*		atom		recolor=-1
+	"\\"		atom_escape	recolor=-1
+	";"		comment		recolor=-1
+	"\""		string		recolor=-1
+	"\-"		negdec_or_atom	recolor=-1 mark
+	"0-9"		decimal_or_atom	recolor=-1 mark
+	"*"		octal_first	recolor=-1 mark
+	" \t\n"		idle
+	"."		lval		recolor=-1
+	","		gval		recolor=-1
+	"<"		form		recolor=-1
+	"("		list		recolor=-1
+	"["		vector		recolor=-1
+.ifdef IN_FORM
+	">"		idle		noeat return
+.endif
+.ifdef IN_LIST
+	")"		idle		noeat return
+.endif
+.ifdef IN_VECTOR
+	"]"		idle		noeat return
+.else
+.ifdef IN_UVECTOR
+	"]"		idle		noeat return
+.endif
+.endif
+	"'"		quote		recolor=-1
+	"!"		bang		recolor=-1 mark
+	"%"		macro		recolor=-1 mark
+	"#"		hash		recolor=-1
+
+:atom Atom
+	*				atom
+	"\\"				atom_escape
+	" \t\n<>(){}[]:;\"',%#"	idle	noeat return
+
+:atom_escape Atom
+	*	atom
+	" \t\n"	atom_space	recolor=-1
+
+:atom_space AtomSpace
+	*	atom	noeat
+
+:comment Comment
+	*		idle	noeat call=.expr(COMMENT)
+
+:quote Quote
+	*		idle	noeat call=.expr(QUOTED)
+
+:string ZString
+	*		string
+	"\""		idle		return
+	"\\"		string_escape	recolor=-1
+
+:string_escape Escape
+	*		string
+	"\n"		string		recolor=-2
+
+:negdec_or_atom ZConstant
+	*				atom	noeat recolormark
+	"0-9"				decimal_or_atom
+
+:decimal_or_atom ZConstant
+	*				atom	noeat recolormark
+	"0-9"				decimal_or_atom
+	" \t\n<>(){}[]:;\"',%#"		idle	noeat return
+
+:octal_first ZConstant
+	*	atom		noeat recolormark
+	"0-7"	octal_or_atom
+
+:octal_or_atom ZConstant
+	*				atom	noeat recolormark
+	"0-7"				octal_or_atom
+	"*"				octal_end
+
+:octal_end ZConstant
+	*				atom	noeat recolormark
+# Combining the "\\" into the next line doesn't work for some reason...?
+	"\\"				idle 	noeat return
+	" \t\n<>(){}[]:;\"',%#"		idle	noeat return
+
+:lval Local
+	*		lval_rest
+	" \t\n"		lval
+
+:lval_rest Local
+	*				lval_rest
+	" \t\n<>(){}[]:;\"'\\,%#"	idle	noeat return
+
+:gval Global
+	*		gval_rest
+	" \t\n"		gval
+
+:gval_rest Global
+	*				gval_rest
+	" \t\n<>(){}[]:;\"'\\,%#"	idle	noeat return
+
+:form Form
+	*	form_rest	noeat
+	">"	false		recolor=-2
+
+:false ZConstant
+	*	idle	noeat return
+
+:form_rest Form
+	*				form_rest	noeat call=.expr(IN_FORM)
+	" \t\n<(){}[]:;\"'\\,%#"	form_rest	noeat call=.expr(IN_FORM)
+	">"				idle		return
+
+:list List
+	*	list	noeat call=.expr(IN_LIST)
+	")"	idle	return
+
+:vector Vector
+	*	vector	noeat call=.expr(IN_VECTOR)
+	"]"	idle	return
+
+:bang Mystery
+	*	idle		noeat return
+	"\\"	char		recolor=-2
+	"["	uvector		recolor=-2
+.ifdef IN_UVECTOR
+	"]"	uvector_end	noeat recolor=-2
+.endif
+	" \t\n"	bang_space
+	".,<"	segment_rtn	noeat recolormark call=.expr(SEGMENT)
+
+:uvector Vector
+	*	uvector	noeat call=.expr(IN_UVECTOR)
+	"]"	idle	return
+
+:uvector_end Vector
+	*	idle	noeat return
+
+:bang_space Mystery
+	*	idle		noeat return
+	" \t\n"	bang_space
+	".,<"	segment_rtn	noeat recolormark call=.expr(SEGMENT)
+
+:char ZConstant
+	*	idle		return
+	" \t\n"	char_space	recolor=-1
+
+:char_space ZConstantSpace
+	*	idle	noeat return
+
+:segment_rtn Segment
+	*	idle	noeat return
+
+:macro Macro
+	*	idle	noeat return
+	" \t\n"	macro_body
+	".,<"	macro_rtn	noeat recolormark call=.expr(MACRO)
+	"%"	macro_body
+
+:macro_body Macro
+	*	idle	noeat return
+	" \t\n"	macro_body
+	".,<"	macro_rtn	noeat recolormark call=.expr(MACRO)
+
+:hash Hash
+	*	hash_rest
+	" \t\n"	hash
+
+:hash_rest Hash
+	*			hash_rest
+	" \t\n"			hash_second
+	"<>(){}[]:;\"'\\,%#"	idle	noeat return
+
+:hash_second Hash
+	*			idle	noeat call=.expr(HASH)
+	" \t\n"			hash_second
+
+.end
