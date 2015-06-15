@@ -1,0 +1,203 @@
+# JOE syntax highlight file for ZAP assembly language
+# Based on asm.jsf
+
+=Idle
+=Bad		bold red
+=Comment 	green
+=Constant 	cyan
+=String		cyan
+=Escape 	bold cyan
+=Keyword 	bold
+=Control
+=Directive	bold blue
+=PosBranch	bold magenta
+=NegBranch	bold magenta
+=Store		magenta
+
+:reset Idle
+	*		idle		noeat
+	" \t"		reset
+
+:idle Idle
+	*		idle
+	";"		line_comment	recolor=-1
+	"\n"		reset
+	"0-9"		decimal		recolor=-1
+	"."		directive	recolor=-1 buffer
+	"\""		string		recolor=-1
+	"a-zA-Z?$#&"	ident		mark buffer
+	",:=()>[]*&|!~+\-%^"	control		recolor=-1
+	"/"		pbranch		recolor=-1
+	"\\"		nbranch		recolor=-1
+	">"		store		recolor=-1
+
+:control Control
+	*	idle	noeat
+
+:line_comment Comment
+	*		line_comment
+	"\n"		reset
+
+:bad_number Bad
+	*		idle	noeat
+	"0-9"		bad_number
+
+:decimal Constant
+	*		idle	noeat
+	"0-9"		decimal
+
+:string	Constant
+	*		string
+	"\""		idle
+	"\\"		string_escape	recolor=-1
+
+:string_escape Escape
+	*		string
+
+:ident Idle
+	*			idle		noeat strings
+	"ADD"			kw
+	"ASHIFT"		kw
+	"ASSIGNED?"		kw
+	"BAND"			kw
+	"BCOM"			kw
+	"BOR"			kw
+	"BTST"			kw
+	"BUFOUT"		kw
+	"CALL"			kw
+	"CALL1"			kw
+	"CALL2"			kw
+	"CATCH"			kw
+	"CHECKU"		kw
+	"CLEAR"			kw
+	"COLOR"			kw
+	"COPYT"			kw
+	"CRLF"			kw
+	"CURGET"		kw
+	"CURSET"		kw
+	"DCLEAR"		kw
+	"DEC"			kw
+	"DIRIN"			kw
+	"DIROUT"		kw
+	"DISPLAY"		kw
+	"DIV"			kw
+	"DLESS?"		kw
+	"EQUAL?"		kw
+	"ERASE"			kw
+	"FCLEAR"		kw
+	"FIRST?"		kw
+	"FONT"			kw
+	"FSET"			kw
+	"FSET?"			kw
+	"FSTACK"		kw
+	"GET"			kw
+	"GETB"			kw
+	"GETP"			kw
+	"GETPT"			kw
+	"GRTR?"			kw
+	"HLIGHT"		kw
+	"ICALL"			kw
+	"ICALL1"		kw
+	"ICALL2"		kw
+	"IGRTR?"		kw
+	"IN?"			kw
+	"INC"			kw
+	"INPUT"			kw
+	"INTBL?"		kw
+	"IRESTORE"		kw
+	"ISAVE"			kw
+	"IXCALL"		kw
+	"JUMP"			kw
+	"LESS?"			kw
+	"LEX"			kw
+	"LOC"			kw
+	"MARGIN"		kw
+	"MENU"			kw
+	"MOD"			kw
+	"MOUSE-INFO"		kw
+	"MOUSE-LIMIT"		kw
+	"MOVE"			kw
+	"MUL"			kw
+	"NEXT?"			kw
+	"NEXTP"			kw
+	"NOOP"			kw
+	"ORIGINAL?"		kw
+	"PICINF"		kw
+	"PICSET"		kw
+	"POP"			kw
+	"PRINT"			kw
+	"PRINTB"		kw
+	"PRINTC"		kw
+	"PRINTD"		kw
+	"PRINTF"		kw
+	"PRINTI"		kw
+	"PRINTN"		kw
+	"PRINTR"		kw
+	"PRINTT"		kw
+	"PRINTU"		kw
+	"PTSIZE"		kw
+	"PUSH"			kw
+	"PUT"			kw
+	"PUTB"			kw
+	"PUTP"			kw
+	"QUIT"			kw
+	"RANDOM"		kw
+	"READ"			kw
+	"REMOVE"		kw
+	"RESTART"		kw
+	"RESTORE"		kw
+	"RETURN"		kw
+	"RFALSE"		kw
+	"RSTACK"		kw
+	"RTRUE"			kw
+	"SAVE"			kw
+	"SCREEN"		kw
+	"SCROLL"		kw
+	"SET"			kw
+	"SHIFT"			kw
+	"SOUND"			kw
+	"SPLIT"			kw
+	"SUB"			kw
+	"THROW"			kw
+	"USL"			kw
+	"VALUE"			kw
+	"VERIFY"		kw
+	"WINATTR"		kw
+	"WINGET"		kw
+	"WINPOS"		kw
+	"WINPUT"		kw
+	"WINSIZE"		kw
+	"XCALL"			kw
+	"XPUSH"			kw
+	"ZERO?"			kw
+	"XWSTR"			kw
+done
+	"a-zA-Z0-9\-?$#&."	ident
+
+:kw Keyword
+	*		idle	noeat
+
+:directive Directive
+	*		directive
+	"\n"		idle
+	"\""		directive_str	recolor=-1
+
+:directive_str String
+	*		directive_str
+	"\""		directive
+	"\\"		directive_str_escape
+
+:directive_str_escape Escape
+	*		directive_str
+
+:pbranch PosBranch
+	*			idle	noeat
+	"a-zA-Z0-9\-?$#&."	pbranch
+
+:nbranch NegBranch
+	*			idle	noeat
+	"a-zA-Z0-9\-?$#&."	nbranch
+
+:store Store
+	*			idle	noeat
+	"a-zA-Z0-9\-?$#&."	store
