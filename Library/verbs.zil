@@ -1,6 +1,7 @@
 "Verbs"
 
-<DIRECTIONS NORTH SOUTH EAST WEST NORTHEAST NORTHWEST SOUTHEAST SOUTHWEST IN OUT UP DOWN>
+<DIRECTIONS NORTH SOUTH EAST WEST NORTHEAST NORTHWEST SOUTHEAST SOUTHWEST
+            IN OUT UP DOWN>
 
 <SYNONYM NORTH N>
 <SYNONYM SOUTH S>
@@ -119,187 +120,139 @@
 
 <ROUTINE V-BRIEF ()
     <TELL "Brief descriptions." CR>
-    <SETG MODE ,BRIEF>
->
+    <SETG MODE ,BRIEF>>
 
 <ROUTINE V-VERBOSE ()
     <TELL "Verbose descriptions." CR>
     <SETG MODE ,VERBOSE>
-    <V-LOOK>
->
+    <V-LOOK>>
 
 <ROUTINE V-SUPERBRIEF ()
     <TELL "Superbrief descriptions." CR>
-    <SETG MODE ,SUPERBRIEF>
->
+    <SETG MODE ,SUPERBRIEF>>
 
 <ROUTINE V-LOOK ()
-    <COND
-     (<DESCRIBE-ROOM ,HERE 1>
-        <DESCRIBE-OBJECTS ,HERE>)>
->
+    <COND (<DESCRIBE-ROOM ,HERE T>
+           <DESCRIBE-OBJECTS ,HERE>)>>
 
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         ;"check for light, unless running LOOK from NOW-LIT (which sets NLITSET to 1)"
         (<NOT <OR <FSET? .RM ,LIGHTBIT>
-        <AND <SEARCH-FOR-LIGHT>>
-              <EQUAL? ,NLITSET 1>>>
-          <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
-          <RFALSE>)
-          (ELSE 
-                ;"print the room's real name"
-                <TELL D .RM CR>
-                <COND
-                    (<EQUAL? ,MODE ,SUPERBRIEF>
-                        <RFALSE>)
-                    (
-                        <AND <NOT .LONG>
-                            <FSET? .RM ,TOUCHBIT>
-                            <NOT <EQUAL? ,MODE ,VERBOSE>>>
-                    <RETURN>)>
-                <FSET .RM ,TOUCHBIT>	
-            ;"either print the room's LDESC or call its ACTION with M-LOOK"
-            <COND
-                (<SET P <GETP .RM ,P?LDESC>>
-                    <TELL .P CR>)
-                (ELSE
-                    <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)
-            >
-         )
-     >
-     <RETURN>
->
+                  <SEARCH-FOR-LIGHT>
+                  ,NLITSET>>
+         <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
+         <RFALSE>)
+        (ELSE 
+         ;"print the room's real name"
+         <TELL D .RM CR>
+         <COND (<EQUAL? ,MODE ,SUPERBRIEF>
+                <RFALSE>)
+               (<AND <NOT .LONG>
+                     <FSET? .RM ,TOUCHBIT>
+                     <NOT <EQUAL? ,MODE ,VERBOSE>>>
+                <RTRUE>)>
+         <FSET .RM ,TOUCHBIT>	
+         ;"either print the room's LDESC or call its ACTION with M-LOOK"
+         <COND (<SET P <GETP .RM ,P?LDESC>>
+                <TELL .P CR>)
+               (ELSE
+                <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>)>>
    
-<ROUTINE DESCRIBE-OBJECTS ( RM "AUX" P F N S)
+<ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
     <MAP-CONTENTS (I .RM)
         <COND
             ;"objects with DESCFNs"
-            ( <SET P <GETP .I ,P?DESCFCN>>
-                <CRLF>
-                <APPLY .P>
-                <CRLF>
-            )
+            (<SET P <GETP .I ,P?DESCFCN>>
+             <CRLF>
+             <APPLY .P>
+             <CRLF>)
             ;"un-moved objects with FDESCs"	
-           (<AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
-                                            <TELL CR .P CR>
-           )
-           ;"objects with LDESCs"
-           (
-           <SET P <GETP .I ,P?LDESC>>
-                                            <TELL CR .P CR>)>
-    >
-            ;"use N add up all non fdesc, ndescbit, personbit objects in room"
-            <MAP-CONTENTS (I .RM)
-                     <COND
-                            (<NOT <OR <FSET? .I ,NDESCBIT>
-                                          <SET P <GETP .I ,P?DESCFCN>>
-                                           <==? .I ,WINNER> 
-                                           <FSET? .I ,PERSONBIT> 
-                                           <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
+            (<AND <NOT <FSET? .I ,TOUCHBIT>>
+                  <SET P <GETP .I ,P?FDESC>>>
+             <TELL CR .P CR>)
+            ;"objects with LDESCs"
+            (<SET P <GETP .I ,P?LDESC>>
+             <TELL CR .P CR>)>>
+    ;"use N add up all non fdesc, ndescbit, personbit objects in room"
+    <MAP-CONTENTS (I .RM)
+        <COND (<NOT <OR <FSET? .I ,NDESCBIT>
+                        <SET P <GETP .I ,P?DESCFCN>>
+                        <==? .I ,WINNER> 
+                        <FSET? .I ,PERSONBIT> 
+                        <AND <NOT <FSET? .I ,TOUCHBIT>>
+                             <SET P <GETP .I ,P?FDESC>>>
+                        <SET P <GETP .I ,P?LDESC>>>>
+               <SET N <+ .N 1>>
+               <COND (<==? .N 1> <SET F .I>)
+                     (<==? .N 2> <SET S .I>)>)>>
+    ;"go through the N objects"
+    <COND (<G? .N 0>
+           <TELL CR "There ">
+           <COND (<FSET? .F ,PLURALBIT>
+                  <TELL "are ">)
+                 (ELSE
+                  <TELL "is ">)>
+           <COND (<==? .N 1> <TELL A .F>)
+                 (<==? .N 2> <TELL A .F " and " A .S>)
+                 (ELSE
+                  <MAP-CONTENTS (I .RM)
+                      <COND (<NOT <OR <FSET? .I ,NDESCBIT> 
+                                      <==? .I ,WINNER>
+                                      <SET P <GETP .I ,P?LDESC>>
+                                      <FSET? .I ,PERSONBIT> 
+                                      <SET P <GETP .I ,P?DESCFCN>>
+                                      <AND <NOT <FSET? .I ,TOUCHBIT>>
+                                           <SET P <GETP .I ,P?FDESC>>>>>
+                             <TELL A .I>
+                             <SET N <- .N 1>>
+                             <COND (<0? .N>)
+                                   (<==? .N 1> <TELL ", and ">)
+                                   (ELSE <TELL ", ">)>)>>)>
+           <TELL " here." CR>)>
+    ;"describe visible contents of containers and surfaces"
+    <MAP-CONTENTS (I .RM)
+        <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
+                    <FIRST? .I>
+                    <OR <FSET? .I ,SURFACEBIT>
+                        <AND <FSET? .I ,CONTBIT> 
+                             <FSET? .I ,OPENBIT>>>>
+               <DESCRIBE-CONTENTS .I>)>>
+    ;"Re-use N to add up NPCs"
+    <SET N 0>
+    <MAP-CONTENTS (I .RM)
+        <COND (<AND <FSET? .I ,PERSONBIT>
+                    <NOT <OR <==? .I ,WINNER>
+                             <FSET? .I ,NDESCBIT>
+                             <SET P <GETP .I ,P?DESCFCN>>
+                             <SET P <GETP .I ,P?LDESC>>
+                             <AND <NOT <FSET? .I ,TOUCHBIT>>
+                                  <SET P <GETP .I ,P?FDESC>>>>>>
+               <SET N <+ .N 1>>
+               <COND (<==? .N 1> <SET F .I>)
+                     (<==? .N 2> <SET S .I>)>)>>
+    ;"go through the N NPCs"
+    <COND (<G? .N 0>
+           ;<TELL CR>
+           <COND (<==? .N 1> <TELL CT .F " is">)
+                 (<==? .N 2> <TELL CT .F " and " T .S " are">)
+                 (ELSE
+                  <MAP-CONTENTS (I .RM)
+                      <COND (<AND <FSET? .I ,PERSONBIT>
+                                  <NOT <OR <==? .I ,WINNER>
+                                           <FSET? .I ,NDESCBIT>
+                                           <SET P <GETP .I ,P?DESCFCN>>
                                            <SET P <GETP .I ,P?LDESC>>
-                                       >
-                                  >
-                                                
-                                                <SET N <+ .N 1>>
-                                                <COND (<==? .N 1>
-                                                            <SET F .I>)
-                                                      (<==? .N 2>
-                                                            <SET S .I>)>		
-                            )>>
-            ;"go through the N objects"
-            <COND (<G? .N 0>
-                <TELL CR>
-                <COND (<FSET? .F ,PLURALBIT>
-                       <TELL "There are ">)
-                      (ELSE <TELL "There is ">)>
-                <COND
-                    (<==? .N 1> <TELL A .F>)
-                    (<==? .N 2> <TELL A .F " and " A .S>)
-                    (ELSE
-                        <MAP-CONTENTS (I .RM)
-                                 <COND
-                                    (<NOT <OR <FSET? .I ,NDESCBIT> 
-                                                <==? .I ,WINNER>
-                                                <SET P <GETP .I ,P?LDESC>>
-                                                <FSET? .I ,PERSONBIT> 
-                                                <SET P <GETP .I ,P?DESCFCN>>
-                                                <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
-                                            >
-                                     >
-                                                <TELL A .I>
-                                                <SET N <- .N 1>>
-                                                <COND
-                                                    (<0? .N>)
-                                                    (<==? .N 1> <TELL ", and ">)
-                                                    (ELSE <TELL ", ">)>)>
-                        >)>
-                  <TELL " here." CR>)>
-            ;"describe visible contents of containers and surfaces"
-            <MAP-CONTENTS (I .RM)
-                        <COND 
-                                (<AND 
-                                      <NOT <FSET? .I ,INVISIBLE>>
-                                      <FIRST? .I>
-                                      <OR <FSET? .I ,SURFACEBIT>
-                                      <AND <FSET? .I ,CONTBIT> 
-                                          <FSET? .I ,OPENBIT>
-                                      >
-                                  >
-                              >
-                                            <DESCRIBE-CONTENTS .I>)
-                        >
-            >
-            ;"Re-use N to add up NPCs"
-            <SET N 0>
-            <MAP-CONTENTS (I .RM)
-                     <COND
-                            (<AND <FSET? .I ,PERSONBIT>
-                                     <NOT <OR <==? .I ,WINNER>
-                                          <FSET? .I ,NDESCBIT>
-                                          <SET P <GETP .I ,P?DESCFCN>>
-                                                 <SET P <GETP .I ,P?LDESC>>
-                                             <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
-                                             >
-                                     >
-                                > 
-                                        <SET N <+ .N 1>>
-                                        <COND (<==? .N 1>
-                                                    <SET F .I>)
-                                                (<==? .N 2>
-                                                    <SET S .I>)>		
-                            )>>
-           ;"go through the N NPCs"
-            <COND (<G? .N 0>
-                ;<TELL CR>
-                <COND
-                    (<==? .N 1>
-                     <TELL CT .F " is">)
-                    (<==? .N 2>
-                     <TELL CT .F " and " T .S " are">)
-                    (ELSE
-                     <MAP-CONTENTS (I .RM)
-                                 <COND
-                                    (<AND <FSET? .I ,PERSONBIT>
-                                     <NOT <OR <==? .I ,WINNER>
-                                          <FSET? .I ,NDESCBIT>
-                                          <SET P <GETP .I ,P?DESCFCN>>
-                                                 <SET P <GETP .I ,P?LDESC>>
-                                             <AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>> >
-                                             >
-                                     >
-                                     > 
-                                                <COND (<==? .I .F> <TELL CT .I>) (ELSE <TELL T .I>)>
-                                                <SET N <- .N 1>>
-                                                <COND
-                                                    (<0? .N>)
-                                                    (<==? .N 1> <TELL ", and ">)
-                                                    (ELSE <TELL ",">)>)>            
-                        >
-                        <TELL " are">)>
-                  <TELL " here." CR>)>
-            <SETG NLITSET 0>
->
+                                           <AND <NOT <FSET? .I ,TOUCHBIT>>
+                                                <SET P <GETP .I ,P?FDESC>>>>>>
+                             <COND (<==? .I .F> <TELL CT .I>) (ELSE <TELL T .I>)>
+                             <SET N <- .N 1>>
+                             <COND (<0? .N>)
+                                   (<==? .N 1> <TELL ", and ">)
+                                   (ELSE <TELL ",">)>)>>
+                  <TELL " are">)>
+           <TELL " here." CR>)>
+    <SETG NLITSET <>>>
 
 <ROUTINE INDEF-ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
@@ -319,64 +272,69 @@
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (ELSE <TELL "The ">)>>
 
-<ROUTINE PRINT-INDEF (OBJ) <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
-<ROUTINE PRINT-DEF (OBJ) <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
-<ROUTINE PRINT-CINDEF (OBJ) <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
-<ROUTINE PRINT-CDEF (OBJ) <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-INDEF (OBJ)
+    <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+
+<ROUTINE PRINT-DEF (OBJ)
+    <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+
+<ROUTINE PRINT-CINDEF (OBJ)
+    <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+
+<ROUTINE PRINT-CDEF (OBJ)
+    <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
-        (ELSE <TELL "In">)>
+          (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
     <ISARE-LIST .OBJ>
     <TELL "." CR>>
     
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding ">)
-        (ELSE <TELL " (containing ">)>
+          (ELSE <TELL " (containing ">)>
     <SET F <FIRST? .OBJ>>
     <COND (<NOT .F>
-            <TELL "nothing)"> <RETURN>)>
-    <MAP-CONTENTS (I .OBJ) <SET N <+ .N 1>>>
-    <COND
-        (<==? .N 1> <TELL A .F>)
-        (<==? .N 2> <TELL A .F " and " A <NEXT? .F>>)
-        (ELSE
-            <MAP-CONTENTS (I .OBJ)
-                <TELL A .I>
-                <SET N <- .N 1>>
-                <COND
-                    (<0? .N>)
-                    (<==? .N 1> <TELL ", and ">)
-                    (ELSE <TELL ", ">)>
-             >)
-       >
-    <TELL ")">
- >
+           <TELL "nothing)">
+           <RETURN>)>
+    <MAP-CONTENTS (I .OBJ)
+        <SET N <+ .N 1>>>
+    <COND (<==? .N 1>
+           <TELL A .F>)
+          (<==? .N 2>
+           <TELL A .F " and " A <NEXT? .F>>)
+          (ELSE
+           <MAP-CONTENTS (I .OBJ)
+               <TELL A .I>
+               <SET N <- .N 1>>
+               <COND (<0? .N>)
+                     (<==? .N 1> <TELL ", and ">)
+                     (ELSE <TELL ", ">)>>)>
+    <TELL ")">>
  
-
 <ROUTINE ISARE-LIST (O "AUX" N F)
     <SET F <FIRST? .O>>
     <COND (<NOT .F>
-            <TELL "is nothing"> <RETURN>)>
-    <MAP-CONTENTS (I .O) <SET N <+ .N 1>>>
-    <COND
-        (<==? .N 1>
-         <COND (<FSET? .F ,PLURALBIT>
-                <TELL "are ">)
-               (ELSE <TELL "is ">)>
-         <TELL A .F>)
-        (<==? .N 2>
-         <TELL "are " A .F " and " A <NEXT? .F>>)
-        (ELSE
-            <TELL "are ">
-            <MAP-CONTENTS (I .O)
-                <TELL A .I>
-                <SET N <- .N 1>>
-                <COND
-                    (<0? .N>)
-                    (<==? .N 1> <TELL ", and ">)
-                    (ELSE <TELL ", ">)>>)>>
+           <TELL "is nothing">
+           <RETURN>)>
+    <MAP-CONTENTS (I .O)
+        <SET N <+ .N 1>>>
+    <COND (<==? .N 1>
+           <COND (<FSET? .F ,PLURALBIT>
+                  <TELL "are ">)
+                 (ELSE <TELL "is ">)>
+           <TELL A .F>)
+          (<==? .N 2>
+           <TELL "are " A .F " and " A <NEXT? .F>>)
+          (ELSE
+           <TELL "are ">
+           <MAP-CONTENTS (I .O)
+               <TELL A .I>
+               <SET N <- .N 1>>
+               <COND (<0? .N>)
+                     (<==? .N 1> <TELL ", and ">)
+                     (ELSE <TELL ", ">)>>)>>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
@@ -415,398 +373,351 @@
 
 <ROUTINE V-WALK ("AUX" PT PTS RM)
     <COND (<NOT ,PRSO-DIR>
-            <PRINTR "You must give a direction to walk in.">)
-        (<0? <SET PT <GETPT ,HERE ,PRSO>>>
-            <PRINTR "You can't go that way.">)
-        (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
-            <SET RM <GET/B .PT ,EXIT-RM>>)
-        (<==? .PTS ,NEXIT>
-            <PRINT <GET .PT ,NEXIT-MSG>>
-            <CRLF>
-            <RTRUE>)
-        (<==? .PTS ,FEXIT>
-            <OR
-                <SET RM <APPLY <GET .PT ,FEXIT-RTN>>>
-                <RTRUE>>)
-        (<==? .PTS ,CEXIT>
-            <COND (<VALUE <GETB .PT ,CEXIT-VAR>>
-                    <SET RM <GET/B .PT ,EXIT-RM>>)
-                (<SET RM <GET .PT ,CEXIT-MSG>>
-                    <PRINT .RM>
-                    <CRLF>
-                    <RTRUE>)
-                (ELSE
-                    <PRINTR "You can't go that way.">)>)
-        (<==? .PTS ,DEXIT>
-            <PRINTR "Not implemented.">)
-        (ELSE
-            <TELL "Broken exit (" N .PTS ")." CR>
-            <RTRUE>)>
-    <GOTO .RM>
-    ;<V-LOOK>>
+           <PRINTR "You must give a direction to walk in.">)
+          (<0? <SET PT <GETPT ,HERE ,PRSO>>>
+           <PRINTR "You can't go that way.">)
+          (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
+           <SET RM <GET/B .PT ,EXIT-RM>>)
+          (<==? .PTS ,NEXIT>
+           <PRINT <GET .PT ,NEXIT-MSG>>
+           <CRLF>
+           <RTRUE>)
+          (<==? .PTS ,FEXIT>
+           <OR <SET RM <APPLY <GET .PT ,FEXIT-RTN>>>
+               <RTRUE>>)
+          (<==? .PTS ,CEXIT>
+           <COND (<VALUE <GETB .PT ,CEXIT-VAR>>
+                  <SET RM <GET/B .PT ,EXIT-RM>>)
+                 (<SET RM <GET .PT ,CEXIT-MSG>>
+                  <PRINT .RM>
+                  <CRLF>
+                  <RTRUE>)
+                 (ELSE
+                  <PRINTR "You can't go that way.">)>)
+          (<==? .PTS ,DEXIT>
+           ;"TODO: implement DEXIT"
+           <PRINTR "Not implemented.">)
+          (ELSE
+           <TELL "Broken exit (" N .PTS ")." CR>
+           <RTRUE>)>
+    <GOTO .RM>>
 
 <ROUTINE V-QUIT ()
     <TELL "Are you sure you want to quit?">
     <COND (<YES?>
-                <TELL CR "Thanks for playing." CR>
-                <QUIT>)
+           <TELL CR "Thanks for playing." CR>
+           <QUIT>)
           (ELSE
-                <TELL CR "OK - not quitting." CR>)>>
+           <TELL CR "OK - not quitting." CR>)>>
 
-<ROUTINE V-EXAMINE ("AUX" P N)
-    <SET N 0>
+<ROUTINE V-EXAMINE ("AUX" P (N <>))
     <COND (<SET P <GETP ,PRSO P?LDESC>>
-                <TELL .P CR>
-                <SET N 1>)>
+           <TELL .P CR>
+           <SET N T>)>
     <COND (<SET P <GETP ,PRSO P?TEXT>>
-                <TELL .P CR>
-                <SET N 1>)>
-    <COND
-        (<AND <FSET? ,PRSO ,OPENABLEBIT> 
-              <NOT <FSET? ,PRSO ,OPENBIT>>
-         >
-                <TELL CT ,PRSO " is closed." CR>
-                <COND (<AND <FSET? ,PRSO ,TRANSBIT> <FIRST? ,PRSO>> <DESCRIBE-CONTENTS ,PRSO>)>
-                <SET N 1>)
-        (<AND <FSET? ,PRSO ,OPENABLEBIT> 
-              <FSET? ,PRSO ,OPENBIT>
-         >
-                <TELL CT ,PRSO " is open. ">
-                <DESCRIBE-CONTENTS ,PRSO>
-                <SET N 1>)
-        (<AND 	<AND <FSET? ,PRSO ,CONTBIT> 
-                     <AND <FIRST? ,PRSO>>
-                >
+           <TELL .P CR>
+           <SET N T>)>
+    <COND (<AND <FSET? ,PRSO ,OPENABLEBIT> 
+                <NOT <FSET? ,PRSO ,OPENBIT>>>
+           <TELL CT ,PRSO " is closed." CR>
+           <COND (<AND <FSET? ,PRSO ,TRANSBIT>
+                       <FIRST? ,PRSO>>
+                  <DESCRIBE-CONTENTS ,PRSO>)>
+           <SET N T>)
+          (<AND <FSET? ,PRSO ,OPENABLEBIT> 
+                <FSET? ,PRSO ,OPENBIT>>
+           <TELL CT ,PRSO " is open. ">
+           <DESCRIBE-CONTENTS ,PRSO>
+           <SET N T>)
+          (<AND <FSET? ,PRSO ,CONTBIT> 
+                <FIRST? ,PRSO>
                 <OR <FSET? ,PRSO ,TRANSBIT>
                     <FSET? ,PRSO ,SURFACEBIT>
                     <AND <FSET? ,PRSO ,OPENBIT>
-                         <FSET? ,PRSO ,OPENABLEBIT>
-                    >
+                         <FSET? ,PRSO ,OPENABLEBIT>>
                     <AND <FSET? ,PRSO ,CONTBIT>
-                         <NOT <FSET? ,PRSO ,OPENABLEBIT>>
-                    >
-                >
-     >
-                <DESCRIBE-CONTENTS ,PRSO>
-                <SET N 1>)
-     >
-     <COND (<0? .N>
-              <TELL "You see nothing special about " T ,PRSO "." CR>)
-    >
->
-
+                         <NOT <FSET? ,PRSO ,OPENABLEBIT>>>>>
+           <DESCRIBE-CONTENTS ,PRSO>
+           <SET N T>)>
+     <COND (<NOT .N>
+            <TELL "You see nothing special about " T ,PRSO "." CR>)>>
 
 <ROUTINE V-INVENTORY ()
-  ;"check for light first"
-  <COND
-     (<OR <FSET? ,HERE ,LIGHTBIT>
-           <AND <SEARCH-FOR-LIGHT>>>
-                <COND
-                (<FIRST? ,WINNER>
-                    <TELL "You are carrying:" CR>
-                    <MAP-CONTENTS (I ,WINNER)
-                        <TELL "   " A .I>
-                        <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
-                        <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
-                        <COND (<FSET? .I ,CONTBIT>
-                                    <COND (<AND <FSET? .I ,OPENABLEBIT>
-                                                <FSET? .I ,OPENBIT>
-                                            >
-                                                    <TELL " (open) ">
-                                                    <INV-DESCRIBE-CONTENTS .I>
-                                          )
-                                          (<AND    
-                                                <FSET? .I ,OPENABLEBIT>
-                                                <NOT <FSET? .I ,OPENBIT>>
-                                           >
-                                                    <TELL " (closed)">
-                                          )
-                                          (<AND 
-                                                ;<FIRST? .I>
-                                                <OR <FSET? .I ,SURFACEBIT>
-                                                    <FSET? .I ,OPENBIT>
-                                                    <AND <FSET? .I ,CONTBIT>
-                                                         <NOT <FSET? .I ,OPENABLEBIT>>
-                                                    >
-                                                >
-                                            >
-                                                    <INV-DESCRIBE-CONTENTS .I>
-                                          )
-                                    >
-                        )	
-                        >
-                        <CRLF>>)
-                (ELSE
-                    <TELL "You are empty-handed." CR>)>)
-    (ELSE <TELL "It is too dark to see what you're carrying." CR>)>
->
+    ;"check for light first"
+    <COND (<OR <FSET? ,HERE ,LIGHTBIT>
+               <SEARCH-FOR-LIGHT>>
+           <COND (<FIRST? ,WINNER>
+                  <TELL "You are carrying:" CR>
+                  <MAP-CONTENTS (I ,WINNER)
+                      <TELL "   " A .I>
+                      <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
+                      <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
+                      <COND (<FSET? .I ,CONTBIT>
+                             <COND (<AND <FSET? .I ,OPENABLEBIT>
+                                         <FSET? .I ,OPENBIT>>
+                                    <TELL " (open) ">
+                                    <INV-DESCRIBE-CONTENTS .I>)
+                                   (<AND <FSET? .I ,OPENABLEBIT>
+                                         <NOT <FSET? .I ,OPENBIT>>>
+                                    <TELL " (closed)">)
+                                   (<AND ;<FIRST? .I>
+                                         <OR <FSET? .I ,SURFACEBIT>
+                                             <FSET? .I ,OPENBIT>
+                                             <AND <FSET? .I ,CONTBIT>
+                                                  <NOT <FSET? .I ,OPENABLEBIT>>>>>
+                                    <INV-DESCRIBE-CONTENTS .I>)>)>
+                      <CRLF>>)
+                 (ELSE
+                  <TELL "You are empty-handed." CR>)>)
+          (ELSE
+           <TELL "It is too dark to see what you're carrying." CR>)>>
 
 <ROUTINE V-TAKE ("AUX" HOLDER S X)
-    <COND
-        (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-        (<NOT <FSET? ,PRSO ,TAKEBIT>>
-            <PRINTR "That's not something you can pick up.">)
-        (<IN? ,PRSO ,WINNER>
-            <PRINTR "You already have that.">)
-        (ELSE
-            <COND
-                (<FSET? ,PRSO ,WEARBIT>
-                    <TELL "You wear " T ,PRSO "." CR>
-                    <FSET ,PRSO ,WORNBIT>
-                    <MOVE ,PRSO ,WINNER>
-                    <FSET ,PRSO ,TOUCHBIT>)
-                (ELSE
-                    ;"See if picked up object is being taken from a container"
-                    <SET HOLDER <TAKE-CONT-SEARCH ,HERE>>
-                    ;<TELL "HOLDER is currently " D .HOLDER CR>
-                    <COND (<AND .HOLDER>
-                                <COND (<FSET? .HOLDER ,SURFACEBIT>
-                                            <TELL "You pick up " T ,PRSO "." CR>
-                                            <FSET ,PRSO ,TOUCHBIT>
-                                            <MOVE ,PRSO ,WINNER>)
-                                       (<FSET? .HOLDER ,OPENBIT>
-                                            <TELL "You reach in " T .HOLDER " and take " T ,PRSO "." CR>
-                                            <FSET ,PRSO ,TOUCHBIT>
-                                            <MOVE ,PRSO ,WINNER>)
-                                      (ELSE
-                                            <TELL "The enclosing " D .HOLDER " prevents you from taking " T ,PRSO "." CR>)
-                                >)
-                          (ELSE <TELL "You pick up " T ,PRSO "." CR>
-                          <FSET ,PRSO ,TOUCHBIT>
-                          <MOVE ,PRSO ,WINNER>)
-                    >
-                 )>)>>
+    <COND (<FSET? ,PRSO ,PERSONBIT>
+           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
+          (<NOT <FSET? ,PRSO ,TAKEBIT>>
+           <PRINTR "That's not something you can pick up.">)
+          (<IN? ,PRSO ,WINNER>
+           <PRINTR "You already have that.">)
+          (<FSET? ,PRSO ,WEARBIT>
+           <TELL "You wear " T ,PRSO "." CR>
+           <FSET ,PRSO ,WORNBIT>
+           <MOVE ,PRSO ,WINNER>
+           <FSET ,PRSO ,TOUCHBIT>)
+          ;"See if picked up object is being taken from a container"
+          (<SET HOLDER <TAKE-CONT-SEARCH ,HERE>>
+           ;<TELL "HOLDER is currently " D .HOLDER CR>
+           <COND (<FSET? .HOLDER ,SURFACEBIT>
+                  <TELL "You pick up " T ,PRSO "." CR>
+                  <FSET ,PRSO ,TOUCHBIT>
+                  <MOVE ,PRSO ,WINNER>)
+                 (<FSET? .HOLDER ,OPENBIT>
+                  <TELL "You reach in " T .HOLDER " and take " T ,PRSO "." CR>
+                  <FSET ,PRSO ,TOUCHBIT>
+                  <MOVE ,PRSO ,WINNER>)
+                 (ELSE
+                  <TELL "The enclosing " D .HOLDER " prevents you from taking " T ,PRSO "." CR>)>)
+          (ELSE
+           <TELL "You pick up " T ,PRSO "." CR>
+           <FSET ,PRSO ,TOUCHBIT>
+           <MOVE ,PRSO ,WINNER>)>>
                  
-                 
- <ROUTINE TAKE-CONT-SEARCH (A "AUX" H)  	
-            <MAP-CONTENTS (I .A)
-                        ;<TELL "Looping to check containers.  I is currently " D .I CR>
-                        <COND (<OR <FSET? .I ,CONTBIT>
-                                   <==? .I ,WINNER>
-                               >
-                                        ;<TELL "Found container " D .I CR>
-                                        <COND (<IN? ,PRSO .I>
-                                                ;<TELL "PRSO is in I, setting HOLDER" CR>
-                                                <SET H .I>
-                                                <RETURN>)
-                                              (ELSE
-                                                <SET H <TAKE-CONT-SEARCH .I>>
-                                                <AND .H <RETURN>>
-                                              )
-                                        >
-                              )
-                        >
-            >
-            <AND .H <RETURN .H>>
-> 
-
-           
+<ROUTINE TAKE-CONT-SEARCH (A "AUX" H)  	
+    <MAP-CONTENTS (I .A)
+        ;<TELL "Looping to check containers.  I is currently " D .I CR>
+        <COND (<OR <FSET? .I ,CONTBIT>
+                   <==? .I ,WINNER>>
+               ;<TELL "Found container " D .I CR>
+               <COND (<IN? ,PRSO .I>
+                      ;<TELL "PRSO is in I, setting HOLDER" CR>
+                      <SET H .I>
+                      <RETURN>)
+                     (ELSE
+                      <SET H <TAKE-CONT-SEARCH .I>>
+                      <AND .H <RETURN>>)>)>>
+    <AND .H <RETURN .H>>> 
+          
 
 <ROUTINE V-DROP ()
     <COND
         (<NOT <IN? ,PRSO ,WINNER>>
-            <PRINTR "You don't have that.">)
+         <PRINTR "You don't have that.">)
         (ELSE
-            <MOVE ,PRSO ,HERE>
-            <FSET ,PRSO ,TOUCHBIT>
-            <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You drop " T ,PRSO "." CR>)>>
+         <MOVE ,PRSO ,HERE>
+         <FSET ,PRSO ,TOUCHBIT>
+         <FCLEAR ,PRSO ,WORNBIT>
+         <TELL "You drop " T ,PRSO "." CR>)>>
 
 <ROUTINE INDIRECTLY-IN? (OBJ CONT)
     <REPEAT ()
-        <COND (<0? .OBJ> <RFALSE>)
-            (<EQUAL? <SET OBJ <LOC .OBJ>> .CONT> <RTRUE>)>>>
+        <COND (<0? .OBJ>
+               <RFALSE>)
+              (<EQUAL? <SET OBJ <LOC .OBJ>> .CONT>
+               <RTRUE>)>>>
 
 <ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
-    <COND
-        (<FSET? ,PRSI ,PERSONBIT>
-            <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
-        (<NOT <AND <FSET? ,PRSI ,CONTBIT> <FSET? ,PRSI ,SURFACEBIT>>>
-            <TELL CT ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things on." CR>)
-        (<NOT <IN? ,PRSO ,WINNER>>
-            <PRINTR "You don't have that.">)
-        (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
-            <PRINTR "You can't put something on itself.">)
-        (ELSE
-            ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
-            <COND (<SET X <GETPT ,PRSO ,P?SIZE>>
-                        <SET S <GETP ,PRSO ,P?SIZE>>
-                        ;<TELL D ,PRSO " has a size prop of " N .S CR>)
-                  (ELSE 
-                        ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
-                        <SET S 5>)>
-            <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                        <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
-                        ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
-                  (ELSE 
-                        ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
-                        <SET CCAP 5>
-                        ;"set bottomless flag"
-                        <SET B 1>
-                  )>
+    <COND (<FSET? ,PRSI ,PERSONBIT>
+           <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
+          (<NOT <AND <FSET? ,PRSI ,CONTBIT>
+                     <FSET? ,PRSI ,SURFACEBIT>>>
+           <TELL CT ,PRSI>
+           <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">)
+                 (ELSE <TELL " isn't">)>
+           <TELL " something you can put things on." CR>)
+          (<NOT <IN? ,PRSO ,WINNER>>
+           <PRINTR "You don't have that.">)
+          (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
+           <PRINTR "You can't put something on itself.">)
+          (ELSE
+           ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
+           <COND (<SET X <GETPT ,PRSO ,P?SIZE>>
+                  <SET S <GETP ,PRSO ,P?SIZE>>
+                  ;<TELL D ,PRSO " has a size prop of " N .S CR>)
+                 (ELSE 
+                  ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
+                  <SET S 5>)>
+           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
+                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+                  ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
+                 (ELSE 
+                  ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
+                  <SET CCAP 5>
+                  ;"set bottomless flag"
+                  <SET B 1>)>
            <COND (<SET X <GETPT ,PRSI ,P?SIZE>>
-                        <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-                        ;<TELL D ,PRSI " has a size prop of " N .CSIZE CR>)
+                  <SET CSIZE <GETP ,PRSI ,P?SIZE>>
+                  ;<TELL D ,PRSI " has a size prop of " N .CSIZE CR>)
                   (ELSE <SET CSIZE 5>)>
-            ;<TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE ", capacity " >
-                        ;<COND (<0? .B>
+           ;<TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE ", capacity ">
+                 ;<COND (<0? .B>
                             ;<TELL N .CCAP CR>)
                         ;(ELSE <TELL "infinite" CR>)>
-            <COND (<OR <G? .S .CCAP>
-                       <G? .S .CSIZE>>
-                            <TELL "That won't fit on " T ,PRSI "." CR>
-                            <RETURN>)>
-            <COND (<0? .B>
-                        ;"Determine weight of contents of IO"
-                        <SET W <CONTENTS-WEIGHT ,PRSI>>
-                        ;<TELL "Back from Contents-weight loop" CR>
-                        <SET X <+ .W .S>>
-                        <COND (<G? .X .CCAP> 
-                            <TELL "There's not enough room on " T ,PRSI "." CR>
-                            ;<TELL D ,PRSO " of size " N .S " can't fit, since current weight of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
-                            <RETURN>)>
-                       ; <TELL D ,PRSO " of size " N .S " can fit, since current weight of of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
+           <COND (<OR <G? .S .CCAP> <G? .S .CSIZE>>
+                  <TELL "That won't fit on " T ,PRSI "." CR>
+                  <RETURN>)>
+           <COND (<0? .B>
+                  ;"Determine weight of contents of IO"
+                  <SET W <CONTENTS-WEIGHT ,PRSI>>
+                  ;<TELL "Back from Contents-weight loop" CR>
+                  <SET X <+ .W .S>>
+                  <COND (<G? .X .CCAP> 
+                         <TELL "There's not enough room on " T ,PRSI "." CR>
+                         ;<TELL D ,PRSO " of size " N .S " can't fit, since current weight of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
+                         <RETURN>)>
+                  ; <TELL D ,PRSO " of size " N .S " can fit, since current weight of of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
                   )>
-            <MOVE ,PRSO ,PRSI>
-            <FSET ,PRSO ,TOUCHBIT>
-            <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>
-    )>>
+           <MOVE ,PRSO ,PRSI>
+           <FSET ,PRSO ,TOUCHBIT>
+           <FCLEAR ,PRSO ,WORNBIT>
+           <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>>
             
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
     ;<TELL "In the PUT-IN routine" CR>
-    <COND 
-        (<FSET? ,PRSI ,PERSONBIT>
-                <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
-        (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
-             <FSET? ,PRSI ,SURFACEBIT>
-         >
-                <TELL CT ,PRSI> <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">) (ELSE <TELL " isn't">)> <TELL " something you can put things in." CR>)
-    (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
-                  <FSET? ,PRSI ,OPENABLEBIT>
-         >
-                <TELL CT ,PRSI " is closed." CR>)
-    ;"always closed case"
-    (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
-           <FSET? ,PRSI ,CONTBIT>
-         >
-                <TELL "You see no way to put things into " T ,PRSI  "." CR>)
-        (<NOT <IN? ,PRSO ,WINNER>>
-            <PRINTR "You aren't holding that.">)
-        (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
+    <COND (<FSET? ,PRSI ,PERSONBIT>
+           <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
+          (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
+               <FSET? ,PRSI ,SURFACEBIT>>
+           <TELL CT ,PRSI>
+           <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">)
+                 (ELSE <TELL " isn't">)>
+           <TELL " something you can put things in." CR>)
+          (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
+                <FSET? ,PRSI ,OPENABLEBIT>>
+           <TELL CT ,PRSI " is closed." CR>)
+          ;"always closed case"
+          (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
+                <FSET? ,PRSI ,CONTBIT>>
+           <TELL "You see no way to put things into " T ,PRSI  "." CR>)
+          (<NOT <IN? ,PRSO ,WINNER>>
+           <PRINTR "You aren't holding that.">)
+          (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
             <PRINTR "You can't put something in itself.">)
-        (ELSE
-            ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
+          (ELSE
+           ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
             <COND (<SET X <GETPT ,PRSO ,P?SIZE>>
-                        <SET S <GETP ,PRSO ,P?SIZE>>
-                        ;<TELL D ,PRSO " has a size prop of " N .S CR>)
+                   <SET S <GETP ,PRSO ,P?SIZE>>
+                   ;<TELL D ,PRSO " has a size prop of " N .S CR>)
                   (ELSE 
-                        ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
-                        <SET S 5>)>
+                   ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
+                   <SET S 5>)>
             <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                        <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
-                        <COND (<AND ,DBCONT> <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>)
+                   <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+                   <COND (<AND ,DBCONT> <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>)
                   (ELSE 
-                        <COND (<AND ,DBCONT> <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>
-                        <SET CCAP 5>
-                        ;"set bottomless flag"
-                        <SET B 1>
-                  )>
+                   <COND (<AND ,DBCONT> <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>
+                   <SET CCAP 5>
+                   ;"set bottomless flag"
+                   <SET B 1>)>
            <COND (<SET X <GETPT ,PRSI ,P?SIZE>>
-                        <SET CSIZE <GETP ,PRSI ,P?SIZE>>)
-                  (ELSE <SET CSIZE 5>)>
+                  <SET CSIZE <GETP ,PRSI ,P?SIZE>>)
+                 (ELSE <SET CSIZE 5>)>
             ;<COND (<AND ,DBCONT> <TELL D ,PRSI " has a size of " N .CSIZE CR>)>
-        <COND (<AND ,DBCONT> <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR >)>
-                        ;<COND (<0? .B>
-                            ;<TELL N .CCAP CR>)
-                        ;(ELSE <TELL "infinite" CR>)>
-            <COND (<OR <G? .S .CCAP>
-                       <G? .S .CSIZE>>
-                            <TELL "That won't fit in " T ,PRSI "." CR>
-                            <RETURN>)>
-            <COND (<0? .B>
-                        ;"Determine weight of contents of IO"
-                        <SET W <CONTENTS-WEIGHT ,PRSI>>
-                        ;<TELL "Back from Contents-weight loop" CR>
-                        <SET X <+ .W .S>>
-                        <COND (<G? .X .CCAP> 
-                            <TELL "There's not enough room in " T ,PRSI "." CR>
-                            <COND (<AND ,DBCONT> <TELL D ,PRSO " can't fit, since current bulk of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>)>
-                            <RETURN>)>
-                        <COND (<AND ,DBCONT> <TELL D ,PRSO " can fit, since current bulk of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>)>
-                  )>
-            <MOVE ,PRSO ,PRSI>
-            <FSET ,PRSO ,TOUCHBIT>
-            <FCLEAR ,PRSO ,WORNBIT>
-            <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>
-    )>>
+        <COND (<AND ,DBCONT>
+               <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR>)>
+        ;<COND (<0? .B>
+        ;<TELL N .CCAP CR>)
+        ;(ELSE <TELL "infinite" CR>)>
+        <COND (<OR <G? .S .CCAP>
+                   <G? .S .CSIZE>>
+               <TELL "That won't fit in " T ,PRSI "." CR>
+               <RETURN>)>
+        <COND (<0? .B>
+               ;"Determine weight of contents of IO"
+               <SET W <CONTENTS-WEIGHT ,PRSI>>
+               ;<TELL "Back from Contents-weight loop" CR>
+               <SET X <+ .W .S>>
+               <COND (<G? .X .CCAP> 
+                      <TELL "There's not enough room in " T ,PRSI "." CR>
+                      <COND (<AND ,DBCONT>
+                             <TELL D ,PRSO " can't fit, since current bulk of "
+                                   D ,PRSI "'s contents is " N .W " and "
+                                   D ,PRSI "'s capacity is " N .CCAP CR>)>
+                      <RETURN>)>
+               <COND (<AND ,DBCONT>
+                      <TELL D ,PRSO " can fit, since current bulk of " D ,PRSI
+                            "'s contents is " N .W " and " D ,PRSI "'s capacity is "
+                            N .CCAP CR>)>)>
+        <MOVE ,PRSO ,PRSI>
+        <FSET ,PRSO ,TOUCHBIT>
+        <FCLEAR ,PRSO ,WORNBIT>
+        <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>>
             
-            
-  <ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
-            ;"add size of objects inside container - does not recurse through containers withink this container"
-            <MAP-CONTENTS (I .O)
-                        ;<TELL "Content-weight loop for " D .O ", which contains " D .I CR>
-                        <COND (<SET X <GETPT .I ,P?SIZE>>
-                                    <SET X <GETP .I ,P?SIZE>>
-                                    <SET W <+ .W .X>>)
-                        (ELSE <SET W <+ .W 5>>)>
-                        ;<TELL "Content weight of " D .O " is now " N .W CR>
-            >
-            ;<TELL "Total weight of contents of " D .O " is " N .W CR>
-            <AND .W <RETURN .W>>
->
+<ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
+    ;"add size of objects inside container - does not recurse through containers
+      within this container"
+    <MAP-CONTENTS (I .O)
+        ;<TELL "Content-weight loop for " D .O ", which contains " D .I CR>
+        <COND (<SET X <GETPT .I ,P?SIZE>>
+               <SET X <GETP .I ,P?SIZE>>
+               <SET W <+ .W .X>>)
+              (ELSE
+               <SET W <+ .W 5>>)>
+        ;<TELL "Content weight of " D .O " is now " N .W CR>>
+    ;<TELL "Total weight of contents of " D .O " is " N .W CR>
+    .W>
  
- 
- <ROUTINE WEIGHT (O "AUX" X W)  	
-            ;"Unlike CONTENTS-WEIGHT - drills down through all contents, adding sizes of all objects + contents"
-            ;"start with size of container itself"
-            <COND (<SET X <GETPT .O ,P?SIZE>>
-                                    <SET W <GETP .O ,P?SIZE>>)
-                        (ELSE <SET W <+ .W 5>>)>
-            ;"add size of objects inside container"
-            <MAP-CONTENTS (I .O)
-                        <TELL "Looping to set weight.  I is currently " D .I CR>
-                        <COND (<SET X <GETPT .I ,P?SIZE>>
-                                    <SET X <GETP .I ,P?SIZE>>
-                                    <SET W <+ .W .X>>)
-                        (ELSE <SET W <+ .W 5>>)>
-                        ;<TELL "Weight of " D .O " is now " N .W CR>
-                        <COND (<OR <FSET? .I ,CONTBIT>
-                                   <==? .I ,WINNER>
-                               >
-                                    ;<TELL "Weightloop: found container " D .I CR>
-                                    <SET X <WEIGHT .I>>
-                                    <SET W <+ .W .X>>
-                                    ;<TELL "Weightloop-containerloop: Weight of " D .O " is now " N .W CR>
-                              )
-                        >
-            >
-            ;<TELL "Total weight (its size + contents' size) of " D .O " is " N .W CR>
-            <AND .W <RETURN .W>>
-> 
-
-
+<ROUTINE WEIGHT (O "AUX" X W)  	
+    ;"Unlike CONTENTS-WEIGHT - drills down through all contents, adding sizes of all objects + contents"
+    ;"start with size of container itself"
+    <COND (<SET X <GETPT .O ,P?SIZE>>
+           <SET W <GETP .O ,P?SIZE>>)
+          (ELSE <SET W <+ .W 5>>)>
+    ;"add size of objects inside container"
+    <MAP-CONTENTS (I .O)
+         <TELL "Looping to set weight.  I is currently " D .I CR>
+         <COND (<SET X <GETPT .I ,P?SIZE>>
+                <SET X <GETP .I ,P?SIZE>>
+                <SET W <+ .W .X>>)
+               (ELSE <SET W <+ .W 5>>)>
+         ;<TELL "Weight of " D .O " is now " N .W CR>
+         <COND (<OR <FSET? .I ,CONTBIT>
+                    <==? .I ,WINNER>>
+                ;<TELL "Weightloop: found container " D .I CR>
+                <SET X <WEIGHT .I>>
+                <SET W <+ .W .X>>
+                ;<TELL "Weightloop-containerloop: Weight of " D .O " is now " N .W CR>)>>
+    ;<TELL "Total weight (its size + contents' size) of " D .O " is " N .W CR>
+    <AND .W <RETURN .W>>>
 
 <ROUTINE V-WEAR ()
     <COND (<FSET? ,PRSO ,WEARBIT>
-            <PERFORM ,V?TAKE ,PRSO>)
-        (ELSE <TELL "You can't wear that." CR>)>>
+           <PERFORM ,V?TAKE ,PRSO>)
+          (ELSE
+           <TELL "You can't wear that." CR>)>>
 
 <ROUTINE V-UNWEAR ()
     <COND (<AND <FSET? ,PRSO ,WORNBIT>
                 <IN? ,PRSO ,WINNER>>
-                    <PERFORM ,V?DROP ,PRSO>)
-        (ELSE <TELL "You aren't wearing that." CR>)>>
+           <PERFORM ,V?DROP ,PRSO>)
+          (ELSE <TELL "You aren't wearing that." CR>)>>
         
 <ROUTINE V-EAT ()
     <COND (<FSET? ,PRSO ,EDIBLEBIT>
-                ;"TO DO: improve this check will a real, drilling-down HELD? routine"
-                <COND (<IN? ,PRSO ,WINNER>
-                        <TELL "You devour " T ,PRSO CR>
-                        <REMOVE ,PRSO>
-                        )
-                      (ELSE <TELL "You're not holding that." CR>)>)	
+           ;"TO DO: improve this check will a real, drilling-down HELD? routine"
+           <COND (<IN? ,PRSO ,WINNER>
+                  <TELL "You devour " T ,PRSO CR>
+                  <REMOVE ,PRSO>)
+                 (ELSE <TELL "You're not holding that." CR>)>)	
           (ELSE <TELL "That's hardly edible." CR>)>>
 
 <ROUTINE V-VERSION ()
@@ -821,37 +732,33 @@
     <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>>
     
 <ROUTINE V-OPEN ()
-    <COND
-        (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-        (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
-            <PRINTR "That's not something you can open.">) 			
-        (<FSET? ,PRSO ,OPENBIT>
-            <PRINTR "It's already open.">)
-        (<FSET? ,PRSO ,LOCKEDBIT>
-            <TELL "You'll have to unlock it first." CR>)
-        (ELSE
-            <FSET ,PRSO ,TOUCHBIT>
-            <FSET ,PRSO ,OPENBIT>
-            <TELL "You open " T ,PRSO "." CR>
-            <DESCRIBE-CONTENTS ,PRSO>
-        )>>
+    <COND (<FSET? ,PRSO ,PERSONBIT>
+           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
+          (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
+           <PRINTR "That's not something you can open.">) 			
+          (<FSET? ,PRSO ,OPENBIT>
+           <PRINTR "It's already open.">)
+          (<FSET? ,PRSO ,LOCKEDBIT>
+           <TELL "You'll have to unlock it first." CR>)
+          (ELSE
+           <FSET ,PRSO ,TOUCHBIT>
+           <FSET ,PRSO ,OPENBIT>
+           <TELL "You open " T ,PRSO "." CR>
+           <DESCRIBE-CONTENTS ,PRSO>)>>
         
- <ROUTINE V-CLOSE ()
-    <COND
-        (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-        (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
-                    <PRINTR "That's not something you can close.">)
-        ;(<FSET? ,PRSO ,SURFACEBIT>
-            <PRINTR "That's not something you can close.">)
-        (<NOT <FSET? ,PRSO ,OPENBIT>>
-            <PRINTR "It's already closed.">)
-        (ELSE
-            <FSET ,PRSO ,TOUCHBIT>
-            <FCLEAR ,PRSO ,OPENBIT>
-            <TELL "You close " T ,PRSO "." CR>
-        )>>
+<ROUTINE V-CLOSE ()
+    <COND (<FSET? ,PRSO ,PERSONBIT>
+           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
+          (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
+           <PRINTR "That's not something you can close.">)
+          ;(<FSET? ,PRSO ,SURFACEBIT>
+           <PRINTR "That's not something you can close.">)
+          (<NOT <FSET? ,PRSO ,OPENBIT>>
+           <PRINTR "It's already closed.">)
+          (ELSE
+           <FSET ,PRSO ,TOUCHBIT>
+           <FCLEAR ,PRSO ,OPENBIT>
+           <TELL "You close " T ,PRSO "." CR>)>>
 
 <ROUTINE V-WAIT ("AUX" T INTERRUPT ENDACT)
     <SET T 1>
@@ -864,149 +771,119 @@
         ;<TELL "INTERRUPT IS NOW " D .INTERRUPT CR>
         <SET T <+ .T 1>>
         <COND (<OR <G? .T ,STANDARD-WAIT>
-                   <AND .ENDACT>
-                   <AND .INTERRUPT>
-               >
-                        <RETURN>
-              )
-        >
-    >>
-    
+                   .ENDACT
+                   .INTERRUPT>
+               <RETURN>)>>>
+
 <ROUTINE V-AGAIN ()
-     <SETG AGAINCALL 1>
-     <RESTORE-READBUF>
-     <RESTORE-LEX>
-     ;<TELL "In V-AGAIN - Previous readbuf and lexbuf restored." CR>
-     ;<DUMPBUF>
-     ;<DUMPLEX>
-     <COND (<NOT <EQUAL? <GET ,READBUF 1> 0>>
-            <COND (<PARSER>
-                   ;<TELL "Doing PERFORM within V-AGAIN" CR>
-                   <PERFORM ,PRSA ,PRSO ,PRSI>
-                   <COND (<NOT <META-VERB?>>
-                          <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                          <CLOCKER>)>
-                   <SETG HERE <LOC ,WINNER>>)>)
-           (ELSE <TELL "Nothing to repeat." CR>)>>
+    <SETG AGAINCALL 1>
+    <RESTORE-READBUF>
+    <RESTORE-LEX>
+    ;<TELL "In V-AGAIN - Previous readbuf and lexbuf restored." CR>
+    ;<DUMPBUF>
+    ;<DUMPLEX>
+    <COND (<NOT <EQUAL? <GET ,READBUF 1> 0>>
+           <COND (<PARSER>
+                  ;<TELL "Doing PERFORM within V-AGAIN" CR>
+                  <PERFORM ,PRSA ,PRSO ,PRSI>
+                  <COND (<NOT <META-VERB?>>
+                         <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+                         <CLOCKER>)>
+                  <SETG HERE <LOC ,WINNER>>)>)
+          (ELSE <TELL "Nothing to repeat." CR>)>>
 
 <ROUTINE V-READ ("AUX" T)
-     <COND (<NOT <FSET? ,PRSO ,READBIT>>
-        <TELL "That's not something you can read." CR>)
-           (<SET T <GETP ,PRSO ,P?TEXT>>
-        <TELL .T CR>)
-           (<SET T <GETP ,PRSO ,P?TEXT-HELD>>
-        <COND (<IN? ,PRSO ,WINNER>
-               <TELL .T CR>)
-              (ELSE
-               <TELL "You must be holding that to be able to read it." CR>)
-        >)
-       (ELSE
-        <PERFORM ,V?EXAMINE ,PRSO>)
-     >
->
+    <COND (<NOT <FSET? ,PRSO ,READBIT>>
+           <TELL "That's not something you can read." CR>)
+          (<SET T <GETP ,PRSO ,P?TEXT>>
+           <TELL .T CR>)
+          (<SET T <GETP ,PRSO ,P?TEXT-HELD>>
+           <COND (<IN? ,PRSO ,WINNER>
+                  <TELL .T CR>)
+                 (ELSE
+                  <TELL "You must be holding that to be able to read it." CR>)>)
+          (ELSE
+           <PERFORM ,V?EXAMINE ,PRSO>)>>
 
 <ROUTINE V-TURN-ON ()
     ;<TELL "CURRENTLY IN TURN-ON" CR>
-     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-                <TELL "That's not something you can switch on and off." CR>)
-           (<FSET? ,PRSO ,ONBIT>
-                <TELL "It's already on." CR>)
-           (ELSE
-                 <FSET ,PRSO ,ONBIT>
-                 <TELL "You switch on " T ,PRSO "." CR>)
-     >
->
-
-
+    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
+           <TELL "That's not something you can switch on and off." CR>)
+          (<FSET? ,PRSO ,ONBIT>
+           <TELL "It's already on." CR>)
+          (ELSE
+           <FSET ,PRSO ,ONBIT>
+           <TELL "You switch on " T ,PRSO "." CR>)>>
 
 <ROUTINE V-TURN-OFF ()
     ;<TELL "CURRENTLY IN TURN-OFF" CR>
      <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-                <TELL "That's not something you can switch on and off." CR>)
+            <TELL "That's not something you can switch on and off." CR>)
            (<NOT <FSET? ,PRSO ,ONBIT>>
-                <TELL "It's already off." CR>)
+            <TELL "It's already off." CR>)
            (ELSE
-                 <FCLEAR ,PRSO ,ONBIT>
-                 <TELL "You switch off " T ,PRSO "." CR>)
-     >
->
-
-
+            <FCLEAR ,PRSO ,ONBIT>
+            <TELL "You switch off " T ,PRSO "." CR>)>>
 
 <ROUTINE V-FLIP ()
      ;<TELL "CURRENTLY IN FLIP" CR>
      <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-                <TELL "That's not something you can switch on and off." CR>)
+            <TELL "That's not something you can switch on and off." CR>)
            (<FSET? ,PRSO ,ONBIT>
-                <FCLEAR ,PRSO ,ONBIT>
-                <TELL "You switch off " T ,PRSO "." CR>)
+            <FCLEAR ,PRSO ,ONBIT>
+            <TELL "You switch off " T ,PRSO "." CR>)
            (<NOT <FSET? ,PRSO ,ONBIT>>
-                 <FSET ,PRSO ,ONBIT>
-                 <TELL "You switch on " T ,PRSO "." CR>)
-     >
->
+            <FSET ,PRSO ,ONBIT>
+            <TELL "You switch on " T ,PRSO "." CR>)>>
 
 <ROUTINE V-PUSH ()
-     <COND
-        (<FSET? ,PRSO ,PERSONBIT>
+     <COND (<FSET? ,PRSO ,PERSONBIT>
             <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-        (ELSE
-             <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>
->
-
+           (ELSE
+            <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>>
 
 <ROUTINE V-UNDO ("AUX" R)
      <VERSION?
-                (ZIP <TELL "Undo is not available in this version." CR>)
-            (EZIP <TELL "Undo is not available in this version." CR>)
-            (ELSE
-                <COND (<0? ,USAVE>
-                    <TELL "Cannot undo any further." CR>
-                    <RETURN>)>
-                    <SET R <IRESTORE>>
-                    ;<TELL "IRESTORE returned " N .R CR>
-                    <COND (<EQUAL? .R 0>
-                        <TELL "Undo failed." CR>)>
-                )
-    >
->
+         (ZIP <TELL "Undo is not available in this version." CR>)
+         (EZIP <TELL "Undo is not available in this version." CR>)
+         (ELSE
+          <COND (<0? ,USAVE>
+                 <TELL "Cannot undo any further." CR>
+                 <RETURN>)>
+          <SET R <IRESTORE>>
+          ;<TELL "IRESTORE returned " N .R CR>
+          <COND (<EQUAL? .R 0>
+                 <TELL "Undo failed." CR>)>)>>
 
 <ROUTINE V-SAVE ("AUX" S)
      ;<TELL "Now in save routine" CR>
     <TELL "Saving..." CR>
     <COND (<SAVE> <V-LOOK>)
-        (ELSE <TELL "Save failed." CR>)>
->
-
+          (ELSE <TELL "Save failed." CR>)>>
 
 <ROUTINE V-RESTORE ("AUX" R)
     ; <TELL "Now in restore routine" CR>
     <COND (<NOT <RESTORE>>
-        <TELL "Restore failed." CR>)>
->
+           <TELL "Restore failed." CR>)>>
 
 <ROUTINE V-RESTART ()
     <TELL "Are you sure you want to restart?" CR>
     <COND (<YES?>
-                <RESTART>)
+           <RESTART>)
           (ELSE
-                <TELL "Restart aborted." CR>)>>
-
+           <TELL "Restart aborted." CR>)>>
 
 <ROUTINE V-DROB ()
     <TELL "REMOVING CONTENTS OF " D ,PRSO " FROM THE GAME." CR>
-    <ROB ,PRSO>
-    >
+    <ROB ,PRSO>>
     
 <ROUTINE V-DSEND ()
     <TELL "SENDING CONTENTS OF " D ,PRSO " TO " D ,PRSI "." CR>
-    <ROB ,PRSO ,PRSI>
-    >
+    <ROB ,PRSO ,PRSI>>
     
 <ROUTINE V-DOBJL ()
     <MAP-CONTENTS (I ,PRSO)
-        <TELL "The objects in " T ,PRSO " include " D .I CR>>
-    >
+        <TELL "The objects in " T ,PRSO " include " D .I CR>>>
 
 ;<ROUTINE V-DVIS ("AUX" P)
     <SET P <VISIBLE? ,BILL>>
@@ -1090,19 +967,17 @@
     >
     
 <ROUTINE V-DCONT ()
-    <COND (<AND ,DBCONT>
-                <SET DBCONT <>>
-                <TELL "Reporting of PUT-IN process with containers turned off." CR>)
-              (ELSE
-                <SET DBCONT 1>
-                <TELL "Reporting of PUT-IN process with containers turned on." CR>)>
->  
+    <COND (,DBCONT
+           <SET DBCONT <>>
+           <TELL "Reporting of PUT-IN process with containers turned off." CR>)
+          (ELSE
+           <SET DBCONT T>
+           <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>  
 
 <ROUTINE V-DTURN ()
-    <COND (<AND ,DTURNS>
-                <SET DTURNS <>>
-                <TELL "Reporting of TURN # turned off." CR>)
-              (ELSE
-                <SET DTURNS 1>
-                <TELL "Reporting of TURN # turned on." CR>)>
->  
+    <COND (,DTURNS
+           <SET DTURNS <>>
+           <TELL "Reporting of TURN # turned off." CR>)
+          (ELSE
+           <SET DTURNS T>
+           <TELL "Reporting of TURN # turned on." CR>)>>  
