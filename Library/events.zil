@@ -6,7 +6,7 @@
     ;<PROG () <TELL "NOW IQ-LENGTH IS: "> <PRINTN ,IQ-LENGTH> <TELL CR>>
     <PUT ,IQUEUE <- ,IQ-LENGTH 1> .IRTN>
     <PUT ,IQUEUE ,IQ-LENGTH .TURNZ>>
-    
+
 <ROUTINE DEQUEUE (IRTN "AUX" S)
     ;<TELL "DEQUEUEING EVENT">
     <REPEAT ()
@@ -35,7 +35,7 @@
                    <PUT ,IQUEUE <- .Z 1> <GET ,IQUEUE <+ .Z 1>>>
                    <PUT ,IQUEUE .Z  <GET ,IQUEUE <+ .Z 2>>>
                    ;<PROG () <TELL "DID SHIFT of the PAIR ending at "> <PRINTN .Z> <TELL CR>>
-                   <COND (<=? .Z ,IQ-LENGTH> 
+                   <COND (<=? .Z ,IQ-LENGTH>
                           <PUT ,IQUEUE <- .Z 1> 0>
                           <PUT ,IQUEUE .Z 0>
                           <SETG IQ-LENGTH <- ,IQ-LENGTH 2>>
@@ -49,7 +49,7 @@
     <REPEAT ()
         <SET S <+ .S 2>>
         ;<PROG () <TELL "S IS :"> <PRINTN .S> <TELL CR>>
-        <COND (<G? .S ,IQ-LENGTH> 
+        <COND (<G? .S ,IQ-LENGTH>
                ;<TELL "And S is greater than IQ-LENGTH so returning false" CR>
                <RFALSE>)
               (<==? <GET ,IQUEUE <- .S 1>> .E>
@@ -68,15 +68,15 @@
         <SET S <+ .S 2>>
         ;<PROG () <TELL "S is :"> <PRINTN .S> <TELL CR>
         ;<TELL "IQ-LENGTH is :"> <PRINTN ,IQ-LENGTH> <TELL CR>>
-        <COND (<G? .S ,IQ-LENGTH> 
+        <COND (<G? .S ,IQ-LENGTH>
                ;<PROG () <TELL "GREATER THAN IQ-LENGTH" CR> <TELL "SEE IF NEED TO DO CLEANUP --" CR>>
                <COND (<EQUAL? .C 1> <IQUEUE-CLEANUP>)>
                <RETURN>)>
-                    
+
         <COND (<EQUAL? <GET ,IQUEUE .S> -1>
                ;<PROG () <TELL "THE TURN COUNT IS " CR> <PRINTN <GET ,IQUEUE .S>> <TELL CR "SO WE ARE APPLYING AN EVERY-TURN FIRE" CR>>
                <SET FIRED <BOR .FIRED <APPLY <GET ,IQUEUE <- .S 1>>>>>)>
-                    
+
         <COND (<G? <GET ,IQUEUE .S> 0>
                ;<TELL "SUBTRACT 1 from event's TURN counter" CR>
                <PUT ,IQUEUE .S <- <GET ,IQUEUE .S> 1>>

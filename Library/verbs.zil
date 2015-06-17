@@ -143,7 +143,7 @@
                   ,NLITSET>>
          <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
          <RFALSE>)
-        (ELSE 
+        (ELSE
          ;"print the room's real name"
          <TELL D .RM CR>
          <COND (<EQUAL? ,MODE ,SUPERBRIEF>
@@ -152,13 +152,13 @@
                      <FSET? .RM ,TOUCHBIT>
                      <NOT <EQUAL? ,MODE ,VERBOSE>>>
                 <RTRUE>)>
-         <FSET .RM ,TOUCHBIT>	
+         <FSET .RM ,TOUCHBIT>
          ;"either print the room's LDESC or call its ACTION with M-LOOK"
          <COND (<SET P <GETP .RM ,P?LDESC>>
                 <TELL .P CR>)
                (ELSE
                 <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>)>>
-   
+
 <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
     <MAP-CONTENTS (I .RM)
         <COND
@@ -167,7 +167,7 @@
              <CRLF>
              <APPLY .P>
              <CRLF>)
-            ;"un-moved objects with FDESCs"	
+            ;"un-moved objects with FDESCs"
             (<AND <NOT <FSET? .I ,TOUCHBIT>>
                   <SET P <GETP .I ,P?FDESC>>>
              <TELL CR .P CR>)
@@ -178,8 +178,8 @@
     <MAP-CONTENTS (I .RM)
         <COND (<NOT <OR <FSET? .I ,NDESCBIT>
                         <SET P <GETP .I ,P?DESCFCN>>
-                        <==? .I ,WINNER> 
-                        <FSET? .I ,PERSONBIT> 
+                        <==? .I ,WINNER>
+                        <FSET? .I ,PERSONBIT>
                         <AND <NOT <FSET? .I ,TOUCHBIT>>
                              <SET P <GETP .I ,P?FDESC>>>
                         <SET P <GETP .I ,P?LDESC>>>>
@@ -197,10 +197,10 @@
                  (<==? .N 2> <TELL A .F " and " A .S>)
                  (ELSE
                   <MAP-CONTENTS (I .RM)
-                      <COND (<NOT <OR <FSET? .I ,NDESCBIT> 
+                      <COND (<NOT <OR <FSET? .I ,NDESCBIT>
                                       <==? .I ,WINNER>
                                       <SET P <GETP .I ,P?LDESC>>
-                                      <FSET? .I ,PERSONBIT> 
+                                      <FSET? .I ,PERSONBIT>
                                       <SET P <GETP .I ,P?DESCFCN>>
                                       <AND <NOT <FSET? .I ,TOUCHBIT>>
                                            <SET P <GETP .I ,P?FDESC>>>>>
@@ -215,7 +215,7 @@
         <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
                     <FIRST? .I>
                     <OR <FSET? .I ,SURFACEBIT>
-                        <AND <FSET? .I ,CONTBIT> 
+                        <AND <FSET? .I ,CONTBIT>
                              <FSET? .I ,OPENBIT>>>>
                <DESCRIBE-CONTENTS .I>)>>
     ;"Re-use N to add up NPCs"
@@ -290,7 +290,7 @@
     <TELL " " T .OBJ " ">
     <ISARE-LIST .OBJ>
     <TELL "." CR>>
-    
+
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding ">)
           (ELSE <TELL " (containing ">)>
@@ -312,7 +312,7 @@
                      (<==? .N 1> <TELL ", and ">)
                      (ELSE <TELL ", ">)>>)>
     <TELL ")">>
- 
+
 <ROUTINE ISARE-LIST (O "AUX" N F)
     <SET F <FIRST? .O>>
     <COND (<NOT .F>
@@ -417,30 +417,17 @@
     <COND (<SET P <GETP ,PRSO P?TEXT>>
            <TELL .P CR>
            <SET N T>)>
-    <COND (<AND <FSET? ,PRSO ,OPENABLEBIT> 
-                <NOT <FSET? ,PRSO ,OPENBIT>>>
-           <TELL CT ,PRSO " is closed." CR>
-           <COND (<AND <FSET? ,PRSO ,TRANSBIT>
-                       <FIRST? ,PRSO>>
-                  <DESCRIBE-CONTENTS ,PRSO>)>
-           <SET N T>)
-          (<AND <FSET? ,PRSO ,OPENABLEBIT> 
-                <FSET? ,PRSO ,OPENBIT>>
-           <TELL CT ,PRSO " is open. ">
-           <DESCRIBE-CONTENTS ,PRSO>
-           <SET N T>)
-          (<AND <FSET? ,PRSO ,CONTBIT> 
-                <FIRST? ,PRSO>
-                <OR <FSET? ,PRSO ,TRANSBIT>
-                    <FSET? ,PRSO ,SURFACEBIT>
-                    <AND <FSET? ,PRSO ,OPENBIT>
-                         <FSET? ,PRSO ,OPENABLEBIT>>
-                    <AND <FSET? ,PRSO ,CONTBIT>
-                         <NOT <FSET? ,PRSO ,OPENABLEBIT>>>>>
+    <COND (<FSET? ,PRSO ,OPENABLEBIT>
+           <TELL CT ,PRSO " is ">
+           <COND (<FSET? ,PRSO ,OPENBIT> <TELL "open.">)
+                 (ELSE <TELL "closed.">)>
+           <CRLF>
+           <SET N T>)>
+    <COND (<AND <FIRST? ,PRSO> <SEE-INSIDE? ,PRSO>>
            <DESCRIBE-CONTENTS ,PRSO>
            <SET N T>)>
-     <COND (<NOT .N>
-            <TELL "You see nothing special about " T ,PRSO "." CR>)>>
+    <COND (<NOT .N>
+           <TELL "You see nothing special about " T ,PRSO "." CR>)>>
 
 <ROUTINE V-INVENTORY ()
     ;"check for light first"
@@ -453,19 +440,10 @@
                       <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
                       <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
                       <COND (<FSET? .I ,CONTBIT>
-                             <COND (<AND <FSET? .I ,OPENABLEBIT>
-                                         <FSET? .I ,OPENBIT>>
-                                    <TELL " (open) ">
-                                    <INV-DESCRIBE-CONTENTS .I>)
-                                   (<AND <FSET? .I ,OPENABLEBIT>
-                                         <NOT <FSET? .I ,OPENBIT>>>
-                                    <TELL " (closed)">)
-                                   (<AND ;<FIRST? .I>
-                                         <OR <FSET? .I ,SURFACEBIT>
-                                             <FSET? .I ,OPENBIT>
-                                             <AND <FSET? .I ,CONTBIT>
-                                                  <NOT <FSET? .I ,OPENABLEBIT>>>>>
-                                    <INV-DESCRIBE-CONTENTS .I>)>)>
+                             <COND (<FSET? .I ,OPENABLEBIT>
+                                    <COND (<FSET? .I ,OPENBIT> <TELL " (open)">)
+                                          (ELSE <TELL " (closed)">)>)>
+                             <COND (<SEE-INSIDE? .I> <INV-DESCRIBE-CONTENTS .I>)>)>
                       <CRLF>>)
                  (ELSE
                   <TELL "You are empty-handed." CR>)>)
@@ -501,8 +479,8 @@
            <TELL "You pick up " T ,PRSO "." CR>
            <FSET ,PRSO ,TOUCHBIT>
            <MOVE ,PRSO ,WINNER>)>>
-                 
-<ROUTINE TAKE-CONT-SEARCH (A "AUX" H)  	
+
+<ROUTINE TAKE-CONT-SEARCH TCS (A "AUX" H)
     <MAP-CONTENTS (I .A)
         ;<TELL "Looping to check containers.  I is currently " D .I CR>
         <COND (<OR <FSET? .I ,CONTBIT>
@@ -510,13 +488,12 @@
                ;<TELL "Found container " D .I CR>
                <COND (<IN? ,PRSO .I>
                       ;<TELL "PRSO is in I, setting HOLDER" CR>
-                      <SET H .I>
-                      <RETURN>)
+                      <RETURN .I .TCS>)
                      (ELSE
                       <SET H <TAKE-CONT-SEARCH .I>>
-                      <AND .H <RETURN>>)>)>>
-    <AND .H <RETURN .H>>> 
-          
+                      <AND .H <RETURN .H .TCS>>)>)>>
+    <RFALSE>>
+
 
 <ROUTINE V-DROP ()
     <COND
@@ -549,25 +526,16 @@
           (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
            <PRINTR "You can't put something on itself.">)
           (ELSE
-           ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
-           <COND (<SET X <GETPT ,PRSO ,P?SIZE>>
-                  <SET S <GETP ,PRSO ,P?SIZE>>
-                  ;<TELL D ,PRSO " has a size prop of " N .S CR>)
-                 (ELSE 
-                  ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
-                  <SET S 5>)>
+           <SET S <GETP ,PRSO ,P?SIZE>>
            <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
                   <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
                   ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
-                 (ELSE 
+                 (ELSE
                   ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
                   <SET CCAP 5>
                   ;"set bottomless flag"
                   <SET B 1>)>
-           <COND (<SET X <GETPT ,PRSI ,P?SIZE>>
-                  <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-                  ;<TELL D ,PRSI " has a size prop of " N .CSIZE CR>)
-                  (ELSE <SET CSIZE 5>)>
+           <SET CSIZE <GETP ,PRSI ,P?SIZE>>
            ;<TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE ", capacity ">
                  ;<COND (<0? .B>
                             ;<TELL N .CCAP CR>)
@@ -580,7 +548,7 @@
                   <SET W <CONTENTS-WEIGHT ,PRSI>>
                   ;<TELL "Back from Contents-weight loop" CR>
                   <SET X <+ .W .S>>
-                  <COND (<G? .X .CCAP> 
+                  <COND (<G? .X .CCAP>
                          <TELL "There's not enough room on " T ,PRSI "." CR>
                          ;<TELL D ,PRSO " of size " N .S " can't fit, since current weight of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
                          <RETURN>)>
@@ -590,7 +558,7 @@
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,WORNBIT>
            <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>>
-            
+
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
     ;<TELL "In the PUT-IN routine" CR>
     <COND (<FSET? ,PRSI ,PERSONBIT>
@@ -611,27 +579,19 @@
           (<NOT <IN? ,PRSO ,WINNER>>
            <PRINTR "You aren't holding that.">)
           (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
-            <PRINTR "You can't put something in itself.">)
+           <PRINTR "You can't put something in itself.">)
           (ELSE
-           ;"Need to check if size property exists for DO - using GETPT to see if property has an actual address"
-            <COND (<SET X <GETPT ,PRSO ,P?SIZE>>
-                   <SET S <GETP ,PRSO ,P?SIZE>>
-                   ;<TELL D ,PRSO " has a size prop of " N .S CR>)
-                  (ELSE 
-                   ;<TELL D ,PRSO " has no size prop - will be assigned default size of 5" CR>
-                   <SET S 5>)>
-            <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                   <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
-                   <COND (<AND ,DBCONT> <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>)
-                  (ELSE 
-                   <COND (<AND ,DBCONT> <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>
-                   <SET CCAP 5>
-                   ;"set bottomless flag"
-                   <SET B 1>)>
-           <COND (<SET X <GETPT ,PRSI ,P?SIZE>>
-                  <SET CSIZE <GETP ,PRSI ,P?SIZE>>)
-                 (ELSE <SET CSIZE 5>)>
-            ;<COND (<AND ,DBCONT> <TELL D ,PRSI " has a size of " N .CSIZE CR>)>
+           <SET S <GETP ,PRSO ,P?SIZE>>
+           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
+                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+                  <COND (<AND ,DBCONT> <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>)
+                 (ELSE
+                  <COND (<AND ,DBCONT> <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>
+                  <SET CCAP 5>
+                  ;"set bottomless flag"
+                  <SET B 1>)>
+           <SET CSIZE <GETP ,PRSI ,P?SIZE>>
+           ;<COND (<AND ,DBCONT> <TELL D ,PRSI " has a size of " N .CSIZE CR>)>
         <COND (<AND ,DBCONT>
                <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR>)>
         ;<COND (<0? .B>
@@ -646,7 +606,7 @@
                <SET W <CONTENTS-WEIGHT ,PRSI>>
                ;<TELL "Back from Contents-weight loop" CR>
                <SET X <+ .W .S>>
-               <COND (<G? .X .CCAP> 
+               <COND (<G? .X .CCAP>
                       <TELL "There's not enough room in " T ,PRSI "." CR>
                       <COND (<AND ,DBCONT>
                              <TELL D ,PRSO " can't fit, since current bulk of "
@@ -661,43 +621,36 @@
         <FSET ,PRSO ,TOUCHBIT>
         <FCLEAR ,PRSO ,WORNBIT>
         <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>>
-            
+
 <ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
     ;"add size of objects inside container - does not recurse through containers
       within this container"
     <MAP-CONTENTS (I .O)
         ;<TELL "Content-weight loop for " D .O ", which contains " D .I CR>
-        <COND (<SET X <GETPT .I ,P?SIZE>>
-               <SET X <GETP .I ,P?SIZE>>
-               <SET W <+ .W .X>>)
-              (ELSE
-               <SET W <+ .W 5>>)>
+        <SET W <+ .W <GETP .I ,P?SIZE>>>
         ;<TELL "Content weight of " D .O " is now " N .W CR>>
     ;<TELL "Total weight of contents of " D .O " is " N .W CR>
     .W>
- 
-<ROUTINE WEIGHT (O "AUX" X W)  	
+
+<ROUTINE WEIGHT (O "AUX" X W)
     ;"Unlike CONTENTS-WEIGHT - drills down through all contents, adding sizes of all objects + contents"
     ;"start with size of container itself"
-    <COND (<SET X <GETPT .O ,P?SIZE>>
-           <SET W <GETP .O ,P?SIZE>>)
-          (ELSE <SET W <+ .W 5>>)>
+    <SET W <GETP .O ,P?SIZE>>
     ;"add size of objects inside container"
     <MAP-CONTENTS (I .O)
-         <TELL "Looping to set weight.  I is currently " D .I CR>
-         <COND (<SET X <GETPT .I ,P?SIZE>>
-                <SET X <GETP .I ,P?SIZE>>
-                <SET W <+ .W .X>>)
-               (ELSE <SET W <+ .W 5>>)>
+         ;<TELL "Looping to set weight.  I is currently " D .I CR>
+         ;<SET W <+ .W <GETP .I ,P?SIZE>>>
          ;<TELL "Weight of " D .O " is now " N .W CR>
          <COND (<OR <FSET? .I ,CONTBIT>
-                    <==? .I ,WINNER>>
+                    <==? .I ,WINNER>>  ;"TODO: should check PERSONBIT"
                 ;<TELL "Weightloop: found container " D .I CR>
                 <SET X <WEIGHT .I>>
                 <SET W <+ .W .X>>
-                ;<TELL "Weightloop-containerloop: Weight of " D .O " is now " N .W CR>)>>
+                ;<TELL "Weightloop-containerloop: Weight of " D .O " is now " N .W CR>)
+               (ELSE
+                <SET W <+ .W <GETP .I ,P?SIZE>>>)>>
     ;<TELL "Total weight (its size + contents' size) of " D .O " is " N .W CR>
-    <AND .W <RETURN .W>>>
+    .W>
 
 <ROUTINE V-WEAR ()
     <COND (<FSET? ,PRSO ,WEARBIT>
@@ -710,14 +663,14 @@
                 <IN? ,PRSO ,WINNER>>
            <PERFORM ,V?DROP ,PRSO>)
           (ELSE <TELL "You aren't wearing that." CR>)>>
-        
+
 <ROUTINE V-EAT ()
     <COND (<FSET? ,PRSO ,EDIBLEBIT>
-           ;"TO DO: improve this check will a real, drilling-down HELD? routine"
+           ;"TODO: improve this check will a real, drilling-down HELD? routine"
            <COND (<IN? ,PRSO ,WINNER>
                   <TELL "You devour " T ,PRSO CR>
                   <REMOVE ,PRSO>)
-                 (ELSE <TELL "You're not holding that." CR>)>)	
+                 (ELSE <TELL "You're not holding that." CR>)>)
           (ELSE <TELL "That's hardly edible." CR>)>>
 
 <ROUTINE V-VERSION ()
@@ -727,15 +680,15 @@
      <LOWCORE-TABLE SERIAL 6 PRINTC>
      <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
      <CRLF>>
-     
+
 <ROUTINE V-THINK-ABOUT ()
     <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>>
-    
+
 <ROUTINE V-OPEN ()
     <COND (<FSET? ,PRSO ,PERSONBIT>
            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
           (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
-           <PRINTR "That's not something you can open.">) 			
+           <PRINTR "That's not something you can open.">)
           (<FSET? ,PRSO ,OPENBIT>
            <PRINTR "It's already open.">)
           (<FSET? ,PRSO ,LOCKEDBIT>
@@ -745,7 +698,7 @@
            <FSET ,PRSO ,OPENBIT>
            <TELL "You open " T ,PRSO "." CR>
            <DESCRIBE-CONTENTS ,PRSO>)>>
-        
+
 <ROUTINE V-CLOSE ()
     <COND (<FSET? ,PRSO ,PERSONBIT>
            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
@@ -776,7 +729,7 @@
                <RETURN>)>>>
 
 <ROUTINE V-AGAIN ()
-    <SETG AGAINCALL 1>
+    <SETG AGAINCALL T>
     <RESTORE-READBUF>
     <RESTORE-LEX>
     ;<TELL "In V-AGAIN - Previous readbuf and lexbuf restored." CR>
@@ -876,11 +829,11 @@
 <ROUTINE V-DROB ()
     <TELL "REMOVING CONTENTS OF " D ,PRSO " FROM THE GAME." CR>
     <ROB ,PRSO>>
-    
+
 <ROUTINE V-DSEND ()
     <TELL "SENDING CONTENTS OF " D ,PRSO " TO " D ,PRSI "." CR>
     <ROB ,PRSO ,PRSI>>
-    
+
 <ROUTINE V-DOBJL ()
     <MAP-CONTENTS (I ,PRSO)
         <TELL "The objects in " T ,PRSO " include " D .I CR>>>
@@ -897,7 +850,7 @@
                     (ELSE
                 <TELL "The grime is visible." CR>)>
     >
-    
+
 ;<ROUTINE V-DMETALOC ("AUX" P)
     <SET P <META-LOC ,PRSO>>
     <COND (<NOT .P>
@@ -910,8 +863,8 @@
               (ELSE
             <TELL "Meta-Loc of grime is " D .P CR>)
             >
-    > 
-    
+    >
+
 ;<ROUTINE V-DACCESS ("AUX" P)
     <SET P <ACCESSIBLE? ,PRSO>>
     <COND (<NOT .P>
@@ -923,8 +876,8 @@
             <TELL "Bill is not accessible" CR>)
               (ELSE
             <TELL "Bill is accessible" CR>)>
-    > 
-    
+    >
+
 ;<ROUTINE V-DHELD ("AUX" P)
     <SET P <HELD? ,PRSO ,PRSI>>
     <COND (<NOT .P>
@@ -936,8 +889,8 @@
             <TELL D ,PRSO " is not held by the Foyer" CR>)
               (ELSE
             <TELL D ,PRSO " is held by the Foyer" CR>)>
-    > 
-    
+    >
+
 ;<ROUTINE V-DHELDP ("AUX" P)
     <SET P <HELD? ,PRSO>>
     <COND (<NOT .P>
@@ -950,7 +903,7 @@
               (ELSE
             <TELL "Bill is held by the player" CR>)>
     >
-    
+
 ;<ROUTINE V-DLIGHT ()
     <COND (<FSET? ,FLASHLIGHT ,LIGHTBIT>
                 <FCLEAR ,FLASHLIGHT ,LIGHTBIT>
@@ -965,14 +918,14 @@
                 <FSET ,FLASHLIGHT ,ONBIT>
                 )>
     >
-    
+
 <ROUTINE V-DCONT ()
     <COND (,DBCONT
            <SET DBCONT <>>
            <TELL "Reporting of PUT-IN process with containers turned off." CR>)
           (ELSE
            <SET DBCONT T>
-           <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>  
+           <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>
 
 <ROUTINE V-DTURN ()
     <COND (,DTURNS
@@ -980,4 +933,4 @@
            <TELL "Reporting of TURN # turned off." CR>)
           (ELSE
            <SET DTURNS T>
-           <TELL "Reporting of TURN # turned on." CR>)>>  
+           <TELL "Reporting of TURN # turned on." CR>)>>
