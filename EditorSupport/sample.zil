@@ -73,6 +73,8 @@ lines">
 %,FOO
 %%,FOO
 
+<FOO %<MACRO>>		;"call FOO with macro result arg"
+
 "=== Character literals ==="
 !\C		;"literal C"
 !\ 		;"literal space"
