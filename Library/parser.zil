@@ -17,9 +17,8 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL TEMPTABLE <ITABLE 50 <> >>
 <GLOBAL IQ-LENGTH 0>
 <GLOBAL STANDARD-WAIT 4>
-<GLOBAL AGAINCALL 0>
+<GLOBAL AGAINCALL <>>
 <GLOBAL USAVE 0>
-<GLOBAL ONCAGAIN 0>
 <GLOBAL NLITSET <>>
 <GLOBAL DBCONT <>>
 <GLOBAL DTURNS <>>
@@ -48,10 +47,12 @@ other versions. These macros let us write the same code for all versions."
 "Parser"
 
 <CONSTANT READBUF-SIZE 100>
-<CONSTANT READBUF <ITABLE NONE 100>>
-<CONSTANT BACKREADBUF <ITABLE NONE 100>>
-<CONSTANT LEXBUF <ITABLE 59 (LEXV) 0 #BYTE 0 #BYTE 0>>
-<CONSTANT BACKLEXBUF <ITABLE 59 (LEXV) 0 #BYTE 0 #BYTE 0>>
+<CONSTANT READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+<CONSTANT BACKREADBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+
+<CONSTANT LEXBUF-SIZE 59>
+<CONSTANT LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<CONSTANT BACKLEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
 
 <CONSTANT P1MASK 3>
 
@@ -224,7 +225,7 @@ other versions. These macros let us write the same code for all versions."
                (ELSE
                 ;"save state for undo after moving from room to room"
                 <COND (<AND <NOT <VERB? UNDO>>
-                            <NOT <EQUAL? ,AGAINCALL 1>>>
+                            <NOT ,AGAINCALL>>
                        <SETG USAVE <ISAVE>>
                        ;<TELL "ISAVE returned " N ,USAVE CR>
                        <COND (<EQUAL? ,USAVE 2>
@@ -244,7 +245,7 @@ other versions. These macros let us write the same code for all versions."
                       (ELSE
                        ;"save state for UNDO, unless we're about to UNDO the previous command"
                        <COND (<AND <NOT <VERB? UNDO>>
-                                   <NOT <EQUAL? ,AGAINCALL 1>>>
+                                   <NOT ,AGAINCALL>>
                               <SETG USAVE <ISAVE>>
                               ;<TELL "ISAVE returned " N ,USAVE CR>
                               <COND (<EQUAL? ,USAVE 2>
@@ -311,9 +312,12 @@ other versions. These macros let us write the same code for all versions."
 
 
 <ROUTINE STARTS-CLAUSE? (W)
-    <OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
-        <CHKWORD? .W ,PS?ADJECTIVE>
-        <WORD? .W OBJECT>>>
+    ;"The COND should be unnecessary, but ZILF generates ugly code without it"
+    <COND (<OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
+               <CHKWORD? .W ,PS?ADJECTIVE>
+               <WORD? .W OBJECT>>
+           <RTRUE>)>
+    <RFALSE>>
 
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
@@ -411,273 +415,99 @@ other versions. These macros let us write the same code for all versions."
                <RTRUE>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>>
 
+<INSERT-FILE "scope">
+
+<CONSTANT S-PRONOUN-UNKNOWN-PERSON "I'm unsure to whom you are referring.">
+<CONSTANT S-PRONOUN-UNKNOWN-THING "I'm unsure what you're referring to.">
+
+;"<FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
+  Expands to:
+  <COND (<EQUAL? .X ,W?IT>
+         <COND (<0? ,IT-ONCE>
+                <TELL ,S-PRONOUN-UNKNOWN-THING CR>
+                <RFALSE>)>
+         <COPY-TABLE ,P-DOBJS-BACK ,P-IOBJS 21>
+         <COPY-TABLE ,P-DOBJEX-BACK ,P-IOBJEX 21>
+         <SETG IT-USE T>)
+        (ELSE <SETG IT-USE <>>)>"
+<DEFMAC FIND-OBJECTS-CHECK-PRONOUN ('X 'PRONOUN 'PRONOUN-TBL-STEM 'DEST-TBL-STEM
+                                    "AUX" MSG VOCAB-WORD ONCE-VAR USE-VAR
+                                    OBJS-BACK-TBL OBJEX-BACK-TBL
+                                    OBJS-DEST-TBL OBJEX-DEST-TBL)
+    <COND (<OR <=? .PRONOUN IT> <=? .PRONOUN THEM>>
+           <SET MSG ',S-PRONOUN-UNKNOWN-THING>)
+          (ELSE
+           <SET MSG ',S-PRONOUN-UNKNOWN-PERSON>)>
+    <SET WORD <PARSE <STRING "W?" <SPNAME .PRONOUN>>>>
+    <SET ONCE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-ONCE">>>
+    <SET USE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-USE">>>
+    <SET OBJS-BACK-TBL <PARSE <STRING "P-" <SPNAME .PRONOUN-TBL-STEM> "S-BACK">>>
+    <SET OBJEX-BACK-TBL <PARSE <STRING "P-" <SPNAME .PRONOUN-TBL-STEM> "EX-BACK">>>
+    <SET OBJS-DEST-TBL <PARSE <STRING "P-" <SPNAME .DEST-TBL-STEM> "S">>>
+    <SET OBJEX-DEST-TBL <PARSE <STRING "P-" <SPNAME .DEST-TBL-STEM> "EX">>>
+    <FORM COND <LIST <FORM EQUAL? .X <FORM GVAL .WORD>>
+                     <FORM COND <LIST <FORM 0? <FORM GVAL .ONCE-VAR>>
+                                      <FORM TELL .MSG CR>
+                                      <FORM RFALSE>>>
+                     <FORM COPY-TABLE <FORM GVAL .OBJS-BACK-TBL> <FORM GVAL .OBJS-DEST-TBL> 21>
+                     <FORM COPY-TABLE <FORM GVAL .OBJEX-BACK-TBL> <FORM GVAL .OBJEX-DEST-TBL> 21>
+                     <FORM SETG .USE-VAR T>>
+               <LIST ELSE <FORM SETG .USE-VAR <>>>>>
 
 <ROUTINE FIND-OBJECTS ("AUX" X)
     <COND (<G=? ,P-NOBJ 1>
            <SET X <GET ,P-DOBJS 2>>
            ;<TELL "Find objects PRSO test - X is " N .X CR>
-           <COND (<EQUAL? .X W?IT>
-                  <COND (<L? ,IT-ONCE 1>
-                         <TELL "I'm unsure what you're referring to." CR>
-                         <RFALSE>)>
-                  ;<TELL "IT found (in D.O.).  Replacing with backed-up P-DOBJS" CR>
-                  <COPY-TABLE ,P-DOBJS-BACK ,P-DOBJS 21>
-                  <COPY-TABLE ,P-DOBJEX-BACK ,P-DOBJEX 21>
-                  <SETG IT-USE 1>)
-                 (ELSE <SETG IT-USE 0>)>
-            <COND (<EQUAL? .X W?THEM>
-                   <COND (<L? ,THEM-ONCE 1>
-                          <TELL "I'm unsure what you're referring to." CR>
-                          <RFALSE>)>
-                   ;<TELL "IT found (in D.O.).  Replacing with backed-up P-TOBJS" CR>
-                   <COPY-TABLE ,P-TOBJS-BACK ,P-DOBJS  21>
-                   <COPY-TABLE ,P-TOBJEX-BACK ,P-DOBJEX  21>
-                   <SETG THEM-USE 1>)
-                  (ELSE <SETG THEM-USE 0>)>
-            <COND (<EQUAL? .X W?HIM>
-                   <COND (<0? ,HIM-ONCE>
-                          <TELL "I'm unsure to whom you are referring." CR>
-                          <RFALSE>)>
-                   ;<TELL "HIM found (in D.O.).  Replacing with backed-up P-DOBJS" CR>
-                   <COPY-TABLE ,P-MOBJS-BACK ,P-DOBJS  21>
-                   <COPY-TABLE ,P-MOBJEX-BACK ,P-DOBJEX  21>
-                   <SETG HIM-USE 1>)
-                  (ELSE <SETG HIM-USE 0>)>
-            <COND (<EQUAL? .X W?HER>
-                   <COND (<0? ,HER-ONCE>
-                          <TELL "I'm unsure to whom you are referring." CR>
-                          <RFALSE>)>
-                   ;<TELL "HER found (in D.O.).  Replacing with backed-up P-DOBJS" CR>
-                   <COPY-TABLE ,P-FOBJS-BACK ,P-DOBJS  21>
-                   <COPY-TABLE ,P-FOBJEX-BACK ,P-DOBJEX  21>
-                   <SETG HER-USE 1>)
-                  (ELSE <SETG HER-USE 0>)>
-            <COND (<NOT <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX>>>
-                   <RFALSE>)>)
+           <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ DOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ DOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ DOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
+           <COND (<NOT <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX>>>
+                  <RFALSE>)>)
           (ELSE <SETG PRSO <>>)>
     <COND (<G=? ,P-NOBJ 2>
            <SET X <GET ,P-IOBJS 2>>
            ;<TELL "Find objects PRSI test - X is " N .X CR>
-           <COND (<EQUAL? .X W?IT>
-                  ;<TELL "IT found (in .I.O). Replacing with backed-up P-DOBJS" CR>
-                  <COPY-TABLE ,P-DOBJS-BACK ,P-IOBJS 21>
-                  <COPY-TABLE ,P-DOBJEX-BACK ,P-IOBJEX 21>
-                  <SETG IT-USE 1>)
-                 (ELSE <SETG IT-USE 0>)>
-            <COND (<EQUAL? .X W?THEM>
-                   ;<TELL "THEM found (in .I.O). Replacing with backed-up P-DOBJS" CR>
-                   <COPY-TABLE ,P-TOBJS-BACK ,P-IOBJS 21>
-                   <COPY-TABLE ,P-TOBJEX-BACK ,P-IOBJEX 21>
-                   <SETG THEM-USE 1>)
-                  (ELSE <SETG THEM-USE 0>)>
-            <COND (<EQUAL? .X W?HIM>
-                   ;<TELL "HIM found (in .I.O). Replacing with backed-up P-DOBJS" CR>
-                   <COPY-TABLE ,P-MOBJS-BACK ,P-IOBJS 21>
-                   <COPY-TABLE ,P-MOBJEX-BACK ,P-IOBJEX 21>
-                   <SETG HIM-USE 1>)
-                  (ELSE <SETG HIM-USE 0>)>
-            <COND (<EQUAL? .X W?HER>
-                   ;<TELL "HER found (in .I.O). Replacing with backed-up P-DOBJS" CR>
-                   <COPY-TABLE ,P-FOBJS-BACK ,P-IOBJS 21>
-                   <COPY-TABLE ,P-FOBJEX-BACK ,P-IOBJEX 21>
-                   <SETG HER-USE 1>)
-                  (ELSE <SETG HER-USE 0>)>
-            <COND (<NOT <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX>>>
-                   <RFALSE>)>)
+           <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ IOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ IOBJ>
+           <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
+           <COND (<NOT <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX>>>
+                  <RFALSE>)>)
           (ELSE <SETG PRSI <>>)>
     <RTRUE>>
 
-;"This seems really inefficient - mostly repeating FIND-ONE-OBJ & CONTAINER-SEARCH - can't think of better right now"
-;"TODO: eliminate .F?"
-<ROUTINE SEARCH-FOR-LIGHT ("AUX" F G H GMAX X)
-    ;<TELL "search inventory for light source">
-    <MAP-CONTENTS (I ,WINNER)
-        ;<TELL "I is currently " D . I  CR>
-        <COND (<FSET? .I ,LIGHTBIT>
-               <SET F .I>
-               <RETURN>)>
-        ;"if any items are surfaces or open containers, search their contents"
-        <COND (<OR <FSET? .I ,SURFACEBIT>
-                   <AND <FSET? .I ,OPENABLEBIT>
-                        <FSET? .I ,OPENBIT>>
-                   ;"always-open or transparent container"
-                   <AND <FSET? .I ,CONTBIT>
-                        <OR <NOT <FSET? .I ,OPENABLEBIT>>
-                            <FSET? .I ,TRANSBIT>>>>
-               ;<TELL D .I " is a container." CR>
-               <SET F <CONTAINER-LIGHT-SEARCH .I>>
-               ;<TELL "Back in main SEARCH-FOR-LIGHT loop and F is " D .F CR>
-               <COND (.F <RETURN>)>)>>
-    <AND .F <RTRUE>>
-    ;"check location"
-    <MAP-CONTENTS (I ,HERE)
-        ;<TELL "Room Loop object is currently " D .I CR>
-        <COND (<FSET? .I ,LIGHTBIT>
-               <SET F .I>
-               ;<TELL "F is now set to " D .F CR>
-               <RETURN>)>
-        ;"if any items are surfaces or open containers, search their contents"
-        <COND (<OR <FSET? .I ,SURFACEBIT>
-                   <FSET? .I ,OPENBIT>
-                   ;"always-open or transparent container"
-                   <AND <FSET? .I ,CONTBIT> 
-                        <OR <NOT <FSET? .I ,OPENABLEBIT>>
-                            <FSET? .I ,TRANSBIT>>>>
-               ;<TELL D .I " is a container." CR>
-               <SET F <CONTAINER-LIGHT-SEARCH .I>>
-               ;<TELL "Back in main SEARCH-FOR-LIGHT loop and F is " D .F CR>
-               <COND (.F <RETURN>)>)>>
-    <AND .F <RTRUE>>
-    ;"check global objects"
-    <MAP-CONTENTS (I ,GLOBAL-OBJECTS)
-        <COND (<FSET? .I ,LIGHTBIT>
-               <SET F .I>
-               <RETURN>)>>
-    <AND .F <RETURN .F>>
-    ;"check local-globals"
-    <MAP-CONTENTS (I ,LOCAL-GLOBALS)
-        <COND (<AND <FSET? .I ,LIGHTBIT> <GLOBAL-IN? .I ,HERE>>
-               ;"room has an object that matches this global with LIGHTBIT"
-               <SET F .I>
-               <RETURN>)>>
-    <AND .F <RTRUE>> 
-    ;<TELL "no light source found" CR>
+<ROUTINE SEARCH-FOR-LIGHT SFL ()
+    <MAP-SCOPE (I) (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)
+        <COND (<FSET? .I ,LIGHTBIT> <RETURN .I .SFL>)>>
     <RFALSE>>
 
 <ROUTINE SEE-INSIDE? (OBJ)
     ;"The COND should be unnecessary, but ZILF generates ugly code without it"
-    <COND (<OR <FSET? .OBJ ,SURFACEBIT>
+    <COND (<OR ;"We can always see the contents of surfaces"
+               <FSET? .OBJ ,SURFACEBIT>
+               ;"We can see inside containers if they're open, transparent, or
+                 unopenable (= always-open)"
                <AND <FSET? .OBJ ,CONTBIT>
                     <OR <FSET? .OBJ ,OPENBIT>
-                        <FSET? .OBJ ,TRANSBIT>>>>
+                        <FSET? .OBJ ,TRANSBIT>
+                        <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>
            <RTRUE>)>
     <RFALSE>>
 
-<ROUTINE CONTAINER-LIGHT-SEARCH (I "AUX" F)
-    <MAP-CONTENTS (J .I)
-        ;<TELL "Searching contents of " D .I " for light source" CR>
-        ;<TELL "Current object is " D .J CR>
-        <COND (<FSET? .J ,LIGHTBIT>
-               <SET F .J>
-               ;<TELL "Light source match found in container search, F is now " D .F CR>
-               <RETURN>)
-              (<OR <FSET? .J ,SURFACEBIT>
-                   <AND <FSET? .J ,OPENABLEBIT>
-                        <FSET? .J ,OPENBIT>>
-                   ;"the always-open case"
-                   <AND <FSET? .J ,CONTBIT> 
-                        <NOT <FSET? .J ,OPENABLEBIT>>>>
-               ;<TELL "Found another container - about to search through " D .J CR>
-               <SET F <CONTAINER-LIGHT-SEARCH .J>>
-               <AND .F <RETURN>>)>>
-    <AND .F <RETURN .F>>>
-
-<ROUTINE FIND-ONE-OBJ (YTBL NTBL "AUX" A N F G H GMAX X P)
+<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL "AUX" A N)
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
-    <IF-DEBUG <TELL "[FIND-ONE-OBJ: adj=" N .A " noun=" N .N "]" CR>>
-    ;"check abstract/generic objects"
-    <MAP-CONTENTS (I ,GENERIC-OBJECTS)
+    <MAP-SCOPE (I)
         <COND (<REFERS? .A .N .I>
-               <SET F .I>
-               <RETURN>)>>
-    <AND .F <RETURN .F>>
-    ;"check for light"
-    <COND (<NOT <FSET? ,HERE ,LIGHTBIT>>
-           <COND (<NOT <SEARCH-FOR-LIGHT>>
-                  <TELL "It's too dark to see anything here." CR>
-                  <RFALSE>)>)>
-    ;"check location"
-    <MAP-CONTENTS (I ,HERE)
-        ;<TELL "Room Loop object is currently " D .I CR>
-        <COND (<REFERS? .A .N .I>
-               <SET F .I>
-               ;<TELL "F is now set to " D .F CR>
-               <RETURN>)>
-        ;"if any items are surfaces, open containers, or transparent containers, search their contents"
-        <COND (<OR <FSET? .I ,SURFACEBIT>
-                   ;"open container"
-                   <AND <FSET? .I ,OPENABLEBIT>
-                        <FSET? .I ,OPENBIT>>
-                   ;"always open container"
-                   <AND <FSET? .I ,CONTBIT> 
-                        <NOT <FSET? .I ,OPENABLEBIT>>>
-                   ;"transparent container"
-                   <AND <FSET? .I ,CONTBIT> 
-                        <FSET? .I ,TRANSBIT>>>
-               ;<TELL D .I " is a container." CR>
-               <SET F <CONTAINER-SEARCH .I .A .N>>
-               ;<TELL "Back in main FIND-ONE-OBJ loop and F is " D .F CR>
-               <AND .F <RETURN>>
-               ;<RETURN>)>>
-    <AND .F <RETURN .F>>       
-    ;"check inventory"
-    <MAP-CONTENTS (I ,WINNER)
-        <COND (<REFERS? .A .N .I>
-               <SET F .I>
-               <RETURN>)>
-        ;"if any items are surfaces or open containers, search their contents"
-        <COND (<OR <FSET? .I ,SURFACEBIT>
-                   ;"open container"
-                   <AND <FSET? .I ,OPENABLEBIT>
-                        <FSET? .I ,OPENBIT>>
-                   ;"always open container"
-                   <AND <FSET? .I ,CONTBIT> 
-                        <NOT <FSET? .I ,OPENABLEBIT>>>
-                   ;"transparent container"
-                   <AND <FSET? .I ,CONTBIT> 
-                        <FSET? .I ,TRANSBIT>>>
-               ;<TELL D .I " is a container." CR>
-               <SET F <CONTAINER-SEARCH .I .A .N>>
-               ;<TELL "Back in main FIND-ONE-OBJ loop and F is " D .F CR>
-               <AND .F <RETURN>>
-               ;<RETURN>)>>
-    <AND .F <RETURN .F>>
-    ;"check global objects"
-    <MAP-CONTENTS (I ,GLOBAL-OBJECTS)
-        <COND (<REFERS? .A .N .I>
-               <SET F .I>
-               <RETURN>)>>
-    <AND .F <RETURN .F>>
-    ;"check local-globals"
-    <MAP-CONTENTS (I ,LOCAL-GLOBALS)
-        <COND (<AND <REFERS? .A .N .I> <GLOBAL-IN? .I ,HERE>>
-               <SET F .I>
-               <RETURN>)>>
-    <AND .F <RETURN .F>> 
-    ;"no match"
-    ;"TO DO - Search through containers in rooms to see if I-matching NPC is there for 'does not seem to be here' message"
-    <MAP-CONTENTS (I ROOMS)
-        <MAP-CONTENTS (J .I)
-            <COND (<REFERS? .A .N .J>
-                   <SET P .J>
-                   ;<TELL "No match - P is " D .P CR>
-                   <COND (<FSET? .P ,PERSONBIT>
-                          <TELL CT .P " does not seem to be here." CR > <RFALSE>)>)>>>
-    <TELL "You don't see that here." CR>
+               <RETURN .I .FOO>)>>
+    ;"Not found"
+    <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
+           <TELL "It's too dark to see anything here." CR>)
+          (ELSE
+           <TELL "You don't see that here." CR>)>
     <RFALSE>>
-    
-<ROUTINE CONTAINER-SEARCH (I A N "AUX" J F)
-    <MAP-CONTENTS (J .I)
-        ;<TELL "Searching contents of " D .I CR>
-        ;<TELL "Current object is " D .J CR>
-        <COND (<REFERS? .A .N .J>
-               <SET F .J>
-               ;<TELL "Match found in container search, F is now " D .F CR>
-               <RETURN>)
-              (<OR <FSET? .I ,SURFACEBIT>
-                   <AND <FSET? .I ,OPENABLEBIT>
-                        <FSET? .I ,OPENBIT>>
-                        ;"the always-open case"
-                        <AND <FSET? .I ,CONTBIT> 
-                             <NOT <FSET? .I ,OPENABLEBIT>>>
-                        ;"transparent container"
-                        <AND <FSET? .I ,CONTBIT> 
-                             <FSET? .I ,TRANSBIT>>>                      				
-               ;<TELL "Found another container - about to search through " D .J CR>
-               <SET F <CONTAINER-SEARCH .J .A .N>>
-               <AND .F <RETURN>>)>>
-    .F>
+        
 
 <ROUTINE GLOBAL-IN? (O R)
     <IN-PB/WTBL? .R ,P?GLOBAL .O>>
@@ -697,18 +527,16 @@ other versions. These macros let us write the same code for all versions."
         <ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- </ <PTSIZE .PT> 2> 1>>
-            <REPEAT ((I 0))
-                <COND
-                    (<==? <GET .PT .I> .V> <RTRUE>)
-                    (<IGRTR? I .MAX> <RFALSE>)>>>
+            <DO (I 0 .MAX)
+                <COND (<==? <GET .PT .I> .V> <RTRUE>)>>
+            <RFALSE>>
 
         <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- <PTSIZE .PT> 1>>
-            <REPEAT ((I 0))
-                <COND
-                    (<==? <GETB .PT .I> .V> <RTRUE>)
-                    (<IGRTR? I .MAX> <RFALSE>)>>>)
+            <DO (I 0 .MAX)
+                <COND (<==? <GETB .PT .I> .V> <RTRUE>)>>
+            <RFALSE>>)
     (EZIP
         ;"V4 only has the 3-argument (word) form of INTBL?"
         <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
@@ -719,36 +547,33 @@ other versions. These macros let us write the same code for all versions."
         <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- <PTSIZE .PT> 1>>
-            <REPEAT ((I 0))
-                <COND
-                    (<==? <GETB .PT .I> .V> <RTRUE>)
-                    (<IGRTR? I .MAX> <RFALSE>)>>>)
+            <DO (I 0 .MAX)
+                <COND (<==? <GETB .PT .I> .V> <RTRUE>)>>
+            <RFALSE>>)
     (T
         ;"use built-in INTBL? in V5+"
         <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
-        <SET LEN </ <PTSIZE .PT> 2>>
-        <AND <INTBL? .V .PT .LEN> <RTRUE>>>
-    
+            <SET LEN </ <PTSIZE .PT> 2>>
+            <AND <INTBL? .V .PT .LEN> <RTRUE>>>
+
         <ROUTINE IN-PBTBL? (O P V "AUX" PT LEN)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET LEN <PTSIZE .PT>>
             <AND <INTBL? .V .PT .LEN 1> <RTRUE>>>)>
 
-<ROUTINE DUMPLINE ("AUX" (P <+ ,LEXBUF 2>) (WDS <GETB ,LEXBUF 1>))
+<ROUTINE DUMPLINE ("AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
     <TELL N .WDS " words:">
-    <REPEAT ()
-        <COND (<DLESS? WDS 0> <CRLF> <RTRUE>)
-              (ELSE <TELL " "> <DUMPWORD <GET .P 0>>)>
-        <SET P <+ .P 4>>>>
-        
-<ROUTINE DUMPLEX ("AUX" C (P <+ ,LEXBUF 2>) (WDS <GETB ,LEXBUF 1>))
+    <DO (I 1 .WDS)
+        <TELL " ">
+        <DUMPWORD <GET .P 0>>
+        <SET P <+ .P 4>>>
+    <CRLF>>
+
+<ROUTINE DUMPLEX ("AUX" (WDS <GETB ,LEXBUF 1>))
     ;<TELL N .WDS " words:">
-    <SET C 1>
-    <REPEAT ()
-        <TELL N .C " of LEXBUF is " N <GET ,LEXBUF .C> CR>
-        <SET C <+ .C 1>>
-        <COND (<G? .C .WDS> <RETURN>)>>>
+    <DO (C 1 .WDS)
+        <TELL N .C " of LEXBUF is " N <GET ,LEXBUF .C> CR>>>
 
 <ROUTINE DUMPWORD (W "AUX" FL)
     <COND (.W
@@ -763,50 +588,25 @@ other versions. These macros let us write the same code for all versions."
            <COND (<BTST .FL ,PS?OBJECT> <TELL "O">)>
            <TELL ")">)
           (ELSE <TELL "---">)>>
-        
-<ROUTINE COPY-LEXBUF ("AUX" C W (WDS <GETB ,LEXBUF 1>))  
-        <SET C 1>
-        <PUTB ,BACKLEXBUF 1 .WDS>
-        <REPEAT ()
-              <SET W <GET ,LEXBUF .C>>
-              ;<TELL N .C "COPY LEX W is " N .W CR>
-              <PUT ,BACKLEXBUF  .C .W> 
-              <SET C <+ .C 1>>
-              <COND (<G? .C .WDS> <RETURN>)>>>
 
-<ROUTINE RESTORE-LEX ("AUX" C W (WDS <GETB ,BACKLEXBUF 1>))  
-        <SET C 1>
-        <PUTB ,LEXBUF 1 .WDS>
-        <REPEAT ()
-              <SET W <GET ,BACKLEXBUF .C>>
-              ;<TELL N .C "RESTORE LEX W is " N .W CR>
-              <PUT ,LEXBUF .C .W> 
-              <SET C <+ .C 1>>
-              <COND (<G? .C .WDS> <RETURN>)>>>
+<ROUTINE COPY-LEXBUF ("AUX" C W (WDS <GETB ,LEXBUF 1>))
+    <PUTB ,BACKLEXBUF 1 .WDS>
+    <COPY-TABLE <REST ,LEXBUF 2> <REST ,BACKLEXBUF 2> <* 2 .WDS>>>
 
-<ROUTINE COPY-READBUF ("AUX" C W)  
-        <SET C 1>
-        <REPEAT ()
-              <SET W <GETB ,READBUF .C>>
-              <PUTB ,BACKREADBUF .C .W> 
-              <SET C <+ .C 1>>
-              <COND (<G? .C 100> <RETURN>)>>>
+<ROUTINE RESTORE-LEX ("AUX" C W (WDS <GETB ,BACKLEXBUF 1>))
+    <PUTB ,LEXBUF 1 .WDS>
+    <COPY-TABLE <REST ,BACKLEXBUF 2> <REST ,LEXBUF 2> <* 2 .WDS>>>
 
-<ROUTINE RESTORE-READBUF ("AUX" C W)  
-        <SET C 1>
-        <REPEAT ()
-              <SET W <GETB ,BACKREADBUF .C>>
-              <PUTB ,READBUF .C .W> 
-              <SET C <+ .C 1>>
-              <COND (<G? .C 100> <RETURN>)>>>
+<ROUTINE COPY-READBUF ("AUX" C W)
+    <COPY-TABLE ,READBUF ,BACKREADBUF %</ ,READBUF-SIZE 2>>>
 
-<ROUTINE DUMPBUF ("AUX" C (WDS <GETB ,READBUF 1>))
+<ROUTINE RESTORE-READBUF ("AUX" C W)
+    <COPY-TABLE ,BACKREADBUF ,READBUF %</ ,READBUF-SIZE 2>>>
+
+<ROUTINE DUMPBUF ("AUX" (WDS <GETB ,READBUF 1>))
     ;<TELL N .WDS " words:">
-    <SET C 1>
-        <REPEAT ()
-        <TELL N .C " of READBUF is " N <GET ,READBUF .C> CR>
-        <SET C <+ .C 1>>
-        <COND (<G? .C 100> <RETURN>)>>>
+    <DO (C 1 ,READBUF-SIZE)
+        <TELL N .C " of READBUF is " N <GET ,READBUF .C> CR>>>
 
 ;"The read buffer has a slightly different format on V3."
 <ROUTINE READLINE ()
@@ -862,11 +662,11 @@ other versions. These macros let us write the same code for all versions."
            <RTRUE>)
           (<AND .PRTN <APPLY .PRTN>>
            <RTRUE>)
-          (<AND ,PRSI 
+          (<AND ,PRSI
                 <SET AC <GETP <LOC ,PRSI> ,P?CONTFCN>>
                 <APPLY .AC>>
            <RTRUE>)
-          (<AND ,PRSI 
+          (<AND ,PRSI
                 <SET AC <GETP ,PRSI ,P?ACTION>>
                 <APPLY .AC>>
            <RTRUE>)
@@ -874,7 +674,7 @@ other versions. These macros let us write the same code for all versions."
                 <NOT ,PRSO-DIR>
                 <SET AC <GETP <LOC ,PRSO> ,P?CONTFCN>>
                 <APPLY .AC>>
-           <RTRUE>)    
+           <RTRUE>)
           (<AND ,PRSO
                 <NOT ,PRSO-DIR>
                 <SET AC <GETP ,PRSO ,P?ACTION>>
@@ -945,7 +745,7 @@ other versions. These macros let us write the same code for all versions."
       <SET RND <RANDOM <GET .TABL 0>>>
       <SET MSG <GET .TABL .RND>>
       <RETURN .MSG>>
-      
+
 <VERSION?
     (ZIP
         <DEFMAC INIT-STATUS-LINE () <>>
@@ -1015,7 +815,7 @@ other versions. These macros let us write the same code for all versions."
                   <SET R <RESTORE>>
                   ;"Workaround for restore failing duirng JIGS-UP, otherwise game will continue, even though player is 'dead'"
                   <COND (<NOT .R>
-                         <TELL "Restore failed - restarting instead." CR> 
+                         <TELL "Restore failed - restarting instead." CR>
                          <TELL "Press any key >">
                          <GETONECHAR>
                          <RESTART>)>)
@@ -1029,27 +829,21 @@ other versions. These macros let us write the same code for all versions."
                   <SET R <V-UNDO>>
                   ;"Workaround for undo failing duirng JIGS-UP, otherwise game will continue, even though player is 'dead'"
                   <COND (<NOT .R>
-                         <TELL "Undo failed - restarting instead." CR> 
+                         <TELL "Undo failed - restarting instead." CR>
                          <TELL "Press any key >">
                          <GETONECHAR>
                          <RESTART>)>)
                  (T
                   <JIGS-UP "">)>)>>
 
-<ROUTINE ROB (VICTIM "OPT" DEST "AUX" N I)
+<ROUTINE ROB (VICTIM "OPT" DEST "AUX" DEST-IS-PERSON)
     ;"TODO: use MAP-CONTENTS"
-     <SET I <FIRST? .VICTIM>>
-     <REPEAT ()
-         <COND (<NOT .I> <RETURN>)>
-         <SET N <NEXT? .I>>
-         <COND (<AND <FSET? .I ,WORNBIT>
-                     <NOT <FSET? .DEST ,PERSONBIT>>>
-                        <FCLEAR .I ,WORNBIT>)>
-         <COND (<NOT .DEST>
-                    <REMOVE .I>)
-               (ELSE
-                    <MOVE .I .DEST>)>
-         <SET I .N>>>
+    <COND (<AND .DEST <FSET? .DEST ,PERSONBIT>>
+           <SET DEST-IS-PERSON T>)>
+    <MAP-CONTENTS (I N .VICTIM)
+        <COND (<NOT .DEST-IS-PERSON> <FCLEAR .I ,WORNBIT>)>
+        <COND (<NOT .DEST> <REMOVE .I>)
+              (ELSE <MOVE .I .DEST>)>>>
 
 <ROUTINE YES? ("AUX" RESP)
      <PRINTI " (y/n) >">
@@ -1066,7 +860,7 @@ other versions. These macros let us write the same code for all versions."
 <VERSION?
     (ZIP
         <ROUTINE GETONECHAR ()
-            <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
+            <PUTB ,READBUF 0 %<- ,READBUF-SIZE 2>>
             <READ ,READBUF ,LEXBUF>
             <GETB ,READBUF 1>>)
     (ELSE
@@ -1074,9 +868,10 @@ other versions. These macros let us write the same code for all versions."
             ;"TODO: is BUFOUT doing anything useful here?"
             <BUFOUT <>>
             <BUFOUT T>
-            <INPUT 1>>)>			
-         
-<ROUTINE VISIBLE? (OBJ "AUX" P M (T 0))
+            <INPUT 1>>)>
+
+;"TODO: should this check GENERIC-OBJECTS too?"
+<ROUTINE VISIBLE? (OBJ "AUX" P M)
     <SET P <LOC .OBJ>>
     <SET M <META-LOC .OBJ>>
     <COND (<NOT <=? .M ,HERE>>
@@ -1087,21 +882,13 @@ other versions. These macros let us write the same code for all versions."
                  (ELSE <RFALSE>)>)>
     ;<TELL "The meta-loc = HERE and the LOC is " D .P CR>
     <REPEAT ()
-        <COND (<AND <FSET? .P ,CONTBIT>
-                    <NOT <FSET? .P ,SURFACEBIT>>
-                    <NOT <FSET? .P ,TRANSBIT>>
-                    <NOT <FSET? .P ,OPENBIT>>>
-               ;<TELL D .P " is a non-transparent container that is closed." CR>
-               <SET T 0>
-               <RETURN>)
-              (<OR <=? .P ,HERE>
-                   <=? .P ,WINNER>>
+        <COND (<EQUAL? .P ,HERE ,WINNER>
                ;<TELL D .P " is either = HERE or the player." CR>
-               <SET T 1>
-               <RETURN>)
-              (ELSE <SET P <LOC .P>>)>>
-    <COND (<=? .T 1> <RTRUE>)
-          (ELSE <RFALSE>)>>
+               <RTRUE>)
+              (<NOT <SEE-INSIDE? .P>>
+               ;<TELL D .P " is a non-transparent container that is closed." CR>
+               <RFALSE>)
+              (ELSE <SET P <LOC .P>>)>>>
 
 <ROUTINE ACCESSIBLE? (OBJ "AUX" L)
     ;"currently GLOBALs and LOCAL-GLOBALS return false since they are non-interactive scenery."
@@ -1132,7 +919,7 @@ other versions. These macros let us write the same code for all versions."
               (ELSE
                <SET OBJ <LOC .OBJ>>)>>>
 
-<ROUTINE META-LOC ML (OBJ "AUX" P (T 0))
+<ROUTINE META-LOC ML (OBJ "AUX" P)
     <SET P <LOC .OBJ>>
     <COND (<IN? .P ,ROOMS>
            <RETURN .P>)>
@@ -1152,16 +939,16 @@ other versions. These macros let us write the same code for all versions."
     <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
                 <NOT <SEARCH-FOR-LIGHT>>>
            <TELL "You are plunged into darkness." CR>)>>
-    
+
 <ROUTINE NOW-LIT ()
     <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
                 <NOT <SEARCH-FOR-LIGHT>>>
            <TELL "You can see your surroundings now." CR CR>
-           <SETG NLITSET 1>
+           <SETG NLITSET T>
            <V-LOOK>)>>
 
 <INSERT-FILE "events">
-            
+
 <INSERT-FILE "verbs">
 
 "Objects"
@@ -1172,11 +959,11 @@ other versions. These macros let us write the same code for all versions."
            LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
            OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
            PLURALBIT)>
-         
+
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
 <OBJECT NULLTHANG
-    (SIZE 2)
+    (SIZE 5)
     (ADJECTIVE NULLTHANG)
     (LDESC <>)
     (FDESC <>)
@@ -1186,7 +973,9 @@ other versions. These macros let us write the same code for all versions."
     (DESCFCN <>)
     (TEXT-HELD <>)
     (CAPACITY 10)>
-    
+
+<PROPDEF SIZE 5>
+
 <OBJECT GLOBAL-OBJECTS>
 
 <OBJECT GENERIC-OBJECTS>
@@ -1195,13 +984,13 @@ other versions. These macros let us write the same code for all versions."
 
 <OBJECT IT
     (SYNONYM IT)>
-    
+
 <OBJECT HIM
     (SYNONYM HIM)>
-    
+
 <OBJECT HER
     (SYNONYM HER)>
-    
+
 <OBJECT THEM
     (SYNONYM THEM)>
 
