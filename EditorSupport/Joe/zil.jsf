@@ -115,10 +115,10 @@
 =ZConstant	red
 =ZConstantSpace	inverse red
 =List		bold yellow
-=Form		magenta
+=Form		bold magenta
 =Vector		yellow
 =Macro		bold green
-=Local		bold magenta
+=Local		magenta
 =Global		blue
 =Segment	bold red
 =Hash		red
@@ -289,6 +289,9 @@
 	*	idle	noeat return
 	" \t\n"	macro_body
 	".,<"	macro_rtn	noeat recolormark call=.expr(MACRO)
+
+:macro_rtn Macro
+	*	idle	noeat return
 
 :hash Hash
 	*	hash_rest
