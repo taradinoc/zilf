@@ -106,6 +106,7 @@
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="MacroTests.cs" />
+    <Compile Include="MetaTests.cs" />
     <Compile Include="VariableTests.cs" />
     <Compile Include="VocabTests.cs" />
     <Compile Include="ZlrHelper.cs" />

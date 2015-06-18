@@ -3062,7 +3062,7 @@ namespace Zilf.Compiler
             while (!clauses.IsEmpty)
             {
                 ZilList clause = clauses.First as ZilList;
-                clauses = clauses.Rest as ZilList;
+                clauses = clauses.Rest;
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
                     throw new CompilerError("all clauses in VERSION? must be lists");
@@ -3111,7 +3111,7 @@ namespace Zilf.Compiler
                 if (condVersion == cc.Context.ZEnvironment.ZVersion || condVersion == 0)
                 {
                     // emit code for clause
-                    clause = clause.Rest as ZilList;
+                    clause = clause.Rest;
                     if (clause.IsEmpty && wantResult)
                         rb.EmitStore(resultStorage, cc.Game.One);
 
@@ -3140,7 +3140,7 @@ namespace Zilf.Compiler
                             rb.EmitStore(resultStorage, result);
                         }
 
-                        clause = clause.Rest as ZilList;
+                        clause = clause.Rest;
                     }
 
                     if (condVersion == 0 && !clauses.IsEmpty)
@@ -3162,7 +3162,95 @@ namespace Zilf.Compiler
         private static IOperand CompileIFFLAG(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
             ISourceLine src, bool wantResult, IVariable resultStorage)
         {
-            throw new NotImplementedException();
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(clauses != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
+            if (resultStorage == null)
+                resultStorage = rb.Stack;
+
+            Contract.Assert(resultStorage != null);
+
+            while (!clauses.IsEmpty)
+            {
+                ZilList clause = clauses.First as ZilList;
+                clauses = clauses.Rest as ZilList;
+
+                if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+                    throw new CompilerError("all clauses in IFFLAG must be lists");
+
+                ZilAtom atom;
+                ZilForm form;
+                ZilObject value;
+                bool match, isElse = false;
+                if ((atom = clause.First as ZilAtom) != null &&
+                    (value = cc.Context.GetCompilationFlagValue(atom)) != null)
+                {
+                    // name of a defined compilation flag
+                    match = value.IsTrue;
+                }
+                else if ((form = clause.First as ZilForm) != null)
+                {
+                    form = Subrs.SubstituteIfflagForm(cc.Context, form);
+                    match = form.Eval(cc.Context).IsTrue;
+                }
+                else
+                {
+                    match = isElse = true;
+                }
+
+                // does this clause match?
+                if (match)
+                {
+                    // emit code for clause
+                    clause = clause.Rest;
+                    if (clause.IsEmpty && wantResult)
+                        rb.EmitStore(resultStorage, cc.Game.One);
+
+                    while (!clause.IsEmpty)
+                    {
+                        // only want the result of the last statement (if any)
+                        bool wantThisResult = wantResult && clause.Rest.IsEmpty;
+                        ZilForm innerForm = clause.First as ZilForm;
+                        IOperand result;
+                        if (innerForm != null)
+                        {
+                            MarkSequencePoint(cc, rb, innerForm);
+
+                            result = CompileForm(cc, rb, innerForm,
+                                wantThisResult,
+                                wantThisResult ? resultStorage : null);
+                            if (wantThisResult && result != resultStorage)
+                                rb.EmitStore(resultStorage, result);
+                        }
+                        else if (wantResult)
+                        {
+                            result = CompileConstant(cc, clause.First);
+                            if (result == null)
+                                throw new CompilerError("unexpected value as statement");
+
+                            rb.EmitStore(resultStorage, result);
+                        }
+
+                        clause = clause.Rest;
+                    }
+
+                    if (isElse && !clauses.IsEmpty)
+                    {
+                        Errors.CompWarning(cc.Context, src, "IFFLAG: clauses after else part will never be evaluated");
+                    }
+
+                    return wantResult ? resultStorage : null;
+                }
+            }
+
+            // no matching clauses
+            if (wantResult)
+                rb.EmitStore(resultStorage, cc.Game.Zero);
+
+            return wantResult ? resultStorage : null;
         }
 
         private static IOperand CompileImpromptuTable(CompileCtx cc, IRoutineBuilder rb, ZilForm form,
