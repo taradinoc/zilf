@@ -97,5 +97,16 @@ namespace ZilfTests.Interpreter
             const string CODE = "<COMPILATION-FLAG-VALUE ASDFGHJKL>";
             TestHelpers.EvalAndCatch<InterpreterError>(CODE);
         }
+
+        [TestMethod]
+        public void ZIP_OPTIONS_Should_Become_Compilation_Flags()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<IFFLAG (UNDO T) (ELSE <>)>", ctx.FALSE);
+
+            TestHelpers.Evaluate(ctx, "<ZIP-OPTIONS UNDO>");
+
+            TestHelpers.EvalAndAssert(ctx, "<IFFLAG (UNDO T) (ELSE <>)>", ctx.TRUE);
+        }
     }
 }

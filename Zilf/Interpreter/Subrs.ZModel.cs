@@ -1073,6 +1073,7 @@ namespace Zilf.Interpreter
                         throw new InterpreterError("ZIP-OPTIONS: unrecognized option " + atom);
                 }
 
+                ctx.DefineCompilationFlag(atom, ctx.TRUE, true);
                 ctx.SetGlobalVal(ctx.GetStdAtom(flag), ctx.TRUE);
             }
 
