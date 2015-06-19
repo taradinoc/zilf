@@ -2,6 +2,11 @@
 
 <SETG ZILLIB-VERSION "J1">
 
+<VERSION?
+    (ZIP)
+    (EZIP)
+    (ELSE <ZIP-OPTIONS UNDO COLOR>)>
+
 "Debugging"
 
 <COMPILATION-FLAG-DEFAULT DEBUG <>>
@@ -20,12 +25,14 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL AGAINCALL <>>
 <GLOBAL USAVE 0>
 <GLOBAL NLITSET <>>
-<GLOBAL DBCONT <>>
-<GLOBAL DTURNS <>>
 <GLOBAL MODE 1>
 <CONSTANT SUPERBRIEF 0>
 <CONSTANT BRIEF 1>
 <CONSTANT VERBOSE 2>
+
+<IF-DEBUG
+    <GLOBAL DBCONT <>>
+    <GLOBAL DTURNS <>>>
 
 <ADD-TELL-TOKENS
     T *     <PRINT-DEF .X>
@@ -156,6 +163,7 @@ other versions. These macros let us write the same code for all versions."
     <SET VAL <>>
     <SET DIR <>>
     <SETG HERE <LOC ,PLAYER>>
+    ;"Fill READBUF and LEXBUF"
     <READLINE>
     <IF-DEBUG <DUMPLINE>>
     <SETG P-LEN <GETB ,LEXBUF 1>>
@@ -165,131 +173,130 @@ other versions. These macros let us write the same code for all versions."
     <PUT ,P-IOBJS 0 0>
     <SETG P-P1 <>>
     <SETG P-P2 <>>
-    <SETG HERE <LOC ,WINNER>>
+    <SETG HERE <LOC ,WINNER>>	;"TODO: why WINNER here vs. PLAYER above?"
+    ;"Identify the verb, prepositions, and noun clauses"
     <REPEAT ((I 1) W)
-        ;<TELL "W is currently " N .W CR>
-        ;"setting of W separated out so verb recogniton could also be separated"
         <COND (<G? .I ,P-LEN>
+               ;"Reached the end of the command"
                <RETURN>)
               (<NOT <SET W <GETWORD? .I>>>
+               ;"Word not in vocabulary"
                <TELL "I don't know the word \"">
                <PRINT-WORD .I>
                <TELL "\"." CR>
-               <RFALSE>)>
-        ;"verb recognition separated from rest so a verb and object can have the same name"
-        <COND (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
+               <RFALSE>)
+              (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
+               ;"Found the verb"
                <SETG P-V <WORD? .W VERB>>)
-              (ELSE
-               <COND (<AND <EQUAL? ,P-V <> ,ACT?WALK>
-                           <SET VAL <WORD? .W DIRECTION>>>
-                      <SET DIR .VAL>)
-                     (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
-                      <COND (<AND <==? .NOBJ 0> <NOT ,P-P1>>
-                             <SETG P-P1 .VAL>)
-                            (<AND <==? .NOBJ 1> <NOT ,P-P2>>
-                             <SETG P-P2 .VAL>)>)
-                     (<STARTS-CLAUSE? .W>
-                      <SET NOBJ <+ .NOBJ 1>>
-                      <COND (<==? .NOBJ 1>
-                             <SET VAL <MATCH-CLAUSE .I ,P-DOBJS ,P-DOBJEX>>)
-                            (<==? .NOBJ 2>
-                             <SET VAL <MATCH-CLAUSE .I ,P-IOBJS ,P-IOBJEX>>)
-                            (ELSE
-                             <TELL "That sentence has too many objects." CR>
-                             <RFALSE>)>
-                      <COND (.VAL
-                             <SET I .VAL>
-                             <AGAIN>)
-                            (ELSE
-                             <TELL "That noun clause didn't make sense." CR>
-                             <RFALSE>)>)
+              (<AND <EQUAL? ,P-V <> ,ACT?WALK>
+                    <SET VAL <WORD? .W DIRECTION>>>
+               ;"Found a direction"
+               <SET DIR .VAL>)
+              (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
+               ;"Found a preposition"
+               ;"Only keep the first preposition for each object"
+               <COND (<AND <==? .NOBJ 0> <NOT ,P-P1>>
+                      <SETG P-P1 .VAL>)
+                     (<AND <==? .NOBJ 1> <NOT ,P-P2>>
+                      <SETG P-P2 .VAL>)>)
+              (<STARTS-CLAUSE? .W>
+               ;"Found a noun clause"
+               <SET NOBJ <+ .NOBJ 1>>
+               <COND (<==? .NOBJ 1>
+                      <SET VAL <MATCH-CLAUSE .I ,P-DOBJS ,P-DOBJEX>>)
+                     (<==? .NOBJ 2>
+                      <SET VAL <MATCH-CLAUSE .I ,P-IOBJS ,P-IOBJEX>>)
                      (ELSE
-                      <TELL "I didn't expect the word \"">
-                      <PRINT-WORD .I>
-                      <TELL "\" there." CR>
-                      <RFALSE>)>)>
+                      <TELL "That sentence has too many objects." CR>
+                      <RFALSE>)>
+               <COND (.VAL
+                      <SET I .VAL>
+                      <AGAIN>)
+                     (ELSE
+                      <TELL "That noun clause didn't make sense." CR>
+                      <RFALSE>)>)
+              (ELSE
+               ;"Unexpected word type"
+               <TELL "I didn't expect the word \"">
+               <PRINT-WORD .I>
+               <TELL "\" there." CR>
+               <RFALSE>)>
         <SET I <+ .I 1>>>
     <SETG P-NOBJ .NOBJ>
     <IF-DEBUG
         <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
               " P1=" N ,P-P1 " DOBJS=" N <GETB ,P-DOBJS 0>
               " P2=" N ,P-P2 " IOBJS=" N <GETB ,P-IOBJS 0> "]" CR>>
+    ;"If we have a direction, it's a walk action, and no verb is needed"
     <COND (.DIR
            <SETG PRSO-DIR T>
            <SETG PRSA ,V?WALK>
            <SETG PRSO .DIR>
            <SETG PRSI <>>
-           <VERSION?
-               (ZIP <>)
-               (EZIP <>)
-               (ELSE
-                ;"save state for undo after moving from room to room"
-                <COND (<AND <NOT <VERB? UNDO>>
-                            <NOT ,AGAINCALL>>
-                       <SETG USAVE <ISAVE>>
-                       ;<TELL "ISAVE returned " N ,USAVE CR>
-                       <COND (<EQUAL? ,USAVE 2>
-                              <TELL "Previous turn undone." CR>
-                              ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
-                              <AGAIN>)>)>)>
-           <RTRUE>)
-          (<NOT ,P-V>
+           <IF-UNDO
+               ;"save state for undo after moving from room to room"
+               <COND (<NOT <OR <VERB? UNDO> ,AGAINCALL>>
+                      <SETG USAVE <ISAVE>>
+                      <COND (<EQUAL? ,USAVE 2>
+                             <TELL "Previous turn undone." CR>
+                             <AGAIN>)>)>>
+           <RTRUE>)>
+    ;"Otherwise, a verb is required"
+    <COND (<NOT ,P-V>
            <TELL "That sentence has no verb." CR>
-           <RFALSE>)
-          (ELSE
-           <SETG PRSO-DIR <>>
-           <COND (<AND <MATCH-SYNTAX> <FIND-OBJECTS>>
-                  <VERSION?
-                      (ZIP <>)
-                      (EZIP <>)
-                      (ELSE
-                       ;"save state for UNDO, unless we're about to UNDO the previous command"
-                       <COND (<AND <NOT <VERB? UNDO>>
-                                   <NOT ,AGAINCALL>>
-                              <SETG USAVE <ISAVE>>
-                              ;<TELL "ISAVE returned " N ,USAVE CR>
-                              <COND (<EQUAL? ,USAVE 2>
-                                     <TELL "Previous turn undone." CR>
-                                     ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
-                                     <AGAIN>
-                                     ;<SETG NOUAGAIN 0> )>)>)>
-                  ;"if successful PRSO and not after an IT use, back up PRSO for IT"
-                  <COND (<AND <EQUAL? ,IT-USE 0>
-                              ,PRSO
-                              <NOT <FSET? ,PRSO ,PERSONBIT>>
-                              <NOT <FSET? ,PRSO ,PLURALBIT>>>
-                         ;<TELL "Copying P-DOBJS into P-DOBJS-BACK" CR>
-                         <COPY-TABLE ,P-DOBJS ,P-DOBJS-BACK 21>
-                         <COPY-TABLE ,P-DOBJEX ,P-DOBJEX-BACK 21>
-                         <COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
-                        ;"if PRSO has PLURALBIT, back up to THEM instead"
-                        (<AND <EQUAL? ,THEM-USE 0>
-                              ,PRSO
-                              <NOT <FSET? ,PRSO ,PERSONBIT>>
-                              <FSET? ,PRSO ,PLURALBIT>>
-                         ;<TELL "Copying P-DOBJS into P-TOBJS-BACK" CR>
-                         <COPY-TABLE ,P-DOBJS ,P-TOBJS-BACK 21>
-                         <COPY-TABLE ,P-DOBJEX ,P-TOBJEX-BACK 21>
-                         <COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
-                        ;"if successful PRSO who is male, back up PRSO for HIM"
-                        (<AND <EQUAL? ,HIM-USE 0>
-                              ,PRSO
-                              <FSET? ,PRSO ,PERSONBIT>
-                              <NOT <FSET? ,PRSO ,FEMALEBIT>>>
-                                            ;<TELL "Copying P-DOBJS into P-MOBJS-BACK" CR>
-                                            <COPY-TABLE ,P-DOBJS ,P-MOBJS-BACK 21>
-                                            <COPY-TABLE ,P-DOBJEX ,P-MOBJEX-BACK 21>
-                                            <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
-                        ;"if successful PRSO who is female, back up PRSO for HER"
-                        (<AND <EQUAL? ,HER-USE 0>
-                              ,PRSO
-                              <FSET? ,PRSO ,PERSONBIT>
-                              <FSET? ,PRSO ,FEMALEBIT>>
-                         ;<TELL "Copying P-DOBJS into P-FOBJS-BACK" CR>
-                         <COPY-TABLE ,P-DOBJS ,P-FOBJS-BACK 21>
-                         <COPY-TABLE ,P-DOBJEX ,P-FOBJEX-BACK 21>
-                         <COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>)>
-                  <RTRUE>)>)>>
+           <RFALSE>)>
+    <SETG PRSO-DIR <>>
+    ;"Match syntax lines and objects"
+    <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
+           <RFALSE>)>
+    ;"Save UNDO state"
+    <IF-UNDO
+        <COND (<AND <NOT <VERB? UNDO>>
+                    <NOT ,AGAINCALL>>
+               <SETG USAVE <ISAVE>>
+               ;<TELL "ISAVE returned " N ,USAVE CR>
+               <COND (<EQUAL? ,USAVE 2>
+                      <TELL "Previous turn undone." CR>
+                      ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
+                      <AGAIN>
+                      ;<SETG NOUAGAIN 0> )>)>>
+    ;"if successful PRSO and not after an IT use, back up PRSO for IT"
+    <COND (<AND <EQUAL? ,IT-USE 0>
+                ,PRSO
+                <NOT <FSET? ,PRSO ,PERSONBIT>>
+                <NOT <FSET? ,PRSO ,PLURALBIT>>>
+           ;<TELL "Copying P-DOBJS into P-DOBJS-BACK" CR>
+           <COPY-TABLE ,P-DOBJS ,P-DOBJS-BACK 21>
+           <COPY-TABLE ,P-DOBJEX ,P-DOBJEX-BACK 21>
+           <COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
+          ;"if PRSO has PLURALBIT, back up to THEM instead"
+          (<AND <EQUAL? ,THEM-USE 0>
+                ,PRSO
+                <NOT <FSET? ,PRSO ,PERSONBIT>>
+                <FSET? ,PRSO ,PLURALBIT>>
+           ;<TELL "Copying P-DOBJS into P-TOBJS-BACK" CR>
+           <COPY-TABLE ,P-DOBJS ,P-TOBJS-BACK 21>
+           <COPY-TABLE ,P-DOBJEX ,P-TOBJEX-BACK 21>
+           <COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
+          ;"if successful PRSO who is male, back up PRSO for HIM"
+          (<AND <EQUAL? ,HIM-USE 0>
+                ,PRSO
+                <FSET? ,PRSO ,PERSONBIT>
+                <NOT <FSET? ,PRSO ,FEMALEBIT>>>
+                              ;<TELL "Copying P-DOBJS into P-MOBJS-BACK" CR>
+                              <COPY-TABLE ,P-DOBJS ,P-MOBJS-BACK 21>
+                              <COPY-TABLE ,P-DOBJEX ,P-MOBJEX-BACK 21>
+                              <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
+          ;"if successful PRSO who is female, back up PRSO for HER"
+          (<AND <EQUAL? ,HER-USE 0>
+                ,PRSO
+                <FSET? ,PRSO ,PERSONBIT>
+                <FSET? ,PRSO ,FEMALEBIT>>
+           ;<TELL "Copying P-DOBJS into P-FOBJS-BACK" CR>
+           <COPY-TABLE ,P-DOBJS ,P-FOBJS-BACK 21>
+           <COPY-TABLE ,P-DOBJEX ,P-FOBJEX-BACK 21>
+           <COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>)>
+    <RTRUE>>
 
 
 <VERSION?
@@ -775,18 +782,14 @@ other versions. These macros let us write the same code for all versions."
             <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
             <CURSET 1 1>>)>
 
-<ROUTINE JIGS-UP (TEXT "AUX" RESP (Y 0) (X <>) R)
+<ROUTINE JIGS-UP (TEXT "AUX" RESP (Y 0) R)
     <TELL .TEXT CR CR>
     <TELL "    ****  The game is over  ****" CR CR>
     ;"<TELL "    ****  You have died  ****" CR CR>"
-    <VERSION?
-        (ZIP <>)
-        (EZIP <>)
-        (ELSE <SET X T>)>
-    <COND (.X
-           <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
-          (T
-           <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
+    <IFFLAG (UNDO
+             <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
+            (ELSE
+             <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
     <REPEAT ()
         <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
         <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
@@ -804,37 +807,26 @@ other versions. These macros let us write the same code for all versions."
                <SET Y 4>
                <RETURN>)
               (T
-               <COND (<AND .X>
-                      <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT)  >" >)
-                     (ELSE
-                      <TELL CR "(Please type RESTART, RESTORE or QUIT) > " > )>)>>
+               <IFFLAG (UNDO
+                        <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
+                       (ELSE
+                        <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>
+    ;"TODO: combine this with the REPEAT above"
     <COND (<=? .Y 1>
            <RESTART>)
           (<=? .Y 2>
-           <COND (.X		;"TODO: checking .X seems wrong here, this isn't undo"
-                  <SET R <RESTORE>>
-                  ;"Workaround for restore failing duirng JIGS-UP, otherwise game will continue, even though player is 'dead'"
-                  <COND (<NOT .R>
-                         <TELL "Restore failed - restarting instead." CR>
-                         <TELL "Press any key >">
-                         <GETONECHAR>
-                         <RESTART>)>)
-                 (T
-                  <JIGS-UP "">)>)
+           <SET R <RESTORE>>
+           <COND (<NOT .R>
+                  <TELL "Restore failed." CR>
+                  <AGAIN>)>)
           (<=? .Y 3>
            <TELL CR "Thanks for playing." CR>
            <QUIT>)
           (<=? .Y 4>
-           <COND (.X
-                  <SET R <V-UNDO>>
-                  ;"Workaround for undo failing duirng JIGS-UP, otherwise game will continue, even though player is 'dead'"
-                  <COND (<NOT .R>
-                         <TELL "Undo failed - restarting instead." CR>
-                         <TELL "Press any key >">
-                         <GETONECHAR>
-                         <RESTART>)>)
-                 (T
-                  <JIGS-UP "">)>)>>
+           <SET R <V-UNDO>>
+           <COND (<NOT .R>
+                  <TELL "Undo failed." CR>
+                  <AGAIN>)>)>>
 
 <ROUTINE ROB (VICTIM "OPT" DEST "AUX" DEST-IS-PERSON)
     ;"TODO: use MAP-CONTENTS"

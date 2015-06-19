@@ -584,16 +584,18 @@
            <SET S <GETP ,PRSO ,P?SIZE>>
            <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
                   <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
-                  <COND (<AND ,DBCONT> <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>)
+                  <IF-DEBUG <COND (,DBCONT
+                                   <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>>)
                  (ELSE
-                  <COND (<AND ,DBCONT> <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>
+                  <IF-DEBUG <COND (,DBCONT
+                                   <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>>
                   <SET CCAP 5>
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
            ;<COND (<AND ,DBCONT> <TELL D ,PRSI " has a size of " N .CSIZE CR>)>
-        <COND (<AND ,DBCONT>
-               <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR>)>
+        <IF-DEBUG <COND (,DBCONT
+               <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR>)>>
         ;<COND (<0? .B>
         ;<TELL N .CCAP CR>)
         ;(ELSE <TELL "infinite" CR>)>
@@ -608,15 +610,15 @@
                <SET X <+ .W .S>>
                <COND (<G? .X .CCAP>
                       <TELL "There's not enough room in " T ,PRSI "." CR>
-                      <COND (<AND ,DBCONT>
+                      <IF-DEBUG <COND (,DBCONT
                              <TELL D ,PRSO " can't fit, since current bulk of "
                                    D ,PRSI "'s contents is " N .W " and "
-                                   D ,PRSI "'s capacity is " N .CCAP CR>)>
+                                   D ,PRSI "'s capacity is " N .CCAP CR>)>>
                       <RETURN>)>
-               <COND (<AND ,DBCONT>
+               <IF-DEBUG <COND (,DBCONT
                       <TELL D ,PRSO " can fit, since current bulk of " D ,PRSI
                             "'s contents is " N .W " and " D ,PRSI "'s capacity is "
-                            N .CCAP CR>)>)>
+                            N .CCAP CR>)>>)>
         <MOVE ,PRSO ,PRSI>
         <FSET ,PRSO ,TOUCHBIT>
         <FCLEAR ,PRSO ,WORNBIT>
@@ -770,43 +772,41 @@
 
 <ROUTINE V-TURN-OFF ()
     ;<TELL "CURRENTLY IN TURN-OFF" CR>
-     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-            <TELL "That's not something you can switch on and off." CR>)
-           (<NOT <FSET? ,PRSO ,ONBIT>>
-            <TELL "It's already off." CR>)
-           (ELSE
-            <FCLEAR ,PRSO ,ONBIT>
-            <TELL "You switch off " T ,PRSO "." CR>)>>
+    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
+           <TELL "That's not something you can switch on and off." CR>)
+          (<NOT <FSET? ,PRSO ,ONBIT>>
+           <TELL "It's already off." CR>)
+          (ELSE
+           <FCLEAR ,PRSO ,ONBIT>
+           <TELL "You switch off " T ,PRSO "." CR>)>>
 
 <ROUTINE V-FLIP ()
-     ;<TELL "CURRENTLY IN FLIP" CR>
-     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-            <TELL "That's not something you can switch on and off." CR>)
-           (<FSET? ,PRSO ,ONBIT>
-            <FCLEAR ,PRSO ,ONBIT>
-            <TELL "You switch off " T ,PRSO "." CR>)
-           (<NOT <FSET? ,PRSO ,ONBIT>>
-            <FSET ,PRSO ,ONBIT>
-            <TELL "You switch on " T ,PRSO "." CR>)>>
+    ;<TELL "CURRENTLY IN FLIP" CR>
+    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
+           <TELL "That's not something you can switch on and off." CR>)
+          (<FSET? ,PRSO ,ONBIT>
+           <FCLEAR ,PRSO ,ONBIT>
+           <TELL "You switch off " T ,PRSO "." CR>)
+          (<NOT <FSET? ,PRSO ,ONBIT>>
+           <FSET ,PRSO ,ONBIT>
+           <TELL "You switch on " T ,PRSO "." CR>)>>
 
 <ROUTINE V-PUSH ()
-     <COND (<FSET? ,PRSO ,PERSONBIT>
-            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-           (ELSE
-            <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>>
+    <COND (<FSET? ,PRSO ,PERSONBIT>
+           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
+          (ELSE
+           <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>>
 
 <ROUTINE V-UNDO ("AUX" R)
-     <VERSION?
-         (ZIP <TELL "Undo is not available in this version." CR>)
-         (EZIP <TELL "Undo is not available in this version." CR>)
-         (ELSE
-          <COND (<0? ,USAVE>
-                 <TELL "Cannot undo any further." CR>
-                 <RETURN>)>
-          <SET R <IRESTORE>>
-          ;<TELL "IRESTORE returned " N .R CR>
-          <COND (<EQUAL? .R 0>
-                 <TELL "Undo failed." CR>)>)>>
+    <IFFLAG
+        (UNDO
+         <COND (<NOT ,USAVE>
+                <TELL "Cannot undo any further." CR>
+                <RETURN>)>
+         <SET R <IRESTORE>>
+         <COND (<EQUAL? .R 0>
+                <TELL "Undo failed." CR>)>)
+        (ELSE <TELL "Undo is not available in this version." CR>)>>
 
 <ROUTINE V-SAVE ("AUX" S)
      ;<TELL "Now in save routine" CR>
@@ -826,111 +826,113 @@
           (ELSE
            <TELL "Restart aborted." CR>)>>
 
-<ROUTINE V-DROB ()
-    <TELL "REMOVING CONTENTS OF " D ,PRSO " FROM THE GAME." CR>
-    <ROB ,PRSO>>
+;"Debugging verbs"
+<IF-DEBUG
+    <ROUTINE V-DROB ()
+        <TELL "REMOVING CONTENTS OF " D ,PRSO " FROM THE GAME." CR>
+        <ROB ,PRSO>>
 
-<ROUTINE V-DSEND ()
-    <TELL "SENDING CONTENTS OF " D ,PRSO " TO " D ,PRSI "." CR>
-    <ROB ,PRSO ,PRSI>>
+    <ROUTINE V-DSEND ()
+        <TELL "SENDING CONTENTS OF " D ,PRSO " TO " D ,PRSI "." CR>
+        <ROB ,PRSO ,PRSI>>
 
-<ROUTINE V-DOBJL ()
-    <MAP-CONTENTS (I ,PRSO)
-        <TELL "The objects in " T ,PRSO " include " D .I CR>>>
+    <ROUTINE V-DOBJL ()
+        <MAP-CONTENTS (I ,PRSO)
+            <TELL "The objects in " T ,PRSO " include " D .I CR>>>
 
-;<ROUTINE V-DVIS ("AUX" P)
-    <SET P <VISIBLE? ,BILL>>
-    <COND (<NOT .P>
-                <TELL "The bill is not visible." CR>)
-                    (ELSE
-                <TELL "The bill is visible." CR>)>
-    <SET P <VISIBLE? ,GRIME>>
-    <COND (<NOT .P>
-                <TELL "The grime is not visible." CR>)
-                    (ELSE
-                <TELL "The grime is visible." CR>)>
-    >
+    ;<ROUTINE V-DVIS ("AUX" P)
+        <SET P <VISIBLE? ,BILL>>
+        <COND (<NOT .P>
+                    <TELL "The bill is not visible." CR>)
+                        (ELSE
+                    <TELL "The bill is visible." CR>)>
+        <SET P <VISIBLE? ,GRIME>>
+        <COND (<NOT .P>
+                    <TELL "The grime is not visible." CR>)
+                        (ELSE
+                    <TELL "The grime is visible." CR>)>
+        >
 
-;<ROUTINE V-DMETALOC ("AUX" P)
-    <SET P <META-LOC ,PRSO>>
-    <COND (<NOT .P>
-            <TELL "META-LOC returned false." CR>)
+    ;<ROUTINE V-DMETALOC ("AUX" P)
+        <SET P <META-LOC ,PRSO>>
+        <COND (<NOT .P>
+                <TELL "META-LOC returned false." CR>)
+                  (ELSE
+                <TELL "Meta-Loc of " D ,PRSO " is " D .P CR>)>
+        <SET P <META-LOC ,GRIME>>
+        <COND (<NOT .P>
+                <TELL "META-LOC of grime returned false." CR>)
+                  (ELSE
+                <TELL "Meta-Loc of grime is " D .P CR>)
+                >
+        >
+
+    ;<ROUTINE V-DACCESS ("AUX" P)
+        <SET P <ACCESSIBLE? ,PRSO>>
+        <COND (<NOT .P>
+                <TELL D ,PRSO " is not accessible" CR>)
+                  (ELSE
+                <TELL D ,PRSO " is accessible" CR>)>
+        <SET P <ACCESSIBLE? ,BILL>>
+        <COND (<NOT .P>
+                <TELL "Bill is not accessible" CR>)
+                  (ELSE
+                <TELL "Bill is accessible" CR>)>
+        >
+
+    ;<ROUTINE V-DHELD ("AUX" P)
+        <SET P <HELD? ,PRSO ,PRSI>>
+        <COND (<NOT .P>
+                <TELL D ,PRSO " is not held by " D ,PRSI CR>)
+                  (ELSE
+                <TELL D ,PRSO " is held by " D ,PRSI CR>)>
+        <SET P <HELD? ,PRSO ,FOYER>>
+        <COND (<NOT .P>
+                <TELL D ,PRSO " is not held by the Foyer" CR>)
+                  (ELSE
+                <TELL D ,PRSO " is held by the Foyer" CR>)>
+        >
+
+    ;<ROUTINE V-DHELDP ("AUX" P)
+        <SET P <HELD? ,PRSO>>
+        <COND (<NOT .P>
+                <TELL D ,PRSO " is not held by the player" CR>)
+                  (ELSE
+                <TELL D ,PRSO " is held by the player" CR>)>
+        <SET P <HELD? ,BILL>>
+        <COND (<NOT .P>
+                <TELL "Bill is not held by the player" CR>)
+                  (ELSE
+                <TELL "Bill is held by the player" CR>)>
+        >
+
+    ;<ROUTINE V-DLIGHT ()
+        <COND (<FSET? ,FLASHLIGHT ,LIGHTBIT>
+                    <FCLEAR ,FLASHLIGHT ,LIGHTBIT>
+                    <FCLEAR ,FLASHLIGHT ,ONBIT>
+                    <TELL "Flashlight is turned off." CR>
+                    <NOW-DARK>)
+                  (ELSE
+                    <TELL "Flashlight is turned on." CR>
+                    <NOW-LIT>
+                    ;"always set LIGHTBIT after calling NOW-LIT"
+                    <FSET ,FLASHLIGHT ,LIGHTBIT>
+                    <FSET ,FLASHLIGHT ,ONBIT>
+                    )>
+        >
+
+    <ROUTINE V-DCONT ()
+        <COND (,DBCONT
+               <SET DBCONT <>>
+               <TELL "Reporting of PUT-IN process with containers turned off." CR>)
               (ELSE
-            <TELL "Meta-Loc of " D ,PRSO " is " D .P CR>)>
-    <SET P <META-LOC ,GRIME>>
-    <COND (<NOT .P>
-            <TELL "META-LOC of grime returned false." CR>)
-              (ELSE
-            <TELL "Meta-Loc of grime is " D .P CR>)
-            >
-    >
+               <SET DBCONT T>
+               <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>
 
-;<ROUTINE V-DACCESS ("AUX" P)
-    <SET P <ACCESSIBLE? ,PRSO>>
-    <COND (<NOT .P>
-            <TELL D ,PRSO " is not accessible" CR>)
+    <ROUTINE V-DTURN ()
+        <COND (,DTURNS
+               <SET DTURNS <>>
+               <TELL "Reporting of TURN # turned off." CR>)
               (ELSE
-            <TELL D ,PRSO " is accessible" CR>)>
-    <SET P <ACCESSIBLE? ,BILL>>
-    <COND (<NOT .P>
-            <TELL "Bill is not accessible" CR>)
-              (ELSE
-            <TELL "Bill is accessible" CR>)>
-    >
-
-;<ROUTINE V-DHELD ("AUX" P)
-    <SET P <HELD? ,PRSO ,PRSI>>
-    <COND (<NOT .P>
-            <TELL D ,PRSO " is not held by " D ,PRSI CR>)
-              (ELSE
-            <TELL D ,PRSO " is held by " D ,PRSI CR>)>
-    <SET P <HELD? ,PRSO ,FOYER>>
-    <COND (<NOT .P>
-            <TELL D ,PRSO " is not held by the Foyer" CR>)
-              (ELSE
-            <TELL D ,PRSO " is held by the Foyer" CR>)>
-    >
-
-;<ROUTINE V-DHELDP ("AUX" P)
-    <SET P <HELD? ,PRSO>>
-    <COND (<NOT .P>
-            <TELL D ,PRSO " is not held by the player" CR>)
-              (ELSE
-            <TELL D ,PRSO " is held by the player" CR>)>
-    <SET P <HELD? ,BILL>>
-    <COND (<NOT .P>
-            <TELL "Bill is not held by the player" CR>)
-              (ELSE
-            <TELL "Bill is held by the player" CR>)>
-    >
-
-;<ROUTINE V-DLIGHT ()
-    <COND (<FSET? ,FLASHLIGHT ,LIGHTBIT>
-                <FCLEAR ,FLASHLIGHT ,LIGHTBIT>
-                <FCLEAR ,FLASHLIGHT ,ONBIT>
-                <TELL "Flashlight is turned off." CR>
-                <NOW-DARK>)
-              (ELSE
-                <TELL "Flashlight is turned on." CR>
-                <NOW-LIT>
-                ;"always set LIGHTBIT after calling NOW-LIT"
-                <FSET ,FLASHLIGHT ,LIGHTBIT>
-                <FSET ,FLASHLIGHT ,ONBIT>
-                )>
-    >
-
-<ROUTINE V-DCONT ()
-    <COND (,DBCONT
-           <SET DBCONT <>>
-           <TELL "Reporting of PUT-IN process with containers turned off." CR>)
-          (ELSE
-           <SET DBCONT T>
-           <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>
-
-<ROUTINE V-DTURN ()
-    <COND (,DTURNS
-           <SET DTURNS <>>
-           <TELL "Reporting of TURN # turned off." CR>)
-          (ELSE
-           <SET DTURNS T>
-           <TELL "Reporting of TURN # turned on." CR>)>>
+               <SET DTURNS T>
+               <TELL "Reporting of TURN # turned on." CR>)>>>
