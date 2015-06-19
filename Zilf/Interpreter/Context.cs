@@ -978,6 +978,13 @@ namespace Zilf.Interpreter
         private void InitCompilationFlags()
         {
             DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), TRUE);
+
+            DefineCompilationFlag(GetStdAtom(StdAtom.COLOR), FALSE);
+            DefineCompilationFlag(GetStdAtom(StdAtom.MOUSE), FALSE);
+            DefineCompilationFlag(GetStdAtom(StdAtom.UNDO), FALSE);
+            DefineCompilationFlag(GetStdAtom(StdAtom.DISPLAY), FALSE);
+            DefineCompilationFlag(GetStdAtom(StdAtom.SOUND), FALSE);
+            DefineCompilationFlag(GetStdAtom(StdAtom.MENU), FALSE);
         }
 
         public void DefineCompilationFlag(ZilAtom name, ZilObject value, bool redefine = false)
