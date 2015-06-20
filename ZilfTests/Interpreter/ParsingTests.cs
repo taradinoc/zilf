@@ -57,5 +57,13 @@ namespace ZilfTests.Interpreter
                 Assert.AreEqual(secondValue, adecl.Second);
             }
         }
+
+        [TestMethod]
+        public void TestUNPARSE()
+        {
+            TestHelpers.EvalAndAssert("<UNPARSE 123>", new ZilString("123"));
+
+            TestHelpers.EvalAndAssert("<UNPARSE '(\"FOO\" [BAR])>", new ZilString("(\"FOO\" [BAR])"));
+        }
     }
 }
