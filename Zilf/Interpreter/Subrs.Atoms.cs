@@ -46,6 +46,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx, args);
 
             // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
+            // TODO: implement arbitrary expression parsing?
 
             if (args.Length != 1)
                 throw new InterpreterError("PARSE", 1, 1);
@@ -54,6 +55,21 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("PARSE: arg must be a string");
 
             return ZilAtom.Parse(args[0].ToStringContext(ctx, true), ctx);
+        }
+
+        // TODO: implement LPARSE?
+
+        [Subr]
+        public static ZilObject UNPARSE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            // in MDL, this takes an optional second argument (radix), but we don't bother
+
+            if (args.Length != 1)
+                throw new InterpreterError("UNPARSE", 1, 1);
+
+            return new ZilString(args[0].ToStringContext(ctx, false));
         }
 
         [Subr]
