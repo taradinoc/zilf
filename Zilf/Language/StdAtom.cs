@@ -48,6 +48,7 @@ namespace Zilf.Language
         APPLICABLE,
         APPLY,
         ATOM,
+        B,
         BACK,
         BAND,
         BCOM,

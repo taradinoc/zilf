@@ -971,6 +971,12 @@ namespace Zilf.Interpreter
                         GetStdAtom(StdAtom.PRINTC),
                         new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) }),
                     }),
+                    // B * <PRINTB .X>
+                    GetStdAtom(StdAtom.B), GetStdAtom(StdAtom.Times),
+                    new ZilForm(new ZilObject[] {
+                        GetStdAtom(StdAtom.PRINTB),
+                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) }),
+                    }),
                 },
                 this));
         }
