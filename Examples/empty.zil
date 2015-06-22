@@ -18,9 +18,9 @@ An interactive fiction by AUTHOR NAME">
     <V-LOOK>
     <REPEAT ()
         <COND (<PARSER>
-                <PERFORM ,PRSA ,PRSO ,PRSI>
-                <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                <OR <META-VERB?> <CLOCKER>>)>
+               <PERFORM ,PRSA ,PRSO ,PRSI>
+               <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+               <OR <META-VERB?> <CLOCKER>>)>
         <SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
