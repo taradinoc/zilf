@@ -92,20 +92,42 @@ other versions. These macros let us write the same code for all versions."
         <CONSTANT VOCAB-V1 7>
         <CONSTANT VOCAB-V2 8>)>
 
+;"Determines whether a word has the given part of speech, and returns
+its part of speech value if so.
+
+Args:
+  W: The word.
+  PS: The part of speech's PS? constant, e.g. PS?VERB.
+  P1: The part of speech's P1? constant, e.g. P1?VERB. If omitted,
+      the value will not be returned, only a boolean indicating whether
+      the word has the given part of speech.
+
+Returns:
+  If the word does not have the given part of speech, returns 0. Otherwise,
+  returns the word's value for the given part of speech if P1 was supplied,
+  or 1 if not."
 <ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F)
     <COND (<0? .W> <RFALSE>)>
     <IF-DEBUG <TELL "[CHKWORD: " B .W " PS=" N .PS " P1=" N .P1>>
     <SET F <GETB .W ,VOCAB-FL>>
     <IF-DEBUG <TELL " F=" N .F>>
     <SET F <COND (<BTST .F .PS>
-                    <COND (<L? .P1 0>
-                            <RTRUE>)
+                  <COND (<L? .P1 0>
+                         <RTRUE>)
                         (<==? <BAND .F ,P1MASK> .P1>
-                            <GETB .W ,VOCAB-V1>)
+                         <GETB .W ,VOCAB-V1>)
                         (ELSE <GETB .W ,VOCAB-V2>)>)>>
     <IF-DEBUG <TELL " = " N .F "]" CR>>
     .F>
 
+;"Gets the word at the given index in LEXBUF.
+
+Args:
+  N: The index, starting at 1.
+
+Returns:
+  A pointer to the vocab word, or 0 if the word at the given index was
+  unrecognized."
 <ROUTINE GETWORD? (N "AUX" R)
     <SET R <GET ,LEXBUF <- <* .N 2> 1>>>
     <IF-DEBUG
@@ -114,6 +136,10 @@ other versions. These macros let us write the same code for all versions."
         <TELL "]" CR>>
     .R>
 
+;"Prints the word at the given index in LEXBUF.
+
+Args:
+  N: The index, starting at 1."
 <ROUTINE PRINT-WORD (N "AUX" I MAX)
     <SET I <GETB ,LEXBUF <+ <* .N 4> 1>>>
     <SET MAX <- <+ .I <GETB ,LEXBUF <* .N 4>>> 1>>
@@ -157,6 +183,37 @@ other versions. These macros let us write the same code for all versions."
 
 <BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE \. \, \">
 
+;"Reads and parses a command.
+
+Sets:
+  P-LEN
+  P-V
+  P-NOBJ
+  P-DOBJS
+  P-IOBJS
+  P-P1
+  P-P2
+  HERE
+  PRSA
+  PRSO
+  PRSO-DIR
+  PRSI
+  USAVE
+  P-DOBJS
+  P-DOBJEX
+  P-DOBJS-BACK
+  P=DOBJEX-BACK
+  IT-ONCE
+  P-TOBJS-BACK
+  P-TOBJEX-BACK
+  THEM-ONCE
+  P-MOBJS-BACK
+  P-MOBJEX-BACK
+  HIM-ONCE
+  P-FOBJS-BACK
+  P-FOBJEX-BACK
+  HER-ONCE
+"
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET NOBJ <>>
@@ -301,23 +358,60 @@ other versions. These macros let us write the same code for all versions."
 
 <VERSION?
     (ZIP
+        ;"Copies a number of words from one table to another.
+        
+        If the tables overlap, the result is undefined.
+        
+        Args:
+          SRC: A pointer to the source table.
+          DEST: A poitner to the destination table.
+          LEN: The number of words to copy."
         <ROUTINE COPY-TABLE (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUT .DEST .I <GET .SRC .I>>>>)
+                <PUT .DEST .I <GET .SRC .I>>>>
+        
+        ;"Copies a number of bytes from one table to another.
+        
+        If the tables overlap, the result is undefined.
+        
+        Args:
+          SRC: A pointer to the source table.
+          DEST: A poitner to the destination table.
+          LEN: The number of bytes to copy."
+        <ROUTINE COPY-TABLE-B (SRC DEST LEN)
+            <SET LEN <- .LEN 1>>
+            <DO (I 0 .LEN)
+                <PUTB .DEST .I <GETB .SRC .I>>>>)
     (EZIP
         <ROUTINE COPY-TABLE (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUT .DEST .I <GET .SRC .I>>>>)
+                <PUT .DEST .I <GET .SRC .I>>>>
+
+        <ROUTINE COPY-TABLE-B (SRC DEST LEN)
+            <SET LEN <- .LEN 1>>
+            <DO (I 0 .LEN)
+                <PUTB .DEST .I <GETB .SRC .I>>>>)
     (ELSE
         <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
             ;"someday the compiler should do this optimization on its own..."
             <COND (<TYPE? .LEN FIX> <SET BYTES <* .LEN 2>>)
                   (ELSE <SET BYTES <FORM * .LEN 2>>)>
-            <FORM COPYT .SRC .DEST .BYTES>>)>
+            <FORM COPYT .SRC .DEST .BYTES>>
+        
+        <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
+            <FORM COPYT .SRC .DEST .LEN>>)>
 
+;"Determines whether a given word can start a noun clause.
 
+For a word to pass this test, it must be an article, adjective, or noun.
+
+Args:
+  W: The word to test.
+
+Returns:
+  True if the word can start a noun clause."
 <ROUTINE STARTS-CLAUSE? (W)
     ;"The COND should be unnecessary, but ZILF generates ugly code without it"
     <COND (<OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
@@ -329,6 +423,22 @@ other versions. These macros let us write the same code for all versions."
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
 
+
+;"Attempts to match a noun clause.
+
+If the match fails, an error message may be printed.
+
+Args:
+  WN: The 1-based word number where the noun clause starts.
+  YTBL: The address of a table in which to return the adjective/noun pairs that
+      should be included ('yes').
+  NTBL: The address of a table in which to return the adjective/noun pairs that
+      should be excluded ('no').
+
+Returns:
+  True if the noun clause was matched. YTBL and NTBL may be modified even if
+  this routine returns false.
+"
 <ROUTINE MATCH-CLAUSE (WN YTBL NTBL "AUX" (TI 1) W VAL (MODE 0) (ADJ <>) (NOUN <>) (BUT <>))
     <REPEAT ()
         <COND
@@ -401,6 +511,19 @@ other versions. These macros let us write the same code for all versions."
 <CONSTANT SYN-OPTS2 6>
 <CONSTANT SYN-ACTION 7>
 
+;"Attempts to match a syntax line for the current verb.
+
+Uses:
+  P-V
+  P-NOBJ
+  P-P1
+  P-P2
+
+Sets:
+  PRSA
+
+Returns:
+  True if a syntax line was matched."
 <ROUTINE MATCH-SYNTAX ("AUX" PTR CNT)
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
     <SET CNT <GETB .PTR 0>>
@@ -461,6 +584,22 @@ other versions. These macros let us write the same code for all versions."
                      <FORM SETG .USE-VAR T>>
                <LIST ELSE <FORM SETG .USE-VAR <>>>>>
 
+;"Attempts to match PRSO and PRSO, if necessary, after parsing a command.
+
+Uses:
+  P-NOBJ
+  P-DOBJS
+
+Sets:
+  PRSO
+  PRSI
+  IT-USE
+  THEM-USE
+  HIM-USE
+  HER-USE
+
+Returns:
+  True if all required objects were found, or false if not."
 <ROUTINE FIND-OBJECTS ("AUX" X)
     <COND (<G=? ,P-NOBJ 1>
            <SET X <GET ,P-DOBJS 2>>
@@ -484,11 +623,23 @@ other versions. These macros let us write the same code for all versions."
           (ELSE <SETG PRSI <>>)>
     <RTRUE>>
 
+;"Searches scope for a usable light source.
+
+Returns:
+  An object providing light, or false if no light source was found."
 <ROUTINE SEARCH-FOR-LIGHT SFL ()
     <MAP-SCOPE (I) (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)
         <COND (<FSET? .I ,LIGHTBIT> <RETURN .I .SFL>)>>
     <RFALSE>>
 
+;"Determines whether an object's contents are in scope (and provide light)
+when the object is in scope.
+
+Args:
+  OBJ: The object to test.
+
+Returns:
+  True if the object's contents are in scope, otherwise false."
 <ROUTINE SEE-INSIDE? (OBJ)
     ;"The COND should be unnecessary, but ZILF generates ugly code without it"
     <COND (<OR ;"We can always see the contents of surfaces"
@@ -502,6 +653,15 @@ other versions. These macros let us write the same code for all versions."
            <RTRUE>)>
     <RFALSE>>
 
+;"Attempts to find an object in scope, given the adjectives and nouns that
+describe it.
+
+Args:
+  YTBL: A table of adjective/noun pairs that the object must have ('yes').
+  NTBL: A table of adjective/noun pairs that the object must not have ('no').
+
+Returns:
+  The located object, or false if no matching object was found. "
 <ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL "AUX" A N)
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
@@ -515,7 +675,15 @@ other versions. These macros let us write the same code for all versions."
            <TELL "You don't see that here." CR>)>
     <RFALSE>>
         
+;"Determines whether a local-global object is present in a given room.
 
+Args:
+  O: The local-global object.
+  R: The room.
+
+Returns:
+  True if the object is present in the room's GLOBAL property.
+  Otherwise, false."
 <ROUTINE GLOBAL-IN? (O R)
     <IN-PB/WTBL? .R ,P?GLOBAL .O>>
 
@@ -523,6 +691,12 @@ other versions. These macros let us write the same code for all versions."
 ;<DEFMAC GLOBAL-IN? ('O 'R)
     <FORM IN-PB/WTBL? .R ',P?GLOBAL .O>>
 
+;"Determines whether an adjective/noun pair refer to a given object.
+
+Args:
+  A: The adjective word. May be 0.
+  N: The noun word.
+  O: The object."
 <ROUTINE REFERS? (A N O)
     <AND
         <OR <0? .A> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
@@ -531,6 +705,16 @@ other versions. These macros let us write the same code for all versions."
 <VERSION?
     (ZIP
         ;"V3 has no INTBL? opcode"
+        
+        ;"Attempts to locate a word in a property table.
+        
+        Args:
+          O: The object containing the property.
+          P: The property number.
+          V: The word to locate.
+        
+        Returns:
+          True if the word is located, otherwise false."
         <ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- </ <PTSIZE .PT> 2> 1>>
@@ -538,6 +722,15 @@ other versions. These macros let us write the same code for all versions."
                 <COND (<==? <GET .PT .I> .V> <RTRUE>)>>
             <RFALSE>>
 
+        ;"Attempts to locate a byte in a property table.
+        
+        Args:
+          O: The object containing the property.
+          P: The property number.
+          V: The byte to locate. Must be 255 or lower.
+        
+        Returns:
+          True if the byte is located, otherwise false."
         <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
             <OR <SET PT <GETPT .O .P>> <RFALSE>>
             <SET MAX <- <PTSIZE .PT> 1>>
@@ -569,58 +762,69 @@ other versions. These macros let us write the same code for all versions."
             <SET LEN <PTSIZE .PT>>
             <AND <INTBL? .V .PT .LEN 1> <RTRUE>>>)>
 
-<ROUTINE DUMPLINE ("AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
-    <TELL N .WDS " words:">
-    <DO (I 1 .WDS)
-        <TELL " ">
-        <DUMPWORD <GET .P 0>>
-        <SET P <+ .P 4>>>
-    <CRLF>>
+<IF-DEBUG
+    ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
+    <ROUTINE DUMPLINE ("AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
+        <TELL N .WDS " words:">
+        <DO (I 1 .WDS)
+            <TELL " ">
+            <DUMPWORD <GET .P 0>>
+            <SET P <+ .P 4>>>
+        <CRLF>>
 
-<ROUTINE DUMPLEX ("AUX" (WDS <GETB ,LEXBUF 1>))
-    ;<TELL N .WDS " words:">
-    <DO (C 1 .WDS)
-        <TELL N .C " of LEXBUF is " N <GET ,LEXBUF .C> CR>>>
+    ;"Prints the raw contents of LEXBUF."
+    <ROUTINE DUMPLEX ("AUX" (WDS <GETB ,LEXBUF 1>))
+        ;<TELL N .WDS " words:">
+        <DO (C 1 .WDS)
+            <TELL N .C " of LEXBUF is " N <GET ,LEXBUF .C> CR>>>
 
-<ROUTINE DUMPWORD (W "AUX" FL)
-    <COND (.W
-           <PRINTB .W>
-           <TELL "(">
-           <SET FL <GETB .W ,VOCAB-FL>>
-           <COND (<BTST .FL ,PS?BUZZ-WORD> <TELL "B">)>
-           <COND (<BTST .FL ,PS?PREPOSITION> <TELL "P">)>
-           <COND (<BTST .FL ,PS?DIRECTION> <TELL "D">)>
-           <COND (<BTST .FL ,PS?ADJECTIVE> <TELL "A">)>
-           <COND (<BTST .FL ,PS?VERB> <TELL "V">)>
-           <COND (<BTST .FL ,PS?OBJECT> <TELL "O">)>
-           <TELL ")">)
-          (ELSE <TELL "---">)>>
+    ;"Prints the raw contents of READBUF."
+    <ROUTINE DUMPBUF ("AUX" (WDS <GETB ,READBUF 1>))
+        ;<TELL N .WDS " words:">
+        <DO (C 1 ,READBUF-SIZE)
+            <TELL N .C " of READBUF is " N <GET ,READBUF .C> CR>>>
 
+    ;"Prints a vocabulary word and its parts of speech."
+    <ROUTINE DUMPWORD (W "AUX" FL)
+        <COND (.W
+               <PRINTB .W>
+               <TELL "(">
+               <SET FL <GETB .W ,VOCAB-FL>>
+               <COND (<BTST .FL ,PS?BUZZ-WORD> <TELL "B">)>
+               <COND (<BTST .FL ,PS?PREPOSITION> <TELL "P">)>
+               <COND (<BTST .FL ,PS?DIRECTION> <TELL "D">)>
+               <COND (<BTST .FL ,PS?ADJECTIVE> <TELL "A">)>
+               <COND (<BTST .FL ,PS?VERB> <TELL "V">)>
+               <COND (<BTST .FL ,PS?OBJECT> <TELL "O">)>
+               <TELL ")">)
+              (ELSE <TELL "---">)>>>
+
+;"Saves a copy of LEXBUF in BACKLEXBUF."
 <ROUTINE COPY-LEXBUF ("AUX" C W (WDS <GETB ,LEXBUF 1>))
     <PUTB ,BACKLEXBUF 1 .WDS>
     <COPY-TABLE <REST ,LEXBUF 2> <REST ,BACKLEXBUF 2> <* 2 .WDS>>>
 
+;"Restores LEXBUF from BACKLEXBUF."
 <ROUTINE RESTORE-LEX ("AUX" C W (WDS <GETB ,BACKLEXBUF 1>))
     <PUTB ,LEXBUF 1 .WDS>
     <COPY-TABLE <REST ,BACKLEXBUF 2> <REST ,LEXBUF 2> <* 2 .WDS>>>
 
+;"Saves a copy of READBUF in BACKREADBUF."
 <ROUTINE COPY-READBUF ("AUX" C W)
     <COPY-TABLE ,READBUF ,BACKREADBUF %</ ,READBUF-SIZE 2>>>
 
+;"Restores READBUF from BACKREADBUF."
 <ROUTINE RESTORE-READBUF ("AUX" C W)
     <COPY-TABLE ,BACKREADBUF ,READBUF %</ ,READBUF-SIZE 2>>>
 
-<ROUTINE DUMPBUF ("AUX" (WDS <GETB ,READBUF 1>))
-    ;<TELL N .WDS " words:">
-    <DO (C 1 ,READBUF-SIZE)
-        <TELL N .C " of READBUF is " N <GET ,READBUF .C> CR>>>
-
-;"The read buffer has a slightly different format on V3."
+;"Fills READBUF and LEXBUF by reading a command from the player.
+If ,AGAINCALL is true, no new command is read and the buffers are reused."
 <ROUTINE READLINE ()
     ;"skip input if doing an AGAIN"
     <COND (,AGAINCALL <RETURN>)>
     <TELL CR "> ">
     <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
+    ;"The read buffer has a slightly different format on V3."
     <VERSION? (ZIP <>)
               (ELSE
                <PUTB ,READBUF 1 0>
