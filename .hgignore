@@ -17,3 +17,8 @@ Testing/*.z7
 Testing/*.z8
 Testing/*.zap
 Testing/parser.zil
+Library/tests/*.dll
+Library/tests/*.exe
+Library/tests/*.z?
+Library/tests/*.zap
+*~

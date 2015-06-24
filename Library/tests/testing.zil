@@ -1,6 +1,6 @@
 "Testing framework"
 
-<SETG TEST-SETUP-CODE ()>
+<SETG TEST-SETUP-CODE '(() <RTRUE>)>
 <SETG TEST-CASES ()>		;"reverse definition order"
 
 <ADD-TELL-TOKENS
@@ -47,8 +47,8 @@
                         (<==? .F CHECK>
                          <FORM OR <FORM TEST-CHECK-CONDITION <UNPARSE <2 .I>> !<REST .I>>
                                   '<RFALSE>>)
-                        (ELSE
-                         <ERROR ILLEGAL-TEST-STEP .F>)>>
+                        (<MEMQ .F '(MOVE REMOVE FSET FCLEAR)> .I)
+                        (ELSE <ERROR ILLEGAL-TEST-STEP .F>)>>
               .BODY>>
     ;"Create routine"
     <SET RTN-NAME <PARSE <STRING <SPNAME .NAME> "-TEST-R">>>
@@ -134,6 +134,8 @@ Returns:
 Args:
   ROOM: The room where the player should start."
 <DEFINE TEST-GO ('ROOM "AUX" RTNS DESCS)
+    ;"Validate"
+    <COND (<LENGTH? ,TEST-CASES 0> <ERROR NO-TEST-CASES>)>
     ;"Define necessary constants"
     <CONSTANT GAME-BANNER "Automated Tests">
     <CONSTANT RELEASEID 0>
@@ -216,7 +218,7 @@ Returns:
 <CONSTANT EXPECTBUF <ITABLE NONE ,OUTBUF-SIZE>>
 
 ;"Implementation of the <EXPECT ...> test step."
-<ROUTINE TEST-CHECK-OUTPUT (EXPECTED "AUX" ELEN ACTUAL ALEN D)
+<ROUTINE TEST-CHECK-OUTPUT (EXPECTED "AUX" ELEN ACTUAL ALEN)
     ;"Copy expected output to buffer"
     <DIROUT 3 ,EXPECTBUF>
     <PRINT .EXPECTED>
@@ -225,15 +227,13 @@ Returns:
     <SET EXPECTED <REST ,EXPECTBUF 2>>
     <SET ALEN <GET ,OUTBUF 0>>
     <SET ACTUAL <REST ,OUTBUF 2>>
-    <TELL "Output: " BUF .ACTUAL .ALEN>
     ;"Compare"
-    <COND (<N=? .ALEN .ELEN>
-           <TELL "Output length differs. Expected " N .ELEN
-                 ", actual " N .ALEN ". Expected {" BUF .EXPECTED .ELEN
-                 "}." CR>
-           <RFALSE>)
-          (<SET D <BUFS-DIFFER? .ACTUAL .EXPECTED .ALEN>>
-           <TELL "Output differs. Expected {" BUF .EXPECTED .ELEN "}." CR>
+    <COND (<OR <N=? .ALEN .ELEN> <BUFS-DIFFER? .ACTUAL .EXPECTED .ALEN>>
+           <TELL "Output differs." CR CR
+                 "EXPECTED:" CR
+                 BUF .EXPECTED .ELEN CR
+                 "ACTUAL:" CR
+                 BUF .ACTUAL .ALEN CR>
            <RFALSE>)>
     <RTRUE>>
 
