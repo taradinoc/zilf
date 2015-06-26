@@ -1,5 +1,19 @@
 "Events"
 
+;"Queues an interrupt routine to run in some number of turns.
+
+Uses:
+  IQ-LENGTH
+
+Sets:
+  IQ-LENGTH
+  IQUEUE (contents)
+
+Args:
+  IRTN: The interrupt routine to enqueue.
+  TURNZ: The number of turns to count. 1 means the end of the current turn,
+    2 means the end of the next turn, etc. If TURNZ is -1, the interrupt will
+    run after every subsequent turn until dequeued."
 <ROUTINE QUEUE (IRTN TURNZ)
     ;<PROG () <TELL "QUEING A ROUTINE. IQ-LENGTH IS CURRENTLY :"> <PRINTN ,IQ-LENGTH> <TELL CR>>
     <SETG IQ-LENGTH <+ ,IQ-LENGTH 2>>
@@ -7,6 +21,16 @@
     <PUT ,IQUEUE <- ,IQ-LENGTH 1> .IRTN>
     <PUT ,IQUEUE ,IQ-LENGTH .TURNZ>>
 
+;"Removes an interrupt routine from the event queue.
+
+Interrupt routines should call this to dequeue themselves after they've fired.
+
+Uses and sets:
+  IQ-LENGTH
+  IQUEUE (contents)
+
+Args:
+  IRTN: The interrupt routine."
 <ROUTINE DEQUEUE (IRTN "AUX" S)
     ;<TELL "DEQUEUEING EVENT">
     <REPEAT ()
@@ -17,11 +41,23 @@
                <IQUEUE-CLEANUP>
                <RETURN>)>>>
 
+;"Marks a slot in the interrupt queue as deleted. Internal use only.
+
+Sets:
+  IQUEUE (contents)
+
+Args:
+  IQPOS: An index into IQUEUE."
 <ROUTINE DEL-EVENT (IQPOS)
     ;<TELL "DELETING EVENT" CR>
     ;<PUT ,IQUEUE .IQPOS "">
     <PUT ,IQUEUE .IQPOS -9>>
 
+;"Compacts the interrupt queue, freeing up deleted slots. Internal use only.
+
+Uses and sets:
+  IQ-LENGTH
+  IQUEUE"
 <ROUTINE IQUEUE-CLEANUP ("AUX" S Z)
     ;<TELL "CLEANING UP IQUEUE" CR>
     <REPEAT ()
@@ -44,6 +80,19 @@
                    <SET Z <+ .Z 2>>
                    ;<TELL "NOW Z IS " N .Z CR "IQ-LENGTH IS " N ,IQ-LENGTH CR>>)>>>
 
+;"Determines whether an interrupt routine is queued to run at the end of the
+current turn.
+
+Uses:
+  IQ-LENGTH
+  IQUEUE
+
+Args:
+  E: The interrupt routine.
+
+Returns:
+  True if the interrupt will run at the end of the current turn, i.e. if it's
+  queued with a remaining turn count of 1 or -1, otherwise false."
 <ROUTINE RUNNING? (E "AUX" S)
     ;<TELL "In the RUNNING? routine" CR>
     <REPEAT ()
@@ -60,6 +109,21 @@
 
 "Clocker"
 
+;"Advances the turn count, decrements interrupt turn counters, and runs
+eligible interrupt routines.
+
+Uses:
+  TURNS
+  IQ-LENGTH
+  IQUEUE (contents)
+
+Sets:
+  TURNS
+  IQUEUE (contents)
+
+Returns:
+  True if any interrupt routines were fired and returned true (indicating
+  that something was printed), otherwise false."
 <ROUTINE CLOCKER ("AUX" S C FIRED)
     <SETG TURNS <+ ,TURNS 1>>
     ;<PROG () <TELL "TURN :"> <PRINTN ,TURNS> <TELL CR>>
@@ -87,9 +151,14 @@
                       <SET C 1>)>)>>
     .FIRED>
 
+;"Waits for a number of turns, exiting early if any interrupt routines printed
+a message.
+
+Args:
+  TURNS: The number of turns to wait."
 <ROUTINE WAIT-TURNS (TURNS "AUX" T INTERRUPT ENDACT BACKUP-WAIT)
     <SET BACKUP-WAIT ,STANDARD-WAIT>
-    <SET STANDARD-WAIT .TURNS>
+    <SETG STANDARD-WAIT .TURNS>
     <SET T 1>
     ;<TELL "Time passes." CR>
     <REPEAT ()
@@ -102,7 +171,7 @@
         <COND (<OR <G? .T ,STANDARD-WAIT>
                    <AND .ENDACT>
                    <AND .INTERRUPT>>
-               <SET STANDARD-WAIT .BACKUP-WAIT>
+               <SETG STANDARD-WAIT .BACKUP-WAIT>
                ;"To keep clocker from running again after the WAITED turns"
-               <SET AGAINCALL 1>
+               <SETG AGAINCALL T>
                <RETURN>)>>>
