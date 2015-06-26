@@ -135,17 +135,38 @@
     <COND (<DESCRIBE-ROOM ,HERE T>
            <DESCRIBE-OBJECTS ,HERE>)>>
 
+;"Prints a room description, handling darkness and briefness.
+
+If the room is dark, this prints a generic room name and description.
+If the room is lit, the real name is printed, optionally followed by
+a description (if MODE is VERBOSE, or if it's BRIEF and this is the
+first time describing the room, or if LONG is true).
+
+Uses:
+  MODE
+  NLITSET
+
+Args:
+  RM: The room to describe.
+  LONG: If true, print the room description even in BRIEF mode.
+
+Returns:
+  True if the objects in the room should also be described, otherwise
+  false."
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         ;"check for light, unless running LOOK from NOW-LIT (which sets NLITSET to 1)"
+        ;"TODO: SEARCH-FOR-LIGHT assumes the current room, not .RM"
         (<NOT <OR <FSET? .RM ,LIGHTBIT>
                   <SEARCH-FOR-LIGHT>
                   ,NLITSET>>
+         ;"TODO: description should obey (SUPER)BRIEF?"
          <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
          <RFALSE>)
         (ELSE
          ;"print the room's real name"
          <TELL D .RM CR>
+         ;"TODO: LOOK should still print description in SUPERBRIEF mode"
          <COND (<EQUAL? ,MODE ,SUPERBRIEF>
                 <RFALSE>)
                (<AND <NOT .LONG>
@@ -159,10 +180,28 @@
                (ELSE
                 <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>)>>
 
+;"Describes the objects in a room.
+
+Objects are described in four passes:
+1. All non-person objects with DESCFCNs, FDESCS, and LDESCs.
+2. All non-person objects not covered by #1.
+3. The visible contents of containers and surfaces.
+4. All objects with PERSONBIT other than WINNER.
+
+Finally, this routine clears NLITSET (!).
+
+Uses:
+  WINNER
+
+Sets:
+  NLITSET
+
+Args:
+  RM: The room."
 <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
     <MAP-CONTENTS (I .RM)
         <COND
-            ;"objects with DESCFNs"
+            ;"objects with DESCFCNs"
             (<SET P <GETP .I ,P?DESCFCN>>
              <CRLF>
              <APPLY .P>
@@ -176,6 +215,7 @@
              <TELL CR .P CR>)>>
     ;"use N add up all non fdesc, ndescbit, personbit objects in room"
     <MAP-CONTENTS (I .RM)
+        ;"TODO: factor out this condition"
         <COND (<NOT <OR <FSET? .I ,NDESCBIT>
                         <SET P <GETP .I ,P?DESCFCN>>
                         <==? .I ,WINNER>
@@ -189,6 +229,7 @@
     ;"go through the N objects"
     <COND (<G? .N 0>
            <TELL CR "There ">
+           ;"TODO: use ISARE-LIST here"
            <COND (<FSET? .F ,PLURALBIT>
                   <TELL "are ">)
                  (ELSE
@@ -214,9 +255,7 @@
     <MAP-CONTENTS (I .RM)
         <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
                     <FIRST? .I>
-                    <OR <FSET? .I ,SURFACEBIT>
-                        <AND <FSET? .I ,CONTBIT>
-                             <FSET? .I ,OPENBIT>>>>
+                    <SEE-INSIDE? .I>>
                <DESCRIBE-CONTENTS .I>)>>
     ;"Re-use N to add up NPCs"
     <SET N 0>
@@ -254,36 +293,49 @@
            <TELL " here." CR>)>
     <SETG NLITSET <>>>
 
+;"Prints the indefinite article for an object, followed by a space, or
+nothing if it has NARTICLEBIT."
 <ROUTINE INDEF-ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
           (ELSE <TELL "a ">)>>
 
+;"Prints the definite article for an object, followed by a space, or
+nothing if it has NARTICLEBIT."
 <ROUTINE DEF-ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (ELSE <TELL "the ">)>>
 
+;"Prints the capitalized indefinite article for an object, followed by a space,
+or nothing if it has NARTICLEBIT."
 <ROUTINE CINDEF-ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
           (ELSE <TELL "A ">)>>
 
+;"Prints the capitalized definite article for an object, followed by a space,
+or nothing if it has NARTICLEBIT."
 <ROUTINE CDEF-ARTICLE (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (ELSE <TELL "The ">)>>
 
+;"Implements <TELL A .OBJ>."
 <ROUTINE PRINT-INDEF (OBJ)
     <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
+;"Implements <TELL T .OBJ>."
 <ROUTINE PRINT-DEF (OBJ)
     <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
+;"Implements <TELL CA .OBJ>."
 <ROUTINE PRINT-CINDEF (OBJ)
     <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
+;"Implements <TELL CT .OBJ>."
 <ROUTINE PRINT-CDEF (OBJ)
     <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
 
+;"Prints a sentence describing the contents of a surface or container."
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
           (ELSE <TELL "In">)>
@@ -291,6 +343,8 @@
     <ISARE-LIST .OBJ>
     <TELL "." CR>>
 
+;"Prints a space followed by a parenthetical describing the contents of a
+surface or container, for use in inventory listings."
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding ">)
           (ELSE <TELL " (containing ">)>
@@ -313,6 +367,25 @@
                      (ELSE <TELL ", ">)>>)>
     <TELL ")">>
 
+;"Prints a list describing the contents of a surface or container.
+
+The list begins with 'is' or 'are' depending on the count and plurality of
+the child objects, and no trailing punctuation is printed. For example:
+
+  If the container is empty:
+    is nothing
+
+  If the container has one singular object:
+    is a shirt
+
+  If the container has one plural object:
+    are some pants
+
+  If the container has two objects:
+    are a shirt and a hat
+
+  If the container has three objects:
+    are a shirt, a hat, and a watch"
 <ROUTINE ISARE-LIST (O "AUX" N F)
     <SET F <FIRST? .O>>
     <COND (<NOT .F>
@@ -367,6 +440,8 @@
         <CONSTANT DEXIT-OBJ 1>
         <CONSTANT DEXIT-MSG 2>)>
 
+;"TODO: rename this to GAME-VERB?"
+;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC META-VERB? ()
     '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
             SUPERBRIEF BRIEF VERBOSE>>
@@ -451,6 +526,7 @@
            <TELL "It is too dark to see what you're carrying." CR>)>>
 
 <ROUTINE V-TAKE ("AUX" HOLDER S X)
+    ;"TODO: stop the player taking NPCs' possessions?"
     <COND (<FSET? ,PRSO ,PERSONBIT>
            <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
           (<NOT <FSET? ,PRSO ,TAKEBIT>>
@@ -480,6 +556,8 @@
            <FSET ,PRSO ,TOUCHBIT>
            <MOVE ,PRSO ,WINNER>)>>
 
+;"Checks whether an object is in a container?
+TODO: Eliminate TAKE-CONT-SEARCH."
 <ROUTINE TAKE-CONT-SEARCH TCS (A "AUX" H)
     <MAP-CONTENTS (I .A)
         ;<TELL "Looping to check containers.  I is currently " D .I CR>
@@ -494,7 +572,6 @@
                       <AND .H <RETURN .H .TCS>>)>)>>
     <RFALSE>>
 
-
 <ROUTINE V-DROP ()
     <COND
         (<NOT <IN? ,PRSO ,WINNER>>
@@ -504,13 +581,6 @@
          <FSET ,PRSO ,TOUCHBIT>
          <FCLEAR ,PRSO ,WORNBIT>
          <TELL "You drop " T ,PRSO "." CR>)>>
-
-<ROUTINE INDIRECTLY-IN? (OBJ CONT)
-    <REPEAT ()
-        <COND (<0? .OBJ>
-               <RFALSE>)
-              (<EQUAL? <SET OBJ <LOC .OBJ>> .CONT>
-               <RTRUE>)>>>
 
 <ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
     <COND (<FSET? ,PRSI ,PERSONBIT>
@@ -523,7 +593,7 @@
            <TELL " something you can put things on." CR>)
           (<NOT <IN? ,PRSO ,WINNER>>
            <PRINTR "You don't have that.">)
-          (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
+          (<OR <EQUAL? ,PRSO ,PRSI> <HELD? ,PRSI ,PRSO>>
            <PRINTR "You can't put something on itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
@@ -578,7 +648,7 @@
            <TELL "You see no way to put things into " T ,PRSI  "." CR>)
           (<NOT <IN? ,PRSO ,WINNER>>
            <PRINTR "You aren't holding that.">)
-          (<OR <EQUAL? ,PRSO ,PRSI> <INDIRECTLY-IN? ,PRSI ,PRSO>>
+          (<OR <EQUAL? ,PRSO ,PRSI> <HELD? ,PRSI ,PRSO>>
            <PRINTR "You can't put something in itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
@@ -624,6 +694,7 @@
         <FCLEAR ,PRSO ,WORNBIT>
         <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>>
 
+;"Calculates the weight of all objects in a container, non-recursively."
 <ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
     ;"add size of objects inside container - does not recurse through containers
       within this container"
@@ -634,6 +705,7 @@
     ;<TELL "Total weight of contents of " D .O " is " N .W CR>
     .W>
 
+;"Calculates the weight of an object, including its contents recursively."
 <ROUTINE WEIGHT (O "AUX" X W)
     ;"Unlike CONTENTS-WEIGHT - drills down through all contents, adding sizes of all objects + contents"
     ;"start with size of container itself"
@@ -668,9 +740,9 @@
 
 <ROUTINE V-EAT ()
     <COND (<FSET? ,PRSO ,EDIBLEBIT>
-           ;"TODO: improve this check will a real, drilling-down HELD? routine"
-           <COND (<IN? ,PRSO ,WINNER>
-                  <TELL "You devour " T ,PRSO CR>
+           ;"TODO: move this held check to syntax flags"
+           <COND (<HELD? ,PRSO>
+                  <TELL "You devour " T ,PRSO "." CR>
                   <REMOVE ,PRSO>)
                  (ELSE <TELL "You're not holding that." CR>)>)
           (ELSE <TELL "That's hardly edible." CR>)>>

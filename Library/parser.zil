@@ -24,7 +24,7 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL STANDARD-WAIT 4>
 <GLOBAL AGAINCALL <>>
 <GLOBAL USAVE 0>
-<GLOBAL NLITSET <>>
+<GLOBAL NLITSET <>>    ;"TODO: eliminate NLITSET"
 <GLOBAL MODE 1>
 <CONSTANT SUPERBRIEF 0>
 <CONSTANT BRIEF 1>
@@ -818,7 +818,14 @@ Args:
     <COPY-TABLE ,BACKREADBUF ,READBUF %</ ,READBUF-SIZE 2>>>
 
 ;"Fills READBUF and LEXBUF by reading a command from the player.
-If ,AGAINCALL is true, no new command is read and the buffers are reused."
+If ,AGAINCALL is true, no new command is read and the buffers are reused.
+
+Uses:
+  AGAINCALL
+
+Sets (contents):
+  READBUF
+  LEXBUF"
 <ROUTINE READLINE ()
     ;"skip input if doing an AGAIN"
     <COND (,AGAINCALL <RETURN>)>
@@ -834,6 +841,16 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
 
 "Action framework"
 
+;"Invokes the handlers for a given action (and objects).
+
+Uses:
+  WINNER
+
+Sets (temporarily):
+  PRSA
+  PRSO
+  PRSO-DIR
+  PRSI"
 <ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON)
     <IF-DEBUG <TELL "[PERFORM: ACT=" N .ACT " DOBJ=" N .DOBJ " IOBJ=" N .IOBJ "]" CR>>
     <SET PRTN <GET ,PREACTIONS .ACT>>
@@ -863,6 +880,33 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
    PRSO's ACTION,
    verb action."
 
+;"Helper function to call action handlers, respecting a search order.
+
+The routine searches for handlers in a set order, calling each one it finds
+until one returns true to indicate that it has handled the action.
+
+The search order is as follows:
+  ACTION property of WINNER
+  ACTION property of WINNER's location (with M-BEG parameter)
+  Verb preaction
+  CONTFCN property of PRSI's location
+  ACTION property of PRSI
+  CONTFCN property of PRSO's location
+  ACTION property of PRSO
+  Verb action
+
+Uses:
+  WINNER
+  PRSO
+  PRSO-DIR
+  PRSI
+
+Args:
+  PRTN: The verb preaction routine, or false for no preaction.
+  RTN: The verb action routine.
+
+Returns:
+  True if the action was handled."
 <ROUTINE PERFORM-CALL-HANDLERS (PRTN RTN "AUX" AC RM)
     <COND (<AND <SET AC <GETP ,WINNER ,P?ACTION>>
                 <APPLY .AC>>
@@ -893,6 +937,17 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
            <RTRUE>)
           (ELSE <APPLY .RTN>)>>
 
+;"Moves the player to a new location, notifies the location that the player
+has entered, and prints the location name (and possibly description).
+
+Uses:
+  WINNER
+
+Sets:
+  HERE
+
+Args:
+  RM: The room to move into."
 <ROUTINE GOTO (RM)
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
@@ -904,6 +959,19 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
 
 "Misc Routines"
 
+;"Searches an object to find exactly one child with a given flag set, and
+optionally prints a message about it.
+
+Args:
+  C: The container or location to search.
+  BIT: The flag to look for.
+  WORD: A string to print in a message describing the found object,
+    e.g. 'with' to print '[with the purple key]'. If omitted, no message
+    will be shown.
+
+Returns:
+  If exactly one object was found, returns the found object.
+  If zero or multiple objects were found, returns false."
 <ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W)
     <MAP-CONTENTS (I .C)
         <COND (<FSET? .I  .BIT>
@@ -926,6 +994,10 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
            <CONSTANT H-ITALIC 4>
            <CONSTANT H-MONO 8>)>
 
+;"Prints a string with italics for emphasis (if supported).
+
+Args:
+  STR: The string to emphasize."
 <ROUTINE ITALICIZE (STR "AUX" A)
     <VERSION? (ZIP)
               (T <HLIGHT ,H-ITALIC>)>
@@ -933,39 +1005,63 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
     <VERSION? (ZIP)
               (T <HLIGHT ,H-NORMAL>)>>
 
-<ROUTINE PICK-ONE (TABL "AUX" LENGTH CNT RND S MSG)
-       <SET LENGTH <GET .TABL 0>>
-       <SET CNT <GET .TABL 1>>
-       <REPEAT ()
-               <PUT ,TEMPTABLE .S <GET .TABL <+ .CNT .S>>>
-               <SET S <+ .S 1>>
-               ;<PROG () <TELL "IN LOOP: S IS NOW: "> <PRINTN .S> <TELL CR>>
-               <COND (<G? <+ .S .CNT> .LENGTH> <RETURN>)>>
-       ;<PROG () <TELL "S IS CURRENTLY: "> <PRINTN .S> <TELL CR>>
-       <SET RND <- <RANDOM .S> 1>>
-       ;<PROG () <TELL "RND IS CURRENTLY: "> <PRINTN .RND> <TELL CR>>
-       <SET MSG <GET ,TEMPTABLE .RND>>
-       <PUT .TABL <+ .CNT .RND> <GET .TABL .CNT>>
-       <PUT .TABL .CNT .MSG>
-       <SET CNT <+ 1 .CNT>>
-       <COND (<G? .CNT .LENGTH> <SET CNT 2>)>
-       <PUT .TABL 1 .CNT>
-       <RETURN .MSG>>
+;"Returns a random element from a table, not repeating until every element
+has been returned once.
 
+Args:
+  TABL: The table, which should be an LTABLE with word elements. The first
+    element of the table (after the length word) is used as a counter and
+    must be 2 initially.
+
+Returns:
+  A random element from the table."
+<ROUTINE PICK-ONE (TABL "AUX" LENGTH CNT RND S MSG)
+    <SET LENGTH <GET .TABL 0>>
+    <SET CNT <GET .TABL 1>>
+    <REPEAT ()
+        <PUT ,TEMPTABLE .S <GET .TABL <+ .CNT .S>>>
+        <SET S <+ .S 1>>
+        ;<PROG () <TELL "IN LOOP: S IS NOW: "> <PRINTN .S> <TELL CR>>
+        <COND (<G? <+ .S .CNT> .LENGTH> <RETURN>)>>
+    ;<PROG () <TELL "S IS CURRENTLY: "> <PRINTN .S> <TELL CR>>
+    <SET RND <- <RANDOM .S> 1>>
+    ;<PROG () <TELL "RND IS CURRENTLY: "> <PRINTN .RND> <TELL CR>>
+    <SET MSG <GET ,TEMPTABLE .RND>>
+    <PUT .TABL <+ .CNT .RND> <GET .TABL .CNT>>
+    <PUT .TABL .CNT .MSG>
+    <SET CNT <+ 1 .CNT>>
+    <COND (<G? .CNT .LENGTH> <SET CNT 2>)>
+    <PUT .TABL 1 .CNT>
+    <RETURN .MSG>>
+
+;"Returns a random element from a table, possibly repeating.
+
+Args:
+  TABL: The table, which should be an LTABLE with word elements.
+
+Returns:
+  A random element from the table."
 <ROUTINE PICK-ONE-R (TABL "AUX" MSG RND)
-      <SET RND <RANDOM <GET .TABL 0>>>
-      <SET MSG <GET .TABL .RND>>
-      <RETURN .MSG>>
+    <SET RND <RANDOM <GET .TABL 0>>>
+    <SET MSG <GET .TABL .RND>>
+    <RETURN .MSG>>
 
 <VERSION?
     (ZIP
         <DEFMAC INIT-STATUS-LINE () <>>
         <DEFMAC UPDATE-STATUS-LINE () '<USL>> )
     (T
+        ;"Splits the screen and clears a 1-line status line."
         <ROUTINE INIT-STATUS-LINE ()
             <SPLIT 1>
             <CLEAR 1>>
 
+        ;"Writes the location name, score, and turn count in the status line.
+        
+        Uses:
+          HERE
+          SCORE
+          TURNS"
         <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
             <SCREEN 1>
             <HLIGHT 1>   ;"reverses the fg and bg colors"
@@ -981,11 +1077,20 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
             <SCREEN 0>
             <HLIGHT 0>>
 
+        ;"Fills the top row with spaces."
         <ROUTINE FAKE-ERASE ("AUX" CNT WIDTH)
             <CURSET 1 1>
             <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
             <CURSET 1 1>>)>
 
+;"Prints a message and ends the game, prompting the player to restart,
+(possibly) undo, restore, or quit.
+
+Args:
+  TEXT: The message to print before the 'game is over' banner.
+
+Returns:
+  Does not return."
 <ROUTINE JIGS-UP (TEXT "AUX" RESP (Y 0) R)
     <TELL .TEXT CR CR>
     <TELL "    ****  The game is over  ****" CR CR>
@@ -1032,6 +1137,15 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
                   <TELL "Undo failed." CR>
                   <AGAIN>)>)>>
 
+;"Empties the contents of one object into another, or removes them from play.
+
+The WORNBIT flag will also be cleared on the objects, unless the destination
+is a person.
+
+Args:
+  VICTIM: The object that will be emptied.
+  DEST: The object where the contents will be placed. If omitted or false,
+    the contents will be removed from play instead."
 <ROUTINE ROB (VICTIM "OPT" DEST "AUX" DEST-IS-PERSON)
     ;"TODO: use MAP-CONTENTS"
     <COND (<AND .DEST <FSET? .DEST ,PERSONBIT>>
@@ -1041,6 +1155,13 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
         <COND (<NOT .DEST> <REMOVE .I>)
               (ELSE <MOVE .I .DEST>)>>>
 
+;"Prompts the player to answer a yes/no question by pressing 'y' or 'n',
+repeating the prompt if they press any other key.
+
+The question should be printed before calling this routine.
+
+Returns:
+  True if the user pressed 'y', false if they pressed 'n'."
 <ROUTINE YES? ("AUX" RESP)
      <PRINTI " (y/n) >">
      <REPEAT ()
@@ -1055,6 +1176,17 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
 
 <VERSION?
     (ZIP
+        ;"Reads one character from the user.
+        
+        In V3, this uses line input since there is no character input. Only
+        the first character entered is used.
+
+        Sets (contents):
+          READBUF
+          LEXBUF
+        
+        Returns:
+          The ZSCII code of the character entered."
         <ROUTINE GETONECHAR ()
             <PUTB ,READBUF 0 %<- ,READBUF-SIZE 2>>
             <READ ,READBUF ,LEXBUF>
@@ -1066,8 +1198,19 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
             <BUFOUT T>
             <INPUT 1>>)>
 
-;"TODO: should this check GENERIC-OBJECTS too?"
+;"Determines whether an object can be seen by the player.
+
+Uses:
+  HERE
+  WINNER
+
+Args:
+  OBJ: The object to check.
+
+Returns:
+  True if the object is visible, otherwise false."
 <ROUTINE VISIBLE? (OBJ "AUX" P M)
+    ;"TODO: should this check GENERIC-OBJECTS too?"
     <SET P <LOC .OBJ>>
     <SET M <META-LOC .OBJ>>
     <COND (<NOT <=? .M ,HERE>>
@@ -1086,6 +1229,17 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
                <RFALSE>)
               (ELSE <SET P <LOC .P>>)>>>
 
+;"Determines whether an object can be touched by the player.
+
+Uses:
+  HERE
+  WINNER
+
+Args:
+  OBJ: The object to check.
+
+Returns:
+  True if the object is accessible, otherwise false."
 <ROUTINE ACCESSIBLE? (OBJ "AUX" L)
     ;"currently GLOBALs and LOCAL-GLOBALS return false since they are non-interactive scenery."
     <SET L <LOC .OBJ>>
@@ -1105,6 +1259,17 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
               (ELSE
                <SET L <LOC .L>>)>>>
 
+;"Determines whether an object is contained by another object (or the player).
+
+Uses:
+  WINNER
+
+Args:
+  OBJ: The object to check.
+  HLDR: The container to check. If omitted or false, defaults to WINNER.
+
+Returns:
+  True if OBJ is contained by HLDR, otherwise false."
 <ROUTINE HELD? (OBJ "OPT" (HLDR <>))
     <OR .HLDR <SET HLDR ,WINNER>>
     <REPEAT ()
@@ -1115,6 +1280,13 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
               (ELSE
                <SET OBJ <LOC .OBJ>>)>>>
 
+;"Finds the room that ultimately contains a given object.
+
+Args:
+  OBJ: The object.
+
+Returns:
+  The room that encloses the object, or false if it isn't in a room."
 <ROUTINE META-LOC ML (OBJ "AUX" P)
     <SET P <LOC .OBJ>>
     <COND (<IN? .P ,ROOMS>
@@ -1131,12 +1303,23 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
               (<NOT .P>
                <RFALSE>)>>>
 
-<ROUTINE NOW-DARK ()
+;"Checks whether the player has entered darkness, printing a message if so.
+
+This should be called when the player has done something that might cause
+a light source to go away."
+<ROUTINE NOW-DARK? ()
     <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
                 <NOT <SEARCH-FOR-LIGHT>>>
            <TELL "You are plunged into darkness." CR>)>>
 
-<ROUTINE NOW-LIT ()
+;"Checks whether the player is no longer in darkness, printing a message if so.
+
+This should be called when the player has done something that might activate
+or reveal a light source.
+
+Sets:
+  NLITSET"
+<ROUTINE NOW-LIT? ()
     <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
                 <NOT <SEARCH-FOR-LIGHT>>>
            <TELL "You can see your surroundings now." CR CR>
@@ -1196,6 +1379,7 @@ If ,AGAINCALL is true, no new command is read and the buffers are reused."
     (FLAGS NARTICLEBIT PERSONBIT TOUCHBIT)
     (ACTION PLAYER-R)>
 
+;"Action handler for the player."
 <ROUTINE PLAYER-R ()
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
