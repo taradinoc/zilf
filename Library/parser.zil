@@ -24,8 +24,8 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL STANDARD-WAIT 4>
 <GLOBAL AGAINCALL <>>
 <GLOBAL USAVE 0>
-<GLOBAL NLITSET <>>    ;"TODO: eliminate NLITSET"
 <GLOBAL MODE 1>
+<GLOBAL HERE-LIT T>
 <CONSTANT SUPERBRIEF 0>
 <CONSTANT BRIEF 1>
 <CONSTANT VERBOSE 2>
@@ -219,7 +219,8 @@ Sets:
     <SET NOBJ <>>
     <SET VAL <>>
     <SET DIR <>>
-    <SETG HERE <LOC ,PLAYER>>
+    <SETG HERE <LOC ,WINNER>>
+    <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"Fill READBUF and LEXBUF"
     <READLINE>
     <IF-DEBUG <DUMPLINE>>
@@ -230,7 +231,6 @@ Sets:
     <PUT ,P-IOBJS 0 0>
     <SETG P-P1 <>>
     <SETG P-P2 <>>
-    <SETG HERE <LOC ,WINNER>>	;"TODO: why WINNER here vs. PLAYER above?"
     ;"Identify the verb, prepositions, and noun clauses"
     <REPEAT ((I 1) W)
         <COND (<G? .I ,P-LEN>
@@ -628,6 +628,7 @@ Returns:
 Returns:
   An object providing light, or false if no light source was found."
 <ROUTINE SEARCH-FOR-LIGHT SFL ()
+    <COND (<FSET? ,HERE ,LIGHTBIT> <RTRUE>)>
     <MAP-SCOPE (I) (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)
         <COND (<FSET? .I ,LIGHTBIT> <RETURN .I .SFL>)>>
     <RFALSE>>
@@ -952,7 +953,9 @@ Args:
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
-    ;"moved V-LOOK into GOTO so descriptors will be called when you call GOTO from a PER routine, etc"
+    ;"Call SEARCH-FOR-LIGHT down here in case M-ENTER adjusts the light."
+    <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
+    ;"moved descriptors into GOTO so they'll be called when you call GOTO from a PER routine, etc"
     <COND (<DESCRIBE-ROOM ,HERE>
            <DESCRIBE-OBJECTS ,HERE>)>
     <FSET ,HERE ,TOUCHBIT>>
@@ -1308,22 +1311,20 @@ Returns:
 This should be called when the player has done something that might cause
 a light source to go away."
 <ROUTINE NOW-DARK? ()
-    <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
+    <COND (<AND ,HERE-LIT
                 <NOT <SEARCH-FOR-LIGHT>>>
+           <SETG HERE-LIT <>>
            <TELL "You are plunged into darkness." CR>)>>
 
 ;"Checks whether the player is no longer in darkness, printing a message if so.
 
 This should be called when the player has done something that might activate
-or reveal a light source.
-
-Sets:
-  NLITSET"
+or reveal a light source."
 <ROUTINE NOW-LIT? ()
-    <COND (<AND <NOT <FSET? ,HERE ,LIGHTBIT>>
-                <NOT <SEARCH-FOR-LIGHT>>>
+    <COND (<AND <NOT ,HERE-LIT>
+                <SEARCH-FOR-LIGHT>>
+           <SETG HERE-LIT T>
            <TELL "You can see your surroundings now." CR CR>
-           <SETG NLITSET T>
            <V-LOOK>)>>
 
 <INSERT-FILE "events">

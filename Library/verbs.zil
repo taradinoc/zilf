@@ -137,14 +137,15 @@
 
 ;"Prints a room description, handling darkness and briefness.
 
-If the room is dark, this prints a generic room name and description.
-If the room is lit, the real name is printed, optionally followed by
-a description (if MODE is VERBOSE, or if it's BRIEF and this is the
-first time describing the room, or if LONG is true).
+If the room is HERE and the player doesn't have a light source, this prints
+a generic room name and description.
+
+Otherwise, the real name is printed, optionally followed by a description
+(if MODE is VERBOSE, or if it's BRIEF and this is the first time describing
+the room, or if LONG is true).
 
 Uses:
   MODE
-  NLITSET
 
 Args:
   RM: The room to describe.
@@ -155,11 +156,7 @@ Returns:
   false."
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
-        ;"check for light, unless running LOOK from NOW-LIT (which sets NLITSET to 1)"
-        ;"TODO: SEARCH-FOR-LIGHT assumes the current room, not .RM"
-        (<NOT <OR <FSET? .RM ,LIGHTBIT>
-                  <SEARCH-FOR-LIGHT>
-                  ,NLITSET>>
+        (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
          ;"TODO: description should obey (SUPER)BRIEF?"
          <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
          <RFALSE>)
@@ -188,13 +185,8 @@ Objects are described in four passes:
 3. The visible contents of containers and surfaces.
 4. All objects with PERSONBIT other than WINNER.
 
-Finally, this routine clears NLITSET (!).
-
 Uses:
   WINNER
-
-Sets:
-  NLITSET
 
 Args:
   RM: The room."
@@ -290,8 +282,7 @@ Args:
                                    (<==? .N 1> <TELL ", and ">)
                                    (ELSE <TELL ",">)>)>>
                   <TELL " are">)>
-           <TELL " here." CR>)>
-    <SETG NLITSET <>>>
+           <TELL " here." CR>)>>
 
 ;"Prints the indefinite article for an object, followed by a space, or
 nothing if it has NARTICLEBIT."
@@ -506,8 +497,7 @@ the child objects, and no trailing punctuation is printed. For example:
 
 <ROUTINE V-INVENTORY ()
     ;"check for light first"
-    <COND (<OR <FSET? ,HERE ,LIGHTBIT>
-               <SEARCH-FOR-LIGHT>>
+    <COND (,HERE-LIT
            <COND (<FIRST? ,WINNER>
                   <TELL "You are carrying:" CR>
                   <MAP-CONTENTS (I ,WINNER)
@@ -771,7 +761,8 @@ TODO: Eliminate TAKE-CONT-SEARCH."
            <FSET ,PRSO ,TOUCHBIT>
            <FSET ,PRSO ,OPENBIT>
            <TELL "You open " T ,PRSO "." CR>
-           <DESCRIBE-CONTENTS ,PRSO>)>>
+           <AND ,HERE-LIT <DESCRIBE-CONTENTS ,PRSO>>
+           <NOW-LIT?>)>>
 
 <ROUTINE V-CLOSE ()
     <COND (<FSET? ,PRSO ,PERSONBIT>
@@ -785,7 +776,8 @@ TODO: Eliminate TAKE-CONT-SEARCH."
           (ELSE
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,OPENBIT>
-           <TELL "You close " T ,PRSO "." CR>)>>
+           <TELL "You close " T ,PRSO "." CR>
+           <NOW-DARK?>)>>
 
 <ROUTINE V-WAIT ("AUX" T INTERRUPT ENDACT)
     <SET T 1>
