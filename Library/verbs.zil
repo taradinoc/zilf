@@ -117,6 +117,7 @@
 <CONSTANT M-END 2>
 <CONSTANT M-ENTER 3>
 <CONSTANT M-LOOK 4>
+<CONSTANT M-OBJDESC? 5>   ;"for DESCFCN"
 
 <ROUTINE V-BRIEF ()
     <TELL "Brief descriptions." CR>
@@ -207,14 +208,7 @@ Args:
              <TELL CR .P CR>)>>
     ;"use N add up all non fdesc, ndescbit, personbit objects in room"
     <MAP-CONTENTS (I .RM)
-        ;"TODO: factor out this condition"
-        <COND (<NOT <OR <FSET? .I ,NDESCBIT>
-                        <SET P <GETP .I ,P?DESCFCN>>
-                        <==? .I ,WINNER>
-                        <FSET? .I ,PERSONBIT>
-                        <AND <NOT <FSET? .I ,TOUCHBIT>>
-                             <SET P <GETP .I ,P?FDESC>>>
-                        <SET P <GETP .I ,P?LDESC>>>>
+        <COND (<GENERIC-DESC? .I>
                <SET N <+ .N 1>>
                <COND (<==? .N 1> <SET F .I>)
                      (<==? .N 2> <SET S .I>)>)>>
@@ -230,13 +224,7 @@ Args:
                  (<==? .N 2> <TELL A .F " and " A .S>)
                  (ELSE
                   <MAP-CONTENTS (I .RM)
-                      <COND (<NOT <OR <FSET? .I ,NDESCBIT>
-                                      <==? .I ,WINNER>
-                                      <SET P <GETP .I ,P?LDESC>>
-                                      <FSET? .I ,PERSONBIT>
-                                      <SET P <GETP .I ,P?DESCFCN>>
-                                      <AND <NOT <FSET? .I ,TOUCHBIT>>
-                                           <SET P <GETP .I ,P?FDESC>>>>>
+                      <COND (<GENERIC-DESC? .I>
                              <TELL A .I>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
@@ -245,20 +233,14 @@ Args:
            <TELL " here." CR>)>
     ;"describe visible contents of containers and surfaces"
     <MAP-CONTENTS (I .RM)
-        <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
+        <COND (<AND <NOT <FSET? .I ,NDESCBIT>>
                     <FIRST? .I>
                     <SEE-INSIDE? .I>>
                <DESCRIBE-CONTENTS .I>)>>
     ;"Re-use N to add up NPCs"
     <SET N 0>
     <MAP-CONTENTS (I .RM)
-        <COND (<AND <FSET? .I ,PERSONBIT>
-                    <NOT <OR <==? .I ,WINNER>
-                             <FSET? .I ,NDESCBIT>
-                             <SET P <GETP .I ,P?DESCFCN>>
-                             <SET P <GETP .I ,P?LDESC>>
-                             <AND <NOT <FSET? .I ,TOUCHBIT>>
-                                  <SET P <GETP .I ,P?FDESC>>>>>>
+        <COND (<NPC-DESC? .I>
                <SET N <+ .N 1>>
                <COND (<==? .N 1> <SET F .I>)
                      (<==? .N 2> <SET S .I>)>)>>
@@ -269,13 +251,7 @@ Args:
                  (<==? .N 2> <TELL CT .F " and " T .S " are">)
                  (ELSE
                   <MAP-CONTENTS (I .RM)
-                      <COND (<AND <FSET? .I ,PERSONBIT>
-                                  <NOT <OR <==? .I ,WINNER>
-                                           <FSET? .I ,NDESCBIT>
-                                           <SET P <GETP .I ,P?DESCFCN>>
-                                           <SET P <GETP .I ,P?LDESC>>
-                                           <AND <NOT <FSET? .I ,TOUCHBIT>>
-                                                <SET P <GETP .I ,P?FDESC>>>>>>
+                      <COND (<NPC-DESC? .I>
                              <COND (<==? .I .F> <TELL CT .I>) (ELSE <TELL T .I>)>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
@@ -283,6 +259,25 @@ Args:
                                    (ELSE <TELL ",">)>)>>
                   <TELL " are">)>
            <TELL " here." CR>)>>
+
+<ROUTINE GENERIC-DESC? (OBJ "AUX" P)
+    <T? <NOT <OR <==? .OBJ ,WINNER>
+                 <FSET? .OBJ ,NDESCBIT>
+                 <FSET? .OBJ ,PERSONBIT>
+                 <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
+                      <GETP .OBJ ,P?FDESC>>
+                 <GETP .OBJ ,P?LDESC>
+                 <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>
+
+<ROUTINE NPC-DESC? (OBJ "AUX" P)
+    <T? <AND <FSET? .OBJ ,PERSONBIT>
+             <NOT <OR <==? .OBJ ,WINNER>
+                      <FSET? .OBJ ,NDESCBIT>
+                      <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
+                           <GETP .OBJ ,P?FDESC>>
+                      <GETP .OBJ ,P?LDESC>
+                      <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
+                      
 
 ;"Prints the indefinite article for an object, followed by a space, or
 nothing if it has NARTICLEBIT."
