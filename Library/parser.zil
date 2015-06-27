@@ -1134,7 +1134,6 @@ Args:
   DEST: The object where the contents will be placed. If omitted or false,
     the contents will be removed from play instead."
 <ROUTINE ROB (VICTIM "OPT" DEST "AUX" DEST-IS-PERSON)
-    ;"TODO: use MAP-CONTENTS"
     <COND (<AND .DEST <FSET? .DEST ,PERSONBIT>>
            <SET DEST-IS-PERSON T>)>
     <MAP-CONTENTS (I N .VICTIM)
@@ -1180,9 +1179,6 @@ Returns:
             <GETB ,READBUF 1>>)
     (ELSE
         <ROUTINE GETONECHAR ()
-            ;"TODO: is BUFOUT doing anything useful here?"
-            <BUFOUT <>>
-            <BUFOUT T>
             <INPUT 1>>)>
 
 ;"Determines whether an object can be seen by the player.
