@@ -413,12 +413,11 @@ Args:
 Returns:
   True if the word can start a noun clause."
 <ROUTINE STARTS-CLAUSE? (W)
-    ;"The COND should be unnecessary, but ZILF generates ugly code without it"
-    <COND (<OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
-               <CHKWORD? .W ,PS?ADJECTIVE>
-               <WORD? .W OBJECT>>
-           <RTRUE>)>
-    <RFALSE>>
+    ;"T? forces the OR to be evaluated as a condition, since we don't
+      care about the exact return value from CHKWORD? or WORD?."
+    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
+            <CHKWORD? .W ,PS?ADJECTIVE>
+            <WORD? .W OBJECT>>>>
 
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
@@ -642,17 +641,15 @@ Args:
 Returns:
   True if the object's contents are in scope, otherwise false."
 <ROUTINE SEE-INSIDE? (OBJ)
-    ;"The COND should be unnecessary, but ZILF generates ugly code without it"
-    <COND (<OR ;"We can always see the contents of surfaces"
-               <FSET? .OBJ ,SURFACEBIT>
-               ;"We can see inside containers if they're open, transparent, or
-                 unopenable (= always-open)"
-               <AND <FSET? .OBJ ,CONTBIT>
-                    <OR <FSET? .OBJ ,OPENBIT>
-                        <FSET? .OBJ ,TRANSBIT>
-                        <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>
-           <RTRUE>)>
-    <RFALSE>>
+    ;"The T? should be unnecessary, but ZILF generates ugly code without it"
+    <T? <OR ;"We can always see the contents of surfaces"
+            <FSET? .OBJ ,SURFACEBIT>
+            ;"We can see inside containers if they're open, transparent, or
+              unopenable (= always-open)"
+            <AND <FSET? .OBJ ,CONTBIT>
+                 <OR <FSET? .OBJ ,OPENBIT>
+                     <FSET? .OBJ ,TRANSBIT>
+                     <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>>>
 
 ;"Attempts to find an object in scope, given the adjectives and nouns that
 describe it.
@@ -1094,51 +1091,38 @@ Args:
 
 Returns:
   Does not return."
-<ROUTINE JIGS-UP (TEXT "AUX" RESP (Y 0) R)
+<ROUTINE JIGS-UP (TEXT "AUX" RESP W)
     <TELL .TEXT CR CR>
     <TELL "    ****  The game is over  ****" CR CR>
     ;"<TELL "    ****  You have died  ****" CR CR>"
-    <IFFLAG (UNDO
-             <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
-            (ELSE
-             <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
-    <REPEAT ()
-        <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
-        <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
-        <READ ,READBUF ,LEXBUF>
-        <COND (<EQUAL? <GET ,LEXBUF 1> ,W?RESTART>
-               <SET Y 1>
-               <RETURN>)
-              (<EQUAL? <GET ,LEXBUF 1> ,W?RESTORE>
-               <SET Y 2>
-               <RETURN>)
-              (<EQUAL? <GET ,LEXBUF 1> ,W?QUIT>
-               <SET Y 3>
-               <RETURN>)
-              (<EQUAL? <GET ,LEXBUF 1> ,W?UNDO>
-               <SET Y 4>
-               <RETURN>)
-              (T
-               <IFFLAG (UNDO
-                        <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
-                       (ELSE
-                        <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>
-    ;"TODO: combine this with the REPEAT above"
-    <COND (<=? .Y 1>
-           <RESTART>)
-          (<=? .Y 2>
-           <SET R <RESTORE>>
-           <COND (<NOT .R>
-                  <TELL "Restore failed." CR>
-                  <AGAIN>)>)
-          (<=? .Y 3>
-           <TELL CR "Thanks for playing." CR>
-           <QUIT>)
-          (<=? .Y 4>
-           <SET R <V-UNDO>>
-           <COND (<NOT .R>
-                  <TELL "Undo failed." CR>
-                  <AGAIN>)>)>>
+    <REPEAT PROMPT ()
+        <IFFLAG (UNDO
+                 <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
+                (ELSE
+                 <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
+        <REPEAT ()
+            <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
+            <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
+            <READ ,READBUF ,LEXBUF>
+            <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
+            <COND (<EQUAL? .W ,W?RESTART>
+                   <RESTART>)
+                  (<EQUAL? .W ,W?RESTORE>
+                   <RESTORE>  ;"only returns on failure"
+                   <TELL "Restore failed." CR>
+                   <AGAIN .PROMPT>)
+                  (<EQUAL? .W ,W?QUIT>
+                   <TELL CR "Thanks for playing." CR>
+                   <QUIT>)
+                  (<EQUAL? .W ,W?UNDO>
+                   <V-UNDO>   ;"only returns on failure"
+                   <TELL "Undo failed." CR>
+                   <AGAIN .PROMPT>)
+                  (T
+                   <IFFLAG (UNDO
+                            <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
+                           (ELSE
+                            <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>>>
 
 ;"Empties the contents of one object into another, or removes them from play.
 
