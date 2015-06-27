@@ -2,7 +2,7 @@ The main documentation for ZIL programming is Infocom's "Learning ZIL" manual,
 which you can find at
 http://www.xlisper.com/zil.pdf
 
-This doc describes the differences between ZILF's v0.3 library and the description 
+This doc describes the differences between ZILF's v0.6 library and the description 
 of ZIL found in "Learning ZIL", including, at the bottom of this doc, what is not 
 yet implemented in the ZILF library.
 
@@ -68,7 +68,7 @@ in the same fashion as a player-called WAIT.
 WHAT'S NOT IMPLEMENTED IN THE ZILF LIBRARY
 --------------------------------------------
 
-The following are not implemented yet as of v 0.3:
+The following are not implemented yet as of v 0.6:
 
 General
 - Prompted disambiguation of similarly named objects
@@ -80,8 +80,6 @@ OFF doesn't)
 
 Properties
 PLURAL (note this is different from PLURALBIT, which is implemented)
-DESCFCN
-CONTFCN
 GENERIC
 SDESC
 OWNER
@@ -94,7 +92,6 @@ DOORBIT
 LOCKEDBIT
 FLAMEBIT
 BURNBIT
-INVISIBLE
 SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
 when searching through visible & accessible objects)
 VEHBIT
@@ -111,16 +108,11 @@ INBIT
 
 Routines
 THIS-IS-IT
-INIT-STATUS
-UPDATE-STATUS
-ITALICIZE
 UNTOUCHABLE?
 WITHIN?
 OTHER-SIDE
 TOUCHING?
 CANT-SEE
-SEE-INSIDE?
 CAPITAL-NOUN?
-FIND-IN
 
 No OOPS
