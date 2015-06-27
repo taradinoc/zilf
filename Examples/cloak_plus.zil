@@ -28,7 +28,7 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
                <PERFORM ,PRSA ,PRSO ,PRSI>
                ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
                those routines if WAIT ran this turn"
-               <COND (<NOT <OR ,AGAINCALL <META-VERB?>>>
+               <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
                       <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                       <CLOCKER>)>
                ;"backup inputbuffers"
@@ -232,7 +232,7 @@ of the foyer to the north, is completely empty.")
                (ELSE <FSET ,BAR ,LIGHTBIT>)>)
         (<==? .RARG ,M-BEG>
          <COND (<AND <NOT <FSET? ,BAR ,LIGHTBIT>>
-                     <NOT <META-VERB?>>
+                     <NOT <GAME-VERB?>>
                      <NOT <VERB? THINK-ABOUT>>
                      <NOT <VERB? LOOK>>
                      <NOT <AND <VERB? WALK> <==? ,PRSO ,P?NORTH>>>>
