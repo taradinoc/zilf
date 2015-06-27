@@ -208,7 +208,7 @@ Returns:
     <SETG AGAINCALL <>>
     <COND (.PARSED
            <PERFORM ,PRSA ,PRSO ,PRSI>
-           <COND (<NOT <OR ,AGAINCALL <META-VERB?>>>
+           <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
                   <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                   <CLOCKER>)>)>
     <DIROUT -3>

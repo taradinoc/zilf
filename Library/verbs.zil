@@ -426,9 +426,8 @@ the child objects, and no trailing punctuation is printed. For example:
         <CONSTANT DEXIT-OBJ 1>
         <CONSTANT DEXIT-MSG 2>)>
 
-;"TODO: rename this to GAME-VERB?"
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
-<DEFMAC META-VERB? ()
+<DEFMAC GAME-VERB? ()
     '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
             SUPERBRIEF BRIEF VERBOSE>>
 
@@ -800,7 +799,7 @@ TODO: Eliminate TAKE-CONT-SEARCH."
            <COND (<PARSER>
                   ;<TELL "Doing PERFORM within V-AGAIN" CR>
                   <PERFORM ,PRSA ,PRSO ,PRSI>
-                  <COND (<NOT <META-VERB?>>
+                  <COND (<NOT <GAME-VERB?>>
                          <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                          <CLOCKER>)>
                   <SETG HERE <LOC ,WINNER>>)>)
