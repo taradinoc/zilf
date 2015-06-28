@@ -212,30 +212,15 @@ Args:
             ;"objects with LDESCs"
             (<SET P <GETP .I ,P?LDESC>>
              <TELL CR .P CR>)>>
-    ;"use N add up all non fdesc, ndescbit, personbit objects in room"
+    ;"See if there are any non fdesc, ndescbit, personbit objects in room"
     <MAP-CONTENTS (I .RM)
         <COND (<GENERIC-DESC? .I>
-               <SET N <+ .N 1>>
-               <COND (<==? .N 1> <SET F .I>)
-                     (<==? .N 2> <SET S .I>)>)>>
+               <SET N T>
+               <RETURN>)>>
     ;"go through the N objects"
-    <COND (<G? .N 0>
+    <COND (.N
            <TELL CR "There ">
-           ;"TODO: use ISARE-LIST here"
-           <COND (<FSET? .F ,PLURALBIT>
-                  <TELL "are ">)
-                 (ELSE
-                  <TELL "is ">)>
-           <COND (<==? .N 1> <TELL A .F>)
-                 (<==? .N 2> <TELL A .F " and " A .S>)
-                 (ELSE
-                  <MAP-CONTENTS (I .RM)
-                      <COND (<GENERIC-DESC? .I>
-                             <TELL A .I>
-                             <SET N <- .N 1>>
-                             <COND (<0? .N>)
-                                   (<==? .N 1> <TELL ", and ">)
-                                   (ELSE <TELL ", ">)>)>>)>
+           <ISARE-LIST .RM GENERIC-DESC? ,L-ISMANY>
            <TELL " here." CR>)>
     ;"describe visible contents of containers and surfaces"
     <MAP-CONTENTS (I .RM)
@@ -243,27 +228,15 @@ Args:
                     <FIRST? .I>
                     <SEE-INSIDE? .I>>
                <DESCRIBE-CONTENTS .I>)>>
-    ;"Re-use N to add up NPCs"
-    <SET N 0>
+    ;"See if there are any NPCs"
+    <SET N <>>
     <MAP-CONTENTS (I .RM)
         <COND (<NPC-DESC? .I>
-               <SET N <+ .N 1>>
-               <COND (<==? .N 1> <SET F .I>)
-                     (<==? .N 2> <SET S .I>)>)>>
+               <SET N T>
+               <RETURN>)>>
     ;"go through the N NPCs"
-    <COND (<G? .N 0>
-           ;<TELL CR>
-           <COND (<==? .N 1> <TELL CT .F " is">)
-                 (<==? .N 2> <TELL CT .F " and " T .S " are">)
-                 (ELSE
-                  <MAP-CONTENTS (I .RM)
-                      <COND (<NPC-DESC? .I>
-                             <COND (<==? .I .F> <TELL CT .I>) (ELSE <TELL T .I>)>
-                             <SET N <- .N 1>>
-                             <COND (<0? .N>)
-                                   (<==? .N 1> <TELL ", and ">)
-                                   (ELSE <TELL ",">)>)>>
-                  <TELL " are">)>
+    <COND (.N
+           <ISARE-LIST .RM NPC-DESC? ,L-SUFFIX>
            <TELL " here." CR>)>>
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
@@ -377,29 +350,61 @@ the child objects, and no trailing punctuation is printed. For example:
     are a shirt and a hat
 
   If the container has three objects:
-    are a shirt, a hat, and a watch"
-<ROUTINE ISARE-LIST (O "AUX" N F)
-    <SET F <FIRST? .O>>
-    <COND (<NOT .F>
-           <TELL "is nothing">
-           <RETURN>)>
+    are a shirt, a hat, and a watch
+
+Args:
+  O: The object whose contents are to be listed.
+  FILTER: An optional routine to select children to list.
+    If provided, the list will only include objects for which the filter
+    returns true; otherwise it'll list all contents.
+  FLAGS: A combination of option flags:
+    L-SUFFIX: Print 'is' or 'are' after the list instead of before.
+    L-ISMANY: Use 'is' before a list of objects unless the first one has
+      PLURALBIT. (Ignored if L-SUFFIX is given.)
+
+Returns:
+  The number of objects listed."
+<ROUTINE ISARE-LIST (O "OPT" FILTER FLAGS "AUX" N F)
     <MAP-CONTENTS (I .O)
-        <SET N <+ .N 1>>>
-    <COND (<==? .N 1>
+        <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
+               <OR .F <SET F .I>>
+               <SET N <+ .N 1>>)>>
+    <COND (<==? .N 0>
+           <COND (<BTST .FLAGS ,L-SUFFIX>
+                  <TELL "nothing is">)
+                 (ELSE <TELL "is nothing">)>)
+          (<==? .N 1>
+           <AND <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>
            <COND (<FSET? .F ,PLURALBIT>
                   <TELL "are ">)
                  (ELSE <TELL "is ">)>
-           <TELL A .F>)
+           <OR <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>)
           (<==? .N 2>
-           <TELL "are " A .F " and " A <NEXT? .F>>)
+           <OR <BTST .FLAGS ,L-SUFFIX>
+               <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
+                          <FSET? .F ,PLURALBIT>>
+                      <TELL "are ">)
+                     (ELSE <TELL "is ">)>>
+           <TELL A .F " and " A <NEXT? .F>>
+           <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
           (ELSE
-           <TELL "are ">
+           <OR <BTST .FLAGS ,L-SUFFIX>
+               <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
+                          <FSET? .F ,PLURALBIT>>
+                      <TELL "are ">)
+                     (ELSE <TELL "is ">)>>
            <MAP-CONTENTS (I .O)
-               <TELL A .I>
-               <SET N <- .N 1>>
-               <COND (<0? .N>)
-                     (<==? .N 1> <TELL ", and ">)
-                     (ELSE <TELL ", ">)>>)>>
+               <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
+                      <TELL A .I>
+                      <SET N <- .N 1>>
+                      <COND (<0? .N>)
+                            (<==? .N 1> <TELL ", and ">)
+                            (ELSE <TELL ", ">)>)>>
+           <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>
+    <RETURN .N>>
+
+<CONSTANT L-SUFFIX 1>
+<CONSTANT L-ISMANY 2>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
@@ -807,7 +812,7 @@ Returns:
          ;<SET W <+ .W <GETP .I ,P?SIZE>>>
          ;<TELL "Weight of " D .O " is now " N .W CR>
          <COND (<OR <FSET? .I ,CONTBIT>
-                    <==? .I ,WINNER>>  ;"TODO: should check PERSONBIT"
+                    <FSET? .I ,PERSONBIT>>
                 ;<TELL "Weightloop: found container " D .I CR>
                 <SET X <WEIGHT .I>>
                 <SET W <+ .W .X>>
