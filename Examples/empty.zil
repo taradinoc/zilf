@@ -20,7 +20,7 @@ An interactive fiction by AUTHOR NAME">
         <COND (<PARSER>
                <PERFORM ,PRSA ,PRSO ,PRSI>
                <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-               <OR <META-VERB?> <CLOCKER>>)>
+               <OR <GAME-VERB?> <CLOCKER>>)>
         <SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
