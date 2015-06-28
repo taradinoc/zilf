@@ -1,0 +1,285 @@
+=== MDL SUBRs and FSUBRs ===
+(i.e. "things you can use outside a routine")
+
+<- numbers...>
+<* numbers...>
+</ numbers...>
+<+ numbers...>
+<=? value values...>
+<==? value values...>
+<0? value>
+<1? value>
+<ADD-TELL-TOKENS token-specs...>
+<ADJ-SYNONYM word new-words...>
+<AGAIN>
+<AND values...>
+<AND? values...>
+<ANDB numbers...>
+<APPLICABLE? value>
+<APPLY applicable args...>
+<ASCII number/character>
+<ASSIGNED? name>
+<BIND (bindings...) expressions...>
+<BIT-SYNONYM flag-name new-names...>
+<BUZZ word...>
+<BYTE number>
+<CHECK-VERSION? name/number>
+<CHRSET chrset0 chrset1 chrset2>
+<CHTYPE value type>
+<CLOSE channel>
+<COMPILATION-FLAG name [value]>
+<COMPILATION-FLAG-DEFAULT name value>
+<COMPILATION-FLAG-VALUE name>
+<COND (condition expressions...)...>
+<CONS value list>
+<CONSTANT name value>
+<CRLF>
+<DEFAULT-DEFINITION name expressions...>
+<DEFINE name (arguments...) expressions...>
+<DEFINE-GLOBALS name (name [BYTE|WORD] [default-value])...>
+<DEFINE20 name (arguments...) expressions...>
+<DEFMAC name (arguments...) expressions...>
+<DEFSTRUCT struct-spec>
+<DELAY-DEFINITION name>
+<DIR-SYNONYM word new-words...>
+<DIRECTIONS word...>
+<EMPTY? structured>
+<EQVB numbers...>
+<ERROR values...>
+<EVAL value>
+<EXPAND value>
+<FILE-FLAGS word...>
+<FILE-LENGTH channel>
+<FIRST structured>
+<FORM values...>
+<FREQUENT-WORDS?>
+<FUNCTION (arguments...) expressions...>
+<FUNNY-GLOBALS?>
+<G? number number>
+<G=? number number>
+<GASSIGNED? name>
+<GDECL name decl>
+<GETB table number>
+<GETPROP value value>
+<GLOBAL name value>
+<GVAL name>
+<ID value>
+<IFFLAG (compilation-flag-condition expressions...)...>
+<ILIST length initializer>
+<IMAGE number>
+<INSERT string oblist>
+<INSERT-FILE filename>
+<ISTRING length initializer>
+<ITABLE [length-spec] number [(table-flags...)] [const-expressions...]>
+<IVECTOR length initializer>
+<L? number number>
+<L=? number number>
+<LANGUAGE name>
+<LENGTH structured>
+<LENGTH? structured number>
+<LIST values...>
+<LONG-WORDS?>
+<LOOKUP string oblist>
+<LSH number number>
+<LTABLE [(table-flags...)] values...>
+<LVAL name>
+<MAKE-GVAL atom>
+<MAPF reduce-func map-func [structured]>
+<MAPLEAVE>
+<MAPR reduce-func map-func [structured]>
+<MAPRET values...>
+<MAPSTOP>
+<MAX numbers...>
+<MEMBER value structured>
+<MEMQ value structured>
+<MIN numbers...>
+<MOD number number>
+<N=? value values...>
+<N==? value values...>
+<NOT value>
+<NTH structured number>
+<OBJECT name (property values...)...>
+<OPEN "READ" filename>
+<OR values...>
+<OR? values...>
+<ORB numbers...>
+<ORDER-FLAGS? name>
+<ORDER-OBJECTS? name>
+<ORDER-TREE? name>
+<PARSE string>
+<PLTABLE [(table-flags...)] values...>
+<PREP-SYNONYM word new-words...>
+<PRINC value>
+<PROG (bindings...) expressions...>
+<PROPDEF name value [spec...]>
+<PTABLE [(table-flags...)] values...>
+<PUT structured number value>
+<PUTB table number value>
+<PUTPROP value value value>
+<PUTREST list list>
+<QUIT>
+<QUOTE value>
+<READSTRING string channel number>
+<REPEAT (bindings...) expressions...>
+<REPLACE-DEFINITION name expressions...>
+<REST structured [number]>
+<RETURN [value]>
+<ROOM name (property values...)>>
+<ROOT>
+<ROUTINE name [activation] (arguments...) expressions...>
+<ROUTINE-FLAGS name...>
+<SET name value>
+<SET-DEFSTRUCT-FILE-DEFAULTS spec...>
+<SETG name value>
+<SETG20 name value>
+<SNAME atom>
+<SPNAME atom>
+<STRING value...>
+<STRUCTURED? value>
+<SUBSTRUC structured number number [dest-structured]>
+<SYNONYM word new-words...>
+<SYNTAX verb [prep1] [OBJECT] [(FIND flag-name)] [(search-flags)]
+             [prep2] [OBJECT] [(FIND flag-name)] [(search-flags)]
+             = action-routine [preaction-routine] [name]>
+<TABLE (table-flags...)] values..>
+<TELL-TOKENS spec...>
+<TIME>
+<TYPE value>
+<TYPE? value type>
+<UNPARSE value>
+<VECTOR values...>
+<VERB-SYNONYM word new-words...>
+<VERSION name/number>
+<VERSION? (name/number expressions...)...>
+<VOC string>
+<XORB numbers...>
+<ZGET table number>
+<ZIP-OPTIONS name...>
+<ZPUT table number value>
+<ZSTART name>
+
+
+=== Z-code builtins ===
+(i.e. "things you can use inside a routine")
+
+<- values...>
+<* values...>
+</ values...>
+<+ values...>
+<==? value values...>
+<0? value>
+<1? value>
+<AGAIN [activation]>
+<AND expressions...>
+<APPLY routine values...>
+<ASH number places>
+<ASSIGNED? name>
+<BACK table [bytes]>
+<BAND number number>
+<BCOM value>
+<BIND (bindings...) expressions...>
+<BOR number number>
+<BUFOUT value>
+<CATCH>
+<CHECKU character>
+<CLEAR window-number>
+<COLOR fg bg>
+<COND (condition expressions...)...>
+<COPYT src-table dest-table length>
+<CRLF>
+<CURGET table>
+<CURSET row column>
+<DEC name>
+<DIRIN stream-number>
+<DIROUT stream-number [table]>
+<DIROUT stream-number>
+<DLESS? name value>
+<DO (name start end [step]) expressions...>
+<ERASE value>
+<F? expression>
+<FCLEAR object flag>
+<FIRST? object>
+<FONT number>
+<FSET object flag>
+<FSET? object flag>
+<G? value value>
+<G=? value value>
+<GET table offset>
+<GETB table offset>
+<GETP object property>
+<GETPT object property>
+<GVAL name>
+<HLIGHT style>
+<IFFLAG (compilation-flag-condition expressions...)...>
+<IGRTR? name value>
+<IN? object object>
+<INC name>
+<INPUT 1 [time] [routine]>
+<INTBL? value table length [form]>
+<IRESTORE>
+<ISAVE>
+<ITABLE [length-spec] number [(table-flags...)] [const-expressions...]>
+<L? value value>
+<L=? value value>
+<LEX text parse [dictionary] [flag]>
+<LOC object>
+<LOWCORE-TABLE field-spec length routine>
+<LOWCORE field-spec [new-value]>
+<LSH number places>
+<LTABLE [(table-flags...)] values...>
+<LVAL name>
+<MAP-CONTENTS (name [next] object) expressions...>
+<MAP-DIRECTIONS (name pt room) expressions...>
+<MOD number number>
+<MOVE object object>
+<N==? value values...>
+<NEXT? object>
+<NEXTP object property>
+<NOT expression>
+<OR expressions...>
+<ORIGINAL?>
+<PLTABLE [(table-flags...)] values...>
+<PRINT packed-string>
+<PRINTB unpacked-string>
+<PRINTC character>
+<PRINTD object>
+<PRINTI string>
+<PRINTN number>
+<PRINTR string>
+<PRINTT table width height skip>
+<PRINTU number>
+<PROG (bindings...) expressions...>
+<PTABLE [(table-flags...)] values...>
+<PTSIZE table>
+<PUSH value>
+<PUT table offset value>
+<PUTB table offset value>
+<PUTP object property value>
+<QUIT>
+<RANDOM range>
+<READ text parse [time] [routine]>
+<REMOVE object>
+<REPEAT (bindings...) expressions...>
+<REST table [bytes]>
+<RESTART>
+<RESTORE [table] [bytes] [filename]>
+<RETURN [value] [activation]>
+<RFALSE>
+<RFATAL>
+<RSTACK>
+<RTRUE>
+<SAVE [table] [bytes] [filename]>
+<SCREEN window-number>
+<SET name value>
+<SETG name value>
+<SOUND number [effect] [volume] [routine]>
+<SPLIT number>
+<T? expression>
+<TABLE [(table-flags...)] values...>
+<TELL token-commands>
+<THROW value stack-frame>
+<USL>
+<VALUE name/number>
+<VERIFY>
+<VERSION? (name/number expressions...)...>
+<ZWSTR src-table length offset dest-table>
