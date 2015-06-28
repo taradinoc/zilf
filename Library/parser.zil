@@ -149,9 +149,11 @@ Args:
 
 <GLOBAL P-LEN 0>
 <GLOBAL P-V <>>
+<GLOBAL P-V-WORD <>>
 <GLOBAL P-NOBJ 0>
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
+<GLOBAL P-SYNTAX <>>
 
 
 <CONSTANT P-MAXOBJS 10>
@@ -244,6 +246,7 @@ Sets:
                <RFALSE>)
               (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
                ;"Found the verb"
+               <SETG P-V-WORD .W>
                <SETG P-V <WORD? .W VERB>>)
               (<AND <EQUAL? ,P-V <> ,ACT?WALK>
                     <SET VAL <WORD? .W DIRECTION>>>
@@ -510,6 +513,14 @@ Returns:
 <CONSTANT SYN-OPTS2 6>
 <CONSTANT SYN-ACTION 7>
 
+<CONSTANT SF-HAVE 2>
+<CONSTANT SF-MANY 4>
+<CONSTANT SF-TAKE 8>
+<CONSTANT SF-ON-GROUND 16>
+<CONSTANT SF-IN-ROOM 32>
+<CONSTANT SF-CARRIED 64>
+<CONSTANT SF-HELD 128>
+
 ;"Attempts to match a syntax line for the current verb.
 
 Uses:
@@ -520,10 +531,11 @@ Uses:
 
 Sets:
   PRSA
+  P-SYNTAX
 
 Returns:
   True if a syntax line was matched."
-<ROUTINE MATCH-SYNTAX ("AUX" PTR CNT)
+<ROUTINE MATCH-SYNTAX ("AUX" PTR CNT NOBJ PREP1 PREP2)
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
     <SET CNT <GETB .PTR 0>>
     <SET PTR <+ .PTR 1>>
@@ -533,16 +545,73 @@ Returns:
         ;<BIND ((TEST-PTR <GET .PTR ,SYN-NOBJ>) (TEST-P-NOBJ ,P-NOBJ))
             <TELL "<GETB .PTR ,SYN-NOBJ> is " N .TEST-PTR "and P-NOBJ is " N .TEST-P-NOBJ CR>>
         <COND (<DLESS? CNT 0>
-               <TELL "I don't understand that sentence." CR>
-               <RFALSE>)
-              (<AND <==? <GETB .PTR ,SYN-NOBJ> ,P-NOBJ>
+               ;"Out of syntax lines"
+               <RETURN>)>
+        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+        <COND (<AND <==? .NOBJ ,P-NOBJ>
                     <OR <L? ,P-NOBJ 1>
-                        <==? <GETB .PTR ,SYN-PREP1> ,P-P1>>
+                        <==? .PREP1 ,P-P1>>
                     <OR <L? ,P-NOBJ 2>
-                        <==? <GETB .PTR ,SYN-PREP2> ,P-P2>>>
+                        <==? .PREP2 ,P-P2>>>
+               ;"Complete match"
                <SETG PRSA <GETB .PTR ,SYN-ACTION>>
+               <SETG P-SYNTAX .PTR>
                <RTRUE>)>
-        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>>
+        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
+    ;"No complete match, look for something close"
+    <SET PTR <GUESS-SYNTAX>>
+    <COND (.PTR
+           <SETG PRSA <GETB .PTR ,SYN-ACTION>>
+           <SETG P-SYNTAX .PTR>
+           <RTRUE>)
+          (ELSE
+           <TELL "I don't understand that sentence." CR>
+           <RFALSE>)>>
+
+;"Find the best incompletely-matching syntax line, given that no line matches
+  exactly."
+<ROUTINE GUESS-SYNTAX ("AUX" PTR CNT BEST BEST-SCORE S NOBJ PREP1 PREP2)
+    <SET PTR <GET ,VERBS <- 255 ,P-V>>>
+    <SET CNT <GETB .PTR 0>>
+    <SET PTR <+ .PTR 1>>
+    <REPEAT ()
+        <COND (<DLESS? CNT 0>
+               ;"Out of syntax lines"
+               <RETURN>)>
+        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+        <PROG ()
+            ;"The syntax line has to have more objects than we've parsed"
+            <COND (<L=? .NOBJ ,P-NOBJ> <RETURN>)>
+            ;"See how much we can match..."
+            <SET S 1>
+            <COND (,P-P1
+                   <COND (<N==? .PREP1 ,P-P1>
+                          ;"Wrong preposition 1"
+                          <RETURN>)
+                         (ELSE <SET S <+ .S 1>>)>)
+                  (<AND <G=? ,P-NOBJ 1> .PREP1>
+                   ;"Missing preposition 1"
+                   <RETURN>)
+                  (<0? .PREP1> <SET S <+ .S 1>>)>
+            <COND (,P-P2
+                   <COND (<N==? .PREP2 ,P-P2>
+                          ;"Wrong preposition 2"
+                          <RETURN>)
+                         (ELSE <SET S <+ .S 1>>)>)
+                  (<AND <G=? ,P-NOBJ 2> .PREP2>
+                   ;"Missing preposition 2 - shouldn't get here?"
+                   <RETURN>)
+                  (<0? .PREP2> <SET S <+ .S 1>>)>
+            <COND (<G? .S .BEST-SCORE>
+                   <SET BEST-SCORE .S>
+                   <SET BEST .PTR>)>>
+        ;"Advance"
+        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
+    .BEST>
 
 <INSERT-FILE "scope">
 
@@ -583,11 +652,13 @@ Returns:
                      <FORM SETG .USE-VAR T>>
                <LIST ELSE <FORM SETG .USE-VAR <>>>>>
 
-;"Attempts to match PRSO and PRSO, if necessary, after parsing a command.
+;"Attempts to match PRSO and PRSI, if necessary, after parsing a command.
+  Prints a message if it fails.
 
 Uses:
   P-NOBJ
   P-DOBJS
+  P-SYNTAX
 
 Sets:
   PRSO
@@ -599,28 +670,107 @@ Sets:
 
 Returns:
   True if all required objects were found, or false if not."
-<ROUTINE FIND-OBJECTS ("AUX" X)
-    <COND (<G=? ,P-NOBJ 1>
-           <SET X <GET ,P-DOBJS 2>>
-           ;<TELL "Find objects PRSO test - X is " N .X CR>
-           <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ DOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ DOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ DOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
-           <COND (<NOT <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX>>>
-                  <RFALSE>)>)
-          (ELSE <SETG PRSO <>>)>
-    <COND (<G=? ,P-NOBJ 2>
-           <SET X <GET ,P-IOBJS 2>>
-           ;<TELL "Find objects PRSI test - X is " N .X CR>
-           <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ IOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ IOBJ>
-           <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
-           <COND (<NOT <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX>>>
-                  <RFALSE>)>)
-          (ELSE <SETG PRSI <>>)>
+<ROUTINE FIND-OBJECTS ("AUX" X F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+    <COND (<L? .SNOBJ 1>
+           <SETG PRSO <>>)
+          (ELSE
+           <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
+           <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
+           <COND (<L? ,P-NOBJ 1>
+                  <SETG PRSO
+                      <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
+                  <COND (<0? ,PRSO>
+                         <WHAT-DO-YOU-WANT>
+                         <RFALSE>)>)
+                 (ELSE
+                  <SET X <GET ,P-DOBJS 2>>
+                  ;<TELL "Find objects PRSO test - X is " N .X CR>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
+                  <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX
+                                           <ENCODE-NOUN-BITS .F .O>>>)>
+           <COND (<NOT ,PRSO> <RFALSE>)>)>
+    <COND (<L? .SNOBJ 2>
+           <SETG PRSI <>>)
+          (ELSE
+           <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>
+           <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
+           <COND (<L? ,P-NOBJ 2>
+                  <SETG PRSI
+                      <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP2>>>
+                  <COND (<0? ,PRSI>
+                         <WHAT-DO-YOU-WANT>
+                         <RFALSE>)>)
+                 (ELSE
+                  <SET X <GET ,P-IOBJS 2>>
+                  ;<TELL "Find objects PRSI test - X is " N .X CR>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
+                  <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX
+                                           <ENCODE-NOUN-BITS .F .O>>>)>
+           <COND (<NOT ,PRSI> <RFALSE>)>)>
     <RTRUE>>
+
+<ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2)
+    <SET SN <GETB ,P-SYNTAX ,SYN-NOBJ>>
+    <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
+    <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
+    ;"TODO: implement orphaning so we can handle the response to this question"
+    <TELL "What do you want to " B ,P-V-WORD>
+    <COND (.SP1
+           <TELL " " B <GET-PREP-WORD .SP1>>)>
+    <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
+           <TELL " " T ,PRSO>
+           <COND (.SP2
+                  <TELL " " B <GET-PREP-WORD .SP2>>)>)>
+    <TELL "?" CR>>
+
+;"Searches scope for a single object with the given flag set, and prints an
+inference message before returning it.
+
+The flag KLUDGEBIT is a special case that always finds ROOMS.
+
+Args:
+  BIT: The flag to search for.
+  OPTS: The search options to use. (Currently ignored.)
+  PREP: The preposition to use in the message.
+
+Returns:
+  The single object that matches, or false if zero or multiple objects match."
+<ROUTINE GWIM (BIT OPTS PREP "AUX" O PW)
+    ;"Special case"
+    <COND (<==? .BIT ,KLUDGEBIT>
+           <RETURN ,ROOMS>)>
+    ;"Look for exactly one matching object"
+    <MAP-SCOPE (I)
+        <COND (<FSET? .I .BIT>
+               <COND (.O <RFALSE>)
+                     (ELSE <SET O .I>)>)>>
+    ;"Print inference message"
+    <COND (.O
+           <TELL "[">
+           <COND (<SET PW <GET-PREP-WORD .PREP>>
+                  <TELL B .PW " ">)>
+           <TELL T .O "]" CR>
+           <RETURN .O>)
+          (ELSE <RFALSE>)>>
+
+<ROUTINE GET-PREP-WORD GPW (PREP "AUX" MAX)
+    <SET MAX <- <* <GET ,PREPOSITIONS 0> 2> 1>>
+    <DO (I 1 .MAX 2)
+        <COND (<==? <GET ,PREPOSITIONS <+ .I 1>> .PREP>
+               <RETURN <GET ,PREPOSITIONS .I> .GPW>)>>
+    <RFALSE>>
+
+<DEFMAC ENCODE-NOUN-BITS ('F 'O)
+    <FORM BOR .F <FORM * .O 256>>>
+
+<DEFMAC DECODE-FINDBIT ('E)
+    <FORM BAND <FORM / .E 256> 255>>
 
 ;"Searches scope for a usable light source.
 
@@ -657,10 +807,12 @@ describe it.
 Args:
   YTBL: A table of adjective/noun pairs that the object must have ('yes').
   NTBL: A table of adjective/noun pairs that the object must not have ('no').
+  BITS: A word with the scope flags in the lower byte and the number of the
+    FIND flag in the upper byte.
 
 Returns:
   The located object, or false if no matching object was found. "
-<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL "AUX" A N)
+<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL BITS "AUX" A N)
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
     <MAP-SCOPE (I)
@@ -1318,7 +1470,7 @@ or reveal a light source."
     (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT
            LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
            OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
-           PLURALBIT)>
+           PLURALBIT KLUDGEBIT)>
 
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
