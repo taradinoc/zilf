@@ -164,25 +164,25 @@ Returns:
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
-         ;"TODO: description should obey (SUPER)BRIEF?"
-         <TELL "Darkness" CR "It is pitch black. You are likely to be eaten by a grue." CR>
+         <TELL "It is pitch black. You are likely to be eaten by a grue." CR>
          <RFALSE>)
         (ELSE
          ;"print the room's real name"
          <TELL D .RM CR>
-         ;"TODO: LOOK should still print description in SUPERBRIEF mode"
-         <COND (<EQUAL? ,MODE ,SUPERBRIEF>
-                <RFALSE>)
-               (<AND <NOT .LONG>
-                     <FSET? .RM ,TOUCHBIT>
-                     <NOT <EQUAL? ,MODE ,VERBOSE>>>
-                <RTRUE>)>
+         ;"If this is an implicit LOOK, check briefness."
+         <COND (<NOT .LONG>
+                <COND (<EQUAL? ,MODE ,SUPERBRIEF>
+                       <RFALSE>)
+                      (<AND <FSET? .RM ,TOUCHBIT>
+                            <NOT <EQUAL? ,MODE ,VERBOSE>>>
+                       <RTRUE>)>)>
          <FSET .RM ,TOUCHBIT>
          ;"either print the room's LDESC or call its ACTION with M-LOOK"
          <COND (<SET P <GETP .RM ,P?LDESC>>
                 <TELL .P CR>)
                (ELSE
-                <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>)>>
+                <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>
+         <RTRUE>)>>
 
 ;"Describes the objects in a room.
 

@@ -22,3 +22,4 @@ Library/tests/*.exe
 Library/tests/*.z?
 Library/tests/*.zap
 *~
+Library/tests/*.dbg
