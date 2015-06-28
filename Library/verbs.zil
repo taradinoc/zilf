@@ -548,51 +548,120 @@ Returns:
            <TELL "It is too dark to see what you're carrying." CR>)>>
 
 <ROUTINE V-TAKE ("AUX" HOLDER S X)
-    ;"TODO: stop the player taking NPCs' possessions?"
     <COND (<FSET? ,PRSO ,PERSONBIT>
-           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
+           <TELL "I don't think " T ,PRSO " would appreciate that." CR>
+           <RTRUE>)
           (<NOT <FSET? ,PRSO ,TAKEBIT>>
            <PRINTR "That's not something you can pick up.">)
           (<IN? ,PRSO ,WINNER>
-           <PRINTR "You already have that.">)
-          (<FSET? ,PRSO ,WEARBIT>
+           <PRINTR "You already have that.">)>
+    ;"See if picked up object is being taken from a container"
+    <COND (<SET HOLDER <TAKE-HOLDER ,PRSO ,WINNER>>
+           <COND (<FSET? .HOLDER ,PERSONBIT>
+                  <TELL "That seems to belong to " T .HOLDER "." CR>
+                  <RTRUE>)
+                 (<BLOCKS-TAKE? .HOLDER>
+                  <TELL CT .HOLDER " is in the way." CR>
+                  <RTRUE>)
+                 (<AND <FSET? .HOLDER ,CONTBIT>
+                       <HELD? ,PRSO .HOLDER>
+                       <NOT <HELD? ,WINNER .HOLDER>>>
+                  <TELL "You reach ">
+                  <COND (<HELD? ,WINNER .HOLDER>
+                         <TELL "out of ">)
+                        (ELSE <TELL "in ">)>
+                  <TELL T .HOLDER " and ">
+                  <COND (<FSET? ,PRSO ,WEARBIT>
+                         <TELL "wear ">
+                         <FSET ,PRSO ,WORNBIT>)
+                        (ELSE <TELL "take ">)>
+                  <TELL T ,PRSO "." CR>
+                  <FSET ,PRSO ,TOUCHBIT>
+                  <MOVE ,PRSO ,WINNER>
+                  <RTRUE>)>)>
+    <COND (<FSET? ,PRSO ,WEARBIT>
            <TELL "You wear " T ,PRSO "." CR>
            <FSET ,PRSO ,WORNBIT>
            <MOVE ,PRSO ,WINNER>
            <FSET ,PRSO ,TOUCHBIT>)
-          ;"See if picked up object is being taken from a container"
-          (<SET HOLDER <TAKE-CONT-SEARCH ,HERE>>
-           ;<TELL "HOLDER is currently " D .HOLDER CR>
-           <COND (<FSET? .HOLDER ,SURFACEBIT>
-                  <TELL "You pick up " T ,PRSO "." CR>
-                  <FSET ,PRSO ,TOUCHBIT>
-                  <MOVE ,PRSO ,WINNER>)
-                 (<FSET? .HOLDER ,OPENBIT>
-                  <TELL "You reach in " T .HOLDER " and take " T ,PRSO "." CR>
-                  <FSET ,PRSO ,TOUCHBIT>
-                  <MOVE ,PRSO ,WINNER>)
-                 (ELSE
-                  <TELL "The enclosing " D .HOLDER " prevents you from taking " T ,PRSO "." CR>)>)
           (ELSE
            <TELL "You pick up " T ,PRSO "." CR>
            <FSET ,PRSO ,TOUCHBIT>
            <MOVE ,PRSO ,WINNER>)>>
 
-;"Checks whether an object is in a container?
-TODO: Eliminate TAKE-CONT-SEARCH."
-<ROUTINE TAKE-CONT-SEARCH TCS (A "AUX" H)
-    <MAP-CONTENTS (I .A)
-        ;<TELL "Looping to check containers.  I is currently " D .I CR>
-        <COND (<OR <FSET? .I ,CONTBIT>
-                   <==? .I ,WINNER>>
-               ;<TELL "Found container " D .I CR>
-               <COND (<IN? ,PRSO .I>
-                      ;<TELL "PRSO is in I, setting HOLDER" CR>
-                      <RETURN .I .TCS>)
-                     (ELSE
-                      <SET H <TAKE-CONT-SEARCH .I>>
-                      <AND .H <RETURN .H .TCS>>)>)>>
-    <RFALSE>>
+;"Locates the container, person, or room that restricts the ability to take a
+given object.
+
+If at least one thing between the taker and the object is a closed container
+or a person, the closest one to the taker will be returned. Otherwise, the
+innermost non-surface container or room that encloses the object will be
+returned.
+
+Args:
+  OBJ: The object being taken.
+  TAKER: The object doing the taking.
+
+Returns:
+  The closed container or person blocking the take, or the open container
+  or room allowing the take, or ROOMS if the objects have no common parent."
+<ROUTINE TAKE-HOLDER (OBJ TAKER "AUX" CEIL BLOCKER ALLOWER HAD-ALLOWER?)
+    <SET CEIL <COMMON-PARENT? .OBJ .TAKER>>
+    <COND (<0? .CEIL> <RETURN ,ROOMS>)>
+    ;"Walk up the tree from OBJ to CEIL"
+    <DO (L <LOC .OBJ> <0? .L> <SET L <LOC .L>>)
+        <COND (<==? .L .CEIL>
+               <RETURN>)
+              (<BLOCKS-TAKE? .L>
+               ;"Keep the furthest blocker from OBJ"
+               <SET BLOCKER .L>)
+              (<OR <AND <FSET? .L ,CONTBIT>
+                        <NOT <FSET? .L ,SURFACEBIT>>>
+                   <IN? .L ,ROOMS>>
+               ;"Keep the closest allower to OBJ"
+               <OR .ALLOWER <SET ALLOWER .L>>)>>
+    ;"Walk up the tree from TAKER to CEIL, setting variables in reverse"
+    <SET HAD-ALLOWER? .ALLOWER>
+    <DO (L <LOC .TAKER> <0? .L> <SET L <LOC .L>>)
+        <COND (<==? .L .CEIL>
+               <RETURN>)
+              (<BLOCKS-TAKE? .L>
+               ;"Keep the closest blocker to TAKER"
+               <OR .BLOCKER <SET BLOCKER .L>>)
+              (<OR <AND <FSET? .L ,CONTBIT>
+                        <NOT <FSET? .L ,SURFACEBIT>>>
+                   <IN? .L ,ROOMS>>
+               ;"Keep the furthest blocker from TAKER unless we already found
+                 one on the first walk."
+               <OR .HAD-ALLOWER? <SET ALLOWER .L>>)>>
+    <OR .BLOCKER .ALLOWER>>
+
+<ROUTINE BLOCKS-TAKE? (OBJ)
+    <T? <OR <FSET? .OBJ ,PERSONBIT>
+            <AND <FSET? .OBJ ,CONTBIT>
+                 <FSET? .OBJ ,OPENABLEBIT>
+                 <NOT <FSET? .OBJ ,OPENBIT>>>>>>
+
+<DEFMAC COMMON-PARENT? ('A 'B)
+    <FORM COMMON-PARENT-R .A .B ',HERE>>
+
+<ROUTINE COMMON-PARENT-R CPR (A B ROOT "AUX" N F R)
+    <OR .ROOT <RFALSE>>
+    ;"If ROOT is equal to A or B, it's the common parent"
+    <COND (<EQUAL? .ROOT .A .B> <RETURN .ROOT>)>
+    ;"If ROOT directly contains either A or B, it's the common parent"
+    <COND (<OR <IN? .A .ROOT> <IN? .B .ROOT>> <RETURN .ROOT>)>
+    ;"Look for common parent in each subtree, keeping any matching
+      tree and counting the number found."
+    <MAP-CONTENTS (I .ROOT)
+        <COND (<SET R <COMMON-PARENT-R .A .B .I>>
+               <SET F .R>
+               <SET N <+ .N 1>>
+               ;"If we found matching parents in two children,
+                ROOT is the common parent."
+               <COND (<G? .N 2> <RETURN .ROOT .CPR>)>)>>
+    ;"One child contained both objects, so the common parent is whatever
+      COMMON-PARENT-R returned for it."
+    .F>
 
 <ROUTINE V-DROP ()
     <COND
