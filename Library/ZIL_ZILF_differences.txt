@@ -8,11 +8,11 @@ yet implemented in the ZILF library.
 
 The code that comprises the library is part of parser.zil.
 
--- New OPENABLE bit.  If an object with CONTBIT also has OPENABLE, then it 
+-- New OPENABLEBIT bit.  If an object with CONTBIT also has OPENABLEBIT, then it 
 can be opened and closed by the player. An object with CONTBIT and OPENBIT but no 
-OPENABLE flag will be considered always open.  An object with just CONTBIT
+OPENABLEBIT flag will be considered always open.  An object with just CONTBIT
 assigned to it is considered a sealed-off container (the author can make certain 
-game events add OPENBIT and/or OPENABLE to such a container to make it an 
+game events add OPENBIT and/or OPENABLEBIT to such a container to make it an 
 accessible container).
 
 -- If an object has a TEXT property, that TEXT will show, along with any LDESC, 
@@ -88,8 +88,6 @@ ADJACENT
 
 Bits
 TRYTAKEBIT
-DOORBIT
-LOCKEDBIT
 FLAMEBIT
 BURNBIT
 SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
@@ -110,7 +108,6 @@ Routines
 THIS-IS-IT
 UNTOUCHABLE?
 WITHIN?
-OTHER-SIDE
 TOUCHING?
 CANT-SEE
 CAPITAL-NOUN?

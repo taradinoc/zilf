@@ -11,16 +11,22 @@
 <SYNONYM NORTHWEST NW>
 <SYNONYM SOUTHEAST SE>
 <SYNONYM SOUTHWEST SW>
-<SYNONYM IN ENTER>
-<SYNONYM OUT EXIT>
+<SYNONYM IN INTO INSIDE>
+<SYNONYM OUT OUTSIDE>
 <SYNONYM UP U>
 <SYNONYM DOWN D>
+
+<SYNONYM THROUGH THRU>
 
 <SYNTAX LOOK = V-LOOK>
 <VERB-SYNONYM LOOK L>
 
 <SYNTAX WALK OBJECT = V-WALK>
+<SYNTAX WALK IN OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX WALK THROUGH OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
 <VERB-SYNONYM WALK GO>
+
+<SYNTAX ENTER OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
 
 <SYNTAX QUIT = V-QUIT>
 
@@ -439,8 +445,7 @@ the child objects, and no trailing punctuation is printed. For example:
           (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
            <SET RM <GET/B .PT ,EXIT-RM>>)
           (<==? .PTS ,NEXIT>
-           <PRINT <GET .PT ,NEXIT-MSG>>
-           <CRLF>
+           <TELL <GET .PT ,NEXIT-MSG> CR>
            <RTRUE>)
           (<==? .PTS ,FEXIT>
            <OR <SET RM <APPLY <GET .PT ,FEXIT-RTN>>>
@@ -449,18 +454,51 @@ the child objects, and no trailing punctuation is printed. For example:
            <COND (<VALUE <GETB .PT ,CEXIT-VAR>>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
                  (<SET RM <GET .PT ,CEXIT-MSG>>
-                  <PRINT .RM>
-                  <CRLF>
+                  <TELL .RM CR>
                   <RTRUE>)
                  (ELSE
                   <PRINTR "You can't go that way.">)>)
           (<==? .PTS ,DEXIT>
-           ;"TODO: implement DEXIT"
-           <PRINTR "Not implemented.">)
+           <COND (<FSET? <GET/B .PT ,DEXIT-OBJ> ,OPENBIT>
+                  <SET RM <GET/B .PT ,EXIT-RM>>)
+                 (<SET RM <GET .PT ,DEXIT-MSG>>
+                  <TELL .RM CR>
+                  <RTRUE>)
+                 (ELSE
+                  <TELL "You'll have to open " T <GET/B .PT ,DEXIT-OBJ>
+                        " first." CR>
+                  <RTRUE>)>)
           (ELSE
            <TELL "Broken exit (" N .PTS ")." CR>
            <RTRUE>)>
     <GOTO .RM>>
+
+<ROUTINE V-ENTER ()
+    <COND (<FSET? ,PRSO ,DOORBIT>
+           <PERFORM ,V?WALK <DOOR-DIR ,PRSO>>
+           <RTRUE>)
+          (ELSE
+           <TELL "That's not something you can get inside." CR>)>>
+
+;"Finds a direction from HERE that leads through the given door.
+
+Returns:
+  A direction property, or false if no direction leads through the door."
+<ROUTINE DOOR-DIR DD (DOOR)
+    <MAP-DIRECTIONS (D PT ,HERE)
+        <COND (<AND <==? <PTSIZE .PT> ,DEXIT>
+                    <==? <GET/B .PT ,DEXIT-OBJ> .DOOR>>
+               <RETURN .D .DD>)>>
+    <RFALSE>>
+
+;"Finds the room on the other side of a given door from HERE.
+
+Returns:
+  A room, or false if no direction leads through the door."
+<ROUTINE OTHER-SIDE (DOOR "AUX" D)
+    <COND (<SET D <DOOR-DIR .DOOR>>
+           <GET/B <GETPT ,HERE .D> ,EXIT-RM>)
+          (ELSE <>)>>
 
 <ROUTINE V-QUIT ()
     <TELL "Are you sure you want to quit?">
