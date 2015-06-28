@@ -73,7 +73,8 @@ apple: You pick up the apple.|">
     <CHECK <NOT <IN? ,WINNER ,WINNER>>>>
 
 <TEST-CASE ("Take with no noun and one candidate")
-    <REMOVE ,APPLE>
+    <REMOVE ,BANANA>
+    <REMOVE ,HAT>
     <COMMAND [TAKE]>
     <EXPECT "[the apple]|You pick up the apple.|">
     <CHECK <IN? ,APPLE ,WINNER>>>
@@ -85,6 +86,7 @@ apple: You pick up the apple.|">
 <TEST-CASE ("Take with no noun and no candidates")
     <REMOVE ,APPLE>
     <REMOVE ,BANANA>
+    <REMOVE ,HAT>
     <COMMAND [TAKE]>
     <EXPECT "What do you want to take?|">>
 
