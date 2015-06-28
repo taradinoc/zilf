@@ -34,7 +34,7 @@ namespace Zilf
 {
     class Program
     {
-        public const string VERSION = "ZILF 0.5";
+        public const string VERSION = "ZILF 0.6";
 
         internal static int Main(string[] args)
         {
