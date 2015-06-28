@@ -20,6 +20,12 @@
     (SYNONYM BANANA)
     (FLAGS TAKEBIT EDIBLEBIT)>
 
+<OBJECT HAT
+    (IN STARTROOM)
+    (DESC "hat")
+    (SYNONYM HAT)
+    (FLAGS TAKEBIT WEARBIT)>
+
 <OBJECT CAGE
     (IN STARTROOM)
     (DESC "cage")
@@ -44,6 +50,8 @@
     <MOVE ,WINNER ,STARTROOM>
     <MOVE ,APPLE ,STARTROOM>
     <MOVE ,BANANA ,STARTROOM>
+    <MOVE ,HAT ,STARTROOM>
+    <FCLEAR ,HAT ,WORNBIT>
     <MOVE ,CAGE ,STARTROOM>
     <MOVE ,DESK ,STARTROOM>
     <MOVE ,BUCKET ,STARTROOM>>
@@ -53,10 +61,12 @@
     <EXPECT "bucket: That's not something you can pick up.|
 desk: That's not something you can pick up.|
 cage: That's not something you can pick up.|
+hat: You wear the hat.|
 banana: You pick up the banana.|
 apple: You pick up the apple.|">
     <CHECK <IN? ,APPLE ,WINNER>>
     <CHECK <IN? ,BANANA ,WINNER>>
+    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
     <CHECK <NOT <IN? ,CAGE ,WINNER>>>
     <CHECK <NOT <IN? ,DESK ,WINNER>>>
     <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
@@ -109,7 +119,19 @@ apple: You pick up the apple.|">
 <TEST-CASE ("Take object from closed container")
     <MOVE ,APPLE ,CAGE>
     <COMMAND [TAKE APPLE]>
-    <EXPECT "The enclosing cage prevents you from taking the apple.|">
+    <EXPECT "The cage is in the way.|">
     <CHECK <IN? ,APPLE ,CAGE>>>
+
+<TEST-CASE ("Take object from nested container with indirect block")
+    <MOVE ,APPLE ,BUCKET>
+    <MOVE ,BUCKET ,CAGE>
+    <MOVE ,CAGE ,DESK>
+    <COMMAND [TAKE APPLE]>
+    <EXPECT "The cage is in the way.|">
+    <CHECK <NOT <IN? ,APPLE ,WINNER>>>
+    <MOVE ,HAT ,BUCKET>
+    <COMMAND [TAKE HAT]>
+    <EXPECT "The cage is in the way.|">
+    <CHECK <NOT <IN? ,HAT ,WINNER>>>>
 
 <TEST-GO ,STARTROOM>
