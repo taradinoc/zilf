@@ -1470,7 +1470,7 @@ or reveal a light source."
     (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT
            LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
            OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
-           PLURALBIT KLUDGEBIT)>
+           PLURALBIT KLUDGEBIT DOORBIT)>
 
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
