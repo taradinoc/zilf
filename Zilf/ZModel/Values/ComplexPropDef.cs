@@ -564,6 +564,8 @@ namespace Zilf.ZModel.Values
             Contract.Requires(prop != null);
             Contract.Requires(tb != null);
 
+            var propName = (ZilAtom)prop.First;
+
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
             foreach (var p in patterns)
@@ -575,7 +577,7 @@ namespace Zilf.ZModel.Values
                 if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
                 {
                     // build output
-                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, prop.SourceLine);
+                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, propName, prop.SourceLine);
                     return;
                 }
             }
@@ -738,7 +740,7 @@ namespace Zilf.ZModel.Values
 
         private bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
             Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex,
-            ISourceLine src)
+            ZilAtom propName, ISourceLine src)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(tb != null);
@@ -774,16 +776,33 @@ namespace Zilf.ZModel.Values
                     capturedValue = null;
                 }
 
+                IOperand capturedConstantValue;
+                if (capturedValue != null)
+                {
+                    capturedConstantValue = converters.CompileConstant(capturedValue);
+                    if (capturedConstantValue == null)
+                    {
+                        Errors.CompError(ctx, src, "non-constant value for property {0}: {1}", propName, capturedValue);
+                        capturedConstantValue = converters.CompileConstant(ctx.FALSE);
+                        Contract.Assume(capturedConstantValue != null);
+                    }
+                }
+                else
+                {
+                    capturedConstantValue = null;
+                }
+
                 switch (output.Type)
                 {
                     case OutputElementType.Length:
+                        // TODO: verify length
                         length = output.Fix;
                         break;
 
                     case OutputElementType.Byte:
                         if (capturedValue != null)
                         {
-                            tb.AddByte(converters.CompileConstant(capturedValue));
+                            tb.AddByte(capturedConstantValue);
                         }
                         else
                         {
@@ -794,7 +813,7 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Word:
                         if (capturedValue != null)
                         {
-                            tb.AddShort(converters.CompileConstant(capturedValue));
+                            tb.AddShort(capturedConstantValue);
                         }
                         else
                         {
@@ -806,16 +825,16 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Object:
                         if (OutputElementSize(output, ctx) == 1)
                         {
-                            tb.AddByte(converters.CompileConstant(capturedValue));
+                            tb.AddByte(capturedConstantValue);
                         }
                         else
                         {
-                            tb.AddShort(converters.CompileConstant(capturedValue));
+                            tb.AddShort(capturedConstantValue);
                         }
                         break;
 
                     case OutputElementType.String:
-                        tb.AddShort(converters.CompileConstant(capturedValue));
+                        tb.AddShort(capturedConstantValue);
                         break;
 
                     case OutputElementType.Global:
@@ -842,7 +861,7 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case OutputElementType.Many:
-                        while (WritePartialOutput(ctx, tb, converters, captures, outputs, i + 1, src))
+                        while (WritePartialOutput(ctx, tb, converters, captures, outputs, i + 1, propName, src))
                         {
                             // repeat
                         }

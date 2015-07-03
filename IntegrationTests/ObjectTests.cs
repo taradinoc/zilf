@@ -443,5 +443,14 @@ namespace IntegrationTests
                 "<OBJECT BAR (BAZ 4 5 FOO)>")
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void Nonexistent_Object_In_Direction_Property_Should_Be_Rejected()
+        {
+            AssertGlobals(
+                "<DIRECTIONS NORTH>",
+                "<OBJECT FOO (NORTH TO BAR)>")
+                .DoesNotCompile();
+        }
     }
 }
