@@ -2210,7 +2210,7 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     <TELL "The way north "
           <COND (<FSET? ,RUSTY-DOOR ,OPENBIT> "leads through")
                 (ELSE "is barred by")>
-          "a massive, rusty, iron door.">>
+          " a massive, rusty, iron door.">>
 
 <CONSTANT HINGES-ARE-RUSTED
     "The hinges are quite thoroughly rusted now and won't budge.">
