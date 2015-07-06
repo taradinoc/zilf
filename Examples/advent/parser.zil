@@ -701,8 +701,9 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
                   <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
-           ;"TODO: HAVE check, implicit take"
-           <COND (<NOT ,PRSO> <RFALSE>)>)>
+           <COND (<OR <NOT ,PRSO>
+                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK ,PRSO .O>>>>
+                  <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
           (ELSE
@@ -723,8 +724,8 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
                   <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
-           ;"TODO: HAVE check, implicit take"
-           <COND (<NOT ,PRSI> <RFALSE>)>)>
+           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK ,PRSI .O>>>
+                  <RFALSE>)>)>
     <RTRUE>>
 
 <ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2)
@@ -741,6 +742,35 @@ Returns:
            <COND (.SP2
                   <TELL " " B <GET-PREP-WORD .SP2>>)>)>
     <TELL "?" CR>>
+
+;"Applies the rules for the HAVE and TAKE syntax flags to a parsed object,
+printing a failure message if appropriate.
+
+Args:
+  OBJ: An object matched as one of the nouns in a command.
+  OPTS: The corresponding search options, including the HAVE and TAKE flags.
+
+Returns:
+  True if the checks passed, i.e. either the object doesn't have to be held
+  by the WINNER, or it is held, possibly as the result of an implicit TAKE.
+  False if the object has to be held, the WINNER is not holding it, and
+  it couldn't be taken implicitly."
+<ROUTINE HAVE-TAKE-CHECK (OBJ OPTS)
+    ;"Attempt implicit take if WINNER isn't directly holding the object"
+    <COND (<BTST .OPTS ,SF-TAKE>
+           ;"TODO: Don't implicit take out of a closed container? Or should
+             the container handle this by setting TRYTAKEBIT on its contents?"
+           ;"TODO: Enforce inventory limit; split relevant logic out of V-TAKE."
+           <COND (<AND <NOT <IN? .OBJ ,WINNER>>
+                       <FSET? .OBJ ,TAKEBIT>
+                       <NOT <FSET? .OBJ ,TRYTAKEBIT>>>
+                  <TELL "[taking " T .OBJ "]" CR>
+                  <MOVE .OBJ ,WINNER>)>)>
+    ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
+    <COND (<AND <BTST .OPTS ,SF-HAVE> <NOT <HELD? .OBJ>>>
+           <TELL "You aren't holding " T .OBJ "." CR>
+           <RFALSE>)>
+    <RTRUE>>
 
 ;"Searches scope for a single object with the given flag set, and prints an
 inference message before returning it.

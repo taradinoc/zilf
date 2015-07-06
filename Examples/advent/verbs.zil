@@ -54,11 +54,11 @@
 <VERB-SYNONYM UNWEAR DOFF>
 <SYNTAX TAKE OFF OBJECT (FIND WORNBIT) (HAVE HELD CARRIED) = V-UNWEAR>
 
-<SYNTAX PUT OBJECT (HAVE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON>
-<SYNTAX PUT UP OBJECT (HAVE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
+<SYNTAX PUT UP OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
 <VERB-SYNONYM PUT HANG PLACE>
 
-<SYNTAX PUT OBJECT (HAVE HELD CARRIED) IN OBJECT (FIND CONTBIT) = V-PUT-IN>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
 <VERB-SYNONYM PUT PLACE INSERT>
 
 <SYNTAX INVENTORY = V-INVENTORY>
@@ -115,7 +115,7 @@
 <VERB-SYNONYM ATTACK HIT SMASH BREAK KILL DESTROY>
 
 <SYNTAX GIVE OBJECT (HAVE HELD CARRIED) TO OBJECT (FIND PERSONBIT) = V-GIVE>
-<SYNTAX GIVE OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) = V-RGIVE>
+<SYNTAX GIVE OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) = V-SGIVE>
 
 <SYNTAX WAVE = V-WAVE-HANDS>
 <SYNTAX WAVE OBJECT (TAKE HAVE HELD CARRIED) = V-WAVE>
@@ -186,7 +186,7 @@
 <ROUTINE YOU-MASHER ("OPT" WHOM)
     <TELL "I don't think " T <OR .WHOM ,PRSO> " would appreciate that." CR>>
 
-<ROUTINE NO-EFFECT (VING "OPT" PREP REV? "AUX" F S)
+<ROUTINE POINTLESS (VING "OPT" PREP REV? "AUX" F S)
     <COND (.REV? <SET F ,PRSI> <SET S ,PRSO>)
           (ELSE <SET F ,PRSO> <SET S ,PRSI>)>
     <TELL .VING>
@@ -807,9 +807,13 @@ Returns:
          <FCLEAR ,PRSO ,WORNBIT>
          <TELL "You drop " T ,PRSO "." CR>)>>
 
-<ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
+<ROUTINE PRE-PUT-ON ()
     <COND (<PRSI? ,WINNER> <PERFORM ,V?WEAR ,PRSO> <RTRUE>)
-          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
+          (<PRSO? ,WINNER> <PERFORM ,V?ENTER ,PRSI> <RTRUE>)
+          (<NOT <HAVE-TAKE-CHECK ,PRSO ,SF-HAVE>> <RTRUE>)>>
+
+<ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
+    <COND (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
           (<NOT <AND <FSET? ,PRSI ,CONTBIT>
                      <FSET? ,PRSI ,SURFACEBIT>>>
            <NOT-POSSIBLE "put things on">
@@ -852,10 +856,14 @@ Returns:
            <FCLEAR ,PRSO ,WORNBIT>
            <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>>
 
+<ROUTINE PRE-PUT-IN ()
+    <COND (<PRSI? ,WINNER> <TSD> <RTRUE>)
+          (<PRSO? ,WINNER> <PERFORM ,V?ENTER ,PRSI> <RTRUE>)
+          (<NOT <HAVE-TAKE-CHECK ,PRSO ,SF-HAVE>> <RTRUE>)>>
+
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
     ;<TELL "In the PUT-IN routine" CR>
-    <COND (<PRSI? ,WINNER> <TSD> <RTRUE>)
-          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
+    <COND (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
           (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
                <FSET? ,PRSI ,SURFACEBIT>>
            <NOT-POSSIBLE "put things in">
@@ -1050,7 +1058,8 @@ Returns:
     <SETG AGAINCALL <>>>
 
 <ROUTINE V-READ ("AUX" T)
-    <COND (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)
+    <COND (<NOT ,HERE-LIT> <TELL "It's too dark." CR>)
+          (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)
           (<SET T <GETP ,PRSO ,P?TEXT>>
            <TELL .T CR>)
           (<SET T <GETP ,PRSO ,P?TEXT-HELD>>
@@ -1063,7 +1072,8 @@ Returns:
 
 <ROUTINE V-TURN-ON ()
     ;<TELL "CURRENTLY IN TURN-ON" CR>
-    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>> <NOT-POSSIBLE "switch on and off"> <RTRUE>)
+    <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
+          (<NOT <FSET? ,PRSO ,DEVICEBIT>> <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<FSET? ,PRSO ,ONBIT>
            <TELL "It's already on." CR>)
           (ELSE
@@ -1072,7 +1082,9 @@ Returns:
 
 <ROUTINE V-TURN-OFF ()
     ;<TELL "CURRENTLY IN TURN-OFF" CR>
-    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
+    <COND (<PRSO? ,WINNER>
+           <TELL <PICK-ONE-R <PLTABLE "Baseball." "Cold showers.">> CR>)
+          (<NOT <FSET? ,PRSO ,DEVICEBIT>>
            <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<NOT <FSET? ,PRSO ,ONBIT>>
            <TELL "It's already off." CR>)
@@ -1082,7 +1094,9 @@ Returns:
 
 <ROUTINE V-FLIP ()
     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-           <NOT-POSSIBLE "switch on and off">)
+           <COND (<FSET? ,PRSO ,SURFACEBIT>
+                  <POINTLESS "Taking your frustration out on">)
+                 (ELSE <NOT-POSSIBLE "switch on and off">)>)
           (<FSET? ,PRSO ,ONBIT>
            <PERFORM ,V?TURN-OFF ,PRSO>)
           (ELSE
@@ -1092,13 +1106,13 @@ Returns:
 <ROUTINE V-PUSH ()
     <COND (<PRSO? ,WINNER> <TELL "No, you seem close to the edge." CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <NO-EFFECT "Pushing">)>
+          (ELSE <POINTLESS "Pushing">)>
     <RTRUE>>
 
 <ROUTINE V-PULL ()
     <COND (<PRSO? ,WINNER> <TELL "That would demean both of us." CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <NO-EFFECT "Pulling">)>
+          (ELSE <POINTLESS "Pulling">)>
     <RTRUE>>
 
 <ROUTINE V-YES ()
@@ -1128,13 +1142,13 @@ Returns:
 <ROUTINE V-ATTACK ()
     <COND (<PRSO? ,WINNER> <TELL "Let's hope it doesn't come to that." CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <NO-EFFECT "Taking your frustration out on">)>
+          (ELSE <POINTLESS "Taking your frustration out on">)>
     <RTRUE>>
 
 <ROUTINE V-THROW-AT ()
     <COND (<PRSO? ,WINNER> <TELL "Get" <IF-PLURAL ,PRSO " them" " it"> " yourself." CR>)
           (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
-          (ELSE <NO-EFFECT "Taking your frustration out on" <> T>)>
+          (ELSE <POINTLESS "Taking your frustration out on" <> T>)>
     <RTRUE>>
 
 <ROUTINE V-GIVE ()
@@ -1145,11 +1159,12 @@ Returns:
           (ELSE <TELL CT ,PRSI <IF-PLURAL ,PRSI " don't" " doesn't">
                       " take " T ,PRSO "." CR>)>>
 
-<ROUTINE V-RGIVE ()
-    <PERFORM ,V?GIVE ,PRSI ,PRSO>>
+<ROUTINE V-SGIVE ()
+    <PERFORM ,V?GIVE ,PRSI ,PRSO>
+    <RTRUE>>
 
 <ROUTINE V-WAVE-HANDS ()
-    <NO-EFFECT "Waving your hands">
+    <POINTLESS "Waving your hands">
     <RTRUE>>
 
 <ROUTINE V-WAVE ()
@@ -1165,7 +1180,7 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-JUMP ()
-    <NO-EFFECT "Jumping in place">
+    <POINTLESS "Jumping in place">
     <RTRUE>>
 
 <ROUTINE V-WAKE ()
@@ -1176,12 +1191,12 @@ Returns:
 <ROUTINE V-RUB ()
     <COND (<PRSO? ,WINNER> <TSD>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <NO-EFFECT "Rubbing">)>>
+          (ELSE <POINTLESS "Rubbing">)>>
 
 <ROUTINE V-BURN ()
     <COND (<PRSO? ,WINNER> <TELL "What is this, the Friars Club?" CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <NO-EFFECT "Recklessly incinerating">)>>
+          (ELSE <POINTLESS "Recklessly incinerating">)>>
 
 ;"Action handlers for game verbs"
 
