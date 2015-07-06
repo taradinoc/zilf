@@ -5,6 +5,7 @@
 
 <VERSION ZIP>
 <CONSTANT RELEASEID 1>
+<CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
