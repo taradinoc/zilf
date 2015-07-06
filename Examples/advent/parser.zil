@@ -1523,6 +1523,4 @@ or reveal a light source."
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
           (<VERB? EXAMINE>
-           <PRINTR "You look like you're up for an adventure.">)
-          (<VERB? TAKE>
-           <PRINTR "That couldn't possibly work.">)>>
+           <PRINTR "You look like you're up for an adventure.">)>>
