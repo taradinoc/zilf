@@ -264,47 +264,66 @@ Args:
                       <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
                       
 
-;"Prints the indefinite article for an object, followed by a space, or
-nothing if it has NARTICLEBIT."
-<ROUTINE INDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
-          (ELSE <TELL "a ">)>>
 
-;"Prints the definite article for an object, followed by a space, or
-nothing if it has NARTICLEBIT."
-<ROUTINE DEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (ELSE <TELL "the ">)>>
+;"Prints a (short) string with the first letter capitalized."
+<ROUTINE PRINT-CAP-STR (S "AUX" MAX C)
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINT .S>
+    <DIROUT -3>
+    <SET MAX <GET ,TEMPTABLE 0>>
+    <COND (.MAX
+           <INC MAX>
+           <DO (I 2 .MAX)
+               <SET C <GETB ,TEMPTABLE .I>>
+               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
+                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <PRINTC .C>>)>>
 
-;"Prints the capitalized indefinite article for an object, followed by a space,
-or nothing if it has NARTICLEBIT."
-<ROUTINE CINDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
-          (ELSE <TELL "A ">)>>
-
-;"Prints the capitalized definite article for an object, followed by a space,
-or nothing if it has NARTICLEBIT."
-<ROUTINE CDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (ELSE <TELL "The ">)>>
+;"Prints an object name with the first letter capitalized."
+<ROUTINE PRINT-CAP-OBJ (OBJ "AUX" MAX C)
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINTD .OBJ>
+    <DIROUT -3>
+    <SET MAX <GET ,TEMPTABLE 0>>
+    <COND (.MAX
+           <INC MAX>
+           <DO (I 2 .MAX)
+               <SET C <GETB ,TEMPTABLE .I>>
+               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
+                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <PRINTC .C>>)>>
 
 ;"Implements <TELL A .OBJ>."
-<ROUTINE PRINT-INDEF (OBJ)
-    <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-INDEF (OBJ "AUX" A)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (<SET A <GETP .OBJ ,P?ARTICLE>> <TELL .A> <PRINTC !\ >)
+          (<FSET? .OBJ ,PLURALBIT> <TELL "some ">)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
+          (ELSE <TELL "a ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL T .OBJ>."
 <ROUTINE PRINT-DEF (OBJ)
-    <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+    <COND (<NOT <FSET? .OBJ ,NARTICLEBIT>> <TELL "the ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL CA .OBJ>."
-<ROUTINE PRINT-CINDEF (OBJ)
-    <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-CINDEF (OBJ "AUX" A)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>
+           <PRINT-CAP-OBJ .OBJ>
+           <RTRUE>)>
+    <COND (<SET A <GETP .OBJ ,P?ARTICLE>> <PRINT-CAP-STR .A> <PRINTC !\ >)
+          (<FSET? .OBJ ,PLURALBIT> <TELL "Some ">)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
+          (ELSE <TELL "A ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL CT .OBJ>."
 <ROUTINE PRINT-CDEF (OBJ)
-    <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+    <COND (<FSET? .OBJ ,NARTICLEBIT>
+           <PRINT-CAP-OBJ .OBJ>
+           <RTRUE>)
+          (ELSE <TELL "The " D .OBJ>)>>
 
 ;"Prints a sentence describing the contents of a surface or container."
 <ROUTINE DESCRIBE-CONTENTS (OBJ)

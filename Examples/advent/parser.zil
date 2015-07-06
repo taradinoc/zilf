@@ -1515,7 +1515,7 @@ or reveal a light source."
 <OBJECT PLAYER
     (DESC "you")
     (SYNONYM ME MYSELF)
-    (FLAGS NARTICLEBIT PERSONBIT TOUCHBIT)
+    (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
     (ACTION PLAYER-R)>
 
 ;"Action handler for the player."
