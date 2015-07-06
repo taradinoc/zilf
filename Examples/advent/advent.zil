@@ -1,6 +1,7 @@
 ;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
+;"TODO: Signs, magazines, etc. should respond to READ as well as EXAMINE."
 
 <VERSION ZIP>
 <CONSTANT RELEASEID 1>
@@ -120,7 +121,9 @@ It is extremely cold." CR>)
                   <REMOVE ,PRSO>
                   <COND (<FSET? ,PRSO ,TREASUREBIT>
                          <SETG SCORE <- ,SCORE 5>>)>
-                  <TELL CT ,PRSO " washes away with the stream." CR>)>)>>
+                  <TELL CT ,PRSO " wash">
+                  <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
+                  <TELL " away with the stream." CR>)>)>>
 
 <OBJECT ROAD
     (DESC "road")
@@ -238,7 +241,7 @@ There is a building in the distance.")
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
         %<VERSION? (ZIP #SPLICE ()) (ELSE RATIONS)>)
     (ADJECTIVE YUMMY TASTY DELICIOUS SCRUMPTIOUS)
-    ;"TODO: indef article 'some'"
+    (ARTICLE "some")
     (FDESC "There is tasty food here.")
     (TEXT "Sure looks yummy!")
     (ACTION TASTY-FOOD-F)
@@ -382,7 +385,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
 
 <OBJECT WATER-IN-BOTTLE
     (DESC "bottled water")
-    ;"TODO: indef article 'some'"
+    (ARTICLE "some")
     (SYNONYM WATER H2O)
     (ADJECTIVE
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
@@ -398,7 +401,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
 
 <OBJECT OIL-IN-BOTTLE
     (DESC "bottled oil")
-    ;"TODO: indef article 'some'"
+    (ARTICLE "some")
     (SYNONYM OIL LUBRICANT GREASE)
     (ADJECTIVE
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
@@ -957,7 +960,6 @@ parallel to and north of the hall of mists." CR>
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
         %<VERSION? (ZIP #SPLICE ()) (ELSE DIAMONDS)>)
     (ADJECTIVE SEVERAL HIGH QUALITY)
-    ;"TODO: indef article 'some'"
     (FDESC "There are diamonds here!")
     (TEXT "They look to be of the highest quality!")
     (FLAGS TAKEBIT TREASUREBIT PLURALBIT MULTITUDEBIT)>
@@ -1126,7 +1128,6 @@ The hole goes down to an E/W passage.")
     (DESC "bars of silver")
     (IN LOW-N/S-PASSAGE)
     (SYNONYM BARS SILVER)
-    ;"TODO: indef article 'some'"
     (FDESC "There are bars of silver here!")
     (TEXT "They're probably worth a fortune!")
     (FLAGS TAKEBIT PLURALBIT TREASUREBIT)>
@@ -1144,7 +1145,7 @@ The hole goes down to an E/W passage.")
     (IN IN-SOUTH-SIDE-CHAMBER)
     (SYNONYM JEWEL JEWELS JEWELRY)
     (ADJECTIVE PRECIOUS EXQUISITE)
-    ;"TODO: indef article 'some'"
+    (ARTICLE "some")
     (FDESC "There is precious jewelry here!")
     (TEXT "It's all quite exquisite!")
     (FLAGS TAKEBIT TREASUREBIT)>
@@ -1165,7 +1166,7 @@ A passage continues west and up here.")
     (IN IN-WEST-SIDE-CHAMBER)
     (SYNONYM COINS)
     (ADJECTIVE RARE)
-    ;"TODO: indef article 'many'"
+    (ARTICLE "many")
     (FDESC "There are many coins here!")
     (TEXT "They're a numismatist's dream!")
     (FLAGS TAKEBIT PLURALBIT TREASUREBIT MULTITUDEBIT)>
@@ -2112,7 +2113,6 @@ At the eastern end is a hole through which you can see a profusion of leaves.")
 <OBJECT LEAVES
     (DESC "leaves")
     (IN IN-NARROW-CORRIDOR)
-    ;"TODO: indef article 'some'"
     ;"V3 property size is limited to 8 bytes"
     %<VERSION?
         (ZIP '(SYNONYM LEAF LEAVES PROFUSION TREE))
@@ -2382,7 +2382,6 @@ and a hands and knees crawl leads west.")
     (DESC "worthless shards of pottery")
     (SYNONYM POTTERY SHARDS REMAINS VASE)
     (ADJECTIVE WORTHLESS)
-    ;"TODO: indef article 'some'"
     (FDESC "The floor is littered with worthless shards of pottery.")
     (TEXT "They look to be the remains of what was once a beautiful vase.
 I guess some oaf must have dropped it.")
@@ -2632,7 +2631,7 @@ Proceed at own risk. [Witt Construction Company]\"")
     (IN IN-ANTEROOM)
     (SYNONYM MAGAZINE ISSUE ISSUES TODAY)
     (ADJECTIVE RECENT SPELUNKER)
-    ;"TODO: indef article 'a few'"
+    (ARTICLE "a few")
     (FDESC "There are a few recent issues of \"Spelunker Today\" magazine here.")
     (TEXT "I'm afraid the magazines are written in Dwarvish.")
     (ACTION MAGAZINES-F)
@@ -3029,7 +3028,7 @@ The only exit is a crawl heading west, through which is coming a low rumbling.")
     (DESC "rare spices")
     (SYNONYM SPICES SPICE)
     (ADJECTIVE RARE EXOTIC)
-    ;"TODO: indef article 'a selection of'"
+    (ARTICLE "a selection of")
     (ACTION RARE-SPICES-F)
     (DEPOSIT-POINTS 14)
     (FLAGS TAKEBIT TREASUREBIT PLURALBIT MULTITUDEBIT)>
@@ -3623,7 +3622,7 @@ you leave the \"Adventure\" materials where they are." CR>)>>
     (IN AT-NE-END)
     (SYNONYM DWARF DWARVES)
     (ADJECTIVE SLEEPING SNORING DOZING SNOOZING)
-    ;"indef article 'hundreds of angry'"
+    (ARTICLE "hundreds of angry")
     (TEXT "I wouldn't bother the dwarves if I were you.")
     (ACTION SLEEPING-DWARVES-F)
     (FLAGS PERSONBIT PLURALBIT MULTITUDEBIT)>
