@@ -549,7 +549,7 @@ Returns:
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
     '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
-            SUPERBRIEF BRIEF VERBOSE>>
+            SUPERBRIEF BRIEF VERBOSE AGAIN>>
 
 <ROUTINE V-WALK ("AUX" PT PTS RM)
     <COND (<NOT ,PRSO-DIR>
@@ -1046,7 +1046,8 @@ Returns:
                          <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                          <CLOCKER>)>
                   <SETG HERE <LOC ,WINNER>>)>)
-          (ELSE <TELL "Nothing to repeat." CR>)>>
+          (ELSE <TELL "Nothing to repeat." CR>)>
+    <SETG AGAINCALL <>>>
 
 <ROUTINE V-READ ("AUX" T)
     <COND (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)

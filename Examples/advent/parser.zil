@@ -315,6 +315,10 @@ Sets:
     ;"Match syntax lines and objects"
     <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
            <RFALSE>)>
+    ;"Save command for AGAIN"
+    <COND (<NOT <VERB? AGAIN>>
+           <COPY-READBUF>
+           <COPY-LEXBUF>)>
     ;"Save UNDO state"
     <IF-UNDO
         <COND (<AND <NOT <VERB? UNDO>>
@@ -697,6 +701,7 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
                   <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
+           ;"TODO: HAVE check, implicit take"
            <COND (<NOT ,PRSO> <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
@@ -718,6 +723,7 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
                   <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
+           ;"TODO: HAVE check, implicit take"
            <COND (<NOT ,PRSI> <RFALSE>)>)>
     <RTRUE>>
 
@@ -726,6 +732,7 @@ Returns:
     <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
     <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
     ;"TODO: implement orphaning so we can handle the response to this question"
+    ;"TODO: use LONG-WORDS table for verb/preposition words"
     <TELL "What do you want to " B ,P-V-WORD>
     <COND (.SP1
            <TELL " " B <GET-PREP-WORD .SP1>>)>
@@ -759,6 +766,7 @@ Returns:
     ;"Print inference message"
     <COND (.O
            <TELL "[">
+           ;"TODO: use LONG-WORDS table for preposition word"
            <COND (<SET PW <GET-PREP-WORD .PREP>>
                   <TELL B .PW " ">)>
            <TELL T .O "]" CR>
@@ -817,8 +825,9 @@ Args:
     FIND flag in the upper byte.
 
 Returns:
-  The located object, or false if no matching object was found. "
+  The located object, or false if no matching object was found."
 <ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL BITS "AUX" A N)
+    ;"TODO: Disambiguate and/or match multiple objects."
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
     <MAP-SCOPE (I)
