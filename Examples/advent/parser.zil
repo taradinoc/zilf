@@ -46,9 +46,11 @@ other versions. These macros let us write the same code for all versions."
 <VERSION?
     (ZIP
         <DEFMAC GET/B ('T 'O) <FORM GETB .T .O>>
+        <DEFMAC PUT/B ('T 'O 'V) <FORM PUTB .T .O .V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>)
     (ELSE
         <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
+        <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>)>
 
 "Parser"

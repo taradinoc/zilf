@@ -548,8 +548,10 @@ Returns:
 
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
-    '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
-            SUPERBRIEF BRIEF VERBOSE AGAIN>>
+    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
+                SUPERBRIEF BRIEF VERBOSE AGAIN !,EXTRA-GAME-VERBS>>
+
+<COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
 <ROUTINE V-WALK ("AUX" PT PTS RM)
     <COND (<NOT ,PRSO-DIR>
@@ -792,7 +794,7 @@ Returns:
                <SET N <+ .N 1>>
                ;"If we found matching parents in two children,
                 ROOT is the common parent."
-               <COND (<G? .N 2> <RETURN .ROOT .CPR>)>)>>
+               <COND (<G? .N 1> <RETURN .ROOT .CPR>)>)>>
     ;"One child contained both objects, so the common parent is whatever
       COMMON-PARENT-R returned for it."
     .F>

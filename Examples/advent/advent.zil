@@ -2,17 +2,21 @@
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
 
+;----------------------------------------------------------------------
+"General directives"
+;----------------------------------------------------------------------
+
 <VERSION ZIP>
 <CONSTANT RELEASEID 1>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
+
+<COMPILATION-FLAG DEBUG>
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
   by discarding the noun value (which was always set to 1)."
 ;"TODO: Enable NEW-VOC? once the parser supports it."
 ;<SETG NEW-VOC? T>
-
-"Main loop"
 
 <CONSTANT GAME-BANNER
 "ADVENTURE|
@@ -21,16 +25,21 @@ Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and Kent Tessman (1995)|
 Adapted once more by Jesse McGrew (2015)">
 
-;"The main entry point."
+;----------------------------------------------------------------------
+"Main entry point"
+;----------------------------------------------------------------------
+
 <ROUTINE GO ()
     <CRLF> <CRLF>
     <TELL "IT WAS THE SEVENTIES AND THERE WAS TIME FOR..." CR CR>   ;XXX
     <V-VERSION> <CRLF>
     <SETG HERE ,AT-END-OF-ROAD>
     <SETG SCORE 36>
+    <SETG PREV-SCORE ,SCORE>
     <QUEUE I-DWARF -1>
     <QUEUE I-PIRATE -1>
     <QUEUE I-CAVE-CLOSER -1>
+    <QUEUE I-SCORE -1>
     <MOVE ,PLAYER ,HERE>
     <V-LOOK>
     <REPEAT ()
@@ -41,7 +50,18 @@ Adapted once more by Jesse McGrew (2015)">
                       <CLOCKER>)>)>
         <SETG HERE <LOC ,WINNER>>>>
 
+;----------------------------------------------------------------------
+"Include the standard library"
+;----------------------------------------------------------------------
+
+;"This affects the definition of GAME-VERB?."
+<SETG EXTRA-GAME-VERBS '(SCORE)>
+
 <INSERT-FILE "parser">
+
+;----------------------------------------------------------------------
+"Utilities, properties, globals, and constants"
+;----------------------------------------------------------------------
 
 ;"Utility macro for randomness"
 <DEFMAC PROB ('N)
@@ -50,11 +70,7 @@ Adapted once more by Jesse McGrew (2015)">
 ;"Properties"
 <PROPDEF DEPOSIT-POINTS 10>
 
-;"Treasures"
-<GLOBAL TREASURES-FOUND 0>
-<CONSTANT MAX-TREASURES 15>
 ;"TODO: <CONSTANT MAX-CARRIED 7>"
-;"TODO: <CONSTANT MAX-SCORE 350>"
 
 ;----------------------------------------------------------------------
 "The outside world"
@@ -112,15 +128,12 @@ It is extremely cold." CR>)
            <COND (<PRSO? ,MING-VASE>
                   <REMOVE ,PRSO>
                   <MOVE ,SHARDS ,HERE>
-                  <SETG SCORE <- ,SCORE 5>>
                   <TELL "The sudden change in temperature has delicately shattered the vase." CR>)
                  (<PRSO? ,BOTTLE>
                   <PERFORM ,V?FILL ,BOTTLE>
                   <RTRUE>)
                  (ELSE
                   <REMOVE ,PRSO>
-                  <COND (<FSET? ,PRSO ,TREASUREBIT>
-                         <SETG SCORE <- ,SCORE 5>>)>
                   <TELL CT ,PRSO " wash">
                   <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
                   <TELL " away with the stream." CR>)>)>>
@@ -604,6 +617,8 @@ There is a dim light at the east end of the passage.")
 <OBJECT WICKER-CAGE
     (DESC "wicker cage")
     (IN IN-COBBLE-CRAWL)
+    (SYNONYM CAGE)
+    (ADJECTIVE SMALL WICKER)
     (FDESC "There is a small wicker cage discarded nearby.")
     (TEXT "It's a small wicker cage.")
     (ACTION WICKER-CAGE-F)
@@ -1195,8 +1210,7 @@ There is a large \"Y2\" on a rock in the rooms center.")
                  (<VERB? PLOVER>
                   <OR <FSET? ,IN-PLOVER-ROOM ,TOUCHBIT> <RFALSE>>
                   <COND (<HELD? ,EGG-SIZED-EMERALD>
-                         <MOVE ,EGG-SIZED-EMERALD ,IN-PLOVER-ROOM>
-                         <SETG SCORE <- ,SCORE 5>>)>
+                         <MOVE ,EGG-SIZED-EMERALD ,IN-PLOVER-ROOM>)>
                   <GOTO ,IN-PLOVER-ROOM>
                   <RTRUE>)>)
           (<AND <=? .RARG ,M-END>
@@ -2455,8 +2469,7 @@ A dark corridor leads northeast.")
     <COND (<=? .RARG ,M-BEG>
            <COND (<VERB? PLOVER>
                   <COND (<HELD? ,EGG-SIZED-EMERALD>
-                         <MOVE ,EGG-SIZED-EMERALD ,IN-PLOVER-ROOM>
-                         <SETG SCORE <- ,SCORE 5>>)>
+                         <MOVE ,EGG-SIZED-EMERALD ,IN-PLOVER-ROOM>)>
                   <GOTO ,AT-Y2>
                   <RTRUE>)
                  (<AND <VERB? WALK> <PRSO? ,P?OUT>>
@@ -2467,7 +2480,9 @@ A dark corridor leads northeast.")
     (DESC "emerald the size of a plover's egg")
     (IN IN-PLOVER-ROOM)
     (SYNONYM EMERALD EGG)
-    (ADJECTIVE EGG-SIZED EGG SIZED PLOVER\'S)
+    (ADJECTIVE EGG-SIZED EGG SIZED
+        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
+        %<VERSION? (ZIP PLOVER) (ELSE PLOVER\'S)>)
     (FDESC "There is an emerald here the size of a plover's egg!")
     (TEXT "Plover's eggs, by the way, are quite large.")
     (DEPOSIT-POINTS 14)
@@ -2831,7 +2846,6 @@ as that of a rhinoceros.")
                   <REMOVE ,PRSO>
                   <MOVE ,TROLL ,RICKETY-BRIDGE>
                   <SETG TROLL-CAUGHT-TREASURE T>
-                  <SETG SCORE <- ,SCORE 5>>
                   <TELL "The troll catches your treasure and scurries away out of sight." CR>)
                  (<PRSO? ,TASTY-FOOD>
                   <TELL "Gluttony is not one of the troll's vices. Avarice, however, is." CR>)
@@ -3190,7 +3204,7 @@ The bear soon gives up the pursuit and wanders back." CR>)
     (DESCFCN GOLDEN-CHAIN-DESCFCN)
     (ACTION GOLDEN-CHAIN-F)
     (DEPOSIT-POINTS 14)
-    (FLAGS TAKEBIT TRYTAKEBIT LOCKEDBIT)>
+    (FLAGS TAKEBIT TREASUREBIT TRYTAKEBIT LOCKEDBIT)>
 
 <ROUTINE GOLDEN-CHAIN-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
@@ -3514,18 +3528,17 @@ With that, he vanishes into the gloom." CR>
     <COND (,PIRATE-SPOTTED <DEQUEUE I-PIRATE>)>
     ;"We can't move objects in a MAP-SCOPE, so use recursion in a separate routine"
     <NESTED-ROB-TREASURE ,HERE ,DEAD-END-13>
-    <NESTED-ROB-TREASURE ,WINNER ,DEAD-END-13 -5>
+    <NESTED-ROB-TREASURE ,WINNER ,DEAD-END-13>
     <TELL CR "Out from the shadows behind you pounces a bearded pirate!
 \"Har, har,\" he chortles. \"I'll just take all this booty and hide it away
 with me chest deep in the maze!\"
 He snatches your treasure and vanishes into the gloom." CR>>
 
-<ROUTINE NESTED-ROB-TREASURE (SRC DEST "OPT" (DSCORE 0))
+<ROUTINE NESTED-ROB-TREASURE (SRC DEST)
     <MAP-CONTENTS (I N .SRC)
-        <COND (<FIRST? .I> <NESTED-ROB-TREASURE .I .DEST .DSCORE>)>
+        <COND (<FIRST? .I> <NESTED-ROB-TREASURE .I .DEST>)>
         <COND (<FSET? .I ,TREASUREBIT>
-               <MOVE .I .DEST>
-               <SETG SCORE <+ ,SCORE .DSCORE>>)>>>
+               <MOVE .I .DEST>)>>>
 
 ;----------------------------------------------------------------------
 "The cave is closing now..."
@@ -3704,12 +3717,49 @@ At your feet is a large steel grate, next to which is a sign which reads,
     <COND (<VERB? WAVE> <TELL "Nothing happens." CR>)>>
 
 ;----------------------------------------------------------------------
-"Some entry points"
+"Scoring and treasure counting"
 ;----------------------------------------------------------------------
 
-;"TODO: print player ranking in V-SCORE"
-<ROUTINE PRINT-PLAYER-RANKING ()
+;"Treasures"
+<CONSTANT MAX-TREASURES 15>
+<GLOBAL TREASURES-FOUND 0>
+
+<CONSTANT TR-UNFOUND 0>
+<CONSTANT TR-TOUCHED 1>
+<CONSTANT TR-CARRIED 2>
+<CONSTANT TR-DEPOSITED 3>
+
+<CONSTANT ALL-TREASURES
+    <TABLE %<VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>
+        LARGE-GOLD-NUGGET TR-UNFOUND
+        DIAMONDS          TR-UNFOUND
+        BARS-OF-SILVER    TR-UNFOUND
+        PRECIOUS-JEWELRY  TR-UNFOUND
+        RARE-COINS        TR-UNFOUND
+        PERSIAN-RUG       TR-UNFOUND
+        TREASURE-CHEST    TR-UNFOUND
+        GOLDEN-EGGS       TR-UNFOUND
+        TRIDENT           TR-UNFOUND
+        MING-VASE         TR-UNFOUND
+        EGG-SIZED-EMERALD TR-UNFOUND
+        PLATINUM-PYRAMID  TR-UNFOUND
+        PEARL             TR-UNFOUND
+        RARE-SPICES       TR-UNFOUND
+        GOLDEN-CHAIN      TR-UNFOUND>>
+        
+<CONSTANT MAX-SCORE 350>
+
+<GLOBAL PREV-SCORE 0>
+
+<SYNTAX SCORE = V-SCORE>
+
+<ROUTINE V-SCORE ()
+    <TELL "In ">
+    <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
+    <TELL ", you've scored ">
+    <COND (<1? ,SCORE> <TELL "1 point">) (ELSE <TELL N ,SCORE " points">)>
     <TELL
+        " out of a maximum " N ,MAX-SCORE
         ", earning you the rank of "
         <COND (<G=? ,SCORE 348> "Grandmaster Adventurer!")
               (<G=? ,SCORE 330> "Master, first class.")
@@ -3722,6 +3772,47 @@ At your feet is a large steel grate, next to which is a sign which reads,
               (ELSE "Amateur.")>
         CR>>
 
+
+<ROUTINE I-SCORE ("AUX" D T OS NS)
+    ;"Note any changes in treasure status"
+    <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
+        <SET T <GET/B ,ALL-TREASURES .I>>
+        <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
+        <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
+              (<IN? .T ,WINNER> <SET NS ,TR-CARRIED>)
+              (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
+              (ELSE <SET NS ,TR-UNFOUND>)>
+        <COND (<N=? .OS .NS>
+               ;"A permanent 2 points for taking it in the first place"
+               <COND (<=? .OS ,TR-UNFOUND> <SETG SCORE <+ ,SCORE 2>>)>
+               ;"A revocable 5 points for carrying it"
+               <COND (<=? .NS ,TR-CARRIED> <SETG SCORE <+ ,SCORE 5>>)
+                     (<=? .OS ,TR-CARRIED> <SETG SCORE <- ,SCORE 5>>)>
+               ;"A revocable ${DEPOSIT-POINTS} points for placing it in INSIDE-BUILDING"
+               <COND (<=? .NS ,TR-DEPOSITED>
+                      <SETG SCORE <+ ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)
+                     (<=? .OS ,TR-DEPOSITED>
+                      <SETG SCORE <- ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)>
+               <PUT/B ,ALL-TREASURES <+ .I 1> .NS>)>>
+    ;"Notify player if score has changed"
+    <SET D <- ,SCORE ,PREV-SCORE>>
+    <COND (.D
+           <TELL CR "[Your score has gone">
+           <COND (<G? .D 0>
+                  <TELL " up">)
+                 (ELSE
+                  <SET D <- .D>>
+                  <TELL " down">)>
+           <TELL " by " N .D " point">
+           <COND (<NOT <1? .D>> <TELL !\s>)>
+           <TELL ".]" CR>)>
+    <SETG PREV-SCORE ,SCORE>
+    <T? .D>>
+
+;----------------------------------------------------------------------
+"Stumbling around in the dark"
+;----------------------------------------------------------------------
+
 ;"TODO: call DARK-TO-DARK when stumbling around"
 <GLOBAL DARK-WARNING <>>
 
@@ -3732,7 +3823,11 @@ At your feet is a large steel grate, next to which is a sign which reads,
           (<PROB 25>
            <JIGS-UP "You fell into a pit and broke every bone in your body!">)>>
 
-;"Unknown verb handler is unnecessary; we don't support teleporting."
+;----------------------------------------------------------------------
+"Teleportation system"
+;----------------------------------------------------------------------
+
+;"Not supported in this version."
 
 ;----------------------------------------------------------------------
 "Resurrection"
@@ -3835,21 +3930,22 @@ across the walls of the room.">)>>
 <SYNTAX FOO = V-FOO>
 <SYNTAX SESAME (SHAZAM HOCUS ABRACADABRA FOOBAR OPEN-SESAME FROTZ) = V-OLD-MAGIC>
 
-<SYNTAX SAY BLAST OBJECT (FIND KLUDGEBIT) = V-BLAST>
-<SYNTAX SAY XYZZY OBJECT (FIND KLUDGEBIT) = V-XYZZY>
-<SYNTAX SAY PLUGH OBJECT (FIND KLUDGEBIT) = V-PLUGH>
-<SYNTAX SAY PLOVER OBJECT (FIND KLUDGEBIT) = V-PLOVER>
-<SYNTAX SAY FEE OBJECT (FIND KLUDGEBIT) = V-FEE>
-<SYNTAX SAY FIE OBJECT (FIND KLUDGEBIT) = V-FIE>
-<SYNTAX SAY FOE OBJECT (FIND KLUDGEBIT) = V-FOE>
-<SYNTAX SAY FOO OBJECT (FIND KLUDGEBIT) = V-FOO>
-<SYNTAX SAY SESAME OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY SHAZAM OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY HOCUS OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY ABRACADABRA OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY FOOBAR OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY OPEN-SESAME OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
-<SYNTAX SAY FROTZ OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;"TODO: Enable SAY [magic word] syntaxes once NEW-VOC? is working. (PLOVER needs it.)"
+;<SYNTAX SAY BLAST OBJECT (FIND KLUDGEBIT) = V-BLAST>
+;<SYNTAX SAY XYZZY OBJECT (FIND KLUDGEBIT) = V-XYZZY>
+;<SYNTAX SAY PLUGH OBJECT (FIND KLUDGEBIT) = V-PLUGH>
+;<SYNTAX SAY PLOVER OBJECT (FIND KLUDGEBIT) = V-PLOVER>
+;<SYNTAX SAY FEE OBJECT (FIND KLUDGEBIT) = V-FEE>
+;<SYNTAX SAY FIE OBJECT (FIND KLUDGEBIT) = V-FIE>
+;<SYNTAX SAY FOE OBJECT (FIND KLUDGEBIT) = V-FOE>
+;<SYNTAX SAY FOO OBJECT (FIND KLUDGEBIT) = V-FOO>
+;<SYNTAX SAY SESAME OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY SHAZAM OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY HOCUS OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY ABRACADABRA OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY FOOBAR OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY OPEN-SESAME OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
+;<SYNTAX SAY FROTZ OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
 
 <ROUTINE V-XYZZY () <TELL "Nothing happens." CR>>
 
@@ -3908,5 +4004,25 @@ appears out of nowhere!" CR>)>)>)
 
 <ROUTINE V-USE ()
     <TELL "You'll have to be a bit more explicit than that." CR>>
+
+;----------------------------------------------------------------------
+"Debug/cheat verbs"
+;----------------------------------------------------------------------
+
+<IF-DEBUG
+
+    <SYNTAX XMAGIC = V-XMAGIC>
+    
+    <ROUTINE V-XMAGIC ()
+        <FSET ,IN-DEBRIS-ROOM ,TOUCHBIT>
+        <FSET ,AT-Y2 ,TOUCHBIT>
+        <FSET ,IN-PLOVER-ROOM ,TOUCHBIT>
+        <TELL "Magic words unlocked." CR>>
+    
+    <SYNTAX XSCORE = V-XSCORE>
+    
+    <ROUTINE V-XSCORE ()
+        <SETG SCORE <+ ,SCORE <RANDOM 11> -6>>>
+>
 
 ;----------------------------------------------------------------------
