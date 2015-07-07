@@ -1,7 +1,6 @@
 ;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
-;"TODO: Signs, magazines, etc. should respond to READ as well as EXAMINE."
 
 <VERSION ZIP>
 <CONSTANT RELEASEID 1>
@@ -651,7 +650,7 @@ A note on the wall says, \"Magic word XYZZY.\"")
     (IN IN-DEBRIS-ROOM)
     (SYNONYM NOTE)
     (TEXT "The note says \"Magic word XYZZY\".")
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT READBIT)>
 
 <OBJECT BLACK-ROD
     (DESC "black rod with a rusty star on the end")
@@ -894,7 +893,7 @@ Rough stone steps lead up the dome.")
     (SYNONYM NOTE)
     (ADJECTIVE CRUDE)
     (TEXT "The note says, \"You won't get it up the steps.\"")
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT READBIT)>
 
 <OBJECT LARGE-GOLD-NUGGET
     (DESC "large gold nugget")
@@ -2622,7 +2621,8 @@ The remnants of recent digging are evident.")
     (IN IN-ANTEROOM)
     (FDESC "A sign in midair here says \"Cave under construction beyond this point.
 Proceed at own risk. [Witt Construction Company]\"")
-    (ACTION CONSTRUCTION-SIGN-F)>
+    (ACTION CONSTRUCTION-SIGN-F)
+    (FLAGS READBIT)>
 
 <ROUTINE CONSTRUCTION-SIGN-F ()
     <COND (<VERB? TAKE> <TELL "It's hanging way above your head." CR>)>>
@@ -3078,7 +3078,7 @@ A sign posted above the entrance reads: \"Caution! Bear in room!\"")
     (SYNONYM SIGN)
     (ADJECTIVE BARREN ROOM CAUTION)
     (TEXT "The sign reads, \"Caution! Bear in room!\"")
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT READBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -3830,7 +3830,7 @@ across the walls of the room.">)>>
 <SYNTAX PLUGH = V-PLUGH>
 <SYNTAX PLOVER = V-PLOVER>
 <SYNTAX FEE = V-FEE>
-<SYNTAX FIE = V-FOE>
+<SYNTAX FIE = V-FIE>
 <SYNTAX FOE = V-FOE>
 <SYNTAX FOO = V-FOO>
 <SYNTAX SESAME (SHAZAM HOCUS ABRACADABRA FOOBAR OPEN-SESAME FROTZ) = V-OLD-MAGIC>
