@@ -127,12 +127,14 @@
                       <RFALSE>)>
                <RTRUE>)>>>
 
-<ROUTINE MAP-SCOPE-NEXT MSN ("AUX" N (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (INIT <>))
+<ROUTINE MAP-SCOPE-NEXT MSN ("AUX" S N (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (INIT <>))
     <REPEAT ()
         <COND (<G? ,SCOPE-CURRENT-STAGE .LEN>
                <SETG MAP-SCOPE-STATUS ,MS-FINISHED>
                <RFALSE>)
-              (<SET N <APPLY <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE> .INIT>>
+              (<AND <SET S <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>>
+                    <OR <NOT .INIT> <APPLY .S T>>
+                    <SET N <APPLY .S>>>
                <COND (<==? .N -1>
                       ;"If stage returns -1, abort. It already set MAP-SCOPE-STATUS."
                       <RFALSE>)>
