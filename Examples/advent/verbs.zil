@@ -699,6 +699,7 @@ Returns:
                  (<BLOCKS-TAKE? .HOLDER>
                   <TELL CT .HOLDER " is in the way." CR>
                   <RTRUE>)
+                 (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)
                  (<AND <FSET? .HOLDER ,CONTBIT>
                        <HELD? ,PRSO .HOLDER>
                        <NOT <HELD? ,WINNER .HOLDER>>>
@@ -715,7 +716,8 @@ Returns:
                   <FSET ,PRSO ,TOUCHBIT>
                   <MOVE ,PRSO ,WINNER>
                   <RTRUE>)>)>
-    <COND (<FSET? ,PRSO ,WEARBIT>
+    <COND (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)
+          (<FSET? ,PRSO ,WEARBIT>
            <TELL "You wear " T ,PRSO "." CR>
            <FSET ,PRSO ,WORNBIT>
            <MOVE ,PRSO ,WINNER>
@@ -799,6 +801,18 @@ Returns:
       COMMON-PARENT-R returned for it."
     .F>
 
+<DEFAULT-DEFINITION TAKE-CAPACITY-CHECK
+
+    <ROUTINE TAKE-CAPACITY-CHECK (O "AUX" (CAP <GETP ,WINNER ,P?CAPACITY>) CWT NWT)
+        <COND (<L? .CAP 0> <RTRUE>)>
+        <SET CWT <- <WEIGHT ,WINNER> <GETP ,WINNER ,P?SIZE>>>
+        <SET NWT <WEIGHT .O>>
+        <COND (<G? <+ .CWT .NWT> .CAP>
+               <TELL "You're carrying too much to pick up " T .O "." CR>
+               <RFALSE>)>
+        <RTRUE>>
+>
+
 <ROUTINE V-DROP ()
     <COND
         (<NOT <IN? ,PRSO ,WINNER>>
@@ -826,8 +840,7 @@ Returns:
            <PRINTR "You can't put something on itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
                   ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
                  (ELSE
                   ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
@@ -883,8 +896,7 @@ Returns:
            <PRINTR "You can't put something in itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
                   <IF-DEBUG <COND (,DBCONT
                                    <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>>)
                  (ELSE
