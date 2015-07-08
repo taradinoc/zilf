@@ -1534,6 +1534,7 @@ or reveal a light source."
     (CAPACITY 10)>
 
 <PROPDEF SIZE 5>
+<PROPDEF CAPACITY -1>
 
 <OBJECT GLOBAL-OBJECTS>
 
@@ -1557,6 +1558,7 @@ or reveal a light source."
     (DESC "you")
     (SYNONYM ME MYSELF)
     (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
+    (CAPACITY -1)
     (ACTION PLAYER-R)>
 
 ;"Action handler for the player."

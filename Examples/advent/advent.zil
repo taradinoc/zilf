@@ -41,6 +41,7 @@ Adapted once more by Jesse McGrew (2015)">
     <QUEUE I-CAVE-CLOSER -1>
     <QUEUE I-SCORE -1>
     <MOVE ,PLAYER ,HERE>
+    <PUTP ,PLAYER ,P?CAPACITY 35> ;"7 objects at default size 5"
     <V-LOOK>
     <REPEAT ()
         <COND (<PARSER>
@@ -69,8 +70,6 @@ Adapted once more by Jesse McGrew (2015)">
 
 ;"Properties"
 <PROPDEF DEPOSIT-POINTS 10>
-
-;"TODO: <CONSTANT MAX-CARRIED 7>"
 
 ;----------------------------------------------------------------------
 "The outside world"
@@ -852,7 +851,7 @@ Rough stone steps lead up the dome.")
 
 <ROUTINE IN-HALL-OF-MISTS-F (RARG)
     <COND (<AND <=? .RARG ,M-ENTER>
-                <NOT <FSET? ,IN-HALL-OF-MISTS-F ,TOUCHBIT>>>
+                <NOT <FSET? ,IN-HALL-OF-MISTS ,TOUCHBIT>>>
            <SETG SCORE <+ ,SCORE 25>>)>>
 
 <ROUTINE UP-OUT-OF-SMALL-PIT ()
