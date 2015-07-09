@@ -16,10 +16,15 @@
           <LIST !,SCOPE-STAGES
                 <VECTOR .NAME .STATE-WORDS .INIT-CODE .NEXT-CODE>>>>
 
-<DEFMAC SCOPE-STAGE? ('NAME)
+<DEFMAC SCOPE-STAGE? ("ARGS" NAMES "AUX" SSS)
+    <SET SSS
+        <MAPF
+            ,LIST
+            <FUNCTION (N) <PARSE <STRING <SPNAME .N> "-SCOPE-STAGE">>>
+            .NAMES>>
     <FORM ==?
           '<GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>
-          <PARSE <STRING <SPNAME .NAME> "-SCOPE-STAGE">>>>
+          !.SSS>>
 
 <DEFMAC SCOPE-EXIT ('STATUS)
     <FORM BIND ()
@@ -37,10 +42,6 @@
     (<PUT SCOPE-STATE 0 <FIRST? ,WINNER>>
      <PUT SCOPE-STATE 1 ,WINNER>)
     (<SCOPE-CRAWL>)>
-
-<SCOPE-STAGE CHECK-LIGHT 0
-    (<COND (<NOT ,HERE-LIT> <SCOPE-EXIT ,MS-NO-LIGHT>)>)
-    (<>)>
 
 <SCOPE-STAGE LOCATION 2
     (<PUT SCOPE-STATE 0 <FIRST? ,HERE>>
@@ -82,15 +83,21 @@
 <CONSTANT SCOPE-CURRENT-STAGES <ITABLE WORD ,SCOPE-CURRENT-STAGES-SIZE>>
 <GLOBAL SCOPE-CURRENT-STAGE -1>
 
-<DEFMAC MAP-SCOPE ('VAR "ARGS" BODY "AUX" STAGES INIT-STAGES)
+<CONSTANT MSO-NEED-LIGHT 1>
+<GLOBAL MAP-SCOPE-OPTIONS <>>
+
+<DEFMAC MAP-SCOPE ('VAR "ARGS" BODY "AUX" STAGES INIT-OPTIONS INIT-STAGES)
     <COND (<TYPE? .VAR LIST> <SET VAR <1 .VAR>>)
           (ELSE <ERROR WRONG-ARG-TYPE 1 .VAR>)>
     ;"User can specify stages, or default to all stages in definition order"
+    ;"Light is not required when specifying stages explicitly"
     <COND (<TYPE? <1 .BODY> LIST>
            <SET STAGES <1 .BODY>>
-           <SET BODY <REST .BODY>>)
+           <SET BODY <REST .BODY>>
+           <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS <>>>)
           (ELSE
-           <SET STAGES <MAPF ,LIST 1 ,SCOPE-STAGES>>)>
+           <SET STAGES <MAPF ,LIST 1 ,SCOPE-STAGES>>
+           <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>)>
     <COND (<G? <LENGTH .STAGES> ,SCOPE-CURRENT-STAGES-SIZE>
            <ERROR TOO-MANY-STAGES>)>
     ;"Generate code to initialize SCOPE-CURRENT-STAGES"
@@ -107,6 +114,7 @@
     <FORM PROG '()
           <FORM PUT ',SCOPE-CURRENT-STAGES 0 <LENGTH .INIT-STAGES>>
           !.INIT-STAGES
+          .INIT-OPTIONS
           '<COND (<NOT <MAP-SCOPE-START>>
                   <RETURN>)>
           <FORM REPEAT <LIST .VAR>
@@ -115,24 +123,33 @@
                                  '<RETURN>>>
                 !.BODY>>>
 
-<ROUTINE MAP-SCOPE-START ("AUX" V (LEN <GET ,SCOPE-CURRENT-STAGES 0>))
+<ROUTINE MAP-SCOPE-START ("AUX" V (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (NEED-LIGHT <>))
+    <COND (<AND <NOT ,HERE-LIT> <BTST ,MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>
+           <SET NEED-LIGHT T>)>
+    <COND (.NEED-LIGHT <SETG MAP-SCOPE-STATUS ,MS-NO-LIGHT>)
+          (ELSE <SETG MAP-SCOPE-STATUS ,MS-FINISHED>)>
     <SETG SCOPE-CURRENT-STAGE 0>
     <REPEAT ()
         <COND (<G? <SETG SCOPE-CURRENT-STAGE <+ ,SCOPE-CURRENT-STAGE 1>> .LEN>
-               <SETG MAP-SCOPE-STATUS ,MS-FINISHED>
+               ;<SETG MAP-SCOPE-STATUS ,MS-FINISHED>
                <RFALSE>)
+              (<AND .NEED-LIGHT <NOT <DARKNESS-F ,M-SCOPE?>>>
+               <AGAIN>)
               (<SET V <APPLY <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE> T>>
                <COND (<==? .V -1>
                       ;"If stage returns -1, abort. It already set MAP-SCOPE-STATUS."
                       <RFALSE>)>
                <RTRUE>)>>>
 
-<ROUTINE MAP-SCOPE-NEXT MSN ("AUX" S N (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (INIT <>))
+<ROUTINE MAP-SCOPE-NEXT MSN ("AUX" S N (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (INIT <>) (NEED-LIGHT <>))
+    <COND (<AND <NOT ,HERE-LIT> <BTST ,MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>
+           <SET NEED-LIGHT T>)>
     <REPEAT ()
         <COND (<G? ,SCOPE-CURRENT-STAGE .LEN>
-               <SETG MAP-SCOPE-STATUS ,MS-FINISHED>
+               ;<SETG MAP-SCOPE-STATUS ,MS-FINISHED>
                <RFALSE>)
-              (<AND <SET S <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>>
+              (<AND <OR <NOT .NEED-LIGHT> <DARKNESS-F ,M-SCOPE?>>
+                    <SET S <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>>
                     <OR <NOT .INIT> <APPLY .S T>>
                     <SET N <APPLY .S>>>
                <COND (<==? .N -1>
