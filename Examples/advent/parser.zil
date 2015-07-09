@@ -1303,11 +1303,13 @@ Args:
   TEXT: The message to print before the 'game is over' banner.
 
 Returns:
-  Does not return."
+  True if RESURRECT? indicated that the game should resume.
+  Otherwise, never returns."
 <ROUTINE JIGS-UP (TEXT "AUX" RESP W)
     <TELL .TEXT CR CR>
-    <TELL "    ****  The game is over  ****" CR CR>
-    ;"<TELL "    ****  You have died  ****" CR CR>"
+    <PRINT-GAME-OVER>
+    <CRLF>
+    <COND (<RESURRECT?> <RTRUE>)>
     <REPEAT PROMPT ()
         <IFFLAG (UNDO
                  <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
@@ -1336,6 +1338,25 @@ Returns:
                             <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
                            (ELSE
                             <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>>>
+
+<DEFAULT-DEFINITION PRINT-GAME-OVER
+    ;"Prints a message explaining that the game is over or the player has died.
+      This is called after JIGS-UP has already printed the message passed in to
+      describe the specific circumstances, so usually this should print a generic
+      message appropriate for the game's theme."
+    <ROUTINE PRINT-GAME-OVER ()
+        <TELL "    ****  The game is over  ****" CR>>
+>
+
+<DEFAULT-DEFINITION RESURRECT?
+    ;"Optionally gives the player a chance to resume the game after JIGS-UP.
+    
+    Returns:
+      True if JIGS-UP should return to its caller; the function should change
+      the game state as needed for this to make sense. False if JIGS-UP should
+      prompt the player to RESTART/UNDO/RESTORE/QUIT and never return."
+    <DEFMAC RESURRECT? () <>>
+>
 
 ;"Empties the contents of one object into another, or removes them from play.
 

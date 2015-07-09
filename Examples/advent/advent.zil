@@ -10,7 +10,7 @@
 <CONSTANT RELEASEID 1>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
-<COMPILATION-FLAG DEBUG>
+;<COMPILATION-FLAG DEBUG>
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
@@ -58,8 +58,10 @@ Adapted once more by Jesse McGrew (2015)">
 ;"This affects the definition of GAME-VERB?."
 <SETG EXTRA-GAME-VERBS '(SCORE)>
 
-;"We replace DARKNESS-F below."
+;"We replace a few library sections below."
 <DELAY-DEFINITION DARKNESS-F>
+<DELAY-DEFINITION PRINT-GAME-OVER>
+<DELAY-DEFINITION RESURRECT?>
 
 <INSERT-FILE "parser">
 
@@ -344,6 +346,7 @@ Anyway, nothing happens." CR>)
                   <TELL "Your lamp has run out of power.">
                   <COND (<NOT <OR <HELD? ,FRESH-BATTERIES>
                                   <FSET? ,HERE ,LIGHTBIT>>>
+                         <SETG LAMP-RAN-OUT T>
                          <JIGS-UP " You can't explore the cave without a lamp. So let's just call it a day.">)
                         (ELSE <REPLACE-LANTERN-BATTERIES>)>
                   <CRLF>
@@ -2795,7 +2798,8 @@ A southwest path leads away from the chasm into a winding corridor.")
                   <JIGS-UP "Just as you reach the other side, the bridge buckles
 beneath the weight of the bear, which was still following you around.
 You scrabble desperately for support, but as the bridge collapses you stumble back
-and fall into the chasm.">)>
+and fall into the chasm.">
+                  <RTRUE>)>
            <COND (<=? ,HERE ,ON-SW-SIDE-OF-CHASM> ,ON-NE-SIDE-OF-CHASM)
                  (ELSE ,ON-SW-SIDE-OF-CHASM)>)
           (<IN? ,TROLL ,HERE> <TELL "The troll refuses to let you cross." CR>)
@@ -3865,7 +3869,65 @@ At your feet is a large steel grate, next to which is a sign which reads,
 "Resurrection"
 ;----------------------------------------------------------------------
 
-;"TODO: replace JIGS-UP for resurrection"
+<GLOBAL DEATHS 0>
+<GLOBAL LAMP-RAN-OUT <>>
+
+<REPLACE-DEFINITION PRINT-GAME-OVER
+    <ROUTINE PRINT-GAME-OVER ()
+        <COND (,LAMP-RAN-OUT
+               <TELL "    ****  Better luck next time  ****" CR>)
+              (ELSE
+               <TELL "    ****  You have died  ****" CR>)>>>
+
+;"The text here is slightly changed from the Inform version, since we print
+  'You have died' before attempting to resurrect."
+
+<CONSTANT RESURRECT-PROMPT
+    <TABLE
+        "I might be able to help you out, but I've never really done this before.
+Do you want me to try to reincarnate you?"
+        "You clumsy oaf, you've done it again! I don't know how long I can keep this up.
+Do you want me to try reincarnating you again?"
+        "Now you've really done it! I'm out of orange smoke!
+You don't expect me to do a decent reincarnation without any orange smoke, do you?">>
+
+<CONSTANT RESURRECT-NO
+    <TABLE
+        "Very well."
+        "Probably a wise choice."
+        "I thought not!">>
+
+<CONSTANT RESURRECT-YES
+    <TABLE
+        "All right. But don't blame me if something goes wr......||||
+--- POOF!! ---||
+You are engulfed in a cloud of orange smoke.
+Coughing and gasping, you emerge from the smoke and find that you're...."
+        "Okay, now where did I put my orange smoke?.... >POOF!<||
+Everything disappears in a dense cloud of orange smoke."
+        "Okay, if you're so smart, do it yourself! I'm leaving.">>
+
+<REPLACE-DEFINITION RESURRECT?
+    <ROUTINE RESURRECT? ()
+        <COND (,LAMP-RAN-OUT <RFALSE>)
+              (,CAVES-CLOSED
+               <TELL "Seeing as how it's so close to closing time anyway, I think we'll just call it a day." CR>
+               <RFALSE>)>
+        <TELL <GET ,RESURRECT-PROMPT ,DEATHS>>
+        <COND (<NOT <YES?>>
+               <TELL CR <GET ,RESURRECT-NO ,DEATHS> CR>
+               <RFALSE>)>
+        <TELL CR <GET ,RESURRECT-YES ,DEATHS> CR CR>
+        <COND (<G=? ,DEATHS 2> <RFALSE>)>
+        <SETG DEATHS <+ ,DEATHS 1>>
+        <SETG SCORE <- ,SCORE 10>>
+        <ROB ,WINNER ,HERE>
+        <MOVE ,BRASS-LANTERN ,AT-END-OF-ROAD>
+        <FCLEAR ,BRASS-LANTERN ,ONBIT>
+        <FCLEAR ,BRASS-LANTERN ,LIGHTBIT>
+        <REMOVE DWARF>
+        <GOTO ,INSIDE-BUILDING>
+        <RTRUE>>>
 
 ;XXX
 <ROUTINE FINISH ()
