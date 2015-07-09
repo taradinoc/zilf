@@ -175,11 +175,22 @@
 ;"Constants"
 
 ;"TODO: these belong in parser.zil?"
+;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK"
+;"Object DESCFCNs may get: M-OBJDESC?, no arg"
+;"DARKNESS-F may get: M-LOOK, M-SCOPE?, M-LIT-TO-DARK, M-DARK-TO-LIT,
+    M-DARK-TO-DARK, M-DARK-CANT-GO"
 <CONSTANT M-BEG 1>
 <CONSTANT M-END 2>
 <CONSTANT M-ENTER 3>
 <CONSTANT M-LOOK 4>
-<CONSTANT M-OBJDESC? 5>   ;"for DESCFCN"
+<CONSTANT M-OBJDESC? 5>
+<CONSTANT M-SCOPE? 6>
+<CONSTANT M-LIT-TO-DARK 7>
+<CONSTANT M-DARK-TO-LIT 8>
+<CONSTANT M-DARK-TO-DARK 9>
+<CONSTANT M-DARK-CANT-GO 10>
+<CONSTANT M-NOW-DARK 11>
+<CONSTANT M-NOW-LIT 12>
 
 ;"Helper routines for action handlers"
 
@@ -256,7 +267,7 @@ Returns:
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
-         <TELL "It is pitch black. You are likely to be eaten by a grue." CR>
+         <DARKNESS-F ,M-LOOK>
          <RFALSE>)
         (ELSE
          ;"print the room's real name"
@@ -275,6 +286,21 @@ Returns:
                (ELSE
                 <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>
          <RTRUE>)>>
+
+<DEFAULT-DEFINITION DARKNESS-F
+
+    <ROUTINE DARKNESS-F (ARG)
+        <COND (<=? .ARG ,M-LOOK>
+               <TELL "It is pitch black. You can't see a thing." CR>)
+              (<=? .ARG ,M-SCOPE?>
+               <T? <SCOPE-STAGE? GENERIC INVENTORY GLOBALS>>)
+              (<=? .ARG ,M-NOW-DARK>
+               <TELL "You are plunged into darkness." CR>)
+              (<=? .ARG ,M-NOW-LIT>
+               <TELL "You can see your surroundings now." CR CR>
+               <RFALSE>)
+              (ELSE <RFALSE>)>>
+>
 
 ;"Describes the objects in a room.
 
@@ -553,11 +579,15 @@ Returns:
 
 <COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
-<ROUTINE V-WALK ("AUX" PT PTS RM)
+<CONSTANT CANT-GO-THAT-WAY "You can't go that way.">
+
+<ROUTINE V-WALK ("AUX" PT PTS RM THERE-LIT)
     <COND (<NOT ,PRSO-DIR>
            <PRINTR "You must give a direction to walk in.">)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
-           <PRINTR "You can't go that way.">)
+           <COND (<OR ,HERE-LIT <NOT <DARKNESS-F ,M-DARK-CANT-GO>>>
+                  <TELL ,CANT-GO-THAT-WAY CR>)>
+           <RTRUE>)
           (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
            <SET RM <GET/B .PT ,EXIT-RM>>)
           (<==? .PTS ,NEXIT>
@@ -572,8 +602,11 @@ Returns:
                  (<SET RM <GET .PT ,CEXIT-MSG>>
                   <TELL .RM CR>
                   <RTRUE>)
+                 (<AND <NOT ,HERE-LIT> <DARKNESS-F ,M-DARK-CANT-GO>>
+                  <RTRUE>)
                  (ELSE
-                  <PRINTR "You can't go that way.">)>)
+                  <TELL ,CANT-GO-THAT-WAY CR>
+                  <RTRUE>)>)
           (<==? .PTS ,DEXIT>
            <COND (<FSET? <GET/B .PT ,DEXIT-OBJ> ,OPENBIT>
                   <SET RM <GET/B .PT ,EXIT-RM>>)

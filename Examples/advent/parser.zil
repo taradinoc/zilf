@@ -1135,7 +1135,10 @@ Returns:
           (ELSE <APPLY .RTN>)>>
 
 ;"Moves the player to a new location, notifies the location that the player
-has entered, and prints the location name (and possibly description).
+has entered, and prints an appropriate room introduction.
+
+If the old and/or new location is dark, DARKNESS-F will be given a chance to
+print the room introduction before DESCRIBE-ROOM and DESCRIBE-OBJECTS.
 
 Uses:
   WINNER
@@ -1145,14 +1148,25 @@ Sets:
 
 Args:
   RM: The room to move into."
-<ROUTINE GOTO (RM)
+<ROUTINE GOTO (RM "AUX" WAS-LIT F)
+    <SET WAS-LIT ,HERE-LIT>
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
     ;"Call SEARCH-FOR-LIGHT down here in case M-ENTER adjusts the light."
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"moved descriptors into GOTO so they'll be called when you call GOTO from a PER routine, etc"
-    <COND (<DESCRIBE-ROOM ,HERE>
+    <COND (<NOT .WAS-LIT>
+           <COND (,HERE-LIT
+                  <SET F <DARKNESS-F ,M-DARK-TO-LIT>>)
+                 (<OR <DARKNESS-F ,M-DARK-TO-DARK>
+                      <DARKNESS-F ,M-LOOK>>
+                  <SET F T>)>)
+          (,HERE-LIT)
+          (<OR <DARKNESS-F ,M-LIT-TO-DARK>
+               <DARKNESS-F ,M-LOOK>>
+           <SET F T>)>
+    <COND (<AND <NOT .F> <DESCRIBE-ROOM ,HERE>>
            <DESCRIBE-OBJECTS ,HERE>)>
     <FSET ,HERE ,TOUCHBIT>>
 
@@ -1493,7 +1507,7 @@ a light source to go away."
     <COND (<AND ,HERE-LIT
                 <NOT <SEARCH-FOR-LIGHT>>>
            <SETG HERE-LIT <>>
-           <TELL "You are plunged into darkness." CR>)>>
+           <DARKNESS-F ,M-NOW-DARK>)>>
 
 ;"Checks whether the player is no longer in darkness, printing a message if so.
 
@@ -1503,8 +1517,7 @@ or reveal a light source."
     <COND (<AND <NOT ,HERE-LIT>
                 <SEARCH-FOR-LIGHT>>
            <SETG HERE-LIT T>
-           <TELL "You can see your surroundings now." CR CR>
-           <V-LOOK>)>>
+           <OR <DARKNESS-F ,M-NOW-LIT> <V-LOOK>>)>>
 
 <INSERT-FILE "events">
 

@@ -58,6 +58,9 @@ Adapted once more by Jesse McGrew (2015)">
 ;"This affects the definition of GAME-VERB?."
 <SETG EXTRA-GAME-VERBS '(SCORE)>
 
+;"We replace DARKNESS-F below."
+<DELAY-DEFINITION DARKNESS-F>
+
 <INSERT-FILE "parser">
 
 ;----------------------------------------------------------------------
@@ -3812,15 +3815,45 @@ At your feet is a large steel grate, next to which is a sign which reads,
 "Stumbling around in the dark"
 ;----------------------------------------------------------------------
 
-;"TODO: call DARK-TO-DARK when stumbling around"
-<GLOBAL DARK-WARNING <>>
+;"Our darkness rules differ slightly from the Inform and Hugo ports as well
+  as the original Colossal Cave.
+  
+  - Like the original and the Inform version, entering darkness is always
+    safe. The player will only ever fall into a pit when moving in the dark.
 
-<ROUTINE DARK-TO-DARK ()
-    <COND (<NOT ,DARK-WARNING>
-           <SETG DARK-WARNING T>
-           <TELL "It is now pitch dark. If you proceed you will likely fall into a pit." CR>)
-          (<PROB 25>
-           <JIGS-UP "You fell into a pit and broke every bone in your body!">)>>
+  - Like the original version, the chance of falling into a pit is 35%,
+    compared to 25% in the Inform and Hugo ports.
+
+  - Unlike any of those versions, the player may fall into a pit when
+    moving in an unconnected direction in the dark! The only safe
+    direction is back into the light."
+
+<CONSTANT PIT-WARNING "If you proceed you will likely fall into a pit.">
+
+<REPLACE-DEFINITION DARKNESS-F
+
+    <ROUTINE DARKNESS-F (ARG)
+        <COND (<=? .ARG ,M-LOOK>
+               <TELL "It is pitch dark. You can't see a thing." CR>)
+              (<=? .ARG ,M-SCOPE?>
+               ;"The player can refer to their inventory items in the dark, but nothing else."
+               <SCOPE-STAGE? INVENTORY>)
+              (<=? .ARG ,M-NOW-DARK>
+               <TELL "You are plunged into darkness." CR>)
+              (<=? .ARG ,M-NOW-LIT>
+               <TELL "You can see your surroundings now." CR CR>
+               <RFALSE>)
+              (<=? .ARG ,M-LIT-TO-DARK>
+               <TELL "It is now pitch dark. " ,PIT-WARNING CR>)
+              (<=? .ARG ,M-DARK-TO-DARK ,M-DARK-CANT-GO>
+               <COND (<PROB 35>
+                      <JIGS-UP "You fell into a pit and broke every bone in your body!">)
+                     (<=? .ARG ,M-DARK-CANT-GO>
+                      <TELL "You stumble around in the dark but make no progress in that direction." CR>)
+                     (ELSE
+                      <TELL "It is still pitch dark. " ,PIT-WARNING CR>)>)
+              (ELSE <RFALSE>)>>
+>
 
 ;----------------------------------------------------------------------
 "Teleportation system"
