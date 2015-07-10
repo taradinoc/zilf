@@ -305,7 +305,7 @@ There is a building in the distance.")
 <ROUTINE BRASS-LANTERN-F ()
     <COND (<VERB? EXAMINE>
            <TELL "It is a shiny brass lamp">
-           <COND (<NOT <FSET ,PRSO ,LIGHTBIT>>
+           <COND (<NOT <FSET? ,PRSO ,LIGHTBIT>>
                   <TELL ". It is not currently lit." CR>)
                  (<L? ,LANTERN-POWER 30>
                   <TELL ", glowing dimly." CR>)
