@@ -7,10 +7,11 @@
 ;----------------------------------------------------------------------
 
 <VERSION ZIP>
-<CONSTANT RELEASEID 1>
+<CONSTANT RELEASEID 0>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 ;<COMPILATION-FLAG DEBUG>
+<COMPILATION-FLAG BETA>
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
@@ -18,20 +19,21 @@
 ;"TODO: Enable NEW-VOC? once the parser supports it."
 ;<SETG NEW-VOC? T>
 
-<CONSTANT GAME-BANNER
-"ADVENTURE|
-A Modern Classic|
+<CONSTANT GAME-BANNER <STRING
+<IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
+"A Modern Classic|
 Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and Kent Tessman (1995)|
-Adapted once more by Jesse McGrew (2015)">
+Adapted once more by Jesse McGrew (2015)">>
 
 ;----------------------------------------------------------------------
 "Main entry point"
 ;----------------------------------------------------------------------
 
 <ROUTINE GO ()
+    <IF-BETA <SEED-RANDOM>>
     <CRLF> <CRLF>
-    <TELL "IT WAS THE SEVENTIES AND THERE WAS TIME FOR..." CR CR>   ;XXX
+    ;<TELL "IT WAS THE SEVENTIES AND THERE WAS TIME FOR..." CR CR>
     <V-VERSION> <CRLF>
     <SETG HERE ,AT-END-OF-ROAD>
     <SETG SCORE 36>
@@ -50,6 +52,22 @@ Adapted once more by Jesse McGrew (2015)">
                       <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                       <CLOCKER>)>)>
         <SETG HERE <LOC ,WINNER>>>>
+
+<IF-BETA
+    <CONSTANT FORTUNES
+        <PLTABLE "Watch out for bugs!"
+                 "Full batteries make empty pits."
+                 "A bearded man will steal your treasure."
+                 "A savage beast will become your friend."
+                 "A group of visitors will surprise you with shiny gifts."
+                 "Not all questions are rhetorical.">>
+
+    <ROUTINE SEED-RANDOM ("AUX" S)
+        <SET S <RANDOM 32767>>
+        <TELL "[Your fortune for today: \""
+              <PICK-ONE-R ,FORTUNES>
+              " Lucky number " N .S ".\"]" CR>
+        <RANDOM <- .S>>>>
 
 ;----------------------------------------------------------------------
 "Include the standard library"
@@ -3913,7 +3931,7 @@ Everything disappears in a dense cloud of orange smoke."
               (,CAVES-CLOSED
                <TELL "Seeing as how it's so close to closing time anyway, I think we'll just call it a day." CR>
                <RFALSE>)>
-        <TELL <GET ,RESURRECT-PROMPT ,DEATHS>>
+        <TELL <GET ,RESURRECT-PROMPT ,DEATHS> CR>
         <COND (<NOT <YES?>>
                <TELL CR <GET ,RESURRECT-NO ,DEATHS> CR>
                <RFALSE>)>
