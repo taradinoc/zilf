@@ -866,7 +866,7 @@ Returns:
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
     <MAP-SCOPE (I)
-        <COND (<REFERS? .A .N .I>
+        <COND (<AND <NOT <FSET? .I ,INVISIBLE>> <REFERS? .A .N .I>>
                <RETURN .I .FOO>)>>
     ;"Not found"
     <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
@@ -885,11 +885,7 @@ Returns:
   True if the object is present in the room's GLOBAL property.
   Otherwise, false."
 <ROUTINE GLOBAL-IN? (O R)
-    <IN-PB/WTBL? .R ,P?GLOBAL .O>>
-
-;"Making this a macro is tempting, but it'd evaluate the parameters in the wrong order"
-;<DEFMAC GLOBAL-IN? ('O 'R)
-    <FORM IN-PB/WTBL? .R ',P?GLOBAL .O>>
+    <AND <NOT <FSET? .O ,INVISIBLE>> <IN-PB/WTBL? .R ,P?GLOBAL .O>>>
 
 ;"Determines whether an adjective/noun pair refer to a given object.
 
