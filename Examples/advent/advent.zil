@@ -1008,7 +1008,7 @@ parallel to and north of the hall of mists." CR>
     (SYNONYM BRIDGE)
     (ADJECTIVE CRYSTAL)
     (TEXT "It spans the fissure, thereby providing you a way across.")
-    (FLAGS DOORBIT OPENBIT INVISIBLE)>
+    (FLAGS DOORBIT INVISIBLE)>
 
 <OBJECT FISSURE
     (DESC "fissure")
