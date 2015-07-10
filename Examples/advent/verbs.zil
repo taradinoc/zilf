@@ -1018,7 +1018,9 @@ Returns:
           (ELSE <TELL "You aren't wearing that." CR>)>>
 
 <ROUTINE V-EAT ()
-    <COND (<FSET? ,PRSO ,EDIBLEBIT>
+    <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
+          (<FSET? ,PRSO ,EDIBLEBIT>
            ;"TODO: move this held check to syntax flags"
            <COND (<HELD? ,PRSO>
                   <TELL "You devour " T ,PRSO "." CR>
