@@ -217,7 +217,7 @@ There is a building in the distance.")
 <ROOM INSIDE-BUILDING
     (DESC "Inside Building")
     (IN ROOMS)
-    (GLOBAL WELL-HOUSE STREAM)
+    (GLOBAL WELL-HOUSE)
     (LDESC "You are inside a building, a well house for a large spring.")
     (ACTION INSIDE-BUILDING-F)
     (WEST TO AT-END-OF-ROAD)
@@ -244,10 +244,14 @@ There is a building in the distance.")
 <OBJECT SPRING
     (DESC "spring")
     (IN INSIDE-BUILDING)
-    (SYNONYM SPRING)
+    (SYNONYM SPRING STREAM)
     (ADJECTIVE LARGE)
     (TEXT ,STREAM-FLOWS-OUT)
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT)
+    (ACTION SPRING-F)>
+
+<ROUTINE SPRING-F ()
+    <COND (<VERB? DRINK> <TELL ,STREAM-FLOWS-OUT CR>)>>
 
 <OBJECT SEWER-PIPES
     (DESC "pair of 1 foot diameter sewer pipes")
@@ -500,8 +504,8 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (IN IN-A-VALLEY)
     (SYNONYM BED ROCK
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP STREAM) (ELSE STREAMBED)>)
-    (ADJECTIVE SMALL ROCKY BARE DRY)
+        %<VERSION? (ZIP #SPLICE ()) (ELSE STREAMBED)>)
+    (ADJECTIVE SMALL ROCKY ;BARE ;DRY STREAM)
     (FLAGS NDESCBIT)>
 
 ;----------------------------------------------------------------------
