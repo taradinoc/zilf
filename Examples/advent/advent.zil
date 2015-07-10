@@ -138,9 +138,12 @@ A small stream flows out of the building and down a gully.")
 
 <ROUTINE STREAM-F ()
     <COND (<VERB? DRINK>
-           <TELL "You have taken a drink from the stream.
-The water tastes strongly of animals, but is not unpleasant.
-It is extremely cold." CR>)
+           <TELL "You have taken a drink from the stream. The water tastes strongly of ">
+           ;"Inspired by a typo that was too amusing to take out..."
+           <COND (<PROB 95> <TELL "minerals">)
+                 (<PROB 50> <TELL "animals">)
+                 (ELSE <TELL "vegetables">)>
+           <TELL ", but is not unpleasant. It is extremely cold." CR>)
           (<VERB? TAKE>
            <COND (<HELD? ,BOTTLE>
                   <PERFORM ,V?FILL ,BOTTLE>
