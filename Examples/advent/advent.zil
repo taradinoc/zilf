@@ -235,11 +235,9 @@ There is a building in the distance.")
                  (<AND <VERB? ENTER> <PRSO? ,SPRING ,SEWER-PIPES>>
                   <TELL ,STREAM-FLOWS-OUT CR "It would be advisable to use the exit." CR>)
                  (<VERB? XYZZY>
-                  <OR <FSET? ,IN-DEBRIS-ROOM ,TOUCHBIT> <RFALSE>>
                   <GOTO ,IN-DEBRIS-ROOM>
                   <RTRUE>)
                  (<VERB? PLUGH>
-                  <OR <FSET? ,AT-Y2 ,TOUCHBIT> <RFALSE>>
                   <GOTO ,AT-Y2>
                   <RTRUE>)>)>>
 
@@ -1236,7 +1234,6 @@ There is a large \"Y2\" on a rock in the rooms center.")
                   <GOTO ,INSIDE-BUILDING>
                   <RTRUE>)
                  (<VERB? PLOVER>
-                  <OR <FSET? ,IN-PLOVER-ROOM ,TOUCHBIT> <RFALSE>>
                   <COND (<HELD? ,EGG-SIZED-EMERALD>
                          <MOVE ,EGG-SIZED-EMERALD ,IN-PLOVER-ROOM>)>
                   <GOTO ,IN-PLOVER-ROOM>
@@ -4130,20 +4127,8 @@ appears out of nowhere!" CR>)>)>)
 "Debug/cheat verbs"
 ;----------------------------------------------------------------------
 
-<IF-DEBUG
+;<IF-DEBUG
 
-    <SYNTAX XMAGIC = V-XMAGIC>
-    
-    <ROUTINE V-XMAGIC ()
-        <FSET ,IN-DEBRIS-ROOM ,TOUCHBIT>
-        <FSET ,AT-Y2 ,TOUCHBIT>
-        <FSET ,IN-PLOVER-ROOM ,TOUCHBIT>
-        <TELL "Magic words unlocked." CR>>
-    
-    <SYNTAX XSCORE = V-XSCORE>
-    
-    <ROUTINE V-XSCORE ()
-        <SETG SCORE <+ ,SCORE <RANDOM 11> -6>>>
 >
 
 ;----------------------------------------------------------------------
