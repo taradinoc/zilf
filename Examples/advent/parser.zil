@@ -158,6 +158,7 @@ Args:
 <GLOBAL P-LEN 0>
 <GLOBAL P-V <>>
 <GLOBAL P-V-WORD <>>
+<GLOBAL P-V-WORDN 0>
 <GLOBAL P-NOBJ 0>
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
@@ -255,6 +256,7 @@ Sets:
               (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
                ;"Found the verb"
                <SETG P-V-WORD .W>
+               <SETG P-V-WORDN .I>
                <SETG P-V <WORD? .W VERB>>)
               (<AND <EQUAL? ,P-V <> ,ACT?WALK>
                     <SET VAL <WORD? .W DIRECTION>>>
@@ -735,8 +737,9 @@ Returns:
     <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
     <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
     ;"TODO: implement orphaning so we can handle the response to this question"
-    ;"TODO: use LONG-WORDS table for verb/preposition words"
-    <TELL "What do you want to " B ,P-V-WORD>
+    ;"TODO: use LONG-WORDS table for preposition words"
+    <TELL "What do you want to ">
+    <PRINT-WORD ,P-V-WORDN>
     <COND (.SP1
            <TELL " " B <GET-PREP-WORD .SP1>>)>
     <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
