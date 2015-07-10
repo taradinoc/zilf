@@ -820,7 +820,8 @@ Rough stone steps lead down the pit.")
 
 <ROUTINE DOWN-INTO-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
-           <JIGS-UP "You are at the bottom of the pit with a broken neck.">)
+           <JIGS-UP "You are at the bottom of the pit with a broken neck.">
+           ,HERE)
           (ELSE ,IN-HALL-OF-MISTS)>>
 
 <OBJECT SMALL-MISTY-PIT
@@ -880,7 +881,8 @@ Rough stone steps lead up the dome.")
 
 <ROUTINE UP-OUT-OF-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
-           <TELL "The dome is unclimbable." CR>)
+           <TELL "The dome is unclimbable." CR>
+           <RFALSE>)
           (ELSE ,AT-TOP-OF-SMALL-PIT)>>
 
 <OBJECT WIDE-STONE-STAIRCASE
@@ -1987,7 +1989,8 @@ having done so you would be unable to reach it to climb back up.")
 
 <ROUTINE DIR-EXIT-FROM-IN-SECRET-CANYON (DEST)
     <COND (<AND <N=? ,CANYON-FROM .DEST> <IN? ,DRAGON ,HERE>>
-           <TELL CT ,DRAGON " looks rather nasty. You'd best not try to get by." CR>)
+           <TELL CT ,DRAGON " looks rather nasty. You'd best not try to get by." CR>
+           <RFALSE>)
           (ELSE .DEST)>>
 
 <ROUTINE OUT-FROM-IN-SECRET-CANYON ()
@@ -2817,13 +2820,16 @@ A southwest path leads away from the chasm into a winding corridor.")
 beneath the weight of the bear, which was still following you around.
 You scrabble desperately for support, but as the bridge collapses you stumble back
 and fall into the chasm.">
-                  <RTRUE>)>
+                  ,HERE)>
            <COND (<=? ,HERE ,ON-SW-SIDE-OF-CHASM> ,ON-NE-SIDE-OF-CHASM)
                  (ELSE ,ON-SW-SIDE-OF-CHASM)>)
-          (<IN? ,TROLL ,HERE> <TELL "The troll refuses to let you cross." CR>)
+          (<IN? ,TROLL ,HERE>
+           <TELL "The troll refuses to let you cross." CR>
+           <RFALSE>)
           (ELSE
            <MOVE ,TROLL ,HERE>
-           <TELL "The troll steps out from beneath the bridge and blocks your way." CR>)>>
+           <TELL "The troll steps out from beneath the bridge and blocks your way." CR>
+           <RFALSE>)>>
 
 <OBJECT RICKETY-BRIDGE
     (DESC "rickety bridge")
