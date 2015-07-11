@@ -2071,9 +2071,9 @@ You have just vanquished a dragon with your bare hands!
 <ROUTINE PERSIAN-RUG-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (<IN? ,DRAGON ,HERE>
-           <TELL CT ,DRAGON " is sprawled out on " T ,PERSIAN-RUG "!" CR>)
+           <TELL CT ,DRAGON " is sprawled out on " T ,PERSIAN-RUG "!">)
           (ELSE
-           <TELL CT ,PERSIAN-RUG " is spread out on the floor here." CR>)>>
+           <TELL CT ,PERSIAN-RUG " is spread out on the floor here.">)>>
 
 <ROUTINE PERSIAN-RUG-F ()
     <COND (<AND <VERB? TAKE> <IN? ,DRAGON ,HERE>>
