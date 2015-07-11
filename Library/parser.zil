@@ -1,6 +1,6 @@
 "Library header"
 
-<SETG ZILLIB-VERSION "J2">
+<SETG ZILLIB-VERSION "J2+">
 
 <VERSION?
     (ZIP)
@@ -46,9 +46,11 @@ other versions. These macros let us write the same code for all versions."
 <VERSION?
     (ZIP
         <DEFMAC GET/B ('T 'O) <FORM GETB .T .O>>
+        <DEFMAC PUT/B ('T 'O 'V) <FORM PUTB .T .O .V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>)
     (ELSE
         <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
+        <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>)>
 
 "Parser"
@@ -76,6 +78,12 @@ other versions. These macros let us write the same code for all versions."
             <FORM GVAL <PARSE <STRING "V?" <SPNAME .I>>>>>
         .A>>
     <FORM EQUAL? ',PRSA !.O>>
+
+<DEFMAC PRSO? ("ARGS" A)
+    <FORM EQUAL? ',PRSO !.A>>
+
+<DEFMAC PRSI? ("ARGS" A)
+    <FORM EQUAL? ',PRSI !.A>>
 
 <DEFMAC WORD? ('W 'T)
     <FORM CHKWORD? .W
@@ -150,6 +158,7 @@ Args:
 <GLOBAL P-LEN 0>
 <GLOBAL P-V <>>
 <GLOBAL P-V-WORD <>>
+<GLOBAL P-V-WORDN 0>
 <GLOBAL P-NOBJ 0>
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
@@ -247,6 +256,7 @@ Sets:
               (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
                ;"Found the verb"
                <SETG P-V-WORD .W>
+               <SETG P-V-WORDN .I>
                <SETG P-V <WORD? .W VERB>>)
               (<AND <EQUAL? ,P-V <> ,ACT?WALK>
                     <SET VAL <WORD? .W DIRECTION>>>
@@ -309,6 +319,10 @@ Sets:
     ;"Match syntax lines and objects"
     <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
            <RFALSE>)>
+    ;"Save command for AGAIN"
+    <COND (<NOT <VERB? AGAIN>>
+           <COPY-READBUF>
+           <COPY-LEXBUF>)>
     ;"Save UNDO state"
     <IF-UNDO
         <COND (<AND <NOT <VERB? UNDO>>
@@ -691,7 +705,9 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
                   <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
-           <COND (<NOT ,PRSO> <RFALSE>)>)>
+           <COND (<OR <NOT ,PRSO>
+                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK ,PRSO .O>>>>
+                  <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
           (ELSE
@@ -712,7 +728,8 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
                   <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX
                                            <ENCODE-NOUN-BITS .F .O>>>)>
-           <COND (<NOT ,PRSI> <RFALSE>)>)>
+           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK ,PRSI .O>>>
+                  <RFALSE>)>)>
     <RTRUE>>
 
 <ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2)
@@ -720,7 +737,9 @@ Returns:
     <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
     <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
     ;"TODO: implement orphaning so we can handle the response to this question"
-    <TELL "What do you want to " B ,P-V-WORD>
+    ;"TODO: use LONG-WORDS table for preposition words"
+    <TELL "What do you want to ">
+    <PRINT-WORD ,P-V-WORDN>
     <COND (.SP1
            <TELL " " B <GET-PREP-WORD .SP1>>)>
     <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
@@ -728,6 +747,35 @@ Returns:
            <COND (.SP2
                   <TELL " " B <GET-PREP-WORD .SP2>>)>)>
     <TELL "?" CR>>
+
+;"Applies the rules for the HAVE and TAKE syntax flags to a parsed object,
+printing a failure message if appropriate.
+
+Args:
+  OBJ: An object matched as one of the nouns in a command.
+  OPTS: The corresponding search options, including the HAVE and TAKE flags.
+
+Returns:
+  True if the checks passed, i.e. either the object doesn't have to be held
+  by the WINNER, or it is held, possibly as the result of an implicit TAKE.
+  False if the object has to be held, the WINNER is not holding it, and
+  it couldn't be taken implicitly."
+<ROUTINE HAVE-TAKE-CHECK (OBJ OPTS)
+    ;"Attempt implicit take if WINNER isn't directly holding the object"
+    <COND (<BTST .OPTS ,SF-TAKE>
+           ;"TODO: Don't implicit take out of a closed container? Or should
+             the container handle this by setting TRYTAKEBIT on its contents?"
+           ;"TODO: Enforce inventory limit; split relevant logic out of V-TAKE."
+           <COND (<AND <NOT <IN? .OBJ ,WINNER>>
+                       <FSET? .OBJ ,TAKEBIT>
+                       <NOT <FSET? .OBJ ,TRYTAKEBIT>>>
+                  <TELL "[taking " T .OBJ "]" CR>
+                  <MOVE .OBJ ,WINNER>)>)>
+    ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
+    <COND (<AND <BTST .OPTS ,SF-HAVE> <NOT <HELD? .OBJ>>>
+           <TELL "You aren't holding " T .OBJ "." CR>
+           <RFALSE>)>
+    <RTRUE>>
 
 ;"Searches scope for a single object with the given flag set, and prints an
 inference message before returning it.
@@ -753,6 +801,7 @@ Returns:
     ;"Print inference message"
     <COND (.O
            <TELL "[">
+           ;"TODO: use LONG-WORDS table for preposition word"
            <COND (<SET PW <GET-PREP-WORD .PREP>>
                   <TELL B .PW " ">)>
            <TELL T .O "]" CR>
@@ -811,12 +860,13 @@ Args:
     FIND flag in the upper byte.
 
 Returns:
-  The located object, or false if no matching object was found. "
+  The located object, or false if no matching object was found."
 <ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL BITS "AUX" A N)
+    ;"TODO: Disambiguate and/or match multiple objects."
     <SET A <GET .YTBL 1>>
     <SET N <GET .YTBL 2>>
     <MAP-SCOPE (I)
-        <COND (<REFERS? .A .N .I>
+        <COND (<AND <NOT <FSET? .I ,INVISIBLE>> <REFERS? .A .N .I>>
                <RETURN .I .FOO>)>>
     ;"Not found"
     <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
@@ -835,11 +885,7 @@ Returns:
   True if the object is present in the room's GLOBAL property.
   Otherwise, false."
 <ROUTINE GLOBAL-IN? (O R)
-    <IN-PB/WTBL? .R ,P?GLOBAL .O>>
-
-;"Making this a macro is tempting, but it'd evaluate the parameters in the wrong order"
-;<DEFMAC GLOBAL-IN? ('O 'R)
-    <FORM IN-PB/WTBL? .R ',P?GLOBAL .O>>
+    <AND <NOT <FSET? .O ,INVISIBLE>> <IN-PB/WTBL? .R ,P?GLOBAL .O>>>
 
 ;"Determines whether an adjective/noun pair refer to a given object.
 
@@ -1088,7 +1134,10 @@ Returns:
           (ELSE <APPLY .RTN>)>>
 
 ;"Moves the player to a new location, notifies the location that the player
-has entered, and prints the location name (and possibly description).
+has entered, and prints an appropriate room introduction.
+
+If the old and/or new location is dark, DARKNESS-F will be given a chance to
+print the room introduction before DESCRIBE-ROOM and DESCRIBE-OBJECTS.
 
 Uses:
   WINNER
@@ -1098,14 +1147,25 @@ Sets:
 
 Args:
   RM: The room to move into."
-<ROUTINE GOTO (RM)
+<ROUTINE GOTO (RM "AUX" WAS-LIT F)
+    <SET WAS-LIT ,HERE-LIT>
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
     ;"Call SEARCH-FOR-LIGHT down here in case M-ENTER adjusts the light."
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"moved descriptors into GOTO so they'll be called when you call GOTO from a PER routine, etc"
-    <COND (<DESCRIBE-ROOM ,HERE>
+    <COND (<NOT .WAS-LIT>
+           <COND (,HERE-LIT
+                  <SET F <DARKNESS-F ,M-DARK-TO-LIT>>)
+                 (<OR <DARKNESS-F ,M-DARK-TO-DARK>
+                      <DARKNESS-F ,M-LOOK>>
+                  <SET F T>)>)
+          (,HERE-LIT)
+          (<OR <DARKNESS-F ,M-LIT-TO-DARK>
+               <DARKNESS-F ,M-LOOK>>
+           <SET F T>)>
+    <COND (<AND <NOT .F> <DESCRIBE-ROOM ,HERE>>
            <DESCRIBE-OBJECTS ,HERE>)>
     <FSET ,HERE ,TOUCHBIT>>
 
@@ -1242,11 +1302,13 @@ Args:
   TEXT: The message to print before the 'game is over' banner.
 
 Returns:
-  Does not return."
+  True if RESURRECT? indicated that the game should resume.
+  Otherwise, never returns."
 <ROUTINE JIGS-UP (TEXT "AUX" RESP W)
     <TELL .TEXT CR CR>
-    <TELL "    ****  The game is over  ****" CR CR>
-    ;"<TELL "    ****  You have died  ****" CR CR>"
+    <PRINT-GAME-OVER>
+    <CRLF>
+    <COND (<RESURRECT?> <RTRUE>)>
     <REPEAT PROMPT ()
         <IFFLAG (UNDO
                  <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
@@ -1275,6 +1337,25 @@ Returns:
                             <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
                            (ELSE
                             <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>>>
+
+<DEFAULT-DEFINITION PRINT-GAME-OVER
+    ;"Prints a message explaining that the game is over or the player has died.
+      This is called after JIGS-UP has already printed the message passed in to
+      describe the specific circumstances, so usually this should print a generic
+      message appropriate for the game's theme."
+    <ROUTINE PRINT-GAME-OVER ()
+        <TELL "    ****  The game is over  ****" CR>>
+>
+
+<DEFAULT-DEFINITION RESURRECT?
+    ;"Optionally gives the player a chance to resume the game after JIGS-UP.
+    
+    Returns:
+      True if JIGS-UP should return to its caller; the function should change
+      the game state as needed for this to make sense. False if JIGS-UP should
+      prompt the player to RESTART/UNDO/RESTORE/QUIT and never return."
+    <DEFMAC RESURRECT? () <>>
+>
 
 ;"Empties the contents of one object into another, or removes them from play.
 
@@ -1446,7 +1527,7 @@ a light source to go away."
     <COND (<AND ,HERE-LIT
                 <NOT <SEARCH-FOR-LIGHT>>>
            <SETG HERE-LIT <>>
-           <TELL "You are plunged into darkness." CR>)>>
+           <DARKNESS-F ,M-NOW-DARK>)>>
 
 ;"Checks whether the player is no longer in darkness, printing a message if so.
 
@@ -1456,8 +1537,7 @@ or reveal a light source."
     <COND (<AND <NOT ,HERE-LIT>
                 <SEARCH-FOR-LIGHT>>
            <SETG HERE-LIT T>
-           <TELL "You can see your surroundings now." CR CR>
-           <V-LOOK>)>>
+           <OR <DARKNESS-F ,M-NOW-LIT> <V-LOOK>>)>>
 
 <INSERT-FILE "events">
 
@@ -1470,7 +1550,7 @@ or reveal a light source."
     (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT
            LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
            OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
-           PLURALBIT KLUDGEBIT DOORBIT)>
+           PLURALBIT KLUDGEBIT DOORBIT TRYTAKEBIT)>
 
 ;"This has any special properties, just in case other objects don't define them."
 ;"I guess all properties should go on this dummy object, just to be safe?"
@@ -1484,9 +1564,11 @@ or reveal a light source."
     (CONTFCN <>)
     (DESCFCN <>)
     (TEXT-HELD <>)
-    (CAPACITY 10)>
+    (CAPACITY 10)
+    (ARTICLE <>)>
 
 <PROPDEF SIZE 5>
+<PROPDEF CAPACITY -1>
 
 <OBJECT GLOBAL-OBJECTS>
 
@@ -1509,14 +1591,13 @@ or reveal a light source."
 <OBJECT PLAYER
     (DESC "you")
     (SYNONYM ME MYSELF)
-    (FLAGS NARTICLEBIT PERSONBIT TOUCHBIT)
-    (ACTION PLAYER-R)>
+    (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
+    (CAPACITY -1)
+    (ACTION PLAYER-F)>
 
 ;"Action handler for the player."
-<ROUTINE PLAYER-R ()
+<ROUTINE PLAYER-F ()
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
           (<VERB? EXAMINE>
-           <PRINTR "You look like you're up for an adventure.">)
-          (<VERB? TAKE>
-           <PRINTR "That couldn't possibly work.">)>>
+           <PRINTR "You look like you're up for an adventure.">)>>
