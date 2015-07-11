@@ -1592,10 +1592,10 @@ or reveal a light source."
     (SYNONYM ME MYSELF)
     (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
     (CAPACITY -1)
-    (ACTION PLAYER-R)>
+    (ACTION PLAYER-F)>
 
 ;"Action handler for the player."
-<ROUTINE PLAYER-R ()
+<ROUTINE PLAYER-F ()
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
           (<VERB? EXAMINE>
