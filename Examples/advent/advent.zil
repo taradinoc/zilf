@@ -12,6 +12,7 @@
 
 ;<COMPILATION-FLAG DEBUG>
 <COMPILATION-FLAG BETA>
+;<COMPILATION-FLAG DBMAZE>   ;"Gives the maze rooms unique names"
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
@@ -19,8 +20,7 @@
 ;"TODO: Enable NEW-VOC? once the parser supports it."
 ;<SETG NEW-VOC? T>
 
-<CONSTANT GAME-BANNER <STRING
-<IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
+<CONSTANT GAME-BANNER <STRING<IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
 "A Modern Classic|
 Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and Kent Tessman (1995)|
@@ -1426,7 +1426,7 @@ There are cracks everywhere, and a passage leading east.")
     ;"Build room definition and evaluate it"
     <SET DEF
         <FORM ROOM .NAME
-            '(DESC "Maze")
+            <IFFLAG (DBMAZE <LIST DESC <SPNAME .NAME>>) (ELSE '(DESC "Maze"))>
             '(IN ROOMS)
             '(LDESC "You are in a maze of twisty little passages, all alike.")
             '(ACTION MAZE-ROOMS-F)
@@ -1434,7 +1434,9 @@ There are cracks everywhere, and a passage leading east.")
     <EVAL .DEF>>
 
 <ROUTINE MAZE-ROOMS-F (RARG)
-    <COND (<AND <=? .RARG ,M-BEG>
+    <COND (<=? .RARG ,M-ENTER>
+           <FCLEAR ,HERE ,TOUCHBIT>)
+          (<AND <=? .RARG ,M-BEG>
                 <VERB? WALK>
                 <PRSO? ,P?OUT>>
            <TELL "Easier said than done." CR>)>>
@@ -1443,7 +1445,7 @@ There are cracks everywhere, and a passage leading east.")
     (UP AT-WEST-END-OF-HALL-OF-MISTS) (NORTH 1) (EAST 2) (SOUTH 4) (WEST 11)>
 
 <MAZE-ROOM ALIKE-MAZE-2
-    (EAST 2) (DOWN DEAD-END-3) (SOUTH 6) (NORTH DEAD-END-13)>
+    (WEST 1) (SOUTH 3) (EAST 4)>
 
 <MAZE-ROOM ALIKE-MAZE-3
     (EAST 2) (DOWN DEAD-END-3) (SOUTH 6) (NORTH DEAD-END-13)>
@@ -1459,7 +1461,7 @@ There are cracks everywhere, and a passage leading east.")
 
 <DEAD-END-ROOM DEAD-END-1 WEST ALIKE-MAZE-4>
 
-<DEAD-END-ROOM DEAD-END-2 WEST ALIKE-MAZE-4>
+<DEAD-END-ROOM DEAD-END-2 NORTH ALIKE-MAZE-4>
 
 <DEAD-END-ROOM DEAD-END-3 UP ALIKE-MAZE-3>
 
@@ -1472,7 +1474,7 @@ There are cracks everywhere, and a passage leading east.")
 <MAZE-ROOM ALIKE-MAZE-9
     (WEST 7) (NORTH 8) (SOUTH DEAD-END-4)>
 
-<DEAD-END-ROOM DEAD-END-4 WEST ALIKE-MAZE-9>
+<DEAD-END-ROOM DEAD-END-4 NORTH ALIKE-MAZE-9>
 
 <MAZE-ROOM ALIKE-MAZE-10
     (WEST 8) (NORTH 10) (DOWN DEAD-END-5) (EAST AT-BRINK-OF-PIT)>
@@ -1519,7 +1521,7 @@ The maze continues at this level.")
            <PERFORM ,V?WALK ,P?DOWN>
            <RTRUE>)>>
 
-<DEAD-END-ROOM DEAD-END-6 EAST AT-BRINK-OF-PIT>
+<DEAD-END-ROOM DEAD-END-6 NORTH AT-BRINK-OF-PIT>
 
 ;----------------------------------------------------------------------
 "A line of three vital junctions, east to west"
@@ -2089,17 +2091,17 @@ You have just vanquished a dragon with your bare hands!
     (OUT TO IN-TALL-E/W-CANYON)>
 
 <MAZE-ROOM ALIKE-MAZE-11
-    (NORTH 1) (WEST 11) (SOUTH 11) (EAST 9) (NE 10)>
+    (NORTH 1) (WEST 11) (SOUTH 11) (EAST DEAD-END-9) (NE DEAD-END-10)>
 
 <DEAD-END-ROOM DEAD-END-9 WEST ALIKE-MAZE-11>
 
-<DEAD-END-ROOM DEAD-END-10 SOUTH ALIKE-MAZE-3>
+<DEAD-END-ROOM DEAD-END-10 SW ALIKE-MAZE-11>
 
 <MAZE-ROOM ALIKE-MAZE-12
     (SOUTH AT-BRINK-OF-PIT) (EAST 13) (WEST 11)>
 
 <MAZE-ROOM ALIKE-MAZE-13
-    (NORTH AT-BRINK-OF-PIT) (WEST 12) (NW 13)>
+    (NORTH AT-BRINK-OF-PIT) (WEST 12) (NW DEAD-END-13)>
 
 <DEAD-END-ROOM DEAD-END-11 EAST ALIKE-MAZE-12>
 
@@ -3290,7 +3292,7 @@ which is probably just as well." CR>)
     ;"Build room definition and evaluate it"
     <SET DEF
         <FORM ROOM .NAME
-            '(DESC "Maze")
+            <IFFLAG (DBMAZE <LIST DESC <SPNAME .NAME>>) (ELSE '(DESC "Maze"))>
             '(IN ROOMS)
             <LIST LDESC <STRING "You are in a " .DESC ", all different.">>
             !.PS>>
