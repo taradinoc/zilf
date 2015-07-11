@@ -161,7 +161,9 @@ A small stream flows out of the building and down a gully.")
                   <REMOVE ,PRSO>
                   <TELL CT ,PRSO " wash">
                   <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
-                  <TELL " away with the stream." CR>)>)>>
+                  <TELL " away with the stream." CR>)>)
+          (<VERB? ENTER>
+           <TELL "Your feet are now wet." CR>)>>
 
 <OBJECT ROAD
     (DESC "road")
