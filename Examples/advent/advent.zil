@@ -44,6 +44,7 @@ Adapted once more by Jesse McGrew (2015)">>
     <QUEUE I-SCORE -1>
     <MOVE ,PLAYER ,HERE>
     <PUTP ,PLAYER ,P?CAPACITY 35> ;"7 objects at default size 5"
+    <PUTP ,PLAYER ,P?ACTION ,ADVENT-PLAYER-F>
     <V-LOOK>
     <REPEAT ()
         <COND (<PARSER>
@@ -68,6 +69,16 @@ Adapted once more by Jesse McGrew (2015)">>
               <PICK-ONE-R ,FORTUNES>
               " Lucky number " N .S ".\"]" CR>
         <RANDOM <- .S>>>>
+
+<ROUTINE ADVENT-PLAYER-F ("AUX" F)
+    <COND (<VERB? SWIM>
+           ;"Change the default response, but give the location a chance to override it."
+           <COND (<NOT <AND <SET F <GETP ,HERE ,P?ACTION>>
+                            <APPLY .F ,M-BEG>>>
+                  <TELL "You don't know how." CR>)>
+           <RTRUE>)>
+    ;"Fall back to the library's handler."
+    <PLAYER-F>>
 
 ;----------------------------------------------------------------------
 "Include the standard library"
@@ -2745,7 +2756,7 @@ who, as you know, are extremely vain.">
     (ACTION SUSPENDED-MIRROR-F)>
 
 <ROUTINE SUSPENDED-MIRROR-F ()
-    ;"TODO: is TAKE the right verb here?"
+    ;"TODO: respond to SEARCH (LOOK IN MIRROR)"
     <COND (<VERB? ATTACK TAKE> <TELL "You can't reach it from here." CR>)>>
 
 ;----------------------------------------------------------------------
