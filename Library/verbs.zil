@@ -18,6 +18,8 @@
 
 <SYNONYM THROUGH THRU>
 
+;"Syntaxes for regular verbs"
+
 <SYNTAX LOOK = V-LOOK>
 <VERB-SYNONYM LOOK L>
 
@@ -30,18 +32,18 @@
 
 <SYNTAX QUIT = V-QUIT>
 
-<SYNTAX TAKE OBJECT (FIND TAKEBIT) (ON-GROUND IN-ROOM) = V-TAKE>
+<SYNTAX TAKE OBJECT (FIND TAKEBIT) (MANY ON-GROUND IN-ROOM) = V-TAKE>
 <VERB-SYNONYM TAKE GRAB>
-<SYNTAX PICK UP OBJECT (FIND TAKEBIT) (ON-GROUND IN-ROOM) = V-TAKE>
-<SYNTAX PICK OBJECT (FIND TAKEBIT) UP OBJECT (FIND KLUDGEBIT) (ON-GROUND IN-ROOM) = V-TAKE>
-<SYNTAX GET OBJECT (FIND TAKEBIT) (ON-GROUND IN-ROOM) = V-TAKE>
+<SYNTAX PICK UP OBJECT (FIND TAKEBIT) (MANY ON-GROUND IN-ROOM) = V-TAKE>
+<SYNTAX PICK OBJECT (FIND TAKEBIT) (MANY ON-GROUND IN-ROOM) UP OBJECT (FIND KLUDGEBIT) = V-TAKE>
+<SYNTAX GET OBJECT (FIND TAKEBIT) (MANY ON-GROUND IN-ROOM) = V-TAKE>
 
-<SYNTAX DROP OBJECT (HAVE HELD CARRIED) = V-DROP>
-<SYNTAX PUT DOWN OBJECT (HAVE HELD CARRIED) = V-DROP>
-<SYNTAX PUT OBJECT (HAVE HELD CARRIED) DOWN OBJECT (FIND KLUDGEBIT) = V-DROP>
+<SYNTAX DROP OBJECT (MANY HAVE HELD CARRIED) = V-DROP>
+<SYNTAX PUT DOWN OBJECT (MANY HAVE HELD CARRIED) = V-DROP>
+<SYNTAX PUT OBJECT (MANY HAVE HELD CARRIED) DOWN OBJECT (FIND KLUDGEBIT) = V-DROP>
 
-<SYNTAX EXAMINE OBJECT = V-EXAMINE>
-<SYNTAX LOOK AT OBJECT = V-EXAMINE>
+<SYNTAX EXAMINE OBJECT = V-EXAMINE PRE-REQUIRES-LIGHT>
+<SYNTAX LOOK AT OBJECT = V-EXAMINE PRE-REQUIRES-LIGHT>
 <VERB-SYNONYM EXAMINE X>
 
 <SYNTAX WEAR OBJECT (FIND WEARBIT) (HAVE TAKE) = V-WEAR>
@@ -52,11 +54,11 @@
 <VERB-SYNONYM UNWEAR DOFF>
 <SYNTAX TAKE OFF OBJECT (FIND WORNBIT) (HAVE HELD CARRIED) = V-UNWEAR>
 
-<SYNTAX PUT OBJECT (HAVE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON>
-<SYNTAX PUT UP OBJECT (HAVE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
+<SYNTAX PUT UP OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
 <VERB-SYNONYM PUT HANG PLACE>
 
-<SYNTAX PUT OBJECT (HAVE HELD CARRIED) IN OBJECT (FIND CONTBIT) = V-PUT-IN>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
 <VERB-SYNONYM PUT PLACE INSERT>
 
 <SYNTAX INVENTORY = V-INVENTORY>
@@ -69,16 +71,20 @@
 <SYNTAX OPEN OBJECT (FIND OPENABLEBIT) = V-OPEN>
 
 <SYNTAX CLOSE OBJECT (FIND OPENBIT) = V-CLOSE>
-<VERB-SYNONYM SHUT>
+<VERB-SYNONYM CLOSE SHUT>
+
+<SYNTAX LOCK OBJECT WITH OBJECT (HAVE HELD CARRIED) = V-LOCK>
+
+<SYNTAX UNLOCK OBJECT (FIND LOCKEDBIT) WITH OBJECT (HAVE HELD CARRIED) = V-UNLOCK>
 
 <SYNTAX TURN ON OBJECT (FIND DEVICEBIT) = V-TURN-ON>
-<VERB-SYNONYM FLIP SWITCH>
+<SYNTAX TURN OBJECT (FIND DEVICEBIT) ON OBJECT (FIND KLUDGEBIT) = V-TURN-ON>
 
 <SYNTAX TURN OFF OBJECT (FIND DEVICEBIT) = V-TURN-OFF>
-<VERB-SYNONYM FLIP SWITCH>
+<SYNTAX TURN OBJECT (FIND DEVICEBIT) OFF OBJECT (FIND KLUDGEBIT) = V-TURN-OFF>
 
 <SYNTAX FLIP OBJECT (FIND DEVICEBIT) = V-FLIP>
-<VERB-SYNONYM TOGGLE>
+<VERB-SYNONYM FLIP SWITCH TOGGLE>
 
 <SYNTAX WAIT = V-WAIT>
 <VERB-SYNONYM WAIT Z>
@@ -86,14 +92,59 @@
 <SYNTAX AGAIN = V-AGAIN>
 <VERB-SYNONYM AGAIN G>
 
-<SYNTAX READ OBJECT (FIND READBIT) = V-READ>
+<SYNTAX READ OBJECT (FIND READBIT) (TAKE HELD CARRIED ON-GROUND IN-ROOM) = V-READ PRE-REQUIRES-LIGHT>
 <VERB-SYNONYM READ PERUSE>
 
-<SYNTAX EAT OBJECT (FIND EDIBLEBIT) = V-EAT>
+<SYNTAX EAT OBJECT (FIND EDIBLEBIT) (TAKE HELD CARRIED ON-GROUND IN-ROOM) = V-EAT>
 <VERB-SYNONYM EAT SCARF DEVOUR GULP CHEW>
+
+<SYNTAX DRINK OBJECT = V-DRINK>
+
+<SYNTAX SMELL OBJECT = V-SMELL>
 
 <SYNTAX PUSH OBJECT = V-PUSH>
 <VERB-SYNONYM PUSH SHOVE>
+
+<SYNTAX PULL OBJECT = V-PULL>
+<VERB-SYNONYM PULL YANK DRAG CARRY>
+
+<SYNTAX FILL OBJECT (FIND CONTBIT) = V-FILL>
+<SYNTAX EMPTY OBJECT (FIND CONTBIT) = V-EMPTY>
+
+<SYNTAX ATTACK OBJECT = V-ATTACK>
+<VERB-SYNONYM ATTACK HIT SMASH BREAK KILL DESTROY>
+
+<SYNTAX GIVE OBJECT (HAVE HELD CARRIED) TO OBJECT (FIND PERSONBIT) = V-GIVE>
+<SYNTAX GIVE OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) = V-SGIVE>
+
+<SYNTAX WAVE = V-WAVE-HANDS>
+<SYNTAX WAVE OBJECT (TAKE HAVE HELD CARRIED) = V-WAVE>
+
+<SYNTAX THROW OBJECT (TAKE HAVE HELD CARRIED) AT OBJECT (ON-GROUND IN-ROOM) = V-THROW-AT>
+
+<SYNTAX BURN OBJECT ;(FIND BURNBIT) = V-BURN>
+<VERB-SYNONYM BURN ROAST TORCH>
+
+<SYNTAX RUB OBJECT = V-RUB>
+
+<SYNTAX LOOK UNDER OBJECT (FIND SURFACEBIT) = V-LOOK-UNDER PRE-REQUIRES-LIGHT>
+
+<SYNTAX SEARCH OBJECT (FIND CONTBIT) = V-SEARCH PRE-REQUIRES-LIGHT>
+<SYNTAX LOOK IN OBJECT (FIND CONTBIT) = V-SEARCH PRE-REQUIRES-LIGHT>
+
+<SYNTAX WAKE OBJECT (FIND PERSONBIT) = V-WAKE>
+<SYNTAX WAKE UP OBJECT (FIND PERSONBIT) = V-WAKE>
+<SYNTAX WAKE OBJECT (FIND PERSONBIT) UP OBJECT (FIND KLUDGEBIT) = V-WAKE>
+
+<SYNTAX JUMP = V-JUMP>
+<SYNTAX SWIM = V-SWIM>
+<SYNTAX CLIMB = V-CLIMB>
+<SYNTAX CLIMB OBJECT = V-CLIMB>
+
+<SYNTAX YES = V-YES>
+<SYNTAX NO = V-NO>
+
+;"Syntaxes for game verbs"
 
 <SYNTAX VERSION = V-VERSION>
 
@@ -121,11 +172,64 @@
     <SYNTAX DTURN = V-DTURN>
 >
 
+;"Constants"
+
+;"TODO: these belong in parser.zil?"
+;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK"
+;"Object DESCFCNs may get: M-OBJDESC?, no arg"
+;"DARKNESS-F may get: M-LOOK, M-SCOPE?, M-LIT-TO-DARK, M-DARK-TO-LIT,
+    M-DARK-TO-DARK, M-DARK-CANT-GO"
 <CONSTANT M-BEG 1>
 <CONSTANT M-END 2>
 <CONSTANT M-ENTER 3>
 <CONSTANT M-LOOK 4>
-<CONSTANT M-OBJDESC? 5>   ;"for DESCFCN"
+<CONSTANT M-OBJDESC? 5>
+<CONSTANT M-SCOPE? 6>
+<CONSTANT M-LIT-TO-DARK 7>
+<CONSTANT M-DARK-TO-LIT 8>
+<CONSTANT M-DARK-TO-DARK 9>
+<CONSTANT M-DARK-CANT-GO 10>
+<CONSTANT M-NOW-DARK 11>
+<CONSTANT M-NOW-LIT 12>
+
+;"Helper routines for action handlers"
+
+<ROUTINE YOU-MASHER ("OPT" WHOM)
+    <TELL "I don't think " T <OR .WHOM ,PRSO> " would appreciate that." CR>>
+
+<ROUTINE POINTLESS (VING "OPT" PREP REV? "AUX" F S)
+    <COND (.REV? <SET F ,PRSI> <SET S ,PRSO>)
+          (ELSE <SET F ,PRSO> <SET S ,PRSI>)>
+    <TELL .VING>
+    <COND (.F
+           <TELL !\  T .F>
+           <COND (.PREP
+                  <TELL !\  .PREP>
+                  <COND (.S <TELL !\  T .S>)>)>)>
+    <TELL " doesn't seem like it will help." CR>>
+
+<ROUTINE NOT-POSSIBLE (V)
+    <TELL "That's not something you can " .V "." CR>>
+
+<ROUTINE RHETORICAL ()
+    <TELL "That was a rhetorical question." CR>>
+
+<ROUTINE BE-SPECIFIC ()
+    <TELL "You'll have to be more specific." CR>>
+
+<ROUTINE SILLY ()
+    <TELL "You must be joking." CR>>
+
+<ROUTINE TSD ()
+    <TELL "Not here, not now." CR>>
+
+<DEFMAC IF-PLURAL ('O 'IF-PL 'IF-SG)
+    <FORM COND <LIST <FORM FSET? .O ',PLURALBIT> .IF-PL> <LIST ELSE .IF-SG>>>
+
+<ROUTINE PRE-REQUIRES-LIGHT ()
+    <COND (<NOT ,HERE-LIT> <TELL "It's too dark to see anything here." CR>)>>
+
+;"Action handler routines"
 
 <ROUTINE V-BRIEF ()
     <TELL "Brief descriptions." CR>
@@ -166,7 +270,7 @@ Returns:
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
     <COND
         (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
-         <TELL "It is pitch black. You are likely to be eaten by a grue." CR>
+         <DARKNESS-F ,M-LOOK>
          <RFALSE>)
         (ELSE
          ;"print the room's real name"
@@ -185,6 +289,21 @@ Returns:
                (ELSE
                 <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>
          <RTRUE>)>>
+
+<DEFAULT-DEFINITION DARKNESS-F
+
+    <ROUTINE DARKNESS-F (ARG)
+        <COND (<=? .ARG ,M-LOOK>
+               <TELL "It is pitch black. You can't see a thing." CR>)
+              (<=? .ARG ,M-SCOPE?>
+               <T? <SCOPE-STAGE? GENERIC INVENTORY GLOBALS>>)
+              (<=? .ARG ,M-NOW-DARK>
+               <TELL "You are plunged into darkness." CR>)
+              (<=? .ARG ,M-NOW-LIT>
+               <TELL "You can see your surroundings now." CR CR>
+               <RFALSE>)
+              (ELSE <RFALSE>)>>
+>
 
 ;"Describes the objects in a room.
 
@@ -260,47 +379,66 @@ Args:
                       <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
                       
 
-;"Prints the indefinite article for an object, followed by a space, or
-nothing if it has NARTICLEBIT."
-<ROUTINE INDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
-          (ELSE <TELL "a ">)>>
 
-;"Prints the definite article for an object, followed by a space, or
-nothing if it has NARTICLEBIT."
-<ROUTINE DEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (ELSE <TELL "the ">)>>
+;"Prints a (short) string with the first letter capitalized."
+<ROUTINE PRINT-CAP-STR (S "AUX" MAX C)
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINT .S>
+    <DIROUT -3>
+    <SET MAX <GET ,TEMPTABLE 0>>
+    <COND (.MAX
+           <INC MAX>
+           <DO (I 2 .MAX)
+               <SET C <GETB ,TEMPTABLE .I>>
+               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
+                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <PRINTC .C>>)>>
 
-;"Prints the capitalized indefinite article for an object, followed by a space,
-or nothing if it has NARTICLEBIT."
-<ROUTINE CINDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
-          (ELSE <TELL "A ">)>>
-
-;"Prints the capitalized definite article for an object, followed by a space,
-or nothing if it has NARTICLEBIT."
-<ROUTINE CDEF-ARTICLE (OBJ)
-    <COND (<FSET? .OBJ ,NARTICLEBIT>)
-          (ELSE <TELL "The ">)>>
+;"Prints an object name with the first letter capitalized."
+<ROUTINE PRINT-CAP-OBJ (OBJ "AUX" MAX C)
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINTD .OBJ>
+    <DIROUT -3>
+    <SET MAX <GET ,TEMPTABLE 0>>
+    <COND (.MAX
+           <INC MAX>
+           <DO (I 2 .MAX)
+               <SET C <GETB ,TEMPTABLE .I>>
+               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
+                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <PRINTC .C>>)>>
 
 ;"Implements <TELL A .OBJ>."
-<ROUTINE PRINT-INDEF (OBJ)
-    <INDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-INDEF (OBJ "AUX" A)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>)
+          (<SET A <GETP .OBJ ,P?ARTICLE>> <TELL .A> <PRINTC !\ >)
+          (<FSET? .OBJ ,PLURALBIT> <TELL "some ">)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
+          (ELSE <TELL "a ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL T .OBJ>."
 <ROUTINE PRINT-DEF (OBJ)
-    <DEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+    <COND (<NOT <FSET? .OBJ ,NARTICLEBIT>> <TELL "the ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL CA .OBJ>."
-<ROUTINE PRINT-CINDEF (OBJ)
-    <CINDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+<ROUTINE PRINT-CINDEF (OBJ "AUX" A)
+    <COND (<FSET? .OBJ ,NARTICLEBIT>
+           <PRINT-CAP-OBJ .OBJ>
+           <RTRUE>)>
+    <COND (<SET A <GETP .OBJ ,P?ARTICLE>> <PRINT-CAP-STR .A> <PRINTC !\ >)
+          (<FSET? .OBJ ,PLURALBIT> <TELL "Some ">)
+          (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
+          (ELSE <TELL "A ">)>
+    <PRINTD .OBJ>>
 
 ;"Implements <TELL CT .OBJ>."
 <ROUTINE PRINT-CDEF (OBJ)
-    <CDEF-ARTICLE .OBJ> <PRINTD .OBJ>>
+    <COND (<FSET? .OBJ ,NARTICLEBIT>
+           <PRINT-CAP-OBJ .OBJ>
+           <RTRUE>)
+          (ELSE <TELL "The " D .OBJ>)>>
 
 ;"Prints a sentence describing the contents of a surface or container."
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
@@ -377,9 +515,7 @@ Returns:
                  (ELSE <TELL "is nothing">)>)
           (<==? .N 1>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>
-           <COND (<FSET? .F ,PLURALBIT>
-                  <TELL "are ">)
-                 (ELSE <TELL "is ">)>
+           <IF-PLURAL .F <TELL "are "> <TELL "is ">>
            <OR <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>)
           (<==? .N 2>
            <OR <BTST .FLAGS ,L-SUFFIX>
@@ -441,14 +577,20 @@ Returns:
 
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
-    '<VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
-            SUPERBRIEF BRIEF VERBOSE>>
+    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
+                SUPERBRIEF BRIEF VERBOSE AGAIN !,EXTRA-GAME-VERBS>>
 
-<ROUTINE V-WALK ("AUX" PT PTS RM)
+<COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
+
+<CONSTANT CANT-GO-THAT-WAY "You can't go that way.">
+
+<ROUTINE V-WALK ("AUX" PT PTS RM THERE-LIT)
     <COND (<NOT ,PRSO-DIR>
            <PRINTR "You must give a direction to walk in.">)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
-           <PRINTR "You can't go that way.">)
+           <COND (<OR ,HERE-LIT <NOT <DARKNESS-F ,M-DARK-CANT-GO>>>
+                  <TELL ,CANT-GO-THAT-WAY CR>)>
+           <RTRUE>)
           (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
            <SET RM <GET/B .PT ,EXIT-RM>>)
           (<==? .PTS ,NEXIT>
@@ -463,8 +605,11 @@ Returns:
                  (<SET RM <GET .PT ,CEXIT-MSG>>
                   <TELL .RM CR>
                   <RTRUE>)
+                 (<AND <NOT ,HERE-LIT> <DARKNESS-F ,M-DARK-CANT-GO>>
+                  <RTRUE>)
                  (ELSE
-                  <PRINTR "You can't go that way.">)>)
+                  <TELL ,CANT-GO-THAT-WAY CR>
+                  <RTRUE>)>)
           (<==? .PTS ,DEXIT>
            <COND (<FSET? <GET/B .PT ,DEXIT-OBJ> ,OPENBIT>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
@@ -485,7 +630,7 @@ Returns:
            <PERFORM ,V?WALK <DOOR-DIR ,PRSO>>
            <RTRUE>)
           (ELSE
-           <TELL "That's not something you can get inside." CR>)>>
+           <NOT-POSSIBLE "get inside"> <RTRUE>)>>
 
 ;"Finds a direction from HERE that leads through the given door.
 
@@ -534,6 +679,23 @@ Returns:
     <COND (<NOT .N>
            <TELL "You see nothing special about " T ,PRSO "." CR>)>>
 
+<ROUTINE V-LOOK-UNDER ()
+    <COND (<AND <N=? ,PRSO ,WINNER> <FSET? ,PRSO ,PERSONBIT>>
+           <YOU-MASHER>
+           <RTRUE>)
+          (<NOT ,HERE-LIT> <TELL "It's too dark." CR>)
+          (ELSE <TELL "You can't see anything of interest." CR>)>>
+
+<ROUTINE V-SEARCH ()
+    <COND (<PRSO? ,WINNER> <PERFORM ,V?INVENTORY>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (<NOT <FSET? ,PRSO ,CONTBIT>> <NOT-POSSIBLE "look inside">)
+          (<AND <FSET? ,PRSO ,OPENABLEBIT> <NOT <SEE-INSIDE? ,PRSO>>>
+           <TELL CT ,PRSO <IF-PLURAL ,PRSO " are" " is"> " closed." CR>)
+          (<NOT <FIRST? ,PRSO>>
+           <TELL CT ,PRSO <IF-PLURAL ,PRSO " are" " is"> " empty." CR>)
+          (ELSE <DESCRIBE-CONTENTS ,PRSO>)>>
+
 <ROUTINE V-INVENTORY ()
     ;"check for light first"
     <COND (,HERE-LIT
@@ -552,14 +714,17 @@ Returns:
                  (ELSE
                   <TELL "You are empty-handed." CR>)>)
           (ELSE
-           <TELL "It is too dark to see what you're carrying." CR>)>>
+           <TELL "It's too dark to see what you're carrying." CR>)>>
 
 <ROUTINE V-TAKE ("AUX" HOLDER S X)
-    <COND (<FSET? ,PRSO ,PERSONBIT>
-           <TELL "I don't think " T ,PRSO " would appreciate that." CR>
+    <COND (<PRSO? ,WINNER>
+           <COND (<=? ,P-V-WORD ,W?GET> <TELL "Not quite." CR>)
+                 (<=? ,P-V-WORD ,W?TAKE ,W?GRAB> <TSD>)
+                 (<=? ,P-V-WORD ,W?PICK> <TELL "You aren't my type." CR>)
+                 (ELSE <SILLY>)>
            <RTRUE>)
-          (<NOT <FSET? ,PRSO ,TAKEBIT>>
-           <PRINTR "That's not something you can pick up.">)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
+          (<NOT <FSET? ,PRSO ,TAKEBIT>> <NOT-POSSIBLE "pick up"> <RTRUE>)
           (<IN? ,PRSO ,WINNER>
            <PRINTR "You already have that.">)>
     ;"See if picked up object is being taken from a container"
@@ -570,6 +735,7 @@ Returns:
                  (<BLOCKS-TAKE? .HOLDER>
                   <TELL CT .HOLDER " is in the way." CR>
                   <RTRUE>)
+                 (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)
                  (<AND <FSET? .HOLDER ,CONTBIT>
                        <HELD? ,PRSO .HOLDER>
                        <NOT <HELD? ,WINNER .HOLDER>>>
@@ -586,7 +752,8 @@ Returns:
                   <FSET ,PRSO ,TOUCHBIT>
                   <MOVE ,PRSO ,WINNER>
                   <RTRUE>)>)>
-    <COND (<FSET? ,PRSO ,WEARBIT>
+    <COND (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)
+          (<FSET? ,PRSO ,WEARBIT>
            <TELL "You wear " T ,PRSO "." CR>
            <FSET ,PRSO ,WORNBIT>
            <MOVE ,PRSO ,WINNER>
@@ -665,10 +832,22 @@ Returns:
                <SET N <+ .N 1>>
                ;"If we found matching parents in two children,
                 ROOT is the common parent."
-               <COND (<G? .N 2> <RETURN .ROOT .CPR>)>)>>
+               <COND (<G? .N 1> <RETURN .ROOT .CPR>)>)>>
     ;"One child contained both objects, so the common parent is whatever
       COMMON-PARENT-R returned for it."
     .F>
+
+<DEFAULT-DEFINITION TAKE-CAPACITY-CHECK
+
+    <ROUTINE TAKE-CAPACITY-CHECK (O "AUX" (CAP <GETP ,WINNER ,P?CAPACITY>) CWT NWT)
+        <COND (<L? .CAP 0> <RTRUE>)>
+        <SET CWT <- <WEIGHT ,WINNER> <GETP ,WINNER ,P?SIZE>>>
+        <SET NWT <WEIGHT .O>>
+        <COND (<G? <+ .CWT .NWT> .CAP>
+               <TELL "You're carrying too much to pick up " T .O "." CR>
+               <RFALSE>)>
+        <RTRUE>>
+>
 
 <ROUTINE V-DROP ()
     <COND
@@ -680,23 +859,24 @@ Returns:
          <FCLEAR ,PRSO ,WORNBIT>
          <TELL "You drop " T ,PRSO "." CR>)>>
 
+<ROUTINE PRE-PUT-ON ()
+    <COND (<PRSI? ,WINNER> <PERFORM ,V?WEAR ,PRSO> <RTRUE>)
+          (<PRSO? ,WINNER> <PERFORM ,V?ENTER ,PRSI> <RTRUE>)
+          (<NOT <HAVE-TAKE-CHECK ,PRSO ,SF-HAVE>> <RTRUE>)>>
+
 <ROUTINE V-PUT-ON ("AUX" S CCAP CSIZE X W B)
-    <COND (<FSET? ,PRSI ,PERSONBIT>
-           <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
+    <COND (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
           (<NOT <AND <FSET? ,PRSI ,CONTBIT>
                      <FSET? ,PRSI ,SURFACEBIT>>>
-           <TELL CT ,PRSI>
-           <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">)
-                 (ELSE <TELL " isn't">)>
-           <TELL " something you can put things on." CR>)
+           <NOT-POSSIBLE "put things on">
+           <RTRUE>)
           (<NOT <IN? ,PRSO ,WINNER>>
            <PRINTR "You don't have that.">)
           (<OR <EQUAL? ,PRSO ,PRSI> <HELD? ,PRSI ,PRSO>>
            <PRINTR "You can't put something on itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
                   ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
                  (ELSE
                   ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
@@ -727,16 +907,18 @@ Returns:
            <FCLEAR ,PRSO ,WORNBIT>
            <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>>
 
+<ROUTINE PRE-PUT-IN ()
+    <COND (<PRSI? ,WINNER> <TSD> <RTRUE>)
+          (<PRSO? ,WINNER> <PERFORM ,V?ENTER ,PRSI> <RTRUE>)
+          (<NOT <HAVE-TAKE-CHECK ,PRSO ,SF-HAVE>> <RTRUE>)>>
+
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
     ;<TELL "In the PUT-IN routine" CR>
-    <COND (<FSET? ,PRSI ,PERSONBIT>
-           <TELL "I don't think " T ,PRSI " would appreciate that." CR>)
+    <COND (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
           (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
                <FSET? ,PRSI ,SURFACEBIT>>
-           <TELL CT ,PRSI>
-           <COND (<FSET? ,PRSI ,PLURALBIT> <TELL " aren't">)
-                 (ELSE <TELL " isn't">)>
-           <TELL " something you can put things in." CR>)
+           <NOT-POSSIBLE "put things in">
+           <RTRUE>)
           (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
                 <FSET? ,PRSI ,OPENABLEBIT>>
            <TELL CT ,PRSI " is closed." CR>)
@@ -750,8 +932,7 @@ Returns:
            <PRINTR "You can't put something in itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<SET X <GETPT ,PRSI ,P?CAPACITY>>
-                  <SET CCAP <GETP ,PRSI ,P?CAPACITY>>
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
                   <IF-DEBUG <COND (,DBCONT
                                    <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>>)
                  (ELSE
@@ -827,8 +1008,8 @@ Returns:
 <ROUTINE V-WEAR ()
     <COND (<FSET? ,PRSO ,WEARBIT>
            <PERFORM ,V?TAKE ,PRSO>)
-          (ELSE
-           <TELL "You can't wear that." CR>)>>
+          (ELSE <NOT-POSSIBLE "wear">)>
+    <RTRUE>>
 
 <ROUTINE V-UNWEAR ()
     <COND (<AND <FSET? ,PRSO ,WORNBIT>
@@ -837,7 +1018,9 @@ Returns:
           (ELSE <TELL "You aren't wearing that." CR>)>>
 
 <ROUTINE V-EAT ()
-    <COND (<FSET? ,PRSO ,EDIBLEBIT>
+    <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
+          (<FSET? ,PRSO ,EDIBLEBIT>
            ;"TODO: move this held check to syntax flags"
            <COND (<HELD? ,PRSO>
                   <TELL "You devour " T ,PRSO "." CR>
@@ -854,13 +1037,14 @@ Returns:
      <CRLF>>
 
 <ROUTINE V-THINK-ABOUT ()
-    <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>>
+    <COND (<PRSO? ,WINNER>
+           <TELL "Yes, yes, you're very important." CR>)
+          (ELSE
+           <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>)>>
 
 <ROUTINE V-OPEN ()
-    <COND (<FSET? ,PRSO ,PERSONBIT>
-           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-          (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
-           <PRINTR "That's not something you can open.">)
+    <COND (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
+          (<NOT <FSET? ,PRSO ,OPENABLEBIT>> <NOT-POSSIBLE "open"> <RTRUE>)
           (<FSET? ,PRSO ,OPENBIT>
            <PRINTR "It's already open.">)
           (<FSET? ,PRSO ,LOCKEDBIT>
@@ -869,16 +1053,13 @@ Returns:
            <FSET ,PRSO ,TOUCHBIT>
            <FSET ,PRSO ,OPENBIT>
            <TELL "You open " T ,PRSO "." CR>
-           <AND ,HERE-LIT <DESCRIBE-CONTENTS ,PRSO>>
+           <AND ,HERE-LIT <FSET? ,PRSO ,CONTBIT> <DESCRIBE-CONTENTS ,PRSO>>
            <NOW-LIT?>)>>
 
 <ROUTINE V-CLOSE ()
-    <COND (<FSET? ,PRSO ,PERSONBIT>
-           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-          (<NOT <FSET? ,PRSO ,OPENABLEBIT>>
-           <PRINTR "That's not something you can close.">)
-          ;(<FSET? ,PRSO ,SURFACEBIT>
-           <PRINTR "That's not something you can close.">)
+    <COND (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
+          (<NOT <FSET? ,PRSO ,OPENABLEBIT>> <NOT-POSSIBLE "close"> <RTRUE>)
+          ;(<FSET? ,PRSO ,SURFACEBIT> <NOT-POSSIBLE "close"> <RTRUE>)
           (<NOT <FSET? ,PRSO ,OPENBIT>>
            <PRINTR "It's already closed.">)
           (ELSE
@@ -886,6 +1067,14 @@ Returns:
            <FCLEAR ,PRSO ,OPENBIT>
            <TELL "You close " T ,PRSO "." CR>
            <NOW-DARK?>)>>
+
+<ROUTINE V-LOCK ()
+    <NOT-POSSIBLE "lock">
+    <RTRUE>>
+
+<ROUTINE V-UNLOCK ()
+    <NOT-POSSIBLE "unlock">
+    <RTRUE>>
 
 <ROUTINE V-WAIT ("AUX" T INTERRUPT ENDACT)
     <SET T 1>
@@ -917,11 +1106,11 @@ Returns:
                          <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                          <CLOCKER>)>
                   <SETG HERE <LOC ,WINNER>>)>)
-          (ELSE <TELL "Nothing to repeat." CR>)>>
+          (ELSE <TELL "Nothing to repeat." CR>)>
+    <SETG AGAINCALL <>>>
 
 <ROUTINE V-READ ("AUX" T)
-    <COND (<NOT <FSET? ,PRSO ,READBIT>>
-           <TELL "That's not something you can read." CR>)
+    <COND (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)
           (<SET T <GETP ,PRSO ,P?TEXT>>
            <TELL .T CR>)
           (<SET T <GETP ,PRSO ,P?TEXT-HELD>>
@@ -934,8 +1123,8 @@ Returns:
 
 <ROUTINE V-TURN-ON ()
     ;<TELL "CURRENTLY IN TURN-ON" CR>
-    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-           <TELL "That's not something you can switch on and off." CR>)
+    <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
+          (<NOT <FSET? ,PRSO ,DEVICEBIT>> <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<FSET? ,PRSO ,ONBIT>
            <TELL "It's already on." CR>)
           (ELSE
@@ -944,8 +1133,10 @@ Returns:
 
 <ROUTINE V-TURN-OFF ()
     ;<TELL "CURRENTLY IN TURN-OFF" CR>
-    <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-           <TELL "That's not something you can switch on and off." CR>)
+    <COND (<PRSO? ,WINNER>
+           <TELL <PICK-ONE-R <PLTABLE "Baseball." "Cold showers.">> CR>)
+          (<NOT <FSET? ,PRSO ,DEVICEBIT>>
+           <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<NOT <FSET? ,PRSO ,ONBIT>>
            <TELL "It's already off." CR>)
           (ELSE
@@ -953,21 +1144,112 @@ Returns:
            <TELL "You switch off " T ,PRSO "." CR>)>>
 
 <ROUTINE V-FLIP ()
-    ;<TELL "CURRENTLY IN FLIP" CR>
     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
-           <TELL "That's not something you can switch on and off." CR>)
+           <COND (<FSET? ,PRSO ,SURFACEBIT>
+                  <POINTLESS "Taking your frustration out on">)
+                 (ELSE <NOT-POSSIBLE "switch on and off">)>)
           (<FSET? ,PRSO ,ONBIT>
-           <FCLEAR ,PRSO ,ONBIT>
-           <TELL "You switch off " T ,PRSO "." CR>)
-          (<NOT <FSET? ,PRSO ,ONBIT>>
-           <FSET ,PRSO ,ONBIT>
-           <TELL "You switch on " T ,PRSO "." CR>)>>
+           <PERFORM ,V?TURN-OFF ,PRSO>)
+          (ELSE
+           <PERFORM ,V?TURN-ON ,PRSO>)>
+    <RTRUE>>
 
 <ROUTINE V-PUSH ()
-    <COND (<FSET? ,PRSO ,PERSONBIT>
-           <TELL "I don't think " T ,PRSO " would appreciate that." CR>)
-          (ELSE
-           <TELL "Pushing " T ,PRSO " doesn't seem to accomplish much." CR>)>>
+    <COND (<PRSO? ,WINNER> <TELL "No, you seem close to the edge." CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <POINTLESS "Pushing">)>
+    <RTRUE>>
+
+<ROUTINE V-PULL ()
+    <COND (<PRSO? ,WINNER> <TELL "That would demean both of us." CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <POINTLESS "Pulling">)>
+    <RTRUE>>
+
+<ROUTINE V-YES ()
+    <RHETORICAL>
+    <RTRUE>>
+
+<ROUTINE V-NO ()
+    <RHETORICAL>
+    <RTRUE>>
+
+<ROUTINE V-DRINK ()
+    <TELL "You aren't ">
+    <ITALICIZE "that">
+    <TELL " thirsty." CR>>
+
+<ROUTINE V-FILL ()
+    <BE-SPECIFIC>
+    <RTRUE>>
+
+<ROUTINE V-EMPTY ()
+    <BE-SPECIFIC>
+    <RTRUE>>
+
+<ROUTINE V-SMELL ()
+    <TELL "You smell nothing unexpected." CR>>
+
+<ROUTINE V-ATTACK ()
+    <COND (<PRSO? ,WINNER> <TELL "Let's hope it doesn't come to that." CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <POINTLESS "Taking your frustration out on">)>
+    <RTRUE>>
+
+<ROUTINE V-THROW-AT ()
+    <COND (<PRSO? ,WINNER> <TELL "Get" <IF-PLURAL ,PRSO " them" " it"> " yourself." CR>)
+          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
+          (ELSE <POINTLESS "Taking your frustration out on" <> T>)>
+    <RTRUE>>
+
+<ROUTINE V-GIVE ()
+    <COND (<PRSI? ,WINNER> <TELL "Get it yourself." CR>)
+          (<PRSO? ,WINNER> <SILLY>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (<NOT <FSET? ,PRSI ,PERSONBIT>> <NOT-POSSIBLE "give things to">)
+          (ELSE <TELL CT ,PRSI <IF-PLURAL ,PRSI " don't" " doesn't">
+                      " take " T ,PRSO "." CR>)>>
+
+<ROUTINE V-SGIVE ()
+    <PERFORM ,V?GIVE ,PRSI ,PRSO>
+    <RTRUE>>
+
+<ROUTINE V-WAVE-HANDS ()
+    <POINTLESS "Waving your hands">
+    <RTRUE>>
+
+<ROUTINE V-WAVE ()
+    <SILLY>
+    <RTRUE>>
+
+<ROUTINE V-CLIMB ()
+    <COND (,PRSO <NOT-POSSIBLE "climb">) (ELSE <SILLY>)>
+    <RTRUE>>
+
+<ROUTINE V-SWIM ()
+    <SILLY>
+    <RTRUE>>
+
+<ROUTINE V-JUMP ()
+    <POINTLESS "Jumping in place">
+    <RTRUE>>
+
+<ROUTINE V-WAKE ()
+    <COND (<PRSO? ,WINNER> <TELL "If only this were a dream." CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <NOT-POSSIBLE "wake">)>>
+
+<ROUTINE V-RUB ()
+    <COND (<PRSO? ,WINNER> <TSD>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <POINTLESS "Rubbing">)>>
+
+<ROUTINE V-BURN ()
+    <COND (<PRSO? ,WINNER> <TELL "What is this, the Friars Club?" CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <POINTLESS "Recklessly incinerating">)>>
+
+;"Action handlers for game verbs"
 
 <ROUTINE V-UNDO ("AUX" R)
     <IFFLAG

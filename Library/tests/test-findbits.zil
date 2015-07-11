@@ -29,7 +29,7 @@
 
 <TEST-CASE ("EAT without noun")
     <COMMAND [EAT]>
-    <EXPECT "[the apple]|You eat the apple.|">
+    <EXPECT "[the apple]|[taking the apple]|You devour the apple.|">
     <CHECK <IN? ,APPLE <>>>>
 
 <TEST-GO ,STARTROOM>
