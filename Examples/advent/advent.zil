@@ -3906,7 +3906,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
 "Teleportation system"
 ;----------------------------------------------------------------------
 
-;"Not supported in this version."
+;"TODO: Implement keyword navigation for the above-ground rooms"
 
 ;----------------------------------------------------------------------
 "Resurrection"
