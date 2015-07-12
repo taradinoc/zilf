@@ -874,7 +874,7 @@ The flag KLUDGEBIT is a special case that always finds ROOMS.
 
 Args:
   BIT: The flag to search for.
-  OPTS: The search options to use. (Currently ignored.)
+  OPTS: The search options to use.
   PREP: The preposition to use in the message.
 
 Returns:
@@ -884,7 +884,7 @@ Returns:
     <COND (<==? .BIT ,KLUDGEBIT>
            <RETURN ,ROOMS>)>
     ;"Look for exactly one matching object"
-    <MAP-SCOPE (I)
+    <MAP-SCOPE (I [BITS .OPTS])
         <COND (<FSET? .I .BIT>
                <COND (.O <RFALSE>)
                      (ELSE <SET O .I>)>)>>
@@ -906,7 +906,7 @@ Returns:
     <RFALSE>>
 
 <DEFMAC ENCODE-NOUN-BITS ('F 'O)
-    <FORM BOR .F <FORM * .O 256>>>
+    <FORM BOR <FORM * .F 256> .O>>
 
 <DEFMAC DECODE-FINDBIT ('E)
     <FORM BAND <FORM / .E 256> 255>>
@@ -917,7 +917,7 @@ Returns:
   An object providing light, or false if no light source was found."
 <ROUTINE SEARCH-FOR-LIGHT SFL ()
     <COND (<FSET? ,HERE ,LIGHTBIT> <RTRUE>)>
-    <MAP-SCOPE (I) (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)
+    <MAP-SCOPE (I [STAGES (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)] [NO-LIGHT])
         <COND (<FSET? .I ,LIGHTBIT> <RETURN .I .SFL>)>>
     <RFALSE>>
 
@@ -946,8 +946,7 @@ describe it.
 Args:
   YTBL: A table of adjective/noun pairs that the object must have ('yes').
   NTBL: A table of adjective/noun pairs that the object must not have ('no').
-  BITS: A word with the scope flags in the lower byte and the number of the
-    FIND flag in the upper byte.
+  OUT: A table (P-PRSOS or P-PRSIS) in which to return the matched objects.
 
 Uses:
   FIND-ONE-OBJ-FLAGS
@@ -956,12 +955,12 @@ Uses:
 Returns:
   The located object, or false if no matching object was found."
 <ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL OUT "AUX" F A N NY NN MODE (NOUT 0))
-    ;"TODO: Disambiguate and/or match multiple objects."
-    ;"TODO: Use FIND-ONE-OBJ-FLAGS to restrict the scope search."
+    ;"TODO: Disambiguate if we aren't expecting multiple objects."
+    ;"TODO: Expand the search if we don't find any with the initial set of flags."
     <SET NY <GETB .YTBL 0>>
     <SET NN <GETB .NTBL 0>>
     <SET MODE <GETB .YTBL 1>>
-    <MAP-SCOPE (I)
+    <MAP-SCOPE (I [BITS ,FIND-ONE-OBJ-FLAGS])
         <COND (<NOT <FSET? .I ,INVISIBLE>>
                ;"Match any pair in YTBL, or most objects if YTBL is empty"
                <COND (<0? .NY>
