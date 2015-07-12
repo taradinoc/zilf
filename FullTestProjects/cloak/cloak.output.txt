@@ -6,7 +6,7 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 150611 / ZILF 0.6 lib J2
+Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
@@ -22,9 +22,9 @@ You are standing in a spacious hall, splendidly decorated in red and gold, with 
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 3                                                                               You can't go that way.
 
->  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 4                                                                               It is pitch black. You are likely to be eaten by a grue.
+>  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 4                                                                               It is pitch black. You can't see a thing.
 
->  Foyer Bar                                                 Score: 0                                                                 Moves: 5                                                                               It is too dark to see what you're carrying.
+>  Foyer Bar                                                 Score: 0                                                                 Moves: 5                                                                               It's too dark to see what you're carrying.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 5                                                                               You grope around clumsily in the dark. Better be careful.
 
@@ -60,12 +60,12 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 150611 / ZILF 0.6 lib J2
+Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
 
->  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 0                                                                               It is pitch black. You are likely to be eaten by a grue.
+>  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 0                                                                               It is pitch black. You can't see a thing.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 1                                                                               You grope around clumsily in the dark. Better be careful.
 
