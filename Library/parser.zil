@@ -754,7 +754,7 @@ Returns:
                   <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
                   <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX ,P-PRSOS>>)>
            <COND (<OR <NOT ,PRSO>
-                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK ,P-PRSOS .O>>>>
+                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>
                   <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
@@ -776,7 +776,7 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
                   <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
                   <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX ,P-PRSIS>>)>
-           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK ,P-PRSIS .O>>>
+           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
                   <RFALSE>)>)>
     <RTRUE>>
 
@@ -808,7 +808,7 @@ Returns:
   by the WINNER, or they are held, possibly as the result of an implicit TAKE.
   False if the objects have to be held, the WINNER is not holding them, and
   they couldn't be taken implicitly."
-<ROUTINE HAVE-TAKE-CHECK (TBL OPTS "AUX" MAX DO-TAKE? O)
+<ROUTINE HAVE-TAKE-CHECK-TBL (TBL OPTS "AUX" MAX DO-TAKE? O)
     <SET MAX <GETB .TBL 0>>
     ;"Attempt implicit take if WINNER isn't directly holding the objects"
     <COND (<BTST .OPTS ,SF-TAKE>
@@ -833,6 +833,30 @@ Returns:
                       <LIST-OBJECTS .TBL ,NOT-HELD? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
                       <TELL "." CR>
                       <RFALSE>)>>)>
+    <RTRUE>>
+
+;"Like HAVE-TAKE-CHECK-TBL but for a single object.
+
+Args:
+  OBJ: An object.
+  OPTS: The corresponding search options, including the HAVE and TAKE flags.
+
+Returns:
+  True if the checks passed, i.e. either the objects don't have to be held
+  by the WINNER, or they are held, possibly as the result of an implicit TAKE.
+  False if the objects have to be held, the WINNER is not holding them, and
+  they couldn't be taken implicitly."
+<ROUTINE HAVE-TAKE-CHECK (OBJ OPTS)
+    ;"Attempt implicit take if WINNER isn't directly holding the object"
+    <COND (<BTST .OPTS ,SF-TAKE>
+           <COND (<NEEDS-IMPLICIT-TAKE? .OBJ>
+                  <TELL "[taking " T .OBJ "]" CR>
+                  <MOVE .OBJ ,WINNER>)>)>
+    ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
+    <COND (<BTST .OPTS ,SF-HAVE>
+           <COND (<NOT <HELD? .OBJ>>
+                  <TELL "You aren't holding " T .OBJ "." CR>
+                  <RFALSE>)>)>
     <RTRUE>>
 
 <ROUTINE NEEDS-IMPLICIT-TAKE? (OBJ)
