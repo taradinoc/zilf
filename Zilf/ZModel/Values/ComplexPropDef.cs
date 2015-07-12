@@ -777,7 +777,9 @@ namespace Zilf.ZModel.Values
                 }
 
                 IOperand capturedConstantValue;
-                if (capturedValue != null)
+                if (capturedValue != null &&
+                    output.Type != OutputElementType.Global && output.Type != OutputElementType.Adjective &&
+                    output.Type != OutputElementType.Noun && output.Type != OutputElementType.Voc)
                 {
                     capturedConstantValue = converters.CompileConstant(capturedValue);
                     if (capturedConstantValue == null)

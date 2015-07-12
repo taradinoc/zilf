@@ -54,11 +54,11 @@
 <VERB-SYNONYM UNWEAR DOFF>
 <SYNTAX TAKE OFF OBJECT (FIND WORNBIT) (HAVE HELD CARRIED) = V-UNWEAR>
 
-<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
-<SYNTAX PUT UP OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
+<SYNTAX PUT UP OBJECT (MANY TAKE HELD CARRIED) ON OBJECT (FIND SURFACEBIT) = V-PUT-ON PRE-PUT-ON>
 <VERB-SYNONYM PUT HANG PLACE>
 
-<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED ON-GROUND IN-ROOM) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
+<SYNTAX PUT OBJECT (MANY TAKE HELD CARRIED) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
 <VERB-SYNONYM PUT PLACE INSERT>
 
 <SYNTAX INVENTORY = V-INVENTORY>
@@ -170,6 +170,7 @@
     ;<SYNTAX DLIGHT = V-DLIGHT>
     <SYNTAX DCONT = V-DCONT>
     <SYNTAX DTURN = V-DTURN>
+    <SYNTAX DSCOPE = V-DSCOPE>
 >
 
 ;"Constants"
@@ -341,7 +342,7 @@ Args:
     ;"go through the N objects"
     <COND (.N
            <TELL CR "There ">
-           <ISARE-LIST .RM GENERIC-DESC? ,L-ISMANY>
+           <LIST-OBJECTS .RM GENERIC-DESC? ,L-ISMANY>
            <TELL " here." CR>)>
     ;"describe visible contents of containers and surfaces"
     <MAP-CONTENTS (I .RM)
@@ -357,7 +358,7 @@ Args:
                <RETURN>)>>
     ;"go through the N NPCs"
     <COND (.N
-           <ISARE-LIST .RM NPC-DESC? ,L-SUFFIX>
+           <LIST-OBJECTS .RM NPC-DESC? ,L-SUFFIX>
            <TELL " here." CR>)>>
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
@@ -445,7 +446,7 @@ Args:
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
           (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
-    <ISARE-LIST .OBJ>
+    <LIST-OBJECTS .OBJ ,L-ISARE>
     <TELL "." CR>>
 
 ;"Prints a space followed by a parenthetical describing the contents of a
@@ -472,10 +473,13 @@ surface or container, for use in inventory listings."
                      (ELSE <TELL ", ">)>>)>
     <TELL ")">>
 
-;"Prints a list describing the contents of a surface or container.
+;"Prints a list describing a set of objects, usually the contents of a
+surface or container.
 
-The list begins with 'is' or 'are' depending on the count and plurality of
-the child objects, and no trailing punctuation is printed. For example:
+No trailing punctuation is printed.
+
+If the L-ISARE flag is passed, the list begins with 'is' or 'are' depending
+on the count and plurality of the child objects. For example:
 
   If the container is empty:
     is nothing
@@ -493,56 +497,96 @@ the child objects, and no trailing punctuation is printed. For example:
     are a shirt, a hat, and a watch
 
 Args:
-  O: The object whose contents are to be listed.
+  O: The object whose contents are to be listed, or if L-PRSTABLE is given,
+    the address of a table containing the objects.
   FILTER: An optional routine to select children to list.
     If provided, the list will only include objects for which the filter
     returns true; otherwise it'll list all contents.
   FLAGS: A combination of option flags:
-    L-SUFFIX: Print 'is' or 'are' after the list instead of before.
+    L-ISARE: Print 'is' or 'are'.
+    L-SUFFIX: Print the verb after the list instead of before. (Implies L-ISARE.)
     L-ISMANY: Use 'is' before a list of objects unless the first one has
-      PLURALBIT. (Ignored if L-SUFFIX is given.)
+      PLURALBIT. (Implies L-ISARE. Ignored if L-SUFFIX is given.)
+    L-PRSTABLE: List objects from a table instead of the contents of another
+      object. O is the address of the table in P-PRSOS/P-PRSIS format.
+    L-THE: Print the definite article instead of indefinite.
+    L-OR: Print 'or' instead of 'and'.
 
 Returns:
   The number of objects listed."
-<ROUTINE ISARE-LIST (O "OPT" FILTER FLAGS "AUX" N F)
-    <MAP-CONTENTS (I .O)
-        <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-               <OR .F <SET F .I>>
-               <SET N <+ .N 1>>)>>
+<ROUTINE LIST-OBJECTS (O "OPT" FILTER FLAGS "AUX" N F S MAX J)
+    <COND (<OR <BTST .FLAGS ,L-SUFFIX> <BTST .FLAGS ,L-ISMANY>>
+           <SET FLAGS <BOR .FLAGS ,L-ISARE>>)>
+    <COND (<BTST .FLAGS ,L-PRSTABLE>
+           <COND (<SET MAX <GETB .O 0>>
+                  <DO (I 1 .MAX)
+                      <SET J <GET/B .O .I>>
+                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
+                             <COND (<0? .F> <SET F .J>)
+                                   (<0? .S> <SET S .J>)>
+                             <SET N <+ .N 1>>)>>)>)
+          (ELSE
+           <MAP-CONTENTS (I .O)
+               <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
+                      <COND (<0? .F> <SET F .I>)
+                            (<0? .S> <SET S .I>)>
+                      <SET N <+ .N 1>>)>>)>
     <COND (<==? .N 0>
            <COND (<BTST .FLAGS ,L-SUFFIX>
                   <TELL "nothing is">)
-                 (ELSE <TELL "is nothing">)>)
+                 (<BTST .FLAGS ,L-ISARE>
+                  <TELL "is nothing">)
+                 (ELSE <TELL "nothing">)>)
           (<==? .N 1>
-           <AND <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>
-           <IF-PLURAL .F <TELL "are "> <TELL "is ">>
-           <OR <BTST .FLAGS ,L-SUFFIX> <TELL A .F>>)
-          (<==? .N 2>
+           <AND <BTST .FLAGS ,L-SUFFIX>
+                <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>>
+           <AND <BTST .FLAGS ,L-ISARE>
+                <IF-PLURAL .F <TELL "are "> <TELL "is ">>>
            <OR <BTST .FLAGS ,L-SUFFIX>
-               <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
-                          <FSET? .F ,PLURALBIT>>
-                      <TELL "are ">)
-                     (ELSE <TELL "is ">)>>
-           <TELL A .F " and " A <NEXT? .F>>
+                <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>>)
+          (<==? .N 2>
+           <COND (<AND <BTST .FLAGS ,L-ISARE>
+                       <NOT <BTST .FLAGS ,L-SUFFIX>>>
+                       <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
+                                  <FSET? .F ,PLURALBIT>>
+                              <TELL "are ">)
+                             (ELSE <TELL "is ">)>)>
+           <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>
+           <COND (<BTST .FLAGS ,L-OR> <TELL " or ">) (ELSE <TELL " and ">)>
+           <COND (<BTST .FLAGS ,L-THE> <TELL T .S>) (ELSE <TELL A .S>)>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
           (ELSE
-           <OR <BTST .FLAGS ,L-SUFFIX>
-               <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
-                          <FSET? .F ,PLURALBIT>>
-                      <TELL "are ">)
-                     (ELSE <TELL "is ">)>>
-           <MAP-CONTENTS (I .O)
-               <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-                      <TELL A .I>
-                      <SET N <- .N 1>>
-                      <COND (<0? .N>)
-                            (<==? .N 1> <TELL ", and ">)
-                            (ELSE <TELL ", ">)>)>>
+           <COND (<AND <BTST .FLAGS ,L-ISARE>
+                       <NOT <BTST .FLAGS ,L-SUFFIX>>>
+                  <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
+                             <FSET? .F ,PLURALBIT>>
+                         <TELL "are ">)
+                        (ELSE <TELL "is ">)>)>
+           <COND (<BTST .FLAGS ,L-PRSTABLE>
+                  <DO (I 1 .MAX)
+                      <SET J <GET/B .O .I>>
+                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
+                             <COND (<BTST .FLAGS ,L-THE> <TELL T .J>)
+                                   (ELSE <TELL A .J>)>
+                             <SET N <- .N 1>>
+                             <COND (<0? .N>)
+                                   (<==? .N 1>
+                                    <COND (<BTST .FLAGS ,L-OR> <TELL ", or ">)
+                                          (ELSE <TELL ", and ">)>)
+                                   (ELSE <TELL ", ">)>)>>)
+                 (ELSE
+                  <MAP-CONTENTS (I .O)
+                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
+                             <COND (<BTST .FLAGS ,L-THE> <TELL T .I>)
+                                   (ELSE <TELL A .I>)>
+                             <SET N <- .N 1>>
+                             <COND (<0? .N>)
+                                   (<==? .N 1>
+                                    <COND (<BTST .FLAGS ,L-OR> <TELL ", or ">)
+                                          (ELSE <TELL ", and ">)>)
+                                   (ELSE <TELL ", ">)>)>>)>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>
     <RETURN .N>>
-
-<CONSTANT L-SUFFIX 1>
-<CONSTANT L-ISMANY 2>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
@@ -1389,4 +1433,15 @@ Returns:
                <TELL "Reporting of TURN # turned off." CR>)
               (ELSE
                <SET DTURNS T>
-               <TELL "Reporting of TURN # turned on." CR>)>>>
+               <TELL "Reporting of TURN # turned on." CR>)>>
+
+    <ROUTINE V-DSCOPE ("AUX" S)
+        <MAP-SCOPE (I)
+            %<FORM COND
+                   !<MAPF ,LIST
+                          <FUNCTION (STG)
+                              <LIST <FORM SCOPE-STAGE? <1 .STG>>
+                                    <FORM SET S <SPNAME <1 .STG>>>>>
+                          ,SCOPE-STAGES>>
+            <TELL .S ": " D .I CR>>>
+>

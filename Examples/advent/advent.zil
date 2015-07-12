@@ -774,7 +774,7 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
                   <TELL "The little bird looks unhappy in the cage." CR>)
                  (ELSE
                   <TELL "The cheerful little bird is sitting here singing." CR>)>)
-          (<VERB? PUT-IN>
+          (<AND <VERB? PUT-IN> <PRSO? ,LITTLE-BIRD>>
            <COND (<PRSI? ,WICKER-CAGE>
                   <PERFORM ,V?CATCH ,PRSO>
                   <RTRUE>)
@@ -2111,7 +2111,7 @@ You have just vanquished a dragon with your bare hands!
 <DEAD-END-ROOM DEAD-END-10 SW ALIKE-MAZE-11>
 
 <MAZE-ROOM ALIKE-MAZE-12
-    (SOUTH AT-BRINK-OF-PIT) (EAST 13) (WEST 11)>
+    (SOUTH AT-BRINK-OF-PIT) (EAST 13) (WEST DEAD-END-11)>
 
 <MAZE-ROOM ALIKE-MAZE-13
     (NORTH AT-BRINK-OF-PIT) (WEST 12) (NW DEAD-END-13)>
@@ -3556,7 +3556,7 @@ brushes himself off. Now he's madder than ever!" CR>)
            <TELL CR "A bearded pirate appears, catches sight of the dwarf and runs away." CR>
            <RTRUE>)>
     ;"Look for treasure nearby"
-    <MAP-SCOPE (I) (LOCATION INVENTORY)
+    <MAP-SCOPE (I [STAGES (LOCATION INVENTORY)])
         <COND (<FSET? .I ,TREASUREBIT>
                <SET BOOTY .I>
                <RETURN>)>>
