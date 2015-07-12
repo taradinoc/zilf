@@ -774,7 +774,7 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
                   <TELL "The little bird looks unhappy in the cage." CR>)
                  (ELSE
                   <TELL "The cheerful little bird is sitting here singing." CR>)>)
-          (<VERB? PUT-IN>
+          (<AND <VERB? PUT-IN> <PRSO? ,LITTLE-BIRD>>
            <COND (<PRSI? ,WICKER-CAGE>
                   <PERFORM ,V?CATCH ,PRSO>
                   <RTRUE>)
@@ -3556,7 +3556,7 @@ brushes himself off. Now he's madder than ever!" CR>)
            <TELL CR "A bearded pirate appears, catches sight of the dwarf and runs away." CR>
            <RTRUE>)>
     ;"Look for treasure nearby"
-    <MAP-SCOPE (I) (LOCATION INVENTORY)
+    <MAP-SCOPE (I [STAGES (LOCATION INVENTORY)])
         <COND (<FSET? .I ,TREASUREBIT>
                <SET BOOTY .I>
                <RETURN>)>>

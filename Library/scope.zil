@@ -53,6 +53,8 @@
      <PUT SCOPE-STATE 1 ,GLOBAL-OBJECTS>)
     (<SCOPE-CRAWL>)>
 
+;"TODO: Just step through the GLOBAL property instead of checking everything
+  in LOCAL-GLOBALS."
 <SCOPE-STAGE LOCAL-GLOBALS 2
     (<PUT SCOPE-STATE 0 <FIRST? ,LOCAL-GLOBALS>>
      <PUT SCOPE-STATE 1 ,LOCAL-GLOBALS>)
@@ -86,33 +88,55 @@
 <CONSTANT MSO-NEED-LIGHT 1>
 <GLOBAL MAP-SCOPE-OPTIONS <>>
 
-<DEFMAC MAP-SCOPE ('VAR "ARGS" BODY "AUX" STAGES INIT-OPTIONS INIT-STAGES)
-    <COND (<TYPE? .VAR LIST> <SET VAR <1 .VAR>>)
-          (ELSE <ERROR WRONG-ARG-TYPE 1 .VAR>)>
-    ;"User can specify stages, or default to all stages in definition order"
-    ;"Light is not required when specifying stages explicitly"
-    <COND (<TYPE? <1 .BODY> LIST>
-           <SET STAGES <1 .BODY>>
-           <SET BODY <REST .BODY>>
-           <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS <>>>)
-          (ELSE
-           <SET STAGES <MAPF ,LIST 1 ,SCOPE-STAGES>>
-           <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>)>
-    <COND (<G? <LENGTH .STAGES> ,SCOPE-CURRENT-STAGES-SIZE>
-           <ERROR TOO-MANY-STAGES>)>
+<DEFMAC MAP-SCOPE ('VAR "ARGS" BODY "AUX" STAGES INIT-OPTIONS INIT-STAGES OPTS)
+    <COND (<NOT <TYPE? .VAR LIST>> <ERROR WRONG-ARG-TYPE 1 .VAR>)>
+    ;"To specify stages explicitly:
+        [STAGES (INVENTORY LOCATION)]
+      Or set them from search bits:
+        [BITS .B]
+      Or default to all stages in definition order.
+      
+      To turn off the light requirement:
+        [NO-LIGHT]"
+    <SET OPTS <REST .VAR>>
+    <SET VAR <1 .VAR>>
+    <SET STAGES <MAPF ,LIST 1 ,SCOPE-STAGES>>
+    <SET INIT-STAGES <>>
+    <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>
+    <REPEAT ()
+        <COND (<EMPTY? .OPTS> <RETURN>)>
+        <BIND ((SV <1 .OPTS>))
+            <COND (<NOT <TYPE? .SV VECTOR>> <ERROR BAD-OPTION .SV>)
+                  (<AND <==? <LENGTH .SV> 2> <==? <1 .SV> BITS>>
+                   <SET STAGES <>>
+                   <SET INIT-STAGES
+                       <LIST <FORM MAP-SCOPE-INIT-STAGES-FROM-BITS <2 .SV>>>>)
+                  (<AND <==? <LENGTH .SV> 2> <==? <1 .SV> STAGES>>
+                   <SET STAGES <2 .SV>>
+                   <SET INIT-STAGES <>>)
+                  (<AND <==? <LENGTH .SV> 1> <==? <1 .SV> NO-LIGHT>>
+                   <SET INIT-OPTIONS '<SETG MAP-SCOPE-OPTIONS <>>>)
+                  (ELSE <ERROR BAD-OPTION .SV>)>>
+        <SET OPTS <REST .OPTS>>>
     ;"Generate code to initialize SCOPE-CURRENT-STAGES"
-    <BIND ((I 0))
-        <SET INIT-STAGES
-             <MAPF ,LIST
-                   <FUNCTION (S)
-                       <SET I <+ .I 1>>
-                       <FORM PUT
-                             ',SCOPE-CURRENT-STAGES
-                             .I
-                             <PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
-                   .STAGES>>>
+    <COND (<NOT .INIT-STAGES>
+           <COND (<AND <ASSIGNED? STAGES>
+                       <G? <LENGTH .STAGES> ,SCOPE-CURRENT-STAGES-SIZE>>
+                  <ERROR TOO-MANY-STAGES>)>
+           <BIND ((I 0))
+               <SET INIT-STAGES
+                    <MAPF ,LIST
+                          <FUNCTION (S)
+                              <SET I <+ .I 1>>
+                              <FORM PUT
+                                    ',SCOPE-CURRENT-STAGES
+                                    .I
+                                    <PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
+                          .STAGES>>>
+           <SET INIT-STAGES
+               <CONS <FORM PUT ',SCOPE-CURRENT-STAGES 0 <LENGTH .INIT-STAGES>>
+                     .INIT-STAGES>>)>
     <FORM PROG '()
-          <FORM PUT ',SCOPE-CURRENT-STAGES 0 <LENGTH .INIT-STAGES>>
           !.INIT-STAGES
           .INIT-OPTIONS
           '<COND (<NOT <MAP-SCOPE-START>>
@@ -122,6 +146,20 @@
                 <FORM COND <LIST <FORM 0? <FORM LVAL .VAR>>
                                  '<RETURN>>>
                 !.BODY>>>
+
+<ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
+    ;"TODO: Put a condition on GENERIC-SCOPE-STAGE."
+    <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GENERIC-SCOPE-STAGE>
+    ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM."
+    <COND (<OR <BTST .BITS ,SF-HELD>
+               <BTST .BITS ,SF-CARRIED>>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,INVENTORY-SCOPE-STAGE>)>
+    <COND (<OR <BTST .BITS ,SF-ON-GROUND>
+               <BTST .BITS ,SF-IN-ROOM>>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCATION-SCOPE-STAGE>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GLOBALS-SCOPE-STAGE>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCAL-GLOBALS-SCOPE-STAGE>)>
+    <PUT ,SCOPE-CURRENT-STAGES 0 .CNT>>
 
 <ROUTINE MAP-SCOPE-START ("AUX" V (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (NEED-LIGHT <>))
     <COND (<AND <NOT ,HERE-LIT> <BTST ,MAP-SCOPE-OPTIONS ,MSO-NEED-LIGHT>>
