@@ -1783,7 +1783,9 @@ namespace Zilf.Compiler
                     return CompileAsOperand(cc, rb, ((ZilAdecl)expr).First, src, suggestion ?? rb.Stack);
 
                 default:
-                    throw new NotImplementedException();
+                    Errors.CompError(cc.Context, expr.SourceLine ?? src,
+                        "expected a FORM, ATOM, or ADECL but found: {0}", expr);
+                    return cc.Game.Zero;
             }
         }
 
