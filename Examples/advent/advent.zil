@@ -392,7 +392,7 @@ Anyway, nothing happens." CR>)
                   <COND (,FRESH-BATTERIES-USED
                          <TELL " You're also out of spare batteries. You'd best start wrapping this up." CR>)
                         (<AND <IN? ,FRESH-BATTERIES ,VENDING-MACHINE>
-                              <FSET? ,DEAD-END-14 ,TOUCHBIT>>
+                              <FSET? ,VENDING-DEAD-END ,TOUCHBIT>>
                          <TELL " You'd best start wrapping this up, unless you can find some fresh batteries.
 I seem to recall there's a vending machine in the maze. Bring some coins with you.">)
                         (<NOT <OR <IN? ,FRESH-BATTERIES ,VENDING-MACHINE>
@@ -1086,7 +1086,7 @@ The hall joins up with a narrow north/south passage.")
     (IN ROOMS)
     (LDESC "You are at a crossover of a high N/S passage and a low E/W one.")
     (WEST TO AT-EAST-END-OF-LONG-HALL)
-    (NORTH TO DEAD-END-7)
+    (NORTH TO CROSSOVER-DEAD-END)
     (EAST TO IN-WEST-SIDE-CHAMBER)
     (SOUTH TO AT-WEST-END-OF-LONG-HALL)>
 
@@ -1120,7 +1120,7 @@ The hall joins up with a narrow north/south passage.")
                 <0? <GETPT ,HERE ,PRSO>>>
            <TELL "You'll have to go back the way you came." CR>)>>
 
-<DEAD-END-ROOM DEAD-END-7 SOUTH CROSSOVER>
+<DEAD-END-ROOM CROSSOVER-DEAD-END SOUTH CROSSOVER>
 
 ;----------------------------------------------------------------------
 "The Hall of the Mountain King and side chambers"
@@ -1461,10 +1461,16 @@ There are cracks everywhere, and a passage leading east.")
     (WEST 1) (SOUTH 3) (EAST 4)>
 
 <MAZE-ROOM ALIKE-MAZE-3
-    (EAST 2) (DOWN DEAD-END-3) (SOUTH 6) (NORTH DEAD-END-13)>
+    (EAST 2) (DOWN DEAD-END-3) (SOUTH 6) (NORTH DEAD-END-8)>
 
 <MAZE-ROOM ALIKE-MAZE-4
     (WEST 1) (NORTH 2) (EAST DEAD-END-1) (SOUTH DEAD-END-2) (UP 14) (DOWN 14)>
+
+<DEAD-END-ROOM DEAD-END-1 WEST ALIKE-MAZE-4>
+
+<DEAD-END-ROOM DEAD-END-2 EAST ALIKE-MAZE-4>
+
+<DEAD-END-ROOM DEAD-END-3 UP ALIKE-MAZE-3>
 
 <MAZE-ROOM ALIKE-MAZE-5
     (EAST 6) (WEST 7)>
@@ -1472,22 +1478,16 @@ There are cracks everywhere, and a passage leading east.")
 <MAZE-ROOM ALIKE-MAZE-6
     (EAST 3) (WEST 5) (DOWN 7) (SOUTH 8)>
 
-<DEAD-END-ROOM DEAD-END-1 WEST ALIKE-MAZE-4>
-
-<DEAD-END-ROOM DEAD-END-2 NORTH ALIKE-MAZE-4>
-
-<DEAD-END-ROOM DEAD-END-3 UP ALIKE-MAZE-3>
-
 <MAZE-ROOM ALIKE-MAZE-7
     (WEST 5) (UP 6) (EAST 8) (SOUTH 9)>
 
 <MAZE-ROOM ALIKE-MAZE-8
-    (WEST 6) (EAST 7) (SOUTH 8) (UP 9) (NORTH 10) (DOWN DEAD-END-12)>
+    (WEST 6) (EAST 7) (SOUTH 8) (UP 9) (NORTH 10) (DOWN DEAD-END-10)>
 
 <MAZE-ROOM ALIKE-MAZE-9
     (WEST 7) (NORTH 8) (SOUTH DEAD-END-4)>
 
-<DEAD-END-ROOM DEAD-END-4 NORTH ALIKE-MAZE-9>
+<DEAD-END-ROOM DEAD-END-4 WEST ALIKE-MAZE-9>
 
 <MAZE-ROOM ALIKE-MAZE-10
     (WEST 8) (NORTH 10) (DOWN DEAD-END-5) (EAST AT-BRINK-OF-PIT)>
@@ -1534,7 +1534,57 @@ The maze continues at this level.")
            <PERFORM ,V?WALK ,P?DOWN>
            <RTRUE>)>>
 
-<DEAD-END-ROOM DEAD-END-6 NORTH AT-BRINK-OF-PIT>
+<DEAD-END-ROOM DEAD-END-6 EAST AT-BRINK-OF-PIT>
+
+;----------------------------------------------------------------------
+
+<MAZE-ROOM ALIKE-MAZE-11
+    (NORTH 1) (WEST 11) (SOUTH 11) (EAST DEAD-END-7)>
+
+<DEAD-END-ROOM DEAD-END-7 WEST ALIKE-MAZE-11>
+
+<DEAD-END-ROOM DEAD-END-8 SOUTH ALIKE-MAZE-3>
+
+<MAZE-ROOM ALIKE-MAZE-12
+    (SOUTH AT-BRINK-OF-PIT) (EAST 13) (WEST DEAD-END-9)>
+
+<MAZE-ROOM ALIKE-MAZE-13
+    (NORTH AT-BRINK-OF-PIT) (WEST 12) (NW PIRATE-DEAD-END)>
+
+<DEAD-END-ROOM DEAD-END-9 EAST ALIKE-MAZE-12>
+
+<DEAD-END-ROOM DEAD-END-10 UP ALIKE-MAZE-8>
+
+<MAZE-ROOM ALIKE-MAZE-14
+    (UP 4) (DOWN 4)>
+
+<ROOM PIRATE-DEAD-END
+    (DESC "Dead End")
+    (IN ROOMS)
+    (LDESC "This is the pirate's dead end.")
+    (SE TO ALIKE-MAZE-13)
+    (OUT TO ALIKE-MAZE-13)
+    (ACTION PIRATE-DEAD-END-F)
+    (FLAGS SACREDBIT)>
+
+<ROUTINE PIRATE-DEAD-END-F (RARG)
+    <COND (<=? .RARG ,M-ENTER>
+           <DEQUEUE I-PIRATE>
+           <COND (<AND <IN? ,TREASURE-CHEST ,HERE>
+                       <NOT <FSET? ,TREASURE-CHEST ,TOUCHBIT>>>
+                  <TELL "You've found the pirate's treasure chest!" CR>)>)>>
+
+<OBJECT TREASURE-CHEST
+    (DESC "treasure chest")
+    (IN PIRATE-DEAD-END)
+    (SYNONYM CHEST BOX RICHES TREASURE)
+    (ADJECTIVE PIRATE TREASURE
+        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
+        %<VERSION? (ZIP #SPLICE ()) (ELSE PIRATE\'S)>)
+    (FDESC "The pirate's treasure chest is here!")
+    (TEXT "It's the pirate's treasure chest, filled with riches of all kinds!")
+    (DEPOSIT-POINTS 12)
+    (FLAGS TAKEBIT TREASUREBIT)>
 
 ;----------------------------------------------------------------------
 "A line of three vital junctions, east to west"
@@ -1949,8 +1999,16 @@ If you go down you may not be able to get back up.")
     (LDESC "You are in a tall E/W canyon. A low tight crawl goes 3 feet north
 and seems to open up.")
     (EAST TO IN-N/S-CANYON)
-    (WEST TO DEAD-END-8)
+    (WEST TO BOULDERS-DEAD-END)
     (NORTH TO IN-SWISS-CHEESE-ROOM)>
+
+<ROOM BOULDERS-DEAD-END
+    (DESC "Dead End")
+    (IN ROOMS)
+    (LDESC "The canyon runs into a mass of boulders -- dead end.")
+    (ACTION DEAD-END-ROOMS-F)
+    (SOUTH TO IN-TALL-E/W-CANYON)
+    (OUT TO IN-TALL-E/W-CANYON)>
 
 ;----------------------------------------------------------------------
 
@@ -2090,66 +2148,6 @@ You have just vanquished a dragon with your bare hands!
 
 <ROUTINE DRAGON-CORPSE-F ()
     <COND (<VERB? ATTACK> <TELL "You've already done enough damage!" CR>)>>
-
-;----------------------------------------------------------------------
-"And more of the Alike Maze"
-;----------------------------------------------------------------------
-
-<ROOM DEAD-END-8
-    (DESC "Dead End")
-    (IN ROOMS)
-    (LDESC "The canyon runs into a mass of boulders -- dead end.")
-    (ACTION DEAD-END-ROOMS-F)
-    (SOUTH TO IN-TALL-E/W-CANYON)
-    (OUT TO IN-TALL-E/W-CANYON)>
-
-<MAZE-ROOM ALIKE-MAZE-11
-    (NORTH 1) (WEST 11) (SOUTH 11) (EAST DEAD-END-9) (NE DEAD-END-10)>
-
-<DEAD-END-ROOM DEAD-END-9 WEST ALIKE-MAZE-11>
-
-<DEAD-END-ROOM DEAD-END-10 SW ALIKE-MAZE-11>
-
-<MAZE-ROOM ALIKE-MAZE-12
-    (SOUTH AT-BRINK-OF-PIT) (EAST 13) (WEST DEAD-END-11)>
-
-<MAZE-ROOM ALIKE-MAZE-13
-    (NORTH AT-BRINK-OF-PIT) (WEST 12) (NW DEAD-END-13)>
-
-<DEAD-END-ROOM DEAD-END-11 EAST ALIKE-MAZE-12>
-
-<DEAD-END-ROOM DEAD-END-12 UP ALIKE-MAZE-8>
-
-<MAZE-ROOM ALIKE-MAZE-14
-    (UP 4) (DOWN 4)>
-
-<ROOM DEAD-END-13
-    (DESC "Dead End")
-    (IN ROOMS)
-    (LDESC "This is the pirate's dead end.")
-    (SE TO ALIKE-MAZE-13)
-    (OUT TO ALIKE-MAZE-13)
-    (ACTION DEAD-END-13-F)
-    (FLAGS SACREDBIT)>
-
-<ROUTINE DEAD-END-13-F (RARG)
-    <COND (<=? .RARG ,M-ENTER>
-           <DEQUEUE I-PIRATE>
-           <COND (<AND <IN? ,TREASURE-CHEST ,HERE>
-                       <NOT <FSET? ,TREASURE-CHEST ,TOUCHBIT>>>
-                  <TELL "You've found the pirate's treasure chest!" CR>)>)>>
-
-<OBJECT TREASURE-CHEST
-    (DESC "treasure chest")
-    (IN DEAD-END-13)
-    (SYNONYM CHEST BOX RICHES TREASURE)
-    (ADJECTIVE PIRATE TREASURE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE PIRATE\'S)>)
-    (FDESC "The pirate's treasure chest is here!")
-    (TEXT "It's the pirate's treasure chest, filled with riches of all kinds!")
-    (DEPOSIT-POINTS 12)
-    (FLAGS TAKEBIT TREASUREBIT)>
 
 ;----------------------------------------------------------------------
 "Above the beanstalk: the Giant Room and the Waterfall"
@@ -3317,7 +3315,7 @@ which is probably just as well." CR>)
 
 <DIFFMAZE-ROOM DIFFERENT-MAZE-2 "little maze of twisting passages"
     (SW 3) (NORTH 4) (EAST 5) (NW 6) (SE 7)
-    (NE 8) (WEST 9) (DOWN 10) (UP 11) (SOUTH DEAD-END-14)>
+    (NE 8) (WEST 9) (DOWN 10) (UP 11) (SOUTH VENDING-DEAD-END)>
 
 <DIFFMAZE-ROOM DIFFERENT-MAZE-3 "maze of twisting little passages"
     (WEST 1) (SE 4) (NW 5) (SW 6) (NE 7)
@@ -3357,7 +3355,7 @@ which is probably just as well." CR>)
 
 ;----------------------------------------------------------------------
 
-<ROOM DEAD-END-14
+<ROOM VENDING-DEAD-END
     (DESC "Dead End, near Vending Machine")
     (IN ROOMS)
     (LDESC "You have reached a dead end. There is a massive vending machine here.||
@@ -3368,7 +3366,7 @@ Hmmm... There is a message here scrawled in the dust in a flowery script.")
 
 <OBJECT MESSAGE-IN-DUST
     (DESC "message in the dust")
-    (IN DEAD-END-14)
+    (IN VENDING-DEAD-END)
     (SYNONYM MESSAGE SCRAWL WRITING SCRIPT)
     (ADJECTIVE FLOWERY
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
@@ -3379,7 +3377,7 @@ his treasure chest.\"")
 
 <OBJECT VENDING-MACHINE
     (DESC "vending machine")
-    (IN DEAD-END-14)
+    (IN VENDING-DEAD-END)
     (SYNONYM MACHINE SLOT)
     (ADJECTIVE VENDING MASSIVE COIN
         ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
@@ -3576,8 +3574,8 @@ With that, he vanishes into the gloom." CR>
     <SETG PIRATE-STOLE T>
     <COND (,PIRATE-SPOTTED <DEQUEUE I-PIRATE>)>
     ;"We can't move objects in a MAP-SCOPE, so use recursion in a separate routine"
-    <NESTED-ROB-TREASURE ,HERE ,DEAD-END-13>
-    <NESTED-ROB-TREASURE ,WINNER ,DEAD-END-13>
+    <NESTED-ROB-TREASURE ,HERE ,PIRATE-DEAD-END>
+    <NESTED-ROB-TREASURE ,WINNER ,PIRATE-DEAD-END>
     <TELL CR "Out from the shadows behind you pounces a bearded pirate!
 \"Har, har,\" he chortles. \"I'll just take all this booty and hide it away
 with me chest deep in the maze!\"
