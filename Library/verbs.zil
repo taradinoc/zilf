@@ -520,9 +520,9 @@ Returns:
            <COND (<SET MAX <GETB .O 0>>
                   <DO (I 1 .MAX)
                       <SET J <GET/B .O .I>>
-                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-                             <COND (<0? .F> <SET F .I>)
-                                   (<0? .S> <SET S .I>)>
+                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
+                             <COND (<0? .F> <SET F .J>)
+                                   (<0? .S> <SET S .J>)>
                              <SET N <+ .N 1>>)>>)>)
           (ELSE
            <MAP-CONTENTS (I .O)
@@ -556,7 +556,7 @@ Returns:
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
           (ELSE
            <COND (<AND <BTST .FLAGS ,L-ISARE>
-                       <BTST .FLAGS ,L-SUFFIX>>
+                       <NOT <BTST .FLAGS ,L-SUFFIX>>>
                   <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
                              <FSET? .F ,PLURALBIT>>
                          <TELL "are ">)
