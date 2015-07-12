@@ -1053,7 +1053,7 @@ General switches:
                 if (!ctx.InVocab)
                     Errors.Warn(node, "ignoring .VOCEND outside of a vocabulary block");
                 else
-                    ctx.LeaveVocab();
+                    ctx.LeaveVocab(node);
             }
             else if (node is ByteDirective || node is WordDirective)
             {

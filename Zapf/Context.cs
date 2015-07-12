@@ -268,7 +268,7 @@ namespace Zapf
             vocabKeySize = keySize;
         }
 
-        public void LeaveVocab()
+        public void LeaveVocab(ISourceLine src)
         {
             if (InVocab)
             {
@@ -318,6 +318,18 @@ namespace Zapf
                     }
                 }
 
+                if (FinalPass)
+                {
+                    // check for collisions
+                    for (int i = 1; i < records; i++)
+                    {
+                        if (VocabCompare(buffer, i - 1, i) == 0)
+                        {
+                            Errors.Warn(src, "vocab collision between {0} and {1}", VocabLabel(i - 1), VocabLabel(i));
+                        }
+                    }
+                }
+
                 if (stream != null)
                     stream.Write(buffer, 0, bufLen);
             }
@@ -359,6 +371,21 @@ namespace Zapf
             }
 
             return 0;
+        }
+
+        private string VocabLabel(int index)
+        {
+            foreach (Symbol sym in GlobalSymbols.Values)
+            {
+                if (sym.Type == SymbolType.Label && sym.Value >= vocabStart && sym.Value < position)
+                {
+                    int offset = sym.Value - vocabStart;
+                    if (offset % vocabRecSize == 0 && offset / vocabRecSize == index)
+                        return sym.Name;
+                }
+            }
+
+            return "index " + index;
         }
 
         public void PushFile(string filename)
