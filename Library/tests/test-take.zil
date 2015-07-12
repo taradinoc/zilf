@@ -56,22 +56,6 @@
     <MOVE ,DESK ,STARTROOM>
     <MOVE ,BUCKET ,STARTROOM>>
 
-<TEST-CASE ("Take all")
-    <COMMAND [TAKE ALL]>
-    <EXPECT "bucket: That's not something you can pick up.|
-desk: That's not something you can pick up.|
-cage: That's not something you can pick up.|
-hat: You wear the hat.|
-banana: You pick up the banana.|
-apple: You pick up the apple.|">
-    <CHECK <IN? ,APPLE ,WINNER>>
-    <CHECK <IN? ,BANANA ,WINNER>>
-    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
-    <CHECK <NOT <IN? ,CAGE ,WINNER>>>
-    <CHECK <NOT <IN? ,DESK ,WINNER>>>
-    <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
-    <CHECK <NOT <IN? ,WINNER ,WINNER>>>>
-
 <TEST-CASE ("Take with no noun and one candidate")
     <REMOVE ,BANANA>
     <REMOVE ,HAT>

@@ -9,7 +9,7 @@
 
 "Debugging"
 
-<COMPILATION-FLAG-DEFAULT DEBUG <>>
+<COMPILATION-FLAG-DEFAULT DEBUG ;T <>>
 
 "In V3, we need these globals for the status line. In V5, we could
 call them something else, but we'll continue the tradition anyway."
@@ -100,6 +100,15 @@ other versions. These macros let us write the same code for all versions."
         <CONSTANT VOCAB-V1 7>
         <CONSTANT VOCAB-V2 8>)>
 
+"Constants"
+
+<CONSTANT L-ISARE 1>
+<CONSTANT L-SUFFIX 2>
+<CONSTANT L-ISMANY 4>
+<CONSTANT L-PRSTABLE 8>
+<CONSTANT L-THE 16>
+<CONSTANT L-OR 32>
+
 ;"Determines whether a word has the given part of speech, and returns
 its part of speech value if so.
 
@@ -164,37 +173,56 @@ Args:
 <GLOBAL P-P2 <>>
 <GLOBAL P-SYNTAX <>>
 
+"Tables for object specs (adjective + noun pairs).
+ These each have one length byte, one mode byte, then P-MAX-OBJSPECS pairs of words.
+ The mode byte is unused for the -EX tables."
+<CONSTANT P-MAX-OBJSPECS 10>
+<BIND ((TBLSIZE <+ 1 <* ,P-MAX-OBJSPECS 2>>))
+    <CONSTANT P-DOBJS <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-DOBJEX <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-IOBJS <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-IOBJEX <ITABLE .TBLSIZE <>>>
+    "for recalling last PRSO with IT"
+    <CONSTANT P-DOBJS-BACK <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-DOBJEX-BACK <ITABLE .TBLSIZE <>>>
+    <GLOBAL IT-USE 0>
+    <GLOBAL IT-ONCE 0>
+    "for recalling last PRSO with THEM"
+    <CONSTANT P-TOBJS-BACK <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-TOBJEX-BACK <ITABLE .TBLSIZE <>>>
+    <GLOBAL THEM-USE 0>
+    <GLOBAL THEM-ONCE 0>
+    "for recalling last male PRSO with HIM"
+    <CONSTANT P-MOBJS-BACK <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-MOBJEX-BACK <ITABLE .TBLSIZE <>>>
+    <GLOBAL HIM-USE 0>
+    <GLOBAL HIM-ONCE 0>
+    "for recalling last PRSO with HER"
+    <CONSTANT P-FOBJS-BACK <ITABLE .TBLSIZE <>>>
+    <CONSTANT P-FOBJEX-BACK <ITABLE .TBLSIZE <>>>
+    <GLOBAL HER-USE 0>
+    <GLOBAL HER-ONCE 0>>
 
-<CONSTANT P-MAXOBJS 10>
-"These each have one length byte, one mode byte, then P-MAXOBJS pairs of words."
-<CONSTANT P-DOBJS <ITABLE 21 <>>>
-<CONSTANT P-DOBJEX <ITABLE 21 <>>>
-<CONSTANT P-IOBJS <ITABLE 21 <>>>
-<CONSTANT P-IOBJEX <ITABLE 21 <>>>
-"for recalling last PRSO with IT"
-<CONSTANT P-DOBJS-BACK <ITABLE 21 <>>>
-<CONSTANT P-DOBJEX-BACK <ITABLE 21 <>>>
-<GLOBAL IT-USE 0>
-<GLOBAL IT-ONCE 0>
-"for recalling last PRSO with THEM"
-<CONSTANT P-TOBJS-BACK <ITABLE 21<>>>
-<CONSTANT P-TOBJEX-BACK <ITABLE 21 <>>>
-<GLOBAL THEM-USE 0>
-<GLOBAL THEM-ONCE 0>
-"for recalling last male PRSO with HIM"
-<CONSTANT P-MOBJS-BACK <ITABLE 21 <>>>
-<CONSTANT P-MOBJEX-BACK <ITABLE 21 <>>>
-<GLOBAL HIM-USE 0>
-<GLOBAL HIM-ONCE 0>
-"for recalling last PRSO with HER"
-<CONSTANT P-FOBJS-BACK <ITABLE 21 <>>>
-<CONSTANT P-FOBJEX-BACK <ITABLE 21 <>>>
-<GLOBAL HER-USE 0>
-<GLOBAL HER-ONCE 0>
+<CONSTANT P-MAX-OBJECTS 50>
+"Tables for objects recognized from object specs.
+ These each have one length byte, a dummy byte (V4+ only),
+ then P-MAX-OBJECTS bytes/words for the objects."
+<BIND ((TBLSIZE <+ 1 ,P-MAX-OBJECTS>)
+       (TBLFLAGS <VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>))
+    "Matched direct objects"
+    <GLOBAL P-PRSOS <ITABLE .TBLSIZE .TBLFLAGS>>
+    "Matched indirect objects"
+    <GLOBAL P-PRSIS <ITABLE .TBLSIZE .TBLFLAGS>>>
 
 <BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE \. \, \">
 
 ;"Reads and parses a command.
+
+The primary outputs are PRSA, PRSO (+ PRSO-DIR), and PRSI, suitable
+for passing to PERFORM.
+
+If multiple objects are used for PRSO or PRSI, they will be set
+to MANY-OBJECTS and PERFORM will have to read P-PRSOS or P-PRSIS.
 
 Sets:
   P-LEN
@@ -208,7 +236,11 @@ Sets:
   PRSA
   PRSO
   PRSO-DIR
+  P-PRSOS
   PRSI
+  P-PRSIS
+  P-BUTS
+  P-EXTRA
   USAVE
   P-DOBJS
   P-DOBJEX
@@ -328,50 +360,52 @@ Sets:
         <COND (<AND <NOT <VERB? UNDO>>
                     <NOT ,AGAINCALL>>
                <SETG USAVE <ISAVE>>
-               ;<TELL "ISAVE returned " N ,USAVE CR>
                <COND (<EQUAL? ,USAVE 2>
                       <TELL "Previous turn undone." CR>
                       ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
-                      <AGAIN>
-                      ;<SETG NOUAGAIN 0> )>)>>
+                      <AGAIN>)>)>>
     ;"if successful PRSO and not after an IT use, back up PRSO for IT"
     <COND (<AND <EQUAL? ,IT-USE 0>
                 ,PRSO
+                <NOT <PRSO? ,MANY-OBJECTS>>
                 <NOT <FSET? ,PRSO ,PERSONBIT>>
                 <NOT <FSET? ,PRSO ,PLURALBIT>>>
-           ;<TELL "Copying P-DOBJS into P-DOBJS-BACK" CR>
            <COPY-TABLE ,P-DOBJS ,P-DOBJS-BACK 21>
            <COPY-TABLE ,P-DOBJEX ,P-DOBJEX-BACK 21>
            <COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
           ;"if PRSO has PLURALBIT, back up to THEM instead"
           (<AND <EQUAL? ,THEM-USE 0>
                 ,PRSO
+                ;"Note: we allow MANY-OBJECTS here"
                 <NOT <FSET? ,PRSO ,PERSONBIT>>
                 <FSET? ,PRSO ,PLURALBIT>>
-           ;<TELL "Copying P-DOBJS into P-TOBJS-BACK" CR>
            <COPY-TABLE ,P-DOBJS ,P-TOBJS-BACK 21>
            <COPY-TABLE ,P-DOBJEX ,P-TOBJEX-BACK 21>
            <COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
           ;"if successful PRSO who is male, back up PRSO for HIM"
           (<AND <EQUAL? ,HIM-USE 0>
                 ,PRSO
+                <NOT <PRSO? ,MANY-OBJECTS>>
                 <FSET? ,PRSO ,PERSONBIT>
                 <NOT <FSET? ,PRSO ,FEMALEBIT>>>
-                              ;<TELL "Copying P-DOBJS into P-MOBJS-BACK" CR>
                               <COPY-TABLE ,P-DOBJS ,P-MOBJS-BACK 21>
                               <COPY-TABLE ,P-DOBJEX ,P-MOBJEX-BACK 21>
                               <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
           ;"if successful PRSO who is female, back up PRSO for HER"
           (<AND <EQUAL? ,HER-USE 0>
                 ,PRSO
+                <NOT <PRSO? ,MANY-OBJECTS>>
                 <FSET? ,PRSO ,PERSONBIT>
                 <FSET? ,PRSO ,FEMALEBIT>>
-           ;<TELL "Copying P-DOBJS into P-FOBJS-BACK" CR>
            <COPY-TABLE ,P-DOBJS ,P-FOBJS-BACK 21>
            <COPY-TABLE ,P-DOBJEX ,P-FOBJEX-BACK 21>
            <COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>)>
     <RTRUE>>
 
+;"PRSO or PRSI are set to this when multiple objects are used."
+<OBJECT MANY-OBJECTS
+    (DESC "things")
+    (FLAGS NDESCBIT INVISIBLE PLURALBIT)>
 
 <VERSION?
     (ZIP
@@ -432,7 +466,7 @@ Returns:
 <ROUTINE STARTS-CLAUSE? (W)
     ;"T? forces the OR to be evaluated as a condition, since we don't
       care about the exact return value from CHKWORD? or WORD?."
-    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE>
+    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?ANY ,W?ONE>
             <CHKWORD? .W ,PS?ADJECTIVE>
             <WORD? .W OBJECT>>>>
 
@@ -455,13 +489,21 @@ Returns:
   True if the noun clause was matched. YTBL and NTBL may be modified even if
   this routine returns false.
 "
-<ROUTINE MATCH-CLAUSE (WN YTBL NTBL "AUX" (TI 1) W VAL (MODE 0) (ADJ <>) (NOUN <>) (BUT <>))
+<ROUTINE MATCH-CLAUSE (WN YTBL NTBL "AUX" (TI 1) W VAL (MODE 0) (ADJ <>) (NOUN <>) TBL (BUT <>))
+    <SET TBL .YTBL>
+    <PUTB .NTBL 0 0>
     <REPEAT ()
         <COND
             ;"exit loop if we reached the end of the command"
             (<G? .WN ,P-LEN> <RETURN>)
             ;"fail if we found an unrecognized word"
             (<0? <SET W <GETWORD? .WN>>> <RFALSE>)
+            ;"recognize BUT/EXCEPT"
+            (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
+             <PUTB .TBL 0 </ <- .TI 1> 2>>
+             <SET BUT T>
+             <SET TBL .NTBL>
+             <SET TI 1>)
             ;"recognize ALL/ANY/ONE"
             (<EQUAL? .W ,W?ALL ,W?ANY ,W?ONE>
              <COND (<OR .MODE .ADJ .NOUN> <RFALSE>)>
@@ -484,22 +526,22 @@ Returns:
                                <NOT <OR <CHKWORD? .NW ,PS?ADJECTIVE>
                                         <CHKWORD? .NW ,PS?OBJECT>>>>>>
                   <SET NOUN .W>)
-                 (<==? .TI ,P-MAXOBJS>
+                 (<==? .TI ,P-MAX-OBJSPECS>
                   <TELL "That clause mentions too many objects." CR>
                   <RFALSE>)
                  (<NOT .ADJ> <SET ADJ .VAL>)>)
             ;"match nouns, exiting the loop if we already found one"
             (<WORD? .W OBJECT>
              <COND (.NOUN <RETURN>)
-                   (<==? .TI ,P-MAXOBJS>
+                   (<==? .TI ,P-MAX-OBJSPECS>
                     <TELL "That clause mentions too many objects." CR>
                     <RFALSE>)
                    (ELSE <SET NOUN .W>)>)
             ;"recognize AND/comma"
             (<EQUAL? .W ,W?AND ,W?COMMA>
              <COND (<OR .ADJ .NOUN>
-                    <PUT .YTBL .TI .ADJ>
-                    <PUT .YTBL <+ .TI 1> .NOUN>
+                    <PUT .TBL .TI .ADJ>
+                    <PUT .TBL <+ .TI 1> .NOUN>
                     <SET ADJ <SET NOUN <>>>
                     <SET TI <+ .TI 2>>)>)
             ;"skip buzzwords"
@@ -509,12 +551,13 @@ Returns:
         <SET WN <+ .WN 1>>>
     ;"store final adj/noun pair"
     <COND (<OR .ADJ .NOUN>
-           <PUT .YTBL .TI .ADJ>
-           <PUT .YTBL <+ .TI 1> .NOUN>
+           <PUT .TBL .TI .ADJ>
+           <PUT .TBL <+ .TI 1> .NOUN>
            <SET TI <+ .TI 2>>)>
     ;"store phrase count and mode"
-    <PUTB .YTBL 0 </ <- .TI 1> 2>>
-    <PUTB .YTBL 1 .MODE>
+    <PUTB .TBL 0 </ <- .TI 1> 2>>
+    <PUTB .YTBL 1 .MODE>  ;"mode is always in YTBL"
+    <PUTB .NTBL 1 0>      ;"NTBL mode is unused"
     .WN>
 
 <CONSTANT SYN-REC-SIZE 8>
@@ -669,6 +712,9 @@ Returns:
 ;"Attempts to match PRSO and PRSI, if necessary, after parsing a command.
   Prints a message if it fails.
 
+  If multiple objects are used, sets PRSO or PRSI to MANY-OBJECTS.
+  The objects are left in P-PRSOS and P-PRSIS.
+
 Uses:
   P-NOBJ
   P-DOBJS
@@ -677,6 +723,8 @@ Uses:
 Sets:
   PRSO
   PRSI
+  P-PRSOS
+  P-PRSIS
   IT-USE
   THEM-USE
   HIM-USE
@@ -703,10 +751,10 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ DOBJ>
                   <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ DOBJ>
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
-                  <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX
-                                           <ENCODE-NOUN-BITS .F .O>>>)>
+                  <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
+                  <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX ,P-PRSOS>>)>
            <COND (<OR <NOT ,PRSO>
-                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK ,PRSO .O>>>>
+                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK ,P-PRSOS .O>>>>
                   <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
@@ -726,9 +774,9 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ IOBJ>
                   <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ IOBJ>
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
-                  <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX
-                                           <ENCODE-NOUN-BITS .F .O>>>)>
-           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK ,PRSI .O>>>
+                  <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
+                  <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX ,P-PRSIS>>)>
+           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK ,P-PRSIS .O>>>
                   <RFALSE>)>)>
     <RTRUE>>
 
@@ -748,34 +796,52 @@ Returns:
                   <TELL " " B <GET-PREP-WORD .SP2>>)>)>
     <TELL "?" CR>>
 
-;"Applies the rules for the HAVE and TAKE syntax flags to a parsed object,
+;"Applies the rules for the HAVE and TAKE syntax flags to a set of parsed objects,
 printing a failure message if appropriate.
 
 Args:
-  OBJ: An object matched as one of the nouns in a command.
+  TBL: Either P-PRSOS or P-PRSIS.
   OPTS: The corresponding search options, including the HAVE and TAKE flags.
 
 Returns:
-  True if the checks passed, i.e. either the object doesn't have to be held
-  by the WINNER, or it is held, possibly as the result of an implicit TAKE.
-  False if the object has to be held, the WINNER is not holding it, and
-  it couldn't be taken implicitly."
-<ROUTINE HAVE-TAKE-CHECK (OBJ OPTS)
-    ;"Attempt implicit take if WINNER isn't directly holding the object"
+  True if the checks passed, i.e. either the objects don't have to be held
+  by the WINNER, or they are held, possibly as the result of an implicit TAKE.
+  False if the objects have to be held, the WINNER is not holding them, and
+  they couldn't be taken implicitly."
+<ROUTINE HAVE-TAKE-CHECK (TBL OPTS "AUX" MAX DO-TAKE? O)
+    <SET MAX <GETB .TBL 0>>
+    ;"Attempt implicit take if WINNER isn't directly holding the objects"
     <COND (<BTST .OPTS ,SF-TAKE>
            ;"TODO: Don't implicit take out of a closed container? Or should
              the container handle this by setting TRYTAKEBIT on its contents?"
            ;"TODO: Enforce inventory limit; split relevant logic out of V-TAKE."
-           <COND (<AND <NOT <IN? .OBJ ,WINNER>>
-                       <FSET? .OBJ ,TAKEBIT>
-                       <NOT <FSET? .OBJ ,TRYTAKEBIT>>>
-                  <TELL "[taking " T .OBJ "]" CR>
-                  <MOVE .OBJ ,WINNER>)>)>
-    ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
-    <COND (<AND <BTST .OPTS ,SF-HAVE> <NOT <HELD? .OBJ>>>
-           <TELL "You aren't holding " T .OBJ "." CR>
-           <RFALSE>)>
+           <DO (I 1 .MAX)
+               <COND (<NEEDS-IMPLICIT-TAKE? <GET/B .TBL .I>>
+                      <TELL "[taking ">
+                      <LIST-OBJECTS .TBL ,NEEDS-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>
+                      <TELL "]" CR>
+                      <REPEAT ()
+                          <COND (<NEEDS-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
+                                 <MOVE .O ,WINNER>)>
+                          <COND (<IGRTR? I .MAX> <RETURN>)>>
+                      <RETURN>)>>)>
+    ;"WINNER must (indirectly) hold the objects if SF-HAVE is set"
+    <COND (<BTST .OPTS ,SF-HAVE>
+           <DO (I 1 .MAX)
+               <COND (<NOT <HELD? <GET/B .TBL .I>>>
+                      <TELL "You aren't holding ">
+                      <LIST-OBJECTS .TBL ,NOT-HELD? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+                      <TELL "." CR>
+                      <RFALSE>)>>)>
     <RTRUE>>
+
+<ROUTINE NEEDS-IMPLICIT-TAKE? (OBJ)
+    <T? <AND <NOT <IN? .OBJ ,WINNER>>
+             <FSET? .OBJ ,TAKEBIT>
+             <NOT <FSET? .OBJ ,TRYTAKEBIT>>>>>
+
+<ROUTINE NOT-HELD? (OBJ)
+    <NOT <HELD? .OBJ>>>
 
 ;"Searches scope for a single object with the given flag set, and prints an
 inference message before returning it.
@@ -859,21 +925,70 @@ Args:
   BITS: A word with the scope flags in the lower byte and the number of the
     FIND flag in the upper byte.
 
+Uses:
+  FIND-ONE-OBJ-FLAGS
+  PRSA
+
 Returns:
   The located object, or false if no matching object was found."
-<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL BITS "AUX" A N)
+<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL OUT "AUX" F A N NY NN MODE (NOUT 0))
     ;"TODO: Disambiguate and/or match multiple objects."
-    <SET A <GET .YTBL 1>>
-    <SET N <GET .YTBL 2>>
+    ;"TODO: Use FIND-ONE-OBJ-FLAGS to restrict the scope search."
+    <SET NY <GETB .YTBL 0>>
+    <SET NN <GETB .NTBL 0>>
+    <SET MODE <GETB .YTBL 1>>
     <MAP-SCOPE (I)
-        <COND (<AND <NOT <FSET? .I ,INVISIBLE>> <REFERS? .A .N .I>>
-               <RETURN .I .FOO>)>>
-    ;"Not found"
-    <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
-           <TELL "It's too dark to see anything here." CR>)
+        <COND (<NOT <FSET? .I ,INVISIBLE>>
+               ;"Match any pair in YTBL, or most objects if YTBL is empty"
+               <COND (<0? .NY>
+                      ;"TAKE ALL only finds objects with (TRY)TAKEBIT."
+                      <COND (<AND <VERB? TAKE>
+                                  <NOT <OR <FSET? .I ,TAKEBIT>
+                                           <FSET? .I ,TRYTAKEBIT>>>>
+                             <SET F <>>)
+                            (<=? .I ,WINNER> <SET F <>>)
+                            (ELSE <SET F T>)>)
+                     (ELSE
+                      <SET F <>>
+                      <DO (J 1 .NY)
+                          <SET A <GET .YTBL <- <* 2 .J> 1>>>
+                          <SET N <GET .YTBL <* 2 .J>>>
+                          <COND (<REFERS? .A .N .I>
+                                 <SET F T>
+                                 <RETURN>)>>)>
+               <COND (.F
+                      ;"Exclude if any pair in NTBL matches"
+                      <COND (.NN
+                             <DO (J 1 .NN)
+                                 <SET A <GET .NTBL <- <* 2 .J> 1>>>
+                                 <SET N <GET .NTBL <* 2 .J>>>
+                                 <COND (<REFERS? .A .N .I>
+                                        <SET F <>>
+                                        <RETURN>)>>)>)>
+               <COND (.F
+                      ;"Pick this object, assuming there's room"
+                      <COND (<L? .NOUT ,P-MAX-OBJECTS>
+                             <SET NOUT <+ .NOUT 1>>
+                             <PUT/B .OUT .NOUT .I>)
+                            (ELSE
+                             <TELL "[too many objects!]" CR>
+                             <RETURN>)>)>)>>
+    <PUTB .OUT 0 .NOUT>
+    <COND (<0? .NOUT>
+           ;"Not found"
+           <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
+                  <TELL "It's too dark to see anything here." CR>)
+                 (ELSE
+                  <TELL "You don't see that here." CR>)>
+           <RFALSE>)
+          (<1? .NOUT>
+           <RETURN <GET/B .OUT 1>>)
           (ELSE
-           <TELL "You don't see that here." CR>)>
-    <RFALSE>>
+           <RETURN ,MANY-OBJECTS>)>>
+
+;"FIND-ONE-OBJ needs too many parameters for V3, so we use this global to pass
+  the scope flags (lower byte) and FIND flag (upper byte)."
+<GLOBAL FIND-ONE-OBJ-FLAGS <>>
         
 ;"Determines whether a local-global object is present in a given room.
 
@@ -1047,7 +1162,7 @@ Sets (temporarily):
   PRSO
   PRSO-DIR
   PRSI"
-<ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON)
+<ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT)
     <IF-DEBUG <TELL "[PERFORM: ACT=" N .ACT " DOBJ=" N .DOBJ " IOBJ=" N .IOBJ "]" CR>>
     <SET PRTN <GET ,PREACTIONS .ACT>>
     <SET RTN <GET ,ACTIONS .ACT>>
@@ -1059,7 +1174,24 @@ Sets (temporarily):
     <SETG PRSO .DOBJ>
     <SETG PRSO-DIR <==? .ACT ,V?WALK>>
     <SETG PRSI .IOBJ>
-    <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>
+    ;"Handle multiple objects"
+    <COND (<AND <NOT ,PRSO-DIR> <PRSO? ,MANY-OBJECTS>>
+           <COND (<PRSI? ,MANY-OBJECTS>
+                  <TELL "You can't use multiple direct and indirect objects together." CR>
+                  <SET WON <>>)
+                 (ELSE
+                  <SET CNT <GETB ,P-PRSOS 0>>
+                  <DO (I 1 .CNT)
+                      <SETG PRSO <GET/B ,P-PRSOS .I>>
+                      <TELL D ,PRSO ": ">
+                      <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)>)
+          (<PRSI? ,MANY-OBJECTS>
+           <SET CNT <GETB ,P-PRSIS 0>>
+           <DO (I 1 .CNT)
+               <SETG PRSI <GET/B ,P-PRSIS .I>>
+               <TELL D ,PRSI ": ">
+               <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)
+          (ELSE <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>)>
     <SETG PRSA .OA>
     <SETG PRSO .OD>
     <SETG PRSO-DIR .ODD>
