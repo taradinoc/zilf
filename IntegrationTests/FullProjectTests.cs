@@ -140,13 +140,16 @@ namespace IntegrationTests
         }
 
         private static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
+        private static Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
 
         private static string MassageText(string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            return SerialNumberRegex.Replace(text, "######");
+            text = SerialNumberRegex.Replace(text, "######");
+            text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
+            return text;
         }
 
         private static string[] SplitLines(string text)
