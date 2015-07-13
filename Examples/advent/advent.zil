@@ -290,9 +290,7 @@ There is a building in the distance.")
 <OBJECT TASTY-FOOD
     (DESC "tasty food")
     (IN INSIDE-BUILDING)
-    (SYNONYM FOOD RATION TRIPE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE RATIONS)>)
+    (SYNONYM FOOD RATION TRIPE RATIONS)
     (ADJECTIVE YUMMY TASTY DELICIOUS SCRUMPTIOUS)
     (ARTICLE "some")
     (FDESC "There is tasty food here.")
@@ -441,9 +439,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (DESC "bottled water")
     (ARTICLE "some")
     (SYNONYM WATER H2O)
-    (ADJECTIVE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP BOTTLE) (ELSE BOTTLED)>)
+    (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary water to me.")
     (ACTION WATER-IN-BOTTLE-F)>
 
@@ -457,9 +453,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (DESC "bottled oil")
     (ARTICLE "some")
     (SYNONYM OIL LUBRICANT GREASE)
-    (ADJECTIVE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP BOTTLE) (ELSE BOTTLED)>)
+    (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary oil to me.")
     (ACTION OIL-IN-BOTTLE-F)>
 
@@ -516,7 +510,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (DESC "streambed")
     (IN IN-A-VALLEY)
     (SYNONYM BED ROCK
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
+        ;"In V3, this conflicts with STREAM and we don't want ambiguity."
         %<VERSION? (ZIP #SPLICE ()) (ELSE STREAMBED)>)
     (ADJECTIVE SMALL ROCKY ;BARE ;DRY STREAM)
     (FLAGS NDESCBIT)>
@@ -636,10 +630,10 @@ A low crawl over cobbles leads inward to the west.")
 <OBJECT COBBLES
     (DESC "cobbles")
     (IN LOCAL-GLOBALS)
-    ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-    %<VERSION?
-        (ZIP '(SYNONYM COBBLE STONES STONE))
-        (ELSE '(SYNONYM COBBLE COBBLES COBBLESTONE STONES STONE))>
+    (SYNONYM COBBLE STONES STONE
+        ;"V3 property size is limited to 8 bytes, and these collide anyway"
+        %<VERSION? (ZIP #SPLICE ())
+                   (ELSE #SPLICE (COBBLES COBBLESTONES))>)
     (TEXT "They're just ordinary cobbles.")
     (FLAGS PLURALBIT MULTITUDEBIT)>
 
@@ -1014,9 +1008,7 @@ parallel to and north of the hall of mists." CR>
 <OBJECT DIAMONDS
     (DESC "diamonds")
     (IN WEST-SIDE-OF-FISSURE)
-    (SYNONYM DIAMOND
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE DIAMONDS)>)
+    (SYNONYM DIAMOND DIAMONDS)
     (ADJECTIVE SEVERAL HIGH QUALITY)
     (FDESC "There are diamonds here!")
     (TEXT "They look to be of the highest quality!")
@@ -1336,9 +1328,7 @@ A shadowy figure can be seen there peering back at you." CR>)>>
     (DESC "shadowy figure")
     (IN LOCAL-GLOBALS)
     (SYNONYM FIGURE PERSON INDIVIDUAL SHADOW)
-    (ADJECTIVE MYSTERIOUS
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP SHADOW) (ELSE SHADOWY)>)
+    (ADJECTIVE MYSTERIOUS SHADOWY)
     (LDESC "The shadowy figure seems to be trying to attract your attention.")>
 
 ;----------------------------------------------------------------------
@@ -1522,9 +1512,7 @@ The maze continues at this level.")
     (DESC "pit")
     (IN AT-BRINK-OF-PIT)
     (SYNONYM PIT)
-    (ADJECTIVE THIRTY FOOT
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE THIRTY-FOOT)>)
+    (ADJECTIVE THIRTY FOOT THIRTY-FOOT)
     (TEXT "You'll have to climb down to find out anything more...")
     (ACTION PIT-F)
     (FLAGS NDESCBIT)>
@@ -1578,9 +1566,7 @@ The maze continues at this level.")
     (DESC "treasure chest")
     (IN PIRATE-DEAD-END)
     (SYNONYM CHEST BOX RICHES TREASURE)
-    (ADJECTIVE PIRATE TREASURE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE PIRATE\'S)>)
+    (ADJECTIVE PIRATE TREASURE PIRATE\'S)
     (FDESC "The pirate's treasure chest is here!")
     (TEXT "It's the pirate's treasure chest, filled with riches of all kinds!")
     (DEPOSIT-POINTS 12)
@@ -1910,9 +1896,7 @@ the south one quickly bends west around the boulders.")
 <OBJECT BOULDERS
     (DESC "boulders")
     (IN IN-SLAB-ROOM)
-    (SYNONYM BOULDER ROCKS STONES
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP #SPLICE ()) (ELSE BOULDERS)>)
+    (SYNONYM BOULDER ROCKS STONES BOULDERS)
     (TEXT "They're just ordinary boulders.")
     (FLAGS NDESCBIT MULTITUDEBIT PLURALBIT)>
 
@@ -2118,9 +2102,7 @@ You have just vanquished a dragon with your bare hands!
     (DESC "Persian rug")
     (IN IN-SECRET-CANYON)
     (SYNONYM RUG PERSIAN)
-    (ADJECTIVE PERSIAN FINE FINEST
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP DRAGON) (ELSE DRAGON\'S)>)
+    (ADJECTIVE PERSIAN FINE FINEST DRAGON\'S)
     (DESCFCN PERSIAN-RUG-DESCFCN)
     (ACTION PERSIAN-RUG-F)
     (DEPOSIT-POINTS 14)
@@ -2140,9 +2122,7 @@ You have just vanquished a dragon with your bare hands!
 <OBJECT DRAGON-CORPSE
     (DESC "dragon's body")
     (SYNONYM DRAGON CORPSE BODY)
-    (ADJECTIVE DEAD
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP DRAGON) (ELSE DRAGON\'S)>)
+    (ADJECTIVE DEAD DRAGON\'S)
     (FDESC "The body of a huge green dead dragon is lying off to one side.")
     (ACTION DRAGON-CORPSE-F)>
 
@@ -2208,9 +2188,7 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     (DESC "scrawled inscription")
     (IN IN-GIANT-ROOM)
     (SYNONYM INSCRIPTION WRITING SCRAWL)
-    (ADJECTIVE
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP SCRAWL) (ELSE SCRAWLED)>)
+    (ADJECTIVE SCRAWLED)
     (TEXT "It says, \"Fee fie foe foo\" [sic].")>
 
 <OBJECT GOLDEN-EGGS
@@ -2353,9 +2331,7 @@ Moss covers the ceiling.")
 <OBJECT CURTAINS
     (DESC "curtains")
     (IN IN-SOFT-ROOM)
-    ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-    %<VERSION? (ZIP '(SYNONYM CURTAIN))
-               (ELSE '(SYNONYM CURTAIN CURTAINS))>
+    (SYNONYM CURTAIN CURTAINS)
     (ADJECTIVE HEAVY THICK)
     (TEXT "They seem to absorb sound very well.")
     (ACTION CURTAINS-F)
@@ -2523,9 +2499,7 @@ A dark corridor leads northeast.")
     (DESC "emerald the size of a plover's egg")
     (IN IN-PLOVER-ROOM)
     (SYNONYM EMERALD EGG)
-    (ADJECTIVE EGG-SIZED EGG SIZED
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP PLOVER) (ELSE PLOVER\'S)>)
+    (ADJECTIVE EGG-SIZED EGG SIZED PLOVER\'S)
     (FDESC "There is an emerald here the size of a plover's egg!")
     (TEXT "Plover's eggs, by the way, are quite large.")
     (DEPOSIT-POINTS 14)
@@ -2746,9 +2720,7 @@ who, as you know, are extremely vain.">
     (DESC "suspended mirror")
     (IN IN-MIRROR-CANYON)
     (SYNONYM MIRROR)
-    (ADJECTIVE MASSIVE ENORMOUS HANGING SUSPENDED TWO-SIDED TWO SIDED
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP DWARVES) (ELSE DWARVES\')>)
+    (ADJECTIVE MASSIVE ENORMOUS HANGING SUSPENDED TWO-SIDED TWO SIDED DWARVES\')
     (FDESC ,MIRROR-FOR-DWARVES)
     (TEXT ,MIRROR-FOR-DWARVES)
     (ACTION SUSPENDED-MIRROR-F)>
@@ -3368,9 +3340,7 @@ Hmmm... There is a message here scrawled in the dust in a flowery script.")
     (DESC "message in the dust")
     (IN VENDING-DEAD-END)
     (SYNONYM MESSAGE SCRAWL WRITING SCRIPT)
-    (ADJECTIVE FLOWERY
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP SCRAWL) (ELSE SCRAWLED)>)
+    (ADJECTIVE FLOWERY SCRAWLED)
     (TEXT "The message reads, \"This is not the maze where the pirate leaves
 his treasure chest.\"")
     (FLAGS NDESCBIT)>
@@ -3379,9 +3349,7 @@ his treasure chest.\"")
     (DESC "vending machine")
     (IN VENDING-DEAD-END)
     (SYNONYM MACHINE SLOT)
-    (ADJECTIVE VENDING MASSIVE COIN
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP BATTERIES) (ELSE BATTERY)>)
+    (ADJECTIVE VENDING MASSIVE COIN BATTERY)
     (TEXT "The instructions on the vending machine read,
 \"Insert coins to receive fresh batteries.\"")
     (ACTION VENDING-MACHINE-F)
@@ -3411,9 +3379,7 @@ without getting so much as a scratch." CR>)
 <OBJECT FRESH-BATTERIES
     (DESC "fresh batteries")
     (IN VENDING-MACHINE)
-    ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-    %<VERSION? (ZIP '(SYNONYM BATTERIES))
-               (ELSE '(SYNONYM BATTERIES BATTERY))>
+    (SYNONYM BATTERIES BATTERY)
     (ADJECTIVE FRESH)
     (FDESC "There are fresh batteries here.")
     (TEXT "They look like ordinary batteries. (A sepulchral voice says, \"Still going!\")")
@@ -3425,9 +3391,7 @@ without getting so much as a scratch." CR>)
 
 <OBJECT OLD-BATTERIES
     (DESC "worn-out batteries")
-    ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-    %<VERSION? (ZIP '(SYNONYM BATTERIES))
-               (ELSE '(SYNONYM BATTERIES BATTERY))>
+    (SYNONYM BATTERIES BATTERY)
     (ADJECTIVE WORN OUT WORN-OUT)
     (FDESC "Some worn-out batteries have been discarded nearby.")
     (TEXT "They look like ordinary batteries.")
@@ -3516,9 +3480,7 @@ brushes himself off. Now he's madder than ever!" CR>)
 <OBJECT AXE
     (DESC "dwarvish axe")
     (SYNONYM AXE)
-    (ADJECTIVE LITTLE DWARVISH
-        ;"BUGFIX: Work around dictionary collision in ZILF 0.6"
-        %<VERSION? (ZIP DWARVES) (ELSE DWARVEN)>)
+    (ADJECTIVE LITTLE DWARVISH DWARVEN)
     (FDESC "There is a little axe here.")
     (TEXT "It's just a little axe.")
     (ACTION AXE-F)
@@ -3795,30 +3757,50 @@ At your feet is a large steel grate, next to which is a sign which reads,
         GOLDEN-CHAIN      TR-UNFOUND>>
         
 <CONSTANT MAX-SCORE 350>
-
 <GLOBAL PREV-SCORE 0>
+
+<CONSTANT RANKS
+    <PLTABLE
+        349 "All of adventuredom gives tribute to you, Adventurer Grandmaster!"
+        330 "Your score puts you in Master Adventurer Class A."
+        300 "Your score puts you in Master Adventurer Class B."
+        250 "Your score puts you in Master Adventurer Class C."
+        200 "You have reached \"Junior Master\" status."
+        130 "You may now consider yourself a \"Seasoned Adventurer\"."
+        100 "You have achieved the rating: \"Experienced Adventurer\"."
+        35  "Your score qualifies you as a Novice Class Adventurer."
+        10  "You are obviously a Rank Amateur. Better luck next time.">>
 
 <SYNTAX SCORE = V-SCORE>
 
-<ROUTINE V-SCORE ()
+<ROUTINE V-SCORE ("OPT" DEAD MAX NR)
     <TELL "In ">
     <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
-    <TELL ", you've scored ">
+    <TELL ", you">
+    <COND (<NOT .DEAD> <TELL "'ve">)>
+    <TELL " scored ">
     <COND (<1? ,SCORE> <TELL "1 point">) (ELSE <TELL N ,SCORE " points">)>
-    <TELL
-        " out of a maximum " N ,MAX-SCORE
-        ", earning you the rank of "
-        <COND (<G=? ,SCORE 348> "Grandmaster Adventurer!")
-              (<G=? ,SCORE 330> "Master, first class.")
-              (<G=? ,SCORE 300> "Master, second class.")
-              (<G=? ,SCORE 200> "Junior Master.")
-              (<G=? ,SCORE 130> "Seasoned Adventurer.")
-              (<G=? ,SCORE 100> "Experienced Adventurer.")
-              (<G=? ,SCORE 35> "Adventurer.")
-              (<G=? ,SCORE 10> "Novice.")
-              (ELSE "Amateur.")>
-        CR>>
-
+    <TELL " out of a possible " N ,MAX-SCORE "." CR>
+    <COND (.DEAD
+           ;"Announce the player's rating based on their score."
+           <SET MAX <GET ,RANKS 0>>
+           <DO (I 1 .MAX 2)
+               (END ;"Too low for any rating."
+                <TELL "Wow." CR>
+                <SET NR <- .MAX 1>>)
+               <COND (<G? ,SCORE <GET ,RANKS .I>>
+                      <TELL <GET ,RANKS <+ .I 1>> CR>
+                      <SET I <- .I 2>>
+                      <COND (<L? .I 1> <SET NR 0>)
+                            (ELSE <SET NR .I>)>
+                      <RETURN>)>>
+           <TELL "To achieve the next higher rating">
+           <COND (.NR
+                  <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
+                  <TELL ", you need " N .NR " more point">
+                  <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
+                 (ELSE
+                  <TELL "would be a neat trick!|Congratulations!!" CR>)>)>>
 
 <ROUTINE I-SCORE ("AUX" D T OS NS)
     ;"Note any changes in treasure status"
@@ -3916,17 +3898,15 @@ At your feet is a large steel grate, next to which is a sign which reads,
 <REPLACE-DEFINITION PRINT-GAME-OVER
     <ROUTINE PRINT-GAME-OVER ()
         <COND (,LAMP-RAN-OUT
-               <TELL "    ****  Better luck next time  ****" CR>)
+               <TELL "    ****  Better luck next time  ****||">)
               (ELSE
-               <TELL "    ****  You have died  ****" CR>)>>>
-
-;"The text here is slightly changed from the Inform version, since we print
-  'You have died' before attempting to resurrect."
+               <TELL "    ****  You have died  ****||">)>
+        <V-SCORE T>>>
 
 <CONSTANT RESURRECT-PROMPT
     <TABLE
-        "I might be able to help you out, but I've never really done this before.
-Do you want me to try to reincarnate you?"
+        "Oh dear, you seem to have gotten yourself killed. I might be able to help you
+out, but I've never really done this before. Do you want me to try to reincarnate you?"
         "You clumsy oaf, you've done it again! I don't know how long I can keep this up.
 Do you want me to try reincarnating you again?"
         "Now you've really done it! I'm out of orange smoke!
@@ -3972,7 +3952,8 @@ Everything disappears in a dense cloud of orange smoke."
 
 ;XXX
 <ROUTINE FINISH ()
-    <TELL "CONGRATULATION! A WINNER IS YOU" CR>
+    <TELL "CONGRATULATION! A WINNER IS YOU" CR CR>
+    <V-SCORE T>
     <QUIT>>
 
 ;----------------------------------------------------------------------
