@@ -8,6 +8,7 @@ mkdir dist\bin
 mkdir dist\doc
 mkdir dist\library
 mkdir dist\sample
+mkdir dist\sample\advent
 
 copy distfiles\README.txt dist
 
@@ -15,6 +16,7 @@ copy zilf\bin\release\Antlr3.Runtime.dll dist\bin
 copy distfiles\AntlrLicense.txt dist\bin
 copy zilf\bin\release\zilf.exe dist\bin
 copy zilf\bin\release\zilf.emit.dll dist\bin
+copy zilf\bin\release\zilf.stringencoding.dll dist\bin
 copy COPYING.txt dist\bin
 copy zapf\bin\release\zapf.exe dist\bin
 
@@ -27,6 +29,9 @@ copy library\LICENSE.txt dist\library
 copy library\ZIL_ZILF_differences.txt dist\library
 
 copy examples\*.zil dist\sample
+
+copy examples\advent\*.zil dist\sample\advent
+copy examples\advent\*.txt dist\sample\advent
 
 exit /b 0
 
