@@ -14,7 +14,7 @@ namespace Zilf.Emit.Zap
         internal static readonly LiteralOperand ONE = new LiteralOperand("1");
         internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
 
-        // TODO: share unicode translation table with Zilf.Emit
+        // TODO: share unicode translation table with Zapf
         private static readonly Dictionary<char, byte> DefaultUnicodeMapping = MakeDefaultUnicodeMapping();
 
         #region Default Unicode Mapping
@@ -410,6 +410,16 @@ namespace Zilf.Emit.Zap
             vocabulary.Add(result);
             symbols.Add(name, "word");
             return result;
+        }
+
+        public void RemoveVocabularyWord(string word)
+        {
+            string name = "W?" + SanitizeSymbol(word.ToUpper());
+            if (symbols.ContainsKey(name))
+            {
+                symbols.Remove(name);
+                vocabulary.RemoveAll(wb => wb.Name == name);
+            }
         }
 
         public ICollection<char> SelfInsertingBreaks

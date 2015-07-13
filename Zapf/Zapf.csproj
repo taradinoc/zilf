@@ -142,13 +142,11 @@
     <Compile Include="Context.cs" />
     <Compile Include="DEBF.cs" />
     <Compile Include="Errors.cs" />
-    <Compile Include="Horspool.cs" />
     <Compile Include="IDebugFileWriter.cs" />
     <Compile Include="Opcodes.cs" />
     <Compile Include="Parsing\AntlrBasedParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StringEncoder.cs" />
     <Compile Include="XmlDebugFileWriter.cs" />
     <Compile Include="ZapfAssembler.cs" />
   </ItemGroup>
@@ -178,6 +176,12 @@
       <Link>Zilf.licenseheader</Link>
     </None>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+      <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
+      <Name>Zilf.StringEncoding</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

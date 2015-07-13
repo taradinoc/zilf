@@ -21,9 +21,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Zapf
+namespace Zilf.StringEncoding
 {
-    class StringEncoder
+    public class StringEncoder
     {
         private struct AbbrevEntry
         {
@@ -60,9 +60,15 @@ namespace Zapf
         private static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
         private bool frozen;
 
-        private readonly Dictionary<char, byte> unicodeTranslations;
+        private static readonly Dictionary<char, byte> unicodeTranslations;
 
         public StringEncoder()
+        {
+            // convert characters in DefaultCharset through unicode mapping and into bytes
+            charset = DefaultCharset.Select(s => s.Select(UnicodeToZscii).ToArray()).ToArray();
+        }
+
+        static StringEncoder()
         {
             // TODO: share unicode translation table with Zilf.Emit
             unicodeTranslations = new Dictionary<char, byte>(69)
@@ -137,21 +143,19 @@ namespace Zapf
                 { '¡', 222 },
                 { '¿', 223 },
             };
+        }
 
-            // convert characters in DefaultCharset through unicode mapping and into bytes
-            charset = DefaultCharset.Select(
-                s => s.Select(c =>
-                {
-                    byte b;
-                    if (unicodeTranslations.TryGetValue(c, out b))
-                    {
-                        return b;
-                    }
-                    else
-                    {
-                        return (byte)c;
-                    }
-                }).ToArray()).ToArray();
+        public static byte UnicodeToZscii(char c)
+        {
+            byte b;
+            if (unicodeTranslations.TryGetValue(c, out b))
+            {
+                return b;
+            }
+            else
+            {
+                return (byte)c;
+            }
         }
 
         public bool Frozen

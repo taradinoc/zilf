@@ -133,6 +133,11 @@ namespace Zilf.Emit
         /// </remarks>
         IWordBuilder DefineVocabularyWord(string word);
         /// <summary>
+        /// Deletes a previously defined vocabulary word.
+        /// </summary>
+        /// <param name="word">The vocabulary word.</param>
+        void RemoveVocabularyWord(string p);
+        /// <summary>
         /// Gets the collection of self-inserting word break characters.
         /// </summary>
         /// <remarks>
@@ -273,6 +278,11 @@ namespace Zilf.Emit
             Contract.Requires(!string.IsNullOrWhiteSpace(word));
             Contract.Ensures(Contract.Result<IWordBuilder>() != null);
             return default(IWordBuilder);
+        }
+
+        public void RemoveVocabularyWord(string word)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(word));
         }
 
         public ICollection<char> SelfInsertingBreaks

@@ -189,5 +189,20 @@ namespace IntegrationTests
                 .WithInput("außer")
                 .GivesNumber("1");
         }
+
+        [TestMethod]
+        public void Colliding_Words_Should_Be_Merged()
+        {
+            AssertGlobals(
+                "<OBJECT FOO (SYNONYM HEMIDEMISEMIQUAVER)>",
+                "<OBJECT BAR (SYNONYM HEMIDE)>",
+                "<OBJECT BAZ (ADJECTIVE HEMIDEISH)>")
+                .InV3()
+                .Implies(
+                    "<==? ,W?HEMIDEMISEMIQUAVER ,W?HEMIDE>",
+                    "<==? ,W?HEMIDE ,W?HEMIDEISH>",
+                    "<BTST <GETB ,W?HEMIDE 4> ,PS?OBJECT>",
+                    "<BTST <GETB ,W?HEMIDE 4> ,PS?ADJECTIVE>");
+        }
     }
 }

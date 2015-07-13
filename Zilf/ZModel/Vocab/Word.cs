@@ -531,5 +531,30 @@ new { part = PartOfSpeech.Direction, free = false },
         {
             return (this.SynonymTypes & synonymTypes) != 0;
         }
+
+        public void Merge(Context ctx, Word other)
+        {
+            Contract.Requires(ctx != null);
+
+            if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
+                this.SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));
+
+            if ((other.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
+                this.SetBuzzword(ctx, other.GetDefinition(PartOfSpeech.Buzzword), other.GetValue(PartOfSpeech.Buzzword));
+
+            if ((other.PartOfSpeech & PartOfSpeech.Direction) != 0)
+                this.SetDirection(ctx, other.GetDefinition(PartOfSpeech.Direction), other.GetValue(PartOfSpeech.Direction));
+
+            if ((other.PartOfSpeech & PartOfSpeech.Object) != 0)
+                this.SetObject(ctx, other.GetDefinition(PartOfSpeech.Object));
+
+            if ((other.PartOfSpeech & PartOfSpeech.Preposition) != 0)
+                this.SetPreposition(ctx, other.GetDefinition(PartOfSpeech.Preposition), other.GetValue(PartOfSpeech.Preposition));
+
+            if ((other.PartOfSpeech & PartOfSpeech.Verb) != 0)
+                this.SetVerb(ctx, other.GetDefinition(PartOfSpeech.Verb), other.GetValue(PartOfSpeech.Verb));
+
+            this.MarkAsSynonym(other.PartOfSpeech & ~PartOfSpeech.FirstMask);
+        }
     }
 }
