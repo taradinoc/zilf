@@ -120,10 +120,27 @@ namespace Zilf.Compiler
                 ctx.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
             }
 
-            ctx.ZEnvironment.MergeVocabulary();
+            var vocabMerges = new Dictionary<Word, Word>();
+            ctx.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
+            {
+                cc.Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
+                vocabMerges.Add(duplicateWord, mainWord);
+            });
 
             foreach (Word word in ctx.ZEnvironment.Vocabulary.Values)
+            {
                 DefineWord(cc, word);
+            }
+
+            foreach (var pair in vocabMerges)
+            {
+                Word dupWord = pair.Key, mainWord = pair.Value;
+                var dupAtom = ZilAtom.Parse("W?" + dupWord.Atom.Text, ctx);
+                var mainAtom = ZilAtom.Parse("W?" + mainWord.Atom.Text, ctx);
+
+                cc.Constants[dupAtom] = cc.Constants[mainAtom];
+                cc.Vocabulary[dupWord] = cc.Vocabulary[mainWord];
+            }
 
             // tables for syntax
             BuildSyntaxTables(cc);
@@ -278,10 +295,16 @@ namespace Zilf.Compiler
             Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
             Queue<Word> longWords = (longWordTable == null ? null : new Queue<Word>());
 
+            var builtWords = new HashSet<IWordBuilder>();
             foreach (var pair in cc.Vocabulary)
             {
                 Word word = pair.Key;
                 IWordBuilder wb = pair.Value;
+
+                if (builtWords.Contains(wb))
+                    continue;
+
+                builtWords.Add(wb);
 
                 word.WriteToBuilder(ctx, wb, dirIndexToPropertyOperand);
 

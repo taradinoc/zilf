@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
 		Compatibility Notes.txt = Compatibility Notes.txt
@@ -35,10 +37,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.StringEncoding", "Zilf.StringEncoding\Zilf.StringEncoding.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
+EndProject
 Global
-	GlobalSection(TestCaseManagementSettings) = postSolution
-		CategoryFile = Zilf.vsmdi
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
@@ -112,8 +113,17 @@ Global
 		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}.Release|x86.ActiveCfg = Release|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = Zilf.vsmdi
 	EndGlobalSection
 EndGlobal

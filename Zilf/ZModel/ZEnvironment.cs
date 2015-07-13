@@ -20,9 +20,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.StringEncoding;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 
@@ -611,16 +613,112 @@ namespace Zilf.ZModel
             return result;
         }
 
-        public void MergeVocabulary()
+        /// <summary>
+        /// Merges words that are indistinguishable because of the vocabulary resolution.
+        /// </summary>
+        /// <param name="notifyMerge">A callback to notify the caller that the first word
+        /// has absorbed the second, and any references to the second should be retargeted
+        /// to the first.</param>
+        public void MergeVocabulary(Action<Word, Word> notifyMerge)
         {
             Contract.Ensures(Vocabulary.Count <= Contract.OldValue(Vocabulary.Count));
-
-            //XXX merge words that are indistinguishable because of the vocabulary resolution
 
             /* NOTE: words may end with incomplete multi-ZChar constructs that are still
              * significant for lexing, so even if the printed forms of two vocab words are
              * the same, they may still be distinguishable.
              */
+
+            // initialize string encoder
+            var encoder = new StringEncoder();
+            encoder.SetCharset(0, charset0.Select(c => StringEncoder.UnicodeToZscii(c)));
+            encoder.SetCharset(1, charset1.Select(c => StringEncoder.UnicodeToZscii(c)));
+            encoder.SetCharset(2, charset2.Select(c => StringEncoder.UnicodeToZscii(c)));
+
+            var resolution = ZVersion >= 4 ? 9 : 6;
+            var groupedWords =
+                from pair in this.Vocabulary
+                let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLower(), resolution, noAbbrevs: true))
+                group new { Atom = pair.Key, Word = pair.Value } by enc;
+
+            foreach (var g in groupedWords)
+            {
+                if (g.Take(2).Count() == 2)
+                {
+                    // found a collision: merge words[1..N] into words[0]
+                    var words = g.ToArray();
+                    for (int i = 1; i < words.Length; i++)
+                    {
+                        words[0].Word.Merge(ctx, words[i].Word);
+                        notifyMerge(words[0].Word, words[i].Word);
+                        this.Vocabulary[words[i].Atom] = this.Vocabulary[words[0].Atom];
+                    }
+                }
+            }
+        }
+
+        private struct EncodedWord : IEquatable<EncodedWord>
+        {
+            private readonly byte[] data;
+
+            public EncodedWord(byte[] data)
+            {
+                this.data = data;
+            }
+
+            public bool Equals(EncodedWord other)
+            {
+                if (other.data == this.data)
+                    return true;
+
+                if (other.data.Length != this.data.Length)
+                    return false;
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (other.data[i] != this.data[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is EncodedWord)
+                    return Equals((EncodedWord)obj);
+                else
+                    return false;
+            }
+
+            public override int GetHashCode()
+            {
+                int result = data.Length;
+
+                foreach (byte b in data)
+                    result = unchecked(result * 13 + b);
+
+                return result;
+            }
+
+            public override string ToString()
+            {
+                if (data == null)
+                    return "[null]";
+
+                var sb = new StringBuilder();
+                sb.Append('[');
+
+                foreach (byte b in data)
+                {
+                    if (sb.Length > 1)
+                        sb.Append(',');
+
+                    sb.Append(b);
+                }
+
+                sb.Append(']');
+                return sb.ToString();
+            }
         }
 
         public bool IsLongWord(Word word)

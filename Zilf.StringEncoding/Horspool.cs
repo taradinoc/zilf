@@ -19,13 +19,13 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Zapf
+namespace Zilf.StringEncoding
 {
     /// <summary>
     /// Implements the Boyer-Moore-Horspool algorithm for abbreviation searches.
     /// </summary>
     /// <remarks>http://en.wikipedia.org/wiki/Boyer-Moore-Horspool_algorithm</remarks>
-    class Horspool
+    public class Horspool
     {
         private readonly string needle;
         private readonly CharMap badCharSkip;

@@ -281,6 +281,10 @@
       <Project>{3dd99678-f71c-4caa-a8bf-7dba6188c3c4}</Project>
       <Name>Zilf.Emit</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+      <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
+      <Name>Zilf.StringEncoding</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
