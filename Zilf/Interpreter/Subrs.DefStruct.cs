@@ -190,6 +190,8 @@ namespace Zilf.Interpreter
 
             foreach (var field in fields)
             {
+                // TODO: use default field values?
+
                 existingObjectClauses.AppendFormat(
                     SExistingObjectCondClauseTemplate,
                     field.Name, field.PutFunc, field.Offset);
