@@ -1,6 +1,8 @@
 ;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
+;"TODO: Show score/rank when quitting."
+;"TODO: The oyster message should count as a hint and incur a penalty."
 
 ;----------------------------------------------------------------------
 "General directives"
@@ -23,7 +25,7 @@
 <CONSTANT GAME-BANNER <STRING<IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
 "A Modern Classic|
 Based on Adventure by Willie Crowther and Don Woods (1977)|
-And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and Kent Tessman (1995)|
+And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others|
 Adapted once more by Jesse McGrew (2015)">>
 
 ;----------------------------------------------------------------------
@@ -32,15 +34,21 @@ Adapted once more by Jesse McGrew (2015)">>
 
 <ROUTINE GO ()
     <IF-BETA <SEED-RANDOM>>
-    <CRLF> <CRLF>
-    ;<TELL "IT WAS THE SEVENTIES AND THERE WAS TIME FOR..." CR CR>
-    <V-VERSION> <CRLF>
     <SETG HERE ,AT-END-OF-ROAD>
     <SETG SCORE 36>
+    <SETG MODE ,VERBOSE>
+    <CRLF> <CRLF>
+    <TELL "Welcome to Adventure! Do you need instructions?">
+    <COND (<YES?> <CRLF> <SHOW-HINT ,HNT?INSTRUCTIONS> <CRLF>)>
+    <CRLF>
     <SETG PREV-SCORE ,SCORE>
+    <V-VERSION> <CRLF>
+    ;"I-SCORE should come last, so it can notice anything the other interrupt routines
+      do to affect the score."
     <QUEUE I-DWARF -1>
     <QUEUE I-PIRATE -1>
     <QUEUE I-CAVE-CLOSER -1>
+    <QUEUE I-OFFER-HINT -1>
     <QUEUE I-SCORE -1>
     <MOVE ,PLAYER ,HERE>
     <PUTP ,PLAYER ,P?CAPACITY 35> ;"7 objects at default size 5"
@@ -373,7 +381,8 @@ Anyway, nothing happens." CR>)
     ;"Drain power and turn lamp off if dead"
     <COND (<DLESS? LANTERN-POWER 1>
            <FCLEAR ,BRASS-LANTERN ,LIGHTBIT>
-           <FCLEAR ,BRASS-LANTERN ,ONBIT>)>
+           <FCLEAR ,BRASS-LANTERN ,ONBIT>
+           <NOW-DARK?>)>
     ;"Report anything interesting"
     <COND (<VISIBLE? ,BRASS-LANTERN>
            <COND (<0? ,LANTERN-POWER>
@@ -3950,9 +3959,8 @@ Everything disappears in a dense cloud of orange smoke."
         <GOTO ,INSIDE-BUILDING>
         <RTRUE>>>
 
-;XXX
 <ROUTINE FINISH ()
-    <TELL "CONGRATULATION! A WINNER IS YOU" CR CR>
+    <CRLF>
     <V-SCORE T>
     <QUIT>>
 
@@ -4120,6 +4128,151 @@ appears out of nowhere!" CR>)>)>)
 
 <ROUTINE V-USE ()
     <TELL "You'll have to be a bit more explicit than that." CR>>
+
+;----------------------------------------------------------------------
+"Help and info commands"
+;----------------------------------------------------------------------
+
+<SYNTAX HELP = V-HELP>
+<SYNTAX INFO = V-INFO>
+<SYNTAX CREDITS = V-CREDITS>
+
+<ROUTINE V-HELP ()
+    ;"TODO: Describe keyword movement when implemented."
+    <TELL "I know of places, actions, and things. To move, try words like ENTER, EAST, WEST,
+NORTH, SOUTH, UP, or DOWN. I know about a few special objects, like a black rod hidden in the
+cave. These objects can be manipulated using some of the action words I know. Usually you will
+need to give both the object and action words (in either order), and sometimes an action needs
+two objects (separated by a preposition), but sometimes I can infer the object from the verb
+alone. In particular, INVENTORY implies TAKE INVENTORY, which causes me to give you a list of
+what you're carrying. The objects have side effects; for instance, the rod scares the bird.|
+|
+Usually people having trouble moving just need to try a few more words. Usually people trying
+unsuccessfully to manipulate an object are attempting something beyond their (or my!)
+capabilities and should try a completely different tack. Also, note that cave passages turn a
+lot, and that leaving a room to the north does not guarantee entering the next from the south.|
+|
+Good luck!" CR>>
+
+<ROUTINE V-INFO ()
+    <TELL "If you want to end your adventure early, say QUIT. To suspend your adventure
+such that you can continue later, say SAVE.">
+    <IF-UNDO <TELL " To take back a mistaken command, say UNDO.">>
+    ;"TODO: 'getting killed' -> 'getting killed, or for quitting, though the former costs you more'"
+    <TELL "||To get full credit for a treasure, you must have left it safely in the
+building, though you get partial credit just for picking it up. You lose points for getting
+killed. There are also points based on how much (if any) of the cave you've managed to explore;
+in particular, there is a large bonus just for getting in (to distinguish the beginners from
+the rest of the pack), and there are other ways to determine whether you've been through some
+of the more harrowing sections.|
+|
+If you think you've found all the treasures, just keep exploring for a while. If nothing
+interesting happens, you haven't found them all yet. If something interesting *does* happen, it
+means you're getting a bonus and have an opportunity to garner many more points in the Master's
+section.|
+|
+I may occasionally offer hints if you seem to be having trouble. If I do, I'll warn you in advance
+how much it will affect your score to accept the hints. Finally, to save photons, you may
+specify BRIEF, which tells me never to repeat the full description of a place unless you
+explicitly ask me to." CR>>
+
+<ROUTINE V-CREDITS ()
+    <TELL "Adventure was originally developed by Willie Crowther, with many features added by Don
+Woods. This version was ported to ZIL by Jesse McGrew, thanks to prior porting work done by David
+M. Baggett (TADS), Graham Nelson (Inform), Kent Tessman (Hugo), and Arthur O'Dwyer (vbccz), among
+others.|
+|
+Special thanks go out to everyone who helped with testing, advice, and code contributions,
+including:|
+|
+    Kate Matthews|
+    [TBD]|">
+    <IF-BETA <TELL "    ...and YOU, beta tester!|">>>
+
+;----------------------------------------------------------------------
+"Hints (mostly adaptive, and all of which cost the player points)"
+;----------------------------------------------------------------------
+
+<INSERT-FILE "hints">
+
+<HINT INSTRUCTIONS
+    (PENALTY 10)
+    (EXTENSION %<- 1000 330>)
+    (TEXT
+"Somewhere nearby is Colossal Cave, where others have found fortunes in treasure and gold,
+though it is rumored that some who enter are never seen again. Magic is said to work in the cave!|
+|
+I will be your eyes and hands. Direct me with simple commands, like NORTH or TAKE ALL or
+PUT FOOD AND KEYS IN STREAM. Many commands have abbreviations, like NE for NORTHEAST, X for EXAMINE,
+I for INVENTORY, or ON for TURN ON LAMP.|
+|
+Should you get stuck, type \"help\" for some general hints. For information about how to end your
+adventure, etc., type \"info\". To learn about the authorship of this version of the game, type
+\"credits\".")>
+
+<HINT OPEN-GRATE
+    (PATIENCE 4)
+    (PENALTY 2)
+    (LOCATION OUTSIDE-GRATE)
+    (CONDITION <AND <NOT <FSET? ,GRATE ,OPENBIT>> <NOT <HELD? ,SET-OF-KEYS ,HERE>>>)
+    (PROMPT "Are you trying to get into the cave?")
+    (TEXT "The grate is very solid and has a hardened steel lock. You cannot enter without a key,
+and there are no keys nearby. I would recommend looking elsewhere for the keys.")>
+
+<HINT CATCH-BIRD
+    (PATIENCE 5)
+    (PENALTY 2)
+    (LOCATION IN-BIRD-CHAMBER)
+    (CONDITION <AND <IN? ,LITTLE-BIRD ,HERE> <HELD? ,BLACK-ROD> <PRSO? ,LITTLE-BIRD>>)
+    (PROMPT "Are you trying to catch the bird?")
+    (TEXT "Something seems to be frightening the bird just now and you cannot catch it no
+matter what you try. Perhaps you might try later.")>
+
+<HINT DEFEAT-SNAKE
+    (PATIENCE 8)
+    (PENALTY 2)
+    (LOCATION IN-HALL-OF-MT-KING)
+    (CONDITION <AND <IN? ,SNAKE ,HERE> <NOT <HELD? ,LITTLE-BIRD ,HERE>>>)
+    (PROMPT "Are you trying to somehow deal with the snake?")
+    (TEXT "You can't kill the snake, or drive it away, or avoid it, or anything like that.
+There is a way to get by, but you don't have the necessary resources right now.")>
+
+<HINT ESCAPE-MAZE
+    (PATIENCE 75)
+    (PENALTY 4)
+    (LOCATION ALIKE-MAZE-1  ALIKE-MAZE-2  ALIKE-MAZE-3  ALIKE-MAZE-4  ALIKE-MAZE-5
+              ALIKE-MAZE-6  ALIKE-MAZE-7  ALIKE-MAZE-8  ALIKE-MAZE-9  ALIKE-MAZE-10
+              ALIKE-MAZE-11 ALIKE-MAZE-12 ALIKE-MAZE-13 ALIKE-MAZE-14
+              DEAD-END-1    DEAD-END-2    DEAD-END-3    DEAD-END-5    DEAD-END-5
+              DEAD-END-6    DEAD-END-7    DEAD-END-8    DEAD-END-9    DEAD-END-10)
+    (CONDITION <AND <FIRST? ,WINNER> <NOT <OBJ-DROPPED-IN-MAZE?>>>)
+    (PROMPT "Do you need help getting out of the maze?")
+    (TEXT "You can make the passages look less alike by dropping things.")>
+
+<ROUTINE OBJ-DROPPED-IN-MAZE? ("AUX" TBL MAX)
+    <SET TBL <GET ,HINT-LOCATION-TBL ,HNT?ESCAPE-MAZE>>
+    <SET MAX <GET .TBL 0>>
+    <DO (I 1 .MAX)
+        <COND (<FIRST? <GET .TBL .I>> <RTRUE>)>>
+    <RFALSE>>
+
+<HINT EMERALD
+    (PATIENCE 25)
+    (PENALTY 5)
+    (LOCATION IN-ALCOVE IN-PLOVER-ROOM IN-DARK-ROOM)
+    (CONDITION <AND <FSET? ,IN-PLOVER-ROOM ,TOUCHBIT> <NOT <FSET? ,IN-DARK-ROOM ,TOUCHBIT>>>)
+    (PROMPT "Are you trying to explore beyond the plover room?")
+    (TEXT "There is a way to explore that region without having to worry about falling
+into a pit. None of the objects available is immediately useful in discovering the secret.")>
+
+<HINT WITTS-END
+    (PATIENCE 20)
+    (PENALTY 3)
+    (LOCATION AT-WITTS-END)
+    (PROMPT "Do you need help getting out of here?")
+    (TEXT "Don't go west.")>
+
+<FINISH-HINTS>
 
 ;----------------------------------------------------------------------
 "Debug/cheat verbs"
