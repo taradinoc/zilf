@@ -1322,7 +1322,7 @@ Args:
            <SET F T>)>
     <COND (<AND <NOT .F> <DESCRIBE-ROOM ,HERE>>
            <DESCRIBE-OBJECTS ,HERE>)>
-    <FSET ,HERE ,TOUCHBIT>>
+    <COND (,HERE-LIT <FSET ,HERE ,TOUCHBIT>)>>
 
 "Misc Routines"
 
@@ -1692,6 +1692,7 @@ or reveal a light source."
     <COND (<AND <NOT ,HERE-LIT>
                 <SEARCH-FOR-LIGHT>>
            <SETG HERE-LIT T>
+           <FSET ,HERE ,TOUCHBIT>
            <OR <DARKNESS-F ,M-NOW-LIT> <V-LOOK>>)>>
 
 <INSERT-FILE "events">
