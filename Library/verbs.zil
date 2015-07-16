@@ -450,7 +450,7 @@ Args:
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
           (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
-    <LIST-OBJECTS .OBJ ,L-ISARE>
+    <LIST-OBJECTS .OBJ <> ,L-ISARE>
     <TELL "." CR>>
 
 ;"Prints a space followed by a parenthetical describing the contents of a
