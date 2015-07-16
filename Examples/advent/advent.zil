@@ -678,7 +678,11 @@ There is a dim light at the east end of the passage.")
            <COND (<FSET? ,PRSO ,OPENBIT>
                   <TELL "(releasing " T ,LITTLE-BIRD ")" CR>
                   <PERFORM ,V?RELEASE ,LITTLE-BIRD>)>
-           <RTRUE>)>>
+           <RTRUE>)
+          (<AND <VERB? PUT-IN>
+                <PRSI? ,WICKER-CAGE>
+                <NOT <PRSO? ,LITTLE-BIRD>>>
+           <TELL CT ,PRSI " won't hold " T ,PRSO "." CR>)>>
 
 ;----------------------------------------------------------------------
 
