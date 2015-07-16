@@ -2858,6 +2858,8 @@ can be seen at the bottom of the chasm." CR>)>>
 <OBJECT TROLL
     (DESC "burly troll")
     (IN RICKETY-BRIDGE)
+    (SYNONYM TROLL)
+    (ADJECTIVE BURLY)
     (FDESC "A burly troll stands by the bridge and insists you throw him
 a treasure before you may cross.")
     (TEXT "Trolls are close relatives with rocks and have skin as tough
