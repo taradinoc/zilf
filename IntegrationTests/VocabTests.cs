@@ -196,13 +196,18 @@ namespace IntegrationTests
             AssertGlobals(
                 "<OBJECT FOO (SYNONYM HEMIDEMISEMIQUAVER)>",
                 "<OBJECT BAR (SYNONYM HEMIDE)>",
-                "<OBJECT BAZ (ADJECTIVE HEMIDEISH)>")
+                "<OBJECT BAZ (ADJECTIVE HEMIDEISH SAMPLED)>",
+                "<ROUTINE V-SAMPLE () <>>",
+                "<SYNTAX SAMPLE = V-SAMPLE>")
                 .InV3()
                 .Implies(
                     "<==? ,W?HEMIDEMISEMIQUAVER ,W?HEMIDE>",
                     "<==? ,W?HEMIDE ,W?HEMIDEISH>",
                     "<BTST <GETB ,W?HEMIDE 4> ,PS?OBJECT>",
-                    "<BTST <GETB ,W?HEMIDE 4> ,PS?ADJECTIVE>");
+                    "<BTST <GETB ,W?HEMIDE 4> ,PS?ADJECTIVE>",
+                    "<==? ,W?SAMPLE ,W?SAMPLED>",
+                    "<BTST <GETB ,W?SAMPLE 4> ,PS?VERB>",
+                    "<BTST <GETB ,W?SAMPLE 4> ,PS?ADJECTIVE>");
         }
     }
 }

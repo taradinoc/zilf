@@ -637,6 +637,7 @@ namespace Zilf.ZModel
             var resolution = ZVersion >= 4 ? 9 : 6;
             var groupedWords =
                 from pair in this.Vocabulary
+                orderby pair.Key.Text
                 let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLower(), resolution, noAbbrevs: true))
                 group new { Atom = pair.Key, Word = pair.Value } by enc;
 
@@ -651,6 +652,12 @@ namespace Zilf.ZModel
                         words[0].Word.Merge(ctx, words[i].Word);
                         notifyMerge(words[0].Word, words[i].Word);
                         this.Vocabulary[words[i].Atom] = this.Vocabulary[words[0].Atom];
+                    }
+
+                    // merge back into words[1..N]
+                    for (int i = 1; i < words.Length; i++)
+                    {
+                        words[i].Word.Merge(ctx, words[0].Word);
                     }
                 }
             }
