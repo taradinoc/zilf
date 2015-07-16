@@ -176,7 +176,7 @@
 ;"Constants"
 
 ;"TODO: these belong in parser.zil?"
-;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK"
+;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK, M-FLASH"
 ;"Object DESCFCNs may get: M-OBJDESC?, no arg"
 ;"DARKNESS-F may get: M-LOOK, M-SCOPE?, M-LIT-TO-DARK, M-DARK-TO-LIT,
     M-DARK-TO-DARK, M-DARK-CANT-GO"
@@ -184,14 +184,15 @@
 <CONSTANT M-END 2>
 <CONSTANT M-ENTER 3>
 <CONSTANT M-LOOK 4>
-<CONSTANT M-OBJDESC? 5>
-<CONSTANT M-SCOPE? 6>
-<CONSTANT M-LIT-TO-DARK 7>
-<CONSTANT M-DARK-TO-LIT 8>
-<CONSTANT M-DARK-TO-DARK 9>
-<CONSTANT M-DARK-CANT-GO 10>
-<CONSTANT M-NOW-DARK 11>
-<CONSTANT M-NOW-LIT 12>
+<CONSTANT M-FLASH 5>
+<CONSTANT M-OBJDESC? 6>
+<CONSTANT M-SCOPE? 7>
+<CONSTANT M-LIT-TO-DARK 8>
+<CONSTANT M-DARK-TO-LIT 9>
+<CONSTANT M-DARK-TO-DARK 10>
+<CONSTANT M-DARK-CANT-GO 11>
+<CONSTANT M-NOW-DARK 12>
+<CONSTANT M-NOW-LIT 13>
 
 ;"Helper routines for action handlers"
 
@@ -269,27 +270,30 @@ Returns:
   True if the objects in the room should also be described, otherwise
   false."
 <ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
-    <COND
-        (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
-         <DARKNESS-F ,M-LOOK>
-         <RFALSE>)
-        (ELSE
-         ;"print the room's real name"
-         <TELL D .RM CR>
-         ;"If this is an implicit LOOK, check briefness."
-         <COND (<NOT .LONG>
-                <COND (<EQUAL? ,MODE ,SUPERBRIEF>
-                       <RFALSE>)
-                      (<AND <FSET? .RM ,TOUCHBIT>
-                            <NOT <EQUAL? ,MODE ,VERBOSE>>>
-                       <RTRUE>)>)>
-         <FSET .RM ,TOUCHBIT>
-         ;"either print the room's LDESC or call its ACTION with M-LOOK"
-         <COND (<SET P <GETP .RM ,P?LDESC>>
-                <TELL .P CR>)
-               (ELSE
-                <APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)>
-         <RTRUE>)>>
+    <COND (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
+           <DARKNESS-F ,M-LOOK>
+           <RFALSE>)>
+    ;"Print the room's real name."
+    <TELL D .RM CR>
+    ;"If this is an implicit LOOK, check briefness."
+    <COND (<NOT .LONG>
+           <COND (<EQUAL? ,MODE ,SUPERBRIEF>
+                  <RFALSE>)
+                 (<AND <FSET? .RM ,TOUCHBIT>
+                       <NOT <EQUAL? ,MODE ,VERBOSE>>>
+                  ;"Call the room's ACTION with M-FLASH even in brief mode."
+                  <APPLY <GETP .RM ,P?ACTION> ,M-FLASH>
+                  <RTRUE>)>)>
+    ;"The room's ACTION can print a description with M-LOOK.
+      Otherwise, print the LDESC if present."
+    <COND (<APPLY <GETP .RM ,P?ACTION> ,M-LOOK>)
+          (<SET P <GETP .RM ,P?LDESC>>
+           <TELL .P CR>)>
+    ;"Call the room's ACTION again with M-FLASH for important descriptions."
+    <APPLY <GETP .RM ,P?ACTION> ,M-FLASH>
+    ;"Mark the room visited."
+    <FSET .RM ,TOUCHBIT>
+    <RTRUE>>
 
 <DEFAULT-DEFINITION DARKNESS-F
 

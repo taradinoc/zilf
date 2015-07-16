@@ -404,8 +404,8 @@ Sets:
 
 ;"PRSO or PRSI are set to this when multiple objects are used."
 <OBJECT MANY-OBJECTS
-    (DESC "things")
-    (FLAGS NDESCBIT INVISIBLE PLURALBIT)>
+    (DESC "those things")
+    (FLAGS NDESCBIT NARTICLEBIT INVISIBLE PLURALBIT)>
 
 <VERSION?
     (ZIP
