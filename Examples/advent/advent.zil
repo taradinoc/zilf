@@ -12,9 +12,9 @@
 <CONSTANT RELEASEID 0>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
-;<COMPILATION-FLAG DEBUG>
-<COMPILATION-FLAG BETA>
-;<COMPILATION-FLAG DBMAZE>   ;"Gives the maze rooms unique names"
+<COMPILATION-FLAG DEBUG <>>
+<COMPILATION-FLAG BETA T>
+<COMPILATION-FLAG DBMAZE <>>   ;"Gives the maze rooms unique names"
 
 ;"OIL and WATER appear as verbs, nouns, and prepositions (as part of POUR).
   This isn't allowed in the original vocabulary system, but NEW-VOC? allows it
@@ -575,7 +575,7 @@ A dry streambed leads into the depression.")
     (FLAGS LIGHTBIT SACREDBIT)>
 
 <ROUTINE OUTSIDE-GRATE-F (RARG)
-    <COND (<AND <=? .RARG ,M-END> <VERB? LOOK>>
+    <COND (<=? .RARG ,M-FLASH>
            ;"Since the grate isn't actually in the room, describe it here"
            <COND (<FSET? ,GRATE ,OPENBIT>
                   <TELL CR "The grate stands open." CR>)
@@ -979,7 +979,7 @@ Rough stone steps lead up the dome.")
                         (ELSE <JIGS-UP "You didn't make it.">)>)
                  (<AND <VERB? WALK> <PRSO? ,P?DOWN>>
                   <TELL "The fissure is too terrifying!" CR>)>)
-          (<AND <=? .RARG ,M-END> <VERB? LOOK>>
+          (<=? .RARG ,M-FLASH>
            ;"Since the bridge isn't actually in the room, describe it here"
            <COND (<FSET? ,CRYSTAL-BRIDGE ,OPENBIT>
                   <TELL CR "A crystal bridge now spans the fissure." CR>)>)>>
@@ -1259,7 +1259,7 @@ There is a large \"Y2\" on a rock in the rooms center.")
                   <GOTO ,IN-PLOVER-ROOM>
                   <RTRUE>)>)
           (<AND <=? .RARG ,M-END>
-                <VERB? LOOK>
+                <VERB? LOOK WALK>
                 <PROB 25>>
            <TELL CR "A hollow voice says, \"Plugh.\"" CR>
            <RFALSE>)>>
@@ -1688,8 +1688,7 @@ There is a large hole in the wall above the pit at the end of this room.")
     (ACTION POTENTIAL-PLANT-STICKING-UP-ROOMS-F)>
 
 <ROUTINE POTENTIAL-PLANT-STICKING-UP-ROOMS-F (RARG)
-    <COND (<AND <=? .RARG ,M-END>
-                <VERB? LOOK>
+    <COND (<AND <=? .RARG ,M-FLASH>
                 <NOT <FSET? ,PLANT-STICKING-UP ,INVISIBLE>>>
            <CRLF>
            <DESCRIBE-PLANT-STICKING-UP>
@@ -2804,7 +2803,7 @@ A southwest path leads away from the chasm into a winding corridor.")
                   <COND (<NOT <FSET? ,RICKETY-BRIDGE ,INVISIBLE>>
                          <TELL ,USE-THE-BRIDGE CR>)
                         (ELSE <JIGS-UP "You didn't make it.">)>)>)
-          (<AND <=? .RARG ,M-END> <VERB? LOOK>>
+          (<=? .RARG ,M-FLASH>
            ;"Since the bridge isn't actually in the room, describe it here"
            <DESCRIBE-RICKETY-BRIDGE>)>>
 
@@ -2910,7 +2909,7 @@ A northeast path leads away from the chasm on this side.")
            <COND (<NOT <FSET? ,RICKETY-BRIDGE ,INVISIBLE>>
                   <TELL ,USE-THE-BRIDGE CR>)
                  (ELSE <JIGS-UP "You didn't make it.">)>)
-          (<AND <=? .RARG ,M-END> <VERB? LOOK>>
+          (<=? .RARG ,M-FLASH>
            ;"Since the bridge isn't actually in the room, describe it here"
            <DESCRIBE-RICKETY-BRIDGE>)>>
 
