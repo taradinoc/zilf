@@ -743,7 +743,10 @@ Returns:
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
                   <COND (<0? ,PRSO>
                          <WHAT-DO-YOU-WANT>
-                         <RFALSE>)>)
+                         <RFALSE>)
+                        (ELSE
+                         <PUT/B ,P-PRSOS 1 ,PRSO>
+                         <PUTB ,P-PRSOS 0 1>)>)
                  (ELSE
                   <SET X <GET ,P-DOBJS 2>>
                   ;<TELL "Find objects PRSO test - X is " N .X CR>
@@ -766,7 +769,10 @@ Returns:
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP2>>>
                   <COND (<0? ,PRSI>
                          <WHAT-DO-YOU-WANT>
-                         <RFALSE>)>)
+                         <RFALSE>)
+                        (ELSE
+                         <PUT/B ,P-PRSIS 1 ,PRSI>
+                         <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
                   <SET X <GET ,P-IOBJS 2>>
                   ;<TELL "Find objects PRSI test - X is " N .X CR>
