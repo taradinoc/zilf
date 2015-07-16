@@ -157,6 +157,13 @@
 <SYNTAX SUPERBRIEF = V-SUPERBRIEF>
 <SYNTAX VERBOSE = V-VERBOSE>
 
+<SYNTAX SCRIPT = V-SCRIPT>
+<SYNTAX SCRIPT ON OBJECT (FIND KLUDGEBIT) = V-SCRIPT>
+<SYNTAX SCRIPT OFF OBJECT (FIND KLUDGEBIT) = V-UNSCRIPT>
+<VERB-SYNONYM SCRIPT TRANSCRIPT>
+<SYNTAX UNSCRIPT = V-UNSCRIPT>
+<VERB-SYNONYM UNSCRIPT NOSCRIPT>
+
 ;"debugging verbs - remove"
 <IF-DEBUG
     <SYNTAX DROB OBJECT = V-DROB>
@@ -232,19 +239,6 @@
     <COND (<NOT ,HERE-LIT> <TELL "It's too dark to see anything here." CR>)>>
 
 ;"Action handler routines"
-
-<ROUTINE V-BRIEF ()
-    <TELL "Brief descriptions." CR>
-    <SETG MODE ,BRIEF>>
-
-<ROUTINE V-VERBOSE ()
-    <TELL "Verbose descriptions." CR>
-    <SETG MODE ,VERBOSE>
-    <V-LOOK>>
-
-<ROUTINE V-SUPERBRIEF ()
-    <TELL "Superbrief descriptions." CR>
-    <SETG MODE ,SUPERBRIEF>>
 
 <ROUTINE V-LOOK ()
     <COND (<DESCRIBE-ROOM ,HERE T>
@@ -625,8 +619,9 @@ Returns:
 
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
-    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY ;DLIGHT UNDO ;DSEND
-                SUPERBRIEF BRIEF VERBOSE AGAIN !,EXTRA-GAME-VERBS>>
+    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY UNDO
+                SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
+                !,EXTRA-GAME-VERBS>>
 
 <COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
@@ -1327,6 +1322,37 @@ Returns:
            <RESTART>)
           (ELSE
            <TELL "Restart aborted." CR>)>>
+
+<ROUTINE V-BRIEF ()
+    <TELL "Brief descriptions." CR>
+    <SETG MODE ,BRIEF>>
+
+<ROUTINE V-VERBOSE ()
+    <TELL "Verbose descriptions." CR>
+    <SETG MODE ,VERBOSE>
+    <V-LOOK>>
+
+<ROUTINE V-SUPERBRIEF ()
+    <TELL "Superbrief descriptions." CR>
+    <SETG MODE ,SUPERBRIEF>>
+
+<ROUTINE V-SCRIPT ()
+    <COND (<BTST <LOWCORE FLAGS> 1>
+           <TELL "Transcript already on." CR>)
+          (<AND <DIROUT 2>
+                <BTST <LOWCORE FLAGS> 1>>
+           <TELL "This begins a transcript of ">
+           <V-VERSION>
+           <RTRUE>)
+          (ELSE <TELL "Failed." CR>)>>
+
+<ROUTINE V-UNSCRIPT ()
+    <COND (<NOT <BTST <LOWCORE FLAGS> 1>>
+           <TELL "Transcript already off." CR>)
+          (<AND <TELL CR "End of transcript." CR>
+                <DIROUT -2>
+                <BTST <LOWCORE FLAGS> 1>>
+           <TELL "Failed." CR>)>>
 
 ;"Debugging verbs"
 <IF-DEBUG
