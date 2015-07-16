@@ -4128,6 +4128,10 @@ appears out of nowhere!" CR>)>)>)
     <TELL "You'll have to be a bit more explicit than that." CR>>
 
 ;----------------------------------------------------------------------
+
+<SYNTAX CROSS OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
+
+;----------------------------------------------------------------------
 "Help and info commands"
 ;----------------------------------------------------------------------
 
