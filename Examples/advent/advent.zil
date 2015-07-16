@@ -22,8 +22,10 @@
 ;"TODO: Enable NEW-VOC? once the parser supports it."
 ;<SETG NEW-VOC? T>
 
-<CONSTANT GAME-BANNER <STRING<IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
-"A Modern Classic|
+<CONSTANT GAME-BANNER
+    <STRING
+        <IFFLAG (BETA "ADVENTURE (beta)|") (ELSE "ADVENTURE|")>
+        "A Modern Classic|
 Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others|
 Adapted once more by Jesse McGrew (2015)">>
@@ -3425,7 +3427,7 @@ Suffice it to say the little guy's pretty aggressive.")
 
 <ROUTINE DWARF-F ()
     <COND (<VERB? KICK>
-           <TELL "You boot the dwarf across the room. He curses, the gets up and
+           <TELL "You boot the dwarf across the room. He curses, then gets up and
 brushes himself off. Now he's madder than ever!" CR>)
           (<AND <VERB? THROW-AT> <PRSI? ,DWARF>>
            <COND (<PRSO? ,AXE>
@@ -3508,9 +3510,6 @@ brushes himself off. Now he's madder than ever!" CR>)
 
 <GLOBAL PIRATE-STOLE <>>
 <GLOBAL PIRATE-SPOTTED <>>
-
-;"Filled in by the compiler"
-<CONSTANT LAST-OBJECT <>>
 
 <ROUTINE I-PIRATE ("AUX" BOOTY)
     ;"Pirate has a 2% chance of appearing, but won't appear in sacred rooms or
@@ -3809,7 +3808,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
                   <TELL ", you need " N .NR " more point">
                   <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
                  (ELSE
-                  <TELL "would be a neat trick!|Congratulations!!" CR>)>)>>
+                  <TELL " would be a neat trick!|Congratulations!!" CR>)>)>>
 
 <ROUTINE I-SCORE ("AUX" D T OS NS)
     ;"Note any changes in treasure status"
@@ -4249,6 +4248,7 @@ There is a way to get by, but you don't have the necessary resources right now."
     (PROMPT "Do you need help getting out of the maze?")
     (TEXT "You can make the passages look less alike by dropping things.")>
 
+;"TODO: This will always return true if the player is in the maze! Exclude WINNER."
 <ROUTINE OBJ-DROPPED-IN-MAZE? ("AUX" TBL MAX)
     <SET TBL <GET ,HINT-LOCATION-TBL ,HNT?ESCAPE-MAZE>>
     <SET MAX <GET .TBL 0>>
