@@ -1,7 +1,7 @@
 ;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
-;"TODO: Show score/rank when quitting."
+;"TODO: Show score/rank when quitting. Dock points for quitting."
 ;"TODO: The oyster message should count as a hint and incur a penalty."
 
 ;----------------------------------------------------------------------
@@ -4253,12 +4253,14 @@ There is a way to get by, but you don't have the necessary resources right now."
     (PROMPT "Do you need help getting out of the maze?")
     (TEXT "You can make the passages look less alike by dropping things.")>
 
-;"TODO: This will always return true if the player is in the maze! Exclude WINNER."
-<ROUTINE OBJ-DROPPED-IN-MAZE? ("AUX" TBL MAX)
+<ROUTINE OBJ-DROPPED-IN-MAZE? ("AUX" TBL MAX F)
     <SET TBL <GET ,HINT-LOCATION-TBL ,HNT?ESCAPE-MAZE>>
     <SET MAX <GET .TBL 0>>
     <DO (I 1 .MAX)
-        <COND (<FIRST? <GET .TBL .I>> <RTRUE>)>>
+        <COND (<AND <SET F <FIRST? <GET .TBL .I>>>
+                    <OR <N=? .F ,WINNER>
+                        <NEXT? .F>>>
+               <RTRUE>)>>
     <RFALSE>>
 
 <HINT EMERALD
