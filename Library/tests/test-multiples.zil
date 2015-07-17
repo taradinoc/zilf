@@ -135,4 +135,9 @@ apple: You see nothing special about the apple.|">>
     <COMMAND [PUT ALL IN ALL]>
     <EXPECT "You can't use multiple indirect objects with \"put\".|">>
 
+<TEST-CASE ("Present objects AND non-present objects")
+    <REMOVE ,APPLE>
+    <COMMAND [GET APPLE AND HAT]>
+    <EXPECT "You don't see any apple here.|">>
+
 <TEST-GO ,STARTROOM>
