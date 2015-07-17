@@ -129,6 +129,9 @@ apple: You see nothing special about the apple.|">>
     <EXPECT "You can't use multiple direct objects with \"eat\".|">>
 
 <TEST-CASE ("Put all in all")
+    <MOVE ,APPLE ,WINNER>
+    <MOVE ,BANANA ,WINNER>
+    <MOVE ,HAT ,WINNER>
     <COMMAND [PUT ALL IN ALL]>
     <EXPECT "You can't use multiple indirect objects with \"put\".|">>
 
