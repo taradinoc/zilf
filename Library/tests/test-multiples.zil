@@ -115,4 +115,21 @@ apple: You drop the apple.|">
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>>
 
+<TEST-CASE ("Examine all")
+    <COMMAND [EXAMINE ALL]>
+    <EXPECT "bucket: You see nothing special about the bucket.|
+desk: You see nothing special about the desk.|
+cage: The cage is closed.|
+hat: You see nothing special about the hat.|
+banana: You see nothing special about the banana.|
+apple: You see nothing special about the apple.|">>
+
+<TEST-CASE ("Eat all")
+    <COMMAND [EAT ALL]>
+    <EXPECT "You can't use multiple direct objects with \"eat\".|">>
+
+<TEST-CASE ("Put all in all")
+    <COMMAND [PUT ALL IN ALL]>
+    <EXPECT "You can't use multiple indirect objects with \"put\".|">>
+
 <TEST-GO ,STARTROOM>
