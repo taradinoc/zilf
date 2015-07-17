@@ -95,7 +95,7 @@
 <SYNTAX READ OBJECT (FIND READBIT) (TAKE HELD CARRIED ON-GROUND IN-ROOM) = V-READ PRE-REQUIRES-LIGHT>
 <VERB-SYNONYM READ PERUSE>
 
-<SYNTAX EAT OBJECT (FIND EDIBLEBIT) (TAKE HELD CARRIED ON-GROUND IN-ROOM) = V-EAT>
+<SYNTAX EAT OBJECT (FIND EDIBLEBIT) (TAKE HAVE HELD CARRIED ON-GROUND IN-ROOM) = V-EAT>
 <VERB-SYNONYM EAT SCARF DEVOUR GULP CHEW>
 
 <SYNTAX DRINK OBJECT = V-DRINK>
@@ -1064,11 +1064,8 @@ Returns:
     <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
           (<FSET? ,PRSO ,EDIBLEBIT>
-           ;"TODO: move this held check to syntax flags"
-           <COND (<HELD? ,PRSO>
-                  <TELL "You devour " T ,PRSO "." CR>
-                  <REMOVE ,PRSO>)
-                 (ELSE <TELL "You're not holding that." CR>)>)
+           <TELL "You devour " T ,PRSO "." CR>
+           <REMOVE ,PRSO>)
           (ELSE <TELL "That's hardly edible." CR>)>>
 
 <ROUTINE V-VERSION ()
