@@ -756,8 +756,10 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
                   <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
                   <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX ,P-PRSOS>>)>
-           <COND (<OR <NOT ,PRSO>
-                      <AND <NOT ,PRSO-DIR> <NOT <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>
+           <COND (<NOT <AND ,PRSO
+                            <OR ,PRSO-DIR
+                                <AND <MANY-CHECK ,PRSO .O <>>
+                                     <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
                   <RFALSE>)>)>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
@@ -782,7 +784,9 @@ Returns:
                   <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
                   <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
                   <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX ,P-PRSIS>>)>
-           <COND (<OR <NOT ,PRSI> <NOT <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
+           <COND (<NOT <AND ,PRSI
+                            <MANY-CHECK ,PRSI .O T>
+                            <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
                   <RFALSE>)>)>
     <RTRUE>>
 
@@ -801,6 +805,31 @@ Returns:
            <COND (.SP2
                   <TELL " " B <GET-PREP-WORD .SP2>>)>)>
     <TELL "?" CR>>
+
+;"Applies the rules for the MANY syntax flag to PRSO or PRSI, printing a
+failure message if appropriate.
+
+Args:
+  OBJ: PRSO or PRSI, which should equal MANY-OBJECTS if multiple objects were
+    matched or a single object otherwise.
+  OPTS: The corresponding search options, including the MANY flag if set.
+  INDIRECT?: True if the failure message should say 'indirect objects' instead
+    of 'direct objects'.
+
+Returns:
+  True if the check passed, i.e. either a single object was matched or the MANY
+  flag allowed multiple objects. False if multiple objects were matched but the
+  MANY flag was not set."
+<ROUTINE MANY-CHECK (OBJ OPTS INDIRECT?)
+    <COND (<AND <=? .OBJ ,MANY-OBJECTS>
+                <NOT <BTST .OPTS ,SF-MANY>>>
+           <TELL "You can't use multiple ">
+           <COND (.INDIRECT? <TELL "in">)>
+           <TELL "direct objects with \"">
+           <PRINT-WORD ,P-V-WORDN>
+           <TELL "\"." CR>
+           <RFALSE>)>
+    <RTRUE>>
 
 ;"Applies the rules for the HAVE and TAKE syntax flags to a set of parsed objects,
 printing a failure message if appropriate.
