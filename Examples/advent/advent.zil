@@ -452,6 +452,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (SYNONYM WATER H2O)
     (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary water to me.")
+    (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION WATER-IN-BOTTLE-F)>
 
 <ROUTINE WATER-IN-BOTTLE-F ()
@@ -466,6 +467,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (SYNONYM OIL LUBRICANT GREASE)
     (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary oil to me.")
+    (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION OIL-IN-BOTTLE-F)>
 
 <ROUTINE OIL-IN-BOTTLE-F ()
@@ -770,6 +772,7 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
     (SYNONYM BIRD)
     (ADJECTIVE CHEERFUL MOURNFUL LITTLE)
     (FDESC "A cheerful little bird is sitting here singing.")
+    (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION LITTLE-BIRD-F)
     (FLAGS PERSONBIT)>
 
