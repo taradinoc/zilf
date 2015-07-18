@@ -44,6 +44,24 @@
     (SYNONYM BUCKET)
     (FLAGS CONTBIT OPENBIT)>
 
+<OBJECT RED-CUBE
+    (DESC "red cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE RED)
+    (FLAGS TAKEBIT)>
+
+<OBJECT GREEN-CUBE
+    (DESC "green cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE GREEN)
+    (FLAGS TAKEBIT)>
+
+<OBJECT BLUE-CUBE
+    (DESC "blue cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE BLUE)
+    (FLAGS TAKEBIT)>
+
 <INSERT-FILE "testing">
 
 <TEST-SETUP ()
@@ -54,7 +72,10 @@
     <FCLEAR ,HAT ,WORNBIT>
     <MOVE ,CAGE ,STARTROOM>
     <MOVE ,DESK ,STARTROOM>
-    <MOVE ,BUCKET ,STARTROOM>>
+    <MOVE ,BUCKET ,STARTROOM>
+    <REMOVE ,RED-CUBE>
+    <REMOVE ,GREEN-CUBE>
+    <REMOVE ,BLUE-CUBE>>
 
 <TEST-CASE ("Take all")
     <COMMAND [TAKE ALL]>
@@ -139,5 +160,32 @@ apple: You see nothing special about the apple.|">>
     <REMOVE ,APPLE>
     <COMMAND [GET APPLE AND HAT]>
     <EXPECT "You don't see any apple here.|">>
+
+<TEST-CASE ("GET CUBE with one matching object in location")
+    <MOVE ,RED-CUBE ,STARTROOM>
+    <MOVE ,GREEN-CUBE ,WINNER>
+    <MOVE ,BLUE-CUBE ,WINNER>
+    <COMMAND [GET CUBE]>
+    <EXPECT "You pick up the red cube.|">>
+
+<TEST-CASE ("GET CUBE with two matching objects in location")
+    <MOVE ,RED-CUBE ,STARTROOM>
+    <MOVE ,GREEN-CUBE ,STARTROOM>
+    <MOVE ,BLUE-CUBE ,WINNER>
+    <COMMAND [GET CUBE]>
+    <EXPECT "Which do you mean, the green cube or the red cube?|">>
+
+<TEST-CASE ("GET CUBE with two matching objects in inventory")
+    <MOVE ,RED-CUBE ,WINNER>
+    <MOVE ,GREEN-CUBE ,WINNER>
+    <COMMAND [GET CUBE]>
+    <EXPECT "Which do you mean, the green cube or the red cube?|">>
+
+<TEST-CASE ("GET ALL CUBES with one matching object in location")
+    <MOVE ,RED-CUBE ,STARTROOM>
+    <MOVE ,GREEN-CUBE ,WINNER>
+    <MOVE ,BLUE-CUBE ,WINNER>
+    <COMMAND [GET ALL CUBES]>
+    <EXPECT "You pick up the red cube.|">>
 
 <TEST-GO ,STARTROOM>
