@@ -173,35 +173,77 @@ Args:
 <GLOBAL P-P2 <>>
 <GLOBAL P-SYNTAX <>>
 
-"Tables for object specs (adjective + noun pairs).
- These each have one length byte, one mode byte, then P-MAX-OBJSPECS pairs of words.
- The mode byte is unused for the -EX tables."
+"Structured types for storing noun phrases.
+
+ NOUN-PHRASE:
+   NP-YTBL and NP-NTBL are tables of OBJSPECs, with the corresponding counts
+   in NP-YCNT and NP-NCNT.
+   NP-MODE is a mode byte: either 0, MCM-ALL, or MCM-ANY.
+   The helper macros NP-YSPEC and NP-NSPEC return an OBJSPEC by 1-based index.
+
+ OBJSPEC:
+   OBJSPEC-ADJ contains an adjective (number or voc word, depending on version)
+   or special flag (TBD).
+   OBJSPEC-NOUN contains a noun (voc word).
+   Either field may be 0, but not both."
+<DEFSTRUCT NOUN-PHRASE (TABLE ('NTH GETB) ('PUT PUTB) ('START-OFFSET 0))
+    (NP-YCNT FIX)
+    (NP-NCNT FIX)
+    (NP-YTBL TABLE 'OFFSET 1 'NTH ZGET 'PUT ZPUT)
+    (NP-NTBL TABLE 'OFFSET 2 'NTH ZGET 'PUT ZPUT)
+    (NP-MODE FIX 'OFFSET 6)>
+
 <CONSTANT P-MAX-OBJSPECS 10>
-<BIND ((TBLSIZE <+ 1 <* ,P-MAX-OBJSPECS 2>>))
-    <CONSTANT P-DOBJS <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-DOBJEX <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-IOBJS <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-IOBJEX <ITABLE .TBLSIZE <>>>
-    "for recalling last PRSO with IT"
-    <CONSTANT P-DOBJS-BACK <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-DOBJEX-BACK <ITABLE .TBLSIZE <>>>
-    <GLOBAL IT-USE 0>
-    <GLOBAL IT-ONCE 0>
-    "for recalling last PRSO with THEM"
-    <CONSTANT P-TOBJS-BACK <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-TOBJEX-BACK <ITABLE .TBLSIZE <>>>
-    <GLOBAL THEM-USE 0>
-    <GLOBAL THEM-ONCE 0>
-    "for recalling last male PRSO with HIM"
-    <CONSTANT P-MOBJS-BACK <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-MOBJEX-BACK <ITABLE .TBLSIZE <>>>
-    <GLOBAL HIM-USE 0>
-    <GLOBAL HIM-ONCE 0>
-    "for recalling last PRSO with HER"
-    <CONSTANT P-FOBJS-BACK <ITABLE .TBLSIZE <>>>
-    <CONSTANT P-FOBJEX-BACK <ITABLE .TBLSIZE <>>>
-    <GLOBAL HER-USE 0>
-    <GLOBAL HER-ONCE 0>>
+<DEFINE NOUN-PHRASE ()
+    <MAKE-NOUN-PHRASE
+        'NOUN-PHRASE <TABLE <BYTE 0> <BYTE 0> 0 0 <BYTE 0>>
+        'NP-YTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>
+        'NP-NTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>>>
+
+<CONSTANT P-OBJSPEC-SIZE 4>
+
+<DEFMAC NP-YSPEC ('NP 'I)
+    <FORM REST <FORM NP-YTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>>
+
+<DEFMAC NP-NSPEC ('NP 'I)
+    <FORM REST <FORM NP-NTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>>
+
+<DEFSTRUCT OBJSPEC (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
+    (OBJSPEC-ADJ VOC)
+    (OBJSPEC-NOUN VOC)>
+
+;"Resets a noun phrase to be empty with no mode."
+<ROUTINE CLEAR-NOUN-PHRASE (NP)
+    <NP-YCNT .NP 0>
+    <NP-NCNT .NP 0>
+    <NP-MODE .NP 0>>
+
+;"Copies the contents of one noun phrase into another."
+<ROUTINE COPY-NOUN-PHRASE (SRC DEST "AUX" C)
+    <NP-YCNT .DEST <SET C <NP-YCNT .SRC>>>
+    <COPY-TABLE <NP-YTBL .SRC> <NP-YTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
+    <NP-NCNT .DEST <SET C <NP-NCNT .SRC>>>
+    <COPY-TABLE <NP-NTBL .SRC> <NP-NTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
+    <NP-MODE .DEST <NP-MODE .SRC>>>
+
+"Noun phrase storage for direct/indirect objects"
+<CONSTANT P-NP-DOBJ <NOUN-PHRASE>>
+<CONSTANT P-NP-IOBJ <NOUN-PHRASE>>
+
+"Noun phrase storage for pronouns, and other pronoun storage"
+<CONSTANT P-NP-IT <NOUN-PHRASE>>
+<CONSTANT P-NP-THEM <NOUN-PHRASE>>
+<CONSTANT P-NP-HIM <NOUN-PHRASE>>
+<CONSTANT P-NP-HER <NOUN-PHRASE>>
+
+<GLOBAL IT-USE <>>
+<GLOBAL IT-ONCE <>>
+<GLOBAL THEM-USE <>>
+<GLOBAL THEM-ONCE <>>
+<GLOBAL HIM-USE <>>
+<GLOBAL HIM-ONCE <>>
+<GLOBAL HER-USE <>>
+<GLOBAL HER-ONCE <>>
 
 <CONSTANT P-MAX-OBJECTS 50>
 "Tables for objects recognized from object specs.
@@ -228,8 +270,6 @@ Sets:
   P-LEN
   P-V
   P-NOBJ
-  P-DOBJS
-  P-IOBJS
   P-P1
   P-P2
   HERE
@@ -242,19 +282,15 @@ Sets:
   P-BUTS
   P-EXTRA
   USAVE
-  P-DOBJS
-  P-DOBJEX
-  P-DOBJS-BACK
-  P=DOBJEX-BACK
+  P-NP-DOBJ
+  P-NP-IOBJ
+  P-NP-IT
+  P-NP-THEM
+  P-NP-HIM
+  P-NP-HER
   IT-ONCE
-  P-TOBJS-BACK
-  P-TOBJEX-BACK
   THEM-ONCE
-  P-MOBJS-BACK
-  P-MOBJEX-BACK
   HIM-ONCE
-  P-FOBJS-BACK
-  P-FOBJEX-BACK
   HER-ONCE
 "
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR)
@@ -270,8 +306,8 @@ Sets:
     <SETG P-LEN <GETB ,LEXBUF 1>>
     <SETG P-V <>>
     <SETG P-NOBJ 0>
-    <PUT ,P-DOBJS 0 0>
-    <PUT ,P-IOBJS 0 0>
+    <CLEAR-NOUN-PHRASE ,P-NP-DOBJ>
+    <CLEAR-NOUN-PHRASE ,P-NP-IOBJ>
     <SETG P-P1 <>>
     <SETG P-P2 <>>
     ;"Identify the verb, prepositions, and noun clauses"
@@ -305,9 +341,9 @@ Sets:
                ;"Found a noun clause"
                <SET NOBJ <+ .NOBJ 1>>
                <COND (<==? .NOBJ 1>
-                      <SET VAL <MATCH-CLAUSE .I ,P-DOBJS ,P-DOBJEX>>)
+                      <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
                      (<==? .NOBJ 2>
-                      <SET VAL <MATCH-CLAUSE .I ,P-IOBJS ,P-IOBJEX>>)
+                      <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
                      (ELSE
                       <TELL "That sentence has too many objects." CR>
                       <RFALSE>)>
@@ -327,8 +363,8 @@ Sets:
     <SETG P-NOBJ .NOBJ>
     <IF-DEBUG
         <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
-              " P1=" N ,P-P1 " DOBJS=" N <GETB ,P-DOBJS 0>
-              " P2=" N ,P-P2 " IOBJS=" N <GETB ,P-IOBJS 0> "]" CR>>
+              " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
+              " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ>"]" CR>>
     ;"If we have a direction, it's a walk action, and no verb is needed"
     <COND (.DIR
            <SETG PRSO-DIR T>
@@ -370,8 +406,7 @@ Sets:
                 <NOT <PRSO? ,MANY-OBJECTS>>
                 <NOT <FSET? ,PRSO ,PERSONBIT>>
                 <NOT <FSET? ,PRSO ,PLURALBIT>>>
-           <COPY-TABLE ,P-DOBJS ,P-DOBJS-BACK 21>
-           <COPY-TABLE ,P-DOBJEX ,P-DOBJEX-BACK 21>
+           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-IT>
            <COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
           ;"if PRSO has PLURALBIT, back up to THEM instead"
           (<AND <EQUAL? ,THEM-USE 0>
@@ -379,8 +414,7 @@ Sets:
                 ;"Note: we allow MANY-OBJECTS here"
                 <NOT <FSET? ,PRSO ,PERSONBIT>>
                 <FSET? ,PRSO ,PLURALBIT>>
-           <COPY-TABLE ,P-DOBJS ,P-TOBJS-BACK 21>
-           <COPY-TABLE ,P-DOBJEX ,P-TOBJEX-BACK 21>
+           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-THEM>
            <COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
           ;"if successful PRSO who is male, back up PRSO for HIM"
           (<AND <EQUAL? ,HIM-USE 0>
@@ -388,17 +422,15 @@ Sets:
                 <NOT <PRSO? ,MANY-OBJECTS>>
                 <FSET? ,PRSO ,PERSONBIT>
                 <NOT <FSET? ,PRSO ,FEMALEBIT>>>
-                              <COPY-TABLE ,P-DOBJS ,P-MOBJS-BACK 21>
-                              <COPY-TABLE ,P-DOBJEX ,P-MOBJEX-BACK 21>
-                              <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
+           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-HIM>
+           <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
           ;"if successful PRSO who is female, back up PRSO for HER"
           (<AND <EQUAL? ,HER-USE 0>
                 ,PRSO
                 <NOT <PRSO? ,MANY-OBJECTS>>
                 <FSET? ,PRSO ,PERSONBIT>
                 <FSET? ,PRSO ,FEMALEBIT>>
-           <COPY-TABLE ,P-DOBJS ,P-FOBJS-BACK 21>
-           <COPY-TABLE ,P-DOBJEX ,P-FOBJEX-BACK 21>
+           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-HER>
            <COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>)>
     <RTRUE>>
 
@@ -474,24 +506,22 @@ Returns:
 <CONSTANT MCM-ANY 2>
 
 
-;"Attempts to match a noun clause.
+;"Attempts to parse a noun phrase.
 
 If the match fails, an error message may be printed.
 
 Args:
   WN: The 1-based word number where the noun clause starts.
-  YTBL: The address of a table in which to return the adjective/noun pairs that
-      should be included ('yes').
-  NTBL: The address of a table in which to return the adjective/noun pairs that
-      should be excluded ('no').
+  NP: A NOUN-PHRASE in which to return the parsed result.
 
 Returns:
-  True if the noun clause was matched. YTBL and NTBL may be modified even if
-  this routine returns false.
+  The number of the first word that was not part of the noun phrase,
+  if parsing was successful, or 0 if parsing failed.
+  NP may be left in an invalid state if parsing fails.
 "
-<ROUTINE MATCH-CLAUSE (WN YTBL NTBL "AUX" (TI 1) W VAL (MODE 0) (ADJ <>) (NOUN <>) TBL (BUT <>))
-    <SET TBL .YTBL>
-    <PUTB .NTBL 0 0>
+<ROUTINE PARSE-NOUN-PHRASE (WN NP "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT)
+    <SET SPEC <NP-YSPEC .NP 1>>
+    <NP-NCNT .NP 0>
     <REPEAT ()
         <COND
             ;"exit loop if we reached the end of the command"
@@ -500,10 +530,10 @@ Returns:
             (<0? <SET W <GETWORD? .WN>>> <RFALSE>)
             ;"recognize BUT/EXCEPT"
             (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
-             <PUTB .TBL 0 </ <- .TI 1> 2>>
+             <NP-YCNT .CNT>
              <SET BUT T>
-             <SET TBL .NTBL>
-             <SET TI 1>)
+             <SET SPEC <NP-NSPEC .NP 1>>
+             <SET CNT 0>)
             ;"recognize ALL/ANY/ONE"
             (<EQUAL? .W ,W?ALL ,W?ANY ,W?ONE>
              <COND (<OR .MODE .ADJ .NOUN> <RFALSE>)>
@@ -526,24 +556,25 @@ Returns:
                                <NOT <OR <CHKWORD? .NW ,PS?ADJECTIVE>
                                         <CHKWORD? .NW ,PS?OBJECT>>>>>>
                   <SET NOUN .W>)
-                 (<==? .TI ,P-MAX-OBJSPECS>
+                 (<==? .CNT ,P-MAX-OBJSPECS>
                   <TELL "That clause mentions too many objects." CR>
                   <RFALSE>)
                  (<NOT .ADJ> <SET ADJ .VAL>)>)
             ;"match nouns, exiting the loop if we already found one"
             (<WORD? .W OBJECT>
              <COND (.NOUN <RETURN>)
-                   (<==? .TI ,P-MAX-OBJSPECS>
+                   (<==? .CNT ,P-MAX-OBJSPECS>
                     <TELL "That clause mentions too many objects." CR>
                     <RFALSE>)
                    (ELSE <SET NOUN .W>)>)
             ;"recognize AND/comma"
             (<EQUAL? .W ,W?AND ,W?COMMA>
              <COND (<OR .ADJ .NOUN>
-                    <PUT .TBL .TI .ADJ>
-                    <PUT .TBL <+ .TI 1> .NOUN>
+                    <OBJSPEC-ADJ .SPEC .ADJ>
+                    <OBJSPEC-NOUN .SPEC .NOUN>
                     <SET ADJ <SET NOUN <>>>
-                    <SET TI <+ .TI 2>>)>)
+                    <SET SPEC <REST .SPEC ,P-OBJSPEC-SIZE>>
+                    <SET CNT <+ .CNT 1>>)>)
             ;"skip buzzwords"
             (<CHKWORD? .W ,PS?BUZZ-WORD>)
             ;"exit loop if we found any other word type"
@@ -551,13 +582,12 @@ Returns:
         <SET WN <+ .WN 1>>>
     ;"store final adj/noun pair"
     <COND (<OR .ADJ .NOUN>
-           <PUT .TBL .TI .ADJ>
-           <PUT .TBL <+ .TI 1> .NOUN>
-           <SET TI <+ .TI 2>>)>
+           <OBJSPEC-ADJ .SPEC .ADJ>
+           <OBJSPEC-NOUN .SPEC .NOUN>
+           <SET CNT <+ .CNT 1>>)>
     ;"store phrase count and mode"
-    <PUTB .TBL 0 </ <- .TI 1> 2>>
-    <PUTB .YTBL 1 .MODE>  ;"mode is always in YTBL"
-    <PUTB .NTBL 1 0>      ;"NTBL mode is unused"
+    <COND (.BUT <NP-NCNT .NP .CNT>) (ELSE <NP-YCNT .NP .CNT>)>
+    <NP-MODE .NP .MODE>
     .WN>
 
 <CONSTANT SYN-REC-SIZE 8>
@@ -675,20 +705,18 @@ Returns:
 <CONSTANT S-PRONOUN-UNKNOWN-PERSON "I'm unsure to whom you are referring.">
 <CONSTANT S-PRONOUN-UNKNOWN-THING "I'm unsure what you're referring to.">
 
-;"<FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
+;"<FIND-OBJECTS-CHECK-PRONOUN .X IT IOBJ>
   Expands to:
   <COND (<EQUAL? .X ,W?IT>
          <COND (<0? ,IT-ONCE>
                 <TELL ,S-PRONOUN-UNKNOWN-THING CR>
                 <RFALSE>)>
-         <COPY-TABLE ,P-DOBJS-BACK ,P-IOBJS 21>
-         <COPY-TABLE ,P-DOBJEX-BACK ,P-IOBJEX 21>
+         <COPY-NOUN-PHRASE ,P-NP-IT ,P-NP-IOBJ>
          <SETG IT-USE T>)
         (ELSE <SETG IT-USE <>>)>"
-<DEFMAC FIND-OBJECTS-CHECK-PRONOUN ('X 'PRONOUN 'PRONOUN-TBL-STEM 'DEST-TBL-STEM
+<DEFMAC FIND-OBJECTS-CHECK-PRONOUN ('X 'PRONOUN 'DEST-NP-STEM
                                     "AUX" MSG VOCAB-WORD ONCE-VAR USE-VAR
-                                    OBJS-BACK-TBL OBJEX-BACK-TBL
-                                    OBJS-DEST-TBL OBJEX-DEST-TBL)
+                                    PRONOUN-NP DEST-NP)
     <COND (<OR <=? .PRONOUN IT> <=? .PRONOUN THEM>>
            <SET MSG ',S-PRONOUN-UNKNOWN-THING>)
           (ELSE
@@ -696,16 +724,13 @@ Returns:
     <SET WORD <PARSE <STRING "W?" <SPNAME .PRONOUN>>>>
     <SET ONCE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-ONCE">>>
     <SET USE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-USE">>>
-    <SET OBJS-BACK-TBL <PARSE <STRING "P-" <SPNAME .PRONOUN-TBL-STEM> "S-BACK">>>
-    <SET OBJEX-BACK-TBL <PARSE <STRING "P-" <SPNAME .PRONOUN-TBL-STEM> "EX-BACK">>>
-    <SET OBJS-DEST-TBL <PARSE <STRING "P-" <SPNAME .DEST-TBL-STEM> "S">>>
-    <SET OBJEX-DEST-TBL <PARSE <STRING "P-" <SPNAME .DEST-TBL-STEM> "EX">>>
+    <SET PRONOUN-NP <PARSE <STRING "P-NP-" <SPNAME .PRONOUN>>>>
+    <SET DEST-NP <PARSE <STRING "P-NP-" <SPNAME .DEST-NP-STEM>>>>
     <FORM COND <LIST <FORM EQUAL? .X <FORM GVAL .WORD>>
                      <FORM COND <LIST <FORM 0? <FORM GVAL .ONCE-VAR>>
                                       <FORM TELL .MSG CR>
                                       <FORM RFALSE>>>
-                     <FORM COPY-TABLE <FORM GVAL .OBJS-BACK-TBL> <FORM GVAL .OBJS-DEST-TBL> 21>
-                     <FORM COPY-TABLE <FORM GVAL .OBJEX-BACK-TBL> <FORM GVAL .OBJEX-DEST-TBL> 21>
+                     <FORM COPY-NOUN-PHRASE <FORM GVAL .PRONOUN-NP> <FORM GVAL .DEST-NP>>
                      <FORM SETG .USE-VAR T>>
                <LIST ELSE <FORM SETG .USE-VAR <>>>>>
 
@@ -748,14 +773,13 @@ Returns:
                          <PUT/B ,P-PRSOS 1 ,PRSO>
                          <PUTB ,P-PRSOS 0 1>)>)
                  (ELSE
-                  <SET X <GET ,P-DOBJS 2>>
+                  <SET X <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ 1>>>
                   ;<TELL "Find objects PRSO test - X is " N .X CR>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ DOBJ>
-                  <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
-                  <SETG PRSO <FIND-ONE-OBJ ,P-DOBJS ,P-DOBJEX ,P-PRSOS>>)>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM DOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HER DOBJ>
+                  <SETG PRSO <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>)>
            <COND (<NOT <AND ,PRSO
                             <OR ,PRSO-DIR
                                 <AND <MANY-CHECK ,PRSO .O <>>
@@ -776,14 +800,13 @@ Returns:
                          <PUT/B ,P-PRSIS 1 ,PRSI>
                          <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
-                  <SET X <GET ,P-IOBJS 2>>
+                  <SET X <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>>>
                   ;<TELL "Find objects PRSI test - X is " N .X CR>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM TOBJ IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM MOBJ IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HER FOBJ IOBJ>
-                  <SETG FIND-ONE-OBJ-FLAGS <ENCODE-NOUN-BITS .F .O>>
-                  <SETG PRSI <FIND-ONE-OBJ ,P-IOBJS ,P-IOBJEX ,P-PRSIS>>)>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X IT IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM IOBJ>
+                  <FIND-OBJECTS-CHECK-PRONOUN .X HER IOBJ>
+                  <SETG PRSI <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>)>
            <COND (<NOT <AND ,PRSI
                             <MANY-CHECK ,PRSI .O T>
                             <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
@@ -975,29 +998,32 @@ Returns:
                      <FSET? .OBJ ,TRANSBIT>
                      <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>>>
 
-;"Attempts to find an object in scope, given the adjectives and nouns that
-describe it.
+;"Attempts to find one or more objects in scope, given a noun phrase that
+describes them and a set of search options.
+
+The search options are used to guide the scope search toward the right objects,
+but are not necessarily hard requirements.
 
 Args:
-  YTBL: A table of adjective/noun pairs that the object must have ('yes').
-  NTBL: A table of adjective/noun pairs that the object must not have ('no').
+  NP: The NOUN-PHRASE describing the objects.
   OUT: A table (P-PRSOS or P-PRSIS) in which to return the matched objects.
+  BITS: A FIND flag and search options, as returned by ENCODE-NOUN-BITS.
 
 Uses:
-  FIND-ONE-OBJ-FLAGS
   PRSA
 
 Returns:
-  The located object, or false if no matching object was found."
-<ROUTINE FIND-ONE-OBJ FOO (YTBL NTBL OUT "AUX" F A N NY NN MODE (NOUT 0))
+  The matched object, or MANY-OBJECTS if multiple objects were matched,
+  or false if no objects were matched."
+<ROUTINE MATCH-NOUN-PHRASE FOO (NP OUT BITS "AUX" F NY NN SPEC ;MODE (NOUT 0))
     ;"TODO: Disambiguate if we aren't expecting multiple objects."
     ;"TODO: Expand the search if we don't find any with the initial set of flags."
-    <SET NY <GETB .YTBL 0>>
-    <SET NN <GETB .NTBL 0>>
-    <SET MODE <GETB .YTBL 1>>
-    <MAP-SCOPE (I [BITS ,FIND-ONE-OBJ-FLAGS])
+    <SET NY <NP-YCNT .NP>>
+    <SET NN <NP-NCNT .NP>>
+    ;<SET MODE <NP-MODE .NP>>
+    <MAP-SCOPE (I [BITS .BITS])
         <COND (<NOT <FSET? .I ,INVISIBLE>>
-               ;"Match any pair in YTBL, or most objects if YTBL is empty"
+               ;"Match any YSPEC, or most objects if YTBL is empty"
                <COND (<0? .NY>
                       ;"TAKE ALL only finds objects with (TRY)TAKEBIT."
                       <COND (<AND <VERB? TAKE>
@@ -1009,18 +1035,16 @@ Returns:
                      (ELSE
                       <SET F <>>
                       <DO (J 1 .NY)
-                          <SET A <GET .YTBL <- <* 2 .J> 1>>>
-                          <SET N <GET .YTBL <* 2 .J>>>
-                          <COND (<REFERS? .A .N .I>
+                          <SET SPEC <NP-YSPEC .NP .J>>
+                          <COND (<REFERS? .SPEC .I>
                                  <SET F T>
                                  <RETURN>)>>)>
                <COND (.F
-                      ;"Exclude if any pair in NTBL matches"
+                      ;"Exclude if any NSPEC matches"
                       <COND (.NN
                              <DO (J 1 .NN)
-                                 <SET A <GET .NTBL <- <* 2 .J> 1>>>
-                                 <SET N <GET .NTBL <* 2 .J>>>
-                                 <COND (<REFERS? .A .N .I>
+                                 <SET SPEC <NP-NSPEC .NP .J>>
+                                 <COND (<REFERS? .SPEC .I>
                                         <SET F <>>
                                         <RETURN>)>>)>)>
                <COND (.F
@@ -1044,10 +1068,6 @@ Returns:
           (ELSE
            <RETURN ,MANY-OBJECTS>)>>
 
-;"FIND-ONE-OBJ needs too many parameters for V3, so we use this global to pass
-  the scope flags (lower byte) and FIND flag (upper byte)."
-<GLOBAL FIND-ONE-OBJ-FLAGS <>>
-        
 ;"Determines whether a local-global object is present in a given room.
 
 Args:
@@ -1060,13 +1080,12 @@ Returns:
 <ROUTINE GLOBAL-IN? (O R)
     <AND <NOT <FSET? .O ,INVISIBLE>> <IN-PB/WTBL? .R ,P?GLOBAL .O>>>
 
-;"Determines whether an adjective/noun pair refer to a given object.
+;"Determines whether an OBJSPEC refers to a given object.
 
 Args:
-  A: The adjective word. May be 0.
-  N: The noun word.
+  SPEC: The OBJSPEC.
   O: The object."
-<ROUTINE REFERS? (A N O)
+<ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
     <AND
         <OR <0? .A> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
         <IN-PWTBL? .O ,P?SYNONYM .N>>>
