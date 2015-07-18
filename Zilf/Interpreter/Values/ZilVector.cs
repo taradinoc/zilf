@@ -1,3 +1,4 @@
+using System;
 /* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
@@ -62,12 +63,26 @@ namespace Zilf.Interpreter.Values
 
             public ZilObject GetItem(int offset, int index)
             {
-                return items[index + offset - baseOffset];
+                try
+                {
+                    return items[index + offset - baseOffset];
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    return null;
+                }
             }
 
             public void PutItem(int offset, int index, ZilObject value)
             {
-                items[index + offset - baseOffset] = value;
+                try
+                {
+                    items[index + offset - baseOffset] = value;
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    throw new InterpreterError("index out of range: " + index);
+                }
             }
         }
 
