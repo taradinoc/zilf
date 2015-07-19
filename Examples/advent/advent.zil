@@ -88,7 +88,15 @@ Adapted once more by Jesse McGrew (2015)">>
            <COND (<NOT <AND <SET F <GETP ,HERE ,P?ACTION>>
                             <APPLY .F ,M-BEG>>>
                   <TELL "You don't know how." CR>)>
-           <RTRUE>)>
+           <RTRUE>)
+          (<AND <VERB? CLIMB> <NOT ,PRSO>>
+           <COND (<OR <VISIBLE? <SET F ,PLANT>>
+                      <VISIBLE? <SET F ,PLANT-STICKING-UP>>
+                      <VISIBLE? <SET F ,SMALL-CLIMBABLE-PIT>>
+                      <VISIBLE? <SET F ,MASSIVE-ORANGE-COLUMN>>
+                      <VISIBLE? <SET F ,PIT>>>
+                  <SETG PRSO .F>
+                  <RFALSE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
 
@@ -3272,10 +3280,18 @@ which is probably just as well." CR>)
                  (ELSE
                   <FCLEAR ,PRSO ,LOCKEDBIT>
                   <TELL "Unlocked." CR>)>)
-          (<AND <VERB? LOCK> <PRSO? ,GOLDEN-CHAIN>>
+          (<OR <VERB? CLOSE>
+               <AND <VERB? LOCK> <PRSO? ,GOLDEN-CHAIN>>>
            <COND (<FSET? ,PRSO ,LOCKEDBIT>
                   <TELL "It's already locked." CR>)
-                 (ELSE <TELL "The mechanism won't lock again." CR>)>)>>
+                 (ELSE <TELL "The mechanism won't lock again." CR>)>)
+          (<VERB? OPEN>
+           <COND (<HELD? ,SET-OF-KEYS>
+                  <PERFORM ,V?UNLOCK ,PRSO ,SET-OF-KEYS>
+                  <RTRUE>)
+                 (<FSET? ,PRSO ,LOCKEDBIT>
+                  <TELL "It's locked." CR>)
+                 (ELSE <TELL "It's already unlocked." CR>)>)>>
 
 ;----------------------------------------------------------------------
 "The Different Maze"
@@ -4143,6 +4159,10 @@ appears out of nowhere!" CR>)>)>)
 ;----------------------------------------------------------------------
 
 <SYNTAX CROSS OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX OPEN OBJECT (FIND LOCKEDBIT) WITH OBJECT (HAVE HELD CARRIED) = V-UNLOCK>
+<SYNTAX CLOSE OBJECT WITH OBJECT (HAVE HELD CARRIED) = V-LOCK>
+
+;----------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
 "Help and info commands"
