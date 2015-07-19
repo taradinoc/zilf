@@ -35,9 +35,9 @@ Adapted once more by Jesse McGrew (2015)">>
 ;----------------------------------------------------------------------
 
 <ROUTINE GO ()
-    <IF-BETA <SEED-RANDOM>>
     <SETG HERE ,AT-END-OF-ROAD>
     <SETG SCORE 36>
+    <IF-BETA <SEED-RANDOM>>
     <SETG MODE ,VERBOSE>
     <CRLF> <CRLF>
     <TELL "Welcome to Adventure! Do you need instructions?">
