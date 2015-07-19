@@ -970,13 +970,11 @@ Besides, I suspect it would prefer bird seed." CR>)
 <ROOM AT-TOP-OF-SMALL-PIT
     (DESC "At Top of Small Pit")
     (IN ROOMS)
-    (LDESC "At your feet is a small pit breathing traces of white mist.
-A west passage ends here except for a small crack leading on.||
-Rough stone steps lead down the pit.")
     (GLOBAL MIST)
     (EAST TO IN-BIRD-CHAMBER)
     (WEST SORRY "The crack is far too small for you to follow.")
     (DOWN PER DOWN-INTO-SMALL-PIT)
+    (ACTION AT-TOP-OF-SMALL-PIT-F)
     (FLAGS SACREDBIT)>
 
 <ROUTINE DOWN-INTO-SMALL-PIT ()
@@ -984,6 +982,14 @@ Rough stone steps lead down the pit.")
            <JIGS-UP "You are at the bottom of the pit with a broken neck.">
            ,HERE)
           (ELSE ,IN-HALL-OF-MISTS)>>
+
+<ROUTINE AT-TOP-OF-SMALL-PIT-F (RARG)
+    <COND (<=? .RARG ,M-LOOK>
+           <TELL "At your feet is a small pit breathing traces of white mist.
+A west passage ends here except for a small crack leading on.">
+           <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
+                  <TELL CR CR "Rough stone steps lead down the pit.">)>
+           <CRLF>)>>
 
 <OBJECT SMALL-MISTY-PIT
     (DESC "small pit")
@@ -1020,13 +1026,6 @@ It can be found anywhere but is frequently a sign of a deep pit leading down to 
 <ROOM IN-HALL-OF-MISTS
     (DESC "In Hall of Mists")
     (IN ROOMS)
-    (LDESC "You are at one end of a vast hall stretching forward out of sight to the west.
-There are openings to either side.
-Nearby, a wide stone staircase leads downward.
-The hall is filled with wisps of white mist swaying to and fro almost as if alive.
-A cold wind blows up the staircase.
-There is a passage at the top of a dome behind you.||
-Rough stone steps lead up the dome.")
     (GLOBAL MIST)
     (ACTION IN-HALL-OF-MISTS-F)
     (SOUTH TO IN-NUGGET-OF-GOLD-ROOM)
@@ -1038,7 +1037,16 @@ Rough stone steps lead up the dome.")
 <ROUTINE IN-HALL-OF-MISTS-F (RARG)
     <COND (<AND <=? .RARG ,M-ENTER>
                 <NOT <FSET? ,IN-HALL-OF-MISTS ,TOUCHBIT>>>
-           <SETG SCORE <+ ,SCORE 25>>)>>
+           <SETG SCORE <+ ,SCORE 25>>)
+          (<=? .RARG ,M-LOOK>
+           <TELL "You are at one end of a vast hall stretching forward out of sight to the west.
+There are openings to either side. Nearby, a wide stone staircase leads downward.
+The hall is filled with wisps of white mist swaying to and fro almost as if alive.
+A cold wind blows up the staircase.
+There is a passage at the top of a dome behind you.">
+           <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
+                  <TELL CR CR "Rough stone steps lead up the dome.">)>
+           <CRLF>)>>
 
 <ROUTINE UP-OUT-OF-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
