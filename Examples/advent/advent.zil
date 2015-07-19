@@ -3,6 +3,7 @@
 ;"TODO: Add CANT-GO property?"
 ;"TODO: Show score/rank when quitting. Dock points for quitting."
 ;"TODO: The oyster message should count as a hint and incur a penalty."
+;"TODO: Say 'safely deposited' when dropping a treasure in INSIDE-BUILDING."
 
 ;----------------------------------------------------------------------
 "General directives"
