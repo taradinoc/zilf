@@ -3079,6 +3079,7 @@ The only exit is a crawl heading west, through which is coming a low rumbling.")
 
 <OBJECT RARE-SPICES
     (DESC "rare spices")
+    (IN IN-CHAMBER-OF-BOULDERS)
     (SYNONYM SPICES SPICE)
     (ADJECTIVE RARE EXOTIC)
     (ARTICLE "a selection of")
