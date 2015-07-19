@@ -3172,13 +3172,13 @@ The only exit is the way you came in.")
 <ROUTINE BEAR-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (,BEAR-FOLLOWING
-           <TELL "You are being followed by a very large, tame bear." CR>)
+           <TELL "You are being followed by a very large, tame bear.">)
           (<NOT ,BEAR-FRIENDLY>
-           <TELL "There is a ferocious cave bear eyeing you from the far end of the room!" CR>)
+           <TELL "There is a ferocious cave bear eyeing you from the far end of the room!">)
           (<=? ,HERE ,IN-BARREN-ROOM>
-           <TELL "There is a gentle cave bear sitting placidly in one corner." CR>)
+           <TELL "There is a gentle cave bear sitting placidly in one corner.">)
           (ELSE
-           <TELL "There is a contented-looking bear wandering about nearby." CR>)>>
+           <TELL "There is a contented-looking bear wandering about nearby.">)>>
 
 <CONSTANT BEAR-IS-YOUR-FRIEND "The bear is confused; he only wants to be your friend.">
 
