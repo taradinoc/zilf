@@ -576,7 +576,7 @@ Returns:
                   <DO (I 1 .MAX)
                       <SET J <GET/B .O .I>>
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
-                             <COND (<=? .I 1>
+                             <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I 1>>
                                     <COND (<BTST .FLAGS ,L-THE> <TELL CT .J>)
                                           (ELSE <TELL CA .J>)>)
                                    (<BTST .FLAGS ,L-THE> <TELL T .J>)
@@ -590,7 +590,7 @@ Returns:
                  (ELSE
                   <MAP-CONTENTS (I .O)
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-                             <COND (<=? .I .F>
+                             <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I .F>>
                                     <COND (<BTST .FLAGS ,L-THE> <TELL CT .I>)
                                           (ELSE <TELL CA .I>)>)
                                    (<BTST .FLAGS ,L-THE> <TELL T .I>)
