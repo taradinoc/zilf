@@ -129,9 +129,9 @@ banana: You pick up the banana.|">
     <MOVE ,BANANA ,WINNER>
     <MOVE ,APPLE ,WINNER>
     <COMMAND [DROP ALL]>
-    <EXPECT "hat: You drop the hat.|
+    <EXPECT "apple: You drop the apple.|
 banana: You drop the banana.|
-apple: You drop the apple.|">
+hat: You drop the hat.|">
     <CHECK <NOT <IN? ,HAT ,WINNER>>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>>

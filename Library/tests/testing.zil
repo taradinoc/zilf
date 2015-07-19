@@ -190,11 +190,11 @@ Returns:
     <DO (I 0 .MAX)
         <PRINTC <GETB .BUF .I>>>>
 
-<ROUTINE BUFS-DIFFER? BD? (BUF1 BUF2 LEN "AUX" MAX)
+<ROUTINE BUFS-DIFFER? (BUF1 BUF2 LEN "AUX" MAX)
     <SET MAX <- .LEN 1>>
     <DO (I 0 .MAX)
         <COND (<N=? <GETB .BUF1 .I> <GETB .BUF2 .I>>
-               <RETURN .I .BD?>)>>
+               <RTRUE>)>>
     <RFALSE>>
 
 <CONSTANT OUTBUF-SIZE 512>
@@ -203,6 +203,7 @@ Returns:
 <ROUTINE TEST-PERFORM-COMMAND ("AUX" PARSED)
     ;"Parse and perform command"
     <SETG AGAINCALL T>	;"tells PARSER to use the pre-loaded buffers"
+
     <DIROUT 3 ,OUTBUF>
     <SET PARSED <PARSER>>
     <SETG AGAINCALL <>>
