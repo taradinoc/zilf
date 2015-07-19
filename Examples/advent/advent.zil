@@ -2227,7 +2227,7 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     (FDESC "There is a large nest here, full of golden eggs!")
     (TEXT "The nest is filled with beautiful golden eggs!")
     (DEPOSIT-POINTS 14)
-    (FLAGS TAKEBIT TREASUREBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS TAKEBIT TREASUREBIT MULTITUDEBIT)>
 
 ;----------------------------------------------------------------------
 
