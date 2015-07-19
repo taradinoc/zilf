@@ -159,7 +159,7 @@ apple: You see nothing special about the apple.|">>
 <TEST-CASE ("Present objects AND non-present objects")
     <REMOVE ,APPLE>
     <COMMAND [GET APPLE AND HAT]>
-    <EXPECT "You don't see any apple here.|">>
+    <EXPECT "You don't see that here.|">>
 
 <TEST-CASE ("GET CUBE with one matching object in location")
     <MOVE ,RED-CUBE ,STARTROOM>
@@ -181,11 +181,26 @@ apple: You see nothing special about the apple.|">>
     <COMMAND [GET CUBE]>
     <EXPECT "Which do you mean, the green cube or the red cube?|">>
 
+<TEST-CASE ("GET ALL CUBES with two matching objects in inventory")
+    <MOVE ,RED-CUBE ,WINNER>
+    <MOVE ,GREEN-CUBE ,WINNER>
+    <COMMAND [GET ALL CUBES]>
+    <EXPECT "green cube: You already have that.|
+red cube: You already have that.|">>
+
 <TEST-CASE ("GET ALL CUBES with one matching object in location")
     <MOVE ,RED-CUBE ,STARTROOM>
     <MOVE ,GREEN-CUBE ,WINNER>
     <MOVE ,BLUE-CUBE ,WINNER>
     <COMMAND [GET ALL CUBES]>
     <EXPECT "You pick up the red cube.|">>
+
+<TEST-CASE ("GET ALL CUBES EXCEPT GREEN")
+    <MOVE ,RED-CUBE ,STARTROOM>
+    <MOVE ,GREEN-CUBE ,STARTROOM>
+    <MOVE ,BLUE-CUBE ,STARTROOM>
+    <COMMAND [GET ALL CUBES EXCEPT GREEN]>
+    <EXPECT "blue cube: You pick up the blue cube.|
+red cube: You pick up the red cube.|">>
 
 <TEST-GO ,STARTROOM>
