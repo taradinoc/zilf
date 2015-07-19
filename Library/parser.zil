@@ -108,6 +108,7 @@ other versions. These macros let us write the same code for all versions."
 <CONSTANT L-PRSTABLE 8>
 <CONSTANT L-THE 16>
 <CONSTANT L-OR 32>
+<CONSTANT L-CAP 64>
 
 ;"Determines whether a word has the given part of speech, and returns
 its part of speech value if so.
