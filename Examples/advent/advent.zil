@@ -74,10 +74,12 @@ Adapted once more by Jesse McGrew (2015)">>
                  "Not all questions are rhetorical.">>
 
     <ROUTINE SEED-RANDOM ("AUX" S)
+        <TELL "Hello, beta tester! Do you want to start transcripting now?">
+        <COND (<YES?> <V-SCRIPT>)>
         <SET S <RANDOM 32767>>
         <TELL "[Your fortune for today: \""
               <PICK-ONE-R ,FORTUNES>
-              " Lucky number " N .S ".\"]" CR>
+              " Lucky number " N .S ".\"" CR "Use XLUCKY to replay this game next time.]" CR>
         <RANDOM <- .S>>>>
 
 <ROUTINE ADVENT-PLAYER-F ("AUX" F)
@@ -96,6 +98,7 @@ Adapted once more by Jesse McGrew (2015)">>
 
 ;"This affects the definition of GAME-VERB?."
 <SETG EXTRA-GAME-VERBS '(SCORE)>
+<IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY)>>
 
 ;"We replace a few library sections below."
 <DELAY-DEFINITION DARKNESS-F>
@@ -4290,10 +4293,34 @@ into a pit. None of the objects available is immediately useful in discovering t
 <FINISH-HINTS>
 
 ;----------------------------------------------------------------------
-"Debug/cheat verbs"
+"Debug/beta/cheat verbs"
 ;----------------------------------------------------------------------
 
-;<IF-DEBUG
+<IF-BETA
+
+    <SYNTAX XLUCKY = V-XLUCKY>
+    
+    <ROUTINE V-XLUCKY VXL ("AUX" N I MAX C)
+        <TELL "Enter a new lucky number: ">
+        <READLINE>
+        <COND (<N=? <GETB ,LEXBUF 1> 1>
+               <TELL "One word, please." CR>
+               <AGAIN .VXL>)>
+        <SET I <GETB ,LEXBUF 5>>
+        <SET MAX <- <+ .I <GETB ,LEXBUF 4>> 1>>
+        <SET N 0>
+        <REPEAT ()
+            <SET C <GETB ,READBUF .I>>
+            <COND (<OR <L? .C !\0> <G? .C !\9>>
+                   <TELL "Digits only, please." CR>
+                   <AGAIN .VXL>)>
+            <SET N <+ <* .N 10> <- .C !\0>>>
+            <COND (<L? .N 1>
+                   <TELL "Between 1 and 32767, please." CR>
+                   <AGAIN .VXL>)>
+            <AND <IGRTR? I .MAX> <RETURN>>>
+        <RANDOM <- .N>>
+        <TELL "Your lucky number is now " N .N "." CR>>
 
 >
 
