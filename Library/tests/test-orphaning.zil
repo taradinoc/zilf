@@ -22,7 +22,13 @@
 <OBJECT BLUE-CUBE
     (DESC "blue cube")
     (SYNONYM CUBE CUBES)
-    (ADJECTIVE BLUE RB GB)
+    (ADJECTIVE BLUE RB GB NAVY)
+    (FLAGS TAKEBIT)>
+
+<OBJECT ROYAL-NAVY
+    (DESC "royal navy")
+    (SYNONYM NAVY)
+    (ADJECTIVE ROYAL)
     (FLAGS TAKEBIT)>
 
 <INSERT-FILE "testing">
@@ -31,7 +37,8 @@
     ;"In case a test leaves it in the wrong place..."
     <MOVE ,RED-CUBE ,STARTROOM>
     <MOVE ,GREEN-CUBE ,STARTROOM>
-    <MOVE ,BLUE-CUBE ,STARTROOM>>
+    <MOVE ,BLUE-CUBE ,STARTROOM>
+    <REMOVE ,ROYAL-NAVY>>
 
 <TEST-CASE ("Disambiguate: single object")
     <COMMAND [GET CUBE]>
@@ -107,6 +114,12 @@ red cube: You pick up the red cube.|">
     <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
     <COMMAND [X RED CUBE]>
     <EXPECT "You see nothing special about the red cube.|">>
+
+<TEST-CASE ("Disambiguate: noun as adjective")
+    <COMMAND [GET CUBE]>
+    <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
+    <COMMAND [NAVY]>
+    <EXPECT "You pick up the blue cube.|">>
 
 <TEST-CASE ("Missing noun: single object")
     <COMMAND [GET]>
