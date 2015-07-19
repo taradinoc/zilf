@@ -356,7 +356,7 @@ Args:
                <RETURN>)>>
     ;"go through the N NPCs"
     <COND (.N
-           <LIST-OBJECTS .RM NPC-DESC? ,L-SUFFIX>
+           <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
            <TELL " here." CR>)>>
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
@@ -509,10 +509,13 @@ Args:
       object. O is the address of the table in P-PRSOS/P-PRSIS format.
     L-THE: Print the definite article instead of indefinite.
     L-OR: Print 'or' instead of 'and'.
+    L-CAP: Capitalize the first article printed. (Implies L-SUFFIX.)
 
 Returns:
   The number of objects listed."
 <ROUTINE LIST-OBJECTS (O "OPT" FILTER FLAGS "AUX" N F S MAX J)
+    <COND (<BTST .FLAGS ,L-CAP>
+           <SET FLAGS <BOR .FLAGS ,L-SUFFIX>>)>
     <COND (<OR <BTST .FLAGS ,L-SUFFIX> <BTST .FLAGS ,L-ISMANY>>
            <SET FLAGS <BOR .FLAGS ,L-ISARE>>)>
     <COND (<BTST .FLAGS ,L-PRSTABLE>
@@ -530,18 +533,24 @@ Returns:
                             (<0? .S> <SET S .I>)>
                       <SET N <+ .N 1>>)>>)>
     <COND (<==? .N 0>
-           <COND (<BTST .FLAGS ,L-SUFFIX>
+           <COND (<BTST .FLAGS ,L-CAP>
+                  <TELL "Nothing is">)
+                 (<BTST .FLAGS ,L-SUFFIX>
                   <TELL "nothing is">)
                  (<BTST .FLAGS ,L-ISARE>
                   <TELL "is nothing">)
                  (ELSE <TELL "nothing">)>)
           (<==? .N 1>
-           <AND <BTST .FLAGS ,L-SUFFIX>
-                <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>>
-           <AND <BTST .FLAGS ,L-ISARE>
-                <IF-PLURAL .F <TELL "are "> <TELL "is ">>>
-           <OR <BTST .FLAGS ,L-SUFFIX>
-                <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>>)
+           <COND (<BTST .FLAGS ,L-CAP>
+                  <COND (<BTST .FLAGS ,L-THE> <TELL CT .F>) (ELSE <TELL CA .F>)>
+                  <IF-PLURAL .F <TELL " are"> <TELL " is">>)
+                 (<BTST .FLAGS ,L-SUFFIX>
+                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>
+                  <IF-PLURAL .F <TELL " are"> <TELL " is">>)
+                 (ELSE
+                  <AND <BTST .FLAGS ,L-ISARE>
+                       <IF-PLURAL .F <TELL "are "> <TELL "is ">>>
+                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>)>)
           (<==? .N 2>
            <COND (<AND <BTST .FLAGS ,L-ISARE>
                        <NOT <BTST .FLAGS ,L-SUFFIX>>>
@@ -549,7 +558,10 @@ Returns:
                                   <FSET? .F ,PLURALBIT>>
                               <TELL "are ">)
                              (ELSE <TELL "is ">)>)>
-           <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>
+           <COND (<BTST .FLAGS ,L-CAP>
+                  <COND (<BTST .FLAGS ,L-THE> <TELL CT .F>) (ELSE <TELL CA .F>)>)
+                 (ELSE
+                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>)>
            <COND (<BTST .FLAGS ,L-OR> <TELL " or ">) (ELSE <TELL " and ">)>
            <COND (<BTST .FLAGS ,L-THE> <TELL T .S>) (ELSE <TELL A .S>)>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
@@ -564,7 +576,10 @@ Returns:
                   <DO (I 1 .MAX)
                       <SET J <GET/B .O .I>>
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
-                             <COND (<BTST .FLAGS ,L-THE> <TELL T .J>)
+                             <COND (<=? .I 1>
+                                    <COND (<BTST .FLAGS ,L-THE> <TELL CT .J>)
+                                          (ELSE <TELL CA .J>)>)
+                                   (<BTST .FLAGS ,L-THE> <TELL T .J>)
                                    (ELSE <TELL A .J>)>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
@@ -575,7 +590,10 @@ Returns:
                  (ELSE
                   <MAP-CONTENTS (I .O)
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-                             <COND (<BTST .FLAGS ,L-THE> <TELL T .I>)
+                             <COND (<=? .I .F>
+                                    <COND (<BTST .FLAGS ,L-THE> <TELL CT .I>)
+                                          (ELSE <TELL CA .I>)>)
+                                   (<BTST .FLAGS ,L-THE> <TELL T .I>)
                                    (ELSE <TELL A .I>)>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
