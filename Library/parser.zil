@@ -237,27 +237,69 @@ Args:
     <COPY-TABLE <NP-NTBL .SRC> <NP-NTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
     <NP-MODE .DEST <NP-MODE .SRC>>>
 
+<IF-DEBUG
+    ;"Prints the meaning of a noun phrase."
+    <ROUTINE PRINT-NOUN-PHRASE (NP "AUX" CNT F S A N)
+        ;"Mode"
+        <SET F <NP-MODE .NP>>
+        <COND (<=? .F ,MCM-ALL> <TELL "all ">)
+              (<=? .F ,MCM-ANY> <TELL "any ">)>
+        ;"YSPECs"
+        <SET CNT <NP-YCNT .NP>>
+        <COND (<0? .CNT>
+               <COND (<=? .F ,MCM-ALL> <TELL "objects">)
+                     (<=? .F ,MCM-ANY> <TELL "object">)>)
+              (ELSE
+               <SET S <NP-YSPEC .NP 1>>
+               <DO (I 1 .CNT)
+                   <COND (<G? .I 1> <TELL " and ">)>
+                   <PRINT-OBJSPEC .S>
+                   <SET S <REST .S ,P-OBJSPEC-SIZE>>>)>
+        ;"NSPECs"
+        <SET CNT <NP-NCNT .NP>>
+        <COND (<0? .CNT> <RTRUE>)>
+        <TELL " except ">
+        <SET S <NP-NSPEC .NP 1>>
+        <DO (I 1 .CNT)
+            <COND (<G? .I 1> <TELL ", ">)>
+            <PRINT-OBJSPEC .S>
+            <SET S <REST .S ,P-OBJSPEC-SIZE>>>>
+
+    <ROUTINE PRINT-OBJSPEC (SPEC "AUX" A N)
+        <SET A <OBJSPEC-ADJ .SPEC>>
+        <SET N <OBJSPEC-NOUN .SPEC>>
+        <COND (<AND .A .N>
+               <PRINT-ADJ .A>
+               <TELL " " B .N>)
+              (.A <PRINT-ADJ .A>)
+              (.N <TELL B .N>)
+              (ELSE <TELL "???">)>>
+
+    <VERSION?
+        (ZIP
+            <ROUTINE PRINT-ADJ (A "AUX" W CNT SIZE)
+                <SET W ,VOCAB>
+                <SET W <+ .W 1 <GETB .W 0>>>
+                <SET SIZE <GETB .W 0>>
+                <SET W <+ .W 1>>
+                <SET CNT <GET .W 0>>
+                <DO (I 1 .CNT)
+                    <COND (<=? <CHKWORD? .W ,PS?ADJECTIVE> .A>
+                           <TELL B .W>
+                           <RTRUE>)>
+                    <SET W <+ .W .SIZE>>>
+                <TELL "???">>)
+        (ELSE
+            <DEFMAC PRINT-ADJ ('A)
+                <TELL B .A>>)>
+>
+
 "Noun phrase storage for direct/indirect objects"
 <CONSTANT P-NP-DOBJ <NOUN-PHRASE>>
 <CONSTANT P-NP-IOBJ <NOUN-PHRASE>>
 
 "Extra noun phrase for orphaning"
 <CONSTANT P-NP-XOBJ <NOUN-PHRASE>>
-
-"Noun phrase storage for pronouns, and other pronoun storage"
-<CONSTANT P-NP-IT <NOUN-PHRASE>>
-<CONSTANT P-NP-THEM <NOUN-PHRASE>>
-<CONSTANT P-NP-HIM <NOUN-PHRASE>>
-<CONSTANT P-NP-HER <NOUN-PHRASE>>
-
-<GLOBAL IT-USE <>>
-<GLOBAL IT-ONCE <>>
-<GLOBAL THEM-USE <>>
-<GLOBAL THEM-ONCE <>>
-<GLOBAL HIM-USE <>>
-<GLOBAL HIM-ONCE <>>
-<GLOBAL HER-USE <>>
-<GLOBAL HER-ONCE <>>
 
 "Tables for objects recognized from object specs.
  These each have one length byte, a dummy byte (V4+ only),
@@ -272,8 +314,39 @@ Args:
     "Extra objects for orphaning>"
     <GLOBAL P-XOBJS <ITABLE .TBLSIZE .TBLFLAGS>>>
 
+<DEFMAC COPY-PRSTBL ('SRC 'DEST)
+    <FORM <VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> .SRC .DEST <+ 1 ,P-MAX-OBJECTS>>>
+
+"Orphaning"
 <INSERT-FILE "orphan">
 
+"Pronouns"
+<INSERT-FILE "pronouns">
+
+<PRONOUN IT (X)
+    <NOT <OR <=? .X ,WINNER>
+             <=? .X ,MANY-OBJECTS>
+             <FSET? .X PERSONBIT>
+             <FSET? .X PLURALBIT>>>>
+
+<PRONOUN THEM (X)
+    <AND <N=? .X ,WINNER>
+         <OR <=? .X ,MANY-OBJECTS>
+             <FSET? .X PLURALBIT>>>>
+
+<PRONOUN HIM (X)
+    <AND <N=? .X ,WINNER>
+         <FSET? .X PERSONBIT>
+         <NOT <FSET? .X FEMALEBIT>>>>
+
+<PRONOUN HER (X)
+    <AND <N=? .X ,WINNER>
+         <FSET? .X PERSONBIT>
+         <FSET? .X FEMALEBIT>>>
+
+<FINISH-PRONOUNS>
+
+"Buzzwords"
 <BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE \. \, \">
 
 ;"Reads and parses a command.
@@ -302,14 +375,6 @@ Sets:
   USAVE
   P-NP-DOBJ
   P-NP-IOBJ
-  P-NP-IT
-  P-NP-THEM
-  P-NP-HIM
-  P-NP-HER
-  IT-ONCE
-  THEM-ONCE
-  HIM-ONCE
-  HER-ONCE
 "
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR O-R)
     ;"Need to (re)initialize locals here since we use AGAIN"
@@ -433,37 +498,7 @@ Sets:
                       ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
                       <AGAIN>)>)>>
     ;"if successful PRSO and not after an IT use, back up PRSO for IT"
-    <COND (<AND <EQUAL? ,IT-USE 0>
-                ,PRSO
-                <NOT <PRSO? ,MANY-OBJECTS>>
-                <NOT <FSET? ,PRSO ,PERSONBIT>>
-                <NOT <FSET? ,PRSO ,PLURALBIT>>>
-           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-IT>
-           <COND (<EQUAL? ,IT-ONCE 0> <SET IT-ONCE 1>)>)
-          ;"if PRSO has PLURALBIT, back up to THEM instead"
-          (<AND <EQUAL? ,THEM-USE 0>
-                ,PRSO
-                ;"Note: we allow MANY-OBJECTS here"
-                <NOT <FSET? ,PRSO ,PERSONBIT>>
-                <FSET? ,PRSO ,PLURALBIT>>
-           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-THEM>
-           <COND (<EQUAL? ,THEM-ONCE 0> <SET THEM-ONCE 1>)>)
-          ;"if successful PRSO who is male, back up PRSO for HIM"
-          (<AND <EQUAL? ,HIM-USE 0>
-                ,PRSO
-                <NOT <PRSO? ,MANY-OBJECTS>>
-                <FSET? ,PRSO ,PERSONBIT>
-                <NOT <FSET? ,PRSO ,FEMALEBIT>>>
-           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-HIM>
-           <COND (<0? ,HIM-ONCE> <SET HIM-ONCE 1>)>)
-          ;"if successful PRSO who is female, back up PRSO for HER"
-          (<AND <EQUAL? ,HER-USE 0>
-                ,PRSO
-                <NOT <PRSO? ,MANY-OBJECTS>>
-                <FSET? ,PRSO ,PERSONBIT>
-                <FSET? ,PRSO ,FEMALEBIT>>
-           <COPY-NOUN-PHRASE ,P-NP-DOBJ ,P-NP-HER>
-           <COND (<0? ,HER-ONCE> <SET HER-ONCE 1>)>)>
+    <SET-PRONOUNS ,PRSO ,P-PRSOS>
     <RTRUE>>
 
 ;"PRSO or PRSI are set to this when multiple objects are used."
@@ -740,35 +775,6 @@ Returns:
 <CONSTANT S-PRONOUN-UNKNOWN-PERSON "I'm unsure to whom you are referring.">
 <CONSTANT S-PRONOUN-UNKNOWN-THING "I'm unsure what you're referring to.">
 
-;"<FIND-OBJECTS-CHECK-PRONOUN .X IT IOBJ>
-  Expands to:
-  <COND (<EQUAL? .X ,W?IT>
-         <COND (<0? ,IT-ONCE>
-                <TELL ,S-PRONOUN-UNKNOWN-THING CR>
-                <RFALSE>)>
-         <COPY-NOUN-PHRASE ,P-NP-IT ,P-NP-IOBJ>
-         <SETG IT-USE T>)
-        (ELSE <SETG IT-USE <>>)>"
-<DEFMAC FIND-OBJECTS-CHECK-PRONOUN ('X 'PRONOUN 'DEST-NP-STEM
-                                    "AUX" MSG VOCAB-WORD ONCE-VAR USE-VAR
-                                    PRONOUN-NP DEST-NP)
-    <COND (<OR <=? .PRONOUN IT> <=? .PRONOUN THEM>>
-           <SET MSG ',S-PRONOUN-UNKNOWN-THING>)
-          (ELSE
-           <SET MSG ',S-PRONOUN-UNKNOWN-PERSON>)>
-    <SET WORD <PARSE <STRING "W?" <SPNAME .PRONOUN>>>>
-    <SET ONCE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-ONCE">>>
-    <SET USE-VAR <PARSE <STRING <SPNAME .PRONOUN> "-USE">>>
-    <SET PRONOUN-NP <PARSE <STRING "P-NP-" <SPNAME .PRONOUN>>>>
-    <SET DEST-NP <PARSE <STRING "P-NP-" <SPNAME .DEST-NP-STEM>>>>
-    <FORM COND <LIST <FORM EQUAL? .X <FORM GVAL .WORD>>
-                     <FORM COND <LIST <FORM 0? <FORM GVAL .ONCE-VAR>>
-                                      <FORM TELL .MSG CR>
-                                      <FORM RFALSE>>>
-                     <FORM COPY-NOUN-PHRASE <FORM GVAL .PRONOUN-NP> <FORM GVAL .DEST-NP>>
-                     <FORM SETG .USE-VAR T>>
-               <LIST ELSE <FORM SETG .USE-VAR <>>>>>
-
 ;"Attempts to match PRSO and PRSI, if necessary, after parsing a command.
   Prints a message if it fails.
 
@@ -785,14 +791,10 @@ Sets:
   PRSI
   P-PRSOS
   P-PRSIS
-  IT-USE
-  THEM-USE
-  HIM-USE
-  HER-USE
 
 Returns:
   True if all required objects were found, or false if not."
-<ROUTINE FIND-OBJECTS ("AUX" X F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+<ROUTINE FIND-OBJECTS ("AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
     <COND (<L? .SNOBJ 1>
            <SETG PRSO <>>)
           (ELSE
@@ -809,13 +811,11 @@ Returns:
                          <PUT/B ,P-PRSOS 1 ,PRSO>
                          <PUTB ,P-PRSOS 0 1>)>)
                  (ELSE
-                  <SET X <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ 1>>>
-                  ;<TELL "Find objects PRSO test - X is " N .X CR>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X IT DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM DOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HER DOBJ>
-                  <SETG PRSO <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>)>
+                  <SETG PRSO
+                      <OR <AND <1? <NP-YCNT ,P-NP-DOBJ>>
+                               <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ 1>> ,P-PRSOS>>
+                          <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>>
+                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
            <COND (<NOT <AND ,PRSO
                             <OR ,PRSO-DIR
                                 <AND <MANY-CHECK ,PRSO .O <>>
@@ -837,13 +837,11 @@ Returns:
                          <PUT/B ,P-PRSIS 1 ,PRSI>
                          <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
-                  <SET X <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>>>
-                  ;<TELL "Find objects PRSI test - X is " N .X CR>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X IT IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X THEM IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HIM IOBJ>
-                  <FIND-OBJECTS-CHECK-PRONOUN .X HER IOBJ>
-                  <SETG PRSI <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>)>
+                  <SETG PRSI
+                      <OR <AND <1? <NP-YCNT ,P-NP-IOBJ>>
+                               <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>> ,P-PRSIS>>
+                          <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>>
+                  <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
            <COND (<NOT <AND ,PRSI
                             <MANY-CHECK ,PRSI .O T>
                             <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
@@ -1886,18 +1884,6 @@ or reveal a light source."
 <OBJECT GENERIC-OBJECTS>
 
 <OBJECT LOCAL-GLOBALS>
-
-<OBJECT IT
-    (SYNONYM IT)>
-
-<OBJECT HIM
-    (SYNONYM HIM)>
-
-<OBJECT HER
-    (SYNONYM HER)>
-
-<OBJECT THEM
-    (SYNONYM THEM)>
 
 <OBJECT PLAYER
     (DESC "you")
