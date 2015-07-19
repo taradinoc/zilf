@@ -203,10 +203,20 @@ Args:
 <CONSTANT P-OBJSPEC-SIZE 4>
 
 <DEFMAC NP-YSPEC ('NP 'I)
-    <FORM REST <FORM NP-YTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>>
+    <COND (<==? .I 1>
+           <FORM NP-YTBL .NP>)
+          (<TYPE? .I FIX>
+           <FORM REST <FORM NP-YTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+          (ELSE
+           <FORM REST <FORM NP-YTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
 
 <DEFMAC NP-NSPEC ('NP 'I)
-    <FORM REST <FORM NP-NTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>>
+    <COND (<==? .I 1>
+           <FORM NP-NTBL .NP>)
+          (<TYPE? .I FIX>
+           <FORM REST <FORM NP-NTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+          (ELSE
+           <FORM REST <FORM NP-NTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
 
 <DEFSTRUCT OBJSPEC (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
     (OBJSPEC-ADJ VOC)
@@ -337,8 +347,8 @@ Sets:
                       <SETG P-P1 .VAL>)
                      (<AND <==? .NOBJ 1> <NOT ,P-P2>>
                       <SETG P-P2 .VAL>)>)
-              (<STARTS-CLAUSE? .W>
-               ;"Found a noun clause"
+              (<STARTS-NOUN-PHRASE? .W>
+               ;"Found a noun phrase"
                <SET NOBJ <+ .NOBJ 1>>
                <COND (<==? .NOBJ 1>
                       <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
@@ -351,7 +361,7 @@ Sets:
                       <SET I .VAL>
                       <AGAIN>)
                      (ELSE
-                      <TELL "That noun clause didn't make sense." CR>
+                      <TELL "That noun phrase didn't make sense." CR>
                       <RFALSE>)>)
               (ELSE
                ;"Unexpected word type"
@@ -486,7 +496,7 @@ Sets:
         <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
             <FORM COPYT .SRC .DEST .LEN>>)>
 
-;"Determines whether a given word can start a noun clause.
+;"Determines whether a given word can start a noun phrase.
 
 For a word to pass this test, it must be an article, adjective, or noun.
 
@@ -494,8 +504,8 @@ Args:
   W: The word to test.
 
 Returns:
-  True if the word can start a noun clause."
-<ROUTINE STARTS-CLAUSE? (W)
+  True if the word can start a noun phrase."
+<ROUTINE STARTS-NOUN-PHRASE? (W)
     ;"T? forces the OR to be evaluated as a condition, since we don't
       care about the exact return value from CHKWORD? or WORD?."
     <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?ANY ,W?ONE>
@@ -504,7 +514,6 @@ Returns:
 
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
-
 
 ;"Attempts to parse a noun phrase.
 
@@ -517,8 +526,7 @@ Args:
 Returns:
   The number of the first word that was not part of the noun phrase,
   if parsing was successful, or 0 if parsing failed.
-  NP may be left in an invalid state if parsing fails.
-"
+  NP may be left in an invalid state if parsing fails."
 <ROUTINE PARSE-NOUN-PHRASE (WN NP "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT)
     <SET SPEC <NP-YSPEC .NP 1>>
     <NP-NCNT .NP 0>
@@ -530,7 +538,12 @@ Returns:
             (<0? <SET W <GETWORD? .WN>>> <RFALSE>)
             ;"recognize BUT/EXCEPT"
             (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
-             <NP-YCNT .CNT>
+             <COND (<OR .ADJ .NOUN>
+                    <OBJSPEC-ADJ .SPEC .ADJ>
+                    <OBJSPEC-NOUN .SPEC .NOUN>
+                    <SET ADJ <SET NOUN <>>>
+                    <SET CNT <+ .CNT 1>>)>
+             <NP-YCNT .NP .CNT>
              <SET BUT T>
              <SET SPEC <NP-NSPEC .NP 1>>
              <SET CNT 0>)
@@ -557,14 +570,14 @@ Returns:
                                         <CHKWORD? .NW ,PS?OBJECT>>>>>>
                   <SET NOUN .W>)
                  (<==? .CNT ,P-MAX-OBJSPECS>
-                  <TELL "That clause mentions too many objects." CR>
+                  <TELL "That phrase mentions too many objects." CR>
                   <RFALSE>)
                  (<NOT .ADJ> <SET ADJ .VAL>)>)
             ;"match nouns, exiting the loop if we already found one"
             (<WORD? .W OBJECT>
              <COND (.NOUN <RETURN>)
                    (<==? .CNT ,P-MAX-OBJSPECS>
-                    <TELL "That clause mentions too many objects." CR>
+                    <TELL "That phrase mentions too many objects." CR>
                     <RFALSE>)
                    (ELSE <SET NOUN .W>)>)
             ;"recognize AND/comma"
@@ -1002,11 +1015,16 @@ Returns:
 describes them and a set of search options.
 
 The search options are used to guide the scope search toward the right objects,
-but are not necessarily hard requirements.
+but are not hard requirements.
+
+Specifically, when ALL/ANY is used, we first look for a match in only the preferred
+scope stages, and then expand to all stages if no matches are found.
+When ALL/ANY is not used, we first use all scope stages, and then narrow to only the
+preferred stages if more than one match is found.
 
 Args:
   NP: The NOUN-PHRASE describing the objects.
-  OUT: A table (P-PRSOS or P-PRSIS) in which to return the matched objects.
+  OUT: A table (in the form of P-PRSOS or P-PRSIS) in which to return the matched objects.
   BITS: A FIND flag and search options, as returned by ENCODE-NOUN-BITS.
 
 Uses:
@@ -1015,58 +1033,106 @@ Uses:
 Returns:
   The matched object, or MANY-OBJECTS if multiple objects were matched,
   or false if no objects were matched."
-<ROUTINE MATCH-NOUN-PHRASE FOO (NP OUT BITS "AUX" F NY NN SPEC ;MODE (NOUT 0))
-    ;"TODO: Disambiguate if we aren't expecting multiple objects."
-    ;"TODO: Expand the search if we don't find any with the initial set of flags."
+<ROUTINE MATCH-NOUN-PHRASE (NP OUT BITS "AUX" F NY NN SPEC MODE NOUT OBITS)
     <SET NY <NP-YCNT .NP>>
     <SET NN <NP-NCNT .NP>>
-    ;<SET MODE <NP-MODE .NP>>
-    <MAP-SCOPE (I [BITS .BITS])
-        <COND (<NOT <FSET? .I ,INVISIBLE>>
-               ;"Match any YSPEC, or most objects if YTBL is empty"
-               <COND (<0? .NY>
-                      ;"TAKE ALL only finds objects with (TRY)TAKEBIT."
-                      <COND (<AND <VERB? TAKE>
-                                  <NOT <OR <FSET? .I ,TAKEBIT>
-                                           <FSET? .I ,TRYTAKEBIT>>>>
-                             <SET F <>>)
-                            (<=? .I ,WINNER> <SET F <>>)
-                            (ELSE <SET F T>)>)
-                     (ELSE
-                      <SET F <>>
-                      <DO (J 1 .NY)
-                          <SET SPEC <NP-YSPEC .NP .J>>
-                          <COND (<REFERS? .SPEC .I>
-                                 <SET F T>
-                                 <RETURN>)>>)>
-               <COND (.F
-                      ;"Exclude if any NSPEC matches"
-                      <COND (.NN
-                             <DO (J 1 .NN)
-                                 <SET SPEC <NP-NSPEC .NP .J>>
-                                 <COND (<REFERS? .SPEC .I>
-                                        <SET F <>>
-                                        <RETURN>)>>)>)>
-               <COND (.F
-                      ;"Pick this object, assuming there's room"
-                      <COND (<L? .NOUT ,P-MAX-OBJECTS>
-                             <SET NOUT <+ .NOUT 1>>
-                             <PUT/B .OUT .NOUT .I>)
-                            (ELSE
-                             <TELL "[too many objects!]" CR>
-                             <RETURN>)>)>)>>
-    <PUTB .OUT 0 .NOUT>
-    <COND (<0? .NOUT>
-           ;"Not found"
-           <COND (<==? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
-                  <TELL "It's too dark to see anything here." CR>)
-                 (ELSE
-                  <TELL "You don't see that here." CR>)>
-           <RFALSE>)
-          (<1? .NOUT>
-           <RETURN <GET/B .OUT 1>>)
-          (ELSE
-           <RETURN ,MANY-OBJECTS>)>>
+    <SET MODE <NP-MODE .NP>>
+    <SET OBITS .BITS>
+    <COND (<0? .MODE>
+           <SET .BITS <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>)>
+    <PROG BITS-SET ()
+        ;"Look for matching objects"
+        <SET NOUT 0>
+        <COND (<0? .NY>
+               ;"ALL with no YSPECs matches all objects, or if the action is TAKE,
+                 all objects with TAKEBIT/TRYTAKEBIT."
+               <MAP-SCOPE (I [BITS .BITS])
+                   <COND (<FSET? .I ,INVISIBLE>)
+                         (<=? .I ,WINNER>)
+                         (<AND <VERB? TAKE>
+                               <NOT <OR <FSET? .I ,TAKEBIT>
+                                    <FSET? .I ,TRYTAKEBIT>>>>)
+                         (<AND .NN <NP-EXCLUDES? .NP .I>>)
+                         (<G=? .NOUT ,P-MAX-OBJECTS>
+                          <TELL "[too many objects!]" CR>
+                          <RETURN>)
+                         (ELSE
+                          <SET NOUT <+ .NOUT 1>>
+                          <PUT/B .OUT .NOUT .I>)>>)
+              (ELSE
+               ;"Go through all YSPECs and find matching objects for each one.
+                 Give an error if any YSPEC has no matches, but it's OK if all
+                 the matches for some YSPEC are excluded by NSPECs."
+               <DO (J 1 .NY)
+                   <SET SPEC <NP-YSPEC .NP .J>>
+                   <SET F <>>
+                   <MAP-SCOPE (I [BITS .BITS])
+                       <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
+                                   <REFERS? .SPEC .I>>
+                              <SET F T>
+                              <COND (<G=? .NOUT ,P-MAX-OBJECTS>
+                                     <TELL "[too many objects!]" CR>
+                                     <RETURN>)
+                                    (<NOT <AND .NN <NP-EXCLUDES? .NP .I>>>
+                                     <SET NOUT <+ .NOUT 1>>
+                                     <PUT/B .OUT .NOUT .I>)>)>>
+                   <COND (<NOT .F>
+                          ;"Try expanding the search if we can."
+                          <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
+                          <COND (<N=? .BITS .F>
+                                 <SET BITS .F>
+                                 <SET OBITS .F>    ;"Avoid bouncing between <1 and >1 matches"
+                                 <AGAIN .BITS-SET>)>
+                          <COND (<=? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
+                                 <TELL "It's too dark to see anything here." CR>)
+                                (ELSE
+                                 <TELL "You don't see that here." CR>)>
+                          <RFALSE>)
+                         (<G=? .NOUT ,P-MAX-OBJECTS>
+                          <RETURN>)>>)>
+        ;"Check the number of objects"
+        <PUTB .OUT 0 .NOUT>
+        <COND (<0? .NOUT>
+               ;"This means ALL matched nothing, or BUT excluded everything.
+                 Try expanding the search if we can."
+               <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
+               <COND (<=? .BITS .F>
+                      <TELL "There are none at all available!" CR>
+                      <RFALSE>)>
+               <SET BITS .F>
+               <SET OBITS .F>    ;"Avoid bouncing between <1 and >1 matches"
+               <AGAIN .BITS-SET>)
+              (<1? .NOUT>
+               <RETURN <GET/B .OUT 1>>)
+              (<OR <=? .MODE ,MCM-ALL> <G? .NY 1>>
+               <RETURN ,MANY-OBJECTS>)
+              (<=? .MODE ,MCM-ANY>
+               ;"Pick a random object"
+               <PUT/B .OUT 1 <SET F <GET/B .OUT <RANDOM .NOUT>>>>
+               <PUTB .OUT 0 1>
+               <TELL "[" T .F "]" CR>
+               <RETURN .F>)
+              (ELSE
+               ;"TODO: Do this check when we're matching YSPECs, so each YSPEC can be
+                 disambiguated individually."
+               ;"Try narrowing the search if we can."
+               <COND (<N=? .BITS .OBITS>
+                      <SET BITS .OBITS>
+                      <AGAIN .BITS-SET>)>
+               <TELL "Which do you mean, ">
+               <LIST-OBJECTS .OUT <> %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+               <TELL "?" CR>
+               ;"TODO: orphaning"
+               <RFALSE>)>>>
+
+;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL."
+<ROUTINE NP-EXCLUDES? (NP O "AUX" NN SPEC)
+    <COND (<SET NN <NP-NCNT .NP>>
+           <SET SPEC <NP-NSPEC .NP 1>>
+           <DO (I 1 .NN)
+               <COND (<REFERS? .SPEC .O> <RTRUE>)>
+               <SET SPEC <+ .SPEC ,P-OBJSPEC-SIZE>>>)>
+    <RFALSE>>
 
 ;"Determines whether a local-global object is present in a given room.
 
@@ -1087,8 +1153,8 @@ Args:
   O: The object."
 <ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
     <AND
-        <OR <0? .A> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
-        <IN-PWTBL? .O ,P?SYNONYM .N>>>
+        <OR <AND <0? .A> .N> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
+        <OR <0? .N> <IN-PWTBL? .O ,P?SYNONYM .N>>>>
 
 <VERSION?
     (ZIP
