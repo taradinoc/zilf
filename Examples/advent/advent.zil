@@ -1979,7 +1979,7 @@ where you can't get to it.")
     (IN AT-EAST-END-OF-TWOPIT-ROOM)
     (SYNONYM SLABS SLAB ROCKS STAIRS)
     (ADJECTIVE THIN ROCK)
-    (LDESC "They almost form natural stairs down into the pit.")
+    (TEXT "They almost form natural stairs down into the pit.")
     (ACTION THIN-ROCK-SLABS-F)
     (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
 
