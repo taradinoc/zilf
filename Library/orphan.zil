@@ -81,12 +81,18 @@ Returns:
     <COND (<OR <L? ,P-LEN 1>
                <NOT <STARTS-NOUN-PHRASE? <GETWORD? 1>>>
                <NOT <=? <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ> <+ ,P-LEN 1>>>>
+           <IF-DEBUG <TELL "[HANDLE-ORPHAN-RESPONSE: doesn't look like a noun phrase]" CR>>
            <RETURN ,O-RES-NOT-HANDLED>)>
+    <IF-DEBUG <TELL "[HANDLE-ORPHAN-RESPONSE: O-R=" N ,P-O-REASON "]" CR>>
     ;"To fill in a missing noun phrase, just copy the new one in place."
     <COND (<ORPHANING-BECAUSE-MISSING?>
            <COPY-NOUN-PHRASE
                ,P-NP-XOBJ
                <COND (<ORPHANING-PRSI?> ,P-NP-IOBJ) (ELSE ,P-NP-DOBJ)>>
+           <IF-DEBUG
+               <TELL "[setting NP: ">
+               <PRINT-NOUN-PHRASE ,P-NP-XOBJ>
+               <TELL "]" CR>>
            <RETURN ,O-RES-SET-NP>)>
     ;"We're disambiguating. Loop over the previously matched objects and only keep the
       ones that match the new NP."
@@ -94,7 +100,7 @@ Returns:
     <SET MAX <GETB .TBL 0>>
     <SET CNT 0>
     <SET OUT ,P-XOBJS>
-    ;<TELL "[filtering " N .MAX " objects]" CR>
+    <IF-DEBUG <TELL "[filtering " N .MAX " objects]" CR>>
     <SET NY <NP-YCNT ,P-NP-XOBJ>>
     <DO (I 1 .MAX)
         <SET O <GET/B .TBL .I>>

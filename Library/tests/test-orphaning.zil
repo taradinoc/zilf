@@ -161,4 +161,10 @@ red cube: You pick up the red cube.|">
     <EXPECT "You pick up the blue cube.|">
     <CHECK <IN? ,BLUE-CUBE ,WINNER>>>
 
+<TEST-CASE ("Missing second noun")
+    <COMMAND [THROW RED CUBE]>
+    <EXPECT "[taking the red cube]|What do you want to throw the red cube at?|">
+    <COMMAND [BLUE CUBE]>
+    <EXPECT "Taking your frustration out on the blue cube doesn't seem like it will help.|">>
+
 <TEST-GO ,STARTROOM>
