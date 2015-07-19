@@ -126,16 +126,17 @@ Returns:
   or 1 if not."
 <ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F)
     <COND (<0? .W> <RFALSE>)>
-    <IF-DEBUG <TELL "[CHKWORD: " B .W " PS=" N .PS " P1=" N .P1>>
+    ;<IF-DEBUG <TELL "[CHKWORD: " B .W " PS=" N .PS " P1=" N .P1>>
     <SET F <GETB .W ,VOCAB-FL>>
-    <IF-DEBUG <TELL " F=" N .F>>
+    ;<IF-DEBUG <TELL " F=" N .F>>
     <SET F <COND (<BTST .F .PS>
                   <COND (<L? .P1 0>
+                         ;<IF-DEBUG <TELL " OK!]" CR>>
                          <RTRUE>)
                         (<==? <BAND .F ,P1MASK> .P1>
                          <GETB .W ,VOCAB-V1>)
                         (ELSE <GETB .W ,VOCAB-V2>)>)>>
-    <IF-DEBUG <TELL " = " N .F "]" CR>>
+    ;<IF-DEBUG <TELL " = " N .F "]" CR>>
     .F>
 
 ;"Gets the word at the given index in LEXBUF.
@@ -232,9 +233,9 @@ Args:
 ;"Copies the contents of one noun phrase into another."
 <ROUTINE COPY-NOUN-PHRASE (SRC DEST "AUX" C)
     <NP-YCNT .DEST <SET C <NP-YCNT .SRC>>>
-    <COPY-TABLE <NP-YTBL .SRC> <NP-YTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
+    <COPY-TABLE-B <NP-YTBL .SRC> <NP-YTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
     <NP-NCNT .DEST <SET C <NP-NCNT .SRC>>>
-    <COPY-TABLE <NP-NTBL .SRC> <NP-NTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
+    <COPY-TABLE-B <NP-NTBL .SRC> <NP-NTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
     <NP-MODE .DEST <NP-MODE .SRC>>>
 
 <IF-DEBUG
@@ -283,8 +284,9 @@ Args:
                 <SET SIZE <GETB .W 0>>
                 <SET W <+ .W 1>>
                 <SET CNT <GET .W 0>>
+                <SET W <+ .W 2>>
                 <DO (I 1 .CNT)
-                    <COND (<=? <CHKWORD? .W ,PS?ADJECTIVE> .A>
+                    <COND (<=? <CHKWORD? .W ,PS?ADJECTIVE ,P1?ADJECTIVE> .A>
                            <TELL B .W>
                            <RTRUE>)>
                     <SET W <+ .W .SIZE>>>
@@ -391,13 +393,16 @@ Sets:
     <COND (<ORPHANING?>
            <SET O-R <HANDLE-ORPHAN-RESPONSE>>
            <COND (<=? .O-R ,O-RES-REORPHANED> <RFALSE>)>
-           <SETG P-O-REASON <>>
            <COND (<=? .O-R ,O-RES-FAILED>
                   <SETG P-O-REASON <>>
                   <RFALSE>)
                  (<=? .O-R ,O-RES-SET-NP>
-                  <COND (<ORPHANING-PRSI?> <SETG P-NOBJ 2>)
-                        (ELSE <SETG P-NOBJ 1>)>)>)>
+                  <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
+                  <COND (<ORPHANING-PRSI?>
+                         <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
+                         <SETG P-NOBJ 2>)
+                        (ELSE <SETG P-NOBJ 1>)>)>
+           <SETG P-O-REASON <>>)>
     ;"Identify parts of speech, parse noun phrases"
     <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
            <SETG P-V <>>
@@ -406,7 +411,7 @@ Sets:
            <CLEAR-NOUN-PHRASE ,P-NP-IOBJ>
            <SETG P-P1 <>>
            <SETG P-P2 <>>
-           ;"Identify the verb, prepositions, and noun clauses"
+           ;"Identify the verb, prepositions, and noun phrases"
            <REPEAT ((I 1) W)
                <COND (<G? .I ,P-LEN>
                       ;"Reached the end of the command"
