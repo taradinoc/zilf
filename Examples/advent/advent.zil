@@ -3,7 +3,6 @@
 ;"TODO: Add CANT-GO property?"
 ;"TODO: Show score/rank when quitting. Dock points for quitting."
 ;"TODO: The oyster message should count as a hint and incur a penalty."
-;"TODO: Say 'safely deposited' when dropping a treasure in INSIDE-BUILDING."
 
 ;----------------------------------------------------------------------
 "General directives"
@@ -97,7 +96,15 @@ Adapted once more by Jesse McGrew (2015)">>
                       <VISIBLE? <SET F ,MASSIVE-ORANGE-COLUMN>>
                       <VISIBLE? <SET F ,PIT>>>
                   <SETG PRSO .F>
-                  <RFALSE>)>)>
+                  <RFALSE>)>)
+          (<AND <VERB? DROP>
+                <=? ,HERE ,INSIDE-BUILDING>
+                <FSET? ,PRSO ,TREASUREBIT>>
+           <COND (<PRE-DROP>)
+                 (<MOVE ,PRSO ,HERE>
+                  <FSET ,PRSO ,TOUCHBIT>
+                  <FCLEAR ,PRSO ,WORNBIT>
+                  <TELL "You safely deposit " T ,PRSO "." CR>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
 
@@ -3973,7 +3980,7 @@ Everything disappears in a dense cloud of orange smoke."
               (,CAVES-CLOSED
                <TELL "Seeing as how it's so close to closing time anyway, I think we'll just call it a day." CR>
                <RFALSE>)>
-        <TELL <GET ,RESURRECT-PROMPT ,DEATHS> CR>
+        <TELL <GET ,RESURRECT-PROMPT ,DEATHS>>
         <COND (<NOT <YES?>>
                <TELL CR <GET ,RESURRECT-NO ,DEATHS> CR>
                <RFALSE>)>
