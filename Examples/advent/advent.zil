@@ -127,6 +127,118 @@ Adapted once more by Jesse McGrew (2015)">>
 <PROPDEF DEPOSIT-POINTS 10>
 
 ;----------------------------------------------------------------------
+"Scoring and treasure counting"
+;----------------------------------------------------------------------
+
+;"Treasures"
+<CONSTANT MAX-TREASURES 15>
+
+<CONSTANT TR-UNFOUND 0>
+<CONSTANT TR-TOUCHED 1>
+<CONSTANT TR-CARRIED 2>
+<CONSTANT TR-DEPOSITED 3>
+
+<CONSTANT ALL-TREASURES
+    <TABLE %<VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>
+        LARGE-GOLD-NUGGET TR-UNFOUND
+        DIAMONDS          TR-UNFOUND
+        BARS-OF-SILVER    TR-UNFOUND
+        PRECIOUS-JEWELRY  TR-UNFOUND
+        RARE-COINS        TR-UNFOUND
+        PERSIAN-RUG       TR-UNFOUND
+        TREASURE-CHEST    TR-UNFOUND
+        GOLDEN-EGGS       TR-UNFOUND
+        TRIDENT           TR-UNFOUND
+        MING-VASE         TR-UNFOUND
+        EGG-SIZED-EMERALD TR-UNFOUND
+        PLATINUM-PYRAMID  TR-UNFOUND
+        PEARL             TR-UNFOUND
+        RARE-SPICES       TR-UNFOUND
+        GOLDEN-CHAIN      TR-UNFOUND>>
+        
+<CONSTANT MAX-SCORE 350>
+<GLOBAL PREV-SCORE 0>
+
+<CONSTANT RANKS
+    <PLTABLE
+        349 "All of adventuredom gives tribute to you, Adventurer Grandmaster!"
+        330 "Your score puts you in Master Adventurer Class A."
+        300 "Your score puts you in Master Adventurer Class B."
+        250 "Your score puts you in Master Adventurer Class C."
+        200 "You have reached \"Junior Master\" status."
+        130 "You may now consider yourself a \"Seasoned Adventurer\"."
+        100 "You have achieved the rating: \"Experienced Adventurer\"."
+        35  "Your score qualifies you as a Novice Class Adventurer."
+        10  "You are obviously a Rank Amateur. Better luck next time.">>
+
+<SYNTAX SCORE = V-SCORE>
+
+<ROUTINE V-SCORE ("OPT" DEAD MAX NR)
+    <TELL "In ">
+    <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
+    <TELL ", you">
+    <COND (<NOT .DEAD> <TELL "'ve">)>
+    <TELL " scored ">
+    <COND (<1? ,SCORE> <TELL "1 point">) (ELSE <TELL N ,SCORE " points">)>
+    <TELL " out of a possible " N ,MAX-SCORE "." CR>
+    <COND (.DEAD
+           ;"Announce the player's rating based on their score."
+           <SET MAX <GET ,RANKS 0>>
+           <DO (I 1 .MAX 2)
+               (END ;"Too low for any rating."
+                <TELL "Wow." CR>
+                <SET NR <- .MAX 1>>)
+               <COND (<G? ,SCORE <GET ,RANKS .I>>
+                      <TELL <GET ,RANKS <+ .I 1>> CR>
+                      <SET I <- .I 2>>
+                      <COND (<L? .I 1> <SET NR 0>)
+                            (ELSE <SET NR .I>)>
+                      <RETURN>)>>
+           <TELL "To achieve the next higher rating">
+           <COND (.NR
+                  <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
+                  <TELL ", you need " N .NR " more point">
+                  <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
+                 (ELSE
+                  <TELL " would be a neat trick!|Congratulations!!" CR>)>)>>
+
+<ROUTINE I-SCORE ("AUX" D T OS NS)
+    ;"Note any changes in treasure status"
+    <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
+        <SET T <GET/B ,ALL-TREASURES .I>>
+        <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
+        <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
+              (<IN? .T ,WINNER> <SET NS ,TR-CARRIED>)
+              (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
+              (ELSE <SET NS ,TR-UNFOUND>)>
+        <COND (<N=? .OS .NS>
+               ;"A permanent 2 points for taking it in the first place"
+               <COND (<=? .OS ,TR-UNFOUND> <SETG SCORE <+ ,SCORE 2>>)>
+               ;"A revocable 5 points for carrying it"
+               <COND (<=? .NS ,TR-CARRIED> <SETG SCORE <+ ,SCORE 5>>)
+                     (<=? .OS ,TR-CARRIED> <SETG SCORE <- ,SCORE 5>>)>
+               ;"A revocable ${DEPOSIT-POINTS} points for placing it in INSIDE-BUILDING"
+               <COND (<=? .NS ,TR-DEPOSITED>
+                      <SETG SCORE <+ ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)
+                     (<=? .OS ,TR-DEPOSITED>
+                      <SETG SCORE <- ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)>
+               <PUT/B ,ALL-TREASURES <+ .I 1> .NS>)>>
+    ;"Notify player if score has changed"
+    <SET D <- ,SCORE ,PREV-SCORE>>
+    <COND (.D
+           <TELL CR "[Your score has gone">
+           <COND (<G? .D 0>
+                  <TELL " up">)
+                 (ELSE
+                  <SET D <- .D>>
+                  <TELL " down">)>
+           <TELL " by " N .D " point">
+           <COND (<NOT <1? .D>> <TELL !\s>)>
+           <TELL ".]" CR>)>
+    <SETG PREV-SCORE ,SCORE>
+    <T? .D>>
+
+;----------------------------------------------------------------------
 "The outside world"
 ;----------------------------------------------------------------------
 
@@ -3591,8 +3703,11 @@ He snatches your treasure and vanishes into the gloom." CR>>
 
 <GLOBAL CAVES-CLOSED <>>
 
-<ROUTINE I-CAVE-CLOSER ()
-    <COND (<L? ,TREASURES-FOUND ,MAX-TREASURES> <RFALSE>)>
+<ROUTINE I-CAVE-CLOSER ("AUX" T)
+    ;"Cave starts closing once all treasures have been found."
+    <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
+        <SET T <GET/B ,ALL-TREASURES .I>>
+        <COND (<NOT <FSET? .T ,TOUCHBIT>> <RFALSE>)>>
     <DEQUEUE I-CAVE-CLOSER>
     <SETG CAVES-CLOSED T>
     <SETG SCORE <+ ,SCORE 25>>
@@ -3760,119 +3875,6 @@ At your feet is a large steel grate, next to which is a sign which reads,
 
 <ROUTINE BLACK-MARK-ROD-F ()
     <COND (<VERB? WAVE> <TELL "Nothing happens." CR>)>>
-
-;----------------------------------------------------------------------
-"Scoring and treasure counting"
-;----------------------------------------------------------------------
-
-;"Treasures"
-<CONSTANT MAX-TREASURES 15>
-<GLOBAL TREASURES-FOUND 0>
-
-<CONSTANT TR-UNFOUND 0>
-<CONSTANT TR-TOUCHED 1>
-<CONSTANT TR-CARRIED 2>
-<CONSTANT TR-DEPOSITED 3>
-
-<CONSTANT ALL-TREASURES
-    <TABLE %<VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>
-        LARGE-GOLD-NUGGET TR-UNFOUND
-        DIAMONDS          TR-UNFOUND
-        BARS-OF-SILVER    TR-UNFOUND
-        PRECIOUS-JEWELRY  TR-UNFOUND
-        RARE-COINS        TR-UNFOUND
-        PERSIAN-RUG       TR-UNFOUND
-        TREASURE-CHEST    TR-UNFOUND
-        GOLDEN-EGGS       TR-UNFOUND
-        TRIDENT           TR-UNFOUND
-        MING-VASE         TR-UNFOUND
-        EGG-SIZED-EMERALD TR-UNFOUND
-        PLATINUM-PYRAMID  TR-UNFOUND
-        PEARL             TR-UNFOUND
-        RARE-SPICES       TR-UNFOUND
-        GOLDEN-CHAIN      TR-UNFOUND>>
-        
-<CONSTANT MAX-SCORE 350>
-<GLOBAL PREV-SCORE 0>
-
-<CONSTANT RANKS
-    <PLTABLE
-        349 "All of adventuredom gives tribute to you, Adventurer Grandmaster!"
-        330 "Your score puts you in Master Adventurer Class A."
-        300 "Your score puts you in Master Adventurer Class B."
-        250 "Your score puts you in Master Adventurer Class C."
-        200 "You have reached \"Junior Master\" status."
-        130 "You may now consider yourself a \"Seasoned Adventurer\"."
-        100 "You have achieved the rating: \"Experienced Adventurer\"."
-        35  "Your score qualifies you as a Novice Class Adventurer."
-        10  "You are obviously a Rank Amateur. Better luck next time.">>
-
-<SYNTAX SCORE = V-SCORE>
-
-<ROUTINE V-SCORE ("OPT" DEAD MAX NR)
-    <TELL "In ">
-    <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
-    <TELL ", you">
-    <COND (<NOT .DEAD> <TELL "'ve">)>
-    <TELL " scored ">
-    <COND (<1? ,SCORE> <TELL "1 point">) (ELSE <TELL N ,SCORE " points">)>
-    <TELL " out of a possible " N ,MAX-SCORE "." CR>
-    <COND (.DEAD
-           ;"Announce the player's rating based on their score."
-           <SET MAX <GET ,RANKS 0>>
-           <DO (I 1 .MAX 2)
-               (END ;"Too low for any rating."
-                <TELL "Wow." CR>
-                <SET NR <- .MAX 1>>)
-               <COND (<G? ,SCORE <GET ,RANKS .I>>
-                      <TELL <GET ,RANKS <+ .I 1>> CR>
-                      <SET I <- .I 2>>
-                      <COND (<L? .I 1> <SET NR 0>)
-                            (ELSE <SET NR .I>)>
-                      <RETURN>)>>
-           <TELL "To achieve the next higher rating">
-           <COND (.NR
-                  <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
-                  <TELL ", you need " N .NR " more point">
-                  <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
-                 (ELSE
-                  <TELL " would be a neat trick!|Congratulations!!" CR>)>)>>
-
-<ROUTINE I-SCORE ("AUX" D T OS NS)
-    ;"Note any changes in treasure status"
-    <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
-        <SET T <GET/B ,ALL-TREASURES .I>>
-        <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
-        <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
-              (<IN? .T ,WINNER> <SET NS ,TR-CARRIED>)
-              (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
-              (ELSE <SET NS ,TR-UNFOUND>)>
-        <COND (<N=? .OS .NS>
-               ;"A permanent 2 points for taking it in the first place"
-               <COND (<=? .OS ,TR-UNFOUND> <SETG SCORE <+ ,SCORE 2>>)>
-               ;"A revocable 5 points for carrying it"
-               <COND (<=? .NS ,TR-CARRIED> <SETG SCORE <+ ,SCORE 5>>)
-                     (<=? .OS ,TR-CARRIED> <SETG SCORE <- ,SCORE 5>>)>
-               ;"A revocable ${DEPOSIT-POINTS} points for placing it in INSIDE-BUILDING"
-               <COND (<=? .NS ,TR-DEPOSITED>
-                      <SETG SCORE <+ ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)
-                     (<=? .OS ,TR-DEPOSITED>
-                      <SETG SCORE <- ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)>
-               <PUT/B ,ALL-TREASURES <+ .I 1> .NS>)>>
-    ;"Notify player if score has changed"
-    <SET D <- ,SCORE ,PREV-SCORE>>
-    <COND (.D
-           <TELL CR "[Your score has gone">
-           <COND (<G? .D 0>
-                  <TELL " up">)
-                 (ELSE
-                  <SET D <- .D>>
-                  <TELL " down">)>
-           <TELL " by " N .D " point">
-           <COND (<NOT <1? .D>> <TELL !\s>)>
-           <TELL ".]" CR>)>
-    <SETG PREV-SCORE ,SCORE>
-    <T? .D>>
 
 ;----------------------------------------------------------------------
 "Stumbling around in the dark"
