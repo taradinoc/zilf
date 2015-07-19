@@ -241,6 +241,9 @@ Args:
 <CONSTANT P-NP-DOBJ <NOUN-PHRASE>>
 <CONSTANT P-NP-IOBJ <NOUN-PHRASE>>
 
+"Extra noun phrase for orphaning"
+<CONSTANT P-NP-XOBJ <NOUN-PHRASE>>
+
 "Noun phrase storage for pronouns, and other pronoun storage"
 <CONSTANT P-NP-IT <NOUN-PHRASE>>
 <CONSTANT P-NP-THEM <NOUN-PHRASE>>
@@ -256,16 +259,20 @@ Args:
 <GLOBAL HER-USE <>>
 <GLOBAL HER-ONCE <>>
 
-<CONSTANT P-MAX-OBJECTS 50>
 "Tables for objects recognized from object specs.
  These each have one length byte, a dummy byte (V4+ only),
  then P-MAX-OBJECTS bytes/words for the objects."
+<CONSTANT P-MAX-OBJECTS 50>
 <BIND ((TBLSIZE <+ 1 ,P-MAX-OBJECTS>)
        (TBLFLAGS <VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>))
     "Matched direct objects"
     <GLOBAL P-PRSOS <ITABLE .TBLSIZE .TBLFLAGS>>
     "Matched indirect objects"
-    <GLOBAL P-PRSIS <ITABLE .TBLSIZE .TBLFLAGS>>>
+    <GLOBAL P-PRSIS <ITABLE .TBLSIZE .TBLFLAGS>>
+    "Extra objects for orphaning>"
+    <GLOBAL P-XOBJS <ITABLE .TBLSIZE .TBLFLAGS>>>
+
+<INSERT-FILE "orphan">
 
 <BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE \. \, \">
 
@@ -304,7 +311,7 @@ Sets:
   HIM-ONCE
   HER-ONCE
 "
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR)
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR O-R)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET NOBJ <>>
     <SET VAL <>>
@@ -315,91 +322,105 @@ Sets:
     <READLINE>
     <IF-DEBUG <DUMPLINE>>
     <SETG P-LEN <GETB ,LEXBUF 1>>
-    <SETG P-V <>>
-    <SETG P-NOBJ 0>
-    <CLEAR-NOUN-PHRASE ,P-NP-DOBJ>
-    <CLEAR-NOUN-PHRASE ,P-NP-IOBJ>
-    <SETG P-P1 <>>
-    <SETG P-P2 <>>
-    ;"Identify the verb, prepositions, and noun clauses"
-    <REPEAT ((I 1) W)
-        <COND (<G? .I ,P-LEN>
-               ;"Reached the end of the command"
-               <RETURN>)
-              (<NOT <SET W <GETWORD? .I>>>
-               ;"Word not in vocabulary"
-               <TELL "I don't know the word \"">
-               <PRINT-WORD .I>
-               <TELL "\"." CR>
-               <RFALSE>)
-              (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
-               ;"Found the verb"
-               <SETG P-V-WORD .W>
-               <SETG P-V-WORDN .I>
-               <SETG P-V <WORD? .W VERB>>)
-              (<AND <EQUAL? ,P-V <> ,ACT?WALK>
-                    <SET VAL <WORD? .W DIRECTION>>>
-               ;"Found a direction"
-               <SET DIR .VAL>)
-              (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
-               ;"Found a preposition"
-               ;"Only keep the first preposition for each object"
-               <COND (<AND <==? .NOBJ 0> <NOT ,P-P1>>
-                      <SETG P-P1 .VAL>)
-                     (<AND <==? .NOBJ 1> <NOT ,P-P2>>
-                      <SETG P-P2 .VAL>)>)
-              (<STARTS-NOUN-PHRASE? .W>
-               ;"Found a noun phrase"
-               <SET NOBJ <+ .NOBJ 1>>
-               <COND (<==? .NOBJ 1>
-                      <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
-                     (<==? .NOBJ 2>
-                      <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
+    ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
+    <COND (<ORPHANING?>
+           <SET O-R <HANDLE-ORPHAN-RESPONSE>>
+           <COND (<=? .O-R ,O-RES-REORPHANED> <RFALSE>)>
+           <SETG P-O-REASON <>>
+           <COND (<=? .O-R ,O-RES-FAILED>
+                  <SETG P-O-REASON <>>
+                  <RFALSE>)
+                 (<=? .O-R ,O-RES-SET-NP>
+                  <COND (<ORPHANING-PRSI?> <SETG P-NOBJ 2>)
+                        (ELSE <SETG P-NOBJ 1>)>)>)>
+    ;"Identify parts of speech, parse noun phrases"
+    <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
+           <SETG P-V <>>
+           <SETG P-NOBJ 0>
+           <CLEAR-NOUN-PHRASE ,P-NP-DOBJ>
+           <CLEAR-NOUN-PHRASE ,P-NP-IOBJ>
+           <SETG P-P1 <>>
+           <SETG P-P2 <>>
+           ;"Identify the verb, prepositions, and noun clauses"
+           <REPEAT ((I 1) W)
+               <COND (<G? .I ,P-LEN>
+                      ;"Reached the end of the command"
+                      <RETURN>)
+                     (<NOT <SET W <GETWORD? .I>>>
+                      ;"Word not in vocabulary"
+                      <TELL "I don't know the word \"">
+                      <PRINT-WORD .I>
+                      <TELL "\"." CR>
+                      <RFALSE>)
+                     (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
+                      ;"Found the verb"
+                      <SETG P-V-WORD .W>
+                      <SETG P-V-WORDN .I>
+                      <SETG P-V <WORD? .W VERB>>)
+                     (<AND <EQUAL? ,P-V <> ,ACT?WALK>
+                           <SET VAL <WORD? .W DIRECTION>>>
+                      ;"Found a direction"
+                      <SET DIR .VAL>)
+                     (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
+                      ;"Found a preposition"
+                      ;"Only keep the first preposition for each object"
+                      <COND (<AND <==? .NOBJ 0> <NOT ,P-P1>>
+                             <SETG P-P1 .VAL>)
+                            (<AND <==? .NOBJ 1> <NOT ,P-P2>>
+                             <SETG P-P2 .VAL>)>)
+                     (<STARTS-NOUN-PHRASE? .W>
+                      ;"Found a noun phrase"
+                      <SET NOBJ <+ .NOBJ 1>>
+                      <COND (<==? .NOBJ 1>
+                             <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
+                            (<==? .NOBJ 2>
+                             <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
+                            (ELSE
+                             <TELL "That sentence has too many objects." CR>
+                             <RFALSE>)>
+                      <COND (.VAL
+                             <SET I .VAL>
+                             <AGAIN>)
+                            (ELSE
+                             <TELL "That noun phrase didn't make sense." CR>
+                             <RFALSE>)>)
                      (ELSE
-                      <TELL "That sentence has too many objects." CR>
+                      ;"Unexpected word type"
+                      <TELL "I didn't expect the word \"">
+                      <PRINT-WORD .I>
+                      <TELL "\" there." CR>
                       <RFALSE>)>
-               <COND (.VAL
-                      <SET I .VAL>
-                      <AGAIN>)
-                     (ELSE
-                      <TELL "That noun phrase didn't make sense." CR>
-                      <RFALSE>)>)
-              (ELSE
-               ;"Unexpected word type"
-               <TELL "I didn't expect the word \"">
-               <PRINT-WORD .I>
-               <TELL "\" there." CR>
-               <RFALSE>)>
-        <SET I <+ .I 1>>>
-    <SETG P-NOBJ .NOBJ>
-    <IF-DEBUG
-        <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
-              " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
-              " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ>"]" CR>>
-    ;"If we have a direction, it's a walk action, and no verb is needed"
-    <COND (.DIR
-           <SETG PRSO-DIR T>
-           <SETG PRSA ,V?WALK>
-           <SETG PRSO .DIR>
-           <SETG PRSI <>>
-           <IF-UNDO
-               ;"save state for undo after moving from room to room"
-               <COND (<NOT <OR <VERB? UNDO> ,AGAINCALL>>
-                      <SETG USAVE <ISAVE>>
-                      <COND (<EQUAL? ,USAVE 2>
-                             <TELL "Previous turn undone." CR>
-                             <AGAIN>)>)>>
-           <RTRUE>)>
-    ;"Otherwise, a verb is required"
-    <COND (<NOT ,P-V>
-           <TELL "That sentence has no verb." CR>
-           <RFALSE>)>
-    <SETG PRSO-DIR <>>
+               <SET I <+ .I 1>>>
+           <SETG P-NOBJ .NOBJ>
+           <IF-DEBUG
+               <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
+                     " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
+                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ>"]" CR>>
+           ;"If we have a direction, it's a walk action, and no verb is needed"
+           <COND (.DIR
+                  <SETG PRSO-DIR T>
+                  <SETG PRSA ,V?WALK>
+                  <SETG PRSO .DIR>
+                  <SETG PRSI <>>
+                  <IF-UNDO
+                      ;"save state for undo after moving from room to room"
+                      <COND (<NOT <OR <VERB? UNDO> ,AGAINCALL>>
+                             <SETG USAVE <ISAVE>>
+                             <COND (<EQUAL? ,USAVE 2>
+                                    <TELL "Previous turn undone." CR>
+                                    <AGAIN>)>)>>
+                  <RTRUE>)>
+           ;"Otherwise, a verb is required"
+           <COND (<NOT ,P-V>
+                  <TELL "That sentence has no verb." CR>
+                  <RFALSE>)>
+           <SETG PRSO-DIR <>>)>
     ;"Match syntax lines and objects"
-    <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
-           <RFALSE>)>
+    <COND (<N=? .O-R ,O-RES-SET-PRSTBL>
+           <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
+                  <RFALSE>)>)>
     ;"Save command for AGAIN"
-    <COND (<NOT <VERB? AGAIN>>
+    <COND (<NOT <OR .O-R <VERB? AGAIN>>>
            <COPY-READBUF>
            <COPY-LEXBUF>)>
     ;"Save UNDO state"
@@ -782,6 +803,7 @@ Returns:
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
                   <COND (<0? ,PRSO>
                          <WHAT-DO-YOU-WANT>
+                         <ORPHAN T MISSING PRSO>
                          <RFALSE>)
                         (ELSE
                          <PUT/B ,P-PRSOS 1 ,PRSO>
@@ -809,6 +831,7 @@ Returns:
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP2>>>
                   <COND (<0? ,PRSI>
                          <WHAT-DO-YOU-WANT>
+                         <ORPHAN T MISSING PRSI>
                          <RFALSE>)
                         (ELSE
                          <PUT/B ,P-PRSIS 1 ,PRSI>
@@ -831,7 +854,6 @@ Returns:
     <SET SN <GETB ,P-SYNTAX ,SYN-NOBJ>>
     <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
     <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
-    ;"TODO: implement orphaning so we can handle the response to this question"
     ;"TODO: use LONG-WORDS table for preposition words"
     <TELL "What do you want to ">
     <PRINT-WORD ,P-V-WORDN>
@@ -1120,20 +1142,32 @@ Returns:
                <COND (<N=? .BITS .OBITS>
                       <SET BITS .OBITS>
                       <AGAIN .BITS-SET>)>
-               <TELL "Which do you mean, ">
-               <LIST-OBJECTS .OUT <> %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
-               <TELL "?" CR>
-               ;"TODO: orphaning"
+               <WHICH-DO-YOU-MEAN .OUT>
+               <COND (<=? .NP ,P-NP-DOBJ> <ORPHAN T AMBIGUOUS PRSO>)
+                     (ELSE <ORPHAN T AMBIGUOUS PRSI>)>
                <RFALSE>)>>>
 
-;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL."
-<ROUTINE NP-EXCLUDES? (NP O "AUX" NN SPEC)
-    <COND (<SET NN <NP-NCNT .NP>>
-           <SET SPEC <NP-NSPEC .NP 1>>
-           <DO (I 1 .NN)
-               <COND (<REFERS? .SPEC .O> <RTRUE>)>
-               <SET SPEC <+ .SPEC ,P-OBJSPEC-SIZE>>>)>
+<ROUTINE WHICH-DO-YOU-MEAN (TBL)
+    <TELL "Which do you mean, ">
+    <LIST-OBJECTS .TBL <> %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+    <TELL "?" CR>>
+
+;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
+  Note: NP may be evaluated twice."
+<DEFMAC NP-INCLUDES? ('NP 'O)
+    <FORM ANY-SPEC-REFERS? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .O>>
+
+<ROUTINE ANY-SPEC-REFERS? (TBL N O)
+    <COND (<0? .N> <RFALSE>)>
+    <DO (I 1 .N)
+        <COND (<REFERS? .TBL .O> <RTRUE>)>
+        <SET TBL <+ .TBL ,P-OBJSPEC-SIZE>>>
     <RFALSE>>
+
+;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
+  Note: NP may be evaluated twice."
+<DEFMAC NP-EXCLUDES? ('NP 'O)
+    <FORM ANY-SPEC-REFERS? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .O>>
 
 ;"Determines whether a local-global object is present in a given room.
 
