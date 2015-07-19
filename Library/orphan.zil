@@ -100,7 +100,10 @@ Returns:
     <SET MAX <GETB .TBL 0>>
     <SET CNT 0>
     <SET OUT ,P-XOBJS>
-    <IF-DEBUG <TELL "[filtering " N .MAX " objects]" CR>>
+    <IF-DEBUG
+        <TELL "[filtering " N .MAX " objects with NP: ">
+        <PRINT-NOUN-PHRASE ,P-NP-XOBJ>
+        <TELL "]" CR>>
     <SET NY <NP-YCNT ,P-NP-XOBJ>>
     <DO (I 1 .MAX)
         <SET O <GET/B .TBL .I>>

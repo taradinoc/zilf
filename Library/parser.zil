@@ -1186,13 +1186,23 @@ Returns:
 
 ;"Determines whether an OBJSPEC refers to a given object.
 
+The OBJSPEC may have an adjective, a noun, or both. It may also have a word in its
+noun slot that's actually an adjective.
+
 Args:
   SPEC: The OBJSPEC.
   O: The object."
 <ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
     <AND
-        <OR <AND <0? .A> .N> <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
-        <OR <0? .N> <IN-PWTBL? .O ,P?SYNONYM .N>>>>
+        <OR <AND <0? .A> .N>
+            <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
+        <OR <0? .N>
+            <IN-PWTBL? .O ,P?SYNONYM .N>
+            <AND <0? .A>
+                 <VERSION?
+                     (ZIP <SET A <CHKWORD? .N ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
+                     (ELSE <AND <CHKWORD? .N ,PS?ADJECTIVE> <SET A .N>>)>
+                 <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>>>>
 
 <VERSION?
     (ZIP
