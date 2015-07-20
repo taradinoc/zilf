@@ -169,7 +169,7 @@ Args:
 <GLOBAL P-LEN 0>
 <GLOBAL P-V <>>
 <GLOBAL P-V-WORD <>>
-<GLOBAL P-V-WORDN 0>    ;"0 = invalid, e.g. after orphaning; use P--WORD instead"
+<GLOBAL P-V-WORDN 0>    ;"0 = invalid, e.g. after orphaning; use P-V-WORD instead"
 <GLOBAL P-NOBJ 0>
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
@@ -416,7 +416,8 @@ Sets:
                <COND (<G? .I ,P-LEN>
                       ;"Reached the end of the command"
                       <RETURN>)
-                     (<NOT <SET W <GETWORD? .I>>>
+                     (<NOT <OR <SET W <GETWORD? .I>>
+                               <AND <PARSE-NUMBER? .I> <SET W ,W?\,NUMBER>>>>
                       ;"Word not in vocabulary"
                       <TELL "I don't know the word \"">
                       <PRINT-WORD .I>
@@ -465,7 +466,7 @@ Sets:
            <IF-DEBUG
                <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
                      " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
-                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ>"]" CR>>
+                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ> "]" CR>>
            ;"If we have a direction, it's a walk action, and no verb is needed"
            <COND (.DIR
                   <SETG PRSO-DIR T>
@@ -510,6 +511,50 @@ Sets:
 <OBJECT MANY-OBJECTS
     (DESC "those things")
     (FLAGS NDESCBIT NARTICLEBIT INVISIBLE PLURALBIT)>
+
+;"PRSO or PRSI are set to this when a number is used as a noun.
+  The actual parsed number is in the P-NUMBER global.
+  The synonym is a word that can't be typed normally; we substitute
+  it in the input buffer when we detect a number."
+<OBJECT NUMBER
+    (DESC "number")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM \,NUMBER)>
+
+<GLOBAL P-NUMBER 0>
+
+;"Tries to parse the given word as a number.
+
+If successful, the value is left in P-NUMBER, and the buffer is updated to
+point the word to W?\,NUMBER.
+
+Sets:
+  P-NUMBER
+  LEXBUF
+
+Returns:
+  True if the number was parsed and the buffer updated; otherwise false."
+<ROUTINE PARSE-NUMBER? (WN "AUX" I MAX V C DIG NEG F)
+    <SET I <GETB ,LEXBUF <+ <* .WN 4> 1>>>
+    <SET MAX <- <+ .I <GETB ,LEXBUF <* .WN 4>>> 1>>
+    <COND (<0? .MAX> <RFALSE>)>
+    <SET F T>
+    <REPEAT ()
+        <SET C <GETB ,READBUF .I>>
+        <COND (<AND .F <=? .C !\->>
+               <SET NEG T>)
+              (<AND <G=? .C !\0> <L=? .C !\9>>
+               <SET DIG T>
+               <SET V <+ <* .V 10> <- .C !\0>>>
+               <COND (<L? .V 0> <RFALSE>)>)
+              (ELSE <RFALSE>)>
+        <SET F <>>
+        <AND <IGRTR? I .MAX> <RETURN>>>
+    <COND (<NOT .DIG> <RFALSE>)>
+    <COND (.NEG <SET V <- .V>>)>
+    <SETG P-NUMBER .V>
+    <PUT ,LEXBUF <- <* .I 2> 1> ,W?\,NUMBER>
+    <RETURN ,NUMBER>>
 
 <VERSION?
     (ZIP
@@ -597,7 +642,9 @@ Returns:
             ;"exit loop if we reached the end of the command"
             (<G? .WN ,P-LEN> <RETURN>)
             ;"fail if we found an unrecognized word"
-            (<0? <SET W <GETWORD? .WN>>> <RFALSE>)
+            (<NOT <OR <SET W <GETWORD? .WN>>
+                      <AND <PARSE-NUMBER? .WN> <SET W ,W?\,NUMBER>>>>
+             <RFALSE>)
             ;"recognize BUT/EXCEPT"
             (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
              <COND (<OR .ADJ .NOUN>
@@ -1080,9 +1127,10 @@ Returns:
         <SET NOUT 0>
         <COND (<0? .NY>
                ;"ALL with no YSPECs matches all objects, or if the action is TAKE,
-                 all objects with TAKEBIT/TRYTAKEBIT."
+                 all objects with TAKEBIT/TRYTAKEBIT, skipping generic/global objects."
                <MAP-SCOPE (I [BITS .BITS])
-                   <COND (<FSET? .I ,INVISIBLE>)
+                   <COND (<SCOPE-STAGE? GENERIC GLOBALS>)
+                         (<FSET? .I ,INVISIBLE>)
                          (<=? .I ,WINNER>)
                          (<AND <VERB? TAKE>
                                <NOT <OR <FSET? .I ,TAKEBIT>
@@ -1374,8 +1422,11 @@ Sets (temporarily):
     <SETG PRSO .DOBJ>
     <SETG PRSO-DIR <==? .ACT ,V?WALK>>
     <SETG PRSI .IOBJ>
-    ;"Handle multiple objects"
-    <COND (<AND <NOT ,PRSO-DIR> <PRSO? ,MANY-OBJECTS>>
+    ;"Warn about improper number use, and handle multiple objects"
+    <COND (<G? <COUNT-PRS-APPEARANCES ,NUMBER> 1>
+           <TELL "You can't use more than one number in a command." CR>
+           <SET WON <>>)
+          (<AND <NOT ,PRSO-DIR> <PRSO? ,MANY-OBJECTS>>
            <COND (<PRSI? ,MANY-OBJECTS>
                   <TELL "You can't use multiple direct and indirect objects together." CR>
                   <SET WON <>>)
@@ -1397,6 +1448,19 @@ Sets (temporarily):
     <SETG PRSO-DIR .ODD>
     <SETG PRSI .OI>
     .WON>
+
+<ROUTINE COUNT-PRS-APPEARANCES (O "AUX" R MAX)
+    <COND (<PRSO? .O> <INC R>)
+          (<PRSO? ,MANY-OBJECTS>
+           <SET MAX <GETB ,P-PRSOS 0>>
+           <DO (I 1 .MAX)
+               <COND (<=? <GET/B ,P-PRSOS .I> .O> <INC R>)>>)>
+    <COND (<PRSI? .O> <INC R>)
+          (<PRSI? ,MANY-OBJECTS>
+           <SET MAX <GETB ,P-PRSIS 0>>
+           <DO (I 1 .MAX)
+               <COND (<=? <GET/B ,P-PRSIS .I> .O> <INC R>)>>)>
+    .R>
 
 ;"Handler order:
    player's ACTION,
