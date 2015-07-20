@@ -2346,7 +2346,7 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     (SYNONYM INSCRIPTION WRITING SCRAWL)
     (ADJECTIVE SCRAWLED)
     (TEXT "It says, \"Fee fie foe foo\" [sic].")
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT READBIT)>
 
 <OBJECT GOLDEN-EGGS
     (DESC "nest of golden eggs")
