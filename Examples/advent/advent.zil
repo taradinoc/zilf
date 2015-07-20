@@ -4181,6 +4181,9 @@ appears out of nowhere!" CR>)>)>)
 <SYNTAX OPEN OBJECT (FIND LOCKEDBIT) WITH OBJECT (HAVE HELD CARRIED) = V-UNLOCK>
 <SYNTAX CLOSE OBJECT WITH OBJECT (HAVE HELD CARRIED) = V-LOCK>
 
+<SYNTAX FEED OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
+<SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SGIVE>
+
 ;----------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
