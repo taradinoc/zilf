@@ -104,7 +104,8 @@ Adapted once more by Jesse McGrew (2015)">>
                  (<MOVE ,PRSO ,HERE>
                   <FSET ,PRSO ,TOUCHBIT>
                   <FCLEAR ,PRSO ,WORNBIT>
-                  <TELL "You safely deposit " T ,PRSO "." CR>)>)>
+                  <TELL "You safely deposit " T ,PRSO "." CR>)>
+           <RTRUE>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
 
