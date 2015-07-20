@@ -148,7 +148,7 @@
                 !.BODY>>>
 
 <ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
-    ;"TODO: Put a condition on GENERIC-SCOPE-STAGE."
+    ;"TODO: Put a condition on GENERIC-SCOPE-STAGE?"
     <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GENERIC-SCOPE-STAGE>
     ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM."
     <COND (<OR <BTST .BITS ,SF-HELD>
