@@ -53,7 +53,7 @@
                    ,PRONOUN-DEFINITIONS>>>
     <EVAL .RTN>
 
-    ;"Define EXPAND-PRONOUNS"
+    ;"Define EXPAND-PRONOUN"
     <SET RTN
         <FORM ROUTINE EXPAND-PRONOUN EP '(W OBJS "AUX" CNT)
             <FORM COND
