@@ -56,7 +56,9 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
                   <SET V <ORB .V ,P-OF-PRSI>>)
                  (<N==? .WHICH PRSO>
                   <ERROR BAD-ARGUMENT WHICH .WHICH>)>)>
-    <FORM SETG P-O-REASON .V>>
+    <FORM PROG '()
+          <FORM SETG P-O-REASON .V>
+          <FORM SETG P-V-WORDN 0>>>
 
 <CONSTANT O-RES-NOT-HANDLED 0>   ;"Not an orphaning response; parse as usual"
 <CONSTANT O-RES-REORPHANED 1>    ;"We asked another question; abort parse"

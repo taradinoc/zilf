@@ -169,7 +169,7 @@ Args:
 <GLOBAL P-LEN 0>
 <GLOBAL P-V <>>
 <GLOBAL P-V-WORD <>>
-<GLOBAL P-V-WORDN 0>
+<GLOBAL P-V-WORDN 0>    ;"0 = invalid, e.g. after orphaning; use P--WORD instead"
 <GLOBAL P-NOBJ 0>
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
@@ -864,7 +864,7 @@ Returns:
     <COND (<=? .F ,PERSONBIT> <TELL "Whom">)
           (ELSE <TELL "What">)>
     <TELL " do you want to ">
-    <PRINT-WORD ,P-V-WORDN>
+    <PRINT-VERB>
     <COND (.SP1
            <TELL " " B <GET-PREP-WORD .SP1>>)>
     <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
@@ -872,6 +872,10 @@ Returns:
            <COND (.SP2
                   <TELL " " B <GET-PREP-WORD .SP2>>)>)>
     <TELL "?" CR>>
+
+<ROUTINE PRINT-VERB ()
+    <COND (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
+          (ELSE <PRINTB ,P-V-WORD>)>>
 
 ;"Applies the rules for the MANY syntax flag to PRSO or PRSI, printing a
 failure message if appropriate.
@@ -893,7 +897,7 @@ Returns:
            <TELL "You can't use multiple ">
            <COND (.INDIRECT? <TELL "in">)>
            <TELL "direct objects with \"">
-           <PRINT-WORD ,P-V-WORDN>
+           <PRINT-VERB>
            <TELL "\"." CR>
            <RFALSE>)>
     <RTRUE>>
