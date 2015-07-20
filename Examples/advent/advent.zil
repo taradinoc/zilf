@@ -1388,7 +1388,7 @@ A passage continues west and up here.")
     (IN ROOMS)
     (LDESC "You are in a large room, with a passage to the south,
 a passage to the west, and a wall of broken rock to the east.
-There is a large \"Y2\" on a rock in the rooms center.")
+There is a large \"Y2\" on a rock in the room's center.")
     (SOUTH TO LOW-N/S-PASSAGE)
     (EAST TO JUMBLE-OF-ROCK)
     (WEST TO AT-WINDOW-ON-PIT-1)
@@ -1913,7 +1913,7 @@ There is a large hole in the wall about 25 feet above you.")
            <TELL "There is a 12-foot-tall beanstalk stretching up out of the pit,
 bellowing \"Water!! Water!!\"">)
           (ELSE
-           <TELL "There is a giantic beanstalk stretching all the way up to the hole.">)>>
+           <TELL "There is a gigantic beanstalk stretching all the way up to the hole.">)>>
 
 <ROUTINE PLANT-F ("AUX" F)
     <COND (<VERB? CLIMB>
