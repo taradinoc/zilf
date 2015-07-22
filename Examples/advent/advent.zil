@@ -1952,11 +1952,11 @@ bellowing \"Water!! Water!!\"" CR>)
            <COND (<=? ,PLANT-HEIGHT ,TINY-HEIGHT>
                   <TELL "It's just a little plant!" CR>)
                  (<=? ,PLANT-HEIGHT ,TALL-HEIGHT>
-                  <TELL "You have climbed up the plant and out of the pit." CR>
+                  <TELL "You have climbed up the plant and out of the pit." CR CR>
                   <GOTO ,AT-WEST-END-OF-TWOPIT-ROOM>
                   <RTRUE>)
                  (ELSE
-                  <TELL "You clamber up the plant and scurry through the hole at the top." CR>
+                  <TELL "You clamber up the plant and scurry through the hole at the top." CR CR>
                   <GOTO ,IN-NARROW-CORRIDOR>
                   <RTRUE>)>)
           (<VERB? TAKE>
@@ -3790,7 +3790,7 @@ He snatches your treasure and vanishes into the gloom." CR>>
     <TELL CR "The sepulchral voice intones, \"The cave is now closed.\"
 As the echoes fade, there is a blinding flash of light (and a small
 puff of orange smoke). . .||
-As your eyes refocus, you look around..." CR>
+As your eyes refocus, you look around..." CR CR>
     <GOTO ,AT-NE-END>
     <RTRUE>>
 
