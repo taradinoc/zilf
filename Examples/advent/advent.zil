@@ -4127,18 +4127,20 @@ Everything disappears in a dense cloud of orange smoke."
            <TELL "Oil? What oil?" CR>)>>
 
 <ROUTINE V-POUR-LIQUID ()
-    <PERFORM ,V?EMPTY ,BOTTLE>>
+    <COND (<PRSO? ,WINNER> <POINTLESS "Soaking">)
+          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER>)
+          (ELSE <PERFORM ,V?EMPTY ,BOTTLE>)>>
 
 <ROUTINE PRE-POUR ("AUX" F)
-    <COND (<AND <FSET? ,PRSO ,CONTBIT> <SET F <FIRST? ,PRSO>>>
-           <PERFORM ,V?POUR .F ,PRSI>)
+    <COND (<FSET? ,PRSO ,CONTBIT>
+           <COND (<SET F <FIRST? ,PRSO>>
+                  <PERFORM ,V?POUR .F ,PRSI>)
+                 (ELSE <TELL CT ,PRSO " is empty." CR>)>)
           (<NOT <HELD? ,PRSO ,WINNER>>
            <TELL "You aren't holding " T ,PRSO "." CR>)>>
 
 <ROUTINE V-POUR ()
-    <COND (<PRSI? ,WINNER> <POINTLESS "Dousing yourself">)
-          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
-          (<PRSO? ,WATER-IN-BOTTLE> <PERFORM ,V?WATER ,PRSI>)
+    <COND (<PRSO? ,WATER-IN-BOTTLE> <PERFORM ,V?WATER ,PRSI>)
           (<PRSO? ,OIL-IN-BOTTLE> <PERFORM ,V?OIL ,PRSI>)
           (ELSE <NOT-POSSIBLE "pour">)>>
 
