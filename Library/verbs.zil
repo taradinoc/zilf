@@ -330,15 +330,16 @@ Args:
             ;"objects with DESCFCNs"
             (<SET P <GETP .I ,P?DESCFCN>>
              <CRLF>
-             <APPLY .P>
-             <CRLF>)
-            ;"un-moved objects with FDESCs"
-            (<AND <NOT <FSET? .I ,TOUCHBIT>>
-                  <SET P <GETP .I ,P?FDESC>>>
-             <TELL CR .P CR>)
-            ;"objects with LDESCs"
-            (<SET P <GETP .I ,P?LDESC>>
-             <TELL CR .P CR>)>>
+             ;"The DESCFCN is responsible for listing the object's contents"
+             <APPLY .P>)
+            ;"objects with applicable FDESCs or LDESCs"
+            (<OR <AND <NOT <FSET? .I ,TOUCHBIT>>
+                      <SET P <GETP .I ,P?FDESC>>>
+                 <SET P <GETP .I ,P?LDESC>>>
+             <TELL CR .P CR>
+             ;"Describe contents if applicable"
+             <COND (<AND <SEE-INSIDE? .I> <FIRST? .I>>
+                    <DESCRIBE-CONTENTS .I>)>)>>
     ;"See if there are any non fdesc, ndescbit, personbit objects in room"
     <MAP-CONTENTS (I .RM)
         <COND (<GENERIC-DESC? .I>
@@ -349,11 +350,11 @@ Args:
            <TELL CR "There ">
            <LIST-OBJECTS .RM GENERIC-DESC? ,L-ISMANY>
            <TELL " here." CR>)>
-    ;"describe visible contents of containers and surfaces"
+    ;"describe visible contents of generic-desc containers and surfaces"
     <MAP-CONTENTS (I .RM)
-        <COND (<AND <NOT <FSET? .I ,NDESCBIT>>
-                    <FIRST? .I>
-                    <SEE-INSIDE? .I>>
+        <COND (<AND <SEE-INSIDE? .I>
+                    <GENERIC-DESC? .I>
+                    <FIRST? .I>>
                <DESCRIBE-CONTENTS .I>)>>
     ;"See if there are any NPCs"
     <SET N <>>
