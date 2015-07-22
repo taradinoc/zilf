@@ -13,6 +13,7 @@
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 <COMPILATION-FLAG DEBUG <>>
+<COMPILATION-FLAG DEBUGGING-VERBS T>
 <COMPILATION-FLAG BETA T>
 <COMPILATION-FLAG DBMAZE <>>   ;"Gives the maze rooms unique names"
 
@@ -3919,8 +3920,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
         <COND (<=? .ARG ,M-LOOK>
                <TELL "It is pitch dark. You can't see a thing." CR>)
               (<=? .ARG ,M-SCOPE?>
-               ;"The player can refer to their inventory items in the dark, but nothing else."
-               <SCOPE-STAGE? INVENTORY>)
+               <SCOPE-STAGE? GENERIC INVENTORY GLOBALS>)
               (<=? .ARG ,M-NOW-DARK>
                <TELL "You are plunged into darkness." CR>)
               (<=? .ARG ,M-NOW-LIT>

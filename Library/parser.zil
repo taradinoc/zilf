@@ -7,9 +7,15 @@
     (EZIP)
     (ELSE <ZIP-OPTIONS UNDO COLOR>)>
 
+;"Filled in by compiler"
+<CONSTANT LAST-OBJECT <>>
+
 "Debugging"
 
-<COMPILATION-FLAG-DEFAULT DEBUG ;T <>>
+;"Enables trace messages"
+<COMPILATION-FLAG-DEFAULT DEBUG <>>
+;"Enables XTREE, XGOTO, etc."
+<COMPILATION-FLAG-DEFAULT DEBUGGING-VERBS <>>
 
 "In V3, we need these globals for the status line. In V5, we could
 call them something else, but we'll continue the tradition anyway."
@@ -30,10 +36,6 @@ call them something else, but we'll continue the tradition anyway."
 <CONSTANT BRIEF 1>
 <CONSTANT VERBOSE 2>
 
-<IF-DEBUG
-    <GLOBAL DBCONT <>>
-    <GLOBAL DTURNS <>>>
-
 <ADD-TELL-TOKENS
     T *     <PRINT-DEF .X>
     A *     <PRINT-INDEF .X>
@@ -52,6 +54,32 @@ other versions. These macros let us write the same code for all versions."
         <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
         <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>)>
+
+"Property and flag defaults"
+
+<COND (<NOT <GASSIGNED? EXTRA-FLAGS>> <SETG EXTRA-FLAGS '()>)>
+
+;"These are all set on ROOMS in case no game objects define them."
+<SETG KNOWN-FLAGS
+    (PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT
+     LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
+     OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
+     PLURALBIT KLUDGEBIT DOORBIT TRYTAKEBIT
+     !,EXTRA-FLAGS)>
+
+;"Default property values. Even properties with uninteresting defaults are
+  listed here in case no game objects define them."
+<PROPDEF SIZE 5>
+<PROPDEF ADJECTIVE <>>
+<PROPDEF LDESC <>>
+<PROPDEF FDESC <>>
+<PROPDEF GLOBAL <>>
+<PROPDEF TEXT <>>
+<PROPDEF CONTFCN <>>
+<PROPDEF DESCFCN <>>
+<PROPDEF TEXT-HELD <>>
+<PROPDEF CAPACITY -1>
+<PROPDEF ARTICLE <>>
 
 "Parser"
 
@@ -278,23 +306,27 @@ Args:
 
     <VERSION?
         (ZIP
-            <ROUTINE PRINT-ADJ (A "AUX" W CNT SIZE)
-                <SET W ,VOCAB>
-                <SET W <+ .W 1 <GETB .W 0>>>
-                <SET SIZE <GETB .W 0>>
-                <SET W <+ .W 1>>
-                <SET CNT <GET .W 0>>
-                <SET W <+ .W 2>>
-                <DO (I 1 .CNT)
-                    <COND (<=? <CHKWORD? .W ,PS?ADJECTIVE ,P1?ADJECTIVE> .A>
-                           <TELL B .W>
-                           <RTRUE>)>
-                    <SET W <+ .W .SIZE>>>
-                <TELL "???">>)
+            <DEFMAC PRINT-ADJ ('A)
+                <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
         (ELSE
             <DEFMAC PRINT-ADJ ('A)
                 <TELL B .A>>)>
 >
+
+<IFFLAG (<OR DEBUG DEBUGGING-VERBS>
+         <ROUTINE PRINT-MATCHING-WORD (V PS P1 "AUX" W CNT SIZE)
+             <SET W ,VOCAB>
+             <SET W <+ .W 1 <GETB .W 0>>>
+             <SET SIZE <GETB .W 0>>
+             <SET W <+ .W 1>>
+             <SET CNT <GET .W 0>>
+             <SET W <+ .W 2>>
+             <DO (I 1 .CNT)
+                 <COND (<=? <CHKWORD? .W .PS .P1> .V>
+                        <TELL B .W>
+                        <RTRUE>)>
+                 <SET W <+ .W .SIZE>>>
+             <TELL "???">>)>
 
 "Noun phrase storage for direct/indirect objects"
 <CONSTANT P-NP-DOBJ <NOUN-PHRASE>>
@@ -1942,30 +1974,10 @@ or reveal a light source."
 
 "Objects"
 
+
 ;"This has all the flags, just in case other objects don't define them."
 <OBJECT ROOMS
-    (FLAGS PERSONBIT TOUCHBIT TAKEBIT WEARBIT INVISIBLE WORNBIT LIGHTBIT
-           LOCKEDBIT SURFACEBIT CONTBIT NDESCBIT VOWELBIT NARTICLEBIT OPENBIT
-           OPENABLEBIT READBIT DEVICEBIT ONBIT EDIBLEBIT TRANSBIT FEMALEBIT
-           PLURALBIT KLUDGEBIT DOORBIT TRYTAKEBIT)>
-
-;"This has any special properties, just in case other objects don't define them."
-;"I guess all properties should go on this dummy object, just to be safe?"
-<OBJECT NULLTHANG
-    (SIZE 5)
-    (ADJECTIVE NULLTHANG)
-    (LDESC <>)
-    (FDESC <>)
-    (GLOBAL NULLTHANG)
-    (TEXT <>)
-    (CONTFCN <>)
-    (DESCFCN <>)
-    (TEXT-HELD <>)
-    (CAPACITY 10)
-    (ARTICLE <>)>
-
-<PROPDEF SIZE 5>
-<PROPDEF CAPACITY -1>
+    (FLAGS %<CHTYPE ,KNOWN-FLAGS SPLICE>)>
 
 <OBJECT GLOBAL-OBJECTS>
 
