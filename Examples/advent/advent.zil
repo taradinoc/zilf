@@ -118,9 +118,10 @@ Adapted once more by Jesse McGrew (2015)">>
 <SETG EXTRA-GAME-VERBS '(SCORE)>
 <IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY)>>
 
-;"This is used by the debugging verbs."
+;"This is used by the debugging verbs.
+  Note: TREASUREBIT isn't listed because it's a bit synonym."
 <SETG EXTRA-FLAGS
-    '(SACREDBIT MULTITUDEBIT TREASUREBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
+    '(SACREDBIT MULTITUDEBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
 
 ;"We replace a few library sections below."
 <DELAY-DEFINITION DARKNESS-F>
@@ -139,6 +140,12 @@ Adapted once more by Jesse McGrew (2015)">>
 
 ;"Properties"
 <PROPDEF DEPOSIT-POINTS 10>
+
+;"We're almost over the limit of flags for Z-machine version 3, but we
+  can save one flag by making TREASUREBIT a synonym of SACREDBIT. This
+  works because SACREDBIT is only for rooms and TREASUREBIT is only for
+  things."
+<BIT-SYNONYM SACREDBIT TREASUREBIT>
 
 ;----------------------------------------------------------------------
 "Scoring and treasure counting"
@@ -3033,7 +3040,7 @@ a treasure before you may cross.")
     (TEXT "Trolls are close relatives with rocks and have skin as tough
 as that of a rhinoceros.")
     (ACTION TROLL-F)
-    (FLAGS PERSONBIT)>
+    (FLAGS PERSONBIT ATTACKBIT)>
 
 <GLOBAL TROLL-CAUGHT-TREASURE <>>
 
@@ -4224,6 +4231,8 @@ appears out of nowhere!" CR>)>)>)
 
 <SYNTAX USE OBJECT = V-USE>
 
+;"TODO: Eliminate MULTITUDEBIT since it's almost identical to PLURALBIT.
+  Just list the special cases here."
 <ROUTINE V-COUNT ()
     <COND (<FSET? ,PRSO ,MULTITUDEBIT>
            <TELL "There are a multitude." CR>)
@@ -4239,6 +4248,13 @@ appears out of nowhere!" CR>)>)>)
 
 ;----------------------------------------------------------------------
 
+<SYNTAX ATTACK OBJECT (FIND ATTACKBIT) (ON-GROUND IN-ROOM) WITH OBJECT (HAVE HELD CARRIED) = V-STHROW-AT>
+
+<ROUTINE V-STHROW-AT ()
+    <PERFORM ,V?THROW-AT ,PRSI ,PRSO>>
+
+;----------------------------------------------------------------------
+
 <SYNTAX CROSS OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
 <SYNTAX OPEN OBJECT (FIND LOCKEDBIT) WITH OBJECT (HAVE HELD CARRIED) = V-UNLOCK>
 <SYNTAX CLOSE OBJECT WITH OBJECT (HAVE HELD CARRIED) = V-LOCK>
@@ -4249,8 +4265,6 @@ appears out of nowhere!" CR>)>)>)
 <SYNTAX LIGHT OBJECT (FIND DEVICEBIT) = V-TURN-ON>
 <SYNTAX UNLIGHT OBJECT (FIND DEVICEBIT) = V-TURN-OFF>
 <SYNONYM UNLIGHT EXTINGUISH>
-
-;----------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
 "Help and info commands"
