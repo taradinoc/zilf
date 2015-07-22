@@ -193,4 +193,15 @@ red cube: You pick up the red cube.|">
     <COMMAND [BLUE CUBE]>
     <EXPECT "That's not something you can unlock.|">>
 
+<TEST-CASE ("Missing PRSO, ambiguous orphan response, disambiguate")
+    <MOVE ,RED-CUBE ,WINNER>
+    <MOVE ,GREEN-CUBE ,WINNER>
+    <COMMAND [TOSS RED CUBE AT BLUE CUBE]>
+    <COMMAND [TOSS]>
+    <EXPECT "What do you want to toss?|">
+    <COMMAND [CUBE]>
+    <EXPECT "Which do you mean, the green cube or the red cube?|">
+    <COMMAND [RED]>
+    <EXPECT "What do you want to toss the red cube at?|">>
+
 <TEST-GO ,STARTROOM>
