@@ -1160,15 +1160,11 @@ Returns:
         ;"Look for matching objects"
         <SET NOUT 0>
         <COND (<0? .NY>
-               ;"ALL with no YSPECs matches all objects, or if the action is TAKE,
+               ;"ALL with no YSPECs matches all objects, or if the action is TAKE/DROP,
                  all objects with TAKEBIT/TRYTAKEBIT, skipping generic/global objects."
                <MAP-SCOPE (I [BITS .BITS])
                    <COND (<SCOPE-STAGE? GENERIC GLOBALS>)
-                         (<FSET? .I ,INVISIBLE>)
-                         (<=? .I ,WINNER>)
-                         (<AND <VERB? TAKE>
-                               <NOT <OR <FSET? .I ,TAKEBIT>
-                                    <FSET? .I ,TRYTAKEBIT>>>>)
+                         (<NOT <ALL-INCLUDES? .I>>)
                          (<AND .NN <NP-EXCLUDES? .NP .I>>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
                           <TELL "[too many objects!]" CR>
@@ -1240,6 +1236,13 @@ Returns:
                <COND (<=? .NP ,P-NP-DOBJ> <ORPHAN T AMBIGUOUS PRSO>)
                      (ELSE <ORPHAN T AMBIGUOUS PRSI>)>
                <RFALSE>)>>>
+
+<ROUTINE ALL-INCLUDES? (OBJ)
+    <NOT <OR <FSET? .OBJ ,INVISIBLE>
+             <=? .OBJ ,WINNER>
+             <AND <VERB? TAKE DROP>
+                  <NOT <OR <FSET? .OBJ ,TAKEBIT>
+                       <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
     <TELL "Which do you mean, ">
