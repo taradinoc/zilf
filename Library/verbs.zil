@@ -167,20 +167,23 @@
 
 <SYNTAX PRONOUNS = V-PRONOUNS>
 
-;"debugging verbs - remove"
-<IF-DEBUG
-    <SYNTAX DROB OBJECT = V-DROB>
-    <SYNTAX DSEND OBJECT TO OBJECT = V-DSEND>
-    <SYNTAX DOBJL OBJECT = V-DOBJL>
-    ;<SYNTAX DVIS = V-DVIS>
-    ;<SYNTAX DMETALOC OBJECT = V-DMETALOC>
-    ;<SYNTAX DACCESS OBJECT = V-DACCESS>
-    ;<SYNTAX DHELD OBJECT IN OBJECT = V-DHELD>
-    ;<SYNTAX DHELDP OBJECT = V-DHELDP>
-    ;<SYNTAX DLIGHT = V-DLIGHT>
-    <SYNTAX DCONT = V-DCONT>
-    <SYNTAX DTURN = V-DTURN>
-    <SYNTAX DSCOPE = V-DSCOPE>
+;"Debugging verbs"
+<IF-DEBUGGING-VERBS
+    <SYNTAX XTREE = V-XTREE>
+    <SYNTAX XTREE OBJECT = V-XTREE>
+    
+    <SYNTAX XGOTO OBJECT = V-XGOTO>
+    
+    <SYNTAX XMOVE OBJECT TO OBJECT (FIND PERSONBIT) = V-XMOVE>
+    <SYNTAX XREMOVE OBJECT = V-XREMOVE>
+    
+    <SYNTAX XLIGHT = V-XLIGHT>
+    
+    <SYNTAX XEXITS = V-XEXITS>
+    
+    <SYNTAX XOBJ OBJECT = V-XOBJ>
+    
+    <SYNTAX XIT OBJECT = V-XIT>
 >
 
 ;"Constants"
@@ -642,7 +645,12 @@ Returns:
 <DEFMAC GAME-VERB? ()
     <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY UNDO
                 SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
-                PRONOUNS !,EXTRA-GAME-VERBS>>
+                PRONOUNS
+                !<IFFLAG
+                    (DEBUGGING-VERBS
+                     '(XTREE XGOTO XMOVE XREMOVE XLIGHT XEXITS XOBJ XIT))
+                    (ELSE '())>
+                !,EXTRA-GAME-VERBS>>
 
 <COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
@@ -996,22 +1004,12 @@ Returns:
            <PRINTR "You can't put something in itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
-                  <IF-DEBUG <COND (,DBCONT
-                                   <TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)>>)
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>)
                  (ELSE
-                  <IF-DEBUG <COND (,DBCONT
-                                   <TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>)>>
                   <SET CCAP 5>
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-           ;<COND (<AND ,DBCONT> <TELL D ,PRSI " has a size of " N .CSIZE CR>)>
-        <IF-DEBUG <COND (,DBCONT
-               <TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE CR>)>>
-        ;<COND (<0? .B>
-        ;<TELL N .CCAP CR>)
-        ;(ELSE <TELL "infinite" CR>)>
         <COND (<OR <G? .S .CCAP>
                    <G? .S .CSIZE>>
                <TELL "That won't fit in " T ,PRSI "." CR>
@@ -1023,15 +1021,7 @@ Returns:
                <SET X <+ .W .S>>
                <COND (<G? .X .CCAP>
                       <TELL "There's not enough room in " T ,PRSI "." CR>
-                      <IF-DEBUG <COND (,DBCONT
-                             <TELL D ,PRSO " can't fit, since current bulk of "
-                                   D ,PRSI "'s contents is " N .W " and "
-                                   D ,PRSI "'s capacity is " N .CCAP CR>)>>
-                      <RETURN>)>
-               <IF-DEBUG <COND (,DBCONT
-                      <TELL D ,PRSO " can fit, since current bulk of " D ,PRSI
-                            "'s contents is " N .W " and " D ,PRSI "'s capacity is "
-                            N .CCAP CR>)>>)>
+                      <RETURN>)>)>
         <MOVE ,PRSO ,PRSI>
         <FSET ,PRSO ,TOUCHBIT>
         <FCLEAR ,PRSO ,WORNBIT>
@@ -1373,123 +1363,175 @@ Returns:
            <TELL "Failed." CR>)>>
 
 ;"Debugging verbs"
-<IF-DEBUG
-    <ROUTINE V-DROB ()
-        <TELL "REMOVING CONTENTS OF " D ,PRSO " FROM THE GAME." CR>
-        <ROB ,PRSO>>
+<IF-DEBUGGING-VERBS
 
-    <ROUTINE V-DSEND ()
-        <TELL "SENDING CONTENTS OF " D ,PRSO " TO " D ,PRSI "." CR>
-        <ROB ,PRSO ,PRSI>>
+    <ROUTINE OBJREF? (O)
+        <COND (<=? .O ,NUMBER>
+               <COND (<AND <G=? ,P-NUMBER 1>
+                           <L=? .O ,LAST-OBJECT>>
+                      ,P-NUMBER)
+                     (ELSE
+                      <TELL "[Bad objref.]" CR>
+                      <>)>)
+              (ELSE .O)>>
 
-    <ROUTINE V-DOBJL ()
-        <MAP-CONTENTS (I ,PRSO)
-            <TELL "The objects in " T ,PRSO " include " D .I CR>>>
+    <CONSTANT TREE-INDENT <ITABLE BYTE 80 <BYTE !\ >>>
 
-    ;<ROUTINE V-DVIS ("AUX" P)
-        <SET P <VISIBLE? ,BILL>>
-        <COND (<NOT .P>
-                    <TELL "The bill is not visible." CR>)
-                        (ELSE
-                    <TELL "The bill is visible." CR>)>
-        <SET P <VISIBLE? ,GRIME>>
-        <COND (<NOT .P>
-                    <TELL "The grime is not visible." CR>)
-                        (ELSE
-                    <TELL "The grime is visible." CR>)>
-        >
-
-    ;<ROUTINE V-DMETALOC ("AUX" P)
-        <SET P <META-LOC ,PRSO>>
-        <COND (<NOT .P>
-                <TELL "META-LOC returned false." CR>)
-                  (ELSE
-                <TELL "Meta-Loc of " D ,PRSO " is " D .P CR>)>
-        <SET P <META-LOC ,GRIME>>
-        <COND (<NOT .P>
-                <TELL "META-LOC of grime returned false." CR>)
-                  (ELSE
-                <TELL "Meta-Loc of grime is " D .P CR>)
-                >
-        >
-
-    ;<ROUTINE V-DACCESS ("AUX" P)
-        <SET P <ACCESSIBLE? ,PRSO>>
-        <COND (<NOT .P>
-                <TELL D ,PRSO " is not accessible" CR>)
-                  (ELSE
-                <TELL D ,PRSO " is accessible" CR>)>
-        <SET P <ACCESSIBLE? ,BILL>>
-        <COND (<NOT .P>
-                <TELL "Bill is not accessible" CR>)
-                  (ELSE
-                <TELL "Bill is accessible" CR>)>
-        >
-
-    ;<ROUTINE V-DHELD ("AUX" P)
-        <SET P <HELD? ,PRSO ,PRSI>>
-        <COND (<NOT .P>
-                <TELL D ,PRSO " is not held by " D ,PRSI CR>)
-                  (ELSE
-                <TELL D ,PRSO " is held by " D ,PRSI CR>)>
-        <SET P <HELD? ,PRSO ,FOYER>>
-        <COND (<NOT .P>
-                <TELL D ,PRSO " is not held by the Foyer" CR>)
-                  (ELSE
-                <TELL D ,PRSO " is held by the Foyer" CR>)>
-        >
-
-    ;<ROUTINE V-DHELDP ("AUX" P)
-        <SET P <HELD? ,PRSO>>
-        <COND (<NOT .P>
-                <TELL D ,PRSO " is not held by the player" CR>)
-                  (ELSE
-                <TELL D ,PRSO " is held by the player" CR>)>
-        <SET P <HELD? ,BILL>>
-        <COND (<NOT .P>
-                <TELL "Bill is not held by the player" CR>)
-                  (ELSE
-                <TELL "Bill is held by the player" CR>)>
-        >
-
-    ;<ROUTINE V-DLIGHT ()
-        <COND (<FSET? ,FLASHLIGHT ,LIGHTBIT>
-                    <FCLEAR ,FLASHLIGHT ,LIGHTBIT>
-                    <FCLEAR ,FLASHLIGHT ,ONBIT>
-                    <TELL "Flashlight is turned off." CR>
-                    <NOW-DARK>)
-                  (ELSE
-                    <TELL "Flashlight is turned on." CR>
-                    <NOW-LIT>
-                    ;"always set LIGHTBIT after calling NOW-LIT"
-                    <FSET ,FLASHLIGHT ,LIGHTBIT>
-                    <FSET ,FLASHLIGHT ,ONBIT>
-                    )>
-        >
-
-    <ROUTINE V-DCONT ()
-        <COND (,DBCONT
-               <SET DBCONT <>>
-               <TELL "Reporting of PUT-IN process with containers turned off." CR>)
+    <ROUTINE V-XTREE ("AUX" OFL ROOT L)
+        <SET OFL <LOWCORE FLAGS>>
+        <LOWCORE FLAGS <ORB .OFL 2>>
+        <PUTB ,TREE-INDENT 0 0>
+        <COND (<SET ROOT <OBJREF? ,PRSO>>
+               <COND (<SET L <LOC .ROOT>>
+                      <PRINT-OBJREF .L>
+                      <CRLF>)>
+               <TREE-FROM .ROOT>)
               (ELSE
-               <SET DBCONT T>
-               <TELL "Reporting of PUT-IN process with containers turned on." CR>)>>
+               <DO (I ,LAST-OBJECT 1 -1)
+                   <COND (<IN? .I <>> <TREE-FROM .I>)>>)>
+        <LOWCORE FLAGS .OFL>>
 
-    <ROUTINE V-DTURN ()
-        <COND (,DTURNS
-               <SET DTURNS <>>
-               <TELL "Reporting of TURN # turned off." CR>)
+    <ROUTINE TREE-FROM (O "AUX" I)
+        <PRINT-TREE-INDENT>
+        <TELL "- ">
+        <PRINT-OBJREF .O>
+        <CRLF>
+        <SET I <GETB ,TREE-INDENT 0>>
+        <COND (<AND .I <=? <GETB ,TREE-INDENT .I> !\`>>
+               <PUTB ,TREE-INDENT .I !\ >)>
+        <INC I>
+        <PUTB ,TREE-INDENT .I !\ >
+        <INC I>
+        <PUTB ,TREE-INDENT .I !\ >
+        <INC I>
+        <PUTB ,TREE-INDENT .I !\|>
+        <PUTB ,TREE-INDENT 0 .I>
+        <MAP-CONTENTS (C N .O)
+            <COND (<NOT .N> <PUTB ,TREE-INDENT .I !\`>)>
+            <TREE-FROM .C>>
+        <PUTB ,TREE-INDENT 0 <- .I 3>>>
+
+    <ROUTINE PRINT-TREE-INDENT ("AUX" MAX)
+        <SET MAX <GETB ,TREE-INDENT 0>>
+        <OR .MAX <RETURN>>
+        <DO (I 1 .MAX)
+            <PRINTC <GETB ,TREE-INDENT .I>>>>
+
+    <ROUTINE PRINT-OBJREF (O)
+        ;"Object name"
+        <COND (<0? .O> <TELL "<>">)
+              (<=? .O ,ROOMS> <TELL "ROOMS">)
+              (<=? .O ,GLOBAL-OBJECTS> <TELL "GLOBAL-OBJECTS">)
+              (<=? .O ,LOCAL-GLOBALS> <TELL "LOCAL-GLOBALS">)
+              (<=? .O ,GENERIC-OBJECTS> <TELL "GENERIC-OBJECTS">)
+              (ELSE <TELL D .O>)>
+        ;"Object number"
+        <TELL " (" N .O ")">>
+
+    <ROUTINE PRINT-VARREF (N)
+        <TELL !\[>
+        <COND (<=? .N 0> <TELL "stack">)
+              (<L=? .N 15> <TELL "local " N .N>)
+              (<L=? .N 255> <TELL "global " N .N>)
+              (ELSE <TELL "bad var " N .N>)>
+        <TELL " = " <VALUE .N> !\]>>
+
+    <CONSTANT FLAG-NAMES
+        <PLTABLE
+            %<MAPF <FUNCTION ("TUPLE" A) <CHTYPE .A SPLICE>>
+                   <FUNCTION (FLAG) <MAPRET .FLAG <SPNAME .FLAG>>>
+                   ,KNOWN-FLAGS>>>
+
+    <ROUTINE PRINT-FLAGREF (N "AUX" MAX)
+        <TELL N .N>
+        <SET MAX <GET ,FLAG-NAMES 0>>
+        <DO (I 1 .MAX 2)
+            <COND (<=? <GET ,FLAG-NAMES .I> .N>
+                   <TELL " (" <GET ,FLAG-NAMES <+ .I 1>> ")">
+                   <RETURN>)>>>
+
+    <ROUTINE V-XGOTO ("AUX" D)
+        <COND (<SET D <OBJREF? ,PRSO>>
+               <GOTO .D>)>>
+    
+    <ROUTINE V-XMOVE ("AUX" V D)
+        <COND (<AND <SET V <OBJREF? ,PRSO>>
+                    <SET D <OBJREF? ,PRSI>>>
+               <MOVE .V .D>
+               <TELL "Moved ">
+               <PRINT-OBJREF .V>
+               <TELL " to ">
+               <PRINT-OBJREF .D>
+               <TELL "." CR>)>>
+
+    <ROUTINE V-XREMOVE (V)
+        <COND (<SET V <OBJREF? ,PRSO>>
+               <REMOVE .V>
+               <TELL "Removed ">
+               <PRINT-OBJREF .V>
+               <TELL "." CR>)>>
+
+    <ROUTINE V-XLIGHT ()
+        <COND (<FSET? ,WINNER ,LIGHTBIT>
+               <FCLEAR ,WINNER ,LIGHTBIT>
+               <TELL "You stop glowing." CR>
+               <NOW-DARK?>)
               (ELSE
-               <SET DTURNS T>
-               <TELL "Reporting of TURN # turned on." CR>)>>
+               <FSET ,WINNER ,LIGHTBIT>
+               <TELL "You're now glowing." CR>
+               <NOW-LIT?>)>>
 
-    <ROUTINE V-DSCOPE ("AUX" S)
-        <MAP-SCOPE (I)
-            %<FORM COND
-                   !<MAPF ,LIST
-                          <FUNCTION (STG)
-                              <LIST <FORM SCOPE-STAGE? <1 .STG>>
-                                    <FORM SET S <SPNAME <1 .STG>>>>>
-                          ,SCOPE-STAGES>>
-            <TELL .S ": " D .I CR>>>
+    <ROUTINE V-XEXITS ("AUX" S M)
+        <MAP-DIRECTIONS (D PT ,HERE)
+            <PRINT-MATCHING-WORD .D ,PS?DIRECTION ,P1?DIRECTION>
+            <TELL " -> ">
+            <SET S <PTSIZE .PT>>
+            <COND (<=? .S ,UEXIT>
+                   <TELL "TO ">
+                   <PRINT-OBJREF <GET/B .PT ,EXIT-RM>>)
+                  (<=? .S ,NEXIT>
+                   <TELL "SORRY \"" <GET .PT ,NEXIT-MSG> "\"">)
+                  (<=? .S ,FEXIT>
+                   <TELL "PER " N <GET .PT ,FEXIT-RTN>>)
+                  (<=? .S ,CEXIT>
+                   <TELL "TO ">
+                   <PRINT-OBJREF <GET/B .PT ,EXIT-RM>>
+                   <TELL " IF ">
+                   <PRINT-VARREF <GETB .PT ,CEXIT-VAR>>
+                   <COND (<SET M <GET .PT ,CEXIT-MSG>>
+                          <TELL " ELSE \"" .M "\"">)>)
+                  (<=? .S ,DEXIT>
+                   <TELL "TO ">
+                   <PRINT-OBJREF <GET/B .PT ,EXIT-RM>>
+                   <TELL " IF ">
+                   <PRINT-OBJREF <GET/B .PT ,DEXIT-OBJ>>
+                   <TELL " IS OPEN">
+                   <COND (<SET M <GET .PT ,DEXIT-MSG>>
+                          <TELL " ELSE \"" .M "\"">)>)
+                  (ELSE
+                   <TELL "??? S=" N .S>)>
+            <CRLF>>>
+
+    <ROUTINE V-XOBJ ("AUX" O F)
+        <COND (<NOT <SET O <OBJREF? ,PRSO>>> <RETURN>)>
+        <PRINT-OBJREF .O>
+        <CRLF>
+        <TELL "Location: " >
+        <PRINT-OBJREF <LOC .O>>
+        <CRLF>
+        <TELL "Flags: ">
+        <DO (I 0 %<VERSION? (ZIP 31) (ELSE 47)>)
+            <COND (<FSET? .O .I>
+                   <COND (.F <TELL ", ">)>
+                   <SET F T>
+                   <PRINT-FLAGREF .I>)>>
+        <CRLF>>
+
+    <ROUTINE V-XIT ("AUX" O)
+        <COND (<NOT <SET O <OBJREF? ,PRSO>>> <RETURN>)>
+        <PUTB ,P-PRO-IT-OBJS 0 1>
+        <PUT/B ,P-PRO-IT-OBJS 1 .O>
+        <TELL "IT now refers to ">
+        <PRINT-OBJREF .O>
+        <TELL "." CR>>
 >
