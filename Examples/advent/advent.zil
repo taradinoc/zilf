@@ -462,8 +462,8 @@ There is a building in the distance.")
 <ROUTINE BRASS-LANTERN-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (<FSET? ,BRASS-LANTERN ,LIGHTBIT>
-           <TELL "Your lamp is here, gleaming brightly.">)
-          (ELSE <TELL "There is a shiny brass lamp nearby.">)>>
+           <TELL "Your lamp is here, gleaming brightly." CR>)
+          (ELSE <TELL "There is a shiny brass lamp nearby." CR>)>>
 
 <ROUTINE BRASS-LANTERN-F ()
     <COND (<VERB? EXAMINE>
@@ -552,7 +552,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (DESC "bottle")
     (IN INSIDE-BUILDING)
     (SYNONYM BOTTLE JAR FLASK)
-    (FDESC "There is an empty bottle here.")
+    (DESCFCN BOTTLE-DESCFCN)
     (ACTION BOTTLE-F)
     (CONTFCN BOTTLE-CONTFCN)
     (FLAGS TAKEBIT CONTBIT OPENBIT)>
@@ -582,11 +582,19 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
           (<AND <VERB? PUT-IN> <PRSI? ,BOTTLE>>
            <PERFORM ,V?FILL-WITH ,PRSO ,PRSI>)>>
 
+<ROUTINE BOTTLE-DESCFCN (ARG "AUX" F)
+    <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
+          (<SET F <FIRST? ,BOTTLE>>
+           <TELL "There is a bottle here, containing " A .F "." CR>)
+          (ELSE
+           <TELL "There is an empty bottle here." CR>)>>
+
 <ROUTINE BOTTLE-CONTFCN ()
     <COND (<VERB? TAKE> <TELL "You're holding that already (in " T ,BOTTLE ")." CR>)>>
 
 <OBJECT WATER-IN-BOTTLE
     (DESC "bottled water")
+    (IN BOTTLE)
     (ARTICLE "some")
     (SYNONYM WATER H2O)
     (ADJECTIVE BOTTLED)
@@ -1919,12 +1927,12 @@ There is a large hole in the wall about 25 feet above you.")
 <ROUTINE PLANT-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)>
     <COND (<=? ,PLANT-HEIGHT ,TINY-HEIGHT>
-           <TELL "There is a tiny little plant in the pit, murmuring \"Water, water, ...\"">)
+           <TELL "There is a tiny little plant in the pit, murmuring \"Water, water, ...\"" CR>)
           (<=? ,PLANT-HEIGHT ,TALL-HEIGHT>
            <TELL "There is a 12-foot-tall beanstalk stretching up out of the pit,
-bellowing \"Water!! Water!!\"">)
+bellowing \"Water!! Water!!\"" CR>)
           (ELSE
-           <TELL "There is a gigantic beanstalk stretching all the way up to the hole.">)>>
+           <TELL "There is a gigantic beanstalk stretching all the way up to the hole." CR>)>>
 
 <ROUTINE PLANT-F ("AUX" F)
     <COND (<VERB? CLIMB>
@@ -1966,8 +1974,7 @@ bellowing \"Water!! Water!!\"">)
           (<VERB? OIL>
            <PERFORM ,V?WATER ,PRSO>)
           (<VERB? EXAMINE>
-           <PLANT-DESCFCN <>>
-           <CRLF>)>>
+           <PLANT-DESCFCN <>>)>>
 
 ;----------------------------------------------------------------------
 
@@ -2278,9 +2285,9 @@ You have just vanquished a dragon with your bare hands!
 <ROUTINE PERSIAN-RUG-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (<IN? ,DRAGON ,HERE>
-           <TELL CT ,DRAGON " is sprawled out on " T ,PERSIAN-RUG "!">)
+           <TELL CT ,DRAGON " is sprawled out on " T ,PERSIAN-RUG "!" CR>)
           (ELSE
-           <TELL CT ,PERSIAN-RUG " is spread out on the floor here.">)>>
+           <TELL CT ,PERSIAN-RUG " is spread out on the floor here." CR>)>>
 
 <ROUTINE PERSIAN-RUG-F ()
     <COND (<AND <VERB? TAKE> <IN? ,DRAGON ,HERE>>
@@ -2412,7 +2419,7 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     <TELL "The way north "
           <COND (<FSET? ,RUSTY-DOOR ,OPENBIT> "leads through")
                 (ELSE "is barred by")>
-          " a massive, rusty, iron door.">>
+          " a massive, rusty, iron door." CR>>
 
 <CONSTANT HINGES-ARE-RUSTED
     "The hinges are quite thoroughly rusted now and won't budge.">
@@ -2747,7 +2754,7 @@ A low hands and knees passage enters from the south.")
 
 <ROUTINE GIANT-BIVALVE-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)>
-    <TELL "There is an enormous " <OYSTER-OR-CLAM> " here with its shell tightly closed.">>
+    <TELL "There is an enormous " <OYSTER-OR-CLAM> " here with its shell tightly closed." CR>>
 
 <ROUTINE ISARE (O)
     <COND (<FSET? .O ,PLURALBIT> "are") (ELSE "is")>>
@@ -3320,13 +3327,13 @@ The only exit is the way you came in.")
 <ROUTINE BEAR-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (,BEAR-FOLLOWING
-           <TELL "You are being followed by a very large, tame bear.">)
+           <TELL "You are being followed by a very large, tame bear." CR>)
           (<NOT ,BEAR-FRIENDLY>
-           <TELL "There is a ferocious cave bear eyeing you from the far end of the room!">)
+           <TELL "There is a ferocious cave bear eyeing you from the far end of the room!" CR>)
           (<=? ,HERE ,IN-BARREN-ROOM>
-           <TELL "There is a gentle cave bear sitting placidly in one corner.">)
+           <TELL "There is a gentle cave bear sitting placidly in one corner." CR>)
           (ELSE
-           <TELL "There is a contented-looking bear wandering about nearby.">)>>
+           <TELL "There is a contented-looking bear wandering about nearby." CR>)>>
 
 <CONSTANT BEAR-IS-YOUR-FRIEND "The bear is confused; he only wants to be your friend.">
 
@@ -3399,8 +3406,8 @@ The bear soon gives up the pursuit and wanders back." CR>)
 <ROUTINE GOLDEN-CHAIN-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
           (<FSET? ,GOLDEN-CHAIN ,LOCKEDBIT>
-           <TELL "The bear is held back by a solid gold chain.">)
-          (ELSE <TELL "A solid golden chain lies in coils on the ground!">)>>
+           <TELL "The bear is held back by a solid gold chain." CR>)
+          (ELSE <TELL "A solid golden chain lies in coils on the ground!" CR>)>>
 
 <ROUTINE GOLDEN-CHAIN-F ()
     <COND (<VERB? TAKE>
