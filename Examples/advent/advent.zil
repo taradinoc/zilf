@@ -437,7 +437,7 @@ There is a building in the distance.")
     (FDESC "There are some keys on the ground here.")
     (TEXT "It's just a normal-looking set of keys.")
     (ACTION SET-OF-KEYS-F)
-    (FLAGS TAKEBIT)>
+    (FLAGS TAKEBIT TOOLBIT)>
 
 <ROUTINE SET-OF-KEYS-F ()
     <COND (<VERB? COUNT> <TELL "A dozen or so keys." CR>)>>
@@ -3348,7 +3348,9 @@ The only exit is the way you came in.")
           (<=? ,HERE ,IN-BARREN-ROOM>
            <TELL "There is a gentle cave bear sitting placidly in one corner." CR>)
           (ELSE
-           <TELL "There is a contented-looking bear wandering about nearby." CR>)>>
+           <TELL "There is a contented-looking bear wandering about nearby." CR>)>
+    <COND (<AND <IN? ,GOLDEN-CHAIN ,HERE> <FSET? ,GOLDEN-CHAIN ,LOCKEDBIT>>
+           <TELL "The bear is held back by a solid gold chain." CR>)>>
 
 <CONSTANT BEAR-IS-YOUR-FRIEND "The bear is confused; he only wants to be your friend.">
 
@@ -3413,17 +3415,12 @@ The bear soon gives up the pursuit and wanders back." CR>)
     (IN IN-BARREN-ROOM)
     (SYNONYM CHAIN LINKS SHACKLES CHAINS)
     (ADJECTIVE SOLID GOLD GOLDEN THICK)
+    ;"The LDESC won't appear until we clear NDESCBIT after the chain is unlocked."
+    (LDESC "A solid golden chain lies in coils on the ground!")
     (TEXT "The chain has thick links of solid gold!")
-    (DESCFCN GOLDEN-CHAIN-DESCFCN)
     (ACTION GOLDEN-CHAIN-F)
     (DEPOSIT-POINTS 14)
-    (FLAGS TAKEBIT TREASUREBIT TRYTAKEBIT LOCKEDBIT)>
-
-<ROUTINE GOLDEN-CHAIN-DESCFCN (ARG)
-    <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
-          (<FSET? ,GOLDEN-CHAIN ,LOCKEDBIT>
-           <TELL "The bear is held back by a solid gold chain." CR>)
-          (ELSE <TELL "A solid golden chain lies in coils on the ground!" CR>)>>
+    (FLAGS TAKEBIT TREASUREBIT TRYTAKEBIT LOCKEDBIT NDESCBIT)>
 
 <ROUTINE GOLDEN-CHAIN-F ()
     <COND (<VERB? TAKE>
@@ -3442,6 +3439,8 @@ which is probably just as well." CR>)
                   <TELL "It's already unlocked." CR>)
                  (ELSE
                   <FCLEAR ,PRSO ,LOCKEDBIT>
+                  <FCLEAR ,PRSO ,NDESCBIT>
+                  <FCLEAR ,PRSO ,TRYTAKEBIT>
                   <TELL "Unlocked." CR>)>)
           (<OR <VERB? CLOSE>
                <AND <VERB? LOCK> <PRSO? ,GOLDEN-CHAIN>>>
