@@ -2538,7 +2538,7 @@ Moss covers the ceiling.")
     (ADJECTIVE HEAVY THICK)
     (TEXT "They seem to absorb sound very well.")
     (ACTION CURTAINS-F)
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT PLURALBIT)>
 
 <ROUTINE CURTAINS-F ()
     <COND (<VERB? TAKE>
