@@ -119,7 +119,8 @@ Adapted once more by Jesse McGrew (2015)">>
 <IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY)>>
 
 ;"This is used by the debugging verbs."
-<SETG EXTRA-FLAGS '(SPRINGBIT LIQUIDBIT SPONGEBIT)>
+<SETG EXTRA-FLAGS
+    '(SACREDBIT MULTITUDEBIT TREASUREBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
 
 ;"We replace a few library sections below."
 <DELAY-DEFINITION DARKNESS-F>
@@ -1321,7 +1322,8 @@ The hall joins up with a narrow north/south passage.")
     (ADJECTIVE HUGE FIERCE GREEN FEROCIOUS ;VENEMOUS VENOMOUS LARGE BIG KILLER)
     (FDESC "A huge green fierce snake bars the way!")
     (TEXT "I wouldn't mess with it if I were you.")
-    (ACTION SNAKE-F)>
+    (ACTION SNAKE-F)
+    (FLAGS PERSONBIT ATTACKBIT)>
 
 <ROUTINE SNAKE-F ()
     <COND (<AND <VERB? THROW-AT> <PRSI? ,SNAKE>>
@@ -2257,7 +2259,8 @@ You have just vanquished a dragon with your bare hands!
     (ADJECTIVE HUGE GREEN FIERCE SCALY GIANT FEROCIOUS)
     (FDESC "A huge green fierce dragon bars the way!")
     (TEXT "I wouldn't mess with it if I were you.")
-    (ACTION DRAGON-F)>
+    (ACTION DRAGON-F)
+    (FLAGS PERSONBIT ATTACKBIT)>
 
 <ROUTINE DRAGON-F ()
     <COND (<VERB? ATTACK>
@@ -3322,7 +3325,7 @@ The only exit is the way you came in.")
     (ADJECTIVE LARGE TAME FEROCIOUS CAVE)
     (DESCFCN BEAR-DESCFCN)
     (ACTION BEAR-F)
-    (FLAGS PERSONBIT)>
+    (FLAGS PERSONBIT ATTACKBIT)>
 
 <ROUTINE BEAR-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
@@ -3354,6 +3357,7 @@ The only exit is the way you came in.")
                   <SETG AXE-NEAR-BEAR <>>
                   <REMOVE ,PRSO>
                   <SETG BEAR-FRIENDLY T>
+                  <FCLEAR ,BEAR ,ATTACKBIT>
                   <TELL "The bear eagerly wolfs down your food, after which he seems
 to calm down considerably and even becomes rather friendly." CR>)
                  (,BEAR-FRIENDLY <TELL "The bear doesn't seem very interested in your offer." CR>)
@@ -3598,7 +3602,7 @@ without getting so much as a scratch." CR>)
 Suffice it to say the little guy's pretty aggressive.")
     (FDESC "A threatening little dwarf hides in the shadows.")
     (ACTION DWARF-F)
-    (FLAGS PERSONBIT)>
+    (FLAGS PERSONBIT ATTACKBIT)>
 
 <ROUTINE DWARF-F ()
     <COND (<VERB? KICK>
@@ -4032,7 +4036,9 @@ Everything disappears in a dense cloud of orange smoke."
 ;----------------------------------------------------------------------
 
 <SYNTAX OFF = V-OFF>
+<SYNTAX OFF OBJECT = V-TURN-OFF>
 <SYNTAX ON = V-ON>
+<SYNTAX ON OBJECT = V-TURN-ON>
 
 <ROUTINE V-OFF ()
     <COND (<NOT <HELD? ,BRASS-LANTERN>>
