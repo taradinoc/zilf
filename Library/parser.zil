@@ -412,7 +412,7 @@ Sets:
   P-NP-DOBJ
   P-NP-IOBJ
 "
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR O-R)
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR O-R KEEP)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET NOBJ <>>
     <SET VAL <>>
@@ -423,6 +423,7 @@ Sets:
     <READLINE>
     <IF-DEBUG <DUMPLINE>>
     <SETG P-LEN <GETB ,LEXBUF 1>>
+    <SET KEEP 0>
     ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
     <COND (<ORPHANING?>
            <SET O-R <HANDLE-ORPHAN-RESPONSE>>
@@ -431,10 +432,16 @@ Sets:
                   <SETG P-O-REASON <>>
                   <RFALSE>)
                  (<=? .O-R ,O-RES-SET-NP>
+                  ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
+                    we know about the command-to-be when we ask the orphaning question, not
+                    when we get the response?"
                   <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
                   <COND (<ORPHANING-PRSI?>
                          <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
-                         <SETG P-NOBJ 2>)
+                         <SETG P-NOBJ 2>
+                         ;"Don't re-match P-NP-DOBJ when we've just orphaned PRSI. Use the saved
+                           match results. There won't be a NP to match if we GWIMmed PRSO."
+                         <SET KEEP 1>)
                         (ELSE <SETG P-NOBJ 1>)>)>
            <SETG P-O-REASON <>>)>
     ;"Identify parts of speech, parse noun phrases"
@@ -522,7 +529,7 @@ Sets:
            <SETG PRSO-DIR <>>)>
     ;"Match syntax lines and objects"
     <COND (<N=? .O-R ,O-RES-SET-PRSTBL>
-           <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS>>>
+           <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS .KEEP>>>
                   <RFALSE>)>)>
     ;"Save command for AGAIN"
     <COND (<NOT <OR .O-R <VERB? AGAIN>>>
@@ -867,6 +874,12 @@ Returns:
   If multiple objects are used, sets PRSO or PRSI to MANY-OBJECTS.
   The objects are left in P-PRSOS and P-PRSIS.
 
+Args:
+  KEEP: The number of already matched noun phrases to leave as-is (0, 1, or 2).
+    Pass 1 when P-PRSOS was previously matched and should not be modified, e.g.
+    when PRSO was set by GWIM and FIND-OBJECTS is being called to set PRSI from
+    a new noun phrase after orphaning.
+
 Uses:
   P-NOBJ
   P-DOBJS
@@ -880,8 +893,9 @@ Sets:
 
 Returns:
   True if all required objects were found, or false if not."
-<ROUTINE FIND-OBJECTS ("AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
-    <COND (<L? .SNOBJ 1>
+<ROUTINE FIND-OBJECTS (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+    <COND (<G=? .KEEP 1>)
+          (<L? .SNOBJ 1>
            <SETG PRSO <>>)
           (ELSE
            <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
@@ -907,7 +921,8 @@ Returns:
                                 <AND <MANY-CHECK ,PRSO .O <>>
                                      <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
                   <RFALSE>)>)>
-    <COND (<L? .SNOBJ 2>
+    <COND (<G=? .KEEP 2>)
+          (<L? .SNOBJ 2>
            <SETG PRSI <>>)
           (ELSE
            <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>
