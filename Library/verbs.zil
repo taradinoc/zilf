@@ -329,6 +329,7 @@ Args:
 <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
     <MAP-CONTENTS (I .RM)
         <COND
+            (<FSET? .I ,NDESCBIT>)
             ;"objects with DESCFCNs"
             (<SET P <GETP .I ,P?DESCFCN>>
              <CRLF>
@@ -737,10 +738,8 @@ Returns:
            <TELL CR "OK - not quitting." CR>)>>
 
 <ROUTINE V-EXAMINE ("AUX" P (N <>))
-    <COND (<SET P <GETP ,PRSO P?LDESC>>
-           <TELL .P CR>
-           <SET N T>)>
-    <COND (<SET P <GETP ,PRSO P?TEXT>>
+    <COND (<OR <SET P <GETP ,PRSO ,P?TEXT>>
+               <SET P <GETP ,PRSO ,P?LDESC>>>
            <TELL .P CR>
            <SET N T>)>
     <COND (<FSET? ,PRSO ,OPENABLEBIT>
