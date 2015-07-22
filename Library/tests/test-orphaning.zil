@@ -11,7 +11,7 @@
     (DESC "red cube")
     (SYNONYM CUBE CUBES)
     (ADJECTIVE RED RG RB)
-    (FLAGS TAKEBIT)>
+    (FLAGS TAKEBIT LOCKEDBIT)>
 
 <OBJECT GREEN-CUBE
     (DESC "green cube")
@@ -185,5 +185,12 @@ red cube: You pick up the red cube.|">
     <EXPECT "[taking the red cube]|What do you want to throw the red cube at?|">
     <COMMAND [BLUE CUBE]>
     <EXPECT "Taking your frustration out on the blue cube doesn't seem like it will help.|">>
+
+<TEST-CASE ("GWIMmed PRSO, disambiguated PRSI")
+    <MOVE ,BLUE-CUBE ,WINNER>
+    <COMMAND [UNLOCK]>
+    <EXPECT "[the red cube]|What do you want to unlock the red cube with?|">
+    <COMMAND [BLUE CUBE]>
+    <EXPECT "That's not something you can unlock.|">>
 
 <TEST-GO ,STARTROOM>
