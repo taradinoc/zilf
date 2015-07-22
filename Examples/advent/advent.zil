@@ -2481,7 +2481,12 @@ Passages exit to the south and west.")
     (SYNONYM WATERFALL WHIRLPOOL)
     (ADJECTIVE SPARKLING WHIRLING)
     (TEXT "Wouldn't want to go down in a barrel!")
+    (ACTION WATERFALL-F)
     (FLAGS NDESCBIT)>
+
+<ROUTINE WATERFALL-F ()
+    <COND (<VERB? ENTER>
+           <TELL "Not a good plan, since you don't know how to swim." CR>)>>
 
 <OBJECT TRIDENT
     (DESC "jeweled trident")
