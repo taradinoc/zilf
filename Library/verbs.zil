@@ -17,6 +17,7 @@
 <SYNONYM DOWN D>
 
 <SYNONYM THROUGH THRU>
+<SYNONYM ON ONTO>
 
 ;"Syntaxes for regular verbs"
 
