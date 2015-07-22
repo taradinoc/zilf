@@ -1015,7 +1015,9 @@ Besides, I suspect it would prefer bird seed." CR>)
 A west passage ends here except for a small crack leading on.">
            <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
                   <TELL CR CR "Rough stone steps lead down the pit.">)>
-           <CRLF>)>>
+           <CRLF>)
+          (<AND <=? .RARG ,M-BEG> <VERB? CLIMB> <NOT ,PRSO>>
+           <PERFORM ,V?WALK ,P?DOWN>)>>
 
 <OBJECT SMALL-MISTY-PIT
     (DESC "small pit")
@@ -1072,7 +1074,9 @@ A cold wind blows up the staircase.
 There is a passage at the top of a dome behind you.">
            <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
                   <TELL CR CR "Rough stone steps lead up the dome.">)>
-           <CRLF>)>>
+           <CRLF>)
+          (<AND <=? .RARG ,M-BEG> <VERB? CLIMB> <NOT ,PRSO>>
+           <PERFORM ,V?WALK ,P?UP>)>>
 
 <ROUTINE UP-OUT-OF-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
