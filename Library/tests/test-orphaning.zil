@@ -121,6 +121,12 @@ red cube: You pick up the red cube.|">
     <COMMAND [NAVY]>
     <EXPECT "You pick up the blue cube.|">>
 
+<TEST-CASE ("Noun as adjective: quality distinction")
+    <MOVE ,ROYAL-NAVY ,STARTROOM>
+    <COMMAND [GET NAVY]>
+    <EXPECT "You pick up the royal navy.|">
+    <CHECK <IN? ,ROYAL-NAVY ,WINNER>>>
+
 <TEST-CASE ("Missing noun: single object")
     <COMMAND [GET]>
     <EXPECT "What do you want to get?|">

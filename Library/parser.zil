@@ -1151,7 +1151,7 @@ Uses:
 Returns:
   The matched object, or MANY-OBJECTS if multiple objects were matched,
   or false if no objects were matched."
-<ROUTINE MATCH-NOUN-PHRASE (NP OUT BITS "AUX" F NY NN SPEC MODE NOUT OBITS)
+<ROUTINE MATCH-NOUN-PHRASE (NP OUT BITS "AUX" F NY NN SPEC MODE NOUT OBITS ONOUT BEST Q)
     <SET NY <NP-YCNT .NP>>
     <SET NN <NP-NCNT .NP>>
     <SET MODE <NP-MODE .NP>>
@@ -1177,14 +1177,22 @@ Returns:
               (ELSE
                ;"Go through all YSPECs and find matching objects for each one.
                  Give an error if any YSPEC has no matches, but it's OK if all
-                 the matches for some YSPEC are excluded by NSPECs."
+                 the matches for some YSPEC are excluded by NSPECs. Keep track of
+                 the match quality and only select the best matches."
                <DO (J 1 .NY)
                    <SET SPEC <NP-YSPEC .NP .J>>
                    <SET F <>>
+                   <SET ONOUT .NOUT>
+                   <SET BEST 1>
                    <MAP-SCOPE (I [BITS .BITS])
                        <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
-                                   <REFERS? .SPEC .I>>
+                                   <SET Q <REFERS? .SPEC .I>>
+                                   <G=? .Q .BEST>>
                               <SET F T>
+                              ;"Erase previous matches if this is better"
+                              <COND (<G? .Q .BEST>
+                                     <SET NOUT .ONOUT>
+                                     <SET .BEST .Q>)>
                               <COND (<G=? .NOUT ,P-MAX-OBJECTS>
                                      <TELL "[too many objects!]" CR>
                                      <RETURN>)
@@ -1287,18 +1295,25 @@ noun slot that's actually an adjective.
 
 Args:
   SPEC: The OBJSPEC.
-  O: The object."
+  O: The object.
+
+Returns:
+  A quality score. 0 means the spec didn't match at all, 1 means it matched as
+  adjective-only, 2 means it matched as noun-only, 3 means it was a two-word match."
 <ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
-    <AND
-        <OR <AND <0? .A> .N>
-            <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>
-        <OR <0? .N>
-            <IN-PWTBL? .O ,P?SYNONYM .N>
-            <AND <0? .A>
-                 <VERSION?
-                     (ZIP <SET A <CHKWORD? .N ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
-                     (ELSE <AND <CHKWORD? .N ,PS?ADJECTIVE> <SET A .N>>)>
-                 <IN-PB/WTBL? .O ,P?ADJECTIVE .A>>>>>
+    <COND (<AND .A .N>
+           <COND (<AND <IN-PB/WTBL? .O ,P?ADJECTIVE .A>
+                       <IN-PWTBL? .O ,P?SYNONYM .N>>
+                  <RETURN 3>)>)
+          (.N
+           <COND (<IN-PWTBL? .O ,P?SYNONYM .N> <RETURN 2>)
+                 (<VERSION?
+                      (ZIP <SET A <CHKWORD? .N ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
+                      (ELSE <AND <CHKWORD? .N ,PS?ADJECTIVE> <SET A .N>>)>
+                  <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>)
+          (.A
+           <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>
+    <RETURN 0>>
 
 <VERSION?
     (ZIP
