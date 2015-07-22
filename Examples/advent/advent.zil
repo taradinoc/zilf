@@ -118,6 +118,9 @@ Adapted once more by Jesse McGrew (2015)">>
 <SETG EXTRA-GAME-VERBS '(SCORE)>
 <IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY)>>
 
+;"This is used by the debugging verbs."
+<SETG EXTRA-FLAGS '(SPRINGBIT LIQUIDBIT SPONGEBIT)>
+
 ;"We replace a few library sections below."
 <DELAY-DEFINITION DARKNESS-F>
 <DELAY-DEFINITION PRINT-GAME-OVER>
@@ -288,7 +291,8 @@ A small stream flows out of the building and down a gully.")
     (IN LOCAL-GLOBALS)
     (SYNONYM STREAM WATER ;BROOK RIVER LAKE ;RESERVOIR)
     (ADJECTIVE SMALL TUMBLING SPLASHING BABBLING RUSHING)
-    (ACTION STREAM-F)>
+    (ACTION STREAM-F)
+    (FLAGS SPRINGBIT)>
 
 <ROUTINE STREAM-F ()
     <COND (<VERB? DRINK>
@@ -300,7 +304,7 @@ A small stream flows out of the building and down a gully.")
            <TELL ", but is not unpleasant. It is extremely cold." CR>)
           (<VERB? TAKE>
            <COND (<HELD? ,BOTTLE>
-                  <PERFORM ,V?FILL ,BOTTLE>
+                  <PERFORM ,V?FILL-WITH ,BOTTLE ,STREAM>
                   <RTRUE>)
                  (ELSE <TELL "You have nothing in which to carry the water." CR>)>)
           (<AND <VERB? PUT-IN> <PRSI? ,STREAM>>
@@ -309,7 +313,7 @@ A small stream flows out of the building and down a gully.")
                   <MOVE ,SHARDS ,HERE>
                   <TELL "The sudden change in temperature has delicately shattered the vase." CR>)
                  (<PRSO? ,BOTTLE>
-                  <PERFORM ,V?FILL ,BOTTLE>
+                  <PERFORM ,V?FILL-WITH ,BOTTLE ,STREAM>
                   <RTRUE>)
                  (ELSE
                   <REMOVE ,PRSO>
@@ -403,7 +407,7 @@ There is a building in the distance.")
     (SYNONYM SPRING)
     (ADJECTIVE LARGE)
     (TEXT ,STREAM-FLOWS-OUT)
-    (FLAGS NDESCBIT)
+    (FLAGS NDESCBIT SPRINGBIT)
     (ACTION SPRING-F)>
 
 <ROUTINE SPRING-F ()
@@ -553,28 +557,30 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (CONTFCN BOTTLE-CONTFCN)
     (FLAGS TAKEBIT CONTBIT OPENBIT)>
 
-<ROUTINE BOTTLE-F ("AUX" F)
-    <COND (<VERB? FILL>
+<ROUTINE BOTTLE-F ("AUX" F S)
+    <COND (<VERB? FILL-WITH>
            <COND (<FIRST? ,PRSO>
                   <TELL CT ,PRSO " is full already." CR>)
-                 (<OR <GLOBAL-IN? ,STREAM ,HERE> <IN? ,SPRING ,HERE>>
+                 (<PRSI? ,STREAM ,SPRING>
                   <MOVE ,WATER-IN-BOTTLE ,PRSO>
                   <TELL CT ,PRSO " is now full of water." CR>)
-                 (<IN? ,OIL ,HERE>
+                 (<PRSI? ,OIL>
                   <MOVE ,OIL-IN-BOTTLE ,PRSO>
                   <TELL CT ,PRSO " is now full of oil." CR>)
-                 (ELSE <TELL "There is nothing here with which to fill the bottle." CR>)>)
+                 (ELSE
+                  <TELL CT ,PRSO " is only supposed to hold liquids." CR>)>)
+          (<AND <VERB? FILL> <SET F <FIND-IN ,HERE ,SPRINGBIT "from">>>
+           <PERFORM ,V?FILL-WITH ,PRSO .F>)
           (<VERB? EMPTY>
            <COND (<NOT <SET F <FIRST? ,PRSO>>>
                   <TELL CT ,PRSO " is already empty!" CR>)
+                 (<SET S <FIND-IN ,HERE ,SPONGEBIT "onto">>
+                  <PERFORM ,V?POUR .F .S>)
                  (ELSE
                   <REMOVE .F>
                   <TELL "Your " D ,PRSO " is now empty and the ground is now wet." CR>)>)
           (<AND <VERB? PUT-IN> <PRSI? ,BOTTLE>>
-           <COND (<PRSO? ,STREAM ,OIL>
-                  <PERFORM ,V?FILL ,PRSI>
-                  <RTRUE>)
-                 (ELSE <TELL CT ,PRSI " is only supposed to hold liquids." CR>)>)>>
+           <PERFORM ,V?FILL-WITH ,PRSO ,PRSI>)>>
 
 <ROUTINE BOTTLE-CONTFCN ()
     <COND (<VERB? TAKE> <TELL "You're holding that already (in " T ,BOTTLE ")." CR>)>>
@@ -586,7 +592,8 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary water to me.")
     (SIZE 0)    ;"Doesn't count against inventory limit"
-    (ACTION WATER-IN-BOTTLE-F)>
+    (ACTION WATER-IN-BOTTLE-F)
+    (FLAGS LIQUIDBIT)>
 
 <ROUTINE WATER-IN-BOTTLE-F ()
     <COND (<VERB? DRINK>
@@ -601,7 +608,8 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (ADJECTIVE BOTTLED)
     (TEXT "It looks like ordinary oil to me.")
     (SIZE 0)    ;"Doesn't count against inventory limit"
-    (ACTION OIL-IN-BOTTLE-F)>
+    (ACTION OIL-IN-BOTTLE-F)
+    (FLAGS LIQUIDBIT)>
 
 <ROUTINE OIL-IN-BOTTLE-F ()
     <COND (<VERB? DRINK>
@@ -1851,7 +1859,7 @@ There is a large hole in the wall above the pit at the end of this room.")
         (ZIP '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL))
         (ELSE '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL MURMURING BELLOWING))>
     (ACTION PLANT-STICKING-UP-F)
-    (FLAGS INVISIBLE)>
+    (FLAGS INVISIBLE SPONGEBIT)>
 
 <ROUTINE DESCRIBE-PLANT-STICKING-UP ()
     <COND (<=? ,PLANT-HEIGHT ,TALL-HEIGHT>
@@ -1905,7 +1913,8 @@ There is a large hole in the wall about 25 feet above you.")
         (ZIP '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL))
         (ELSE '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL MURMURING BELLOWING))>
     (DESCFCN PLANT-DESCFCN)
-    (ACTION PLANT-F)>
+    (ACTION PLANT-F)
+    (FLAGS SPONGEBIT)>
 
 <ROUTINE PLANT-DESCFCN (ARG)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)>
@@ -2006,15 +2015,15 @@ There is a small pool of oil in one corner of the pit.")
     (SYNONYM POOL OIL)
     (TEXT "It looks like ordinary oil.")
     (ACTION OIL-F)
-    (FLAGS NDESCBIT)>
+    (FLAGS NDESCBIT SPRINGBIT)>
 
 <ROUTINE OIL-F ()
     <COND (<VERB? DRINK> <TELL "Absolutely not." CR>)
           (<VERB? TAKE>
-           <COND (<HELD? ,BOTTLE> <PERFORM ,V?FILL ,BOTTLE> <RTRUE>)
+           <COND (<HELD? ,BOTTLE> <PERFORM ,V?FILL-WITH ,BOTTLE ,OIL> <RTRUE>)
                  (ELSE <TELL "You have nothing in which to carry the oil." CR>)>)
           (<VERB? PUT-IN>
-           <COND (<PRSI? ,BOTTLE> <PERFORM ,V?FILL ,BOTTLE> <RTRUE>)
+           <COND (<PRSI? ,BOTTLE> <PERFORM ,V?FILL-WITH ,BOTTLE ,OIL> <RTRUE>)
                  (ELSE <TELL "You have nothing in which to carry the oil." CR>)>)>>
 
 <OBJECT HOLE-ABOVE-PIT-EAST
@@ -4043,22 +4052,61 @@ Everything disappears in a dense cloud of orange smoke."
 
 ;----------------------------------------------------------------------
 
-<SYNTAX WATER OBJECT = V-WATER>
-<SYNTAX OIL OBJECT = V-OIL>
+;"There are many ways to pour liquids out in this game. We translate them all
+  to the WATER and OIL actions.
+  
+  The verbs WATER and OIL themselves refer to separate actions, and they use separate preaction
+  routines to check for the correct liquid, but they have the same default action routine, which
+  empties the bottle into the location."
+
+<SYNTAX WATER OBJECT (FIND SPONGEBIT) = V-POUR-LIQUID PRE-WATER WATER>
+<SYNTAX OIL OBJECT (FIND SPONGEBIT) = V-POUR-LIQUID PRE-OIL OIL>
 <VERB-SYNONYM OIL GREASE LUBRICATE>
-;"TODO: Enable POUR WATER/OIL syntaxes once NEW-VOC? is working."
-;<SYNTAX POUR WATER OBJECT = V-WATER>
-;<SYNTAX POUR OIL OBJECT = V-OIL>
-<SYNTAX POUR OBJECT = V-EMPTY>
-<VERB-SYNONYM POUR DOUSE>
 
-<ROUTINE V-WATER ()
-    <COND (<HELD? ,BOTTLE> <PERFORM ,V?EMPTY ,BOTTLE>)
-          (ELSE <TELL "Water? What water?" CR>)>>
+<SYNTAX POUR OBJECT (FIND LIQUIDBIT) (HELD CARRIED) ON OBJECT (FIND SPONGEBIT) = V-POUR PRE-POUR>
+;"Syntaxes with OUT require NEW-VOC?"
+;<SYNTAX POUR OUT OBJECT (FIND LIQUIDBIT) (HELD CARRIED) = V-EMPTY>
+;<SYNTAX POUR OBJECT (FIND LIQUIDBIT) (HELD CARRIED) OUT OBJECT (FIND KLUDGEBIT) = V-EMPTY>
+<VERB-SYNONYM POUR DUMP>
 
-<ROUTINE V-OIL ()
-    <COND (<HELD? ,BOTTLE> <PERFORM ,V?EMPTY ,BOTTLE>)
-          (ELSE <TELL "Oil? What oil?" CR>)>>
+<SYNTAX EMPTY OBJECT (FIND CONTBIT) (HELD CARRIED) ON OBJECT (FIND SPONGEBIT) = V-POUR PRE-POUR>
+;"Syntaxes with OUT require NEW-VOC?"
+;<SYNTAX EMPTY OUT OBJECT (FIND LIQUIDBIT) (HELD CARRIED) = V-EMPTY>
+;<SYNTAX EMPTY OBJECT (FIND LIQUIDBIT) (HELD CARRIED) OUT OBJECT (FIND KLUDGEBIT) = V-EMPTY>
+
+<SYNTAX FILL OBJECT (FIND CONTBIT) (TAKE HAVE HELD CARRIED) WITH OBJECT (FIND SPRINGBIT) = V-FILL-WITH>
+<SYNTAX FILL OBJECT (FIND CONTBIT) (TAKE HAVE HELD CARRIED) FROM OBJECT (FIND SPRINGBIT) = V-FILL-WITH>
+
+<ROUTINE PRE-WATER ()
+    <COND (<AND <HELD? ,BOTTLE> <NOT <FIRST? ,BOTTLE>>>
+           <TELL CT ,BOTTLE " is empty." CR>)
+          (<NOT <AND <HELD? ,BOTTLE> <IN? ,WATER-IN-BOTTLE ,BOTTLE>>>
+           <TELL "Water? What water?" CR>)>>
+
+<ROUTINE PRE-OIL ()
+    <COND (<AND <HELD? ,BOTTLE> <NOT <FIRST? ,BOTTLE>>>
+           <TELL CT ,BOTTLE " is empty." CR>)
+          (<NOT <AND <HELD? ,BOTTLE> <IN? ,OIL-IN-BOTTLE ,BOTTLE>>>
+           <TELL "Oil? What oil?" CR>)>>
+
+<ROUTINE V-POUR-LIQUID ()
+    <PERFORM ,V?EMPTY ,BOTTLE>>
+
+<ROUTINE PRE-POUR ("AUX" F)
+    <COND (<AND <FSET? ,PRSO ,CONTBIT> <SET F <FIRST? ,PRSO>>>
+           <PERFORM ,V?POUR .F ,PRSI>)
+          (<NOT <HELD? ,PRSO ,WINNER>>
+           <TELL "You aren't holding " T ,PRSO "." CR>)>>
+
+<ROUTINE V-POUR ()
+    <COND (<PRSI? ,WINNER> <POINTLESS "Dousing yourself">)
+          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
+          (<PRSO? ,WATER-IN-BOTTLE> <PERFORM ,V?WATER ,PRSI>)
+          (<PRSO? ,OIL-IN-BOTTLE> <PERFORM ,V?OIL ,PRSI>)
+          (ELSE <NOT-POSSIBLE "pour">)>>
+
+<ROUTINE V-FILL-WITH ()
+    <SILLY>>
 
 ;----------------------------------------------------------------------
 
@@ -4184,6 +4232,10 @@ appears out of nowhere!" CR>)>)>)
 
 <SYNTAX FEED OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
 <SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SGIVE>
+
+<SYNTAX LIGHT OBJECT (FIND DEVICEBIT) = V-TURN-ON>
+<SYNTAX UNLIGHT OBJECT (FIND DEVICEBIT) = V-TURN-OFF>
+<SYNONYM UNLIGHT EXTINGUISH>
 
 ;----------------------------------------------------------------------
 
