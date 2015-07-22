@@ -442,7 +442,10 @@ Sets:
                          ;"Don't re-match P-NP-DOBJ when we've just orphaned PRSI. Use the saved
                            match results. There won't be a NP to match if we GWIMmed PRSO."
                          <SET KEEP 1>)
-                        (ELSE <SETG P-NOBJ 1>)>)>
+                        (ELSE <SETG P-NOBJ 1>)>)
+                 (<=? .O-R ,O-RES-SET-PRSTBL>
+                  <COND (<ORPHANING-PRSI?> <SET KEEP 2>)
+                        (ELSE <SET KEEP 1>)>)>
            <SETG P-O-REASON <>>)>
     ;"Identify parts of speech, parse noun phrases"
     <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
@@ -528,11 +531,17 @@ Sets:
                   <RFALSE>)>
            <SETG PRSO-DIR <>>)>
     ;"Match syntax lines and objects"
-    <COND (<N=? .O-R ,O-RES-SET-PRSTBL>
+    <COND (<NOT .O-R>
            <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS .KEEP>>>
+                  <RFALSE>)>)
+          (<L? .KEEP 2>
+           ;"We already found a syntax line last time, but we need FIND-OBJECTS to
+             match at least one noun phrase."
+           <COND (<NOT <FIND-OBJECTS .KEEP>>
                   <RFALSE>)>)>
     ;"Save command for AGAIN"
     <COND (<NOT <OR .O-R <VERB? AGAIN>>>
+           ;"TODO: Save action for AGAIN after orphaning."
            <COPY-READBUF>
            <COPY-LEXBUF>)>
     ;"Save UNDO state"
