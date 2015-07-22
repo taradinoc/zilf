@@ -795,7 +795,16 @@ A low crawl over cobbles leads inward to the west.")
     (GLOBAL GRATE COBBLES)
     (WEST TO IN-COBBLE-CRAWL)
     (UP TO OUTSIDE-GRATE IF GRATE IS OPEN)
+    (ACTION BELOW-THE-GRATE-F)
     (FLAGS LIGHTBIT)>
+
+<ROUTINE BELOW-THE-GRATE-F (RARG)
+    <COND (<=? .RARG ,M-FLASH>
+           ;"Since the grate isn't actually in the room, describe it here"
+           <COND (<FSET? ,GRATE ,OPENBIT>
+                  <TELL CR "The grate stands open." CR>)
+                 (<NOT <FSET? ,GRATE ,LOCKEDBIT>>
+                  <TELL CR "The grate is unlocked but shut." CR>)>)>>
 
 <OBJECT COBBLES
     (DESC "cobbles")
