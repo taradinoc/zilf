@@ -1070,11 +1070,13 @@ Returns:
     ;"Special case"
     <COND (<==? .BIT ,KLUDGEBIT>
            <RETURN ,ROOMS>)>
-    ;"Look for exactly one matching object"
+    ;"Look for exactly one matching object, or two if one is WINNER"
     <MAP-SCOPE (I [BITS .OPTS])
         <COND (<FSET? .I .BIT>
-               <COND (.O <RFALSE>)
-                     (ELSE <SET O .I>)>)>>
+               <COND (<AND .O <N=? .O ,WINNER> <N=? .I ,WINNER>>
+                      <RFALSE>)
+                     (<OR <NOT .O> <N=? .I ,WINNER>>
+                      <SET O .I>)>)>>
     ;"Print inference message"
     <COND (.O
            <TELL "[">

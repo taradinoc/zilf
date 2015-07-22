@@ -20,16 +20,32 @@
     (ADJECTIVE RUSTY)
     (FLAGS TAKEBIT)>
 
+<OBJECT TROLL
+    (IN STARTROOM)
+    (DESC "troll")
+    (SYNONYM TROLL)
+    (FLAGS PERSONBIT)>
+
 <INSERT-FILE "testing">
 
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."
     <MOVE ,APPLE ,STARTROOM>
-    <MOVE ,NAIL ,STARTROOM>>
+    <MOVE ,NAIL ,STARTROOM>
+    <MOVE ,TROLL ,STARTROOM>>
 
 <TEST-CASE ("EAT without noun")
     <COMMAND [EAT]>
     <EXPECT "[the apple]|[taking the apple]|You devour the apple.|">
     <CHECK <IN? ,APPLE <>>>>
+
+<TEST-CASE ("WAKE without noun")
+    <COMMAND [WAKE]>
+    <EXPECT "[the troll]|I don't think the troll would appreciate that.|">>
+
+<TEST-CASE ("WAKE without noun when troll is gone")
+    <REMOVE ,TROLL>
+    <COMMAND [WAKE]>
+    <EXPECT "[you]|If only this were a dream.|">>
 
 <TEST-GO ,STARTROOM>
