@@ -4219,12 +4219,9 @@ across the walls of the room.">)>>
                   <COND (<OR <HELD? ,GOLDEN-EGGS> <IN? ,GOLDEN-EGGS ,HERE>>
                          <TELL CT ,GOLDEN-EGGS " has vanished!" CR>)
                         (ELSE <TELL "Done!" CR>)>
-                  <COND (<HELD? ,GOLDEN-EGGS> <SETG SCORE <- ,SCORE 5>>)
-                        (<IN? ,GOLDEN-EGGS ,INSIDE-BUILDING>
-                         <SETG SCORE <- ,SCORE <GETP ,GOLDEN-EGGS ,P?DEPOSIT-POINTS>>>)>
                   <MOVE ,GOLDEN-EGGS ,IN-GIANT-ROOM>
                   <COND (<=? ,HERE ,IN-GIANT-ROOM>
-                         <TELL CR CR "A large nest full of golden eggs suddenly
+                         <TELL CR "A large nest full of golden eggs suddenly
 appears out of nowhere!" CR>)>)>)
           (ELSE <TELL "Ok." CR>)>>
 
