@@ -1425,7 +1425,23 @@ namespace Zilf.Compiler
             try
             {
                 // expand macro invocations
-                ZilObject expanded = form.Expand(cc.Context);
+                ZilObject expanded;
+                try
+                {
+                    expanded = form.Expand(cc.Context);
+                }
+                catch (InterpreterError ex)
+                {
+                    Errors.CompError(cc.Context, ex.SourceLine ?? form.SourceLine, ex.Message);
+                    return cc.Game.Zero;
+                }
+                catch (ZilError ex)
+                {
+                    if (ex.SourceLine == null)
+                        ex.SourceLine = form.SourceLine;
+
+                    throw;
+                }
                 if (expanded is ZilForm)
                 {
                     form = (ZilForm)expanded;

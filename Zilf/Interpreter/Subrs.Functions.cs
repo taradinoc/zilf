@@ -94,6 +94,7 @@ namespace Zilf.Interpreter
                 (IEnumerable<ZilObject>)args[1],
                 args.Skip(2));
             ZilEvalMacro macro = new ZilEvalMacro(func);
+            macro.SourceLine = ctx.CallingForm.SourceLine;
             ctx.SetGlobalVal(atom, macro);
             return atom;
         }
