@@ -2878,7 +2878,7 @@ Proceed at own risk. [Witt Construction Company]\"")
     (FDESC "There are a few recent issues of \"Spelunker Today\" magazine here.")
     (TEXT "I'm afraid the magazines are written in Dwarvish.")
     (ACTION MAGAZINES-F)
-    (FLAGS TAKEBIT TRYTAKEBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS TAKEBIT TRYTAKEBIT PLURALBIT MULTITUDEBIT READBIT)>
 
 <ROUTINE MAGAZINES-F ()
     <COND (<AND <VERB? TAKE> <IN? ,PRSO ,AT-WITTS-END>>
