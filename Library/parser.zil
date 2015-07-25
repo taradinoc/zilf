@@ -179,7 +179,7 @@ Returns:
   unrecognized."
 <ROUTINE GETWORD? (N "AUX" R)
     <SET R <GET ,LEXBUF <- <* .N 2> 1>>>
-    <IF-DEBUG
+    ;<IF-DEBUG
         <TELL "[GETWORD " N .N " = ">
         <COND (.R <TELL B .R>) (ELSE <TELL "?">)>
         <TELL "]" CR>>
@@ -510,7 +510,7 @@ Sets:
            <IF-DEBUG
                <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
                      " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
-                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-YCNT ,P-NP-IOBJ> "]" CR>>
+                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>>
            ;"If we have a direction, it's a walk action, and no verb is needed"
            <COND (.DIR
                   <SETG PRSO-DIR T>
@@ -794,15 +794,13 @@ Sets:
 
 Returns:
   True if a syntax line was matched."
-<ROUTINE MATCH-SYNTAX ("AUX" PTR CNT NOBJ PREP1 PREP2)
+<ROUTINE MATCH-SYNTAX ("AUX" PTR CNT S BEST BEST-SCORE)
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
     <SET CNT <GETB .PTR 0>>
     <SET PTR <+ .PTR 1>>
     <IF-DEBUG <TELL "[MATCH-SYNTAX: " N .CNT " syntaxes at " N .PTR "]" CR>>
+    <SET BEST-SCORE -999>
     <REPEAT ()
-        ;<TELL "CNT is currently " N .CNT CR>
-        ;<BIND ((TEST-PTR <GET .PTR ,SYN-NOBJ>) (TEST-P-NOBJ ,P-NOBJ))
-            <TELL "<GETB .PTR ,SYN-NOBJ> is " N .TEST-PTR "and P-NOBJ is " N .TEST-P-NOBJ CR>>
         <COND (<DLESS? CNT 0>
                ;"Out of syntax lines"
                <RETURN>)>
@@ -810,26 +808,15 @@ Returns:
             <TELL "[trying line: ">
             <PRINT-SYNTAX-LINE .PTR>
             <TELL " ... ">>
-        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
-        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
-        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
-        <COND (<AND <==? .NOBJ ,P-NOBJ>
-                    <OR <L? ,P-NOBJ 1>
-                        <==? .PREP1 ,P-P1>>
-                    <OR <L? ,P-NOBJ 2>
-                        <==? .PREP2 ,P-P2>>>
-               ;"Complete match"
-               <SETG PRSA <GETB .PTR ,SYN-ACTION>>
-               <SETG P-SYNTAX .PTR>
-               <IF-DEBUG <TELL "OK]" CR>>
-               <RTRUE>)>
-        <IF-DEBUG <TELL "nope]" CR>>
+        <SET S <MATCH-SYNTAX-LINE? .PTR>>
+        <IF-DEBUG <TELL N .S "]" CR>>
+        <COND (<AND .S <G? .S .BEST-SCORE>>
+               <SET BEST-SCORE .S>
+               <SET BEST .PTR>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
-    ;"No complete match, look for something close"
-    <SET PTR <GUESS-SYNTAX>>
-    <COND (.PTR
-           <SETG PRSA <GETB .PTR ,SYN-ACTION>>
-           <SETG P-SYNTAX .PTR>
+    <COND (.BEST
+           <SETG PRSA <GETB .BEST ,SYN-ACTION>>
+           <SETG P-SYNTAX .BEST>
            <RTRUE>)
           (ELSE
            <TELL "I don't understand that sentence." CR>
@@ -842,60 +829,43 @@ Returns:
               " P2=" N <GETB .PTR ,SYN-PREP2>
               " A=" N <GETB .PTR ,SYN-ACTION>>>>
 
-;"Find the best incompletely-matching syntax line, given that no line matches
-  exactly."
-<ROUTINE GUESS-SYNTAX ("AUX" PTR CNT BEST BEST-SCORE S NOBJ PREP1 PREP2)
-    <SET PTR <GET ,VERBS <- 255 ,P-V>>>
-    <SET CNT <GETB .PTR 0>>
-    <SET PTR <+ .PTR 1>>
-    <IF-DEBUG <TELL "[GUESS-SYNTAX]" CR>>
-    <REPEAT ()
-        <COND (<DLESS? CNT 0>
-               ;"Out of syntax lines"
-               <RETURN>)>
-        <IF-DEBUG
-            <TELL "[trying line: ">
-            <PRINT-SYNTAX-LINE .PTR>
-            <TELL " ... ">>
-        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
-        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
-        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
-        <PROG ()
-            ;"The syntax line has to have more objects than we've parsed"
-            <COND (<L=? .NOBJ ,P-NOBJ>
-                   <IF-DEBUG <TELL "too few objects]" CR>>
-                   <RETURN>)>
-            ;"See how much we can match..."
-            <SET S 1>
-            <COND (,P-P1
-                   <COND (<N==? .PREP1 ,P-P1>
-                          ;"Wrong preposition 1"
-                          <IF-DEBUG <TELL "wrong P1]" CR>>
-                          <RETURN>)
-                         (ELSE <SET S <+ .S 1>>)>)
-                  (<AND <G=? ,P-NOBJ 1> .PREP1>
-                   ;"Missing preposition 1"
-                   <IF-DEBUG <TELL "missing P1]" CR>>
-                   <RETURN>)
-                  (<0? .PREP1> <SET S <+ .S 1>>)>
-            <COND (,P-P2
-                   <COND (<N==? .PREP2 ,P-P2>
-                          ;"Wrong preposition 2"
-                          <IF-DEBUG <TELL "wrong P2]" CR>>
-                          <RETURN>)
-                         (ELSE <SET S <+ .S 1>>)>)
-                  (<AND <G=? ,P-NOBJ 2> .PREP2>
-                   ;"Missing preposition 2 - shouldn't get here?"
-                   <IF-DEBUG <TELL "missing P2]" CR>>
-                   <RETURN>)
-                  (<0? .PREP2> <SET S <+ .S 1>>)>
-            <IF-DEBUG <TELL "scored " N .S "]" CR>>
-            <COND (<G? .S .BEST-SCORE>
-                   <SET BEST-SCORE .S>
-                   <SET BEST .PTR>)>>
-        ;"Advance"
-        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
-    .BEST>
+;"Scores how well the parsed command matches a syntax line.
+
+Args:
+  PTR: The syntax line.
+
+Returns:
+  1 if it matches exactly, 0 if it cannot match, or a negative number
+  if it partially matches (i.e. if it could match after inference).
+  Negative numbers further below 0 indicate worse matches needing more inference."
+<ROUTINE MATCH-SYNTAX-LINE? (PTR "AUX" NOBJ PREP1 PREP2 R)
+    <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+    <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+    <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+    <COND ;"If the object count and prepositions are all as expected,
+            this is an exact match."
+          (<AND <=? ,P-NOBJ .NOBJ> <=? ,P-P1 .PREP1> <=? ,P-P2 .PREP2>>
+           <RTRUE>)
+          ;"If object count >= expected count, this can't match."
+          (<G=? ,P-NOBJ .NOBJ> <RFALSE>)
+          ;"If either preposition is nonzero yet different from expected,
+            this can't match."
+          (<OR <N=? ,P-P1 .PREP1 0> <N=? ,P-P2 .PREP2 0>>
+           <RFALSE>)
+          ;"If we have one object, and we expected a first preposition but
+            didn't get it, this can't match. (If we have two objects, we
+            already failed an earlier test.)"
+          (<AND <1? ,P-NOBJ> .PREP1 <NOT ,P-P1>> <RFALSE>)>
+    ;"We have a possible match; now score how well it matches.
+      Dock three points for each object we have to infer."
+    <SET R <* 3 <- ,P-NOBJ .NOBJ>>>
+    ;"Dock an extra point for PRSO if we have to infer a preposition also."
+    <COND (<AND <NOT ,P-P1> .PREP1> <SET R <- .R 1>>)>
+    ;"Dock an extra point for PRSI if we have to infer *no* preposition.
+      This makes us prefer syntaxes with the direct object first
+      (GIVE OBJECT TO OBJECT instead of GIVE OBJECT OBJECT)."
+    <COND (<NOT <OR ,P-P2 .PREP2>> <SET R <- .R 1>>)>
+    .R>
 
 <INSERT-FILE "scope">
 
