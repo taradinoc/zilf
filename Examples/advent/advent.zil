@@ -116,7 +116,7 @@ Adapted once more by Jesse McGrew (2015)">>
 
 ;"This affects the definition of GAME-VERB?."
 <SETG EXTRA-GAME-VERBS '(SCORE)>
-<IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY)>>
+<IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY XLOOT)>>
 
 ;"This is used by the debugging verbs.
   Note: TREASUREBIT isn't listed because it's a bit synonym."
@@ -4459,6 +4459,20 @@ into a pit. None of the objects available is immediately useful in discovering t
             <AND <IGRTR? I .MAX> <RETURN>>>
         <RANDOM <- .N>>
         <TELL "Your lucky number is now " N .N "." CR>>
+
+    <SYNTAX XLOOT = V-XLOOT>
+
+    <ROUTINE V-XLOOT ("AUX" T OS)
+        <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
+            <SET T <GET/B ,ALL-TREASURES .I>>
+            <TELL CT .T ": ">
+            <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
+            <COND (<=? .OS ,TR-UNFOUND> <TELL "unfound">)
+                  (<=? .OS ,TR-TOUCHED> <TELL "touched">)
+                  (<=? .OS ,TR-CARRIED> <TELL "carried">)
+                  (<=? .OS ,TR-DEPOSITED> <TELL "deposited">)
+                  (ELSE <TELL "???">)>
+            <CRLF>>>
 
 >
 
