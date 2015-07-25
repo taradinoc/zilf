@@ -212,9 +212,7 @@ Returns:
            <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
                   <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                   <CLOCKER>)>)>
-    <DIROUT -3>
-    <COPY-READBUF>
-    <COPY-LEXBUF>>
+    <DIROUT -3>>
 
 <CONSTANT EXPECTBUF <ITABLE NONE ,OUTBUF-SIZE>>
 

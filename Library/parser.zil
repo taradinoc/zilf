@@ -87,11 +87,9 @@ other versions. These macros let us write the same code for all versions."
 
 <CONSTANT READBUF-SIZE 100>
 <CONSTANT READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
-<CONSTANT BACKREADBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
 
 <CONSTANT LEXBUF-SIZE 59>
 <CONSTANT LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
-<CONSTANT BACKLEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
 
 <CONSTANT P1MASK 3>
 
@@ -341,17 +339,92 @@ Args:
  These each have one length byte, a dummy byte (V4+ only),
  then P-MAX-OBJECTS bytes/words for the objects."
 <CONSTANT P-MAX-OBJECTS 50>
-<BIND ((TBLSIZE <+ 1 ,P-MAX-OBJECTS>)
-       (TBLFLAGS <VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>))
-    "Matched direct objects"
-    <GLOBAL P-PRSOS <ITABLE .TBLSIZE .TBLFLAGS>>
-    "Matched indirect objects"
-    <GLOBAL P-PRSIS <ITABLE .TBLSIZE .TBLFLAGS>>
-    "Extra objects for orphaning>"
-    <GLOBAL P-XOBJS <ITABLE .TBLSIZE .TBLFLAGS>>>
+
+<DEFINE PRSTBL ()
+    <ITABLE <+ 1 ,P-MAX-OBJECTS> <VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>>>
+
+"Matched direct objects"
+<GLOBAL P-PRSOS <PRSTBL>>
+"Matched indirect objects"
+<GLOBAL P-PRSIS <PRSTBL>>
+"Extra objects for orphaning>"
+<GLOBAL P-XOBJS <PRSTBL>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
     <FORM <VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> .SRC .DEST <+ 1 ,P-MAX-OBJECTS>>>
+
+"Structured type for backing up a complete parsed command"
+<DEFSTRUCT PARSER-RESULT (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
+    (PST-V-WORD FIX)
+    (PST-P1 FIX)
+    (PST-P2 FIX)
+    (PST-SYNTAX FIX)
+    (PST-PRSOS TABLE)
+    (PST-PRSIS TABLE)
+    (PST-NUMBER FIX)
+    (PST-READBUF TABLE)
+    (PST-LEXBUF TABLE)
+    (PST-LEN BYTE 'OFFSET 18 'NTH GETB 'PUT PUTB)
+    (PST-V BYTE 'OFFSET 19 'NTH GETB 'PUT PUTB)
+    (PST-V-WORDN BYTE 'OFFSET 20 'NTH GETB 'PUT PUTB)
+    (PST-NOBJ BYTE 'OFFSET 21 'NTH GETB 'PUT PUTB)
+    (PST-PRSO-DIR BYTE 'OFFSET 22 'NTH GETB 'PUT PUTB)
+    (PST-PRSA BYTE 'OFFSET 23 'NTH GETB 'PUT PUTB)>
+
+<DEFINE PARSER-RESULT ()
+    <MAKE-PARSER-RESULT
+        'PARSER-RESULT <ITABLE 24 (BYTE)>
+        'PST-PRSOS <PRSTBL>
+        'PST-PRSIS <PRSTBL>
+        'PST-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>
+        'PST-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>>
+
+<CONSTANT AGAIN-STORAGE <PARSER-RESULT>>
+
+<ROUTINE SAVE-PARSER-RESULT (DEST)
+    <PST-V-WORD .DEST ,P-V-WORD>
+    <PST-P1 .DEST ,P-P1>
+    <PST-P2 .DEST ,P-P2>
+    <PST-SYNTAX .DEST ,P-SYNTAX>
+    <COPY-PRSTBL ,P-PRSOS <PST-PRSOS .DEST>>
+    <COPY-PRSTBL ,P-PRSIS <PST-PRSIS .DEST>>
+    <PST-NUMBER .DEST ,P-NUMBER>
+    <COPY-LEXBUF ,LEXBUF <PST-LEXBUF .DEST>>
+    <COPY-READBUF ,READBUF <PST-READBUF .DEST>>
+    <PST-LEN .DEST ,P-LEN>
+    <PST-V .DEST ,P-V>
+    <PST-V-WORDN .DEST ,P-V-WORDN>
+    <PST-NOBJ .DEST ,P-NOBJ>
+    <PST-PRSO-DIR .DEST ,PRSO-DIR>
+    <PST-PRSA .DEST ,PRSA>>
+
+<ROUTINE RESTORE-PARSER-RESULT (SRC "AUX" L)
+    <SETG P-V-WORD <PST-V-WORD .SRC>>
+    <SETG P-P1 <PST-P1 .SRC>>
+    <SETG P-P2 <PST-P2 .SRC>>
+    <SETG P-SYNTAX <PST-SYNTAX .SRC>>
+    <COPY-PRSTBL <PST-PRSOS .SRC> ,P-PRSOS>
+    <COPY-PRSTBL <PST-PRSIS .SRC> ,P-PRSIS>
+    <SETG P-NUMBER <PST-NUMBER .SRC>>
+    <COPY-LEXBUF <PST-LEXBUF .SRC> ,LEXBUF>
+    <COPY-READBUF <PST-READBUF .SRC> ,READBUF>
+    <SETG P-LEN <PST-LEN .SRC>>
+    <SETG P-V <PST-V .SRC>>
+    <SETG P-V-WORDN <PST-V-WORDN .SRC>>
+    <SETG P-NOBJ <PST-NOBJ .SRC>>
+    <SETG PRSO-DIR <PST-PRSO-DIR .SRC>>
+    <SETG PRSA <PST-PRSA .SRC>>
+    ;"Set variables calculated from these"
+    <COND (<0? <SET L <GETB ,P-PRSOS 0>>>
+           <SETG PRSO <>>)
+          (<1? .L>
+           <SETG PRSO <GET/B ,P-PRSOS 1>>)
+          (ELSE <SETG PRSO ,MANY-OBJECTS>)>
+    <COND (<0? <SET L <GETB ,P-PRSIS 0>>>
+           <SETG PRSI <>>)
+          (<1? .L>
+           <SETG PRSI <GET/B ,P-PRSIS 1>>)
+          (ELSE <SETG PRSI ,MANY-OBJECTS>)>>
 
 "Orphaning"
 <INSERT-FILE "orphan">
@@ -540,10 +613,8 @@ Sets:
            <COND (<NOT <FIND-OBJECTS .KEEP>>
                   <RFALSE>)>)>
     ;"Save command for AGAIN"
-    <COND (<NOT <OR .O-R <VERB? AGAIN>>>
-           ;"TODO: Save action for AGAIN after orphaning."
-           <COPY-READBUF>
-           <COPY-LEXBUF>)>
+    <COND (<NOT <VERB? AGAIN>>
+           <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
     ;"Save UNDO state"
     <IF-UNDO
         <COND (<AND <NOT <VERB? UNDO>>
@@ -1073,6 +1144,27 @@ Returns:
 <ROUTINE NOT-HELD? (OBJ)
     <NOT <HELD? .OBJ>>>
 
+;"Checks whether the objects listed in a table, which were part of a previous
+  command, are still available to the player, and prints an error message if not.
+
+Args:
+  TBL: A PRS table.
+
+Returns:
+  True if the check passed, or false if at least one object has become unavailable
+  and a message was printed."
+<ROUTINE STILL-VISIBLE-CHECK (TBL "AUX" (CNT <GETB .TBL 0>))
+    <OR .CNT <RTRUE>>
+    <DO (I 1 .CNT)
+        <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
+               <LIST-OBJECTS .TBL ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
+               <TELL " no longer here." CR>
+               <RFALSE>)>>
+    <RTRUE>>
+
+<ROUTINE NOT-VISIBLE? (O)
+    <NOT <VISIBLE? .O>>>
+
 ;"Searches scope for a single object with the given flag set, and prints an
 inference message before returning it.
 
@@ -1431,23 +1523,14 @@ Returns:
                <TELL ")">)
               (ELSE <TELL "---">)>>>
 
-;"Saves a copy of LEXBUF in BACKLEXBUF."
-<ROUTINE COPY-LEXBUF ("AUX" C W (WDS <GETB ,LEXBUF 1>))
-    <PUTB ,BACKLEXBUF 1 .WDS>
-    <COPY-TABLE <REST ,LEXBUF 2> <REST ,BACKLEXBUF 2> <* 2 .WDS>>>
+;"Copies a LEXBUF-like table."
+<ROUTINE COPY-LEXBUF (SRC DEST "AUX" (WDS <GETB .SRC 1>))
+    <PUTB .DEST 1 .WDS>
+    <COPY-TABLE <REST .SRC 2> <REST .DEST 2> <* 2 .WDS>>>
 
-;"Restores LEXBUF from BACKLEXBUF."
-<ROUTINE RESTORE-LEX ("AUX" C W (WDS <GETB ,BACKLEXBUF 1>))
-    <PUTB ,LEXBUF 1 .WDS>
-    <COPY-TABLE <REST ,BACKLEXBUF 2> <REST ,LEXBUF 2> <* 2 .WDS>>>
-
-;"Saves a copy of READBUF in BACKREADBUF."
-<ROUTINE COPY-READBUF ("AUX" C W)
-    <COPY-TABLE ,READBUF ,BACKREADBUF %</ ,READBUF-SIZE 2>>>
-
-;"Restores READBUF from BACKREADBUF."
-<ROUTINE RESTORE-READBUF ("AUX" C W)
-    <COPY-TABLE ,BACKREADBUF ,READBUF %</ ,READBUF-SIZE 2>>>
+;"Copies a READBUF-like table."
+<ROUTINE COPY-READBUF (SRC DEST)
+    <COPY-TABLE .SRC .DEST %</ ,READBUF-SIZE 2>>>
 
 ;"Fills READBUF and LEXBUF by reading a command from the player.
 If ,AGAINCALL is true, no new command is read and the buffers are reused.

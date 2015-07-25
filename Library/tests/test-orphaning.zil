@@ -31,6 +31,23 @@
     (ADJECTIVE ROYAL)
     (FLAGS TAKEBIT)>
 
+<OBJECT DARK-GREEN-CUBE
+    (DESC "dark green cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE DARK GREEN)
+    (FLAGS TAKEBIT)>
+
+<OBJECT DARK-BLUE-CUBE
+    (DESC "dark blue cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE DARK BLUE)
+    (FLAGS TAKEBIT)>
+
+<OBJECT BUGLE
+    (DESC "bugle")
+    (SYNONYM BUGLE)
+    (FLAGS TAKEBIT EDIBLEBIT)>
+
 <INSERT-FILE "testing">
 
 <TEST-SETUP ()
@@ -38,7 +55,10 @@
     <MOVE ,RED-CUBE ,STARTROOM>
     <MOVE ,GREEN-CUBE ,STARTROOM>
     <MOVE ,BLUE-CUBE ,STARTROOM>
-    <REMOVE ,ROYAL-NAVY>>
+    <REMOVE ,ROYAL-NAVY>
+    <REMOVE ,DARK-GREEN-CUBE>
+    <REMOVE ,DARK-BLUE-CUBE>
+    <REMOVE ,BUGLE>>
 
 <TEST-CASE ("Disambiguate: single object")
     <COMMAND [GET CUBE]>
@@ -203,5 +223,23 @@ red cube: You pick up the red cube.|">
     <EXPECT "Which do you mean, the green cube or the red cube?|">
     <COMMAND [RED]>
     <EXPECT "What do you want to toss the red cube at?|">>
+
+<TEST-CASE ("AGAIN with object that must be selected with orphaning")
+    <MOVE ,DARK-GREEN-CUBE ,STARTROOM>
+    <MOVE ,DARK-BLUE-CUBE ,STARTROOM>
+    <COMMAND [TAKE DARK GREEN CUBE]>
+    <EXPECT "Which do you mean, the dark blue cube or the dark green cube?|"> ;[sic]
+    <COMMAND [GREEN]>
+    <EXPECT "You pick up the dark green cube.|">
+    <COMMAND [AGAIN]>
+    <EXPECT "You already have that.|">>
+
+<TEST-CASE ("AGAIN with object that becomes inaccessible")
+    <MOVE ,BUGLE ,STARTROOM>
+    <COMMAND [EAT BUGLE]>
+    <EXPECT "[taking the bugle]|You devour the bugle.|">
+    <CHECK <IN? ,BUGLE <>>>
+    <COMMAND [AGAIN]>
+    <EXPECT "The bugle is no longer here.|">>
 
 <TEST-GO ,STARTROOM>
