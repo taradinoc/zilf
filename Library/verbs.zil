@@ -367,6 +367,7 @@ Args:
                <RETURN>)>>
     ;"go through the N NPCs"
     <COND (.N
+           <CRLF>
            <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
            <TELL " here." CR>)>>
 
