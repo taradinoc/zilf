@@ -115,3 +115,6 @@
             <RFALSE>)
         (ELSE
             <T? <INTBL? ,HERE <REST .LOCS 2> .MAX>>)>>
+
+<DEFMAC HINT-SEEN? ('N)
+    <FORM NOT <FORM GET ,HINT-PENALTY-TBL .N>>>

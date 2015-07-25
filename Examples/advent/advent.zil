@@ -2,7 +2,6 @@
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
 ;"TODO: Show score/rank when quitting. Dock points for quitting."
-;"TODO: The oyster message should count as a hint and incur a penalty."
 
 ;----------------------------------------------------------------------
 "General directives"
@@ -2793,9 +2792,15 @@ A low hands and knees passage enters from the south.")
     <COND (<VERB? EXAMINE>
            <COND (<=? ,HERE ,AT-NE-END ,AT-SW-END>
                   <TELL "Interesting. There seems to be something written
-on the underside of the " <OYSTER-OR-CLAM> ":||
-\"There is something strange about this place,
-such that one of the curses I've always known now has a new effect.\"" CR>)
+on the underside of the " <OYSTER-OR-CLAM>>
+                  <COND (<HINT-SEEN? ,HNT?OYSTER-MESSAGE> <TELL ":" CR>)
+                        (ELSE
+                         <TELL ". This looks like a clue, which means it'll cost you
+10 points to read it. Should I go ahead and read it anyway?">
+                         <COND (<NOT <YES?>> <RTRUE>)>)>
+                  <CRLF>
+                  <SHOW-HINT ,HNT?OYSTER-MESSAGE>
+                  <RTRUE>)
                  (ELSE <TELL "A giant bivalve of some kind." CR>)>)
           (<VERB? OPEN>
            <TELL "You aren't strong enough to open the " <OYSTER-OR-CLAM> " with your bare hands." CR>)
@@ -4364,6 +4369,11 @@ I for INVENTORY, or ON for TURN ON LAMP.|
 Should you get stuck, type \"help\" for some general hints. For information about how to end your
 adventure, etc., type \"info\". To learn about the authorship of this version of the game, type
 \"credits\".")>
+
+<HINT OYSTER-MESSAGE
+    (PENALTY 10)
+    (TEXT "\"There is something strange about this place,
+such that one of the curses I've always known now has a new effect.\"")>
 
 <HINT OPEN-GRATE
     (PATIENCE 4)
