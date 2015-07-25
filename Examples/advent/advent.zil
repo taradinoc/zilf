@@ -80,7 +80,8 @@ Adapted once more by Jesse McGrew (2015)">>
         <SET S <RANDOM 32767>>
         <TELL "[Your fortune for today: \""
               <PICK-ONE-R ,FORTUNES>
-              " Lucky number " N .S ".\"" CR "Use XLUCKY to replay this game next time.]" CR>
+              " Lucky number " N .S ".\"" CR
+              "Use XLUCKY " N .S " to replay this game next time.]" CR>
         <RANDOM <- .S>>>>
 
 <ROUTINE ADVENT-PLAYER-F ("AUX" F)
@@ -4437,29 +4438,15 @@ into a pit. None of the objects available is immediately useful in discovering t
 
 <IF-BETA
 
-    <SYNTAX XLUCKY = V-XLUCKY>
+    <SYNTAX XLUCKY OBJECT = V-XLUCKY>
     
-    <ROUTINE V-XLUCKY VXL ("AUX" N I MAX C)
-        <TELL "Enter a new lucky number: ">
-        <READLINE>
-        <COND (<N=? <GETB ,LEXBUF 1> 1>
-               <TELL "One word, please." CR>
-               <AGAIN .VXL>)>
-        <SET I <GETB ,LEXBUF 5>>
-        <SET MAX <- <+ .I <GETB ,LEXBUF 4>> 1>>
-        <SET N 0>
-        <REPEAT ()
-            <SET C <GETB ,READBUF .I>>
-            <COND (<OR <L? .C !\0> <G? .C !\9>>
-                   <TELL "Digits only, please." CR>
-                   <AGAIN .VXL>)>
-            <SET N <+ <* .N 10> <- .C !\0>>>
-            <COND (<L? .N 1>
-                   <TELL "Between 1 and 32767, please." CR>
-                   <AGAIN .VXL>)>
-            <AND <IGRTR? I .MAX> <RETURN>>>
-        <RANDOM <- .N>>
-        <TELL "Your lucky number is now " N .N "." CR>>
+    <ROUTINE V-XLUCKY ()
+        <COND (<OR <NOT <PRSO? ,NUMBER>>
+                   <L=? ,P-NUMBER 0>>
+               <TELL "That's not a positive number." CR>)
+              (ELSE
+               <RANDOM <- ,P-NUMBER>>
+               <TELL "Your lucky number is now " N ,P-NUMBER "." CR>)>>
 
     <SYNTAX XLOOT = V-XLOOT>
 
