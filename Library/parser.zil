@@ -806,6 +806,10 @@ Returns:
         <COND (<DLESS? CNT 0>
                ;"Out of syntax lines"
                <RETURN>)>
+        <IF-DEBUG
+            <TELL "[trying line: ">
+            <PRINT-SYNTAX-LINE .PTR>
+            <TELL " ... ">>
         <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
         <SET PREP1 <GETB .PTR ,SYN-PREP1>>
         <SET PREP2 <GETB .PTR ,SYN-PREP2>>
@@ -817,7 +821,9 @@ Returns:
                ;"Complete match"
                <SETG PRSA <GETB .PTR ,SYN-ACTION>>
                <SETG P-SYNTAX .PTR>
+               <IF-DEBUG <TELL "OK]" CR>>
                <RTRUE>)>
+        <IF-DEBUG <TELL "nope]" CR>>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
     ;"No complete match, look for something close"
     <SET PTR <GUESS-SYNTAX>>
@@ -829,42 +835,61 @@ Returns:
            <TELL "I don't understand that sentence." CR>
            <RFALSE>)>>
 
+<IF-DEBUG
+    <ROUTINE PRINT-SYNTAX-LINE (PTR)
+        <TELL "NOBJ=" N <GETB .PTR ,SYN-NOBJ>
+              " P1=" N <GETB .PTR ,SYN-PREP1>
+              " P2=" N <GETB .PTR ,SYN-PREP2>
+              " A=" N <GETB .PTR ,SYN-ACTION>>>>
+
 ;"Find the best incompletely-matching syntax line, given that no line matches
   exactly."
 <ROUTINE GUESS-SYNTAX ("AUX" PTR CNT BEST BEST-SCORE S NOBJ PREP1 PREP2)
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
     <SET CNT <GETB .PTR 0>>
     <SET PTR <+ .PTR 1>>
+    <IF-DEBUG <TELL "[GUESS-SYNTAX]" CR>>
     <REPEAT ()
         <COND (<DLESS? CNT 0>
                ;"Out of syntax lines"
                <RETURN>)>
+        <IF-DEBUG
+            <TELL "[trying line: ">
+            <PRINT-SYNTAX-LINE .PTR>
+            <TELL " ... ">>
         <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
         <SET PREP1 <GETB .PTR ,SYN-PREP1>>
         <SET PREP2 <GETB .PTR ,SYN-PREP2>>
         <PROG ()
             ;"The syntax line has to have more objects than we've parsed"
-            <COND (<L=? .NOBJ ,P-NOBJ> <RETURN>)>
+            <COND (<L=? .NOBJ ,P-NOBJ>
+                   <IF-DEBUG <TELL "too few objects]" CR>>
+                   <RETURN>)>
             ;"See how much we can match..."
             <SET S 1>
             <COND (,P-P1
                    <COND (<N==? .PREP1 ,P-P1>
                           ;"Wrong preposition 1"
+                          <IF-DEBUG <TELL "wrong P1]" CR>>
                           <RETURN>)
                          (ELSE <SET S <+ .S 1>>)>)
                   (<AND <G=? ,P-NOBJ 1> .PREP1>
                    ;"Missing preposition 1"
+                   <IF-DEBUG <TELL "missing P1]" CR>>
                    <RETURN>)
                   (<0? .PREP1> <SET S <+ .S 1>>)>
             <COND (,P-P2
                    <COND (<N==? .PREP2 ,P-P2>
                           ;"Wrong preposition 2"
+                          <IF-DEBUG <TELL "wrong P2]" CR>>
                           <RETURN>)
                          (ELSE <SET S <+ .S 1>>)>)
                   (<AND <G=? ,P-NOBJ 2> .PREP2>
                    ;"Missing preposition 2 - shouldn't get here?"
+                   <IF-DEBUG <TELL "missing P2]" CR>>
                    <RETURN>)
                   (<0? .PREP2> <SET S <+ .S 1>>)>
+            <IF-DEBUG <TELL "scored " N .S "]" CR>>
             <COND (<G? .S .BEST-SCORE>
                    <SET BEST-SCORE .S>
                    <SET BEST .PTR>)>>
@@ -1648,6 +1673,8 @@ Args:
 ;"Searches an object to find exactly one child with a given flag set, and
 optionally prints a message about it.
 
+If no matching child is found, the search expands to any LOCAL-GLOBALS present.
+
 Args:
   C: The container or location to search.
   BIT: The flag to look for.
@@ -1658,11 +1685,19 @@ Args:
 Returns:
   If exactly one object was found, returns the found object.
   If zero or multiple objects were found, returns false."
-<ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W)
+<ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W PT MAX)
     <MAP-CONTENTS (I .C)
-        <COND (<FSET? .I  .BIT>
+        <COND (<FSET? .I .BIT>
                <SET N <+ .N 1>>
                <SET W .I>)>>
+    <COND (<AND <0? .N> <SET PT <GETPT .C ,P?GLOBAL>>>
+           <SET MAX <PTSIZE .PT>>
+           <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+           <DO (J 1 .MAX)
+               <BIND ((I <GET/B .PT .J>))
+                   <COND (<FSET? .I .BIT>
+                          <SET N <+ .N 1>>
+                          <SET W .I>)>>>)>
     <COND
         ;"If less or more than one match, we return false."
         (<NOT <EQUAL? .N 1>>
