@@ -44,5 +44,13 @@ namespace IntegrationTests
                 .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(123 456) SPLICE>>")
                 .GivesNumber("456");
         }
+
+        [TestMethod]
+        public void Macro_Call_With_Wrong_Argument_Count_Should_Raise_An_Error()
+        {
+            AssertRoutine("\"AUX\" S", "<SET S <FOO A>>")
+                .WithGlobal("<DEFMAC FOO ('X 'Y 'Z) <FORM TELL \"hello world\" CR>>")
+                .DoesNotCompile();
+        }
     }
 }
