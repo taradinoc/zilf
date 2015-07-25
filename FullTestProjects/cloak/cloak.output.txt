@@ -44,6 +44,7 @@ A small brass hook is on the wall.
 >  Cloakroom                                                 Score: 0                                                                 Moves: 11                                                                               Foyer of the Opera House
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 12                                                                               Foyer Bar
+The bar, much rougher than you'd have guessed after the opulence of the foyer to the north, is completely empty.
 
 There seems to be some sort of message scrawled in the sawdust on the floor.
 
@@ -51,8 +52,7 @@ There seems to be some sort of message scrawled in the sawdust on the floor.
 Are you sure you want to quit? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               
 OK - not quitting.
 
->  Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               Are you sure you want to restart?
- (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               
+>  Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               Are you sure you want to restart? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               
 
 Hurrying through the rainswept November night, you're glad to see the bright lights of the Opera House. It's surprising that there aren't more people about but, hey, what do you expect in a cheap demo game...?
 
@@ -83,6 +83,7 @@ A small brass hook is on the wall.
 >  Cloakroom                                                 Score: 0                                                                 Moves: 6                                                                               Foyer of the Opera House
 
 >  Foyer of the Opera House                                                 Score: 0                                                                 Moves: 7                                                                               Foyer Bar
+The bar, much rougher than you'd have guessed after the opulence of the foyer to the north, is completely empty.
 
 There seems to be some sort of message scrawled in the sawdust on the floor.
 

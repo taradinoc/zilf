@@ -28,11 +28,7 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
                those routines if WAIT ran this turn"
                <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
                       <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                      <CLOCKER>)>
-               ;"backup inputbuffers"
-               <COPY-READBUF>
-               <COPY-LEXBUF>
-               <SETG AGAINCALL 0>)>
+                      <CLOCKER>)>)>
         <SETG HERE <LOC ,WINNER>>>>
 
 <INSERT-FILE "parser">
