@@ -1,7 +1,6 @@
 ;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
-;"TODO: Show score/rank when quitting. Dock points for quitting."
 
 ;----------------------------------------------------------------------
 "General directives"
@@ -107,6 +106,11 @@ Adapted once more by Jesse McGrew (2015)">>
                   <FSET ,PRSO ,TOUCHBIT>
                   <FCLEAR ,PRSO ,WORNBIT>
                   <TELL "You safely deposit " T ,PRSO "." CR>)>
+           <RTRUE>)
+          (<VERB? QUIT>
+           <V-SCORE T>
+           <CRLF>
+           <V-QUIT>
            <RTRUE>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
@@ -195,7 +199,7 @@ Adapted once more by Jesse McGrew (2015)">>
 
 <SYNTAX SCORE = V-SCORE>
 
-<ROUTINE V-SCORE ("OPT" DEAD MAX NR)
+<ROUTINE V-SCORE ("OPT" DEAD "AUX" MAX NR)
     <TELL "In ">
     <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
     <TELL ", you">
