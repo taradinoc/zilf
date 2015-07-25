@@ -947,7 +947,7 @@ Returns:
     ;"Dock an extra point for PRSI if we have to infer *no* preposition.
       This makes us prefer syntaxes with the direct object first
       (GIVE OBJECT TO OBJECT instead of GIVE OBJECT OBJECT)."
-    <COND (<NOT <OR ,P-P2 .PREP2>> <SET R <- .R 1>>)>
+    <COND (<AND <=? .NOBJ 2> <NOT <OR ,P-P2 .PREP2>>> <SET R <- .R 1>>)>
     .R>
 
 <INSERT-FILE "scope">
