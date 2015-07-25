@@ -1375,7 +1375,7 @@ Returns:
     <ROUTINE OBJREF? (O)
         <COND (<=? .O ,NUMBER>
                <COND (<AND <G=? ,P-NUMBER 1>
-                           <L=? .O ,LAST-OBJECT>>
+                           <L=? ,P-NUMBER ,LAST-OBJECT>>
                       ,P-NUMBER)
                      (ELSE
                       <TELL "[Bad objref.]" CR>
