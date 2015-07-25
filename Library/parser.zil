@@ -738,7 +738,7 @@ Returns:
       care about the exact return value from CHKWORD? or WORD?."
     <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?ANY ,W?ONE>
             <CHKWORD? .W ,PS?ADJECTIVE>
-            <WORD? .W OBJECT>>>>
+            <CHKWORD? .W ,PS?OBJECT>>>>
 
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
@@ -791,7 +791,7 @@ Returns:
                  ;"if W can also be a noun, treat it as such if we don't
                    already have a noun, and it isn't followed by an adj or noun"
                  (<AND <0? .NOUN>                       ;"no noun"
-                       <WORD? .W OBJECT>                ;"word can be a noun"
+                       <CHKWORD? .W ,PS?OBJECT>         ;"word can be a noun"
                        <OR ;"word is at end of line"
                            <==? .WN ,P-LEN>
                            ;"next word is not adj/noun"
@@ -804,7 +804,7 @@ Returns:
                   <RFALSE>)
                  (<NOT .ADJ> <SET ADJ .VAL>)>)
             ;"match nouns, exiting the loop if we already found one"
-            (<WORD? .W OBJECT>
+            (<CHKWORD? .W ,PS?OBJECT>
              <COND (.NOUN <RETURN>)
                    (<==? .CNT ,P-MAX-OBJSPECS>
                     <TELL "That phrase mentions too many objects." CR>
