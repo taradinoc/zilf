@@ -1957,6 +1957,7 @@ Returns:
      <PRINTI " (y/n) >">
      <REPEAT ()
          <SET RESP <GETONECHAR>>
+         <VERSION? (ZIP) (ELSE <PRINTC .RESP> <CRLF>)>
          <COND (<EQUAL? .RESP !\Y !\y>
                 <RTRUE>)
                (<EQUAL? .RESP !\N !\n>
