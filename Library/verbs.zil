@@ -1148,19 +1148,22 @@ Returns:
 
 <ROUTINE V-AGAIN ()
     <SETG AGAINCALL T>
-    <RESTORE-READBUF>
-    <RESTORE-LEX>
-    ;<TELL "In V-AGAIN - Previous readbuf and lexbuf restored." CR>
-    ;<DUMPBUF>
-    ;<DUMPLEX>
-    <COND (<NOT <EQUAL? <GET ,READBUF 1> 0>>
-           <COND (<PARSER>
-                  ;<TELL "Doing PERFORM within V-AGAIN" CR>
-                  <PERFORM ,PRSA ,PRSO ,PRSI>
-                  <COND (<NOT <GAME-VERB?>>
-                         <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                         <CLOCKER>)>
-                  <SETG HERE <LOC ,WINNER>>)>)
+    <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
+    <COND (,P-V
+           <COND (<AND ,PRSO
+                       <NOT ,PRSO-DIR>
+                       <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>
+                                 <HAVE-TAKE-CHECK-TBL ,P-PRSOS <GETB ,P-SYNTAX ,SYN-OPTS1>>>>>
+                  <RTRUE>)
+                 (<AND ,PRSI
+                       <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
+                                 <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
+                  <RTRUE>)>
+           <PERFORM ,PRSA ,PRSO ,PRSI>
+           <COND (<NOT <GAME-VERB?>>
+                  <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+                  <CLOCKER>)>
+           <SETG HERE <LOC ,WINNER>>)
           (ELSE <TELL "Nothing to repeat." CR>)>
     <SETG AGAINCALL <>>>
 

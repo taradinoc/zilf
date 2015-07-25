@@ -69,11 +69,8 @@
             '<COND (<0? .CNT>
                     <TELL "You haven't seen any \"" B .W "\" yet." CR>
                     <RETURN ,EXPAND-PRONOUN-FAILED>)>
-            '<DO (I 1 .CNT)
-                <COND (<NOT <VISIBLE? <GET/B .OBJS .I>>>
-                       <LIST-OBJECTS .OBJS ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
-                       <TELL " no longer here." CR>
-                       <RETURN ,EXPAND-PRONOUN-FAILED .EP>)>>
+            '<COND (<NOT <STILL-VISIBLE-CHECK .OBJS>>
+                    <RETURN ,EXPAND-PRONOUN-FAILED .EP>)>
             '<COND (<1? .CNT> <RETURN <GET/B .OBJS 1>>)
                    (ELSE <RETURN ,MANY-OBJECTS>)>>>
     <EVAL .RTN>
@@ -96,6 +93,3 @@
     <EVAL .RTN>>
 
 <CONSTANT EXPAND-PRONOUN-FAILED -1>
-
-<ROUTINE NOT-VISIBLE? (O)
-    <NOT <VISIBLE? .O>>>
