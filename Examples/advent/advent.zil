@@ -161,7 +161,7 @@ Adapted once more by Jesse McGrew (2015)">>
 <CONSTANT TR-DEPOSITED 3>
 
 <CONSTANT ALL-TREASURES
-    <TABLE %<VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>
+    <TABLE %<VERSION? (ZIP '(BYTE)) (ELSE #SPLICE ())>
         LARGE-GOLD-NUGGET TR-UNFOUND
         DIAMONDS          TR-UNFOUND
         BARS-OF-SILVER    TR-UNFOUND
@@ -4465,7 +4465,8 @@ into a pit. None of the objects available is immediately useful in discovering t
     <ROUTINE V-XLOOT ("AUX" T OS)
         <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
             <SET T <GET/B ,ALL-TREASURES .I>>
-            <TELL CT .T ": ">
+            <PRINT-OBJREF .T>
+            <TELL ": ">
             <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
             <COND (<=? .OS ,TR-UNFOUND> <TELL "unfound">)
                   (<=? .OS ,TR-TOUCHED> <TELL "touched">)
