@@ -192,23 +192,26 @@
 ;"Constants"
 
 ;"TODO: these belong in parser.zil?"
+;"Object action handlers may get: M-WINNER, or no arg"
 ;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK, M-FLASH"
-;"Object DESCFCNs may get: M-OBJDESC?, no arg"
+;"Object DESCFCNs may get: M-OBJDESC?, M-OBJDESC"
 ;"DARKNESS-F may get: M-LOOK, M-SCOPE?, M-LIT-TO-DARK, M-DARK-TO-LIT,
     M-DARK-TO-DARK, M-DARK-CANT-GO"
-<CONSTANT M-BEG 1>
-<CONSTANT M-END 2>
-<CONSTANT M-ENTER 3>
-<CONSTANT M-LOOK 4>
-<CONSTANT M-FLASH 5>
-<CONSTANT M-OBJDESC? 6>
-<CONSTANT M-SCOPE? 7>
-<CONSTANT M-LIT-TO-DARK 8>
-<CONSTANT M-DARK-TO-LIT 9>
-<CONSTANT M-DARK-TO-DARK 10>
-<CONSTANT M-DARK-CANT-GO 11>
-<CONSTANT M-NOW-DARK 12>
-<CONSTANT M-NOW-LIT 13>
+<CONSTANT M-BEG 1>                ;"Intercept action at beginning of turn"
+<CONSTANT M-END 2>                ;"React to action at end of turn"
+<CONSTANT M-ENTER 3>              ;"Player is entering room"
+<CONSTANT M-LOOK 4>               ;"Show room description"
+<CONSTANT M-FLASH 5>              ;"Show important descriptions even in BRIEF mode"
+<CONSTANT M-OBJDESC? 6>           ;"Choose whether to self-describe"
+<CONSTANT M-OBJDESC 7>            ;"Write a self-description"
+<CONSTANT M-SCOPE? 8>             ;"Decide which scope stages run in darkness"
+<CONSTANT M-LIT-TO-DARK 9>        ;"Player moved from light to darkness"
+<CONSTANT M-DARK-TO-LIT 10>       ;"Player moved from darkness to light"
+<CONSTANT M-DARK-TO-DARK 11>      ;"Player moved from one dark room to another"
+<CONSTANT M-DARK-CANT-GO 12>      ;"Player stumbled around in a dark room"
+<CONSTANT M-NOW-DARK 13>          ;"Light source is gone"
+<CONSTANT M-NOW-LIT 14>           ;"Light source is back"
+<CONSTANT M-WINNER 15>            ;"Object is the one performing this action"
 
 ;"Helper routines for action handlers"
 
@@ -334,7 +337,7 @@ Args:
             (<SET P <GETP .I ,P?DESCFCN>>
              <CRLF>
              ;"The DESCFCN is responsible for listing the object's contents"
-             <APPLY .P>)
+             <APPLY .P ,M-OBJDESC>)
             ;"objects with applicable FDESCs or LDESCs"
             (<OR <AND <NOT <FSET? .I ,TOUCHBIT>>
                       <SET P <GETP .I ,P?FDESC>>>
@@ -388,8 +391,6 @@ Args:
                            <GETP .OBJ ,P?FDESC>>
                       <GETP .OBJ ,P?LDESC>
                       <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
-                      
-
 
 ;"Prints a (short) string with the first letter capitalized."
 <ROUTINE PRINT-CAP-STR (S "AUX" MAX C)

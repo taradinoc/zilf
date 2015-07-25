@@ -1630,23 +1630,13 @@ Sets (temporarily):
                <COND (<=? <GET/B ,P-PRSIS .I> .O> <INC R>)>>)>
     .R>
 
-;"Handler order:
-   player's ACTION,
-   location's ACTION (M-BEG),
-   verb preaction,
-   PRSI's location's CONTFCN,
-   PRSI's ACTION,
-   PRSO's location's CONTFCN,
-   PRSO's ACTION,
-   verb action."
-
 ;"Helper function to call action handlers, respecting a search order.
 
 The routine searches for handlers in a set order, calling each one it finds
 until one returns true to indicate that it has handled the action.
 
 The search order is as follows:
-  ACTION property of WINNER
+  ACTION property of WINNER (with M-WINNER parameter)
   ACTION property of WINNER's location (with M-BEG parameter)
   Verb preaction
   CONTFCN property of PRSI's location
@@ -1669,7 +1659,7 @@ Returns:
   True if the action was handled."
 <ROUTINE PERFORM-CALL-HANDLERS (PRTN RTN "AUX" AC RM)
     <COND (<AND <SET AC <GETP ,WINNER ,P?ACTION>>
-                <APPLY .AC>>
+                <APPLY .AC ,M-WINNER>>
            <RTRUE>)
           (<AND <SET RM <LOC ,WINNER>>
                 <SET AC <GETP .RM ,P?ACTION>>
