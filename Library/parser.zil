@@ -1656,18 +1656,28 @@ Returns:
   If exactly one object was found, returns the found object.
   If zero or multiple objects were found, returns false."
 <ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W PT MAX)
+    <IF-DEBUG <TELL "[FIND-IN: looking in " D .C " for " N .BIT "]" CR>>
     <MAP-CONTENTS (I .C)
+        <IF-DEBUG <TELL "[considering " D .I "...">>
         <COND (<FSET? .I .BIT>
+               <IF-DEBUG <TELL " OK">>
                <SET N <+ .N 1>>
-               <SET W .I>)>>
+               <SET W .I>)>
+        <IF-DEBUG <TELL "]" CR>>>
     <COND (<AND <0? .N> <SET PT <GETPT .C ,P?GLOBAL>>>
+           <IF-DEBUG <TELL "[falling back to LOCAL-GLOBALS]" CR>>
            <SET MAX <PTSIZE .PT>>
            <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
-           <DO (J 1 .MAX)
+           <SET MAX <- .MAX 1>>
+           <DO (J 0 .MAX)
                <BIND ((I <GET/B .PT .J>))
+                   <IF-DEBUG <TELL "[FIND-IN: considering " D .I "...">>
                    <COND (<FSET? .I .BIT>
+                          <IF-DEBUG <TELL " OK">>
                           <SET N <+ .N 1>>
-                          <SET W .I>)>>>)>
+                          <SET W .I>)>
+                   <IF-DEBUG <TELL "]" CR>>>>)>
+    <IF-DEBUG <TELL "[FIND-IN: found " N .N "]" CR>>
     <COND
         ;"If less or more than one match, we return false."
         (<NOT <EQUAL? .N 1>>
