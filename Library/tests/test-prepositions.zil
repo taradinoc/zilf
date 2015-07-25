@@ -13,6 +13,11 @@
     (SYNONYM APPLE)
     (FLAGS VOWELBIT TAKEBIT)>
 
+<SYNTAX CARESS OBJECT GENTLY OBJECT (FIND KLUDGEBIT) = V-GENTLY-CARESS>
+
+<ROUTINE V-GENTLY-CARESS ()
+    <TELL "You gently caress " T ,PRSO "." CR>>
+
 <INSERT-FILE "testing">
 
 <TEST-SETUP ()
@@ -36,5 +41,9 @@
     <COMMAND [PUT APPLE DOWN]>
     <EXPECT "You drop the apple.|">
     <CHECK <IN? ,APPLE ,HERE>>>
+
+<TEST-CASE ("Don't infer a trailing preposition with KLUDGEBIT")
+    <COMMAND [CARESS APPLE]>
+    <EXPECT "I don't understand that sentence.|">>
 
 <TEST-GO ,STARTROOM>

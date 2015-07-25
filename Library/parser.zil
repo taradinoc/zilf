@@ -310,7 +310,7 @@ Args:
                 <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
         (ELSE
             <DEFMAC PRINT-ADJ ('A)
-                <TELL B .A>>)>
+                <FORM TELL B .A>>)>
 >
 
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
@@ -926,7 +926,19 @@ Returns:
           ;"If we have one object, and we expected a first preposition but
             didn't get it, this can't match. (If we have two objects, we
             already failed an earlier test.)"
-          (<AND <1? ,P-NOBJ> .PREP1 <NOT ,P-P1>> <RFALSE>)>
+          (<AND <1? ,P-NOBJ> .PREP1 <NOT ,P-P1>> <RFALSE>)
+          ;"If we'd end up using FIND KLUDGEBIT for a missing noun and having
+            to infer the preposition, don't match this line."
+          (<OR <AND <G=? .NOBJ 1>
+                    <0? ,P-NOBJ>
+                    <0? ,P-P1>
+                    .PREP1
+                    <=? <GETB .PTR ,SYN-FIND1> ,KLUDGEBIT>>
+               <AND <=? .NOBJ 2>
+                    <0? ,P-P2>
+                    .PREP2
+                    <=? <GETB .PTR ,SYN-FIND2> ,KLUDGEBIT>>>
+           <RFALSE>)>
     ;"We have a possible match; now score how well it matches.
       Dock three points for each object we have to infer."
     <SET R <* 3 <- ,P-NOBJ .NOBJ>>>
