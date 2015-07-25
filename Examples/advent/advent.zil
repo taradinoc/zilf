@@ -102,6 +102,7 @@ Adapted once more by Jesse McGrew (2015)">>
                 <=? ,HERE ,INSIDE-BUILDING>
                 <FSET? ,PRSO ,TREASUREBIT>>
            <COND (<PRE-DROP>)
+                 (<AND <SET F <GETP ,PRSO ,P?ACTION>> <APPLY .F>>)
                  (<MOVE ,PRSO ,HERE>
                   <FSET ,PRSO ,TOUCHBIT>
                   <FCLEAR ,PRSO ,WORNBIT>
