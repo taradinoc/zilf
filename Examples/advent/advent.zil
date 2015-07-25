@@ -2288,7 +2288,7 @@ You have just vanquished a dragon with your bare hands!
            <SETG DRAGON-BEING-ATTACKED T>
            <TELL "With what? Your bare hands?" CR>)
           (<AND <VERB? GIVE> <PRSI? ,DRAGON>>
-           <TELL T ,PRSI " is implacable.">)
+           <TELL CT ,PRSI " is implacable." CR>)
           (<AND <VERB? THROW-AT> <PRSI? ,DRAGON>>
            <COND (<NOT <PRSO? ,AXE>>
                   <TELL "You'd probably be better off using your bare hands than that thing!" CR>)
