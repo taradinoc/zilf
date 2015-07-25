@@ -3299,6 +3299,7 @@ lined with oddly shaped limestone formations.")
 
 <OBJECT LIMESTONE-FORMATIONS
     (DESC "limestone formations")
+    (IN IN-LIMESTONE-PASSAGE)
     (SYNONYM FORMATIONS SHAPE SHAPES LIMESTONE)
     (ADJECTIVE LIME LIMESTONE STONE ODDLY SHAPED ODDLY-SHAPED)
     (TEXT "Every now and then a particularly strange shape catches your eye.")
@@ -3321,6 +3322,7 @@ A sign posted above the entrance reads: \"Caution! Bear in room!\"")
 
 <OBJECT CAUTION-SIGN
     (DESC "caution sign")
+    (IN IN-FRONT-OF-BARREN-ROOM)
     (SYNONYM SIGN)
     (ADJECTIVE BARREN ROOM CAUTION)
     (TEXT "The sign reads, \"Caution! Bear in room!\"")
