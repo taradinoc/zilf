@@ -4284,12 +4284,37 @@ appears out of nowhere!" CR>)>)>)
 <SYNTAX OPEN OBJECT (FIND LOCKEDBIT) WITH OBJECT (HAVE HELD CARRIED) = V-UNLOCK>
 <SYNTAX CLOSE OBJECT WITH OBJECT (HAVE HELD CARRIED) = V-LOCK>
 
-<SYNTAX FEED OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
-<SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SGIVE>
-
 <SYNTAX LIGHT OBJECT (FIND DEVICEBIT) = V-TURN-ON>
 <SYNTAX UNLIGHT OBJECT (FIND DEVICEBIT) = V-TURN-OFF>
 <SYNONYM UNLIGHT EXTINGUISH>
+
+;----------------------------------------------------------------------
+
+<SYNTAX FEED OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
+<SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SGIVE>
+
+;"When the player types an incomplete command like FEED BEAR, the parser has to infer
+  which syntax they meant to use (since there was no exact match). The two syntaxes for FEED
+  above are similar, except one has a prep2 and the other doesn't. The parser is weighted to
+  prefer the syntax with the prep2, which is often a good idea (GIVE X TO Y is more likely
+  than GIVE Y X), but in this case it's wrong; FEED BEAR means something is being fed *to*
+  the bear.
+  
+  So, we define a separate action for FEED OBJECT that searches for food, and redirects it
+  to V-GIVE. We use GWIM instead of FIND-IN to locate the food because the player is probably
+  carrying it."
+<SYNTAX FEED OBJECT (FIND PERSONBIT) = V-FEED>
+
+<ROUTINE V-FEED ("AUX" O)
+    <COND (<NOT <FSET? ,PRSO ,PERSONBIT>>
+           <NOT-POSSIBLE "feed">)
+          (<SET O <GWIM ,EDIBLEBIT -1 <>>>
+           <COND (<=? ,PRSO ,WINNER> <PERFORM ,V?EAT .O>)
+                 (ELSE <PERFORM ,V?GIVE .O ,PRSO>)>)
+          (ELSE <BE-SPECIFIC>)>>
+
+;"TODO: Instead of <BE-SPECIFIC>, could we orphan and force the parser to use the
+  FEED OBJECT OBJECT syntax?"
 
 ;----------------------------------------------------------------------
 "Help and info commands"
