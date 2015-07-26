@@ -120,7 +120,7 @@ Adapted once more by Jesse McGrew (2015)">>
 ;----------------------------------------------------------------------
 
 ;"This affects the definition of GAME-VERB?."
-<SETG EXTRA-GAME-VERBS '(SCORE)>
+<SETG EXTRA-GAME-VERBS '(SCORE HELP INFO CREDITS)>
 <IF-BETA <SETG EXTRA-GAME-VERBS (!,EXTRA-GAME-VERBS XLUCKY XLOOT)>>
 
 ;"This is used by the debugging verbs.
@@ -201,7 +201,7 @@ Adapted once more by Jesse McGrew (2015)">>
 
 <ROUTINE V-SCORE ("OPT" DEAD "AUX" MAX NR)
     <TELL "In ">
-    <COND (<1? ,TURNS> <TELL "1 turn">) (ELSE <TELL N ,TURNS " turns">)>
+    <COND (<1? ,MOVES> <TELL "1 turn">) (ELSE <TELL N ,MOVES " turns">)>
     <TELL ", you">
     <COND (<NOT .DEAD> <TELL "'ve">)>
     <TELL " scored ">
