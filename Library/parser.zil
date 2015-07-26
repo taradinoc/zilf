@@ -1080,6 +1080,9 @@ Sets:
 Returns:
   True if all required objects were found, or false if not."
 <ROUTINE FIND-OBJECTS (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+    <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N .SNOBJ ", we have " N ,P-NOBJ "]" CR>
+    <TRACE-IN>
+    
     <COND (<G=? .KEEP 1>)
           (<L? .SNOBJ 1>
            <SETG PRSO <>>)
@@ -1087,25 +1090,31 @@ Returns:
            <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
            <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
            <COND (<L? ,P-NOBJ 1>
+                  <TRACE 3 "[gwimming PRSO]" CR>
                   <SETG PRSO
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
                   <COND (<0? ,PRSO>
                          <WHAT-DO-YOU-WANT>
                          <ORPHAN T MISSING PRSO>
+                         <TRACE-OUT>
                          <RFALSE>)
                         (ELSE
                          <PUT/B ,P-PRSOS 1 ,PRSO>
                          <PUTB ,P-PRSOS 0 1>)>)
                  (ELSE
+                  <TRACE 3 "[matching PRSO]" CR>
                   <SETG PRSO
                       <OR <AND <1? <NP-YCNT ,P-NP-DOBJ>>
                                <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ 1>> ,P-PRSOS>>
                           <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>>
-                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
+                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED>
+                         <TRACE-OUT>
+                         <RFALSE>)>)>
            <COND (<NOT <AND ,PRSO
                             <OR ,PRSO-DIR
                                 <AND <MANY-CHECK ,PRSO .O <>>
                                      <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
+                  <TRACE-OUT>
                   <RFALSE>)>)>
     <COND (<G=? .KEEP 2>)
           (<L? .SNOBJ 2>
@@ -1114,25 +1123,32 @@ Returns:
            <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>
            <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
            <COND (<L? ,P-NOBJ 2>
+                  <TRACE 3 "[gwimming PRSI]" CR>
                   <SETG PRSI
                       <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP2>>>
                   <COND (<0? ,PRSI>
                          <WHAT-DO-YOU-WANT>
                          <ORPHAN T MISSING PRSI>
+                         <TRACE-OUT>
                          <RFALSE>)
                         (ELSE
                          <PUT/B ,P-PRSIS 1 ,PRSI>
                          <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
+                  <TRACE 3 "[matching PRSI]" CR>
                   <SETG PRSI
                       <OR <AND <1? <NP-YCNT ,P-NP-IOBJ>>
                                <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>> ,P-PRSIS>>
                           <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>>
-                  <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
+                  <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED>
+                         <TRACE-OUT>
+                         <RFALSE>)>)>
            <COND (<NOT <AND ,PRSI
                             <MANY-CHECK ,PRSI .O T>
                             <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
+                  <TRACE-OUT>
                   <RFALSE>)>)>
+    <TRACE-OUT>
     <RTRUE>>
 
 <ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2 F)
@@ -1287,7 +1303,7 @@ inference message before returning it.
 The flag KLUDGEBIT is a special case that always finds ROOMS.
 
 Args:
-  BIT: The flag to search for.
+  BIT: The flag to search for. If zero, all objects in scope will be considered.
   OPTS: The search options to use.
   PREP: The preposition to use in the message.
 
@@ -1296,14 +1312,22 @@ Returns:
 <ROUTINE GWIM (BIT OPTS PREP "AUX" O PW)
     ;"Special case"
     <COND (<==? .BIT ,KLUDGEBIT>
+           <TRACE 4 "[GWIM: autofilling ROOMS for kludge bit]" CR>
            <RETURN ,ROOMS>)>
     ;"Look for exactly one matching object, or two if one is WINNER"
+    <TRACE 4 "[GWIM: searching scope for flag " N .BIT " opts " N .OPTS "]" CR>
+    <TRACE-IN>
     <MAP-SCOPE (I [BITS .OPTS])
-        <COND (<FSET? .I .BIT>
+        <COND (<OR <0? .BIT> <FSET? .I .BIT>>
+               <TRACE 4 "[considering " D .I "]" CR>
                <COND (<AND .O <N=? .O ,WINNER> <N=? .I ,WINNER>>
+                      <TRACE 4 "[too many, bailing]" CR>
+                      <TRACE-OUT>
                       <RFALSE>)
                      (<OR <NOT .O> <N=? .I ,WINNER>>
+                      <TRACE 4 "[updating preference]" CR>
                       <SET O .I>)>)>>
+    <TRACE-OUT>
     ;"Print inference message"
     <COND (.O
            <TELL "[">
