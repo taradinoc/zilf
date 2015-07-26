@@ -1452,10 +1452,9 @@ Returns:
                                      <PUT/B .OUT .NOUT .I>)>)>>
                    <COND (<NOT .F>
                           ;"Try expanding the search if we can."
-                          <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
-                          <COND (<N=? .BITS .F>
-                                 <SET BITS .F>
-                                 <SET OBITS .F>    ;"Avoid bouncing between <1 and >1 matches"
+                          <COND (<N=? .BITS -1>
+                                 <SET BITS -1>
+                                 <SET OBITS -1>    ;"Avoid bouncing between <1 and >1 matches"
                                  <AGAIN .BITS-SET>)>
                           <COND (<=? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
                                  <TELL "It's too dark to see anything here." CR>)

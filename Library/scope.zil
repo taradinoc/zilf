@@ -33,11 +33,6 @@
 
 "Scope stages"
 
-<SCOPE-STAGE GENERIC 2
-    (<PUT SCOPE-STATE 0 <FIRST? ,GENERIC-OBJECTS>>
-     <PUT SCOPE-STATE 1 ,GENERIC-OBJECTS>)
-    (<SCOPE-CRAWL>)>
-
 <SCOPE-STAGE INVENTORY 2
     (<PUT SCOPE-STATE 0 <FIRST? ,WINNER>>
      <PUT SCOPE-STATE 1 ,WINNER>)
@@ -46,11 +41,6 @@
 <SCOPE-STAGE LOCATION 2
     (<PUT SCOPE-STATE 0 <FIRST? ,HERE>>
      <PUT SCOPE-STATE 1 ,HERE>)
-    (<SCOPE-CRAWL>)>
-
-<SCOPE-STAGE GLOBALS 2
-    (<PUT SCOPE-STATE 0 <FIRST? ,GLOBAL-OBJECTS>>
-     <PUT SCOPE-STATE 1 ,GLOBAL-OBJECTS>)
     (<SCOPE-CRAWL>)>
 
 ;"TODO: Just step through the GLOBAL property instead of checking everything
@@ -62,6 +52,16 @@
          <SET N <SCOPE-CRAWL>>
          <COND (<NOT .N> <RFALSE>)
                (<GLOBAL-IN? .N ,HERE> <RETURN .N>)>>)>
+
+<SCOPE-STAGE GLOBALS 2
+    (<PUT SCOPE-STATE 0 <FIRST? ,GLOBAL-OBJECTS>>
+     <PUT SCOPE-STATE 1 ,GLOBAL-OBJECTS>)
+    (<SCOPE-CRAWL>)>
+
+<SCOPE-STAGE GENERIC 2
+    (<PUT SCOPE-STATE 0 <FIRST? ,GENERIC-OBJECTS>>
+     <PUT SCOPE-STATE 1 ,GENERIC-OBJECTS>)
+    (<SCOPE-CRAWL>)>
 
 "Scope machinery"
 
@@ -94,7 +94,7 @@
         [STAGES (INVENTORY LOCATION)]
       Or set them from search bits:
         [BITS .B]
-      Or default to all stages in definition order.
+      Or default to all stages in definition order (or use [BITS -1]).
       
       To turn off the light requirement:
         [NO-LIGHT]"
@@ -148,8 +148,17 @@
                 !.BODY>>>
 
 <ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
-    ;"TODO: Put a condition on GENERIC-SCOPE-STAGE?"
-    <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GENERIC-SCOPE-STAGE>
+    ;"Special case: -1 means all stages in definition order."
+    <COND (<=? -1 .BITS>
+           <PUT ,SCOPE-CURRENT-STAGES 0 %<LENGTH ,SCOPE-STAGES>>
+           %<FORM PROG '()
+                  !<MAPF ,LIST
+                      <FUNCTION (I "AUX" (S <1 .I>))
+                          <FORM PUT ',SCOPE-CURRENT-STAGES
+                                    '<SET CNT <+ .CNT 1>>
+                                    <PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
+                      ,SCOPE-STAGES>>
+           <RETURN>)>
     ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM."
     <COND (<OR <BTST .BITS ,SF-HELD>
                <BTST .BITS ,SF-CARRIED>>
