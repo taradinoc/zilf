@@ -66,13 +66,14 @@ call them something else, but we'll continue the tradition anyway."
 <CONSTANT VERBOSE 2>
 
 <ADD-TELL-TOKENS
-    T *              <PRINT-DEF .X>
-    A *              <PRINT-INDEF .X>
-    CT *             <PRINT-CDEF .X>
-    CA *             <PRINT-CINDEF .X>
-    NOUN-PHRASE *    <PRINT-NOUN-PHRASE .X>
-    SYNTAX-LINE *    <PRINT-SYNTAX-LINE .X>
-    WORD *           <PRINT-WORD .X>>
+    T *                  <PRINT-DEF .X>
+    A *                  <PRINT-INDEF .X>
+    CT *                 <PRINT-CDEF .X>
+    CA *                 <PRINT-CINDEF .X>
+    NOUN-PHRASE *        <PRINT-NOUN-PHRASE .X>
+    SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
+    WORD *               <PRINT-WORD .X>
+    MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
@@ -339,6 +340,7 @@ Args:
 
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
          <ROUTINE PRINT-MATCHING-WORD (V PS P1 "AUX" W CNT SIZE)
+             <COND (<0? .V> <TELL "---"> <RTRUE>)>
              <SET W ,VOCAB>
              <SET W <+ .W 1 <GETB .W 0>>>
              <SET SIZE <GETB .W 0>>
@@ -624,9 +626,11 @@ Sets:
            <SETG P-NOBJ .NOBJ>
  
            <TRACE-OUT>
-           <TRACE 1 "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
-                 " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
-                 " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>
+           <TRACE 1 "[PARSER: V=" MATCHING-WORD ,P-V ,PS?VERB ,P1?VERB "(" N ,P-V ") NOBJ=" N ,P-NOBJ
+                 " P1=" MATCHING-WORD ,P-P1 ,PS?PREPOSITION 0 "(" N ,P-P1
+                 ") DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
+                 " P2=" MATCHING-WORD ,P-P2 ,PS?PREPOSITION 0 "(" N ,P-P2
+                 ") IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>
            <TRACE-IN>
  
            ;"If we have a direction, it's a walk action, and no verb is needed"
@@ -973,11 +977,19 @@ Returns:
            <RFALSE>)>>
 
 <IF-DEBUG
-    <ROUTINE PRINT-SYNTAX-LINE (PTR)
-        <TELL "NOBJ=" N <GETB .PTR ,SYN-NOBJ>
-              " P1=" N <GETB .PTR ,SYN-PREP1>
-              " P2=" N <GETB .PTR ,SYN-PREP2>
-              " A=" N <GETB .PTR ,SYN-ACTION>>>>
+    <ROUTINE PRINT-SYNTAX-LINE (PTR "AUX" NOBJ PREP1 PREP2 ACT)
+        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+        <SET ACT <GETB .PTR ,SYN-ACTION>>
+        <TELL "*">
+        <COND (<G=? .NOBJ 1>
+               <COND (.PREP1 <TELL " " MATCHING-WORD .PREP1 ,PS?PREPOSITION 0>)>
+               <TELL " object">)>
+        <COND (<G=? .NOBJ 2>
+               <COND (.PREP2 <TELL " " MATCHING-WORD .PREP2 ,PS?PREPOSITION 0>)>
+               <TELL " object">)>
+        <TELL " (" N .NOBJ ", " N .PREP1 ", " N .PREP2 ") = " N .ACT>>>
 
 ;"Scores how well the parsed command matches a syntax line.
 
@@ -1706,7 +1718,11 @@ Sets (temporarily):
   PRSO-DIR
   PRSI"
 <ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT)
-    <TRACE 1 "[PERFORM: ACT=" N .ACT " DOBJ=" N .DOBJ " IOBJ=" N .IOBJ "]" CR>
+    <TRACE 1 "[PERFORM: ACT=" N .ACT>
+    <TRACE-DO 1
+        <COND (.DOBJ <TELL " DOBJ=" D .DOBJ "(" N .DOBJ ")">)>
+        <COND (.IOBJ <TELL " IOBJ=" D .IOBJ "(" N .IOBJ ")">)>
+        <TELL "]" CR>>
     <SET PRTN <GET ,PREACTIONS .ACT>>
     <SET RTN <GET ,ACTIONS .ACT>>
     <SET OA ,PRSA>
@@ -1801,7 +1817,8 @@ Returns:
                 <APPLY .PRTN>>
            <RTRUE>)
           (<AND ,PRSI
-                <SET AC <GETP <LOC ,PRSI> ,P?CONTFCN>>
+                <SET RM <LOC ,PRSI>>
+                <SET AC <GETP .RM ,P?CONTFCN>>
                 <TRACE 4 "[calling PRSI LOC (" D <LOC ,PRSI> ") CONTFCN]" CR>
                 <APPLY .AC>>
            <RTRUE>)
@@ -1812,14 +1829,15 @@ Returns:
            <RTRUE>)
           (<AND ,PRSO
                 <NOT ,PRSO-DIR>
-                <SET AC <GETP <LOC ,PRSO> ,P?CONTFCN>>
+                <SET RM <LOC ,PRSO>>
+                <SET AC <GETP .RM ,P?CONTFCN>>
                 <TRACE 4 "[calling PRSO LOC (" D <LOC ,PRSO> ") CONTFCN]" CR>
                 <APPLY .AC>>
            <RTRUE>)
           (<AND ,PRSO
                 <NOT ,PRSO-DIR>
                 <SET AC <GETP ,PRSO ,P?ACTION>>
-                <TRACE 4 "[calling PRSO LOC (" D <LOC ,PRSO> ") ACTION]" CR>
+                <TRACE 4 "[calling PRSO (" D ,PRSO ") ACTION]" CR>
                 <APPLY .AC>>
            <RTRUE>)
           (ELSE
