@@ -44,13 +44,10 @@ Adapted once more by Jesse McGrew (2015)">>
     <CRLF>
     <SETG PREV-SCORE ,SCORE>
     <V-VERSION> <CRLF>
-    ;"I-SCORE should come last, so it can notice anything the other interrupt routines
-      do to affect the score."
     <QUEUE I-DWARF -1>
     <QUEUE I-PIRATE -1>
     <QUEUE I-CAVE-CLOSER -1>
     <QUEUE I-OFFER-HINT -1>
-    <QUEUE I-SCORE -1>
     <MOVE ,PLAYER ,HERE>
     <PUTP ,PLAYER ,P?CAPACITY 35> ;"7 objects at default size 5"
     <PUTP ,PLAYER ,P?ACTION ,ADVENT-PLAYER-F>
@@ -60,7 +57,12 @@ Adapted once more by Jesse McGrew (2015)">>
                <PERFORM ,PRSA ,PRSO ,PRSI>
                <COND (<NOT <GAME-VERB?>>
                       <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                      <CLOCKER>)>)>
+                      <CLOCKER>)>
+               ;"UPDATE-SCORE-AND-NOTIFY is called explicitly instead of using the interrupt
+                 queue: first, because we need to make sure it runs after all other interrupts,
+                 since they might affect the score. Second, because we want it to run even on
+                 GAME-VERB turns, since debugging verbs can move treasures and affect the score."
+               <UPDATE-SCORE-AND-NOTIFY>)>
         <SETG HERE <LOC ,WINNER>>>>
 
 <IF-BETA
@@ -228,7 +230,7 @@ Adapted once more by Jesse McGrew (2015)">>
                  (ELSE
                   <TELL " would be a neat trick!|Congratulations!!" CR>)>)>>
 
-<ROUTINE I-SCORE ("AUX" D T OS NS)
+<ROUTINE UPDATE-SCORE-AND-NOTIFY ("AUX" D T OS NS)
     ;"Note any changes in treasure status"
     <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
         <SET T <GET/B ,ALL-TREASURES .I>>
