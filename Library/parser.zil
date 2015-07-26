@@ -698,7 +698,45 @@ Sets:
 <OBJECT NUMBER
     (DESC "number")
     (IN GENERIC-OBJECTS)
-    (SYNONYM \,NUMBER)>
+    (SYNONYM \,NUMBER)
+    (ACTION NUMBER-F)>
+
+<ROUTINE NUMBER-F ()
+    <COND (<VERB? EXAMINE>
+           <TELL N ,P-NUMBER " is ">
+           <COND (<=? ,P-NUMBER 0>
+                  <TELL "zilch">)
+                 (<=? ,P-NUMBER 1>
+                  <TELL "the loneliest number that you'll ever do">)
+                 (<=? ,P-NUMBER 2>
+                  <TELL "the loneliest number since the number 1">)
+                 (<=? ,P-NUMBER 3>
+                  <TELL "a magic number">)
+                 (<=? ,P-NUMBER 4>
+                  <TELL "the only number that has the same number of characters as its value when written out in English">)
+                 (<=? ,P-NUMBER 5>
+                  <TELL "the only number that's part of more than one pair of twin primes">)
+                 (<=? ,P-NUMBER 6>
+                  <TELL "a perfect number">)
+                 (<=? ,P-NUMBER 7>
+                  <TELL "a 1995 film directed by David Fincher">)
+                 (<=? ,P-NUMBER 8>
+                  <TELL "the first number that's neither prime nor semiprime">)
+                 (<=? ,P-NUMBER 9>
+                  <TELL "a 2009 animated film written and directed by Shane Acker">)
+                 (<=? ,P-NUMBER 10>
+                  <TELL "a 1979 film written, produced, and directed by Blake Edwards">)
+                 (<=? ,P-NUMBER 42>
+                  <TELL "the Answer to the Ultimate Question of Life, The Universe, and Everything">)
+                 (<=? ,P-NUMBER 1729>
+                  <TELL "a very interesting number; it is the smallest number
+expressible as the sum of two cubes in two different ways">)
+                 (<=? ,P-NUMBER 12345>
+                  <TELL "the combination on my luggage">)
+                 (ELSE <TELL "the number between " N <- ,P-NUMBER 1> " and " N <+ ,P-NUMBER 1>>)>
+           <TELL ", but that's not important right now." CR>)
+          (<AND <=? ,P-V-WORD ,W?TAKE> <=? ,P-NUMBER 5 10>>
+           <PERFORM ,V?WAIT>)>>
 
 <GLOBAL P-NUMBER 0>
 
