@@ -171,6 +171,9 @@
 <SYNTAX PRONOUNS = V-PRONOUNS>
 
 ;"Debugging verbs"
+<IF-DEBUG
+    <SYNTAX XTRACE OBJECT = V-XTRACE>>
+
 <IF-DEBUGGING-VERBS
     <SYNTAX XTREE = V-XTREE>
     <SYNTAX XTREE OBJECT = V-XTREE>
@@ -653,6 +656,7 @@ Returns:
     <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY UNDO
                 SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
                 PRONOUNS
+                !<IFFLAG (DEBUG '(XTRACE)) (ELSE '())>
                 !<IFFLAG
                     (DEBUGGING-VERBS
                      '(XTREE XGOTO XMOVE XREMOVE XLIGHT XEXITS XOBJ XIT))
@@ -1148,7 +1152,6 @@ Returns:
                <RETURN>)>>>
 
 <ROUTINE V-AGAIN ()
-    <SETG AGAINCALL T>
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
     <COND (,P-V
            <COND (<AND ,PRSO
@@ -1160,13 +1163,14 @@ Returns:
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
                   <RTRUE>)>
+           <SETG AGAINCALL T>
            <PERFORM ,PRSA ,PRSO ,PRSI>
+           <SETG AGAINCALL <>>
            <COND (<NOT <GAME-VERB?>>
                   <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                   <CLOCKER>)>
            <SETG HERE <LOC ,WINNER>>)
-          (ELSE <TELL "Nothing to repeat." CR>)>
-    <SETG AGAINCALL <>>>
+          (ELSE <TELL "Nothing to repeat." CR>)>>
 
 <ROUTINE V-READ ("AUX" T)
     <COND (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)
@@ -1371,6 +1375,16 @@ Returns:
            <TELL "Failed." CR>)>>
 
 ;"Debugging verbs"
+<IF-DEBUG
+
+    <ROUTINE V-XTRACE ()
+        <COND (<NOT <PRSO? ,NUMBER>>
+               <TELL "Expected a number." CR>)
+              (ELSE
+               <SETG TRACE-LEVEL ,P-NUMBER>
+               <TELL "Tracing level " N ,TRACE-LEVEL "." CR>)>>
+>
+
 <IF-DEBUGGING-VERBS
 
     <ROUTINE OBJREF? (O)

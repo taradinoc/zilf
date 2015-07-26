@@ -83,18 +83,22 @@ Returns:
     <COND (<OR <L? ,P-LEN 1>
                <NOT <STARTS-NOUN-PHRASE? <GETWORD? 1>>>
                <NOT <=? <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ> <+ ,P-LEN 1>>>>
-           <IF-DEBUG <TELL "[HANDLE-ORPHAN-RESPONSE: doesn't look like a noun phrase]" CR>>
+           <TRACE 1 "[HANDLE-ORPHAN-RESPONSE: doesn't look like a noun phrase]" CR>
            <RETURN ,O-RES-NOT-HANDLED>)>
-    <IF-DEBUG <TELL "[HANDLE-ORPHAN-RESPONSE: O-R=" N ,P-O-REASON "]" CR>>
+    
+    <TRACE 1 "[HANDLE-ORPHAN-RESPONSE: REASON=" N ,P-O-REASON
+             <COND (<ORPHANING-BECAUSE-MISSING?> " MISSING") (ELSE " AMBIGUOUS")>
+             <COND (<ORPHANING-PRSI?> " PRSI") (ELSE " PRSO")>
+             "]" CR>
+    <TRACE-IN>
+    
     ;"To fill in a missing noun phrase, just copy the new one in place."
     <COND (<ORPHANING-BECAUSE-MISSING?>
            <COPY-NOUN-PHRASE
                ,P-NP-XOBJ
                <COND (<ORPHANING-PRSI?> ,P-NP-IOBJ) (ELSE ,P-NP-DOBJ)>>
-           <IF-DEBUG
-               <TELL "[setting NP: ">
-               <PRINT-NOUN-PHRASE ,P-NP-XOBJ>
-               <TELL "]" CR>>
+           <TRACE 2 "[setting NP: " NOUN-PHRASE ,P-NP-XOBJ "]" CR>
+           <TRACE-OUT>
            <RETURN ,O-RES-SET-NP>)>
     ;"We're disambiguating. Loop over the previously matched objects and only keep the
       ones that match the new NP."
@@ -102,23 +106,29 @@ Returns:
     <SET MAX <GETB .TBL 0>>
     <SET CNT 0>
     <SET OUT ,P-XOBJS>
-    <IF-DEBUG
-        <TELL "[filtering " N .MAX " objects with NP: ">
-        <PRINT-NOUN-PHRASE ,P-NP-XOBJ>
-        <TELL "]" CR>>
+
+    <TRACE 2 "[filtering " N .MAX " objects with NP: " NOUN-PHRASE ,P-NP-XOBJ "]" CR>
+
     <SET NY <NP-YCNT ,P-NP-XOBJ>>
+    <TRACE-IN>
     <DO (I 1 .MAX)
         <SET O <GET/B .TBL .I>>
         <COND (<AND <OR <0? .NY> <NP-INCLUDES? ,P-NP-XOBJ .O>>
                     <NOT <NP-EXCLUDES? ,P-NP-XOBJ .O>>>
-               ;<TELL "[accepting " T .O "]" CR>
+               <TRACE 3 "[accepting " T .O "]" CR>
                <SET CNT <+ .CNT 1>>
                <PUT/B .OUT .CNT .O>)
-              ;(ELSE <TELL "[rejecting " T .O "]" CR>)>>
+              (ELSE <TRACE 3 "[rejecting " T .O "]" CR>)>>
+    <TRACE-OUT>
     <PUTB .OUT 0 .CNT>
+    
+    <TRACE 2 "[filter kept " N .CNT " object(s)]" CR>
+    
     ;"Fill in PRSO/PRSI, and swap the newly created table with P-PRSOS or P-PRSIS."
-    <COND (<0? .CNT> <SET O <>>)
-          (<1? .CNT> <SET O <GET/B .OUT 1>>)
+    <COND (<0? .CNT>
+           <SET O <>>)
+          (<1? .CNT>
+           <SET O <GET/B .OUT 1>>)
           (<=? <NP-MODE ,P-NP-XOBJ> ,MCM-ANY>
            ;"Pick a random object"
            <PUT/B .OUT 1 <SET O <GET/B .OUT <RANDOM .CNT>>>>
