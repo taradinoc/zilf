@@ -1348,7 +1348,7 @@ Returns:
     <SETG MODE ,BRIEF>>
 
 <ROUTINE V-VERBOSE ()
-    <TELL "Verbose descriptions." CR>
+    <TELL "Verbose descriptions." CR CR>
     <SETG MODE ,VERBOSE>
     <V-LOOK>>
 
