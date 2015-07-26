@@ -3672,7 +3672,7 @@ brushes himself off. Now he's madder than ever!" CR>)
            <COND (<PRSO? ,TASTY-FOOD>
                   <TELL "You fool, dwarves eat only coal! Now you've made him *really* mad!" CR>)
                  (ELSE
-                  <TELL "The dwarf is not all interested in your offer.
+                  <TELL "The dwarf is not at all interested in your offer.
 (The reason being, perhaps, that if he kills you he gets everything you have anyway.)" CR>)>)
           (<VERB? ATTACK> <TELL "Not with your bare hands. No way." CR>)>>
 
