@@ -186,6 +186,7 @@
     <SYNTAX XLIGHT = V-XLIGHT>
     
     <SYNTAX XEXITS = V-XEXITS>
+    <SYNTAX XEXITS OBJECT = V-XEXITS>
     
     <SYNTAX XOBJ OBJECT = V-XOBJ>
     
@@ -1503,8 +1504,13 @@ Returns:
                <TELL "You're now glowing." CR>
                <NOW-LIT?>)>>
 
-    <ROUTINE V-XEXITS ("AUX" S M)
-        <MAP-DIRECTIONS (D PT ,HERE)
+    <ROUTINE V-XEXITS ("AUX" R S M)
+        <COND (,PRSO <SET R <OBJREF? ,PRSO>>)
+              (ELSE <SET R ,HERE>)>
+        <OR .R <RTRUE>>
+        <PRINT-OBJREF .R>
+        <CRLF>
+        <MAP-DIRECTIONS (D PT .R)
             <PRINT-MATCHING-WORD .D ,PS?DIRECTION ,P1?DIRECTION>
             <TELL " -> ">
             <SET S <PTSIZE .PT>>
