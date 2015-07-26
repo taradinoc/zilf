@@ -1010,7 +1010,7 @@ Besides, I suspect it would prefer bird seed." CR>)
 <ROOM AT-TOP-OF-SMALL-PIT
     (DESC "At Top of Small Pit")
     (IN ROOMS)
-    (GLOBAL MIST)
+    (GLOBAL MIST ROUGH-STONE-STEPS)
     (EAST TO IN-BIRD-CHAMBER)
     (WEST SORRY "The crack is far too small for you to follow.")
     (DOWN PER DOWN-INTO-SMALL-PIT)
@@ -1068,7 +1068,7 @@ It can be found anywhere but is frequently a sign of a deep pit leading down to 
 <ROOM IN-HALL-OF-MISTS
     (DESC "In Hall of Mists")
     (IN ROOMS)
-    (GLOBAL MIST)
+    (GLOBAL MIST ROUGH-STONE-STEPS)
     (ACTION IN-HALL-OF-MISTS-F)
     (SOUTH TO IN-NUGGET-OF-GOLD-ROOM)
     (WEST TO ON-EAST-BANK-OF-FISSURE)
@@ -1108,12 +1108,22 @@ There is a passage at the top of a dome behind you.">
 
 <OBJECT ROUGH-STONE-STEPS
     (DESC "rough stone steps")
-    (IN IN-HALL-OF-MISTS)
+    (IN LOCAL-GLOBALS)
     (SYNONYM ;"STAIR STAIRS STAIRCASE"
              STEP STEPS)
     (ADJECTIVE ROUGH STONE)
-    (TEXT "The rough stone steps lead up the dome.")
+    (ACTION ROUGH-STONE-STEPS-F)
     (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
+
+<ROUTINE ROUGH-STONE-STEPS-F ()
+    <COND (<VERB? EXAMINE>
+           <TELL "The rough stone steps ">
+           <COND (<HELD? ,LARGE-GOLD-NUGGET>
+                  <TELL "are gone." CR>)
+                 (<=? ,HERE ,IN-HALL-OF-MISTS>
+                  <TELL "lead up the dome." CR>)
+                 (ELSE
+                  <TELL "lead down the pit." CR>)>)>>
 
 <OBJECT DOME
     (DESC "dome")
@@ -1199,7 +1209,7 @@ The mist is quite thick here, and the fissure is too wide to jump.")
                 <VERB? WALK>
                 <PRSO? ,P?NORTH>>
            <TELL "You have crawled through a very low wide passage
-parallel to and north of the hall of mists." CR>
+parallel to and north of the hall of mists." CR CR>
            <RFALSE>)>>
 
 <ROUTINE WEST-SIDE-OF-FISSURE-F (RARG)
