@@ -51,7 +51,7 @@ call them something else, but we'll continue the tradition anyway."
 
 <GLOBAL HERE <>>
 <GLOBAL SCORE 0>
-<GLOBAL TURNS 0>
+<GLOBAL MOVES 0>
 "next two for the Interrupt Queue"
 <CONSTANT IQUEUE <ITABLE 20>>
 <GLOBAL TEMPTABLE <ITABLE 50 <> >>
@@ -1265,12 +1265,17 @@ Returns:
   True if the check passed, or false if at least one object has become unavailable
   and a message was printed."
 <ROUTINE STILL-VISIBLE-CHECK (TBL "AUX" (CNT <GETB .TBL 0>))
+    <TRACE 4 "[STILL-VISIBLE-CHECK: CNT=" N .CNT "]" CR>
     <OR .CNT <RTRUE>>
+    <TRACE-IN>
     <DO (I 1 .CNT)
+        <TRACE 4 "[considering " D <GET/B .TBL .I> "]" CR>
         <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
                <LIST-OBJECTS .TBL ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
                <TELL " no longer here." CR>
+               <TRACE-OUT>
                <RFALSE>)>>
+    <TRACE-OUT>
     <RTRUE>>
 
 <ROUTINE NOT-VISIBLE? (O)
@@ -1964,7 +1969,7 @@ Returns:
         Uses:
           HERE
           SCORE
-          TURNS"
+          MOVES"
         <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
             <SCREEN 1>
             <HLIGHT 1>   ;"reverses the fg and bg colors"
@@ -1976,7 +1981,7 @@ Returns:
             <PRINTN ,SCORE>
             <CURSET 1 <- .WIDTH 10>>
             <TELL "Moves: ">
-            <PRINTN ,TURNS>
+            <PRINTN ,MOVES>
             <SCREEN 0>
             <HLIGHT 0>>
 
@@ -2119,6 +2124,7 @@ Returns:
   True if the object is visible, otherwise false."
 <ROUTINE VISIBLE? (OBJ "AUX" P M)
     <SET P <LOC .OBJ>>
+    <COND (<0? .P> <RFALSE>)>
     <SET M <META-LOC .OBJ>>
     <COND (<NOT <=? .M ,HERE>>
            <COND (<OR <AND <=? .P ,LOCAL-GLOBALS>
@@ -2126,13 +2132,10 @@ Returns:
                       <=? .P ,GLOBAL-OBJECTS ,GENERIC-OBJECTS>>
                   <RTRUE>)
                  (ELSE <RFALSE>)>)>
-    ;<TELL "The meta-loc = HERE and the LOC is " D .P CR>
     <REPEAT ()
         <COND (<EQUAL? .P ,HERE ,WINNER>
-               ;<TELL D .P " is either = HERE or the player." CR>
                <RTRUE>)
               (<NOT <SEE-INSIDE? .P>>
-               ;<TELL D .P " is a non-transparent container that is closed." CR>
                <RFALSE>)
               (ELSE <SET P <LOC .P>>)>>>
 
@@ -2196,19 +2199,18 @@ Returns:
   The room that encloses the object, or false if it isn't in a room."
 <ROUTINE META-LOC ML (OBJ "AUX" P)
     <SET P <LOC .OBJ>>
-    <COND (<IN? .P ,ROOMS>
+    <COND (<0? .P> <RFALSE>)
+          (<IN? .P ,ROOMS>
            <RETURN .P>)>
     <REPEAT ()
-        ;<TELL "In META-LOC repeat -- P is " D .P CR>
         ;"TODO: infinite loop if P is not a person/container/special object?"
         <COND (<OR <FSET? .P ,PERSONBIT>
                    <FSET? .P ,CONTBIT>
                    <EQUAL? .P ,LOCAL-GLOBALS ,GLOBAL-OBJECTS ,GENERIC-OBJECTS>>
                <SET P <LOC .P>>)>
-        <COND (<IN? .P ,ROOMS>
-               <RETURN .P .ML>)
-              (<NOT .P>
-               <RFALSE>)>>>
+        <COND (<0? .P> <RFALSE>)
+              (<IN? .P ,ROOMS>
+               <RETURN .P .ML>)>>>
 
 ;"Checks whether the player has entered darkness, printing a message if so.
 

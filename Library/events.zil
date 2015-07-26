@@ -98,19 +98,19 @@ Returns:
 eligible interrupt routines.
 
 Uses:
-  TURNS
+  MOVES
   IQ-LENGTH
   IQUEUE (contents)
 
 Sets:
-  TURNS
+  MOVES
   IQUEUE (contents)
 
 Returns:
   True if any interrupt routines were fired and returned true (indicating
   that something was printed), otherwise false."
 <ROUTINE CLOCKER ("AUX" S C FIRED)
-    <SETG TURNS <+ ,TURNS 1>>
+    <SETG MOVES <+ ,MOVES 1>>
     <REPEAT ()
         <SET S <+ .S 2>>
         <COND (<G? .S ,IQ-LENGTH>
