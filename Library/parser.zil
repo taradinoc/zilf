@@ -639,9 +639,11 @@ Sets:
                   <SETG PRSA ,V?WALK>
                   <SETG PRSO .DIR>
                   <SETG PRSI <>>
+                  <COND (<NOT <VERB? AGAIN>>
+                         <TRACE 4 "[saving for AGAIN]" CR>
+                         <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
                   <IF-UNDO
-                      ;"save state for undo after moving from room to room"
-                      <COND (<NOT <OR <VERB? UNDO> ,AGAINCALL>>
+                      <COND (<NOT ,AGAINCALL>
                              <SETG USAVE <ISAVE>>
                              <COND (<EQUAL? ,USAVE 2>
                                     <TELL "Previous turn undone." CR>
