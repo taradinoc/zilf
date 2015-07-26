@@ -1266,7 +1266,9 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-GIVE ()
-    <COND (<PRSI? ,WINNER> <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR>)
+    <COND (<PRSI? ,WINNER>
+           <COND (<HELD? ,PRSO> <TELL "You already have that." CR>)
+                 (ELSE <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR>)>)
           (<PRSO? ,WINNER> <SILLY>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (<NOT <FSET? ,PRSI ,PERSONBIT>> <NOT-POSSIBLE "give things to">)
