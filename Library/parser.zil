@@ -17,6 +17,35 @@
 ;"Enables XTREE, XGOTO, etc."
 <COMPILATION-FLAG-DEFAULT DEBUGGING-VERBS <>>
 
+<IFFLAG
+    (DEBUG
+     <GLOBAL TRACE-LEVEL 0>
+     <GLOBAL TRACE-INDENT 0>
+
+     <DEFMAC TRACE ('N "ARGS" A)
+         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N>
+                          '<PRINT-TRACE-INDENT>
+                          <FORM TELL !.A>>
+                    '(ELSE T)>>
+
+     <DEFMAC TRACE-DO ('N "ARGS" A)
+         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N> !.A>
+                    '(ELSE T)>>
+
+     <ROUTINE PRINT-TRACE-INDENT ()
+         <OR ,TRACE-INDENT <RETURN>>
+         <DO (I 1 ,TRACE-INDENT)
+             <TELL "  ">>>
+
+     <DEFMAC TRACE-IN () '<INC TRACE-INDENT>>
+     <DEFMAC TRACE-OUT () '<DEC TRACE-INDENT>>
+    )
+    (ELSE
+     <DEFMAC TRACE ("ARGS" A) T>
+     <DEFMAC TRACE-DO ("ARGS" A) T>
+     <DEFMAC TRACE-IN () T>
+     <DEFMAC TRACE-OUT () T>)>
+
 "In V3, we need these globals for the status line. In V5, we could
 call them something else, but we'll continue the tradition anyway."
 
@@ -37,10 +66,13 @@ call them something else, but we'll continue the tradition anyway."
 <CONSTANT VERBOSE 2>
 
 <ADD-TELL-TOKENS
-    T *     <PRINT-DEF .X>
-    A *     <PRINT-INDEF .X>
-    CT *    <PRINT-CDEF .X>
-    CA *    <PRINT-CINDEF .X>>
+    T *              <PRINT-DEF .X>
+    A *              <PRINT-INDEF .X>
+    CT *             <PRINT-CDEF .X>
+    CA *             <PRINT-CINDEF .X>
+    NOUN-PHRASE *    <PRINT-NOUN-PHRASE .X>
+    SYNTAX-LINE *    <PRINT-SYNTAX-LINE .X>
+    WORD *           <PRINT-WORD .X>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
@@ -154,17 +186,13 @@ Returns:
   or 1 if not."
 <ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F)
     <COND (<0? .W> <RFALSE>)>
-    ;<IF-DEBUG <TELL "[CHKWORD: " B .W " PS=" N .PS " P1=" N .P1>>
     <SET F <GETB .W ,VOCAB-FL>>
-    ;<IF-DEBUG <TELL " F=" N .F>>
     <SET F <COND (<BTST .F .PS>
                   <COND (<L? .P1 0>
-                         ;<IF-DEBUG <TELL " OK!]" CR>>
                          <RTRUE>)
                         (<==? <BAND .F ,P1MASK> .P1>
                          <GETB .W ,VOCAB-V1>)
                         (ELSE <GETB .W ,VOCAB-V2>)>)>>
-    ;<IF-DEBUG <TELL " = " N .F "]" CR>>
     .F>
 
 ;"Gets the word at the given index in LEXBUF.
@@ -177,10 +205,6 @@ Returns:
   unrecognized."
 <ROUTINE GETWORD? (N "AUX" R)
     <SET R <GET ,LEXBUF <- <* .N 2> 1>>>
-    ;<IF-DEBUG
-        <TELL "[GETWORD " N .N " = ">
-        <COND (.R <TELL B .R>) (ELSE <TELL "?">)>
-        <TELL "]" CR>>
     .R>
 
 ;"Prints the word at the given index in LEXBUF.
@@ -415,12 +439,14 @@ Args:
     <SETG PRSO-DIR <PST-PRSO-DIR .SRC>>
     <SETG PRSA <PST-PRSA .SRC>>
     ;"Set variables calculated from these"
-    <COND (<0? <SET L <GETB ,P-PRSOS 0>>>
+    <COND (<OR <L? ,P-NOBJ 1>
+               <0? <SET L <GETB ,P-PRSOS 0>>>>
            <SETG PRSO <>>)
           (<1? .L>
            <SETG PRSO <GET/B ,P-PRSOS 1>>)
           (ELSE <SETG PRSO ,MANY-OBJECTS>)>
-    <COND (<0? <SET L <GETB ,P-PRSIS 0>>>
+    <COND (<OR <L? ,P-NOBJ 2>
+               <0? <SET L <GETB ,P-PRSIS 0>>>>
            <SETG PRSI <>>)
           (<1? .L>
            <SETG PRSI <GET/B ,P-PRSIS 1>>)
@@ -494,15 +520,20 @@ Sets:
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"Fill READBUF and LEXBUF"
     <READLINE>
-    <IF-DEBUG <DUMPLINE>>
+    
+    <IF-DEBUG <SETG TRACE-INDENT 0>>
+    <TRACE-DO 1 <DUMPLINE>>
+    <TRACE-IN>
+    
     <SETG P-LEN <GETB ,LEXBUF 1>>
     <SET KEEP 0>
     ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
     <COND (<ORPHANING?>
            <SET O-R <HANDLE-ORPHAN-RESPONSE>>
-           <COND (<=? .O-R ,O-RES-REORPHANED> <RFALSE>)>
+           <COND (<=? .O-R ,O-RES-REORPHANED> <TRACE-OUT> <RFALSE>)>
            <COND (<=? .O-R ,O-RES-FAILED>
                   <SETG P-O-REASON <>>
+                  <TRACE-OUT>
                   <RFALSE>)
                  (<=? .O-R ,O-RES-SET-NP>
                   ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
@@ -544,21 +575,28 @@ Sets:
                       ;"Found the verb"
                       <SETG P-V-WORD .W>
                       <SETG P-V-WORDN .I>
-                      <SETG P-V <WORD? .W VERB>>)
+                      <SETG P-V <WORD? .W VERB>>
+                      <TRACE 3 "[verb word " N ,P-V-WORDN " '" B ,P-V-WORD "' = " N ,P-V "]" CR>
+                      )
                      (<AND <EQUAL? ,P-V <> ,ACT?WALK>
                            <SET VAL <WORD? .W DIRECTION>>>
                       ;"Found a direction"
-                      <SET DIR .VAL>)
+                      <SET DIR .VAL>
+                      <TRACE 3 "[got a direction]" CR>)
                      (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
                       ;"Found a preposition"
                       ;"Only keep the first preposition for each object"
                       <COND (<AND <==? .NOBJ 0> <NOT ,P-P1>>
+                             <TRACE 3 "[P1 word " N .I " '" B .W "' = " N .VAL "]" CR>
                              <SETG P-P1 .VAL>)
                             (<AND <==? .NOBJ 1> <NOT ,P-P2>>
+                             <TRACE 3 "[P2 word " N .I " '" B .W "' = " N .VAL "]" CR>
                              <SETG P-P2 .VAL>)>)
                      (<STARTS-NOUN-PHRASE? .W>
                       ;"Found a noun phrase"
                       <SET NOBJ <+ .NOBJ 1>>
+                      <TRACE 3 "[NP start word " N .I ", now NOBJ=" N .NOBJ "]" CR>
+                      <TRACE-IN>
                       <COND (<==? .NOBJ 1>
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
                             (<==? .NOBJ 2>
@@ -566,24 +604,31 @@ Sets:
                             (ELSE
                              <TELL "That sentence has too many objects." CR>
                              <RFALSE>)>
+                      <TRACE 3 "[PARSE-NOUN-PHRASE returned " N .VAL "]" CR>
+                      <TRACE-OUT>
                       <COND (.VAL
                              <SET I .VAL>
                              <AGAIN>)
                             (ELSE
                              <TELL "That noun phrase didn't make sense." CR>
+                             <TRACE-OUT>
                              <RFALSE>)>)
                      (ELSE
                       ;"Unexpected word type"
                       <TELL "I didn't expect the word \"">
                       <PRINT-WORD .I>
                       <TELL "\" there." CR>
+                      <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
            <SETG P-NOBJ .NOBJ>
-           <IF-DEBUG
-               <TELL "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
-                     " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
-                     " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>>
+ 
+           <TRACE-OUT>
+           <TRACE 1 "[PARSER: V=" N ,P-V " NOBJ=" N ,P-NOBJ
+                 " P1=" N ,P-P1 " DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
+                 " P2=" N ,P-P2 " IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>
+           <TRACE-IN>
+ 
            ;"If we have a direction, it's a walk action, and no verb is needed"
            <COND (.DIR
                   <SETG PRSO-DIR T>
@@ -597,28 +642,36 @@ Sets:
                              <COND (<EQUAL? ,USAVE 2>
                                     <TELL "Previous turn undone." CR>
                                     <AGAIN>)>)>>
+                  <TRACE-OUT>
                   <RTRUE>)>
            ;"Otherwise, a verb is required"
            <COND (<NOT ,P-V>
                   <TELL "That sentence has no verb." CR>
+                  <TRACE-OUT>
                   <RFALSE>)>
            <SETG PRSO-DIR <>>)>
     ;"Match syntax lines and objects"
     <COND (<NOT .O-R>
+           <TRACE 2 "[matching syntax and finding objects, KEEP=" N .KEEP "]" CR>
            <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS .KEEP>>>
+                  <TRACE-OUT>
                   <RFALSE>)>)
           (<L? .KEEP 2>
            ;"We already found a syntax line last time, but we need FIND-OBJECTS to
              match at least one noun phrase."
+           <TRACE 2 "[only finding objects, KEEP=" N .KEEP "]" CR>
            <COND (<NOT <FIND-OBJECTS .KEEP>>
+                  <TRACE-OUT>
                   <RFALSE>)>)>
     ;"Save command for AGAIN"
     <COND (<NOT <VERB? AGAIN>>
+           <TRACE 4 "[saving for AGAIN]" CR>
            <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
     ;"Save UNDO state"
     <IF-UNDO
         <COND (<AND <NOT <VERB? UNDO>>
                     <NOT ,AGAINCALL>>
+               <TRACE 4 "[saving for UNDO]" CR>
                <SETG USAVE <ISAVE>>
                <COND (<EQUAL? ,USAVE 2>
                       <TELL "Previous turn undone." CR>
@@ -626,6 +679,7 @@ Sets:
                       <AGAIN>)>)>>
     ;"if successful PRSO and not after an IT use, back up PRSO for IT"
     <SET-PRONOUNS ,PRSO ,P-PRSOS>
+    <TRACE-OUT>
     <RTRUE>>
 
 ;"PRSO or PRSI are set to this when multiple objects are used."
@@ -756,6 +810,9 @@ Returns:
   if parsing was successful, or 0 if parsing failed.
   NP may be left in an invalid state if parsing fails."
 <ROUTINE PARSE-NOUN-PHRASE (WN NP "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT)
+    <TRACE 3 "[PARSE-NOUN-PHRASE starting at word " N .WN "]" CR>
+    <TRACE-IN>
+    
     <SET SPEC <NP-YSPEC .NP 1>>
     <NP-NCNT .NP 0>
     <REPEAT ()
@@ -765,28 +822,37 @@ Returns:
             ;"fail if we found an unrecognized word"
             (<NOT <OR <SET W <GETWORD? .WN>>
                       <AND <PARSE-NUMBER? .WN> <SET W ,W?\,NUMBER>>>>
+             <TRACE 4 "[stop at unrecognized word: " WORD .WN "]" CR>
+             <TRACE-OUT>
              <RFALSE>)
             ;"recognize BUT/EXCEPT"
             (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
+             <TRACE 4 "[BUT at word " N .WN "]" CR>
              <COND (<OR .ADJ .NOUN>
                     <OBJSPEC-ADJ .SPEC .ADJ>
                     <OBJSPEC-NOUN .SPEC .NOUN>
                     <SET ADJ <SET NOUN <>>>
                     <SET CNT <+ .CNT 1>>)>
+             <TRACE 4 "[saving " N .CNT " YSPEC(s)]" CR>
              <NP-YCNT .NP .CNT>
              <SET BUT T>
              <SET SPEC <NP-NSPEC .NP 1>>
              <SET CNT 0>)
             ;"recognize ALL/ANY/ONE"
             (<EQUAL? .W ,W?ALL ,W?ANY ,W?ONE>
-             <COND (<OR .MODE .ADJ .NOUN> <RFALSE>)>
+             <COND (<OR .MODE .ADJ .NOUN>
+                    <TRACE 4 "[too late for mode change at word " N .WN "]" CR>
+                    <TRACE-OUT>
+                    <RFALSE>)>
              <SET MODE
                   <COND (<==? .W ,W?ALL> ,MCM-ALL)
-                        (ELSE ,MCM-ANY)>>)
+                        (ELSE ,MCM-ANY)>>
+             <TRACE 4 "[mode change at word " N .WN ", now mode=" N .MODE "]" CR>)
             ;"match adjectives, keeping only the first"
             (<VERSION?
                 (ZIP <SET VAL <WORD? .W ADJECTIVE>>)
                 (ELSE <AND <CHKWORD? .W ,PS?ADJECTIVE> <SET VAL .W>>)>
+             <TRACE 4 "[adjective '" B .W "' at word " N .WN "]" CR>
              <COND
                  ;"if W can also be a noun, treat it as such if we don't
                    already have a noun, and it isn't followed by an adj or noun"
@@ -798,16 +864,25 @@ Returns:
                            <BIND ((NW <GETWORD? <+ .WN 1>>))
                                <NOT <OR <CHKWORD? .NW ,PS?ADJECTIVE>
                                         <CHKWORD? .NW ,PS?OBJECT>>>>>>
+                  <TRACE 4 "[treating it as a noun]" CR>
                   <SET NOUN .W>)
                  (<==? .CNT ,P-MAX-OBJSPECS>
                   <TELL "That phrase mentions too many objects." CR>
+                  <TRACE-OUT>
                   <RFALSE>)
-                 (<NOT .ADJ> <SET ADJ .VAL>)>)
+                 (<NOT .ADJ>
+                  <SET ADJ .VAL>)
+                 (ELSE
+                  <TRACE 4 "[ignoring it]" CR>)>)
             ;"match nouns, exiting the loop if we already found one"
             (<CHKWORD? .W ,PS?OBJECT>
-             <COND (.NOUN <RETURN>)
+             <TRACE 4 "[noun '" B .W "' at word " N .WN "]" CR>
+             <COND (.NOUN
+                    <TRACE 4 "[terminating]" CR>
+                    <RETURN>)
                    (<==? .CNT ,P-MAX-OBJSPECS>
                     <TELL "That phrase mentions too many objects." CR>
+                    <TRACE-OUT>
                     <RFALSE>)
                    (ELSE <SET NOUN .W>)>)
             ;"recognize AND/comma"
@@ -817,7 +892,8 @@ Returns:
                     <OBJSPEC-NOUN .SPEC .NOUN>
                     <SET ADJ <SET NOUN <>>>
                     <SET SPEC <REST .SPEC ,P-OBJSPEC-SIZE>>
-                    <SET CNT <+ .CNT 1>>)>)
+                    <SET CNT <+ .CNT 1>>
+                    <TRACE 4 "[now have " N .CNT " spec(s)]" CR>)>)
             ;"skip buzzwords"
             (<CHKWORD? .W ,PS?BUZZ-WORD>)
             ;"exit loop if we found any other word type"
@@ -827,10 +903,13 @@ Returns:
     <COND (<OR .ADJ .NOUN>
            <OBJSPEC-ADJ .SPEC .ADJ>
            <OBJSPEC-NOUN .SPEC .NOUN>
-           <SET CNT <+ .CNT 1>>)>
+           <SET CNT <+ .CNT 1>>
+           <TRACE 4 "[finally have " N .CNT " spec(s)]" CR>)>
     ;"store phrase count and mode"
     <COND (.BUT <NP-NCNT .NP .CNT>) (ELSE <NP-YCNT .NP .CNT>)>
     <NP-MODE .NP .MODE>
+    <TRACE 2 "[noun phrase parsed: " NOUN-PHRASE .NP "]" CR>
+    <TRACE-OUT>
     .WN>
 
 <CONSTANT SYN-REC-SIZE 8>
@@ -869,25 +948,25 @@ Returns:
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
     <SET CNT <GETB .PTR 0>>
     <SET PTR <+ .PTR 1>>
-    <IF-DEBUG <TELL "[MATCH-SYNTAX: " N .CNT " syntaxes at " N .PTR "]" CR>>
+    <TRACE 1 "[MATCH-SYNTAX: " N .CNT " syntaxes for verb " N ,P-V "]" CR>
+    <TRACE-IN>
     <SET BEST-SCORE -999>
     <REPEAT ()
         <COND (<DLESS? CNT 0>
                ;"Out of syntax lines"
                <RETURN>)>
-        <IF-DEBUG
-            <TELL "[trying line: ">
-            <PRINT-SYNTAX-LINE .PTR>
-            <TELL " ... ">>
         <SET S <MATCH-SYNTAX-LINE? .PTR>>
-        <IF-DEBUG <TELL N .S "]" CR>>
         <COND (<AND .S <G? .S .BEST-SCORE>>
                <SET BEST-SCORE .S>
-               <SET BEST .PTR>)>
+               <SET BEST .PTR>
+               <COND (<G? .S 0> <RETURN>)>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
+    <TRACE-OUT>
     <COND (.BEST
            <SETG PRSA <GETB .BEST ,SYN-ACTION>>
            <SETG P-SYNTAX .BEST>
+           <TRACE 1 "[picked line at " N .BEST " with score " N .BEST-SCORE
+                    ", PRSA=" N ,PRSA "]" CR>
            <RTRUE>)
           (ELSE
            <TELL "I don't understand that sentence." CR>
@@ -910,23 +989,35 @@ Returns:
   if it partially matches (i.e. if it could match after inference).
   Negative numbers further below 0 indicate worse matches needing more inference."
 <ROUTINE MATCH-SYNTAX-LINE? (PTR "AUX" NOBJ PREP1 PREP2 R)
+    <TRACE 2 "[attempting syntax line at " N .PTR ": " SYNTAX-LINE .PTR "]" CR>
+    <TRACE-IN>
     <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
     <SET PREP1 <GETB .PTR ,SYN-PREP1>>
     <SET PREP2 <GETB .PTR ,SYN-PREP2>>
     <COND ;"If the object count and prepositions are all as expected,
             this is an exact match."
           (<AND <=? ,P-NOBJ .NOBJ> <=? ,P-P1 .PREP1> <=? ,P-P2 .PREP2>>
+           <TRACE 2 "[exact match]" CR>
+           <TRACE-OUT> 
            <RTRUE>)
           ;"If object count >= expected count, this can't match."
-          (<G=? ,P-NOBJ .NOBJ> <RFALSE>)
+          (<G=? ,P-NOBJ .NOBJ>
+           <TRACE 2 "[DQ, no objects left to infer]" CR>
+           <TRACE-OUT>
+           <RFALSE>)
           ;"If either preposition is nonzero yet different from expected,
             this can't match."
           (<OR <N=? ,P-P1 .PREP1 0> <N=? ,P-P2 .PREP2 0>>
+           <TRACE 2 "[DQ, wrong preposition]" CR>
+           <TRACE-OUT>
            <RFALSE>)
           ;"If we have one object, and we expected a first preposition but
             didn't get it, this can't match. (If we have two objects, we
             already failed an earlier test.)"
-          (<AND <1? ,P-NOBJ> .PREP1 <NOT ,P-P1>> <RFALSE>)
+          (<AND <1? ,P-NOBJ> .PREP1 <NOT ,P-P1>>
+           <TRACE 2 "[DQ, skipped over prep1]" CR>
+           <TRACE-OUT>
+           <RFALSE>)
           ;"If we'd end up using FIND KLUDGEBIT for a missing noun and having
             to infer the preposition, don't match this line."
           (<OR <AND <G=? .NOBJ 1>
@@ -938,16 +1029,24 @@ Returns:
                     <0? ,P-P2>
                     .PREP2
                     <=? <GETB .PTR ,SYN-FIND2> ,KLUDGEBIT>>>
+           <TRACE 2 "[DQ, kludge bit]" CR>
+           <TRACE-OUT>
            <RFALSE>)>
     ;"We have a possible match; now score how well it matches.
-      Dock three points for each object we have to infer."
-    <SET R <* 3 <- ,P-NOBJ .NOBJ>>>
-    ;"Dock an extra point for PRSO if we have to infer a preposition also."
-    <COND (<AND <NOT ,P-P1> .PREP1> <SET R <- .R 1>>)>
+      Dock one point for each object we have to infer."
+    <SET R <- ,P-NOBJ .NOBJ>>
+    <TRACE 3 "[base score " N .R "]" CR>
+    ;"Dock an extra two points for PRSO if we have to infer a preposition also."
+    <COND (<AND <NOT ,P-P1> .PREP1>
+           <TRACE 3 "[-2, needs preposition on PRSO]" CR>
+           <SET R <- .R 2>>)>
     ;"Dock an extra point for PRSI if we have to infer *no* preposition.
       This makes us prefer syntaxes with the direct object first
       (GIVE OBJECT TO OBJECT instead of GIVE OBJECT OBJECT)."
-    <COND (<AND <=? .NOBJ 2> <NOT <OR ,P-P2 .PREP2>>> <SET R <- .R 1>>)>
+    <COND (<AND <=? .NOBJ 2> <NOT <OR ,P-P2 .PREP2>>>
+           <TRACE 3 "[-1, no preposition on PRSI]" CR>
+           <SET R <- .R 1>>)>
+    <TRACE-OUT>
     .R>
 
 <INSERT-FILE "scope">
@@ -1579,7 +1678,7 @@ Sets (temporarily):
   PRSO-DIR
   PRSI"
 <ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT)
-    <IF-DEBUG <TELL "[PERFORM: ACT=" N .ACT " DOBJ=" N .DOBJ " IOBJ=" N .IOBJ "]" CR>>
+    <TRACE 1 "[PERFORM: ACT=" N .ACT " DOBJ=" N .DOBJ " IOBJ=" N .IOBJ "]" CR>
     <SET PRTN <GET ,PREACTIONS .ACT>>
     <SET RTN <GET ,ACTIONS .ACT>>
     <SET OA ,PRSA>
@@ -1590,6 +1689,7 @@ Sets (temporarily):
     <SETG PRSO .DOBJ>
     <SETG PRSO-DIR <==? .ACT ,V?WALK>>
     <SETG PRSI .IOBJ>
+    <TRACE-IN>
     ;"Warn about improper number use, and handle multiple objects"
     <COND (<G? <COUNT-PRS-APPEARANCES ,NUMBER> 1>
            <TELL "You can't use more than one number in a command." CR>
@@ -1611,6 +1711,7 @@ Sets (temporarily):
                <TELL D ,PRSI ": ">
                <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)
           (ELSE <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>)>
+    <TRACE-OUT>
     <SETG PRSA .OA>
     <SETG PRSO .OD>
     <SETG PRSO-DIR .ODD>
@@ -1659,33 +1760,43 @@ Returns:
   True if the action was handled."
 <ROUTINE PERFORM-CALL-HANDLERS (PRTN RTN "AUX" AC RM)
     <COND (<AND <SET AC <GETP ,WINNER ,P?ACTION>>
+                <TRACE 4 "[calling WINNER (" D ,WINNER ") ACTION]" CR>
                 <APPLY .AC ,M-WINNER>>
            <RTRUE>)
           (<AND <SET RM <LOC ,WINNER>>
                 <SET AC <GETP .RM ,P?ACTION>>
+                <TRACE 4 "[calling LOC (" D .RM ") ACTION]" CR>
                 <APPLY .AC ,M-BEG>>
            <RTRUE>)
-          (<AND .PRTN <APPLY .PRTN>>
+          (<AND .PRTN
+                <TRACE 4 "[calling preaction routine]" CR>
+                <APPLY .PRTN>>
            <RTRUE>)
           (<AND ,PRSI
                 <SET AC <GETP <LOC ,PRSI> ,P?CONTFCN>>
+                <TRACE 4 "[calling PRSI LOC (" D <LOC ,PRSI> ") CONTFCN]" CR>
                 <APPLY .AC>>
            <RTRUE>)
           (<AND ,PRSI
                 <SET AC <GETP ,PRSI ,P?ACTION>>
+                <TRACE 4 "[calling PRSI (" D ,PRSI ") ACTION]" CR>
                 <APPLY .AC>>
            <RTRUE>)
           (<AND ,PRSO
                 <NOT ,PRSO-DIR>
                 <SET AC <GETP <LOC ,PRSO> ,P?CONTFCN>>
+                <TRACE 4 "[calling PRSO LOC (" D <LOC ,PRSO> ") CONTFCN]" CR>
                 <APPLY .AC>>
            <RTRUE>)
           (<AND ,PRSO
                 <NOT ,PRSO-DIR>
                 <SET AC <GETP ,PRSO ,P?ACTION>>
+                <TRACE 4 "[calling PRSO LOC (" D <LOC ,PRSO> ") ACTION]" CR>
                 <APPLY .AC>>
            <RTRUE>)
-          (ELSE <APPLY .RTN>)>>
+          (ELSE
+           <TRACE 4 "[calling action routine]" CR>
+           <APPLY .RTN>)>>
 
 ;"Moves the player to a new location, notifies the location that the player
 has entered, and prints an appropriate room introduction.
@@ -1741,28 +1852,34 @@ Returns:
   If exactly one object was found, returns the found object.
   If zero or multiple objects were found, returns false."
 <ROUTINE FIND-IN (C BIT "OPT" WORD "AUX" N W PT MAX)
-    <IF-DEBUG <TELL "[FIND-IN: looking in " D .C " for " N .BIT "]" CR>>
+    <TRACE 2 "[FIND-IN: looking in " D .C " for " N .BIT "]" CR>
+    <TRACE-IN>
     <MAP-CONTENTS (I .C)
-        <IF-DEBUG <TELL "[considering " D .I "...">>
+        <TRACE 3 "[considering " D .I "...">
         <COND (<FSET? .I .BIT>
-               <IF-DEBUG <TELL " OK">>
+               <TRACE 3 " OK">
                <SET N <+ .N 1>>
                <SET W .I>)>
-        <IF-DEBUG <TELL "]" CR>>>
+        <TRACE 3 "]" CR>>
+    <TRACE-OUT>
     <COND (<AND <0? .N> <SET PT <GETPT .C ,P?GLOBAL>>>
-           <IF-DEBUG <TELL "[falling back to LOCAL-GLOBALS]" CR>>
+
+           <TRACE 2 "[falling back to LOCAL-GLOBALS]" CR>
+           <TRACE-IN>
+
            <SET MAX <PTSIZE .PT>>
            <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
            <SET MAX <- .MAX 1>>
            <DO (J 0 .MAX)
                <BIND ((I <GET/B .PT .J>))
-                   <IF-DEBUG <TELL "[FIND-IN: considering " D .I "...">>
+                   <TRACE 3 "[considering " D .I "...">
                    <COND (<FSET? .I .BIT>
-                          <IF-DEBUG <TELL " OK">>
+                          <TRACE 3 " OK">
                           <SET N <+ .N 1>>
                           <SET W .I>)>
-                   <IF-DEBUG <TELL "]" CR>>>>)>
-    <IF-DEBUG <TELL "[FIND-IN: found " N .N "]" CR>>
+                   <TRACE 3 "]" CR>>>
+           <TRACE-OUT>)>
+    <TRACE 2 "[FIND-IN: found " N .N "]" CR>
     <COND
         ;"If less or more than one match, we return false."
         (<NOT <EQUAL? .N 1>>
@@ -2001,13 +2118,12 @@ Args:
 Returns:
   True if the object is visible, otherwise false."
 <ROUTINE VISIBLE? (OBJ "AUX" P M)
-    ;"TODO: should this check GENERIC-OBJECTS too?"
     <SET P <LOC .OBJ>>
     <SET M <META-LOC .OBJ>>
     <COND (<NOT <=? .M ,HERE>>
            <COND (<OR <AND <=? .P ,LOCAL-GLOBALS>
                            <GLOBAL-IN? .OBJ ,HERE>>
-                      <=? .P ,GLOBAL-OBJECTS>>
+                      <=? .P ,GLOBAL-OBJECTS ,GENERIC-OBJECTS>>
                   <RTRUE>)
                  (ELSE <RFALSE>)>)>
     ;<TELL "The meta-loc = HERE and the LOC is " D .P CR>

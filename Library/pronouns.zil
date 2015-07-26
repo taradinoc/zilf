@@ -34,7 +34,7 @@
                                           !<REST <PRO-BINDINGS .P>>>
                             <FORM COND
                                   <LIST <FORM PROG '() !<PRO-STMTS .P>>
-                                        <FORM IF-DEBUG <FORM TELL "[setting " <SPNAME .N> "]" CR>>
+                                        <FORM TRACE 3 "[setting " <SPNAME .N> "]" CR>
                                         <FORM COPY-PRSTBL
                                               <FORM LVAL PRO?OBJS>
                                               <FORM GVAL .OBJS-TBL-NAME>>>>>>
