@@ -4314,8 +4314,8 @@ appears out of nowhere!" CR>)>)>)
 
 ;----------------------------------------------------------------------
 
-<SYNTAX FEED OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
-<SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SGIVE>
+<SYNTAX FEED OBJECT (TAKE HAVE HELD CARRIED) (FIND EDIBLEBIT) TO OBJECT (FIND PERSONBIT) = V-FEED-TO>
+<SYNTAX FEED OBJECT (FIND PERSONBIT) OBJECT (TAKE HAVE HELD CARRIED) (FIND EDIBLEBIT) = V-SFEED-TO>
 
 ;"When the player types an incomplete command like FEED BEAR, the parser has to infer
   which syntax they meant to use (since there was no exact match). The two syntaxes for FEED
@@ -4333,9 +4333,17 @@ appears out of nowhere!" CR>)>)>)
     <COND (<NOT <FSET? ,PRSO ,PERSONBIT>>
            <NOT-POSSIBLE "feed">)
           (<SET O <GWIM ,EDIBLEBIT -1 <>>>
-           <COND (<=? ,PRSO ,WINNER> <PERFORM ,V?EAT .O>)
-                 (ELSE <PERFORM ,V?GIVE .O ,PRSO>)>)
+           <PERFORM ,V?FEED-TO .O ,PRSO>)
           (ELSE <BE-SPECIFIC>)>>
+
+<ROUTINE V-FEED-TO ()
+    <COND (<NOT <FSET? ,PRSI ,PERSONBIT>>
+           <NOT-POSSIBLE "feed">)
+          (<PRSI? ,WINNER> <PERFORM ,V?EAT ,PRSO>)
+          (ELSE <PERFORM ,V?GIVE ,PRSO ,PRSI>)>>
+
+<ROUTINE V-SFEED-TO ()
+    <PERFORM ,V?FEED-TO ,PRSI ,PRSO>>
 
 ;"TODO: Instead of <BE-SPECIFIC>, could we orphan and force the parser to use the
   FEED OBJECT OBJECT syntax?"
