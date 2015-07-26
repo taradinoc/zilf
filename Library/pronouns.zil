@@ -44,7 +44,7 @@
     ;"Define SET-PRONOUNS"
     <SET RTN
         <FORM ROUTINE SET-PRONOUNS '(O OBJS)
-            '<OR .O <RFALSE>>
+            '<COND (<=? .O <> ,ROOMS> <RFALSE>)>
             !<MAPF ,LIST
                    <FUNCTION (P "AUX" N RTN-NAME OBJS-TBL-NAME)
                        <SET N <PRO-NAME .P>>
@@ -55,7 +55,7 @@
 
     ;"Define EXPAND-PRONOUN"
     <SET RTN
-        <FORM ROUTINE EXPAND-PRONOUN EP '(W OBJS "AUX" CNT)
+        <FORM ROUTINE EXPAND-PRONOUN '(W OBJS "AUX" CNT)
             <FORM COND
                   !<MAPF ,LIST
                          <FUNCTION (P "AUX" N OBJS-TBL-NAME)
@@ -70,7 +70,7 @@
                     <TELL "You haven't seen any \"" B .W "\" yet." CR>
                     <RETURN ,EXPAND-PRONOUN-FAILED>)>
             '<COND (<NOT <STILL-VISIBLE-CHECK .OBJS>>
-                    <RETURN ,EXPAND-PRONOUN-FAILED .EP>)>
+                    <RETURN ,EXPAND-PRONOUN-FAILED>)>
             '<COND (<1? .CNT> <RETURN <GET/B .OBJS 1>>)
                    (ELSE <RETURN ,MANY-OBJECTS>)>>>
     <EVAL .RTN>
