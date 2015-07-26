@@ -3667,6 +3667,10 @@ brushes himself off. Now he's madder than ever!" CR>)
                         (ELSE
                          <MOVE ,AXE ,HERE>
                          <TELL "Missed! The little dwarf dodges out of the way of the axe." CR>)>)
+                 (<PRSO? ,TRIDENT>
+                  <MOVE ,TRIDENT ,HERE>
+                  <TELL CT ,TRIDENT ", designed for opulence more than ballistics, misses its target and
+clatters to the ground." CR>)
                  (ELSE <PERFORM ,V?GIVE ,PRSO ,PRSI> <RTRUE>)>)
           (<AND <VERB? GIVE> <PRSI? ,DWARF>>
            <COND (<PRSO? ,TASTY-FOOD>
