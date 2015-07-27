@@ -1516,11 +1516,30 @@ Returns:
                    <TELL "??? S=" N .S>)>
             <CRLF>>>
 
-    <ROUTINE V-XOBJ ("AUX" O F)
+    <ROUTINE V-XOBJ ("AUX" O F PT MAX)
         <COND (<NOT <SET O <OBJREF? ,PRSO>>> <RETURN>)>
         <PRINT-OBJREF .O>
         <CRLF>
-        <TELL "Location: " >
+        <TELL "Adjectives: ">
+        <COND (<AND <SET PT <GETPT .O ,P?ADJECTIVE>>
+                    <SET MAX <PTSIZE .PT>>>
+               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+               <SET MAX <- .MAX 1>>
+               <DO (I 0 .MAX)
+                   <COND (.I <TELL ", ">)>
+                   <VERSION?
+                       (ZIP <PRINT-MATCHING-WORD <GETB .PT .I> ,PS?ADJECTIVE ,P1?ADJECTIVE>)
+                       (ELSE <PRINTB <GET .PT .I>>)>>)>
+        <CRLF>
+        <TELL "Nouns: ">
+        <COND (<AND <SET PT <GETPT .O ,P?SYNONYM>>
+                    <SET MAX </ <PTSIZE .PT> 2>>>
+               <SET MAX <- .MAX 1>>
+               <DO (I 0 .MAX)
+                   <COND (.I <TELL ", ">)>
+                   <PRINTB <GET .PT .I>>>)>
+        <CRLF>
+        <TELL "Location: ">
         <PRINT-OBJREF <LOC .O>>
         <CRLF>
         <TELL "Flags: ">
