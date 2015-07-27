@@ -20,20 +20,23 @@
               <SET N <PRO-NAME .P>>
               <BIND ((TBLSIZE <+ 1 ,P-MAX-OBJECTS>)
                      (TBLFLAGS <VERSION? (ZIP '(BYTE)) (ELSE '(WORD))>)
-                     OBJS-TBL-NAME)
+                     OBJS-TBL-NAME CONDITION)
                   ;"Define table P-PRO-THEM-OBJS to hold the objects."
                   <SET OBJS-TBL-NAME <PARSE <STRING "P-PRO-" <SPNAME .N> "-OBJS">>>
                   <CONSTANT .OBJS-TBL-NAME <ITABLE .TBLSIZE .TBLFLAGS>>
                   
                   ;"Define routine PRO-SET-THEM to try to set the pronoun."
                   <SET RTN-NAME <PARSE <STRING "PRO-SET-" <SPNAME .N>>>>
+                  <SET CONDITION <PRO-STMTS .P>>
+                  <COND (<LENGTH? .CONDITION 1> <SET CONDITION <1 .CONDITION>>)
+                        (ELSE <SET CONDITION <FORM PROG '() !.CONDITION>>)>
                   <SET RTN
                       <FORM ROUTINE .RTN-NAME
                                     <LIST <1 <PRO-BINDINGS .P>>
                                           PRO?OBJS
                                           !<REST <PRO-BINDINGS .P>>>
                             <FORM COND
-                                  <LIST <FORM PROG '() !<PRO-STMTS .P>>
+                                  <LIST .CONDITION
                                         <FORM TRACE 3 "[setting " <SPNAME .N> "]" CR>
                                         <FORM COPY-PRSTBL
                                               <FORM LVAL PRO?OBJS>
