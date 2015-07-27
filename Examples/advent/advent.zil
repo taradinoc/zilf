@@ -573,7 +573,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (FLAGS TAKEBIT CONTBIT OPENBIT)>
 
 <ROUTINE BOTTLE-F ("AUX" F S)
-    <COND (<VERB? FILL-WITH>
+    <COND (<AND <VERB? FILL-WITH> <PRSO? ,BOTTLE>>
            <COND (<FIRST? ,PRSO>
                   <TELL CT ,PRSO " is full already." CR>)
                  (<PRSI? ,STREAM ,SPRING>
@@ -4218,6 +4218,7 @@ across the walls of the room.">)>>
 <SYNTAX FIE = V-FIE>
 <SYNTAX FOE = V-FOE>
 <SYNTAX FOO = V-FOO>
+<SYNTAX FUM = V-FUM>
 <SYNTAX SESAME (SHAZAM HOCUS ABRACADABRA FOOBAR OPEN-SESAME FROTZ) = V-OLD-MAGIC>
 
 ;"PLOVER has too many parts of speech, so these syntaxes are only enabled on V4+,
@@ -4231,6 +4232,7 @@ across the walls of the room.">)>>
        <SYNTAX SAY FIE OBJECT (FIND KLUDGEBIT) = V-FIE>
        <SYNTAX SAY FOE OBJECT (FIND KLUDGEBIT) = V-FOE>
        <SYNTAX SAY FOO OBJECT (FIND KLUDGEBIT) = V-FOO>
+       <SYNTAX SAY FUM OBJECT (FIND KLUDGEBIT) = V-FUM>
        <SYNTAX SAY SESAME OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
        <SYNTAX SAY SHAZAM OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
        <SYNTAX SAY HOCUS OBJECT (FIND KLUDGEBIT) = V-OLD-MAGIC>
@@ -4249,6 +4251,7 @@ across the walls of the room.">)>>
 <ROUTINE V-FIE () <FTHING 1>>
 <ROUTINE V-FOE () <FTHING 2>>
 <ROUTINE V-FOO () <FTHING 3>>
+<ROUTINE V-FUM () <FTHING 999>>    ;"Always a mistake"
 
 <GLOBAL FEEFIE-COUNT 0>
 
