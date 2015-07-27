@@ -3922,6 +3922,7 @@ A large number of velvet pillows are scattered about on the floor.
 A vast mirror stretches off to the northeast.
 At your feet is a large steel grate, next to which is a sign which reads,
 \"TREASURE VAULT. Keys in main office.\"")
+    (GLOBAL ENORMOUS-MIRROR)
     (DOWN TO OUTSIDE-GRATE IF REPOSITORY-GRATE IS OPEN)
     (NE TO AT-NE-END)
     (FLAGS LIGHTBIT)>
