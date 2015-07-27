@@ -957,31 +957,22 @@ Returns:
            <PRINTR "You can't put something on itself.">)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
-           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>
-                  ;<TELL D ,PRSI " has a capacity prop of " N .CCAP CR>)
+           <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>)
                  (ELSE
-                  ;<TELL D ,PRSI " has no capacity prop.  Will take endless amount of objects as long as each object is size 5 or under" CR>
                   <SET CCAP 5>
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-           ;<TELL D ,PRSO "size is " N .S ", " D ,PRSI " size is " N .CSIZE ", capacity ">
-                 ;<COND (<0? .B>
-                            ;<TELL N .CCAP CR>)
-                        ;(ELSE <TELL "infinite" CR>)>
            <COND (<OR <G? .S .CCAP> <G? .S .CSIZE>>
                   <TELL "That won't fit on " T ,PRSI "." CR>
                   <RETURN>)>
            <COND (<0? .B>
                   ;"Determine weight of contents of IO"
                   <SET W <CONTENTS-WEIGHT ,PRSI>>
-                  ;<TELL "Back from Contents-weight loop" CR>
                   <SET X <+ .W .S>>
                   <COND (<G? .X .CCAP>
                          <TELL "There's not enough room on " T ,PRSI "." CR>
-                         ;<TELL D ,PRSO " of size " N .S " can't fit, since current weight of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
                          <RETURN>)>
-                  ; <TELL D ,PRSO " of size " N .S " can fit, since current weight of of " D ,PRSI "'s contents is " N .W " and " D ,PRSI "'s capacity is " N .CCAP CR>
                   )>
            <MOVE ,PRSO ,PRSI>
            <FSET ,PRSO ,TOUCHBIT>
@@ -994,7 +985,6 @@ Returns:
           (<NOT <HAVE-TAKE-CHECK ,PRSO ,SF-HAVE>> <RTRUE>)>>
 
 <ROUTINE V-PUT-IN ("AUX" S CCAP CSIZE X W B)
-    ;<TELL "In the PUT-IN routine" CR>
     <COND (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI> <RTRUE>)
           (<OR <NOT <FSET? ,PRSI ,CONTBIT>>
                <FSET? ,PRSI ,SURFACEBIT>>
@@ -1041,10 +1031,7 @@ Returns:
     ;"add size of objects inside container - does not recurse through containers
       within this container"
     <MAP-CONTENTS (I .O)
-        ;<TELL "Content-weight loop for " D .O ", which contains " D .I CR>
-        <SET W <+ .W <GETP .I ,P?SIZE>>>
-        ;<TELL "Content weight of " D .O " is now " N .W CR>>
-    ;<TELL "Total weight of contents of " D .O " is " N .W CR>
+        <SET W <+ .W <GETP .I ,P?SIZE>>>>
     .W>
 
 ;"Calculates the weight of an object, including its contents recursively."
@@ -1054,18 +1041,12 @@ Returns:
     <SET W <GETP .O ,P?SIZE>>
     ;"add size of objects inside container"
     <MAP-CONTENTS (I .O)
-         ;<TELL "Looping to set weight.  I is currently " D .I CR>
-         ;<SET W <+ .W <GETP .I ,P?SIZE>>>
-         ;<TELL "Weight of " D .O " is now " N .W CR>
          <COND (<OR <FSET? .I ,CONTBIT>
                     <FSET? .I ,PERSONBIT>>
-                ;<TELL "Weightloop: found container " D .I CR>
                 <SET X <WEIGHT .I>>
-                <SET W <+ .W .X>>
-                ;<TELL "Weightloop-containerloop: Weight of " D .O " is now " N .W CR>)
+                <SET W <+ .W .X>>)
                (ELSE
                 <SET W <+ .W <GETP .I ,P?SIZE>>>)>>
-    ;<TELL "Total weight (its size + contents' size) of " D .O " is " N .W CR>
     .W>
 
 <ROUTINE V-WEAR ()
@@ -1140,11 +1121,8 @@ Returns:
     <SET T 1>
     <TELL "Time passes." CR>
     <REPEAT ()
-        ;<TELL "THE WAIT TURN IS " N .T CR>
         <SET ENDACT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-        ;<TELL "ENDACT IS NOW " D .ENDACT CR>
         <SET INTERRUPT <CLOCKER>>
-        ;<TELL "INTERRUPT IS NOW " D .INTERRUPT CR>
         <SET T <+ .T 1>>
         <COND (<OR <G? .T ,STANDARD-WAIT>
                    .ENDACT
@@ -1166,6 +1144,7 @@ Returns:
            <SETG AGAINCALL T>
            <PERFORM ,PRSA ,PRSO ,PRSI>
            <SETG AGAINCALL <>>
+           ;"TODO: The COND below should be factored out (of V-AGAIN and the standard GO)."
            <COND (<NOT <GAME-VERB?>>
                   <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
                   <CLOCKER>)>
@@ -1185,7 +1164,6 @@ Returns:
            <PERFORM ,V?EXAMINE ,PRSO>)>>
 
 <ROUTINE V-TURN-ON ()
-    ;<TELL "CURRENTLY IN TURN-ON" CR>
     <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
           (<NOT <FSET? ,PRSO ,DEVICEBIT>> <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<FSET? ,PRSO ,ONBIT>
@@ -1195,7 +1173,6 @@ Returns:
            <TELL "You switch on " T ,PRSO "." CR>)>>
 
 <ROUTINE V-TURN-OFF ()
-    ;<TELL "CURRENTLY IN TURN-OFF" CR>
     <COND (<PRSO? ,WINNER>
            <TELL <PICK-ONE-R <PLTABLE "Baseball." "Cold showers.">> CR>)
           (<NOT <FSET? ,PRSO ,DEVICEBIT>>
@@ -1328,13 +1305,11 @@ Returns:
         (ELSE <TELL "Undo is not available in this version." CR>)>>
 
 <ROUTINE V-SAVE ("AUX" S)
-     ;<TELL "Now in save routine" CR>
     <TELL "Saving..." CR>
     <COND (<SAVE> <V-LOOK>)
           (ELSE <TELL "Save failed." CR>)>>
 
 <ROUTINE V-RESTORE ("AUX" R)
-    ; <TELL "Now in restore routine" CR>
     <COND (<NOT <RESTORE>>
            <TELL "Restore failed." CR>)>>
 
@@ -1477,7 +1452,7 @@ Returns:
     <ROUTINE V-XGOTO ("AUX" D)
         <COND (<SET D <OBJREF? ,PRSO>>
                <GOTO .D>)>>
-    
+
     <ROUTINE V-XMOVE ("AUX" V D)
         <COND (<AND <SET V <OBJREF? ,PRSO>>
                     <SET D <OBJREF? ,PRSI>>>
