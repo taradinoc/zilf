@@ -1366,17 +1366,18 @@ Returns:
     <COND (<==? .BIT ,KLUDGEBIT>
            <TRACE 4 "[GWIM: autofilling ROOMS for kludge bit]" CR>
            <RETURN ,ROOMS>)>
-    ;"Look for exactly one matching object, or two if one is WINNER"
+    ;"Look for exactly one matching object, excluding WINNER"
     <TRACE 4 "[GWIM: searching scope for flag " N .BIT " opts " N .OPTS "]" CR>
     <TRACE-IN>
     <MAP-SCOPE (I [BITS .OPTS])
-        <COND (<OR <0? .BIT> <FSET? .I .BIT>>
+        <COND (<AND <N=? .I ,WINNER>
+                    <OR <0? .BIT> <FSET? .I .BIT>>>
                <TRACE 4 "[considering " D .I "]" CR>
-               <COND (<AND .O <N=? .O ,WINNER> <N=? .I ,WINNER>>
+               <COND (.O
                       <TRACE 4 "[too many, bailing]" CR>
                       <TRACE-OUT>
                       <RFALSE>)
-                     (<OR <NOT .O> <N=? .I ,WINNER>>
+                     (ELSE
                       <TRACE 4 "[updating preference]" CR>
                       <SET O .I>)>)>>
     <TRACE-OUT>
