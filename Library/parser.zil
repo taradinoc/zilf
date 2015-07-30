@@ -1203,25 +1203,27 @@ Returns:
     <TRACE-OUT>
     <RTRUE>>
 
-<ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2 F)
-    <SET SN <GETB ,P-SYNTAX ,SYN-NOBJ>>
-    <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
-    <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
-    ;"TODO: use LONG-WORDS table for preposition words"
-    <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
-           <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>)
-          (ELSE <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>)>
-    <COND (<=? .F ,PERSONBIT> <TELL "Whom">)
-          (ELSE <TELL "What">)>
-    <TELL " do you want to ">
-    <PRINT-VERB>
-    <COND (.SP1
-           <TELL " " B <GET-PREP-WORD .SP1>>)>
-    <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
-           <TELL " " T ,PRSO>
-           <COND (.SP2
-                  <TELL " " B <GET-PREP-WORD .SP2>>)>)>
-    <TELL "?" CR>>
+<DEFAULT-DEFINITION WHAT-DO-YOU-WANT
+    <ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2 F)
+        <SET SN <GETB ,P-SYNTAX ,SYN-NOBJ>>
+        <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
+        <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
+        ;"TODO: use LONG-WORDS table for preposition words"
+        <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
+               <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>)
+              (ELSE <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>)>
+        <COND (<AND <VERB? WALK> <NOT .PRSO>> <TELL "Which way">)
+              (<=? .F ,PERSONBIT> <TELL "Whom">)
+              (ELSE <TELL "What">)>
+        <TELL " do you want to ">
+        <PRINT-VERB>
+        <COND (.SP1
+               <TELL " " B <GET-PREP-WORD .SP1>>)>
+        <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
+               <TELL " " T ,PRSO>
+               <COND (.SP2
+                      <TELL " " B <GET-PREP-WORD .SP2>>)>)>
+        <TELL "?" CR>>>
 
 <ROUTINE PRINT-VERB ()
     <COND (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
