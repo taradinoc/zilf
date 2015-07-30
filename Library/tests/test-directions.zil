@@ -13,7 +13,14 @@
 <OBJECT HALLWAY
     (IN ROOMS)
     (DESC "Hallway")
+    (NORTH TO CLOSET)
     (SOUTH TO STARTROOM)
+    (FLAGS LIGHTBIT)>
+
+<OBJECT CLOSET
+    (IN ROOMS)
+    (DESC "Closet")
+    (SOUTH TO HALLWAY)
     (FLAGS LIGHTBIT)>
 
 <INSERT-FILE "testing">
@@ -26,5 +33,12 @@
     <COMMAND [GO]>
     <EXPECT "Which way do you want to go?|">
     <CHECK <IN? ,WINNER ,STARTROOM>>>
+
+<TEST-CASE ("Repeat motion with AGAIN")
+    <COMMAND [NORTH]>
+    <EXPECT "Hallway|">
+    <COMMAND [AGAIN]>
+    <EXPECT "Closet|">
+    <CHECK <IN? ,WINNER ,CLOSET>>>
 
 <TEST-GO ,STARTROOM>

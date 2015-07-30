@@ -145,6 +145,7 @@
 <SYNTAX CLIMB OBJECT = V-CLIMB>
 
 <SYNTAX YES = V-YES>
+<VERB-SYNONYM YES Y>
 <SYNTAX NO = V-NO>
 
 ;"Syntaxes for game verbs"
@@ -1131,7 +1132,7 @@ Returns:
 
 <ROUTINE V-AGAIN ()
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
-    <COND (,P-V
+    <COND (,PRSA
            <COND (<AND ,PRSO
                        <NOT ,PRSO-DIR>
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>

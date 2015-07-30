@@ -421,7 +421,7 @@ Args:
     <PST-V .DEST ,P-V>
     <PST-V-WORDN .DEST ,P-V-WORDN>
     <PST-NOBJ .DEST ,P-NOBJ>
-    <PST-PRSO-DIR .DEST ,PRSO-DIR>
+    <PST-PRSO-DIR .DEST <AND ,PRSO-DIR ,PRSO>>
     <PST-PRSA .DEST ,PRSA>>
 
 <ROUTINE RESTORE-PARSER-RESULT (SRC "AUX" L)
@@ -441,7 +441,10 @@ Args:
     <SETG PRSO-DIR <PST-PRSO-DIR .SRC>>
     <SETG PRSA <PST-PRSA .SRC>>
     ;"Set variables calculated from these"
-    <COND (<OR <L? ,P-NOBJ 1>
+    <COND (,PRSO-DIR
+           <SETG PRSO ,PRSO-DIR>
+           <SETG PRSO-DIR T>)
+          (<OR <L? ,P-NOBJ 1>
                <0? <SET L <GETB ,P-PRSOS 0>>>>
            <SETG PRSO <>>)
           (<1? .L>
@@ -1212,7 +1215,7 @@ Returns:
         <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
                <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>)
               (ELSE <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>)>
-        <COND (<AND <VERB? WALK> <NOT .PRSO>> <TELL "Which way">)
+        <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL "Which way">)
               (<=? .F ,PERSONBIT> <TELL "Whom">)
               (ELSE <TELL "What">)>
         <TELL " do you want to ">
@@ -1364,10 +1367,13 @@ Args:
 Returns:
   The single object that matches, or false if zero or multiple objects match."
 <ROUTINE GWIM (BIT OPTS PREP "AUX" O PW)
-    ;"Special case"
+    ;"Special cases"
     <COND (<==? .BIT ,KLUDGEBIT>
            <TRACE 4 "[GWIM: autofilling ROOMS for kludge bit]" CR>
-           <RETURN ,ROOMS>)>
+           <RETURN ,ROOMS>)
+          (<VERB? WALK>
+           <TRACE 4 "[GWIM: refusing, verb is WALK]" CR>
+           <RFALSE>)>
     ;"Look for exactly one matching object, excluding WINNER"
     <TRACE 4 "[GWIM: searching scope for flag " N .BIT " opts " N .OPTS "]" CR>
     <TRACE-IN>
