@@ -181,6 +181,7 @@
     <SYNTAX XGOTO OBJECT = V-XGOTO>
     
     <SYNTAX XMOVE OBJECT TO OBJECT (FIND PERSONBIT) = V-XMOVE>
+    <SYNTAX XMOVE OBJECT = V-XMOVE>
     <SYNTAX XREMOVE OBJECT = V-XREMOVE>
     
     <SYNTAX XLIGHT = V-XLIGHT>
@@ -1455,6 +1456,7 @@ Returns:
                <GOTO .D>)>>
 
     <ROUTINE V-XMOVE ("AUX" V D)
+        <OR ,PRSI <SETG PRSI ,WINNER>>
         <COND (<AND <SET V <OBJREF? ,PRSO>>
                     <SET D <OBJREF? ,PRSI>>>
                <MOVE .V .D>
