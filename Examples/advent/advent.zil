@@ -847,10 +847,8 @@ There is a dim light at the east end of the passage.")
 
 <ROUTINE WICKER-CAGE-F ()
     <COND (<AND <VERB? OPEN> <IN? ,LITTLE-BIRD ,PRSO>>
-           <V-OPEN>
-           <COND (<FSET? ,PRSO ,OPENBIT>
-                  <TELL "(releasing " T ,LITTLE-BIRD ")" CR>
-                  <PERFORM ,V?RELEASE ,LITTLE-BIRD>)>
+           <TELL "(releasing " T ,LITTLE-BIRD ")" CR>
+           <PERFORM ,V?RELEASE ,LITTLE-BIRD>
            <RTRUE>)
           (<AND <VERB? PUT-IN>
                 <PRSI? ,WICKER-CAGE>
