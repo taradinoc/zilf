@@ -1780,7 +1780,7 @@ Sets (temporarily):
     <SET OI ,PRSI>
     <SETG PRSA .ACT>
     <SETG PRSO .DOBJ>
-    <SETG PRSO-DIR <==? .ACT ,V?WALK>>
+    <OR <==? .ACT ,V?WALK> <SETG PRSO-DIR <>>>
     <SETG PRSI .IOBJ>
     <TRACE-IN>
     ;"Warn about improper number use, and handle multiple objects"
