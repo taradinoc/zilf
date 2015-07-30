@@ -46,6 +46,6 @@
 <TEST-CASE ("WAKE without noun when troll is gone")
     <REMOVE ,TROLL>
     <COMMAND [WAKE]>
-    <EXPECT "[you]|If only this were a dream.|">>
+    <EXPECT "Whom do you want to wake?|">>
 
 <TEST-GO ,STARTROOM>
