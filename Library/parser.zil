@@ -487,7 +487,7 @@ Args:
 <FINISH-PRONOUNS>
 
 "Buzzwords"
-<BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE \. \, \">
+<BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE THEN UNDO \. \, \">
 
 ;"Reads and parses a command.
 
@@ -531,6 +531,22 @@ Sets:
     <TRACE-IN>
     
     <SETG P-LEN <GETB ,LEXBUF 1>>
+    
+    ;"Save undo state unless this looks like an undo command"
+    <IF-UNDO
+        <COND (,AGAINCALL)
+              (<AND <G=? ,P-LEN 1>
+                    <=? <GETWORD? 1> ,W?UNDO>
+                    <OR <1? ,P-LEN>
+                        <=? <GETWORD? 2> ,W?PERIOD ,W?THEN>>>)
+              (ELSE
+               <TRACE 4 "[saving for UNDO]" CR>
+               <SETG USAVE <ISAVE>>
+               <COND (<=? ,USAVE 2>
+                      <TELL "Previous turn undone." CR CR>
+                      <V-LOOK>
+                      <AGAIN>)>)>>
+    
     <SET KEEP 0>
     ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
     <COND (<ORPHANING?>
@@ -645,12 +661,6 @@ Sets:
                   <COND (<NOT <VERB? AGAIN>>
                          <TRACE 4 "[saving for AGAIN]" CR>
                          <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
-                  <IF-UNDO
-                      <COND (<NOT ,AGAINCALL>
-                             <SETG USAVE <ISAVE>>
-                             <COND (<EQUAL? ,USAVE 2>
-                                    <TELL "Previous turn undone." CR>
-                                    <AGAIN>)>)>>
                   <TRACE-OUT>
                   <RTRUE>)>
            ;"Otherwise, a verb is required"
@@ -676,16 +686,6 @@ Sets:
     <COND (<NOT <VERB? AGAIN>>
            <TRACE 4 "[saving for AGAIN]" CR>
            <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
-    ;"Save UNDO state"
-    <IF-UNDO
-        <COND (<AND <NOT <VERB? UNDO>>
-                    <NOT ,AGAINCALL>>
-               <TRACE 4 "[saving for UNDO]" CR>
-               <SETG USAVE <ISAVE>>
-               <COND (<EQUAL? ,USAVE 2>
-                      <TELL "Previous turn undone." CR>
-                      ;<SETG USAVE 0>  ;"prevent undoing twice in a row"
-                      <AGAIN>)>)>>
     ;"if successful PRSO and not after an IT use, back up PRSO for IT"
     <SET-PRONOUNS ,PRSO ,P-PRSOS>
     <TRACE-OUT>
