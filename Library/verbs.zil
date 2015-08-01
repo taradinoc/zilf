@@ -876,31 +876,33 @@ Returns:
     <SET CEIL <COMMON-PARENT? .OBJ .TAKER>>
     <COND (<0? .CEIL> <RETURN ,ROOMS>)>
     ;"Walk up the tree from OBJ to CEIL"
-    <DO (L <LOC .OBJ> <0? .L> <SET L <LOC .L>>)
-        <COND (<==? .L .CEIL>
-               <RETURN>)
-              (<BLOCKS-TAKE? .L>
-               ;"Keep the furthest blocker from OBJ"
-               <SET BLOCKER .L>)
-              (<OR <AND <FSET? .L ,CONTBIT>
-                        <NOT <FSET? .L ,SURFACEBIT>>>
-                   <IN? .L ,ROOMS>>
-               ;"Keep the closest allower to OBJ"
-               <OR .ALLOWER <SET ALLOWER .L>>)>>
+    <COND (<N=? .OBJ .CEIL>
+           <DO (L <LOC .OBJ> <0? .L> <SET L <LOC .L>>)
+               <COND (<==? .L .CEIL>
+                      <RETURN>)
+                     (<BLOCKS-TAKE? .L>
+                      ;"Keep the furthest blocker from OBJ"
+                      <SET BLOCKER .L>)
+                     (<OR <AND <FSET? .L ,CONTBIT>
+                               <NOT <FSET? .L ,SURFACEBIT>>>
+                          <IN? .L ,ROOMS>>
+                      ;"Keep the closest allower to OBJ"
+                      <OR .ALLOWER <SET ALLOWER .L>>)>>)>
     ;"Walk up the tree from TAKER to CEIL, setting variables in reverse"
     <SET HAD-ALLOWER? .ALLOWER>
-    <DO (L <LOC .TAKER> <0? .L> <SET L <LOC .L>>)
-        <COND (<==? .L .CEIL>
-               <RETURN>)
-              (<BLOCKS-TAKE? .L>
-               ;"Keep the closest blocker to TAKER"
-               <OR .BLOCKER <SET BLOCKER .L>>)
-              (<OR <AND <FSET? .L ,CONTBIT>
-                        <NOT <FSET? .L ,SURFACEBIT>>>
-                   <IN? .L ,ROOMS>>
-               ;"Keep the furthest blocker from TAKER unless we already found
-                 one on the first walk."
-               <OR .HAD-ALLOWER? <SET ALLOWER .L>>)>>
+    <COND (<N=? .TAKER .CEIL>
+           <DO (L <LOC .TAKER> <0? .L> <SET L <LOC .L>>)
+               <COND (<==? .L .CEIL>
+                      <RETURN>)
+                     (<BLOCKS-TAKE? .L>
+                      ;"Keep the closest blocker to TAKER"
+                      <OR .BLOCKER <SET BLOCKER .L>>)
+                     (<OR <AND <FSET? .L ,CONTBIT>
+                               <NOT <FSET? .L ,SURFACEBIT>>>
+                          <IN? .L ,ROOMS>>
+                      ;"Keep the furthest blocker from TAKER unless we already found
+                        one on the first walk."
+                      <OR .HAD-ALLOWER? <SET ALLOWER .L>>)>>)>
     <OR .BLOCKER .ALLOWER>>
 
 <ROUTINE BLOCKS-TAKE? (OBJ)
@@ -916,8 +918,6 @@ Returns:
     <OR .ROOT <RFALSE>>
     ;"If ROOT is equal to A or B, it's the common parent"
     <COND (<EQUAL? .ROOT .A .B> <RETURN .ROOT>)>
-    ;"If ROOT directly contains either A or B, it's the common parent"
-    <COND (<OR <IN? .A .ROOT> <IN? .B .ROOT>> <RETURN .ROOT>)>
     ;"Look for common parent in each subtree, keeping any matching
       tree and counting the number found."
     <MAP-CONTENTS (I .ROOT)
