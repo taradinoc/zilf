@@ -143,6 +143,8 @@
 <SYNTAX SWIM = V-SWIM>
 <SYNTAX CLIMB = V-CLIMB>
 <SYNTAX CLIMB OBJECT = V-CLIMB>
+<SYNTAX SING = V-SING>
+<SYNTAX DANCE = V-DANCE>
 
 <SYNTAX YES = V-YES>
 <VERB-SYNONYM YES Y>
@@ -1277,6 +1279,12 @@ Returns:
 <ROUTINE V-JUMP ()
     <POINTLESS "Jumping in place">
     <RTRUE>>
+
+<ROUTINE V-SING ()
+    <TELL "You give a stirring performance of \"MacArthur Park\". Bravo!" CR>>
+
+<ROUTINE V-DANCE ()
+    <TELL "Dancing is forbidden." CR>>
 
 <ROUTINE V-WAKE ()
     <COND (<PRSO? ,WINNER> <TELL "If only this were a dream." CR>)
