@@ -30,7 +30,13 @@
     (IN STARTROOM)
     (DESC "cage")
     (SYNONYM CAGE)
-    (FLAGS CONTBIT TRANSBIT OPENABLEBIT)>
+    (FLAGS CONTBIT TRANSBIT OPENABLEBIT TAKEBIT)>
+
+<OBJECT BOX
+    (IN STARTROOM)
+    (DESC "box")
+    (SYNONYM BOX)
+    (FLAGS CONTBIT OPENABLEBIT TAKEBIT)>
 
 <OBJECT DESK
     (IN STARTROOM)
@@ -42,7 +48,7 @@
     (IN STARTROOM)
     (DESC "bucket")
     (SYNONYM BUCKET)
-    (FLAGS CONTBIT OPENBIT)>
+    (FLAGS CONTBIT OPENBIT TAKEBIT)>
 
 <INSERT-FILE "testing">
 
@@ -53,13 +59,25 @@
     <MOVE ,HAT ,STARTROOM>
     <FCLEAR ,HAT ,WORNBIT>
     <MOVE ,CAGE ,STARTROOM>
+    <FCLEAR ,CAGE ,OPENBIT>
+    <MOVE ,BOX ,STARTROOM>
+    <FCLEAR ,BOX ,OPENBIT>
     <MOVE ,DESK ,STARTROOM>
-    <MOVE ,BUCKET ,STARTROOM>>
+    <MOVE ,BUCKET ,STARTROOM>
+    <FSET ,BUCKET ,OPENBIT>>
 
 <TEST-CASE ("Open container, revealing contents")
+    <MOVE ,APPLE ,BOX>
+    <COMMAND [OPEN BOX]>
+    <EXPECT "You open the box.|In the box is an apple.|">>
+
+<TEST-CASE ("Take item from closed container")
     <MOVE ,APPLE ,CAGE>
-    <FCLEAR ,CAGE ,OPENBIT>
-    <COMMAND [OPEN CAGE]>
-    <EXPECT "You open the cage.|In the cage is an apple.|">>
+    <COMMAND [TAKE APPLE]>
+    <EXPECT "The cage is in the way.|">
+    <COMMAND [TAKE CAGE]>
+    <EXPECT "You pick up the cage.|">
+    <COMMAND [TAKE APPLE]>
+    <EXPECT "The cage is in the way.|">>
 
 <TEST-GO ,STARTROOM>
