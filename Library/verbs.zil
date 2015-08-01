@@ -714,7 +714,9 @@ Returns:
 
 <ROUTINE V-ENTER ()
     <COND (<FSET? ,PRSO ,DOORBIT>
+           <SETG PRSO-DIR T>
            <PERFORM ,V?WALK <DOOR-DIR ,PRSO>>
+           <SETG PRSO-DIR <>>
            <RTRUE>)
           (ELSE
            <NOT-POSSIBLE "get inside"> <RTRUE>)>>
