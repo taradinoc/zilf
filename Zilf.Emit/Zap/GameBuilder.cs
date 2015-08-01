@@ -442,13 +442,13 @@ namespace Zilf.Emit.Zap
         public static string SanitizeSymbol(string symbol)
         {
             if (symbol == ".")
-                return "PERIOD";
+                return "$PERIOD";
             else if (symbol == ",")
-                return "COMMA";
+                return "$COMMA";
             else if (symbol == "\"")
-                return "QUOTE";
+                return "$QUOTE";
             else if (symbol == "'")
-                return "APOSTROPHE";
+                return "$APOSTROPHE";
 
             StringBuilder sb = new StringBuilder(symbol);
 

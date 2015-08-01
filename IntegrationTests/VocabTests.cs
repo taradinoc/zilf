@@ -209,5 +209,25 @@ namespace IntegrationTests
                     "<BTST <GETB ,W?SAMPLE 4> ,PS?VERB>",
                     "<BTST <GETB ,W?SAMPLE 4> ,PS?ADJECTIVE>");
         }
+
+        [TestMethod]
+        public void Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
+        {
+            AssertRoutine("",
+                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
+                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
+                .WithGlobal(@"<OBJECT FOO (SYNONYM \,)>")
+                .Outputs(", , ,");
+        }
+
+        [TestMethod]
+        public void Punctuation_Name_Words_Should_Split_From_Symbol_Words_When_Given_Definitions()
+        {
+            AssertRoutine("",
+                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
+                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
+                .WithGlobal(@"<OBJECT FOO (SYNONYM COMMA)>")
+                .Outputs("comma comma ,");
+        }
     }
 }
