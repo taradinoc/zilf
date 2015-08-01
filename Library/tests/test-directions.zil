@@ -10,6 +10,12 @@
     (NORTH TO HALLWAY)
     (FLAGS LIGHTBIT)>
 
+<OBJECT APPLE
+    (IN STARTROOM)
+    (DESC "apple")
+    (SYNONYM APPLE)
+    (FLAGS TAKEBIT VOWELBIT)>
+
 <OBJECT HALLWAY
     (IN ROOMS)
     (DESC "Hallway")
@@ -40,5 +46,29 @@
     <COMMAND [AGAIN]>
     <EXPECT "Closet|">
     <CHECK <IN? ,WINNER ,CLOSET>>>
+
+<TEST-CASE ("Direction preceded by garbage")
+    <COMMAND ["1234" NORTH]>
+    <EXPECT "That sentence has no verb.|">
+    <CHECK <IN? ,WINNER ,STARTROOM>>
+    <COMMAND [APPLE \, NORTH]>
+    ;"TODO: EXPECT once ordering is implemented"
+    <CHECK <IN? ,WINNER ,STARTROOM>>>
+
+<TEST-CASE ("Direction followed by garbage")
+    <COMMAND [NORTH ME]>
+    <EXPECT "That sentence has no verb.|">
+    <CHECK <IN? ,WINNER ,STARTROOM>>
+    <COMMAND [NORTH LOOK]>
+    <EXPECT "I didn't expect the word \"look\" there.|">
+    <CHECK <IN? ,WINNER ,STARTROOM>>
+    <COMMAND [NORTH GO THROUGH APPLE]>
+    <EXPECT "I don't understand what \"north\" is doing in that sentence.|">
+    <CHECK <IN? ,WINNER ,STARTROOM>>>
+
+<TEST-CASE ("Multiple directions")
+    <COMMAND [EAST NORTH]>
+    <EXPECT "I didn't expect the word \"north\" there.|">
+    <CHECK <IN? ,WINNER ,STARTROOM>>>
 
 <TEST-GO ,STARTROOM>

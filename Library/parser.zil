@@ -516,11 +516,12 @@ Sets:
   P-NP-DOBJ
   P-NP-IOBJ
 "
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR O-R KEEP)
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET NOBJ <>>
     <SET VAL <>>
     <SET DIR <>>
+    <SET DIR-WN <>>
     <SETG HERE <LOC ,WINNER>>
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"Fill READBUF and LEXBUF"
@@ -581,7 +582,7 @@ Sets:
            <SETG P-P1 <>>
            <SETG P-P2 <>>
            ;"Identify the verb, prepositions, and noun phrases"
-           <REPEAT ((I 1) W)
+           <REPEAT ((I 1) W V)
                <COND (<G? .I ,P-LEN>
                       ;"Reached the end of the command"
                       <RETURN>)
@@ -592,17 +593,20 @@ Sets:
                       <PRINT-WORD .I>
                       <TELL "\"." CR>
                       <RFALSE>)
-                     (<AND <CHKWORD? .W ,PS?VERB> <NOT ,P-V>>
+                     (<AND <NOT ,P-V>
+                           <SET V <WORD? .W VERB>>
+                           <OR <NOT .DIR> <=? .V ,ACT?WALK>>>
                       ;"Found the verb"
                       <SETG P-V-WORD .W>
                       <SETG P-V-WORDN .I>
-                      <SETG P-V <WORD? .W VERB>>
-                      <TRACE 3 "[verb word " N ,P-V-WORDN " '" B ,P-V-WORD "' = " N ,P-V "]" CR>
-                      )
-                     (<AND <EQUAL? ,P-V <> ,ACT?WALK>
+                      <SETG P-V .V>
+                      <TRACE 3 "[verb word " N ,P-V-WORDN " '" B ,P-V-WORD "' = " N ,P-V "]" CR>)
+                     (<AND <NOT .DIR>
+                           <EQUAL? ,P-V <> ,ACT?WALK>
                            <SET VAL <WORD? .W DIRECTION>>>
                       ;"Found a direction"
                       <SET DIR .VAL>
+                      <SET DIR-WN .I>
                       <TRACE 3 "[got a direction]" CR>)
                      (<SET VAL <CHKWORD? .W ,PS?PREPOSITION 0>>
                       ;"Found a preposition"
@@ -652,8 +656,13 @@ Sets:
                  ") IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>
            <TRACE-IN>
  
-           ;"If we have a direction, it's a walk action, and no verb is needed"
-           <COND (.DIR
+           ;"If we have a direction and nothing else except maybe a WALK verb, it's
+             a movement command."
+           <COND (<AND .DIR
+                       <EQUAL? ,P-V <> ,ACT?WALK>
+                       <0? .NOBJ>
+                       <NOT ,P-P1>
+                       <NOT ,P-P2>>
                   <SETG PRSO-DIR T>
                   <SETG PRSA ,V?WALK>
                   <SETG PRSO .DIR>
@@ -663,9 +672,13 @@ Sets:
                          <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
                   <TRACE-OUT>
                   <RTRUE>)>
-           ;"Otherwise, a verb is required"
+           ;"Otherwise, a verb is required and a direction is forbidden."
            <COND (<NOT ,P-V>
                   <TELL "That sentence has no verb." CR>
+                  <TRACE-OUT>
+                  <RFALSE>)
+                 (.DIR
+                  <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
                   <TRACE-OUT>
                   <RFALSE>)>
            <SETG PRSO-DIR <>>)>
