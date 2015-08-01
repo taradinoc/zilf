@@ -3847,7 +3847,13 @@ Off to one side a great many dwarves are sleeping on the floor, snoring loudly.
 A sign nearby reads: \"Do not disturb the dwarves!\"")
     (GLOBAL ENORMOUS-MIRROR)
     (SW TO AT-SW-END)
+    (ACTION AT-NE-END-F)
     (FLAGS LIGHTBIT)>
+
+<ROUTINE AT-NE-END-F (RARG)
+    <COND (<AND <=? .RARG ,M-END> <VERB? SING>>
+           <CRLF>
+           <DWARVES-WAKE-UP>)>>
 
 <OBJECT ENORMOUS-MIRROR
     (DESC "enormous mirror")
@@ -4313,6 +4319,8 @@ appears out of nowhere!" CR>)>)>)
 <SYNTAX LIGHT OBJECT (FIND DEVICEBIT) = V-TURN-ON>
 <SYNTAX UNLIGHT OBJECT (FIND DEVICEBIT) = V-TURN-OFF>
 <SYNONYM UNLIGHT EXTINGUISH>
+
+<SYNONYM WAKE DISTURB>
 
 ;----------------------------------------------------------------------
 
