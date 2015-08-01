@@ -344,12 +344,14 @@ Args:
             (<SET P <GETP .I ,P?DESCFCN>>
              <CRLF>
              ;"The DESCFCN is responsible for listing the object's contents"
-             <APPLY .P ,M-OBJDESC>)
+             <APPLY .P ,M-OBJDESC>
+             <THIS-IS-IT .I>)
             ;"objects with applicable FDESCs or LDESCs"
             (<OR <AND <NOT <FSET? .I ,TOUCHBIT>>
                       <SET P <GETP .I ,P?FDESC>>>
                  <SET P <GETP .I ,P?LDESC>>>
              <TELL CR .P CR>
+             <THIS-IS-IT .I>
              ;"Describe contents if applicable"
              <COND (<AND <SEE-INSIDE? .I> <FIRST? .I>>
                     <DESCRIBE-CONTENTS .I>)>)>>
@@ -362,7 +364,8 @@ Args:
     <COND (.N
            <TELL CR "There ">
            <LIST-OBJECTS .RM GENERIC-DESC? ,L-ISMANY>
-           <TELL " here." CR>)>
+           <TELL " here." CR>
+           <CONTENTS-ARE-IT .RM GENERIC-DESC?>)>
     ;"describe visible contents of generic-desc containers and surfaces"
     <MAP-CONTENTS (I .RM)
         <COND (<AND <SEE-INSIDE? .I>
@@ -379,7 +382,8 @@ Args:
     <COND (.N
            <CRLF>
            <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
-           <TELL " here." CR>)>>
+           <TELL " here." CR>
+           <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
     <T? <NOT <OR <==? .OBJ ,WINNER>
@@ -465,7 +469,8 @@ Args:
           (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
     <LIST-OBJECTS .OBJ <> ,L-ISARE>
-    <TELL "." CR>>
+    <TELL "." CR>
+    <CONTENTS-ARE-IT .OBJ>>
 
 ;"Prints a space followed by a parenthetical describing the contents of a
 surface or container, for use in inventory listings."
@@ -671,7 +676,7 @@ Returns:
 
 <CONSTANT CANT-GO-THAT-WAY "You can't go that way.">
 
-<ROUTINE V-WALK ("AUX" PT PTS RM THERE-LIT)
+<ROUTINE V-WALK ("AUX" PT PTS RM THERE-LIT D)
     <COND (<NOT ,PRSO-DIR>
            <PRINTR "You must give a direction to walk in.">)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
@@ -698,13 +703,14 @@ Returns:
                   <TELL ,CANT-GO-THAT-WAY CR>
                   <RTRUE>)>)
           (<==? .PTS ,DEXIT>
-           <COND (<FSET? <GET/B .PT ,DEXIT-OBJ> ,OPENBIT>
+           <COND (<FSET? <SET D <GET/B .PT ,DEXIT-OBJ>> ,OPENBIT>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
                  (<SET RM <GET .PT ,DEXIT-MSG>>
                   <TELL .RM CR>
                   <RTRUE>)
                  (ELSE
-                  <TELL "You'll have to open " T <GET/B .PT ,DEXIT-OBJ>
+                  <THIS-IS-IT .D>
+                  <TELL "You'll have to open " T .D
                         " first." CR>
                   <RTRUE>)>)
           (ELSE
@@ -820,6 +826,7 @@ Returns:
                   <TELL "That seems to belong to " T .HOLDER "." CR>
                   <RTRUE>)
                  (<BLOCKS-TAKE? .HOLDER>
+                  <THIS-IS-IT .HOLDER>
                   <TELL CT .HOLDER " is in the way." CR>
                   <RTRUE>)
                  (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)

@@ -373,7 +373,7 @@ Args:
 <GLOBAL P-PRSOS <PRSTBL>>
 "Matched indirect objects"
 <GLOBAL P-PRSIS <PRSTBL>>
-"Extra objects for orphaning>"
+"Extra objects for orphaning or temporary use"
 <GLOBAL P-XOBJS <PRSTBL>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
@@ -699,7 +699,7 @@ Sets:
     <COND (<NOT <VERB? AGAIN>>
            <TRACE 4 "[saving for AGAIN]" CR>
            <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
-    ;"if successful PRSO and not after an IT use, back up PRSO for IT"
+    ;"If successful PRSO, back up PRSO for IT"
     <SET-PRONOUNS ,PRSO ,P-PRSOS>
     <TRACE-OUT>
     <RTRUE>>
@@ -825,7 +825,7 @@ Returns:
         
         Args:
           SRC: A pointer to the source table.
-          DEST: A poitner to the destination table.
+          DEST: A pointer to the destination table.
           LEN: The number of bytes to copy."
         <ROUTINE COPY-TABLE-B (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
@@ -1131,9 +1131,6 @@ Returns:
     .R>
 
 <INSERT-FILE "scope">
-
-<CONSTANT S-PRONOUN-UNKNOWN-PERSON "I'm unsure to whom you are referring.">
-<CONSTANT S-PRONOUN-UNKNOWN-THING "I'm unsure what you're referring to.">
 
 ;"Attempts to match PRSO and PRSI, if necessary, after parsing a command.
   Prints a message if it fails.
@@ -2354,7 +2351,6 @@ or reveal a light source."
 <INSERT-FILE "verbs">
 
 "Objects"
-
 
 ;"This has all the flags, just in case other objects don't define them."
 <OBJECT ROOMS

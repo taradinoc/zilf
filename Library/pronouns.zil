@@ -25,8 +25,8 @@
                   <SET OBJS-TBL-NAME <PARSE <STRING "P-PRO-" <SPNAME .N> "-OBJS">>>
                   <CONSTANT .OBJS-TBL-NAME <ITABLE .TBLSIZE .TBLFLAGS>>
                   
-                  ;"Define routine PRO-SET-THEM to try to set the pronoun."
-                  <SET RTN-NAME <PARSE <STRING "PRO-SET-" <SPNAME .N>>>>
+                  ;"Define routine PRO-TRY-SET-THEM to try to set the pronoun."
+                  <SET RTN-NAME <PARSE <STRING "PRO-TRY-SET-" <SPNAME .N>>>>
                   <SET CONDITION <PRO-STMTS .P>>
                   <COND (<LENGTH? .CONDITION 1> <SET CONDITION <1 .CONDITION>>)
                         (ELSE <SET CONDITION <FORM PROG '() !.CONDITION>>)>
@@ -51,7 +51,7 @@
             !<MAPF ,LIST
                    <FUNCTION (P "AUX" N RTN-NAME OBJS-TBL-NAME)
                        <SET N <PRO-NAME .P>>
-                       <SET RTN-NAME <PARSE <STRING "PRO-SET-" <SPNAME .N>>>>
+                       <SET RTN-NAME <PARSE <STRING "PRO-TRY-SET-" <SPNAME .N>>>>
                        <FORM .RTN-NAME '.O '.OBJS>>
                    ,PRONOUN-DEFINITIONS>>>
     <EVAL .RTN>
@@ -96,3 +96,23 @@
     <EVAL .RTN>>
 
 <CONSTANT EXPAND-PRONOUN-FAILED -1>
+
+;"Sets the appropriate pronouns to refer to an object."
+<ROUTINE THIS-IS-IT (O)
+    <PUTB ,P-XOBJS 0 1>
+    <PUT/B ,P-XOBJS 1 .O>
+    <SET-PRONOUNS .O ,P-XOBJS>>
+
+;"Sets the appropriate pronouns to refer to the contents of an object,
+  possibly after filtering through a routine."
+<ROUTINE CONTENTS-ARE-IT (CTNR "OPT" FILTER "AUX" N)
+    <MAP-CONTENTS (I .CTNR)
+        <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
+               <SET N <+ .N 1>>
+               <PUT/B ,P-XOBJS .N .I>
+               <COND (<=? .N ,P-MAX-OBJECTS> <RETURN>)>)>>
+    <PUTB ,P-XOBJS 0 .N>
+    <COND (<0? .N> <RETURN>)
+          (<1? .N> <SET N <GET/B ,P-XOBJS 1>>)
+          (ELSE <SET N ,MANY-OBJECTS>)>
+    <SET-PRONOUNS .N ,P-XOBJS>>
