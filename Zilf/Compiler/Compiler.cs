@@ -868,14 +868,33 @@ namespace Zilf.Compiler
             Contract.Requires(!string.IsNullOrWhiteSpace(punct));
             Contract.Requires(name != null);
 
-            ZilAtom atom = ZilAtom.Parse(punct, cc.Context);
-            Word pword = new Word(atom);
-            cc.Context.ZEnvironment.Vocabulary.Add(atom, pword);
+            var atom = ZilAtom.Parse(punct, cc.Context);
 
-            IWordBuilder pwb = cc.Game.DefineVocabularyWord(punct);
-            cc.Vocabulary.Add(pword, pwb);
-            cc.Constants.Add(ZilAtom.Parse("W?" + name, cc.Context), pwb);
-            cc.Constants.Add(ZilAtom.Parse("W?" + punct, cc.Context), pwb);
+            Word pword;
+            if (!cc.Context.ZEnvironment.Vocabulary.TryGetValue(atom, out pword))
+            {
+                pword = new Word(atom);
+                cc.Context.ZEnvironment.Vocabulary.Add(atom, pword);
+            }
+
+            IWordBuilder pwb;
+            if (!cc.Vocabulary.TryGetValue(pword, out pwb))
+            {
+                pwb = cc.Game.DefineVocabularyWord(punct);
+                cc.Vocabulary.Add(pword, pwb);
+            }
+
+            var namedAtom = ZilAtom.Parse("W?" + name, cc.Context);
+            if (!cc.Constants.ContainsKey(namedAtom))
+            {
+                cc.Constants.Add(namedAtom, pwb);
+            }
+
+            var symbolicAtom = ZilAtom.Parse("W?" + punct, cc.Context);
+            if (!cc.Constants.ContainsKey(symbolicAtom))
+            {
+                cc.Constants.Add(symbolicAtom, pwb);
+            }
         }
         
         private static void DefineWord(CompileCtx cc, Word word)
