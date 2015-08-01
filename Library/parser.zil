@@ -738,6 +738,11 @@ Sets:
 expressible as the sum of two cubes in two different ways">)
                  (<=? ,P-NUMBER 12345>
                   <TELL "the combination on my luggage">)
+                 (<=? ,P-NUMBER -32768 32767>
+                  <TELL "the ">
+                  <COND (<L? ,P-NUMBER 0> <TELL "smallest">)
+                        (ELSE <TELL "largest">)>
+                  <TELL " 16-bit signed integer">)
                  (ELSE <TELL "the number between " N <- ,P-NUMBER 1> " and " N <+ ,P-NUMBER 1>>)>
            <TELL ", but that's not important right now." CR>)
           (<AND <=? ,P-V-WORD ,W?TAKE> <=? ,P-NUMBER 5 10>>
@@ -766,6 +771,14 @@ Returns:
         <COND (<AND .F <=? .C !\->>
                <SET NEG T>)
               (<AND <G=? .C !\0> <L=? .C !\9>>
+               ;"Special case for -32768"
+               <COND (<AND <=? .V 3276>
+                           <=? .C !\8>
+                           .NEG
+                           <=? .I .MAX>>
+                      <SET V -32768>
+                      <SET NEG <>>
+                      <RETURN>)>
                <SET DIG T>
                <SET V <+ <* .V 10> <- .C !\0>>>
                <COND (<L? .V 0> <RFALSE>)>)
