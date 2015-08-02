@@ -84,36 +84,52 @@ Adapted once more by Jesse McGrew (2015)">>
               "Use XLUCKY " N .S " to replay this game next time.]" CR>
         <RANDOM <- .S>>>>
 
-<ROUTINE ADVENT-PLAYER-F ("AUX" F)
-    <COND (<VERB? SWIM>
-           ;"Change the default response, but give the location a chance to override it."
-           <COND (<NOT <AND <SET F <GETP ,HERE ,P?ACTION>>
-                            <APPLY .F ,M-BEG>>>
-                  <TELL "You don't know how." CR>)>
-           <RTRUE>)
-          (<AND <VERB? CLIMB> <NOT ,PRSO>>
-           <COND (<OR <VISIBLE? <SET F ,PLANT>>
-                      <VISIBLE? <SET F ,PLANT-STICKING-UP>>
-                      <VISIBLE? <SET F ,SMALL-CLIMBABLE-PIT>>
-                      <VISIBLE? <SET F ,MASSIVE-ORANGE-COLUMN>>
-                      <VISIBLE? <SET F ,PIT>>>
-                  <SETG PRSO .F>
-                  <RFALSE>)>)
-          (<AND <VERB? DROP>
-                <=? ,HERE ,INSIDE-BUILDING>
-                <FSET? ,PRSO ,TREASUREBIT>>
-           <COND (<PRE-DROP>)
-                 (<AND <SET F <GETP ,PRSO ,P?ACTION>> <APPLY .F>>)
-                 (<MOVE ,PRSO ,HERE>
-                  <FSET ,PRSO ,TOUCHBIT>
-                  <FCLEAR ,PRSO ,WORNBIT>
-                  <TELL "You safely deposit " T ,PRSO "." CR>)>
-           <RTRUE>)
-          (<VERB? QUIT>
-           <V-SCORE T>
-           <CRLF>
-           <V-QUIT>
-           <RTRUE>)>
+<ROUTINE ADVENT-PLAYER-F (ARG "AUX" F)
+    <COND (<=? .ARG ,M-WINNER>
+           <COND (<VERB? SWIM>
+                  ;"Change the default response, but give the location a chance to override it."
+                  <COND (<NOT <AND <SET F <GETP ,HERE ,P?ACTION>>
+                                   <APPLY .F ,M-BEG>>>
+                         <TELL "You don't know how." CR>)>
+                  <RTRUE>)
+                 (<AND <VERB? CLIMB> <NOT ,PRSO>>
+                  <COND (<OR <VISIBLE? <SET F ,PLANT>>
+                             <VISIBLE? <SET F ,PLANT-STICKING-UP>>
+                             <VISIBLE? <SET F ,SMALL-CLIMBABLE-PIT>>
+                             <VISIBLE? <SET F ,MASSIVE-ORANGE-COLUMN>>
+                             <VISIBLE? <SET F ,PIT>>>
+                         <SETG PRSO .F>
+                         <RFALSE>)>)
+                 (<AND <VERB? DROP>
+                       <=? ,HERE ,INSIDE-BUILDING>
+                       <FSET? ,PRSO ,TREASUREBIT>>
+                  <COND (<PRE-DROP>)
+                        (<AND <SET F <GETP ,PRSO ,P?ACTION>> <APPLY .F>>)
+                        (<MOVE ,PRSO ,HERE>
+                         <FSET ,PRSO ,TOUCHBIT>
+                         <FCLEAR ,PRSO ,WORNBIT>
+                         <TELL "You safely deposit " T ,PRSO "." CR>)>
+                  <RTRUE>)
+                 (<VERB? QUIT>
+                  <V-SCORE T>
+                  <CRLF>
+                  <V-QUIT>
+                  <RTRUE>)
+                 (<AND <VERB? PUT-IN>
+                       <PRSO? ,LITTLE-BIRD>
+                       <PRSI? ,WICKER-CAGE>>
+                  ;"PUT BIRD IN CAGE is normally blocked by PRE-PUT-IN, so we intercept it here
+                    and redirect to CATCH BIRD."
+                  <PERFORM ,V?CATCH ,PRSO>
+                  <RTRUE>)
+                 (<AND <VERB? DROP>
+                       <PRSO? ,LITTLE-BIRD>
+                       <IN? ,LITTLE-BIRD ,WICKER-CAGE>
+                       <HELD? ,WICKER-CAGE>>
+                  ;"Likewise, DROP BIRD is normally blocked by PRE-DROP, so we intercept it here
+                    and redirect to FREE BIRD."
+                  <PERFORM ,V?RELEASE ,PRSO>
+                  <RTRUE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
 
@@ -4145,15 +4161,21 @@ Everything disappears in a dense cloud of orange smoke."
 ;----------------------------------------------------------------------
 
 <SYNTAX CATCH OBJECT (FIND PERSONBIT) = V-CATCH>
+<SYNTAX CATCH OBJECT (FIND PERSONBIT) (ON-GROUND IN-ROOM) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
+<SYNTAX CATCH OBJECT (FIND PERSONBIT) (ON-GROUND IN-ROOM) WITH OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
 <VERB-SYNONYM CATCH CAPTURE>
 <SYNTAX RELEASE OBJECT (FIND PERSONBIT) = V-RELEASE>
 <VERB-SYNONYM RELEASE FREE>
 
 <ROUTINE V-CATCH ()
-    <TELL "You can't catch " T ,PRSO "." CR>>
+    <COND (<OR <FSET? ,PRSO ,TAKEBIT> <FSET? ,PRSO ,TRYTAKEBIT>>
+           <PERFORM ,V?TAKE ,PRSO>)
+          (ELSE <TELL "You can't catch " T ,PRSO "." CR>)>>
 
 <ROUTINE V-RELEASE ()
-    <TELL "You can't release " T ,PRSO "." CR>>
+    <COND (<HELD? ,PRSO>
+           <PERFORM ,V?DROP ,PRSO>)
+          (ELSE <TELL "You can't release " T ,PRSO "." CR>)>>
 
 ;----------------------------------------------------------------------
 
