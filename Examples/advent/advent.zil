@@ -1416,7 +1416,7 @@ The hole goes down to an E/W passage.")
 <OBJECT BARS-OF-SILVER
     (DESC "bars of silver")
     (IN LOW-N/S-PASSAGE)
-    (SYNONYM BARS SILVER)
+    (SYNONYM BAR BARS SILVER)
     (FDESC "There are bars of silver here!")
     (TEXT "They're probably worth a fortune!")
     (FLAGS TAKEBIT PLURALBIT TREASUREBIT)>
