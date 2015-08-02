@@ -970,6 +970,16 @@ Returns:
                     <SET SPEC <REST .SPEC ,P-OBJSPEC-SIZE>>
                     <SET CNT <+ .CNT 1>>
                     <TRACE 4 "[now have " N .CNT " spec(s)]" CR>)>)
+            ;"recognize OF"
+            (<AND <EQUAL? .W ,W?OF>
+                  <L? .WN ,P-LEN>
+                  <STARTS-NOUN-PHRASE? <GETWORD? <+ .WN 1>>>>
+             ;"This is a hack to deal with object names consisting of multiple NPs
+               joined by OF. When we see OF before a word that could start a new
+               noun phrase, we forget the current noun, so SMALL PIECE OF TASTY PIE
+               parses as SMALL TASTY PIE (which in turn parses as SMALL PIE)."
+             <TRACE 4 "[OF at word " N .WN ", clearing noun]" CR> 
+             <SET NOUN <>>)
             ;"skip buzzwords"
             (<CHKWORD? .W ,PS?BUZZ-WORD>)
             ;"exit loop if we found any other word type"
