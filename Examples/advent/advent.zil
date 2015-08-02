@@ -2446,7 +2446,13 @@ On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     (FDESC "There is a large nest here, full of golden eggs!")
     (TEXT "The nest is filled with beautiful golden eggs!")
     (DEPOSIT-POINTS 14)
+    (ACTION GOLDEN-EGGS-F)
     (FLAGS TAKEBIT TREASUREBIT MULTITUDEBIT)>
+
+<ROUTINE GOLDEN-EGGS-F ()
+    <COND (<VERB? EAT>
+           <TELL "You probably could, with enough effort,
+but their main value is not nutritional." CR>)>>
 
 ;----------------------------------------------------------------------
 
@@ -2773,12 +2779,16 @@ A dark corridor leads northeast.")
 <OBJECT EGG-SIZED-EMERALD
     (DESC "emerald the size of a plover's egg")
     (IN IN-PLOVER-ROOM)
-    (SYNONYM EMERALD EGG)
+    (SYNONYM EMERALD EGG JEWEL)
     (ADJECTIVE EGG-SIZED EGG SIZED PLOVER\'S)
     (FDESC "There is an emerald here the size of a plover's egg!")
     (TEXT "Plover's eggs, by the way, are quite large.")
     (DEPOSIT-POINTS 14)
+    (ACTION EGG-SIZED-EMERALD-F)
     (FLAGS TAKEBIT TREASUREBIT VOWELBIT)>
+
+<ROUTINE EGG-SIZED-EMERALD-F ()
+    <COND (<VERB? EAT> <TELL "Not everything the size of an egg *is* an egg, you know." CR>)>>
 
 ;----------------------------------------------------------------------
 
