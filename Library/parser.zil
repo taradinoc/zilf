@@ -115,6 +115,7 @@ other versions. These macros let us write the same code for all versions."
 <PROPDEF TEXT-HELD <>>
 <PROPDEF CAPACITY -1>
 <PROPDEF ARTICLE <>>
+<PROPDEF PRONOUN <>>
 
 "Parser"
 
@@ -466,23 +467,25 @@ Args:
 <PRONOUN IT (X)
     <NOT <OR <=? .X ,WINNER>
              <=? .X ,MANY-OBJECTS>
-             <FSET? .X PERSONBIT>
-             <FSET? .X PLURALBIT>>>>
+             <FSET? .X ,PERSONBIT>
+             <FSET? .X ,PLURALBIT>>>>
 
 <PRONOUN THEM (X)
     <AND <N=? .X ,WINNER>
          <OR <=? .X ,MANY-OBJECTS>
-             <FSET? .X PLURALBIT>>>>
+             <FSET? .X ,PLURALBIT>>>>
 
 <PRONOUN HIM (X)
     <AND <N=? .X ,WINNER>
-         <FSET? .X PERSONBIT>
-         <NOT <FSET? .X FEMALEBIT>>>>
+         <FSET? .X ,PERSONBIT>
+         <NOT <FSET? .X ,FEMALEBIT>>
+         <NOT <FSET? .X ,PLURALBIT>>>>
 
 <PRONOUN HER (X)
     <AND <N=? .X ,WINNER>
-         <FSET? .X PERSONBIT>
-         <FSET? .X FEMALEBIT>>>
+         <FSET? .X ,PERSONBIT>
+         <FSET? .X ,FEMALEBIT>
+         <NOT <FSET? .X ,PLURALBIT>>>>
 
 <FINISH-PRONOUNS>
 
