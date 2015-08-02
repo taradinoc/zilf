@@ -1330,7 +1330,7 @@ Returns:
         (ELSE <TELL "Undo is not available in this version." CR>)>>
 
 <ROUTINE V-SAVE ("AUX" S)
-    <TELL "Saving..." CR>
+    <TELL "Saving..." CR CR>
     <COND (<SAVE> <V-LOOK>)
           (ELSE <TELL "Save failed." CR>)>>
 
