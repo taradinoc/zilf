@@ -3016,7 +3016,7 @@ The only passage goes back toward the south.")
     (LDESC "You are on one side of a large, deep chasm.
 A heavy white mist rising up from below obscures all view of the far side.
 A southwest path leads away from the chasm into a winding corridor.")
-    (GLOBAL RICKETY-BRIDGE TROLL-SIGN MIST)
+    (GLOBAL RICKETY-BRIDGE WRECKAGE TROLL-SIGN MIST)
     (NE PER CROSS-RICKETY-BRIDGE)
     (SW TO IN-SLOPING-CORRIDOR)
     (DOWN TO IN-SLOPING-CORRIDOR)
@@ -3047,7 +3047,7 @@ A southwest path leads away from the chasm into a winding corridor.")
 beneath the weight of the bear, which was still following you around.
 You scrabble desperately for support, but as the bridge collapses you stumble back
 and fall into the chasm.">
-                  ,HERE)>
+                  <RFALSE>)>
            <COND (<=? ,HERE ,ON-SW-SIDE-OF-CHASM> ,ON-NE-SIDE-OF-CHASM)
                  (ELSE ,ON-SW-SIDE-OF-CHASM)>)
           (<IN? ,TROLL ,HERE>
@@ -3075,7 +3075,7 @@ A sign posted on the bridge reads, \"Stop! Pay troll!\"" CR>
                   <TELL "The troll is nowhere to be seen." CR>)>)
           (ELSE
            <THIS-IS-IT ,WRECKAGE>
-           <TELL "The wreckage of the troll bridge (and a dead bear)
+           <TELL CR "The wreckage of the troll bridge (and a dead bear)
 can be seen at the bottom of the chasm." CR>)>>
  
 <ROUTINE RICKETY-BRIDGE-F ()
@@ -3122,8 +3122,10 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
           ;"TODO: TELL, ASK, ANSWER">>
 
 <OBJECT WRECKAGE
-    (DESC "wreckage of bridge")
+    (DESC "wreckage of the bridge")
     (IN LOCAL-GLOBALS)
+    (SYNONYM WRECKAGE BRIDGE BEAR)
+    (ADJECTIVE DEAD)
     (ACTION WRECKAGE-F)>
 
 <ROUTINE WRECKAGE-F ()
@@ -3136,7 +3138,7 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
     (IN ROOMS)
     (LDESC "You are on the far side of the chasm.
 A northeast path leads away from the chasm on this side.")
-    (GLOBAL RICKETY-BRIDGE TROLL-SIGN)
+    (GLOBAL RICKETY-BRIDGE WRECKAGE TROLL-SIGN)
     (SW PER CROSS-RICKETY-BRIDGE)
     (NE TO IN-CORRIDOR)
     (ACTION ON-NE-SIDE-OF-CHASM-F)
