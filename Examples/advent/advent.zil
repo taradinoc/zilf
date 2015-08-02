@@ -1041,7 +1041,7 @@ Besides, I suspect it would prefer bird seed." CR>)
 <ROUTINE DOWN-INTO-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
            <JIGS-UP "You are at the bottom of the pit with a broken neck.">
-           ,HERE)
+           <RFALSE>)
           (ELSE ,IN-HALL-OF-MISTS)>>
 
 <ROUTINE AT-TOP-OF-SMALL-PIT-F (RARG)
@@ -1061,7 +1061,12 @@ A west passage ends here except for a small crack leading on.">
     (SYNONYM PIT)
     (ADJECTIVE SMALL)
     (TEXT "The pit is breathing traces of white mist.")
+    (ACTION SMALL-MISTY-PIT-F)
     (FLAGS NDESCBIT)>
+
+<ROUTINE SMALL-MISTY-PIT-F ()
+    <COND (<VERB? ENTER>
+           <DO-WALK ,P?DOWN>)>>
 
 <OBJECT PIT-CRACK
     (DESC "crack")
@@ -2694,6 +2699,7 @@ The path exits to the south and west.")
 <ROOM IN-ALCOVE
     (DESC "Alcove")
     (IN ROOMS)
+    (GLOBAL TUNNEL)
     (LDESC "You are in an alcove.
 A small northwest path seems to widen after a short distance.
 An extremely tight tunnel leads east.
@@ -2715,11 +2721,33 @@ An eerie light can be seen at the other end.")
 You'd best take inventory and drop something." CR>
            <RFALSE>)>>
 
+<OBJECT TUNNEL
+    (DESC "tunnel")
+    (IN LOCAL-GLOBALS)
+    (SYNONYM TUNNEL)
+    (ADJECTIVE EXTREMELY NARROW TIGHT)
+    (TEXT "It looks extremely tight and narrow.")
+    (ACTION TUNNEL-F)
+    (FLAGS NDESCBIT)>
+
+<ROUTINE TUNNEL-F ()
+    <COND (<VERB? ENTER>
+           <DO-WALK <COND (<=? ,HERE ,IN-ALCOVE> ,P?EAST) (ELSE ,P?WEST)>>)>>
+
+<OBJECT EERIE-LIGHT
+    (DESC "eerie light")
+    (IN IN-ALCOVE)
+    (SYNONYM LIGHT)
+    (ADJECTIVE EERIE)
+    (TEXT "You can't make out any detail from here.")
+    (FLAGS NDESCBIT)>
+
 ;----------------------------------------------------------------------
 
 <ROOM IN-PLOVER-ROOM
     (DESC "Plover Room")
     (IN ROOMS)
+    (GLOBAL TUNNEL)
     (LDESC "You're in a small chamber lit by an eerie green light.
 An extremely narrow tunnel exits to the west.
 A dark corridor leads northeast.")
