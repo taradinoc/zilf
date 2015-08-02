@@ -1567,6 +1567,15 @@ Returns:
         <CRLF>
         <TELL "Location: ">
         <PRINT-OBJREF <LOC .O>>
+        <COND (<AND <SET PT <GETPT .O ,P?GLOBAL>>
+                    <SET MAX <PTSIZE .PT>>>
+               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+               <SET MAX <- .MAX 1>>
+               <CRLF>
+               <TELL "Local globals: ">
+               <DO (I 0 .MAX)
+                   <COND (.I <TELL ", ">)>
+                   <PRINT-OBJREF <GET/B .PT .I>>>)>
         <CRLF>
         <TELL "Flags: ">
         <DO (I 0 %<VERSION? (ZIP 31) (ELSE 47)>)
