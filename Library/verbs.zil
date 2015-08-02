@@ -720,12 +720,18 @@ Returns:
 
 <ROUTINE V-ENTER ()
     <COND (<FSET? ,PRSO ,DOORBIT>
-           <SETG PRSO-DIR T>
-           <PERFORM ,V?WALK <DOOR-DIR ,PRSO>>
-           <SETG PRSO-DIR <>>
+           <DO-WALK <DOOR-DIR ,PRSO>>
            <RTRUE>)
           (ELSE
            <NOT-POSSIBLE "get inside"> <RTRUE>)>>
+
+;"Performs the WALK action with a direction."
+<ROUTINE DO-WALK (DIR "AUX" ODD R)
+    <SET ODD ,PRSO-DIR>
+    <SETG PRSO-DIR T>
+    <SET R <PERFORM ,V?WALK .DIR>>
+    <SETG PRSO-DIR .ODD>
+    .R>
 
 ;"Finds a direction from HERE that leads through the given door.
 
