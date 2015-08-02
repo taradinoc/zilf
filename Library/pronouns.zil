@@ -37,17 +37,35 @@
                                           !<REST <PRO-BINDINGS .P>>>
                             <FORM COND
                                   <LIST .CONDITION
-                                        <FORM TRACE 3 "[setting " <SPNAME .N> "]" CR>
-                                        <FORM COPY-PRSTBL
-                                              <FORM LVAL PRO?OBJS>
-                                              <FORM GVAL .OBJS-TBL-NAME>>>>>>
+                                        <FORM
+                                            <PARSE <STRING "PRO-FORCE-SET-" <SPNAME .N>>>
+                                            '.PRO?OBJS>>>>>
+                  <EVAL .RTN>
+                  
+                  ;"Define routine PRO-FORCE-SET-THEM to unconditionally set the pronoun."
+                  <SET RTN-NAME <PARSE <STRING "PRO-FORCE-SET-" <SPNAME .N>>>>
+                  <SET RTN
+                      <FORM ROUTINE .RTN-NAME '(PRO?OBJS)
+                            <FORM TRACE 4 <STRING "[setting " <SPNAME .N> " to ">>
+                            <FORM TRACE-DO 4
+                                <FORM LIST-OBJECTS '.PRO?OBJS <> <+ ,L-PRSTABLE ,L-THE>>
+                                '<TELL "]" CR>>
+                            <FORM COPY-PRSTBL
+                                '.PRO?OBJS
+                                <FORM GVAL .OBJS-TBL-NAME>>
+                            '<RTRUE>>>
                   <EVAL .RTN>>>
           ,PRONOUN-DEFINITIONS>
 
     ;"Define SET-PRONOUNS"
     <SET RTN
-        <FORM ROUTINE SET-PRONOUNS '(O OBJS)
-            '<COND (<=? .O <> ,ROOMS> <RFALSE>)>
+        <FORM ROUTINE SET-PRONOUNS '(O OBJS "AUX" PT MAX)
+            '<COND (<=? .O <> ,ROOMS> <RFALSE>)
+                   (<SET PT <GETPT .O ,P?PRONOUN>>
+                    <SET MAX <- </ <PTSIZE .PT> 2> 1>>
+                    <DO (I 0 .MAX)
+                        <APPLY <GET .PT .I> .OBJS>>
+                    <RTRUE>)>
             !<MAPF ,LIST
                    <FUNCTION (P "AUX" N RTN-NAME OBJS-TBL-NAME)
                        <SET N <PRO-NAME .P>>
@@ -116,3 +134,17 @@
           (<1? .N> <SET N <GET/B ,P-XOBJS 1>>)
           (ELSE <SET N ,MANY-OBJECTS>)>
     <SET-PRONOUNS .N ,P-XOBJS>>
+
+;"Helper for the PRONOUN property. This turns (PRONOUN IT HIM) into
+  (PRONOUN PRO-FORCE-SET-IT PRO-FORCE-SET-HIM)."
+<DEFINE PRONOUN-PROPSPEC (L)
+    <CONS <>
+          <MAPF ,LIST
+                <FUNCTION (A "AUX" R)
+                    <SET R <PARSE <STRING "PRO-FORCE-SET-" <SPNAME .A>>>>
+                    <COND (<NOT <TYPE? <GETPROP .R ZVAL> ROUTINE>>
+                           <ERROR NO-SUCH-PRONOUN .A>)
+                          (ELSE .R)>>
+                <REST .L>>>>
+
+<PUTPROP PRONOUN PROPSPEC PRONOUN-PROPSPEC>
