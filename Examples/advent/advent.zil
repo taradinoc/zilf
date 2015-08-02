@@ -440,6 +440,7 @@ There is a building in the distance.")
     (DESC "set of keys")
     (SYNONYM KEY KEYS KEYRING SET)
     (ADJECTIVE SET)
+    (PRONOUN IT THEM)
     (IN INSIDE-BUILDING)
     (FDESC "There are some keys on the ground here.")
     (TEXT "It's just a normal-looking set of keys.")
@@ -743,10 +744,7 @@ A dry streambed leads into the depression.")
 <ROUTINE OUTSIDE-GRATE-F (RARG)
     <COND (<=? .RARG ,M-FLASH>
            ;"Since the grate isn't actually in the room, describe it here"
-           <COND (<FSET? ,GRATE ,OPENBIT>
-                  <TELL CR "The grate stands open." CR>)
-                 (<NOT <FSET? ,GRATE ,LOCKEDBIT>>
-                  <TELL CR "The grate is unlocked but shut." CR>)>)
+           <MAYBE-DESCRIBE-GRATE>)
           (<AND <=? .RARG ,M-BEG>
                 <VERB? WALK>
                 <PRSO? ,P?DOWN>
@@ -756,6 +754,14 @@ A dry streambed leads into the depression.")
            <FSET ,GRATE ,OPENBIT>
            ;"Return false to continue handling WALK"
            <RFALSE>)>>
+
+<ROUTINE MAYBE-DESCRIBE-GRATE ()
+    <COND (<FSET? ,GRATE ,OPENBIT>
+           <THIS-IS-IT ,GRATE>
+           <TELL CR "The grate stands open." CR>)
+          (<NOT <FSET? ,GRATE ,LOCKEDBIT>>
+           <THIS-IS-IT ,GRATE>
+           <TELL CR "The grate is unlocked but shut." CR>)>>
 
 <OBJECT 20-FOOT-DEPRESSION
     (DESC "20-foot depression")
@@ -808,10 +814,7 @@ A low crawl over cobbles leads inward to the west.")
 <ROUTINE BELOW-THE-GRATE-F (RARG)
     <COND (<=? .RARG ,M-FLASH>
            ;"Since the grate isn't actually in the room, describe it here"
-           <COND (<FSET? ,GRATE ,OPENBIT>
-                  <TELL CR "The grate stands open." CR>)
-                 (<NOT <FSET? ,GRATE ,LOCKEDBIT>>
-                  <TELL CR "The grate is unlocked but shut." CR>)>)>>
+           <MAYBE-DESCRIBE-GRATE>)>>
 
 <OBJECT COBBLES
     (DESC "cobbles")
@@ -912,6 +915,7 @@ A note on the wall says, \"Magic word XYZZY.\"")
                         (ELSE
                          <FCLEAR ,CRYSTAL-BRIDGE ,INVISIBLE>
                          <FSET ,CRYSTAL-BRIDGE ,OPENBIT>
+                         <THIS-IS-IT ,CRYSTAL-BRIDGE>
                          <TELL "A crystal bridge now spans the fissure." CR>)>)
                  (ELSE <TELL "Nothing happens." CR>)>)>>
 
@@ -946,6 +950,7 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
     (IN IN-BIRD-CHAMBER)
     (SYNONYM BIRD)
     (ADJECTIVE CHEERFUL MOURNFUL LITTLE)
+    (PRONOUN IT)
     (FDESC "A cheerful little bird is sitting here singing.")
     (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION LITTLE-BIRD-F)
@@ -1028,10 +1033,11 @@ Besides, I suspect it would prefer bird seed." CR>)
            <TELL "At your feet is a small pit breathing traces of white mist.
 A west passage ends here except for a small crack leading on.">
            <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
-                  <TELL CR CR "Rough stone steps lead down the pit.">)>
+                  <TELL CR CR "Rough stone steps lead down the pit.">
+                  <THIS-IS-IT ,ROUGH-STONE-STEPS>)>
            <CRLF>)
           (<AND <=? .RARG ,M-BEG> <VERB? CLIMB> <NOT ,PRSO>>
-           <PERFORM ,V?WALK ,P?DOWN>)>>
+           <DO-WALK ,P?DOWN>)>>
 
 <OBJECT SMALL-MISTY-PIT
     (DESC "small pit")
@@ -1087,10 +1093,11 @@ The hall is filled with wisps of white mist swaying to and fro almost as if aliv
 A cold wind blows up the staircase.
 There is a passage at the top of a dome behind you.">
            <COND (<NOT <HELD? ,LARGE-GOLD-NUGGET>>
-                  <TELL CR CR "Rough stone steps lead up the dome.">)>
+                  <TELL CR CR "Rough stone steps lead up the dome.">
+                  <THIS-IS-IT ,ROUGH-STONE-STEPS>)>
            <CRLF>)
           (<AND <=? .RARG ,M-BEG> <VERB? CLIMB> <NOT ,PRSO>>
-           <PERFORM ,V?WALK ,P?UP>)>>
+           <DO-WALK ,P?UP>)>>
 
 <ROUTINE UP-OUT-OF-SMALL-PIT ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
@@ -1116,14 +1123,16 @@ There is a passage at the top of a dome behind you.">
     (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
 
 <ROUTINE ROUGH-STONE-STEPS-F ()
-    <COND (<VERB? EXAMINE>
-           <TELL "The rough stone steps ">
-           <COND (<HELD? ,LARGE-GOLD-NUGGET>
-                  <TELL "are gone." CR>)
-                 (<=? ,HERE ,IN-HALL-OF-MISTS>
-                  <TELL "lead up the dome." CR>)
+    <COND (<HELD? ,LARGE-GOLD-NUGGET>
+           <TELL CT ,ROUGH-STONE-STEPS " are gone." CR>)
+          (<VERB? EXAMINE>
+           <TELL CT ,ROUGH-STONE-STEPS " lead ">
+           <COND (<=? ,HERE ,IN-HALL-OF-MISTS>
+                  <TELL "up the dome." CR>)
                  (ELSE
-                  <TELL "lead down the pit." CR>)>)>>
+                  <TELL "down the pit." CR>)>)
+          (<VERB? CLIMB ENTER>
+           <DO-WALK <COND (<=? ,HERE ,IN-HALL-OF-MISTS> ,P?UP) (ELSE ,P?DOWN)>>)>>
 
 <OBJECT DOME
     (DESC "dome")
@@ -1138,7 +1147,7 @@ There is a passage at the top of a dome behind you.">
                   <TELL "I'm not sure you'll be able to get up it with what you're carrying." CR>)
                  (ELSE <TELL "It looks like you might be able to climb up it." CR>)>)
           (<VERB? CLIMB>
-           <PERFORM ,V?WALK ,P?UP>
+           <DO-WALK ,P?UP>
            <RTRUE>)>>
 
 ;----------------------------------------------------------------------
@@ -1182,6 +1191,7 @@ There is a passage at the top of a dome behind you.">
           (<=? .RARG ,M-FLASH>
            ;"Since the bridge isn't actually in the room, describe it here"
            <COND (<FSET? ,CRYSTAL-BRIDGE ,OPENBIT>
+                  <THIS-IS-IT ,CRYSTAL-BRIDGE>
                   <TELL CR "A crystal bridge now spans the fissure." CR>)>)>>
 
 <ROOM ON-EAST-BANK-OF-FISSURE
@@ -1355,6 +1365,7 @@ The hall joins up with a narrow north/south passage.")
     (IN IN-HALL-OF-MT-KING)
     (SYNONYM SNAKE COBRA ASP)
     (ADJECTIVE HUGE FIERCE GREEN FEROCIOUS ;VENEMOUS VENOMOUS LARGE BIG KILLER)
+    (PRONOUN IT)
     (FDESC "A huge green fierce snake bars the way!")
     (TEXT "I wouldn't mess with it if I were you.")
     (ACTION SNAKE-F)
@@ -1576,7 +1587,7 @@ A crawl leads west.")
 
 <ROUTINE SMALL-CLIMBABLE-PIT-F ()
     <COND (<VERB? CLIMB ENTER>
-           <PERFORM ,V?WALK ,P?DOWN>
+           <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
 ;----------------------------------------------------------------------
@@ -1718,7 +1729,7 @@ The maze continues at this level.")
     (FLAGS NDESCBIT)>
 
 <ROUTINE MASSIVE-ORANGE-COLUMN-F ()
-    <COND (<VERB? CLIMB> <PERFORM ,V?WALK ,P?DOWN> <RTRUE>)>>
+    <COND (<VERB? CLIMB> <DO-WALK ,P?DOWN> <RTRUE>)>>
 
 <OBJECT PIT
     (DESC "pit")
@@ -1731,7 +1742,7 @@ The maze continues at this level.")
 
 <ROUTINE PIT-F ()
     <COND (<VERB? CLIMB>
-           <PERFORM ,V?WALK ,P?DOWN>
+           <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
 <DEAD-END-ROOM DEAD-END-6 EAST AT-BRINK-OF-PIT>
@@ -1907,6 +1918,7 @@ There is a large hole in the wall above the pit at the end of this room.")
     (FLAGS INVISIBLE SPONGEBIT)>
 
 <ROUTINE DESCRIBE-PLANT-STICKING-UP ()
+    <THIS-IS-IT ,PLANT-STICKING-UP>
     <COND (<=? ,PLANT-HEIGHT ,TALL-HEIGHT>
            <TELL "The top of a 12-foot-tall beanstalk is poking out of the west pit." CR>)
           (ELSE
@@ -2224,7 +2236,7 @@ having done so you would be unable to reach it to climb back up.")
 
 <ROUTINE ATOP-STALACTITE-F (RARG)
     <COND (<AND <=? .RARG ,M-BEG> <VERB? JUMP CLIMB>>
-           <PERFORM ,V?WALK ,P?DOWN>
+           <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
 <OBJECT STALACTITE
@@ -2292,6 +2304,7 @@ You have just vanquished a dragon with your bare hands!
     (IN IN-SECRET-CANYON)
     (SYNONYM DRAGON MONSTER BEAST LIZARD)
     (ADJECTIVE HUGE GREEN FIERCE SCALY GIANT FEROCIOUS)
+    (PRONOUN IT)
     (FDESC "A huge green fierce dragon bars the way!")
     (TEXT "I wouldn't mess with it if I were you.")
     (ACTION DRAGON-F)
@@ -2710,7 +2723,7 @@ A dark corridor leads northeast.")
                   <GOTO ,AT-Y2>
                   <RTRUE>)
                  (<AND <VERB? WALK> <PRSO? ,P?OUT>>
-                  <PERFORM ,V?WALK ,P?WEST>
+                  <DO-WALK ,P?WEST>
                   <RTRUE>)>)>>
 
 <OBJECT EGG-SIZED-EMERALD
@@ -3003,7 +3016,7 @@ The only passage goes back toward the south.")
     (LDESC "You are on one side of a large, deep chasm.
 A heavy white mist rising up from below obscures all view of the far side.
 A southwest path leads away from the chasm into a winding corridor.")
-    (GLOBAL RICKETY-BRIDGE MIST)
+    (GLOBAL RICKETY-BRIDGE TROLL-SIGN MIST)
     (NE PER CROSS-RICKETY-BRIDGE)
     (SW TO IN-SLOPING-CORRIDOR)
     (DOWN TO IN-SLOPING-CORRIDOR)
@@ -3028,6 +3041,7 @@ A southwest path leads away from the chasm into a winding corridor.")
                   <REMOVE ,BEAR>
                   <FCLEAR ,WRECKAGE ,INVISIBLE>
                   <FSET ,RICKETY-BRIDGE ,INVISIBLE>
+                  <FSET ,TROLL-SIGN ,INVISIBLE>
                   <DEQUEUE I-BEAR>
                   <JIGS-UP "Just as you reach the other side, the bridge buckles
 beneath the weight of the bear, which was still following you around.
@@ -3054,20 +3068,28 @@ and fall into the chasm.">
 
 <ROUTINE DESCRIBE-RICKETY-BRIDGE ()
     <COND (<NOT <FSET? ,RICKETY-BRIDGE ,INVISIBLE>>
+           <THIS-IS-IT ,TROLL-SIGN>
            <TELL CR "A rickety bridge extends across the chasm, vanishing into the mist.||
 A sign posted on the bridge reads, \"Stop! Pay troll!\"" CR>
            <COND (<NOT <IN? ,TROLL ,HERE>>
                   <TELL "The troll is nowhere to be seen." CR>)>)
           (ELSE
+           <THIS-IS-IT ,WRECKAGE>
            <TELL "The wreckage of the troll bridge (and a dead bear)
 can be seen at the bottom of the chasm." CR>)>>
  
 <ROUTINE RICKETY-BRIDGE-F ()
     <COND (<VERB? ENTER>
-           <PERFORM
-               ,V?WALK
+           <DO-WALK
                <COND (<=? ,HERE ,ON-SW-SIDE-OF-CHASM> ,P?NE) (ELSE ,P?SW)>>
            <RTRUE>)>>
+
+<OBJECT TROLL-SIGN
+    (DESC "sign")
+    (IN LOCAL-GLOBALS)
+    (SYNONYM SIGN)
+    (TEXT "The sign reads, \"Stop! Pay troll!\"")
+    (FLAGS NDESCBIT READBIT)>
 
 <OBJECT TROLL
     (DESC "burly troll")
@@ -3114,7 +3136,7 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
     (IN ROOMS)
     (LDESC "You are on the far side of the chasm.
 A northeast path leads away from the chasm on this side.")
-    (GLOBAL RICKETY-BRIDGE)
+    (GLOBAL RICKETY-BRIDGE TROLL-SIGN)
     (SW PER CROSS-RICKETY-BRIDGE)
     (NE TO IN-CORRIDOR)
     (ACTION ON-NE-SIDE-OF-CHASM-F)
@@ -3202,7 +3224,7 @@ A dark, forboding passage exits to the south.")
 
 <ROUTINE AT-BREATH-TAKING-VIEW-F (RARG)
     <COND (<AND <=? .RARG ,M-BEG> <VERB? JUMP>>
-           <PERFORM ,V?WALK ,P?DOWN>
+           <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
 <OBJECT ACTIVE-VOLCANO
@@ -3371,6 +3393,7 @@ The only exit is the way you came in.")
     (IN IN-BARREN-ROOM)
     (SYNONYM BEAR)
     (ADJECTIVE LARGE TAME FEROCIOUS CAVE)
+    (PRONOUN IT HIM)
     (DESCFCN BEAR-DESCFCN)
     (ACTION BEAR-F)
     (FLAGS PERSONBIT ATTACKBIT)>
@@ -3408,6 +3431,7 @@ The only exit is the way you came in.")
                   <REMOVE ,PRSO>
                   <SETG BEAR-FRIENDLY T>
                   <FCLEAR ,BEAR ,ATTACKBIT>
+                  <THIS-IS-IT ,BEAR>
                   <TELL "The bear eagerly wolfs down your food, after which he seems
 to calm down considerably and even becomes rather friendly." CR>)
                  (,BEAR-FRIENDLY <TELL "The bear doesn't seem very interested in your offer." CR>)
@@ -3441,9 +3465,11 @@ The bear soon gives up the pursuit and wanders back." CR>)
     <COND (<NOT ,HERE-LIT> <RFALSE>)>
     <COND (<IN? ,BEAR ,HERE>
            <COND (<=? ,HERE ,AT-BREATH-TAKING-VIEW>
+                  <THIS-IS-IT ,BEAR>
                   <TELL CR "The bear roars with delight." CR>)>)
           (ELSE
            <MOVE ,BEAR ,HERE>
+           <THIS-IS-IT ,BEAR>
            <TELL CR "The bear lumbers along behind you." CR>)>>
 
 <OBJECT GOLDEN-CHAIN
@@ -3597,6 +3623,7 @@ his treasure chest.\"")
            <COND (<PRSO? ,RARE-COINS>
                   <MOVE ,FRESH-BATTERIES ,HERE>
                   <REMOVE ,RARE-COINS>
+                  <THIS-IS-IT ,FRESH-BATTERIES>
                   <TELL "Soon after you insert the coins in the coin slot, "
 T ,VENDING-MACHINE " makes a grinding sound, and a set of fresh batteries
 falls at your feet." CR>)
@@ -3693,12 +3720,14 @@ clatters to the ground." CR>)
                          <TELL "A dwarf appears, but with one casual blast the dragon vaporizes him!" CR>)
                         (ELSE
                          <MOVE ,DWARF ,HERE>
+                         <THIS-IS-IT ,DWARF>
                          <TELL CA ,DWARF " comes out of the shadows!" CR>)>)>)
           (<NOT <IN? ,DWARF ,HERE>>
            <COND (<NOT ,HERE-LIT> <RFALSE>)
                  (<OR <FSET? ,HERE ,SACREDBIT> <FSET? ,HERE ,LIGHTBIT>> <RFALSE>)
                  (<AND <PROB 96> <NOT <IN? ,DWARF ,IN-MIRROR-CANYON>>>
                   <MOVE ,DWARF ,HERE>
+                  <THIS-IS-IT ,DWARF>
                   <TELL CR "The dwarf stalks after you..." CR>)
                  (ELSE <REMOVE ,DWARF> <RFALSE>)>)
           (<PROB 75>
@@ -3707,10 +3736,13 @@ clatters to the ground." CR>)
                   <MOVE ,AXE ,HERE>
                   <SETG DWARF-THREW-AXE T>
                   <REMOVE ,DWARF>
+                  <THIS-IS-IT ,AXE>
                   <TELL "The dwarf throws a nasty little axe at you, misses, curses, and runs away." CR>)
                  (<=? ,HERE ,IN-MIRROR-CANYON>
+                  <THIS-IS-IT ,DWARF>
                   <TELL "The dwarf admires himself in the mirror." CR>)
                  (ELSE
+                  <THIS-IS-IT ,DWARF>
                   <TELL "The dwarf throws a nasty little knife at you, ">
                   <COND (<L=? <RANDOM 1000> 95> <JIGS-UP "and hits!">)
                         (ELSE <TELL "but misses!" CR>)>)>)
