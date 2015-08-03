@@ -59,11 +59,23 @@ call them something else, but we'll continue the tradition anyway."
 <GLOBAL STANDARD-WAIT 4>
 <GLOBAL AGAINCALL <>>
 <GLOBAL USAVE 0>
-<GLOBAL MODE 1>
 <GLOBAL HERE-LIT T>
+
+;"Verbosity modes (controlled by player)"
 <CONSTANT SUPERBRIEF 0>
 <CONSTANT BRIEF 1>
 <CONSTANT VERBOSE 2>
+<GLOBAL MODE ,BRIEF>
+
+;"Report modes (automatically set)"
+<CONSTANT SHORT-REPORT 1>
+<CONSTANT LONG-REPORT 2>
+<GLOBAL REPORT-MODE ,LONG-REPORT>
+
+<DEFMAC SHORT-REPORT? ()
+    '<=? ,REPORT-MODE ,SHORT-REPORT>>
+
+"Extensions for TELL"
 
 <ADD-TELL-TOKENS
     T *                  <PRINT-DEF .X>
@@ -1820,7 +1832,7 @@ Sets (temporarily):
   PRSO
   PRSO-DIR
   PRSI"
-<ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT)
+<ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT ORM)
     <TRACE 1 "[PERFORM: ACT=" N .ACT>
     <TRACE-DO 1
         <COND (.DOBJ <TELL " DOBJ=" D .DOBJ "(" N .DOBJ ")">)>
@@ -1832,6 +1844,7 @@ Sets (temporarily):
     <SET OD ,PRSO>
     <SET ODD ,PRSO-DIR>
     <SET OI ,PRSI>
+    <SET ORM ,REPORT-MODE>
     <SETG PRSA .ACT>
     <SETG PRSO .DOBJ>
     <OR <==? .ACT ,V?WALK> <SETG PRSO-DIR <>>>
@@ -1846,12 +1859,14 @@ Sets (temporarily):
                   <TELL "You can't use multiple direct and indirect objects together." CR>
                   <SET WON <>>)
                  (ELSE
+                  <SETG REPORT-MODE ,SHORT-REPORT>
                   <SET CNT <GETB ,P-PRSOS 0>>
                   <DO (I 1 .CNT)
                       <SETG PRSO <GET/B ,P-PRSOS .I>>
                       <TELL D ,PRSO ": ">
                       <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)>)
           (<PRSI? ,MANY-OBJECTS>
+           <SETG REPORT-MODE ,SHORT-REPORT>
            <SET CNT <GETB ,P-PRSIS 0>>
            <DO (I 1 .CNT)
                <SETG PRSI <GET/B ,P-PRSIS .I>>
@@ -1863,6 +1878,7 @@ Sets (temporarily):
     <SETG PRSO .OD>
     <SETG PRSO-DIR .ODD>
     <SETG PRSI .OI>
+    <SETG REPORT-MODE .ORM>
     .WON>
 
 <ROUTINE COUNT-PRS-APPEARANCES (O "AUX" R MAX)

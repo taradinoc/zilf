@@ -839,29 +839,33 @@ Returns:
                  (<AND <FSET? .HOLDER ,CONTBIT>
                        <HELD? ,PRSO .HOLDER>
                        <NOT <HELD? ,WINNER .HOLDER>>>
-                  <TELL "You reach ">
-                  <COND (<HELD? ,WINNER .HOLDER>
-                         <TELL "out of ">)
-                        (ELSE <TELL "in ">)>
-                  <TELL T .HOLDER " and ">
-                  <COND (<FSET? ,PRSO ,WEARBIT>
-                         <TELL "wear ">
-                         <FSET ,PRSO ,WORNBIT>)
-                        (ELSE <TELL "take ">)>
-                  <TELL T ,PRSO "." CR>
                   <FSET ,PRSO ,TOUCHBIT>
                   <MOVE ,PRSO ,WINNER>
+                  <COND (<SHORT-REPORT?> <TELL "Taken." CR>)
+                        (ELSE
+                         <TELL "You reach ">
+                         <COND (<HELD? ,WINNER .HOLDER>
+                                <TELL "out of ">)
+                               (ELSE <TELL "in ">)>
+                         <TELL T .HOLDER " and ">
+                         <COND (<FSET? ,PRSO ,WEARBIT>
+                                <TELL "wear ">
+                                <FSET ,PRSO ,WORNBIT>)
+                               (ELSE <TELL "take ">)>
+                         <TELL T ,PRSO "." CR>)>
                   <RTRUE>)>)>
     <COND (<NOT <TAKE-CAPACITY-CHECK ,PRSO>>)
           (<FSET? ,PRSO ,WEARBIT>
-           <TELL "You wear " T ,PRSO "." CR>
            <FSET ,PRSO ,WORNBIT>
            <MOVE ,PRSO ,WINNER>
-           <FSET ,PRSO ,TOUCHBIT>)
-          (ELSE
-           <TELL "You pick up " T ,PRSO "." CR>
            <FSET ,PRSO ,TOUCHBIT>
-           <MOVE ,PRSO ,WINNER>)>>
+           <COND (<SHORT-REPORT?> <TELL "Taken (and worn)." CR>)
+                 (ELSE <TELL "You wear " T ,PRSO "." CR>)>)
+          (ELSE
+           <FSET ,PRSO ,TOUCHBIT>
+           <MOVE ,PRSO ,WINNER>
+           <COND (<SHORT-REPORT?> <TELL "Taken." CR>)
+                 (ELSE <TELL "You pick up " T ,PRSO "." CR>)>)>>
 
 ;"Locates the container, person, or room that restricts the ability to take a
 given object.
@@ -957,7 +961,8 @@ Returns:
     <MOVE ,PRSO ,HERE>
     <FSET ,PRSO ,TOUCHBIT>
     <FCLEAR ,PRSO ,WORNBIT>
-    <TELL "You drop " T ,PRSO "." CR>>
+    <COND (<SHORT-REPORT?> <TELL "Dropped." CR>)
+          (ELSE <TELL "You drop " T ,PRSO "." CR>)>>
 
 <ROUTINE PRE-PUT-ON ()
     <COND (<PRSI? ,WINNER> <PERFORM ,V?WEAR ,PRSO> <RTRUE>)
@@ -996,7 +1001,8 @@ Returns:
            <MOVE ,PRSO ,PRSI>
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,WORNBIT>
-           <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>>
+           <COND (<SHORT-REPORT?> <TELL "Done." CR>)
+                 (ELSE <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>)>>
 
 <ROUTINE PRE-PUT-IN ()
     <COND (<PRSI? ,WINNER> <TSD> <RTRUE>)
@@ -1043,7 +1049,8 @@ Returns:
         <MOVE ,PRSO ,PRSI>
         <FSET ,PRSO ,TOUCHBIT>
         <FCLEAR ,PRSO ,WORNBIT>
-        <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>>
+        <COND (<SHORT-REPORT?> <TELL "Done." CR>)
+              (ELSE <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>)>>
 
 ;"Calculates the weight of all objects in a container, non-recursively."
 <ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
@@ -1084,8 +1091,9 @@ Returns:
     <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
           (<FSET? ,PRSO ,EDIBLEBIT>
-           <TELL "You devour " T ,PRSO "." CR>
-           <REMOVE ,PRSO>)
+           <REMOVE ,PRSO>
+           <COND (<SHORT-REPORT?> <TELL "Eaten." CR>)
+                 (ELSE <TELL "You devour " T ,PRSO "." CR>)>)
           (ELSE <TELL "That's hardly edible." CR>)>>
 
 <ROUTINE V-VERSION ()
@@ -1112,11 +1120,13 @@ Returns:
           (ELSE
            <FSET ,PRSO ,TOUCHBIT>
            <FSET ,PRSO ,OPENBIT>
-           <TELL "You open " T ,PRSO "." CR>
-           <COND (<AND ,HERE-LIT
-                       <FSET? ,PRSO ,CONTBIT>
-                       <NOT <FSET? ,PRSO ,TRANSBIT>>>
-                  <DESCRIBE-CONTENTS ,PRSO>)>
+           <COND (<SHORT-REPORT?> <TELL "Opened." CR>)
+                 (ELSE
+                  <TELL "You open " T ,PRSO "." CR>
+                  <COND (<AND ,HERE-LIT
+                              <FSET? ,PRSO ,CONTBIT>
+                              <NOT <FSET? ,PRSO ,TRANSBIT>>>
+                         <DESCRIBE-CONTENTS ,PRSO>)>)>
            <NOW-LIT?>)>>
 
 <ROUTINE V-CLOSE ()
@@ -1128,7 +1138,8 @@ Returns:
           (ELSE
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,OPENBIT>
-           <TELL "You close " T ,PRSO "." CR>
+           <COND (<SHORT-REPORT?> <TELL "Closed." CR>)
+                 (ELSE <TELL "You close " T ,PRSO "." CR>)>
            <NOW-DARK?>)>>
 
 <ROUTINE V-LOCK ()
@@ -1192,7 +1203,8 @@ Returns:
            <TELL "It's already on." CR>)
           (ELSE
            <FSET ,PRSO ,ONBIT>
-           <TELL "You switch on " T ,PRSO "." CR>)>>
+           <COND (<SHORT-REPORT?> <TELL "Switched on." CR>)
+                 (ELSE <TELL "You switch on " T ,PRSO "." CR>)>)>>
 
 <ROUTINE V-TURN-OFF ()
     <COND (<PRSO? ,WINNER>
@@ -1203,7 +1215,8 @@ Returns:
            <TELL "It's already off." CR>)
           (ELSE
            <FCLEAR ,PRSO ,ONBIT>
-           <TELL "You switch off " T ,PRSO "." CR>)>>
+           <COND (<SHORT-REPORT?> <TELL "Switched off." CR>)
+                 (ELSE <TELL "You switch off " T ,PRSO "." CR>)>)>>
 
 <ROUTINE V-FLIP ()
     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
