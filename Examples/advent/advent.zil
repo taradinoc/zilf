@@ -2131,7 +2131,7 @@ There is a small pool of oil in one corner of the pit.")
     (IN LOCAL-GLOBALS)
     (SYNONYM HOLE PIT)
     (ADJECTIVE HOLE ABOVE)
-    (TEXT "The hole is in the wall above you.")
+    (TEXT "The hole is in the wall above the pit at the other end of the the room.")
     (FLAGS NDESCBIT)>
 
 ;----------------------------------------------------------------------
