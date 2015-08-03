@@ -1113,7 +1113,10 @@ Returns:
            <FSET ,PRSO ,TOUCHBIT>
            <FSET ,PRSO ,OPENBIT>
            <TELL "You open " T ,PRSO "." CR>
-           <AND ,HERE-LIT <FSET? ,PRSO ,CONTBIT> <DESCRIBE-CONTENTS ,PRSO>>
+           <COND (<AND ,HERE-LIT
+                       <FSET? ,PRSO ,CONTBIT>
+                       <NOT <FSET? ,PRSO ,TRANSBIT>>>
+                  <DESCRIBE-CONTENTS ,PRSO>)>
            <NOW-LIT?>)>>
 
 <ROUTINE V-CLOSE ()
