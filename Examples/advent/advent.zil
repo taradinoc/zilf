@@ -116,25 +116,15 @@ Adapted once more by Jesse McGrew (2015)">>
                   <CRLF>
                   <V-QUIT>
                   <RTRUE>)
-                 (<AND <VERB? PUT-IN>
-                       <PRSO? ,LITTLE-BIRD>
-                       <PRSI? ,WICKER-CAGE>>
-                  ;"PUT BIRD IN CAGE is normally blocked by PRE-PUT-IN, so we intercept it here
-                    and redirect to CATCH BIRD."
-                  <PERFORM ,V?CATCH ,PRSO>
-                  <RTRUE>)
                  (<AND <VERB? DROP>
-                       <PRSO? ,LITTLE-BIRD>
-                       <IN? ,LITTLE-BIRD ,WICKER-CAGE>
-                       <HELD? ,WICKER-CAGE>>
-                  ;"Likewise, DROP BIRD is normally blocked by PRE-DROP, so we intercept it here
-                    and redirect to FREE BIRD."
+                       <OR <AND <PRSO? ,LITTLE-BIRD>
+                                <IN? ,LITTLE-BIRD ,WICKER-CAGE>
+                                <HELD? ,WICKER-CAGE>>
+                           <AND <PRSO? ,BEAR>
+                                ,BEAR-FOLLOWING>>>
+                  ;"DROP BIRD/BEAR is normally blocked by PRE-DROP, so we intercept it here
+                    and redirect to RELEASE BIRD/BEAR."
                   <PERFORM ,V?RELEASE ,PRSO>
-                  <RTRUE>)
-                 (<AND <VERB? PUT-ON>
-                       <PRSO? ,WATER-IN-BOTTLE>>
-                  ;"Likewise, PUT WATER ON FOO is normally blocked by PRE-PUT-ON."
-                  <PERFORM ,V?POUR ,PRSO ,PRSI>
                   <RTRUE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
@@ -152,7 +142,19 @@ Adapted once more by Jesse McGrew (2015)">>
 <SETG EXTRA-FLAGS
     '(SACREDBIT MULTITUDEBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
 
-;"We replace a few library sections below."
+;"Override the HAVE check to allow PUT, HAVE, and DROP in a few special situations."
+<REPLACE-DEFINITION FAILS-HAVE-CHECK?
+    <ROUTINE FAILS-HAVE-CHECK? (OBJ)
+        <NOT <OR <HELD? .OBJ>
+                 ;"Allow PUT BIRD IN CAGE and PUT WATER/OIL ON <any>."
+                 <AND <VERB? PUT-IN>
+                      <OR <PRSO? ,WATER-IN-BOTTLE ,OIL-IN-BOTTLE>
+                          <AND <PRSO? ,LITTLE-BIRD> <PRSI? ,WICKER-CAGE>>>>
+                 ;"Allow DROP BIRD and DROP BEAR."
+                 <AND <VERB? DROP>
+                      <PRSO? ,LITTLE-BIRD ,BEAR>>>>>>
+
+;"We replace a few more library sections below."
 <DELAY-DEFINITION DARKNESS-F>
 <DELAY-DEFINITION PRINT-GAME-OVER>
 <DELAY-DEFINITION RESURRECT?>
@@ -655,6 +657,9 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     <COND (<VERB? DRINK>
            <REMOVE ,PRSO>
            <PERFORM ,V?DRINK ,STREAM>
+           <RTRUE>)
+          (<AND <VERB? PUT-ON> <PRSO? ,WATER-IN-BOTTLE>>
+           <PERFORM ,V?POUR ,PRSO ,PRSI>
            <RTRUE>)>>
 
 <OBJECT OIL-IN-BOTTLE
@@ -671,6 +676,9 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     <COND (<VERB? DRINK>
            ;"The response to DRINK OIL is to refuse, so we don't remove the object."
            <PERFORM ,V?DRINK ,OIL>
+           <RTRUE>)
+          (<AND <VERB? PUT-ON> <PRSO? ,OIL-IN-BOTTLE>>
+           <PERFORM ,V?POUR ,PRSO ,PRSI>
            <RTRUE>)>>
 
 ;----------------------------------------------------------------------
@@ -4296,7 +4304,7 @@ Everything disappears in a dense cloud of orange smoke."
 
 <ROUTINE V-POUR-LIQUID ()
     <COND (<PRSO? ,WINNER> <POINTLESS "Soaking">)
-          (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER>)
+          (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (ELSE <PERFORM ,V?EMPTY ,BOTTLE>)>>
 
 <ROUTINE PRE-POUR ("AUX" F)
