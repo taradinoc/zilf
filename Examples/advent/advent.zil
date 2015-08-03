@@ -3943,12 +3943,20 @@ He snatches your treasure and vanishes into the gloom." CR>>
     <SETG SCORE <+ ,SCORE 10>>
     <MAP-CONTENTS (I N ,WINNER) <REMOVE .I>>
     <MOVE ,BOTTLE ,AT-NE-END>
+    <FSET ,BOTTLE ,NDESCBIT>
     <COND (<SET F <FIRST? ,BOTTLE>> <REMOVE .F>)>
     <MOVE ,GIANT-BIVALVE ,AT-NE-END>
+    <FSET ,GIANT-BIVALVE ,NDESCBIT>
     <MOVE ,BRASS-LANTERN ,AT-NE-END>
+    <FSET ,BRASS-LANTERN ,NDESCBIT>
     <MOVE ,BLACK-ROD ,AT-NE-END>
-    <MOVE ,LITTLE-BIRD ,AT-SW-END>
+    <FSET ,BLACK-ROD ,NDESCBIT>
+    <MOVE ,LITTLE-BIRD ,WICKER-CAGE>
+    <FSET ,LITTLE-BIRD ,NDESCBIT>
+    <MOVE ,WICKER-CAGE ,AT-SW-END>
+    <FSET ,WICKER-CAGE ,NDESCBIT>
     <MOVE ,VELVET-PILLOW ,AT-SW-END>
+    <FSET ,VELVET-PILLOW ,NDESCBIT>
     <TELL CR "The sepulchral voice intones, \"The cave is now closed.\"
 As the echoes fade, there is a blinding flash of light (and a small
 puff of orange smoke). . .||
@@ -4027,7 +4035,7 @@ you leave the \"Adventure\" materials where they are." CR>)>>
     (ARTICLE "hundreds of angry")
     (TEXT "I wouldn't bother the dwarves if I were you.")
     (ACTION SLEEPING-DWARVES-F)
-    (FLAGS PERSONBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT PERSONBIT PLURALBIT MULTITUDEBIT)>
 
 <ROUTINE SLEEPING-DWARVES-F ()
     <COND (<VERB? TAKE> <TELL "What, all of them?" CR>)
