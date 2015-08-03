@@ -129,6 +129,11 @@ Adapted once more by Jesse McGrew (2015)">>
                   ;"Likewise, DROP BIRD is normally blocked by PRE-DROP, so we intercept it here
                     and redirect to FREE BIRD."
                   <PERFORM ,V?RELEASE ,PRSO>
+                  <RTRUE>)
+                 (<AND <VERB? PUT-ON>
+                       <PRSO? ,WATER-IN-BOTTLE>>
+                  ;"Likewise, PUT WATER ON FOO is normally blocked by PRE-PUT-ON."
+                  <PERFORM ,V?POUR ,PRSO ,PRSI>
                   <RTRUE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
@@ -2045,7 +2050,11 @@ bellowing \"Water!! Water!!\"" CR>)
           (<VERB? OIL>
            <PERFORM ,V?WATER ,PRSO>)
           (<VERB? EXAMINE>
-           <PLANT-DESCFCN <>>)>>
+           <PLANT-DESCFCN ,M-OBJDESC>)
+          (<AND <VERB? GIVE>
+                <PRSO? ,WATER-IN-BOTTLE ,OIL-IN-BOTTLE>>
+           <PERFORM ,V?WATER ,PRSI>
+           <RTRUE>)>>
 
 ;----------------------------------------------------------------------
 
