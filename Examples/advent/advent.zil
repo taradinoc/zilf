@@ -362,9 +362,11 @@ A small stream flows out of the building and down a gully.")
                   <TELL CT ,LITTLE-BIRD " splashes cheerfully, then flies out of the water." CR>)
                  (ELSE
                   <REMOVE ,PRSO>
-                  <TELL CT ,PRSO " wash">
-                  <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
-                  <TELL " away with the stream." CR>)>)
+                  <COND (<SHORT-REPORT?> <TELL "Washed away." CR>)
+                        (ELSE
+                         <TELL CT ,PRSO " wash">
+                         <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
+                         <TELL " away with the stream." CR>)>)>)
           (<VERB? ENTER>
            <TELL "Your feet are now wet." CR>)>>
 
