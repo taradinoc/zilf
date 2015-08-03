@@ -1317,7 +1317,7 @@ Returns:
   by the WINNER, or they are held, possibly as the result of an implicit TAKE.
   False if the objects have to be held, the WINNER is not holding them, and
   they couldn't be taken implicitly."
-<ROUTINE HAVE-TAKE-CHECK-TBL (TBL OPTS "AUX" MAX DO-TAKE? O)
+<ROUTINE HAVE-TAKE-CHECK-TBL (TBL OPTS "AUX" MAX DO-TAKE? O N ORM)
     <SET MAX <GETB .TBL 0>>
     ;"Attempt implicit take if WINNER isn't directly holding the objects"
     <COND (<BTST .OPTS ,SF-TAKE>
@@ -1327,11 +1327,20 @@ Returns:
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
                       <TELL "[taking ">
-                      <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>
+                      <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>>
                       <TELL "]" CR>
                       <REPEAT ()
                           <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
-                                 <MOVE .O ,WINNER>)>
+                                 <COND (<NOT <TRY-TAKE .O T>>
+                                        <COND (<G? .N 1>
+                                               <SET ORM ,REPORT-MODE>
+                                               <SETG REPORT-MODE ,SHORT-REPORT>
+                                               <TELL D .O ": ">
+                                               <TRY-TAKE .O>
+                                               <SETG REPORT-MODE .ORM>)
+                                              (ELSE
+                                               <TRY-TAKE .O>)>
+                                        <RFALSE>)>)>
                           <COND (<IGRTR? I .MAX> <RETURN>)>>
                       <RETURN>)>>)>
     ;"WINNER must (indirectly) hold the objects if SF-HAVE is set"
@@ -1360,7 +1369,9 @@ Returns:
     <COND (<BTST .OPTS ,SF-TAKE>
            <COND (<SHOULD-IMPLICIT-TAKE? .OBJ>
                   <TELL "[taking " T .OBJ "]" CR>
-                  <MOVE .OBJ ,WINNER>)>)>
+                  <COND (<NOT <TRY-TAKE .OBJ T>>
+                         <TRY-TAKE .OBJ>
+                         <RFALSE>)>)>)>
     ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
     <COND (<BTST .OPTS ,SF-HAVE>
            <COND (<FAILS-HAVE-CHECK? .OBJ>
