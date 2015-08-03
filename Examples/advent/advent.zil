@@ -43,6 +43,7 @@ Adapted once more by Jesse McGrew (2015)">>
     <COND (<YES?> <CRLF> <SHOW-HINT ,HNT?INSTRUCTIONS> <CRLF>)>
     <CRLF>
     <SETG PREV-SCORE ,SCORE>
+    <INIT-STATUS-LINE>
     <V-VERSION> <CRLF>
     <QUEUE I-DWARF -1>
     <QUEUE I-PIRATE -1>
