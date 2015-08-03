@@ -1783,12 +1783,27 @@ Sets (contents):
     <TELL CR "> ">
     <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
     ;"The read buffer has a slightly different format on V3."
-    <VERSION? (ZIP <>)
+    <VERSION? (ZIP)
               (ELSE
                <PUTB ,READBUF 1 0>
                <UPDATE-STATUS-LINE>)>
-    <READ ,READBUF ,LEXBUF>>
+    <DO-READ ,READBUF ,LEXBUF>
+    <RTRUE>>
 
+<VERSION?
+    (ZIP
+     ;"If unlit, change HERE to 'Darkness' temporarily."
+     <DEFMAC DO-READ ('RB 'LB)
+         <EXPAND <FORM WRAP-FOR-DARK-STATUS <FORM READ .RB .LB>>>>
+     
+     <DEFMAC WRAP-FOR-DARK-STATUS ('F)
+         <FORM BIND '((OHERE ,HERE))
+             '<COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
+             .F
+             '<SETG HERE .OHERE>>>)
+    (ELSE
+     <DEFMAC DO-READ ('RB 'LB)
+         <FORM READ .RB .LB>>)>
 
 "Action framework"
 
@@ -2080,10 +2095,17 @@ Returns:
     <SET MSG <GET .TABL .RND>>
     <RETURN .MSG>>
 
+;"The game can override this with SETG. It doesn't go through DARKNESS-F, since
+  it has to be a constant on V3."
+<OR <GASSIGNED? DARKNESS-STATUS-TEXT>
+    <SETG DARKNESS-STATUS-TEXT "Darkness">>
+
 <VERSION?
     (ZIP
         <DEFMAC INIT-STATUS-LINE () <>>
-        <DEFMAC UPDATE-STATUS-LINE () '<USL>> )
+        
+        <ROUTINE UPDATE-STATUS-LINE ()
+            <WRAP-FOR-DARK-STATUS <USL>>>)
     (T
         ;"Splits the screen and clears a 1-line status line."
         <ROUTINE INIT-STATUS-LINE ()
@@ -2094,13 +2116,16 @@ Returns:
         
         Uses:
           HERE
+          HERE-LIT
           SCORE
           MOVES"
         <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
             <SCREEN 1>
             <HLIGHT 1>   ;"reverses the fg and bg colors"
             <FAKE-ERASE>
-            <TELL " " D ,HERE>
+            <TELL !\ >
+            <COND (,HERE-LIT <TELL D ,HERE>)
+                  (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
             <SET WIDTH <LOWCORE SCRH>>
             <CURSET 1 <- .WIDTH 22>>
             <TELL "Score: ">
@@ -2139,7 +2164,7 @@ Returns:
         <REPEAT ()
             <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
             <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
-            <READ ,READBUF ,LEXBUF>
+            <DO-READ ,READBUF ,LEXBUF>
             <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
             <COND (<EQUAL? .W ,W?RESTART>
                    <RESTART>)
@@ -2231,7 +2256,7 @@ Returns:
           The ZSCII code of the character entered."
         <ROUTINE GETONECHAR ()
             <PUTB ,READBUF 0 %<- ,READBUF-SIZE 2>>
-            <READ ,READBUF ,LEXBUF>
+            <DO-READ ,READBUF ,LEXBUF>
             <GETB ,READBUF 1>>)
     (ELSE
         <ROUTINE GETONECHAR ()
@@ -2365,8 +2390,12 @@ or reveal a light source."
 
 "Objects"
 
-;"This has all the flags, just in case other objects don't define them."
 <OBJECT ROOMS
+    ;"For V3, we need an object called 'Darkness' to show in the status line."
+    %<VERSION?
+       (ZIP <LIST DESC ,DARKNESS-STATUS-TEXT>)
+       (ELSE #SPLICE ())>
+    ;"This has all the flags, just in case other objects don't define them."
     (FLAGS %<CHTYPE ,KNOWN-FLAGS SPLICE>)>
 
 <OBJECT GLOBAL-OBJECTS>
