@@ -3956,13 +3956,19 @@ A sign nearby reads: \"Do not disturb the dwarves!\"")
 <ROUTINE AT-NE-END-F (RARG)
     <COND (<AND <=? .RARG ,M-END> <VERB? SING>>
            <CRLF>
-           <DWARVES-WAKE-UP>)>>
+           <DWARVES-WAKE-UP>)
+          (<=? .RARG ,M-FLASH> <DESCRIBE-ENORMOUS-MIRROR>)>>
+
+<ROUTINE DESCRIBE-ENORMOUS-MIRROR ()
+    <TELL CR "An immense mirror is hanging against one wall, and stretches to the other end of
+the room, where various other sundry objects can be glimpsed dimly in the distance." CR>>
 
 <OBJECT ENORMOUS-MIRROR
     (DESC "enormous mirror")
     (IN LOCAL-GLOBALS)
     (SYNONYM MIRROR VANITY)
-    (ADJECTIVE ENORMOUS HUGE BIG LARGE SUSPENDED HANGING DWARVISH)
+    (ADJECTIVE ENORMOUS HUGE BIG LARGE IMMENSE SUSPENDED HANGING DWARVISH)
+    (TEXT "It looks like an ordinary, albeit enormous, mirror.")
     (ACTION ENORMOUS-MIRROR-F)
     (FLAGS VOWELBIT)>
 
@@ -4032,7 +4038,11 @@ At your feet is a large steel grate, next to which is a sign which reads,
     (GLOBAL ENORMOUS-MIRROR)
     (DOWN TO OUTSIDE-GRATE IF REPOSITORY-GRATE IS OPEN)
     (NE TO AT-NE-END)
+    (ACTION AT-SW-END-F)
     (FLAGS LIGHTBIT)>
+
+<ROUTINE AT-SW-END-F (RARG)
+    <COND (<=? .RARG ,M-FLASH> <DESCRIBE-ENORMOUS-MIRROR>)>>
 
 <OBJECT REPOSITORY-GRATE
     (DESC "steel grate")
