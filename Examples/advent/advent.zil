@@ -1440,6 +1440,7 @@ The hole goes down to an E/W passage.")
     (SYNONYM JEWEL JEWELS JEWELRY)
     (ADJECTIVE PRECIOUS EXQUISITE)
     (ARTICLE "some")
+    (PRONOUN IT THEM)
     (FDESC "There is precious jewelry here!")
     (TEXT "It's all quite exquisite!")
     (FLAGS TAKEBIT TREASUREBIT)>
@@ -2942,7 +2943,10 @@ The remnants of recent digging are evident.")
 <OBJECT CONSTRUCTION-SIGN
     (DESC "sign")
     (IN IN-ANTEROOM)
+    (SYNONYM SIGN)
     (FDESC "A sign in midair here says \"Cave under construction beyond this point.
+Proceed at own risk. [Witt Construction Company]\"")
+    (TEXT "The sign reads, \"Cave under construction beyond this point.
 Proceed at own risk. [Witt Construction Company]\"")
     (ACTION CONSTRUCTION-SIGN-F)
     (FLAGS READBIT)>
@@ -2953,7 +2957,9 @@ Proceed at own risk. [Witt Construction Company]\"")
 <OBJECT MAGAZINES
     (DESC "recent issues of \"Spelunker Today\"")
     (IN IN-ANTEROOM)
-    (SYNONYM MAGAZINE ISSUE ISSUES TODAY)
+    (SYNONYM MAGAZINES ZINES ISSUES TODAY
+        ;"In V3, MAGAZINES collides with MAGAZINE anyway."
+        %<VERSION? (ZIP #SPLICE ()) (ELSE #SPLICE (MAGAZINE ZINE ISSUE))>)
     (ADJECTIVE RECENT SPELUNKER)
     (ARTICLE "a few")
     (FDESC "There are a few recent issues of \"Spelunker Today\" magazine here.")
