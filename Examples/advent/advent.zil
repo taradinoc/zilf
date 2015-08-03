@@ -326,7 +326,7 @@ A small stream flows out of the building and down a gully.")
 <OBJECT STREAM
     (DESC "stream")
     (IN LOCAL-GLOBALS)
-    (SYNONYM STREAM WATER ;BROOK RIVER LAKE ;RESERVOIR)
+    (SYNONYM STREAM WATER ;BROOK ;RIVER LAKE RESERVOIR)
     (ADJECTIVE SMALL TUMBLING SPLASHING BABBLING RUSHING)
     (ACTION STREAM-F)
     (FLAGS SPRINGBIT)>
@@ -352,6 +352,10 @@ A small stream flows out of the building and down a gully.")
                  (<PRSO? ,BOTTLE>
                   <PERFORM ,V?FILL-WITH ,BOTTLE ,STREAM>
                   <RTRUE>)
+                 (<PRSO? ,LITTLE-BIRD>
+                  <FSET ,WICKER-CAGE ,OPENBIT>
+                  <MOVE ,LITTLE-BIRD ,HERE>
+                  <TELL CT ,LITTLE-BIRD " splashes cheerfully, then flies out of the water." CR>)
                  (ELSE
                   <REMOVE ,PRSO>
                   <TELL CT ,PRSO " wash">
@@ -455,8 +459,14 @@ There is a building in the distance.")
     (IN INSIDE-BUILDING)
     (SYNONYM PAIR PIPES PIPE)
     (ADJECTIVE PAIR FOOT DIAMETER SEWER)
-    (TEXT "Too small. The only exit is to the west.")
+    (TEXT "Too small to fit inside.")
+    (ACTION SEWER-PIPES-F)
     (FLAGS NDESCBIT)>
+
+<ROUTINE SEWER-PIPES-F ()
+    <COND (<AND <VERB? PUT-IN> <PRSI? ,SEWER-PIPES>>
+           <PERFORM ,V?PUT-IN ,PRSO ,STREAM>
+           <RTRUE>)>>
 
 <OBJECT SET-OF-KEYS
     (DESC "set of keys")
@@ -1956,7 +1966,9 @@ There is a large hole in the wall above the pit at the end of this room.")
     <COND (<VERB? EXAMINE> <DESCRIBE-PLANT-STICKING-UP>)
           (<AND <VERB? CLIMB> <=? ,PLANT-HEIGHT ,HUGE-HEIGHT>>
            <PERFORM ,V?CLIMB ,PLANT>
-           <RTRUE>)>>
+           <RTRUE>)
+          (<VERB? WATER OIL>
+           <TELL "You can't aim well enough from here." CR>)>>
 
 <OBJECT HOLE-ABOVE-PIT-WEST
     (DESC "hole above pit")
