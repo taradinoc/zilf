@@ -106,10 +106,12 @@ Adapted once more by Jesse McGrew (2015)">>
                        <FSET? ,PRSO ,TREASUREBIT>>
                   <COND (<PRE-DROP>)
                         (<AND <SET F <GETP ,PRSO ,P?ACTION>> <APPLY .F>>)
-                        (<MOVE ,PRSO ,HERE>
+                        (ELSE
+                         <MOVE ,PRSO ,HERE>
                          <FSET ,PRSO ,TOUCHBIT>
                          <FCLEAR ,PRSO ,WORNBIT>
-                         <TELL "You safely deposit " T ,PRSO "." CR>)>
+                         <COND (<SHORT-REPORT?> <TELL "Safely deposited." CR>)
+                               (ELSE <TELL "You safely deposit " T ,PRSO "." CR>)>)>
                   <RTRUE>)
                  (<VERB? QUIT>
                   <V-SCORE T>
@@ -335,7 +337,7 @@ A small stream flows out of the building and down a gully.")
 
 <ROUTINE STREAM-F ()
     <COND (<VERB? DRINK>
-           <TELL "You have taken a drink from the stream. The water tastes strongly of ">
+           <TELL "The water tastes strongly of ">
            ;"Inspired by a typo that was too amusing to take out..."
            <COND (<PROB 95> <TELL "minerals">)
                  (<PROB 50> <TELL "animals">)
