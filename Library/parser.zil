@@ -1313,21 +1313,21 @@ Returns:
              the container handle this by setting TRYTAKEBIT on its contents?"
            ;"TODO: Enforce inventory limit; split relevant logic out of V-TAKE."
            <DO (I 1 .MAX)
-               <COND (<NEEDS-IMPLICIT-TAKE? <GET/B .TBL .I>>
+               <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
                       <TELL "[taking ">
-                      <LIST-OBJECTS .TBL ,NEEDS-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>
+                      <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>
                       <TELL "]" CR>
                       <REPEAT ()
-                          <COND (<NEEDS-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
+                          <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
                                  <MOVE .O ,WINNER>)>
                           <COND (<IGRTR? I .MAX> <RETURN>)>>
                       <RETURN>)>>)>
     ;"WINNER must (indirectly) hold the objects if SF-HAVE is set"
     <COND (<BTST .OPTS ,SF-HAVE>
            <DO (I 1 .MAX)
-               <COND (<NOT <HELD? <GET/B .TBL .I>>>
+               <COND (<FAILS-HAVE-CHECK? <GET/B .TBL .I>>
                       <TELL "You aren't holding ">
-                      <LIST-OBJECTS .TBL ,NOT-HELD? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+                      <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
                       <TELL "." CR>
                       <RFALSE>)>>)>
     <RTRUE>>
@@ -1346,23 +1346,26 @@ Returns:
 <ROUTINE HAVE-TAKE-CHECK (OBJ OPTS)
     ;"Attempt implicit take if WINNER isn't directly holding the object"
     <COND (<BTST .OPTS ,SF-TAKE>
-           <COND (<NEEDS-IMPLICIT-TAKE? .OBJ>
+           <COND (<SHOULD-IMPLICIT-TAKE? .OBJ>
                   <TELL "[taking " T .OBJ "]" CR>
                   <MOVE .OBJ ,WINNER>)>)>
     ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
     <COND (<BTST .OPTS ,SF-HAVE>
-           <COND (<NOT <HELD? .OBJ>>
+           <COND (<FAILS-HAVE-CHECK? .OBJ>
                   <TELL "You aren't holding " T .OBJ "." CR>
                   <RFALSE>)>)>
     <RTRUE>>
 
-<ROUTINE NEEDS-IMPLICIT-TAKE? (OBJ)
-    <T? <AND <NOT <IN? .OBJ ,WINNER>>
-             <FSET? .OBJ ,TAKEBIT>
-             <NOT <FSET? .OBJ ,TRYTAKEBIT>>>>>
+;"The game can override these to change the precise conditions for TAKE and HAVE."
+<DEFAULT-DEFINITION SHOULD-IMPLICIT-TAKE?
+    <ROUTINE SHOULD-IMPLICIT-TAKE? (OBJ)
+        <T? <AND <NOT <IN? .OBJ ,WINNER>>
+                 <FSET? .OBJ ,TAKEBIT>
+                 <NOT <FSET? .OBJ ,TRYTAKEBIT>>>>>>
 
-<ROUTINE NOT-HELD? (OBJ)
-    <NOT <HELD? .OBJ>>>
+<DEFAULT-DEFINITION FAILS-HAVE-CHECK?
+    <ROUTINE FAILS-HAVE-CHECK? (OBJ)
+        <NOT <HELD? .OBJ>>>>
 
 ;"Checks whether the objects listed in a table, which were part of a previous
   command, are still available to the player, and prints an error message if not.
