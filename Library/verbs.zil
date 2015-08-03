@@ -287,7 +287,9 @@ Returns:
            <DARKNESS-F ,M-LOOK>
            <RFALSE>)>
     ;"Print the room's real name."
+    <VERSION? (ZIP) (ELSE <HLIGHT ,H-BOLD>)>
     <TELL D .RM CR>
+    <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
     ;"If this is an implicit LOOK, check briefness."
     <COND (<NOT .LONG>
            <COND (<EQUAL? ,MODE ,SUPERBRIEF>

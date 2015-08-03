@@ -2151,7 +2151,7 @@ Returns:
           MOVES"
         <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
             <SCREEN 1>
-            <HLIGHT 1>   ;"reverses the fg and bg colors"
+            <HLIGHT ,H-INVERSE>
             <FAKE-ERASE>
             <TELL !\ >
             <COND (,HERE-LIT <TELL D ,HERE>)
@@ -2164,7 +2164,7 @@ Returns:
             <TELL "Moves: ">
             <PRINTN ,MOVES>
             <SCREEN 0>
-            <HLIGHT 0>>
+            <HLIGHT ,H-NORMAL>>
 
         ;"Fills the top row with spaces."
         <ROUTINE FAKE-ERASE ("AUX" CNT WIDTH)
