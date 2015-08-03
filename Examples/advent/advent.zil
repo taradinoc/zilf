@@ -3220,7 +3220,8 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
     (IN LOCAL-GLOBALS)
     (SYNONYM WRECKAGE BRIDGE BEAR)
     (ADJECTIVE DEAD)
-    (ACTION WRECKAGE-F)>
+    (ACTION WRECKAGE-F)
+    (FLAGS INVISIBLE)>
 
 <ROUTINE WRECKAGE-F ()
     <TELL "The wreckage is too far below." CR>>
@@ -4086,6 +4087,13 @@ At your feet is a large steel grate, next to which is a sign which reads,
     (TEXT "It just looks like an ordinary steel grate.")
     (ACTION REPOSITORY-GRATE-F)
     (FLAGS DOORBIT LOCKEDBIT OPENABLEBIT)>
+
+<OBJECT REPOSITORY-SIGN
+    (DESC "sign")
+    (IN AT-SW-END)
+    (SYNONYM SIGN)
+    (TEXT "The sign reads, \"TREASURE VAULT. Keys in main office.\"")
+    (FLAGS NDESCBIT READBIT)>
 
 ;"It can't actually be unlocked."
 <ROUTINE REPOSITORY-GRATE-F ()
