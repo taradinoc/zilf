@@ -248,6 +248,16 @@ namespace Zilf.Compiler
                 }
             }
 
+            // builders for routines (again, in case any were added during compilation, e.g. by a PROPSPEC)
+            foreach (ZilRoutine routine in ctx.ZEnvironment.Routines)
+            {
+                if (!cc.Routines.ContainsKey(routine.Name))
+                    cc.Routines.Add(routine.Name, gb.DefineRoutine(
+                        routine.Name.ToString(),
+                        routine.Name == ctx.ZEnvironment.EntryRoutineName,
+                        (routine.Flags & RoutineFlags.CleanStack) != 0));
+            }
+
             // compile routines
             IRoutineBuilder mainRoutine = null;
 

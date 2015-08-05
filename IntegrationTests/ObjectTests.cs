@@ -424,6 +424,17 @@ namespace IntegrationTests
                     "<=? <GET <GETP ,BAR ,P?FOO> 0> ,W?FOO>");
         }
 
+        [TestMethod]
+        public void Routines_Created_By_PROPSPEC_Should_Work_Correctly()
+        {
+            AssertGlobals(
+                "<PUTPROP FOO PROPSPEC FOO-PROP>",
+                "<DEFINE FOO-PROP (L) <ROUTINE PROP-ROUTINE () 123> (<> PROP-ROUTINE)>",
+                "<OBJECT BAR (FOO FOO)>")
+                .Implies(
+                    "<=? <APPLY <GETP ,BAR ,P?FOO>> 123>");
+        }
+
         #endregion
 
         [TestMethod]
