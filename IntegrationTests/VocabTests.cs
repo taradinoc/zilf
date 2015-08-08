@@ -211,6 +211,19 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Adjective_Numbers_Of_Colliding_Words_Should_Be_Merged()
+        {
+            AssertGlobals(
+                "<OBJECT FOO (ADJECTIVE ABCDEFGHIJKL ABCDEF) (FOO 123)>",
+                "<DEFINE FOO-PROP (L) <VOC \"ABCDEFGHI\" ADJ> .L>",
+                "<PUTPROP FOO PROPSPEC FOO-PROP>")
+                .InV3()
+                .Implies(
+                    "<==? ,A?ABCDEFGHIJKL ,A?ABCDEF>",
+                    "<==? ,A?ABCDEFGHI ,A?ABCDEF>");
+        }
+
+        [TestMethod]
         public void Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
         {
             AssertRoutine("",
