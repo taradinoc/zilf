@@ -99,12 +99,6 @@ namespace Zilf.Compiler
             foreach (ZilTable table in ctx.ZEnvironment.Tables)
                 cc.Tables.Add(table, gb.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0));
 
-            // vocabulary for punctuation
-            DefinePunctWord(cc, ".", "PERIOD");
-            DefinePunctWord(cc, ",", "COMMA");
-            DefinePunctWord(cc, "\"", "QUOTE");
-            DefinePunctWord(cc, "'", "APOSTROPHE");
-
             // self-inserting breaks
             var siBreaks = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) as ZilString;
             if (siBreaks != null)
@@ -115,6 +109,21 @@ namespace Zilf.Compiler
             }
 
             // builders for vocabulary
+            // vocabulary for punctuation
+            var punctWords = new Dictionary<string, string>
+            {
+                { "PERIOD", "." },
+                { "COMMA", "," },
+                { "QUOTE", "\"" },
+                { "APOSTROPHE", "'" },
+            };
+
+            foreach (var symbol in punctWords.Values)
+            {
+                var symbolAtom = ZilAtom.Parse(symbol, ctx);
+                ctx.ZEnvironment.GetVocab(symbolAtom);
+            }
+
             foreach (var pair in ctx.ZEnvironment.Buzzwords)
             {
                 ctx.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
@@ -132,14 +141,40 @@ namespace Zilf.Compiler
                 DefineWord(cc, word);
             }
 
+            foreach (var pair in punctWords)
+            {
+                var nameAtom = ZilAtom.Parse(pair.Key, ctx);
+                var symbolAtom = ZilAtom.Parse(pair.Value, ctx);
+
+                Word symbolWord;
+
+                if (ctx.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out symbolWord) && 
+                    !ctx.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
+                {
+                    var nameWord = new Word(nameAtom);
+                    nameWord.Merge(ctx, symbolWord);
+                    vocabMerges.Add(nameWord, symbolWord);
+                }
+            }
+
+            var wordConstantPrefixes = new[] { "W?", "A?", "ACT?", "P?" };
+
             foreach (var pair in vocabMerges)
             {
                 Word dupWord = pair.Key, mainWord = pair.Value;
-                var dupAtom = ZilAtom.Parse("W?" + dupWord.Atom.Text, ctx);
-                var mainAtom = ZilAtom.Parse("W?" + mainWord.Atom.Text, ctx);
-
-                cc.Constants[dupAtom] = cc.Constants[mainAtom];
                 cc.Vocabulary[dupWord] = cc.Vocabulary[mainWord];
+
+                foreach (var prefix in wordConstantPrefixes)
+                {
+                    var mainAtom = ZilAtom.Parse(prefix + mainWord.Atom.Text, ctx);
+
+                    IOperand value;
+                    if (cc.Constants.TryGetValue(mainAtom, out value))
+                    {
+                        var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, ctx);
+                        cc.Constants[dupAtom] = value;
+                    }
+                }
             }
 
             // tables for syntax
@@ -872,41 +907,12 @@ namespace Zilf.Compiler
             }
         }
 
-        private static void DefinePunctWord(CompileCtx cc, string punct, string name)
-        {
-            Contract.Requires(cc != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(punct));
-            Contract.Requires(name != null);
-
-            var atom = ZilAtom.Parse(punct, cc.Context);
-
-            Word pword;
-            if (!cc.Context.ZEnvironment.Vocabulary.TryGetValue(atom, out pword))
-            {
-                pword = new Word(atom);
-                cc.Context.ZEnvironment.Vocabulary.Add(atom, pword);
-            }
-
-            IWordBuilder pwb;
-            if (!cc.Vocabulary.TryGetValue(pword, out pwb))
-            {
-                pwb = cc.Game.DefineVocabularyWord(punct);
-                cc.Vocabulary.Add(pword, pwb);
-            }
-
-            var namedAtom = ZilAtom.Parse("W?" + name, cc.Context);
-            if (!cc.Constants.ContainsKey(namedAtom))
-            {
-                cc.Constants.Add(namedAtom, pwb);
-            }
-
-            var symbolicAtom = ZilAtom.Parse("W?" + punct, cc.Context);
-            if (!cc.Constants.ContainsKey(symbolicAtom))
-            {
-                cc.Constants.Add(symbolicAtom, pwb);
-            }
-        }
-        
+        /// <summary>
+        /// Defines the appropriate constants for a word (W?FOO, A?FOO, ACT?FOO, PREP?FOO),
+        /// creating the IWordBuilder if needed.
+        /// </summary>
+        /// <param name="cc">The CompileCtx.</param>
+        /// <param name="word">The Word.</param>
         private static void DefineWord(CompileCtx cc, Word word)
         {
             Contract.Requires(cc != null);
@@ -917,9 +923,25 @@ namespace Zilf.Compiler
 
             if (!cc.Vocabulary.ContainsKey(word))
             {
-                IWordBuilder wb = cc.Game.DefineVocabularyWord(rawWord);
-                cc.Vocabulary.Add(word, wb);
-                cc.Constants.Add(ZilAtom.Parse("W?" + rawWord, cc.Context), wb);
+                var wAtom = ZilAtom.Parse("W?" + rawWord, cc.Context);
+                IOperand constantValue;
+                if (cc.Constants.TryGetValue(wAtom, out constantValue) == false)
+                {
+                    IWordBuilder wb = cc.Game.DefineVocabularyWord(rawWord);
+                    cc.Vocabulary.Add(word, wb);
+                    cc.Constants.Add(wAtom, wb);
+                }
+                else
+                {
+                    if (constantValue is IWordBuilder)
+                    {
+                        cc.Vocabulary.Add(word, (IWordBuilder)constantValue);
+                    }
+                    else
+                    {
+                        throw new CompilerError("non-vocab constant '{0}' conflicts with vocab word '{1}'", wAtom, word.Atom);
+                    }
+                }
             }
 
             // adjective numbers only exist in V3
@@ -1069,8 +1091,10 @@ namespace Zilf.Compiler
                 for (int i = 0; i < values.Length; i++)
                     if (values[i] == null)
                     {
+                        var rawElements = new ZilObject[zt.ElementCount];
+                        zt.CopyTo(rawElements, zo => zo, null);
                         Errors.CompError(cc.Context, zt.SourceLine,
-                            "non-constant in table initializer at element {0}", i);
+                            "non-constant in table initializer at element {0}: {1}", i, rawElements[i]);
                         values[i] = defaultFiller;
                     }
 
@@ -3624,7 +3648,7 @@ namespace Zilf.Compiler
 
                                         try
                                         {
-                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine));
+                                            var word = cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
                                         }
                                         catch (ZilError ex)
                                         {
@@ -3644,7 +3668,7 @@ namespace Zilf.Compiler
 
                                         try
                                         {
-                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine));
+                                            var word = cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
                                         }
                                         catch (ZilError ex)
                                         {
@@ -3664,7 +3688,7 @@ namespace Zilf.Compiler
 
                                         try
                                         {
-                                            DefineWord(cc, cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine));
+                                            var word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine);
                                         }
                                         catch (ZilError ex)
                                         {
