@@ -1,7 +1,6 @@
 ;"Main file for ADVENTURE"
 ;"Ported to ZIL by Jesse McGrew, July 2015"
 
-;"TODO: Replace scenery objects with PSEUDO / THINGS once implemented."
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
 
@@ -402,22 +401,9 @@ There is a building in the distance.")
     (NORTH TO AT-END-OF-ROAD)
     (DOWN TO AT-END-OF-ROAD)
     (SOUTH PER RANDOM-FOREST)
+    (THINGS <>    (HILL BUMP INCLINE) "It's just a typical hill."
+            OTHER SIDE                "Why not explore it yourself?")
     (FLAGS LIGHTBIT SACREDBIT)>
-
-<OBJECT HILL
-    (DESC "hill")
-    (IN AT-HILL-IN-ROAD)
-    (SYNONYM HILL BUMP INCLINE)
-    (TEXT "It's just a typical hill.")
-    (FLAGS NDESCBIT)>
-
-<OBJECT OTHER-SIDE-OF-HILL
-    (DESC "other side of hill")
-    (IN AT-HILL-IN-ROAD)
-    (SYNONYM SIDE)
-    (ADJECTIVE OTHER)
-    (TEXT "Why not explore it yourself?")
-    (FLAGS NDESCBIT VOWELBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -430,6 +416,7 @@ There is a building in the distance.")
     (WEST TO AT-END-OF-ROAD)
     (OUT TO AT-END-OF-ROAD)
     (IN SORRY "The pipes are too small.")
+    (THINGS (PAIR FOOT DIAMETER SEWER) (PAIR PIPES PIPE) SEWER-PIPES-F)
     (FLAGS LIGHTBIT SACREDBIT)>
 
 <CONSTANT STREAM-FLOWS-OUT
@@ -726,16 +713,10 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (UP PER RANDOM-FOREST)
     (SOUTH TO AT-SLIT-IN-STREAMBED)
     (DOWN TO AT-SLIT-IN-STREAMBED)
+    ;"In V3, STREAMBED collides with STREAM, but real objects are matched before
+      pseudo-objects so there's no ambiguity."
+    (THINGS (SMALL ROCKY BARE DRY STREAM) (BED ROCK STREAMBED) "It's a typical streambed.")
     (FLAGS LIGHTBIT SACREDBIT)>
-
-<OBJECT STREAMBED
-    (DESC "streambed")
-    (IN IN-A-VALLEY)
-    (SYNONYM BED ROCK
-        ;"In V3, this conflicts with STREAM and we don't want ambiguity."
-        %<VERSION? (ZIP #SPLICE ()) (ELSE STREAMBED)>)
-    (ADJECTIVE SMALL ROCKY ;BARE ;DRY STREAM)
-    (FLAGS NDESCBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -753,19 +734,13 @@ Downstream the streambed is bare rock.")
     (SOUTH TO OUTSIDE-GRATE)
     (DOWN SORRY ,YOU-DONT-FIT)
     (IN SORRY ,YOU-DONT-FIT)
+    (THINGS (TWO INCH 2-INCH) SLIT 2-INCH-SLIT-F)
     (FLAGS LIGHTBIT SACREDBIT)>
 
-<OBJECT 2-INCH-SLIT
-    (DESC "2-inch slit")
-    (IN AT-SLIT-IN-STREAMBED)
-    (SYNONYM SLIT)
-    (ADJECTIVE TWO INCH 2-INCH)
-    (TEXT "It's just a 2-inch slit in the rock, through which the stream is flowing.")
-    (ACTION 2-INCH-SLIT-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE 2-INCH-SLIT-F ()
-    <COND (<VERB? ENTER> <TELL ,YOU-DONT-FIT CR>)>>
+    <COND (<VERB? EXAMINE>
+           <TELL "It's just a 2-inch slit in the rock, through which the stream is flowing." CR>)
+          (<VERB? ENTER> <TELL ,YOU-DONT-FIT CR>)>>
 
 ;----------------------------------------------------------------------
 
@@ -783,6 +758,7 @@ A dry streambed leads into the depression.")
     (NORTH TO AT-SLIT-IN-STREAMBED)
     (DOWN TO BELOW-THE-GRATE IF GRATE IS OPEN)
     (ACTION OUTSIDE-GRATE-F)
+    (THINGS (TWENTY FOOT BARE 20-FOOT) (DEPRESSION DIRT) "You're standing in it.")
     (FLAGS LIGHTBIT SACREDBIT)>
 
 <ROUTINE OUTSIDE-GRATE-F (RARG)
@@ -806,14 +782,6 @@ A dry streambed leads into the depression.")
           (<NOT <FSET? ,GRATE ,LOCKEDBIT>>
            <THIS-IS-IT ,GRATE>
            <TELL CR "The grate is unlocked but shut." CR>)>>
-
-<OBJECT 20-FOOT-DEPRESSION
-    (DESC "20-foot depression")
-    (IN OUTSIDE-GRATE)
-    (SYNONYM DEPRESSION DIRT)
-    (ADJECTIVE TWENTY FOOT BARE 20-FOOT)
-    (TEXT "You're standing in it.")
-    (FLAGS NDESCBIT)>
 
 <OBJECT GRATE
     (DESC "steel grate")
@@ -916,26 +884,14 @@ A note on the wall says, \"Magic word XYZZY.\"")
     (UP TO IN-AWKWARD-SLOPING-E/W-CANYON)
     (WEST TO IN-AWKWARD-SLOPING-E/W-CANYON)
     (ACTION IN-DEBRIS-ROOM-F)
+    (THINGS <> (DEBRIS STUFF MUD) "Yuck."
+            <> NOTE               ([READ EXAMINE] "The note says \"Magic word XYZZY\"."))
     (FLAGS SACREDBIT)>
 
 <ROUTINE IN-DEBRIS-ROOM-F (RARG)
     <COND (<AND <=? .RARG ,M-BEG> <VERB? XYZZY>>
            <GOTO ,INSIDE-BUILDING>
            <RTRUE>)>>
-
-<OBJECT DEBRIS
-    (DESC "debris")
-    (IN IN-DEBRIS-ROOM)
-    (SYNONYM DEBRIS STUFF MUD)
-    (TEXT "Yuck.")
-    (FLAGS NDESCBIT)>
-
-<OBJECT XYZZY-NOTE
-    (DESC "note")
-    (IN IN-DEBRIS-ROOM)
-    (SYNONYM NOTE)
-    (TEXT "The note says \"Magic word XYZZY\".")
-    (FLAGS NDESCBIT READBIT)>
 
 <OBJECT BLACK-ROD
     (DESC "black rod with a rusty star on the end")
@@ -1064,6 +1020,8 @@ Besides, I suspect it would prefer bird seed." CR>)
     (WEST SORRY "The crack is far too small for you to follow.")
     (DOWN PER DOWN-INTO-SMALL-PIT)
     (ACTION AT-TOP-OF-SMALL-PIT-F)
+    (THINGS SMALL PIT   SMALL-MISTY-PIT-F
+            SMALL CRACK PIT-CRACK-F)
     (FLAGS SACREDBIT)>
 
 <ROUTINE DOWN-INTO-SMALL-PIT ()
@@ -1083,30 +1041,17 @@ A west passage ends here except for a small crack leading on.">
           (<AND <=? .RARG ,M-BEG> <VERB? CLIMB> <NOT ,PRSO>>
            <DO-WALK ,P?DOWN>)>>
 
-<OBJECT SMALL-MISTY-PIT
-    (DESC "small pit")
-    (IN AT-TOP-OF-SMALL-PIT)
-    (SYNONYM PIT)
-    (ADJECTIVE SMALL)
-    (TEXT "The pit is breathing traces of white mist.")
-    (ACTION SMALL-MISTY-PIT-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE SMALL-MISTY-PIT-F ()
-    <COND (<VERB? ENTER>
+    <COND (<VERB? EXAMINE>
+           <TELL "The pit is breathing traces of white mist." CR>)
+          (<VERB? ENTER>
            <DO-WALK ,P?DOWN>)>>
 
-<OBJECT PIT-CRACK
-    (DESC "crack")
-    (IN AT-TOP-OF-SMALL-PIT)
-    (SYNONYM CRACK)
-    (ADJECTIVE SMALL)
-    (TEXT "The crack is very small -- far too small for you to follow.")
-    (ACTION PIT-CRACK-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE PIT-CRACK-F ()
-    <COND (<VERB? ENTER> <TELL "The crack is far too small for you to follow." CR>)>>
+    <COND (<VERB? EXAMINE>
+           <TELL "The crack is very small -- far too small for you to follow." CR>)
+          (<VERB? ENTER>
+           <TELL "The crack is far too small for you to follow." CR>)>>
 
 <OBJECT MIST
     (DESC "mist")
@@ -1129,7 +1074,9 @@ It can be found anywhere but is frequently a sign of a deep pit leading down to 
     (WEST TO ON-EAST-BANK-OF-FISSURE)
     (DOWN TO IN-HALL-OF-MT-KING)
     (NORTH TO IN-HALL-OF-MT-KING)
-    (UP PER UP-OUT-OF-SMALL-PIT)>
+    (UP PER UP-OUT-OF-SMALL-PIT)
+    (THINGS (WIDE STONE) (STAIR STAIRS STAIRCASE) WIDE-STONE-STAIRCASE-F
+            <>           DOME                     DOME-F)>
 
 <ROUTINE IN-HALL-OF-MISTS-F (RARG)
     <COND (<AND <=? .RARG ,M-ENTER>
@@ -1154,13 +1101,12 @@ There is a passage at the top of a dome behind you.">
            <RFALSE>)
           (ELSE ,AT-TOP-OF-SMALL-PIT)>>
 
-<OBJECT WIDE-STONE-STAIRCASE
-    (DESC "wide stone staircase")
-    (IN IN-HALL-OF-MISTS)
-    (SYNONYM STAIR STAIRS STAIRCASE)
-    (ADJECTIVE WIDE STONE)
-    (TEXT "The staircase leads down.")
-    (FLAGS NDESCBIT)>
+<ROUTINE WIDE-STONE-STAIRCASE-F ()
+    <COND (<VERB? EXAMINE>
+           <TELL "The staircase leads down." CR>)
+          (<VERB? ENTER>
+           <DO-WALK ,P?DOWN>
+           <RTRUE>)>>
 
 <OBJECT ROUGH-STONE-STEPS
     (DESC "rough stone steps")
@@ -1183,13 +1129,6 @@ There is a passage at the top of a dome behind you.">
           (<VERB? CLIMB ENTER>
            <DO-WALK <COND (<=? ,HERE ,IN-HALL-OF-MISTS> ,P?UP) (ELSE ,P?DOWN)>>)>>
 
-<OBJECT DOME
-    (DESC "dome")
-    (IN IN-HALL-OF-MISTS)
-    (SYNONYM DOME)
-    (ACTION DOME-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE DOME-F ()
     <COND (<VERB? EXAMINE>
            <COND (<HELD? ,LARGE-GOLD-NUGGET>
@@ -1206,15 +1145,8 @@ There is a passage at the top of a dome behind you.">
     (IN ROOMS)
     (LDESC "This is a low room with a crude note on the wall:||
 \"You won't get it up the steps.\"")
-    (NORTH TO IN-HALL-OF-MISTS)>
-
-<OBJECT NUGGET-NOTE
-    (DESC "note")
-    (IN IN-NUGGET-OF-GOLD-ROOM)
-    (SYNONYM NOTE)
-    (ADJECTIVE CRUDE)
-    (TEXT "The note says, \"You won't get it up the steps.\"")
-    (FLAGS NDESCBIT READBIT)>
+    (NORTH TO IN-HALL-OF-MISTS)
+    (THINGS CRUDE NOTE ([READ EXAMINE] "The note says, \"You won't get it up the steps.\""))>
 
 <OBJECT LARGE-GOLD-NUGGET
     (DESC "large gold nugget")
@@ -1350,15 +1282,8 @@ The hall joins up with a narrow north/south passage.")
     (WEST TO AT-EAST-END-OF-LONG-HALL)
     (NORTH TO CROSSOVER-DEAD-END)
     (EAST TO IN-WEST-SIDE-CHAMBER)
-    (SOUTH TO AT-WEST-END-OF-LONG-HALL)>
-
-<OBJECT CROSSOVER-SCENERY
-    (DESC "crossover")
-    (IN CROSSOVER)
-    (SYNONYM CROSSOVER OVER)
-    (ADJECTIVE CROSS)
-    (TEXT "You know as much as I do at this point.")
-    (FLAGS NDESCBIT)>
+    (SOUTH TO AT-WEST-END-OF-LONG-HALL)
+    (THINGS CROSS (OVER CROSSOVER) "You know as much as I do at this point.")>
 
 ;----------------------------------------------------------------------
 "Many Dead Ends will be needed for the maze below, so define a helper function"
@@ -1508,7 +1433,8 @@ There is a large \"Y2\" on a rock in the room's center.")
     (SOUTH TO LOW-N/S-PASSAGE)
     (EAST TO JUMBLE-OF-ROCK)
     (WEST TO AT-WINDOW-ON-PIT-1)
-    (ACTION AT-Y2-F)>
+    (ACTION AT-Y2-F)
+    (THINGS Y2 (ROCK Y2) "There is a large \"Y2\" painted on the rock.")>
 
 <ROUTINE AT-Y2-F (RARG)
     <COND (<=? .RARG ,M-BEG>
@@ -1525,14 +1451,6 @@ There is a large \"Y2\" on a rock in the room's center.")
                 <PROB 25>>
            <TELL CR "A hollow voice says, \"Plugh.\"" CR>
            <RFALSE>)>>
-
-<OBJECT Y2-ROCK
-    (DESC "\"Y2\" rock")
-    (IN AT-Y2)
-    (SYNONYM ROCK Y2)
-    (ADJECTIVE Y2)
-    (TEXT "There is a large \"Y2\" painted on the rock.")
-    (FLAGS NDESCBIT SURFACEBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -1636,7 +1554,9 @@ A crawl leads west.")
     (FLAGS NDESCBIT)>
 
 <ROUTINE SMALL-CLIMBABLE-PIT-F ()
-    <COND (<VERB? CLIMB ENTER>
+    <COND (<VERB? EXAMINE>
+           <TELL "It looks like you might be able to climb down into it." CR>)
+          (<VERB? CLIMB ENTER>
            <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
@@ -1791,7 +1711,9 @@ The maze continues at this level.")
     (FLAGS NDESCBIT)>
 
 <ROUTINE PIT-F ()
-    <COND (<VERB? CLIMB>
+    <COND (<VERB? EXAMINE>
+           <TELL "You'll have to climb down to find out anything more..." CR>)
+          (<VERB? CLIMB>
            <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
@@ -1906,7 +1828,8 @@ Part of the room is occupied by a large bedrock block.")
     (NE TO IN-BEDQUILT)
     (NW TO IN-ORIENTAL-ROOM)
     (EAST TO IN-SOFT-ROOM)
-    (ACTION IN-SWISS-CHEESE-ROOM-F)>
+    (ACTION IN-SWISS-CHEESE-ROOM-F)
+    (THINGS (LARGE BEDROCK) (BEDROCK BLOCK) BEDROCK-BLOCK-F)>
 
 <ROUTINE IN-SWISS-CHEESE-ROOM-F (RARG)
     <COND (<AND <=? .RARG ,M-BEG>
@@ -1915,17 +1838,10 @@ Part of the room is occupied by a large bedrock block.")
                     <AND <PRSO? ,P?NW> <PROB 50>>>>
            <TELL ,CRAWLED-AROUND-HOLES CR>)>>
 
-<OBJECT BEDROCK-BLOCK
-    (DESC "bedrock block")
-    (IN IN-SWISS-CHEESE-ROOM)
-    (SYNONYM BEDROCK BLOCK)
-    (ADJECTIVE BEDROCK LARGE)
-    (TEXT "It's just a huge block.")
-    (ACTION BEDROCK-BLOCK-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE BEDROCK-BLOCK-F ()
-    <COND (<VERB? LOOK-UNDER PUSH PULL TAKE>
+    <COND (<VERB? EXAMINE>
+           <TELL "It's just a huge block." CR>)
+          (<VERB? LOOK-UNDER PUSH PULL TAKE>
            <TELL "Surely you're joking." CR>)>>
 
 ;----------------------------------------------------------------------
@@ -2157,19 +2073,13 @@ but they are now filled with boulders. Low small passages go north and south, an
 the south one quickly bends west around the boulders.")
     (SOUTH TO AT-WEST-END-OF-TWOPIT-ROOM)
     (UP TO IN-SECRET-N/S-CANYON-0)
-    (NORTH TO IN-BEDQUILT)>
-
-<OBJECT SLAB
-    (DESC "slab")
-    (IN IN-SLAB-ROOM)
-    (SYNONYM SLAB)
-    (ADJECTIVE IMMENSE)
-    (TEXT "It is now the floor here.")
-    (ACTION SLAB-F)
-    (FLAGS NDESCBIT)>
+    (NORTH TO IN-BEDQUILT)
+    (THINGS IMMENSE SLAB SLAB-F)>
 
 <ROUTINE SLAB-F ()
-    <COND (<VERB? LOOK-UNDER PUSH PULL TAKE>
+    <COND (<VERB? EXAMINE>
+           <TELL "It is now the floor here." CR>)
+          (<VERB? LOOK-UNDER PUSH PULL TAKE>
            <TELL "Surely you're joking." CR>)>>
 
 <OBJECT BOULDERS
@@ -2283,7 +2193,8 @@ floor below. You could climb down it, and jump from it to the floor, but
 having done so you would be unable to reach it to climb back up.")
     (NORTH TO IN-SECRET-N/S-CANYON-1)
     (DOWN PER DOWN-FROM-ATOP-STALACTITE)
-    (ACTION ATOP-STALACTITE-F)>
+    (ACTION ATOP-STALACTITE-F)
+    (THINGS LARGE (STALACTITE STALAGMITE STALAGTITE) STALACTITE-F)>
 
 <ROUTINE DOWN-FROM-ATOP-STALACTITE ()
     <COND (<PROB 40> ,ALIKE-MAZE-6)
@@ -2295,17 +2206,10 @@ having done so you would be unable to reach it to climb back up.")
            <DO-WALK ,P?DOWN>
            <RTRUE>)>>
 
-<OBJECT STALACTITE
-    (DESC "stalactite")
-    (IN ATOP-STALACTITE)
-    (SYNONYM STALACTITE STALAGMITE ;STALAGTITE)
-    (ADJECTIVE LARGE)
-    (TEXT "You could probably climb down it, but you can forget climbing back up.")
-    (ACTION STALACTITE-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE STALACTITE-F ()
-    <COND (<VERB? LOOK-UNDER PUSH TAKE>
+    <COND (<VERB? EXAMINE>
+           <TELL "You could probably climb down it, but you can forget climbing back up." CR>)
+          (<VERB? LOOK-UNDER PUSH TAKE>
            <TELL "Do get a grip on yourself." CR>)>>
 
 ;----------------------------------------------------------------------
@@ -2463,15 +2367,9 @@ Cavernous passages lead east, north, and south.
 On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].")
     (SOUTH TO IN-NARROW-CORRIDOR)
     (EAST TO AT-RECENT-CAVE-IN)
-    (NORTH TO IN-IMMENSE-N/S-PASSAGE)>
-
-<OBJECT SCRAWLED-INSCRIPTION
-    (DESC "scrawled inscription")
-    (IN IN-GIANT-ROOM)
-    (SYNONYM INSCRIPTION WRITING SCRAWL)
-    (ADJECTIVE SCRAWLED)
-    (TEXT "It says, \"Fee fie foe foo\" [sic].")
-    (FLAGS NDESCBIT READBIT)>
+    (NORTH TO IN-IMMENSE-N/S-PASSAGE)
+    (THINGS SCRAWLED (INSCRIPTION WRITING SCRAWL)
+                         ([READ EXAMINE] "It says, \"Fee fie foe foo\" [sic]."))>
 
 <OBJECT GOLDEN-EGGS
     (DESC "nest of golden eggs")
@@ -2576,19 +2474,13 @@ which disappears through a hole in the floor.
 Passages exit to the south and west.")
     (GLOBAL STREAM)
     (SOUTH TO IN-IMMENSE-N/S-PASSAGE)
-    (WEST TO AT-STEEP-INCLINE)>
-
-<OBJECT WATERFALL
-    (DESC "waterfall")
-    (IN IN-CAVERN-WITH-WATERFALL)
-    (SYNONYM WATERFALL WHIRLPOOL)
-    (ADJECTIVE SPARKLING WHIRLING)
-    (TEXT "Wouldn't want to go down in a barrel!")
-    (ACTION WATERFALL-F)
-    (FLAGS NDESCBIT)>
+    (WEST TO AT-STEEP-INCLINE)
+    (THINGS (SPARKLING WHIRLING) (WATERFALL WHIRLPOOL) WATERFALL-F)>
 
 <ROUTINE WATERFALL-F ()
-    <COND (<VERB? ENTER>
+    <COND (<VERB? EXAMINE>
+           <TELL "Wouldn't want to go down in a barrel!" CR>)
+          (<VERB? ENTER>
            <TELL "Not a good plan, since you don't know how to swim." CR>)>>
 
 <OBJECT TRIDENT
@@ -2611,15 +2503,9 @@ Passages exit to the south and west.")
     (LDESC "You are in the soft room.
 The walls are covered with heavy curtains, the floor with a thick pile carpet.
 Moss covers the ceiling.")
-    (WEST TO IN-SWISS-CHEESE-ROOM)>
-
-<OBJECT CARPET
-    (DESC "carpet")
-    (IN IN-SOFT-ROOM)
-    (SYNONYM CARPET)
-    (ADJECTIVE SHAG PILE HEAVY THICK)
-    (TEXT "The carpet is quite plush.")
-    (FLAGS NDESCBIT)>
+    (WEST TO IN-SWISS-CHEESE-ROOM)
+    (THINGS (SHAG PILE HEAVY THICK) CARPET "The carpet is quite plush."
+            (TYPICAL EVERYDAY)      MOSS   MOSS-F)>
 
 <OBJECT CURTAINS
     (DESC "curtains")
@@ -2628,7 +2514,7 @@ Moss covers the ceiling.")
     (ADJECTIVE HEAVY THICK)
     (TEXT "They seem to absorb sound very well.")
     (ACTION CURTAINS-F)
-    (FLAGS NDESCBIT PLURALBIT)>
+    (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
 
 <ROUTINE CURTAINS-F ()
     <COND (<VERB? TAKE>
@@ -2636,17 +2522,11 @@ Moss covers the ceiling.")
           (<VERB? LOOK-UNDER SEARCH>
            <TELL "You don't find anything exciting behind the curtains." CR>)>>
 
-<OBJECT MOSS
-    (DESC "moss")
-    (IN IN-SOFT-ROOM)
-    (SYNONYM MOSS)
-    (ADJECTIVE TYPICAL EVERYDAY)
-    (TEXT "It just looks like your typical, everyday moss.")
-    (ACTION MOSS-F)
-    (FLAGS NDESCBIT)>
-
 <ROUTINE MOSS-F ()
-    <COND (<VERB? TAKE> <TELL "It crumbles to nothing in your hands." CR>)>>
+    <COND (<VERB? EXAMINE>
+           <TELL "It just looks like your typical, everyday moss." CR>)
+          (<VERB? TAKE>
+           <TELL "It crumbles to nothing in your hands." CR>)>>
 
 <OBJECT VELVET-PILLOW
     (DESC "velvet pillow")
@@ -2724,14 +2604,8 @@ The mist rises up through a fissure in the ceiling.
 The path exits to the south and west.")
     (GLOBAL MIST)
     (SOUTH TO IN-ORIENTAL-ROOM)
-    (WEST TO IN-ALCOVE)>
-
-<OBJECT MISTY-CAVERN-FISSURE
-    (DESC "fissure")
-    (IN IN-MISTY-CAVERN)
-    (SYNONYM FISSURE CEILING)
-    (TEXT "You can't really get close enough to examine it.")
-    (FLAGS NDESCBIT)>
+    (WEST TO IN-ALCOVE)
+    (THINGS <> (FISSURE CEILING) "You can't really get close enough to examine it.")>
 
 ;----------------------------------------------------------------------
 "Plovers and pyramids"
@@ -2747,7 +2621,8 @@ An extremely tight tunnel leads east.
 It looks like a very tight squeeze.
 An eerie light can be seen at the other end.")
     (NW TO IN-MISTY-CAVERN)
-    (EAST PER EAST-FROM-IN-ALCOVE)>
+    (EAST PER EAST-FROM-IN-ALCOVE)
+    (THINGS EERIE LIGHT "You can't make out any detail from here.")>
 
 <ROUTINE EAST-FROM-IN-ALCOVE ()
     <ONLY-EMERALD-CAN-PASS ,IN-PLOVER-ROOM>>
@@ -2774,14 +2649,6 @@ You'd best take inventory and drop something." CR>
 <ROUTINE TUNNEL-F ()
     <COND (<VERB? ENTER>
            <DO-WALK <COND (<=? ,HERE ,IN-ALCOVE> ,P?EAST) (ELSE ,P?WEST)>>)>>
-
-<OBJECT EERIE-LIGHT
-    (DESC "eerie light")
-    (IN IN-ALCOVE)
-    (SYNONYM LIGHT)
-    (ADJECTIVE EERIE)
-    (TEXT "You can't make out any detail from here.")
-    (FLAGS NDESCBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -3317,23 +3184,31 @@ A dark, forboding passage exits to the south.")
     (OUT TO AT-JUNCTION-WITH-WARM-WALLS)
     (DOWN SORRY "Don't be ridiculous!")
     (ACTION AT-BREATH-TAKING-VIEW-F)
+    (THINGS (ACTIVE GLOWING BLOOD BLOOD-RED RED EERIE MACABRE) (VOLCANO ROCK)
+            "Great gouts of molten lava come surging out of the volcano
+and go cascading back down into the depths.
+The glowing rock fills the farthest reaches of the cavern with a blood-red glare,
+giving everything an eerie, macabre appearance."
+            (JAGGED TWISTED MURKY SINISTER) (ROOF FORMATIONS LIGHT APPARITIONS)
+            "Embedded in the jagged roof far overhead are myriad twisted formations
+composed of pure white alabaster,
+which scatter the murky light into sinister apparitions upon the walls."
+            (DEEP BIZARRE TORTURED) (GORGE CHAOS ROCK)
+            "The gorge is filled with a bizarre chaos of tortured rock
+which seems to have been crafted by the devil himself."
+            (FIERY BOTTOMLESS) (RIVER FIRE DEPTH PIT)
+            "The river of fire crashes out from the depths of the volcano,
+burns its way through the gorge, and plummets into a bottomless pit far off to your left."
+            (IMMENSE BLISTERING BARREN SULFUROUS BUBBLING) (GEYSER STEAM ISLAND LAKE)
+            "The geyser of blistering steam erupts continuously from a barren island
+in the center of a sulfurous lake, which bubbles ominously."
+    )
     (FLAGS LIGHTBIT)>
 
 <ROUTINE AT-BREATH-TAKING-VIEW-F (RARG)
     <COND (<AND <=? .RARG ,M-BEG> <VERB? JUMP>>
            <DO-WALK ,P?DOWN>
            <RTRUE>)>>
-
-<OBJECT ACTIVE-VOLCANO
-    (DESC "active volcano")
-    (IN AT-BREATH-TAKING-VIEW)
-    (SYNONYM VOLCANO ROCK)
-    (ADJECTIVE ACTIVE GLOWING BLOOD BLOOD-RED RED EERIE MACABRE)
-    (TEXT "Great gouts of molten lava come surging out of the volcano
-and go cascading back down into the depths.
-The glowing rock fills the farthest reaches of the cavern with a blood-red glare,
-giving everything an eerie, macabre appearance.")
-    (FLAGS NDESCBIT VOWELBIT)>
 
 <OBJECT SPARKS-OF-ASH
     (DESC "sparks of ash")
@@ -3342,43 +3217,6 @@ giving everything an eerie, macabre appearance.")
     (ADJECTIVE FLICKERING)
     (TEXT "The sparks are too far away for you to get a good look at them.")
     (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
-
-<OBJECT JAGGED-ROOF
-    (DESC "jagged roof")
-    (IN AT-BREATH-TAKING-VIEW)
-    (SYNONYM ROOF FORMATIONS LIGHT APPARITIONS)
-    (ADJECTIVE JAGGED TWISTED MURKY SINISTER)
-    (TEXT "Embedded in the jagged roof far overhead are myriad twisted formations
-composed of pure white alabaster,
-which scatter the murky light into sinister apparitions upon the walls.")
-    (FLAGS NDESCBIT)>
-
-<OBJECT DEEP-GORGE
-    (DESC "deep gorge")
-    (IN AT-BREATH-TAKING-VIEW)
-    (SYNONYM GORGE CHAOS ROCK)
-    (ADJECTIVE DEEP BIZARRE TORTURED)
-    (TEXT "The gorge is filled with a bizarre chaos of tortured rock
-which seems to have been crafted by the devil himself.")
-    (FLAGS NDESCBIT)>
-
-<OBJECT RIVER-OF-FIRE
-    (DESC "river of fire")
-    (IN AT-BREATH-TAKING-VIEW)
-    (SYNONYM RIVER FIRE DEPTH PIT)
-    (ADJECTIVE FIERY BOTTOMLESS)
-    (TEXT "The river of fire crashes out from the depths of the volcano,
-burns its way through the gorge, and plummets into a bottomless pit far off to your left.")
-    (FLAGS NDESCBIT)>
-
-<OBJECT IMMENSE-GEYSER
-    (DESC "immense geyser")
-    (IN AT-BREATH-TAKING-VIEW)
-    (SYNONYM GEYSER STEAM ISLAND LAKE)
-    (ADJECTIVE IMMENSE BLISTERING BARREN SULFUROUS BUBBLING)
-    (TEXT "The geyser of blistering steam erupts continuously from a barren island
-in the center of a sulfurous lake, which bubbles ominously.")
-    (FLAGS NDESCBIT VOWELBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -3451,15 +3289,8 @@ A sign posted above the entrance reads: \"Caution! Bear in room!\"")
     (UP TO IN-LIMESTONE-PASSAGE)
     (EAST TO IN-BARREN-ROOM)
     (IN TO IN-BARREN-ROOM)
+    (THINGS (BARREN ROOM CAUTION) SIGN ([READ EXAMINE] "The sign reads, \"Caution! Bear in room!\""))
     (FLAGS SACREDBIT)>
-
-<OBJECT CAUTION-SIGN
-    (DESC "caution sign")
-    (IN IN-FRONT-OF-BARREN-ROOM)
-    (SYNONYM SIGN)
-    (ADJECTIVE BARREN ROOM CAUTION)
-    (TEXT "The sign reads, \"Caution! Bear in room!\"")
-    (FLAGS NDESCBIT READBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -3472,14 +3303,8 @@ Marks in the dust lead away toward the far end of the room.
 The only exit is the way you came in.")
     (WEST TO IN-FRONT-OF-BARREN-ROOM)
     (OUT TO IN-FRONT-OF-BARREN-ROOM)
+    (THINGS <> (DUST MARKS) "It just looks like ordinary dust.")
     (FLAGS SACREDBIT)>
-
-<OBJECT DUST
-    (DESC "dust")
-    (IN IN-BARREN-ROOM)
-    (SYNONYM DUST MARKS)
-    (TEXT "It just looks like ordinary dust.")
-    (FLAGS NDESCBIT)>
 
 <GLOBAL BEAR-FOLLOWING <>>
 <GLOBAL BEAR-FRIENDLY <>>
@@ -3694,16 +3519,10 @@ which is probably just as well." CR>)
 Hmmm... There is a message here scrawled in the dust in a flowery script.")
     (NORTH TO DIFFERENT-MAZE-2)
     (OUT TO DIFFERENT-MAZE-3)
-    (FLAGS SACREDBIT)>
-
-<OBJECT MESSAGE-IN-DUST
-    (DESC "message in the dust")
-    (IN VENDING-DEAD-END)
-    (SYNONYM MESSAGE SCRAWL WRITING SCRIPT)
-    (ADJECTIVE FLOWERY SCRAWLED)
-    (TEXT "The message reads, \"This is not the maze where the pirate leaves
+    (THINGS (FLOWERY SCRAWLED) (MESSAGE SCRAWL WRITING SCRIPT)
+            "The message reads, \"This is not the maze where the pirate leaves
 his treasure chest.\"")
-    (FLAGS NDESCBIT)>
+    (FLAGS SACREDBIT)>
 
 <OBJECT VENDING-MACHINE
     (DESC "vending machine")
@@ -3737,6 +3556,7 @@ without getting so much as a scratch." CR>)
 
 <GLOBAL FRESH-BATTERIES-USED <>>
 
+;"TODO: FRESH-BATTERIES should be plural."
 <OBJECT FRESH-BATTERIES
     (DESC "fresh batteries")
     (IN VENDING-MACHINE)
@@ -4073,6 +3893,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
     (DOWN TO OUTSIDE-GRATE IF REPOSITORY-GRATE IS OPEN)
     (NE TO AT-NE-END)
     (ACTION AT-SW-END-F)
+    (THINGS <> SIGN ([READ EXAMINE] "The sign reads, \"TREASURE VAULT. Keys in main office.\""))
     (FLAGS LIGHTBIT)>
 
 <ROUTINE AT-SW-END-F (RARG)
@@ -4087,13 +3908,6 @@ At your feet is a large steel grate, next to which is a sign which reads,
     (TEXT "It just looks like an ordinary steel grate.")
     (ACTION REPOSITORY-GRATE-F)
     (FLAGS DOORBIT LOCKEDBIT OPENABLEBIT)>
-
-<OBJECT REPOSITORY-SIGN
-    (DESC "sign")
-    (IN AT-SW-END)
-    (SYNONYM SIGN)
-    (TEXT "The sign reads, \"TREASURE VAULT. Keys in main office.\"")
-    (FLAGS NDESCBIT READBIT)>
 
 ;"It can't actually be unlocked."
 <ROUTINE REPOSITORY-GRATE-F ()
@@ -4453,6 +4267,8 @@ appears out of nowhere!" CR>)>)>)
 <ROUTINE V-COUNT ()
     <COND (<FSET? ,PRSO ,MULTITUDEBIT>
            <TELL "There are a multitude." CR>)
+          (<PRSO? ,PSEUDO-OBJECT>
+           <TELL "I see one (1) of those." CR>)
           (ELSE
            <TELL "I see one (1) " D ,PRSO "." CR>)>>
 
