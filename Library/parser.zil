@@ -345,15 +345,17 @@ Args:
               (.A <PRINT-ADJ .A>)
               (.N <TELL B .N>)
               (ELSE <TELL "???">)>>
-
-    <VERSION?
-        (ZIP
-            <DEFMAC PRINT-ADJ ('A)
-                <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
-        (ELSE
-            <DEFMAC PRINT-ADJ ('A)
-                <FORM TELL B .A>>)>
 >
+
+<IFFLAG (<OR DEBUG DEBUGGING-VERBS>
+         <VERSION?
+             (ZIP
+                 <DEFMAC PRINT-ADJ ('A)
+                     <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
+             (ELSE
+                 <DEFMAC PRINT-ADJ ('A)
+                     <FORM TELL B .A>>)>
+)>
 
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
          <ROUTINE PRINT-MATCHING-WORD (V PS P1 "AUX" W CNT SIZE)
