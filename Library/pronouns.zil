@@ -108,7 +108,7 @@
                            <FORM LIST-OBJECTS
                                  <FORM GVAL .OBJS-TBL-NAME>
                                  <>
-                                 <+ ,L-PRSTABLE ,L-THE>>
+                                 <+ ,L-PRSTABLE ,L-THE ,L-SCENERY>>
                            <FORM TELL "." CR>>>
                    ,PRONOUN-DEFINITIONS>>>
     <EVAL .RTN>>
