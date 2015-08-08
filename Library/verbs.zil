@@ -1638,6 +1638,10 @@ Returns:
                <DO (I 0 .MAX)
                    <COND (.I <TELL ", ">)>
                    <PRINT-OBJREF <GET/B .PT .I>>>)>
+        <COND (<SET PT <GETP .O ,P?THINGS>>
+               <CRLF>
+               <TELL "Pseudos: ">
+               <PRINT-PSEUDOS .PT>)>
         <CRLF>
         <TELL "Flags: ">
         <DO (I 0 %<VERSION? (ZIP 31) (ELSE 47)>)
