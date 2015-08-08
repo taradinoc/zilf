@@ -94,11 +94,13 @@ other versions. These macros let us write the same code for all versions."
     (ZIP
         <DEFMAC GET/B ('T 'O) <FORM GETB .T .O>>
         <DEFMAC PUT/B ('T 'O 'V) <FORM PUTB .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>)
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-BTBL? .T .C .V>>)
     (ELSE
         <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
         <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>)>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-WTBL? .T .C .V>>)>
 
 "Property and flag defaults"
 
@@ -128,6 +130,7 @@ other versions. These macros let us write the same code for all versions."
 <PROPDEF CAPACITY -1>
 <PROPDEF ARTICLE <>>
 <PROPDEF PRONOUN <>>
+<PROPDEF THINGS <>>
 
 "Parser"
 
@@ -183,6 +186,7 @@ other versions. These macros let us write the same code for all versions."
 <CONSTANT L-THE 16>
 <CONSTANT L-OR 32>
 <CONSTANT L-CAP 64>
+<CONSTANT L-SCENERY 128>
 
 ;"Determines whether a word has the given part of speech, and returns
 its part of speech value if so.
@@ -472,6 +476,9 @@ Args:
 
 "Orphaning"
 <INSERT-FILE "orphan">
+
+"Pseudo-Objects"
+<INSERT-FILE "pseudo">
 
 "Pronouns"
 <INSERT-FILE "pronouns">
@@ -1521,6 +1528,7 @@ Args:
 
 Uses:
   PRSA
+  HERE
 
 Returns:
   The matched object, or MANY-OBJECTS if multiple objects were matched,
@@ -1567,12 +1575,26 @@ Returns:
                               <COND (<G? .Q .BEST>
                                      <SET NOUT .ONOUT>
                                      <SET .BEST .Q>)>
-                              <COND (<G=? .NOUT ,P-MAX-OBJECTS>
+                              <COND (<AND .NN <NP-EXCLUDES? .NP .I>>)
+                                    (<G=? .NOUT ,P-MAX-OBJECTS>
                                      <TELL "[too many objects!]" CR>
                                      <RETURN>)
-                                    (<NOT <AND .NN <NP-EXCLUDES? .NP .I>>>
+                                    (ELSE
                                      <SET NOUT <+ .NOUT 1>>
                                      <PUT/B .OUT .NOUT .I>)>)>>
+                   ;"Look for a pseudo-object if we didn't find a real one."
+                   <COND (<AND <NOT .F>
+                               <BTST .BITS ,SF-ON-GROUND>
+                               <SET Q <GETP ,HERE ,P?THINGS>>>
+                          <SET F <MATCH-PSEUDO .SPEC .Q>>
+                          <COND (.F
+                                 <COND (<AND .NN <NP-EXCLUDES-PSEUDO? .NP .F>>)
+                                       (<G=? .NOUT ,P-MAX-OBJECTS>
+                                        <TELL "[too many objects!]" CR>
+                                        <RETURN>)
+                                       (ELSE
+                                        <SET NOUT <+ .NOUT 1>>
+                                        <PUT/B .OUT .NOUT <MAKE-PSEUDO .F>>)>)>)>
                    <COND (<NOT .F>
                           ;"Try expanding the search if we can."
                           <COND (<N=? .BITS -1>
@@ -1637,6 +1659,9 @@ Returns:
 <DEFMAC NP-INCLUDES? ('NP 'O)
     <FORM ANY-SPEC-REFERS? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .O>>
 
+<DEFMAC NP-INCLUDES-PSEUDO? ('NP 'PDO)
+    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .PDO>>
+
 <ROUTINE ANY-SPEC-REFERS? (TBL N O)
     <COND (<0? .N> <RFALSE>)>
     <DO (I 1 .N)
@@ -1644,10 +1669,20 @@ Returns:
         <SET TBL <+ .TBL ,P-OBJSPEC-SIZE>>>
     <RFALSE>>
 
+<ROUTINE ANY-SPEC-REFERS-PSEUDO? (TBL N PDO)
+    <COND (<0? .N> <RFALSE>)>
+    <DO (I 1 .N)
+        <COND (<REFERS-PSEUDO? .TBL .PDO> <RTRUE>)>
+        <SET TBL <+ .TBL ,P-OBJSPEC-SIZE>>>
+    <RFALSE>>
+
 ;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
   Note: NP may be evaluated twice."
 <DEFMAC NP-EXCLUDES? ('NP 'O)
     <FORM ANY-SPEC-REFERS? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .O>>
+
+<DEFMAC NP-EXCLUDES-PSEUDO? ('NP 'PDO)
+    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .PDO>>
 
 ;"Determines whether a local-global object is present in a given room.
 
@@ -1688,65 +1723,66 @@ Returns:
            <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>
     <RETURN 0>>
 
+;"Attempts to locate a word in a property table.
+
+Args:
+  O: The object containing the property.
+  P: The property number.
+  V: The word to locate.
+
+Returns:
+  True if the word is located, otherwise false."
+<ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
+    <AND <SET PT <GETPT .O .P>>
+         <IN-WTBL? .PT </ <PTSIZE .PT> 2> .V>>>
+
+;"Attempts to locate a byte in a property table.
+
+Args:
+  O: The object containing the property.
+  P: The property number.
+  V: The byte to locate. Must be 255 or lower.
+
+Returns:
+  True if the byte is located, otherwise false."
+<ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
+    <AND <SET PT <GETPT .O .P>>
+         <IN-BTBL? .PT <PTSIZE .PT> .V>>>
+
 <VERSION?
     (ZIP
         ;"V3 has no INTBL? opcode"
-        
-        ;"Attempts to locate a word in a property table.
-        
-        Args:
-          O: The object containing the property.
-          P: The property number.
-          V: The word to locate.
-        
-        Returns:
-          True if the word is located, otherwise false."
-        <ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET MAX <- </ <PTSIZE .PT> 2> 1>>
-            <DO (I 0 .MAX)
-                <COND (<==? <GET .PT .I> .V> <RTRUE>)>>
+        <ROUTINE IN-WTBL? (TBL CNT V)
+            <OR .CNT <RFALSE>>
+            <SET CNT <- .CNT 1>>
+            <DO (I 0 .CNT)
+                <COND (<==? <GET .TBL .I> .V> <RTRUE>)>>
             <RFALSE>>
 
-        ;"Attempts to locate a byte in a property table.
-        
-        Args:
-          O: The object containing the property.
-          P: The property number.
-          V: The byte to locate. Must be 255 or lower.
-        
-        Returns:
-          True if the byte is located, otherwise false."
-        <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET MAX <- <PTSIZE .PT> 1>>
-            <DO (I 0 .MAX)
-                <COND (<==? <GETB .PT .I> .V> <RTRUE>)>>
+        <ROUTINE IN-BTBL? (TBL CNT V)
+            <OR .CNT <RFALSE>>
+            <SET CNT <- .CNT 1>>
+            <DO (I 0 .CNT)
+                <COND (<==? <GETB .TBL .I> .V> <RTRUE>)>>
             <RFALSE>>)
     (EZIP
         ;"V4 only has the 3-argument (word) form of INTBL?"
-        <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET LEN </ <PTSIZE .PT> 2>>
-            <AND <INTBL? .V .PT .LEN> <RTRUE>>>
+        <ROUTINE IN-WTBL? (TBL CNT V)
+            <T? <INTBL? .V .TBL .CNT>>>
 
-        <ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET MAX <- <PTSIZE .PT> 1>>
-            <DO (I 0 .MAX)
-                <COND (<==? <GETB .PT .I> .V> <RTRUE>)>>
+        <ROUTINE IN-BTBL? (TBL CNT V)
+            <OR .CNT <RFALSE>>
+            <SET CNT <- .CNT 1>>
+            <DO (I 0 .CNT)
+                <COND (<==? <GETB .TBL .I> .V> <RTRUE>)>>
             <RFALSE>>)
     (T
         ;"use built-in INTBL? in V5+"
-        <ROUTINE IN-PWTBL? (O P V "AUX" PT LEN)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET LEN </ <PTSIZE .PT> 2>>
-            <AND <INTBL? .V .PT .LEN> <RTRUE>>>
+        <ROUTINE IN-WTBL? (TBL CNT V)
+            <T? <INTBL? .V .TBL .CNT>>>
 
-        <ROUTINE IN-PBTBL? (O P V "AUX" PT LEN)
-            <OR <SET PT <GETPT .O .P>> <RFALSE>>
-            <SET LEN <PTSIZE .PT>>
-            <AND <INTBL? .V .PT .LEN 1> <RTRUE>>>)>
+        <ROUTINE IN-BTBL? (TBL CNT V)
+            <T? <INTBL? .V .TBL .CNT 1>>>)>
 
 <IF-DEBUG
     ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
@@ -2297,6 +2333,7 @@ Returns:
 Uses:
   HERE
   WINNER
+  PSEUDO-LOC
 
 Args:
   OBJ: The object to check.
@@ -2304,6 +2341,8 @@ Args:
 Returns:
   True if the object is visible, otherwise false."
 <ROUTINE VISIBLE? (OBJ "AUX" P M)
+    <COND (<=? .OBJ ,PSEUDO-OBJECT>
+           <RETURN <=? ,HERE ,PSEUDO-LOC>>)>
     <SET P <LOC .OBJ>>
     <COND (<0? .P> <RFALSE>)>
     <SET M <META-LOC .OBJ>>

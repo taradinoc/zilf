@@ -521,6 +521,10 @@ on the count and plurality of the child objects. For example:
   If the container has three objects:
     are a shirt, a hat, and a watch
 
+Uses:
+  HERE
+  PSEUDO-LOC
+
 Args:
   O: The object whose contents are to be listed, or if L-PRSTABLE is given,
     the address of a table containing the objects.
@@ -537,6 +541,7 @@ Args:
     L-THE: Print the definite article instead of indefinite.
     L-OR: Print 'or' instead of 'and'.
     L-CAP: Capitalize the first article printed. (Implies L-SUFFIX.)
+    L-SCENERY: Refer to PSEUDO-OBJECT as 'some scenery [in PSEUDO-LOC]'.
 
 Returns:
   The number of objects listed."
@@ -569,15 +574,15 @@ Returns:
                  (ELSE <TELL "nothing">)>)
           (<==? .N 1>
            <COND (<BTST .FLAGS ,L-CAP>
-                  <COND (<BTST .FLAGS ,L-THE> <TELL CT .F>) (ELSE <TELL CA .F>)>
+                  <LIST-OBJECTS-PRINT .F .FLAGS T>
                   <IF-PLURAL .F <TELL " are"> <TELL " is">>)
                  (<BTST .FLAGS ,L-SUFFIX>
-                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>
+                  <LIST-OBJECTS-PRINT .F .FLAGS <>>
                   <IF-PLURAL .F <TELL " are"> <TELL " is">>)
                  (ELSE
                   <AND <BTST .FLAGS ,L-ISARE>
                        <IF-PLURAL .F <TELL "are "> <TELL "is ">>>
-                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>)>)
+                  <LIST-OBJECTS-PRINT .F .FLAGS <>>)>)
           (<==? .N 2>
            <COND (<AND <BTST .FLAGS ,L-ISARE>
                        <NOT <BTST .FLAGS ,L-SUFFIX>>>
@@ -585,12 +590,9 @@ Returns:
                                   <FSET? .F ,PLURALBIT>>
                               <TELL "are ">)
                              (ELSE <TELL "is ">)>)>
-           <COND (<BTST .FLAGS ,L-CAP>
-                  <COND (<BTST .FLAGS ,L-THE> <TELL CT .F>) (ELSE <TELL CA .F>)>)
-                 (ELSE
-                  <COND (<BTST .FLAGS ,L-THE> <TELL T .F>) (ELSE <TELL A .F>)>)>
+           <LIST-OBJECTS-PRINT .F .FLAGS <BAND .FLAGS ,L-CAP>>
            <COND (<BTST .FLAGS ,L-OR> <TELL " or ">) (ELSE <TELL " and ">)>
-           <COND (<BTST .FLAGS ,L-THE> <TELL T .S>) (ELSE <TELL A .S>)>
+           <LIST-OBJECTS-PRINT .S .FLAGS <>>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
           (ELSE
            <COND (<AND <BTST .FLAGS ,L-ISARE>
@@ -604,10 +606,9 @@ Returns:
                       <SET J <GET/B .O .I>>
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
                              <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I 1>>
-                                    <COND (<BTST .FLAGS ,L-THE> <TELL CT .J>)
-                                          (ELSE <TELL CA .J>)>)
-                                   (<BTST .FLAGS ,L-THE> <TELL T .J>)
-                                   (ELSE <TELL A .J>)>
+                                    <LIST-OBJECTS-PRINT .J .FLAGS T>)
+                                   (ELSE
+                                    <LIST-OBJECTS-PRINT .J .FLAGS <>>)>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
                                    (<==? .N 1>
@@ -618,10 +619,9 @@ Returns:
                   <MAP-CONTENTS (I .O)
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
                              <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I .F>>
-                                    <COND (<BTST .FLAGS ,L-THE> <TELL CT .I>)
-                                          (ELSE <TELL CA .I>)>)
-                                   (<BTST .FLAGS ,L-THE> <TELL T .I>)
-                                   (ELSE <TELL A .I>)>
+                                    <LIST-OBJECTS-PRINT .I .FLAGS T>)
+                                   (ELSE
+                                    <LIST-OBJECTS-PRINT .I .FLAGS <>>)>
                              <SET N <- .N 1>>
                              <COND (<0? .N>)
                                    (<==? .N 1>
@@ -630,6 +630,21 @@ Returns:
                                    (ELSE <TELL ", ">)>)>>)>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>
     <RETURN .N>>
+
+<ROUTINE LIST-OBJECTS-PRINT (O FLAGS CAP?)
+    <COND (<AND <=? .O ,PSEUDO-OBJECT>
+                <BTST .FLAGS ,L-SCENERY>>
+           <COND (.CAP? <TELL !\S>) (ELSE <TELL !\s>)>
+           <TELL "ome scenery">
+           <COND (<N=? ,PSEUDO-LOC ,HERE>
+                  <TELL " in " D ,PSEUDO-LOC>)>
+           <RTRUE>)
+          (.CAP?
+           <COND (<BTST .FLAGS ,L-THE> <TELL CT .O>)
+                 (ELSE <TELL CA .O>)>)
+          (ELSE
+           <COND (<BTST .FLAGS ,L-THE> <TELL T .O>)
+                 (ELSE <TELL A .O>)>)>>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
