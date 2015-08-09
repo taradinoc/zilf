@@ -71,9 +71,9 @@
     <COMMAND [GET CUBE]>
     <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
     <COMMAND [ALL]>
-    <EXPECT "blue cube: You pick up the blue cube.|
-green cube: You pick up the green cube.|
-red cube: You pick up the red cube.|">
+    <EXPECT "blue cube: Taken.|
+green cube: Taken.|
+red cube: Taken.|">
     <CHECK <IN? ,RED-CUBE ,WINNER>>
     <CHECK <IN? ,GREEN-CUBE ,WINNER>>
     <CHECK <IN? ,BLUE-CUBE ,WINNER>>>
@@ -82,8 +82,8 @@ red cube: You pick up the red cube.|">
     <COMMAND [GET CUBE]>
     <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
     <COMMAND [ALL BUT BLUE]>
-    <EXPECT "green cube: You pick up the green cube.|
-red cube: You pick up the red cube.|">
+    <EXPECT "green cube: Taken.|
+red cube: Taken.|">
     <CHECK <IN? ,RED-CUBE ,WINNER>>
     <CHECK <IN? ,GREEN-CUBE ,WINNER>>
     <CHECK <NOT <IN? ,BLUE-CUBE ,WINNER>>>>
@@ -158,9 +158,9 @@ red cube: You pick up the red cube.|">
     <COMMAND [GET]>
     <EXPECT "What do you want to get?|">
     <COMMAND [ALL]>
-    <EXPECT "blue cube: You pick up the blue cube.|
-green cube: You pick up the green cube.|
-red cube: You pick up the red cube.|">
+    <EXPECT "blue cube: Taken.|
+green cube: Taken.|
+red cube: Taken.|">
     <CHECK <IN? ,RED-CUBE ,WINNER>>
     <CHECK <IN? ,GREEN-CUBE ,WINNER>>
     <CHECK <IN? ,BLUE-CUBE ,WINNER>>>
@@ -169,8 +169,8 @@ red cube: You pick up the red cube.|">
     <COMMAND [GET]>
     <EXPECT "What do you want to get?|">
     <COMMAND [ALL BUT BLUE]>
-    <EXPECT "green cube: You pick up the green cube.|
-red cube: You pick up the red cube.|">
+    <EXPECT "green cube: Taken.|
+red cube: Taken.|">
     <CHECK <IN? ,RED-CUBE ,WINNER>>
     <CHECK <IN? ,GREEN-CUBE ,WINNER>>
     <CHECK <NOT <IN? ,BLUE-CUBE ,WINNER>>>>
