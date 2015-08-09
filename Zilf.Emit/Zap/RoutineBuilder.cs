@@ -1322,6 +1322,12 @@ namespace Zilf.Emit.Zap
                         return Combine1to1("ZERO? " + rm.Groups["var"]);
                     }
 
+                    if (Match(a => a.Code.Text == "JUMP" && (a.Target == RTRUE || a.Target == RFALSE)))
+                    {
+                        // JUMP to TRUE/FALSE => RTRUE/RFALSE
+                        return Combine1to1(matches[0].Target == RTRUE ? "RTRUE" : "RFALSE");
+                    }
+
                     if (Match(a => a.Code.Text.StartsWith("PUSH "), b => b.Code.Text == "RSTACK"))
                     {
                         // PUSH + RSTACK => RFALSE/RTRUE/RETURN

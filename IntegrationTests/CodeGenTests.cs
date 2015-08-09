@@ -204,9 +204,16 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestPrintrOverBranch()
+        public void TestPrintrOverBranch_1()
         {
             AssertRoutine("\"AUX\" X", "<COND (.X <PRINTI \"foo\">) (T <PRINTI \"bar\">)> <CRLF> <RTRUE>")
+                .GeneratesCodeMatching("PRINTR \"foo\".*PRINTR \"bar\"");
+
+        }
+        [TestMethod]
+        public void TestPrintrOverBranch_2()
+        {
+            AssertRoutine("\"AUX\" X", "<COND (.X <PRINTI \"foo\"> <CRLF>) (T <PRINTI \"bar\"> <CRLF>)> <RTRUE>")
                 .GeneratesCodeMatching("PRINTR \"foo\".*PRINTR \"bar\"");
         }
 
