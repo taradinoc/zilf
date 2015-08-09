@@ -1,3 +1,34 @@
+"Pseudo-objects"
+
+"This provides a way to populate games with scenery without creating separate objects for each noun
+ mentioned in a room description.
+ 
+ When the parser can't find a match for an OBJSPEC, it checks the location's THINGS property, which
+ (if present) defines a set of pseudo-objects, each with a list of adjectives, a list of nouns, and
+ an action routine. If one of them matches, the singleton PSEUDO-OBJECT is returned, after setting
+ its ACTION property to the routine and setting the global PSEUDO-LOC to the location.
+ 
+ The format of the THINGS property is:
+ 
+     .PROP 2,P?THINGS
+     .WORD T?THINGS-TABLE
+     
+   T?THINGS-TABLE::
+     .WORD 1                          ; Number of pseudo-objects
+     .BYTE 1                          ; Number of adjectives
+     .BYTE 2                          ; Number of nouns
+     .WORD A?GINGERBREAD              ; Adjective (stored directly since # adjectives = 1,
+                                      ; otherwise this would point to a byte/word table)
+     .WORD T?GINGERBREAD-HOUSE-NOUNS  ; Noun table (since # adjectives > 1)
+     .WORD GINGERBREAD-HOUSE-F        ; Action routine
+   
+   T?GINGERBREAD-HOUSE-NOUNS::
+     .WORD W?HOUSE
+     .WORD W?MANSION
+   
+ The property definition syntax is implemented by THINGS-PROPSPEC below."
+
+"Constants and macros to access pseudo entries"
 <CONSTANT PDO-SIZE 8>
 
 <DEFMAC PDO-NADJ ('PDO)
@@ -15,14 +46,14 @@
 <DEFMAC PDO-ACTION ('PDO)
     <FORM GET .PDO 3>>
 
-<DEFMAC PDO-ADJ-REFERS? ()
-    '<OR <AND <1? .NA> <=? .A .AT>>
-         <AND <NOT <1? .NA>> <IN-B/WTBL? .AT .NA .A>>>>
+;"Like REFERS? but for pseudo entries.
 
-<DEFMAC PDO-NOUN-REFERS? ()
-    '<OR <AND <1? .NN> <=? .N .NT>>
-         <AND <NOT <1? .NN>> <IN-WTBL? .NT .NN .N>>>>
+Args:
+  SPEC: An OBJSPEC.
+  PDO: A pseudo entry.
 
+Returns:
+  A quality score from 0 to 3 indicating how well the OBJSPEC matches the pseudo."
 <ROUTINE REFERS-PSEUDO? (SPEC PDO "AUX" NA NN AT NT
                          (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
     <SET NA <PDO-NADJ .PDO>>
@@ -42,6 +73,22 @@
            <COND (<PDO-ADJ-REFERS?> <RETURN 1>)>)>
     <RETURN 0>>
 
+<DEFMAC PDO-ADJ-REFERS? ()
+    '<OR <AND <1? .NA> <=? .A .AT>>
+         <AND <NOT <1? .NA>> <IN-B/WTBL? .AT .NA .A>>>>
+
+<DEFMAC PDO-NOUN-REFERS? ()
+    '<OR <AND <1? .NN> <=? .N .NT>>
+         <AND <NOT <1? .NN>> <IN-WTBL? .NT .NN .N>>>>
+
+;"Tries to match an OBJSPEC against any of the pseudo entries in a THINGS property.
+
+Args:
+  SPEC: The OBJSPEC.
+  PT: The property table for the THINGS property.
+
+Returns:
+  The address of the pseudo entry, or false if none matched."
 <ROUTINE MATCH-PSEUDO MP (SPEC PT "AUX" CNT)
     <SET CNT <GET .PT 0>>
     <SET PT <REST .PT 2>>
@@ -50,6 +97,7 @@
               (<REFERS-PSEUDO? .SPEC .PT> <RETURN .PT>)>
         <SET PT <REST .PT ,PDO-SIZE>>>>
 
+;"Initializes PSEUDO-OBJECT from a pseudo entry and returns it."
 <ROUTINE MAKE-PSEUDO (PDO)
     <PUTP ,PSEUDO-OBJECT ,P?ACTION <PDO-ACTION .PDO>>
     <SETG PSEUDO-LOC ,HERE>
