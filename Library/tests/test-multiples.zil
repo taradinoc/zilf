@@ -79,9 +79,9 @@
 
 <TEST-CASE ("Take all")
     <COMMAND [TAKE ALL]>
-    <EXPECT "hat: You wear the hat.|
-banana: You pick up the banana.|
-apple: You pick up the apple.|">
+    <EXPECT "hat: Taken (and worn).|
+banana: Taken.|
+apple: Taken.|">
     <CHECK <IN? ,HAT ,WINNER>>
     <CHECK <IN? ,APPLE ,WINNER>>
     <CHECK <IN? ,BANANA ,WINNER>>
@@ -93,8 +93,8 @@ apple: You pick up the apple.|">
 
 <TEST-CASE ("Exclude one object with BUT")
     <COMMAND [TAKE ALL BUT BANANA]>
-    <EXPECT "hat: You wear the hat.|
-apple: You pick up the apple.|">
+    <EXPECT "hat: Taken (and worn).|
+apple: Taken.|">
     <CHECK <IN? ,HAT ,WINNER>>
     <CHECK <IN? ,APPLE ,WINNER>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
@@ -118,8 +118,8 @@ apple: You pick up the apple.|">
 
 <TEST-CASE ("Take individual objects with AND")
     <COMMAND [TAKE HAT AND BANANA]>
-    <EXPECT "hat: You wear the hat.|
-banana: You pick up the banana.|">
+    <EXPECT "hat: Taken (and worn).|
+banana: Taken.|">
     <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
     <CHECK <IN? ,BANANA ,WINNER>>
     <CHECK <NOT <IN? APPLE ,WINNER>>>>
@@ -129,9 +129,9 @@ banana: You pick up the banana.|">
     <MOVE ,BANANA ,WINNER>
     <MOVE ,APPLE ,WINNER>
     <COMMAND [DROP ALL]>
-    <EXPECT "apple: You drop the apple.|
-banana: You drop the banana.|
-hat: You drop the hat.|">
+    <EXPECT "apple: Dropped.|
+banana: Dropped.|
+hat: Dropped.|">
     <CHECK <NOT <IN? ,HAT ,WINNER>>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>>
@@ -200,7 +200,7 @@ red cube: You already have that.|">>
     <MOVE ,GREEN-CUBE ,STARTROOM>
     <MOVE ,BLUE-CUBE ,STARTROOM>
     <COMMAND [GET ALL CUBES EXCEPT GREEN]>
-    <EXPECT "blue cube: You pick up the blue cube.|
-red cube: You pick up the red cube.|">>
+    <EXPECT "blue cube: Taken.|
+red cube: Taken.|">>
 
 <TEST-GO ,STARTROOM>

@@ -44,11 +44,11 @@
 
 <TEST-CASE ("TAKE ALL then DROP THEM")
     <COMMAND [TAKE ALL]>
-    <EXPECT "rusty nail: You pick up the rusty nail.|
-apple: You pick up the apple.|">
+    <EXPECT "rusty nail: Taken.|
+apple: Taken.|">
     <COMMAND [DROP THEM]>
-    <EXPECT "rusty nail: You drop the rusty nail.|
-apple: You drop the apple.|">
+    <EXPECT "rusty nail: Dropped.|
+apple: Dropped.|">
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>
     <CHECK <NOT <IN? ,NAIL ,WINNER>>>
     <CHECK <IN? ,WALLET ,WINNER>>>
