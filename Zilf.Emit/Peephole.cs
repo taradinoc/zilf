@@ -439,12 +439,18 @@ namespace Zilf.Emit
             Queue<LinkedListNode<Line>> queue = new Queue<LinkedListNode<Line>>();
             Dictionary<ILabel, bool> usedLabels = new Dictionary<ILabel, bool>();
 
+            int iterations = 0;
+            const int MaxIterations = 10000;
+
             do
             {
                 Trace();
 
                 if (lines.Count == 0)
                     break;
+
+                if (++iterations > MaxIterations)
+                    throw new NotImplementedException("Optimizer iteration count exceeded, this is probably a bug");
 
                 changed = false;
 
