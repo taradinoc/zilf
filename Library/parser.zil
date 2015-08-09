@@ -136,9 +136,11 @@ other versions. These macros let us write the same code for all versions."
 
 <CONSTANT READBUF-SIZE 100>
 <CONSTANT READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+<CONSTANT OOPS-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
 
 <CONSTANT LEXBUF-SIZE 59>
 <CONSTANT LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<CONSTANT OOPS-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
 
 <CONSTANT P1MASK 3>
 
@@ -244,6 +246,7 @@ Args:
 <GLOBAL P-P1 <>>
 <GLOBAL P-P2 <>>
 <GLOBAL P-SYNTAX <>>
+<GLOBAL P-OOPS-WN 0>
 
 "Structured types for storing noun phrases.
 
@@ -511,7 +514,7 @@ Args:
 <FINISH-PRONOUNS>
 
 "Buzzwords"
-<BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE THEN UNDO \. \, \">
+<BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE THEN UNDO OOPS \. \, \">
 
 ;"Reads and parses a command.
 
@@ -539,6 +542,7 @@ Sets:
   USAVE
   P-NP-DOBJ
   P-NP-IOBJ
+  P-OOPS-WN
 "
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP)
     ;"Need to (re)initialize locals here since we use AGAIN"
@@ -572,7 +576,28 @@ Sets:
                       <V-LOOK>
                       <AGAIN>)>)>>
     
+    ;"Handle OOPS"
+    <COND (<AND ,P-LEN <=? <GETWORD? 1> ,W?OOPS>>
+           <COND (<=? ,P-LEN 2>
+                  <COND (,P-OOPS-WN
+                         <TRACE 2 "[handling OOPS]" CR>
+                         <HANDLE-OOPS 2>
+                         <SETG P-LEN <GETB ,LEXBUF 1>>
+                         <TRACE-DO 1 <DUMPLINE>>)
+                        (ELSE
+                         <TELL "Nothing to correct." CR>
+                         <RFALSE>)>)
+                 (<=? ,P-LEN 1>
+                  <TELL "It's OK." CR>
+                  <RFALSE>)
+                 (ELSE
+                  <TELL "You can only correct one word at a time." CR>
+                  <RFALSE>)>)>
+    
     <SET KEEP 0>
+    <SETG P-OOPS-WN 0>
+    <COPY-LEXBUF ,LEXBUF ,OOPS-LEXBUF>
+    <COPY-READBUF ,READBUF ,OOPS-READBUF>
     ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
     <COND (<ORPHANING?>
            <SET O-R <HANDLE-ORPHAN-RESPONSE>>
@@ -613,6 +638,7 @@ Sets:
                      (<NOT <OR <SET W <GETWORD? .I>>
                                <AND <PARSE-NUMBER? .I> <SET W ,W?\,NUMBER>>>>
                       ;"Word not in vocabulary"
+                      <SETG P-OOPS-WN .I>
                       <TELL "I don't know the word \"">
                       <PRINT-WORD .I>
                       <TELL "\"." CR>
@@ -664,6 +690,7 @@ Sets:
                              <RFALSE>)>)
                      (ELSE
                       ;"Unexpected word type"
+                      <SETG P-OOPS-WN .I>
                       <TELL "I didn't expect the word \"">
                       <PRINT-WORD .I>
                       <TELL "\" there." CR>
@@ -702,6 +729,7 @@ Sets:
                   <TRACE-OUT>
                   <RFALSE>)
                  (.DIR
+                  <SETG P-OOPS-WN .DIR-WN>
                   <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
                   <TRACE-OUT>
                   <RFALSE>)>
@@ -727,6 +755,46 @@ Sets:
     <SET-PRONOUNS ,PRSO ,P-PRSOS>
     <TRACE-OUT>
     <RTRUE>>
+
+;"Replaces word P-OOPS-WN in OOPS-LEXBUF (and -READBUF) with word N from the active buffer, then
+  copies the OOPS buffer into the active buffer."
+<ROUTINE HANDLE-OOPS (N "AUX" W SS SL DS DL BL MAX DELTA)
+    <SET W <GETWORD? .N>>
+    ;"Copy word into LEXBUF"
+    <PUT ,OOPS-LEXBUF <- <* ,P-OOPS-WN 2> 1> .W>
+    ;"Copy word into READBUF"
+    <SET SS <GETB ,LEXBUF <+ <* .N 4> 1>>>
+    <SET SL <GETB ,LEXBUF <* .N 4>>>
+    <SET DS <GETB ,OOPS-LEXBUF <+ <* ,P-OOPS-WN 4> 1>>>
+    <SET DL <GETB ,OOPS-LEXBUF <* ,P-OOPS-WN 4>>>
+    <PUTB ,OOPS-LEXBUF <* ,P-OOPS-WN 4> .SL>
+    <COND (<L? .SL .DL>
+           ;"Copy the new word and overwrite the end of the old one with spaces"
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,OOPS-READBUF .DS> .SL>
+           <SET MAX <- <+ .DS .DL> 1>>
+           <DO (I <+ .SL 1> .MAX)
+               <PUTB ,OOPS-READBUF .I !\ >>)
+          (<G? .SL .DL>
+           ;"Shift the rest of the buffer up to make room"
+           <SET BL <READBUF-LENGTH ,OOPS-READBUF>>
+           <VERSION? (ZIP <SET BL <+ .BL 1>>)>
+           <SET DELTA <- .SL .DL>>
+           <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
+                  <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
+           <DO (I .BL .DS -1)
+               <PUTB ,OOPS-READBUF <+ .I .DELTA> <GETB ,OOPS-READBUF .I>>>
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,OOPS-READBUF .DS> .SL>
+           ;"Update pointers to subsequent words"
+           <SET MAX <GETB ,OOPS-LEXBUF 1>>
+           <COND (<L? .N .MAX>
+                  <DO (I <+ .N 1> .MAX)
+                      <PUTB ,OOPS-LEXBUF
+                            <+ <* .I 4> 1>
+                            <+ <GETB ,OOPS-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+    ;"Copy back into active buffers and clear oops state"
+    <COPY-LEXBUF ,OOPS-LEXBUF ,LEXBUF>
+    <COPY-READBUF ,OOPS-READBUF ,READBUF>
+    <SETG P-OOPS-WN 0>>
 
 ;"PRSO or PRSI are set to this when multiple objects are used."
 <OBJECT MANY-OBJECTS
@@ -1831,6 +1899,19 @@ Returns:
 ;"Copies a READBUF-like table."
 <ROUTINE COPY-READBUF (SRC DEST)
     <COPY-TABLE .SRC .DEST %</ ,READBUF-SIZE 2>>>
+
+;"Measures the length of a READBUF-like table (not including the null terminator on V3-4)."
+<ROUTINE READBUF-LENGTH (TBL)
+    <VERSION? (ZIP
+               <REPEAT ((P 1))
+                   <SET P <+ .P 1>>
+                   <COND (<0? <GETB .TBL .P>> <RETURN <- .P 2>>)>>)
+              (EZIP
+               <REPEAT ((P 1))
+                   <SET P <+ .P 1>>
+                   <COND (<0? <GETB .TBL .P>> <RETURN <- .P 2>>)>>)
+              (ELSE
+               <RETURN <GETB .TBL 1>>)>>
 
 ;"Fills READBUF and LEXBUF by reading a command from the player.
 If ,AGAINCALL is true, no new command is read and the buffers are reused.
