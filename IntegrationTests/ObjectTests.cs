@@ -463,5 +463,34 @@ namespace IntegrationTests
                 "<OBJECT FOO (NORTH TO BAR)>")
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void Direction_Synonyms_Should_Work_Identically()
+        {
+            AssertGlobals(
+                "<DIRECTIONS SOUTHWEST>",
+                "<SYNONYM SOUTHWEST SW>",
+                "<OBJECT FOO (SW TO FOO)>")
+                .InV3()
+                .Implies(
+                    "<=? ,P?SOUTHWEST ,P?SW>",
+                    "<=? <GETB ,W?SW 5> ,P?SOUTHWEST>",
+                    "<=? <GETB ,W?SOUTHWEST 5> ,P?SOUTHWEST>");
+        }
+
+        [TestMethod]
+        public void Direction_Properties_Should_Not_Be_Merged_With_Words()
+        {
+            AssertGlobals(
+                "<DIRECTIONS NORTHNORTHEAST NORTHNORTHWEST>",
+                "<OBJECT FOO (NORTHNORTHEAST TO FOO) (NORTHNORTHWEST TO BAR)>",
+                "<OBJECT BAR>")
+                .InV3()
+                .Implies(
+                    "<=? ,W?NORTHNORTHEAST ,W?NORTHNORTHWEST>",
+                    "<N=? ,P?NORTHNORTHEAST ,P?NORTHNORTHWEST>",
+                    "<=? <GETP ,FOO ,P?NORTHNORTHEAST> ,FOO>",
+                    "<=? <GETP ,FOO ,P?NORTHNORTHWEST> ,BAR>");
+        }
     }
 }

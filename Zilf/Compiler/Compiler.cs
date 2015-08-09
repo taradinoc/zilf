@@ -157,7 +157,7 @@ namespace Zilf.Compiler
                 }
             }
 
-            var wordConstantPrefixes = new[] { "W?", "A?", "ACT?", "P?" };
+            string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
 
             foreach (var pair in vocabMerges)
             {
@@ -3570,6 +3570,9 @@ namespace Zilf.Compiler
                          *   is a pattern for directions
                          */
                         bool phony;
+                        bool? isSynonym = null;
+                        Synonym synonym = null;
+
                         if (prop.Rest != null && prop.Rest.Rest != null && !prop.Rest.Rest.IsEmpty &&
                             (cc.Context.ZEnvironment.Directions.Contains(atom) ||
                              (directionPattern != null && directionPattern.Matches(cc.Context, prop))))
@@ -3580,10 +3583,20 @@ namespace Zilf.Compiler
                             // could be a new implicitly defined direction
                             if (!cc.Context.ZEnvironment.Directions.Contains(atom))
                             {
-                                cc.Context.ZEnvironment.Directions.Add(atom);
-                                cc.Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine);
-                                if (directionPattern != null)
-                                    cc.Context.SetPropDef(atom, directionPattern);
+                                synonym = cc.Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+
+                                if (synonym == null)
+                                {
+                                    isSynonym = false;
+                                    cc.Context.ZEnvironment.Directions.Add(atom);
+                                    cc.Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine);
+                                    if (directionPattern != null)
+                                        cc.Context.SetPropDef(atom, directionPattern);
+                                }
+                                else
+                                {
+                                    isSynonym = true;
+                                }
                             }
                         }
                         else
@@ -3602,8 +3615,36 @@ namespace Zilf.Compiler
                             }
                         }
 
-                        if (!phony)
-                            DefineProperty(cc, atom);
+                        if (!phony && !cc.Properties.ContainsKey(atom))
+                        {
+                            if (isSynonym == null)
+                            {
+                                synonym = cc.Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+                                isSynonym = (synonym != null);
+                            }
+
+                            if ((bool)isSynonym)
+                            {
+                                IPropertyBuilder origPb;
+                                var origAtom = synonym.OriginalWord.Atom;
+                                if (cc.Properties.TryGetValue(origAtom, out origPb) == false)
+                                {
+                                    DefineProperty(cc, origAtom);
+                                    origPb = cc.Properties[origAtom];
+                                }
+                                cc.Properties.Add(atom, origPb);
+
+                                var pAtom = ZilAtom.Parse("P?" + atom, cc.Context);
+                                cc.Constants.Add(pAtom, origPb);
+
+                                var origSpec = cc.Context.GetProp(origAtom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
+                                cc.Context.PutProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC), origSpec);
+                            }
+                            else
+                            {
+                                DefineProperty(cc, atom);
+                            }
+                        }
 
                         // check for a PROPSPEC
                         ZilObject propspec = cc.Context.GetProp(atom, cc.Context.GetStdAtom(StdAtom.PROPSPEC));
