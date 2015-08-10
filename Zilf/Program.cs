@@ -62,6 +62,10 @@ namespace Zilf
                     try
                     {
                         string line = Console.ReadLine();
+
+                        if (line == null)
+                            break;
+
                         if (sb.Length > 0)
                             sb.AppendLine();
                         sb.Append(line);
@@ -374,6 +378,9 @@ Compiler switches:
                 }
                 return null;
             }
+
+            if (fret.Tree == null)
+                return null;
 
             try
             {
