@@ -4410,13 +4410,15 @@ explicitly ask me to." CR>>
 <ROUTINE V-CREDITS ()
     <TELL "Adventure was originally developed by Willie Crowther, with many features added by Don
 Woods. This version was ported to ZIL by Jesse McGrew, thanks to prior porting work done by David
-M. Baggett (TADS), Graham Nelson (Inform), Kent Tessman (Hugo), and Arthur O'Dwyer (vbccz), among
-others.|
+M. Baggett (TADS), Graham Nelson (Inform), Kent Tessman (Hugo), David Given and Arthur O'Dwyer
+(vbccz), among others.|
 |
 Special thanks go out to everyone who helped with testing, advice, and code contributions,
 including:|
 |
+    Arthur O'Dwyer|
     Kate Matthews|
+    Nick Turner|
     [TBD]|">
     <IF-BETA <TELL "    ...and YOU, beta tester!|">>>
 
