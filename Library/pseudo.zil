@@ -124,7 +124,7 @@ Returns:
             <TELL ") (">
             <COND (<1? .NN>
                    <PRINTB .NT>)
-                  (.NA
+                  (.NN
                    <SET NN <- .NN 1>>
                    <DO (I 0 .NN)
                        <COND (.I <TELL ", ">)>
