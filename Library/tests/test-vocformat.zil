@@ -2,7 +2,7 @@
 
 <SETG NEW-VOC? T>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -14,8 +14,6 @@
     (DESC "apple")
     (SYNONYM APPLE)
     (FLAGS VOWELBIT TAKEBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."

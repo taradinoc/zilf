@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -25,8 +25,6 @@
     (DESC "troll")
     (SYNONYM TROLL)
     (FLAGS PERSONBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."

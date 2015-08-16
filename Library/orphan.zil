@@ -82,7 +82,7 @@ Returns:
     ;"Confirm that the command looks like a noun phrase, and parse it into P-NP-XOBJ."
     <COND (<OR <L? ,P-LEN 1>
                <NOT <STARTS-NOUN-PHRASE? <GETWORD? 1>>>
-               <NOT <=? <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ> <+ ,P-LEN 1>>>>
+               <NOT <=? <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ T> <+ ,P-LEN 1>>>>
            <TRACE 1 "[HANDLE-ORPHAN-RESPONSE: doesn't look like a noun phrase]" CR>
            <RETURN ,O-RES-NOT-HANDLED>)>
     

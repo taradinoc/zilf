@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -11,8 +11,6 @@
     (IN STARTROOM)
     (DESC "dial")
     (SYNONYM DIAL)>
-
-<INSERT-FILE "testing">
 
 <SYNTAX TURN OBJECT TO OBJECT = V-TURN-TO>
 

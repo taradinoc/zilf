@@ -1,7 +1,7 @@
 ;"https://bitbucket.org/jmcgrew/zilf/issue/25/local-globals-doesnt-work"
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <ROOM PILL-ROOM
     (DESC "Strange Room")
@@ -29,8 +29,6 @@
     (LOC ROOMS)
     (WEST TO PILL-ROOM)
     (FLAGS ONBIT LIGHTBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     <MOVE ,WINNER ,PILL-ROOM>>

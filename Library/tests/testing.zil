@@ -1,5 +1,15 @@
 "Testing framework"
 
+<GLOBAL READBUF-TO-BE <>>
+<GLOBAL LEXBUF-TO-BE <>>
+
+<REPLACE-DEFINITION READLINE
+    <ROUTINE READLINE ("OPT" PROMPT?)
+        <SETG READBUF ,READBUF-TO-BE>
+        <SETG LEXBUF ,LEXBUF-TO-BE>>>
+
+<INSERT-FILE "parser">
+
 <SETG TEST-SETUP-CODE '(() <RTRUE>)>
 <SETG TEST-CASES ()>		;"reverse definition order"
 
@@ -175,16 +185,14 @@ Returns:
     ;"Print command"
     ;"Note that TEST-MAKE-COMMAND-TABLES sets RDTBL's length prefix to the
       actual command length."
-    <BIND (START MAX)
+    <BIND (START)
         <VERSION? (ZIP <SET START 1>)
                   (EZIP <SET START 1>)
                   (ELSE <SET START 2>)>
-        <SET MAX <- <+ .START <GETB .RDTBL 0>> 1>>
         <TELL "> " BUF <REST .RDTBL .START> <GETB .RDTBL 0> CR>>
-    ;"Load READBUF"
-    <COPY-TABLE-B .RDTBL ,READBUF <+ <GETB .RDTBL 0> 2>>
-    ;"Load LEXBUF"
-    <COPY-TABLE-B .LXTBL ,LEXBUF <+ <* <GETB .LXTBL 0> 4> 2>>>
+    ;"Store buffer pointers to be set by READLINE"
+    <SETG READBUF-TO-BE .RDTBL>
+    <SETG LEXBUF-TO-BE .LXTBL>>
 
 <ROUTINE PRINT-BUF (BUF LEN "AUX" (MAX <- .LEN 1>))
     <DO (I 0 .MAX)
@@ -197,21 +205,19 @@ Returns:
                <RTRUE>)>>
     <RFALSE>>
 
-<CONSTANT OUTBUF-SIZE 512>
+<CONSTANT OUTBUF-SIZE 2048>
 <CONSTANT OUTBUF <ITABLE NONE ,OUTBUF-SIZE>>
 
-<ROUTINE TEST-PERFORM-COMMAND ("AUX" PARSED)
+<ROUTINE TEST-PERFORM-COMMAND ()
     ;"Parse and perform command"
-    <SETG AGAINCALL T>	;"tells PARSER to use the pre-loaded buffers"
-
     <DIROUT 3 ,OUTBUF>
-    <SET PARSED <PARSER>>
-    <SETG AGAINCALL <>>
-    <COND (.PARSED
-           <PERFORM ,PRSA ,PRSO ,PRSI>
-           <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
-                  <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                  <CLOCKER>)>)>
+    <REPEAT ()
+        <COND (<PARSER>
+               <PERFORM ,PRSA ,PRSO ,PRSI>
+               <COND (<NOT <GAME-VERB?>>
+                      <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
+                      <CLOCKER>)>)>
+        <COND (<L=? ,P-CONT 0> <RETURN>)>>
     <DIROUT -3>>
 
 <CONSTANT EXPECTBUF <ITABLE NONE ,OUTBUF-SIZE>>

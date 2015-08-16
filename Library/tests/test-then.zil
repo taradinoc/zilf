@@ -30,13 +30,7 @@
     (IN STARTROOM)
     (DESC "cage")
     (SYNONYM CAGE)
-    (FLAGS CONTBIT TRANSBIT OPENABLEBIT TAKEBIT)>
-
-<OBJECT BOX
-    (IN STARTROOM)
-    (DESC "box")
-    (SYNONYM BOX)
-    (FLAGS CONTBIT OPENABLEBIT TAKEBIT)>
+    (FLAGS CONTBIT TRANSBIT OPENABLEBIT)>
 
 <OBJECT DESK
     (IN STARTROOM)
@@ -48,7 +42,25 @@
     (IN STARTROOM)
     (DESC "bucket")
     (SYNONYM BUCKET)
-    (FLAGS CONTBIT OPENBIT TAKEBIT)>
+    (FLAGS CONTBIT OPENBIT)>
+
+<OBJECT RED-CUBE
+    (DESC "red cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE RED)
+    (FLAGS TAKEBIT)>
+
+<OBJECT GREEN-CUBE
+    (DESC "green cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE GREEN)
+    (FLAGS TAKEBIT)>
+
+<OBJECT BLUE-CUBE
+    (DESC "blue cube")
+    (SYNONYM CUBE CUBES)
+    (ADJECTIVE BLUE)
+    (FLAGS TAKEBIT)>
 
 <TEST-SETUP ()
     <MOVE ,WINNER ,STARTROOM>
@@ -57,25 +69,21 @@
     <MOVE ,HAT ,STARTROOM>
     <FCLEAR ,HAT ,WORNBIT>
     <MOVE ,CAGE ,STARTROOM>
-    <FCLEAR ,CAGE ,OPENBIT>
-    <MOVE ,BOX ,STARTROOM>
-    <FCLEAR ,BOX ,OPENBIT>
     <MOVE ,DESK ,STARTROOM>
     <MOVE ,BUCKET ,STARTROOM>
-    <FSET ,BUCKET ,OPENBIT>>
+    <REMOVE ,RED-CUBE>
+    <REMOVE ,GREEN-CUBE>
+    <REMOVE ,BLUE-CUBE>>
 
-<TEST-CASE ("Open container, revealing contents")
-    <MOVE ,APPLE ,BOX>
-    <COMMAND [OPEN BOX]>
-    <EXPECT "You open the box.|In the box is an apple.|">>
+<TEST-CASE ("Multiple commands")
+    <COMMAND [PICK THE APPLE UP \. PICK UP BANANA THEN GET HAT \.]>
+    <EXPECT "You pick up the apple.|
+|
+You pick up the banana.|
+|
+You wear the hat.|">>
 
-<TEST-CASE ("Take item from closed container")
-    <MOVE ,APPLE ,CAGE>
-    <COMMAND [TAKE APPLE]>
-    <EXPECT "The cage is in the way.|">
-    <COMMAND [TAKE CAGE]>
-    <EXPECT "You pick up the cage.|">
-    <COMMAND [TAKE APPLE]>
-    <EXPECT "The cage is in the way.|">>
+;"TODO: test cases to make sure multi-cmds are interrupted when a command 'fails',
+  including preaction conditions, HAVE check, pronouns no longer present"
 
 <TEST-GO ,STARTROOM>

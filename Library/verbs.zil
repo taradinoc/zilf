@@ -118,6 +118,8 @@
 <SYNTAX GIVE OBJECT (HAVE HELD CARRIED) TO OBJECT (FIND PERSONBIT) = V-GIVE>
 <SYNTAX GIVE OBJECT (FIND PERSONBIT) OBJECT (HAVE HELD CARRIED) = V-SGIVE>
 
+<SYNTAX TELL OBJECT (FIND PERSONBIT) ABOUT OBJECT = V-TELL-ABOUT PRE-TELL>
+
 <SYNTAX WAVE = V-WAVE-HANDS>
 <SYNTAX WAVE OBJECT (TAKE HAVE HELD CARRIED) = V-WAVE>
 
@@ -171,6 +173,8 @@
 <VERB-SYNONYM UNSCRIPT NOSCRIPT>
 
 <SYNTAX PRONOUNS = V-PRONOUNS>
+
+<SYNTAX \,TELL OBJECT (FIND PERSONBIT) = V-TELL PRE-TELL>
 
 ;"Debugging verbs"
 <IF-DEBUG
@@ -681,7 +685,7 @@ Returns:
 <DEFMAC GAME-VERB? ()
     <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY UNDO
                 SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
-                PRONOUNS
+                PRONOUNS TELL
                 !<IFFLAG (DEBUG '(XTRACE)) (ELSE '())>
                 !<IFFLAG
                     (DEBUGGING-VERBS
@@ -1220,9 +1224,7 @@ Returns:
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
                   <RTRUE>)>
-           <SETG AGAINCALL T>
            <PERFORM ,PRSA ,PRSO ,PRSI>
-           <SETG AGAINCALL <>>
            ;"TODO: The COND below should be factored out (of V-AGAIN and the standard GO)."
            <COND (<NOT <GAME-VERB?>>
                   <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
@@ -1335,6 +1337,23 @@ Returns:
 
 <ROUTINE V-SGIVE ()
     <PERFORM ,V?GIVE ,PRSI ,PRSO>
+    <RTRUE>>
+
+<ROUTINE PRE-TELL ()
+    <COND (<OR <PRSO? ,WINNER> <NOT <FSET? ,PRSO ,PERSONBIT>>>
+           <SETG P-CONT 0>
+           <TELL "Talking to ">
+           <COND (<PRSO? ,WINNER> <TELL "yourself">)
+                 (ELSE <TELL A ,PRSO>)>
+           <TELL ", huh?" CR>)>>
+
+<ROUTINE V-TELL-ABOUT ()
+    <TELL CT ,PRSO " doesn't seem interested." CR>>
+
+;"TELL is a game verb, but it's defined here because it shares PRE-TELL"
+<ROUTINE V-TELL ()
+    <IF-DEBUG <COND (<0? ,P-CONT> <PRINTR "[P-CONT=0 in V-TELL]">)>>
+    <SETG WINNER ,PRSO>
     <RTRUE>>
 
 <ROUTINE V-WAVE-HANDS ()
