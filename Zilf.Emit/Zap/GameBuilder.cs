@@ -333,6 +333,8 @@ namespace Zilf.Emit.Zap
         {
             if (name == null)
                 name = "T?" + Convert.ToString(pureTables.Count + impureTables.Count);
+            else
+                name = SanitizeSymbol(name);
 
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, "name");

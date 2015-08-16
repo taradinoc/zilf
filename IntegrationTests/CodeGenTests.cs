@@ -383,5 +383,16 @@ namespace IntegrationTests
                 .InV5()
                 .GeneratesCodeMatching(@"\.CHRSET 0,122,121,120,119,118,117,116,115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100,99,98,97");
         }
+
+        [TestMethod]
+        public void Table_And_Verb_Names_Should_Be_Sanitized()
+        {
+            AssertGlobals(
+                @"<SYNTAX \,TELL = V-TELL>",
+                "<ROUTINE V-TELL () <>>",
+                @"<CONSTANT \,TELLTAB1 <ITABLE 1>>",
+                @"<GLOBAL \,TELLTAB2 <ITABLE 1>>")
+                .GeneratesCodeMatching(@"\A(?:(?!,TELL).)*\Z");
+        }
     }
 }
