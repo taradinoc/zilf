@@ -956,10 +956,13 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
     (ACTION LITTLE-BIRD-F)
     (FLAGS PERSONBIT)>
 
-<ROUTINE LITTLE-BIRD-F ()
-    <COND (<VERB? EXAMINE>
+<ROUTINE LITTLE-BIRD-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <SETG P-CONT 0>
+           <TELL CT ,LITTLE-BIRD " tilts its head, confused." CR>)
+          (<VERB? EXAMINE>
            <COND (<IN? ,PRSO ,WICKER-CAGE>
-                  <TELL "The little bird looks unhappy in the cage." CR>)
+                  <TELL CT ,LITTLE-BIRD " looks unhappy in the cage." CR>)
                  (ELSE
                   <TELL "The cheerful little bird is sitting here singing." CR>)>)
           (<AND <VERB? PUT-IN> <PRSO? ,LITTLE-BIRD>>
@@ -973,7 +976,7 @@ An awkward canyon and a good passage exit from east and west sides of the chambe
            <RTRUE>)
           (<VERB? TAKE CATCH>
            <COND (<IN? ,PRSO ,WICKER-CAGE>
-                  <TELL "You already have the little bird.
+                  <TELL "You already have " T ,LITTLE-BIRD ".
 If you take it out of the cage it will likely fly away from you." CR>)
                  (<NOT <HELD? ,WICKER-CAGE>>
                   <TELL "You can catch the bird, but you cannot carry it." CR>)
@@ -1345,8 +1348,11 @@ The hall joins up with a narrow north/south passage.")
     (ACTION SNAKE-F)
     (FLAGS PERSONBIT ATTACKBIT)>
 
-<ROUTINE SNAKE-F ()
-    <COND (<AND <VERB? THROW-AT> <PRSI? ,SNAKE>>
+<ROUTINE SNAKE-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <SETG P-CONT 0>
+           <TELL CT ,SNAKE " gives you a cold stare." CR>)
+          (<AND <VERB? THROW-AT> <PRSI? ,SNAKE>>
            <COND (<PRSO? ,AXE> <PERFORM ,V?ATTACK ,PRSI>)
                  (ELSE <PERFORM ,V?GIVE ,PRSO ,PRSI>)>
            <RTRUE>)
@@ -2270,8 +2276,11 @@ You have just vanquished a dragon with your bare hands!
     (ACTION DRAGON-F)
     (FLAGS PERSONBIT ATTACKBIT)>
 
-<ROUTINE DRAGON-F ()
-    <COND (<VERB? ATTACK>
+<ROUTINE DRAGON-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <SETG P-CONT 0>
+           <TELL CT ,DRAGON " gives you a cold stare." CR>)
+          (<VERB? ATTACK>
            <SETG DRAGON-BEING-ATTACKED T>
            <TELL "With what? Your bare hands?" CR>)
           (<AND <VERB? GIVE> <PRSI? ,DRAGON>>
@@ -3066,8 +3075,11 @@ as that of a rhinoceros.")
 
 <GLOBAL TROLL-CAUGHT-TREASURE <>>
 
-<ROUTINE TROLL-F ()
-    <COND (<VERB? ATTACK>
+<ROUTINE TROLL-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <SETG P-CONT 0>
+           <TELL "The troll laughs aloud, refusing to do your bidding." CR>)
+          (<VERB? ATTACK>
            <TELL "The troll laughs aloud at your pitiful attempt to injure him." CR>)
           (<VERB? THROW-AT GIVE>
            <COND (<FSET? ,PRSO ,TREASUREBIT>
@@ -3335,8 +3347,16 @@ The only exit is the way you came in.")
 
 <CONSTANT BEAR-IS-YOUR-FRIEND "The bear is confused; he only wants to be your friend.">
 
-<ROUTINE BEAR-F ()
-    <COND (<VERB? ATTACK>
+<ROUTINE BEAR-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <COND (,BEAR-FRIENDLY
+                  ;"TODO: Respond to FOLLOW ME."
+                  <SETG P-CONT 0>
+                  <TELL "The bear doesn't seem to understand." CR>)
+                 (ELSE
+                  <SETG P-CONT 0>
+                  <TELL "The bear glares at you even more intently, narrowing its eyes." CR>)>)
+          (<VERB? ATTACK>
            <COND (<HELD? ,AXE> <PERFORM ,V?THROW-AT ,AXE ,PRSO> <RTRUE>)
                  (,BEAR-FRIENDLY <TELL ,BEAR-IS-YOUR-FRIEND CR>)
                  (ELSE <TELL "With what? Your bare hands? Against *his* bear hands??" CR>)>)
@@ -3595,8 +3615,11 @@ Suffice it to say the little guy's pretty aggressive.")
     (ACTION DWARF-F)
     (FLAGS PERSONBIT ATTACKBIT)>
 
-<ROUTINE DWARF-F ()
-    <COND (<VERB? KICK>
+<ROUTINE DWARF-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <SETG P-CONT 0>
+           <TELL "The dwarf is not at all interested." CR>)
+          (<VERB? KICK>
            <TELL "You boot the dwarf across the room. He curses, then gets up and
 brushes himself off. Now he's madder than ever!" CR>)
           (<AND <VERB? THROW-AT> <PRSI? ,DWARF>>
@@ -3860,8 +3883,11 @@ you leave the \"Adventure\" materials where they are." CR>)>>
     (ACTION SLEEPING-DWARVES-F)
     (FLAGS NDESCBIT PERSONBIT PLURALBIT MULTITUDEBIT)>
 
-<ROUTINE SLEEPING-DWARVES-F ()
-    <COND (<VERB? TAKE> <TELL "What, all of them?" CR>)
+<ROUTINE SLEEPING-DWARVES-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <DWARVES-WAKE-UP>
+           <RTRUE>)
+          (<VERB? TAKE> <TELL "What, all of them?" CR>)
           (<VERB? WAKE>
            <TELL "You prod the nearest dwarf, who wakes up grumpily,
 takes one look at you, curses, and grabs for his axe." CR CR>
