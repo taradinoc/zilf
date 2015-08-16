@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -43,8 +43,6 @@
     (DESC "bucket")
     (SYNONYM BUCKET)
     (FLAGS CONTBIT OPENBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     <MOVE ,WINNER ,STARTROOM>

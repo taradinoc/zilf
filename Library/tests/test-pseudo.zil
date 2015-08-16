@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -39,8 +39,6 @@
     (DESC "Hallway")
     (SOUTH TO STARTROOM)
     (FLAGS LIGHTBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."

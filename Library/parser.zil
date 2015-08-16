@@ -46,20 +46,18 @@
      <DEFMAC TRACE-IN () T>
      <DEFMAC TRACE-OUT () T>)>
 
-"In V3, we need these globals for the status line. In V5, we could
-call them something else, but we'll continue the tradition anyway."
+"Global variables"
 
-<GLOBAL HERE <>>
-<GLOBAL SCORE 0>
-<GLOBAL MOVES 0>
-"next two for the Interrupt Queue"
-<CONSTANT IQUEUE <ITABLE 20>>
-<GLOBAL TEMPTABLE <ITABLE 50 <> >>
-<GLOBAL IQ-LENGTH 0>
-<GLOBAL STANDARD-WAIT 4>
-<GLOBAL AGAINCALL <>>
-<GLOBAL USAVE 0>
-<GLOBAL HERE-LIT T>
+<GLOBAL HERE <>>                   ;"Player's location"
+<GLOBAL SCORE 0>                   ;"Score, or hours in V3 time games"
+<GLOBAL MOVES 0>                   ;"Turn count, or minutes in V3 time games"
+
+<CONSTANT IQUEUE <ITABLE 20>>      ;"Interrupt queue"
+<GLOBAL IQ-LENGTH 0>               ;"Number of slots used in IQUEUE"
+<CONSTANT TEMPTABLE <ITABLE 50>>   ;"Temporary table for miscellaneous use"
+<GLOBAL STANDARD-WAIT 4>           ;"TODO: Make STANDARD-WAIT a constant"
+<GLOBAL USAVE 0>                   ;"TODO: Fix USAVE"
+<GLOBAL HERE-LIT T>                ;"Whether the player's location is lit"
 
 ;"Verbosity modes (controlled by player)"
 <CONSTANT SUPERBRIEF 0>
@@ -135,12 +133,14 @@ other versions. These macros let us write the same code for all versions."
 "Parser"
 
 <CONSTANT READBUF-SIZE 100>
-<CONSTANT READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
-<CONSTANT OOPS-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+<CONSTANT KBD-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+<CONSTANT HELD-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
+<GLOBAL READBUF KBD-READBUF>
 
 <CONSTANT LEXBUF-SIZE 59>
-<CONSTANT LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
-<CONSTANT OOPS-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<CONSTANT KBD-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<CONSTANT HELD-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<GLOBAL LEXBUF KBD-LEXBUF>
 
 <CONSTANT P1MASK 3>
 
@@ -238,15 +238,18 @@ Args:
         <PRINTC <GETB ,READBUF .I>>
         <AND <IGRTR? I .MAX> <RETURN>>>>
 
-<GLOBAL P-LEN 0>
-<GLOBAL P-V <>>
-<GLOBAL P-V-WORD <>>
-<GLOBAL P-V-WORDN 0>    ;"0 = invalid, e.g. after orphaning; use P-V-WORD instead"
-<GLOBAL P-NOBJ 0>
-<GLOBAL P-P1 <>>
-<GLOBAL P-P2 <>>
-<GLOBAL P-SYNTAX <>>
-<GLOBAL P-OOPS-WN 0>
+<GLOBAL P-LEN 0>            ;"Number of words in the command"
+<GLOBAL P-V <>>             ;"Verb number"
+<GLOBAL P-V-WORD <>>        ;"Verb word pointer"
+<GLOBAL P-V-WORDN 0>        ;"Verb word number; 0 = invalid, use P-V-WORD instead"
+<GLOBAL P-NOBJ 0>           ;"Number of noun phrases"
+<GLOBAL P-P1 <>>            ;"Prep number before first NP"
+<GLOBAL P-P2 <>>            ;"Prep number before second NP"
+<GLOBAL P-SYNTAX <>>        ;"Matched syntax line pointer"
+<GLOBAL P-OOPS-WN 0>        ;"Word number in held buffer to be corrected by OOPS"
+<GLOBAL P-OOPS-O-REASON <>> ;"Value of P-O-REASON at the time P-OOPS-WN was set"
+<GLOBAL P-CONT 0>           ;"Word number in held buffer where next parse should resume;
+                              0 or less = get fresh input"
 
 "Structured types for storing noun phrases.
 
@@ -380,7 +383,7 @@ Args:
 <CONSTANT P-NP-DOBJ <NOUN-PHRASE>>
 <CONSTANT P-NP-IOBJ <NOUN-PHRASE>>
 
-"Extra noun phrase for orphaning"
+"Extra noun phrase for temporary use"
 <CONSTANT P-NP-XOBJ <NOUN-PHRASE>>
 
 "Tables for objects recognized from object specs.
@@ -395,7 +398,7 @@ Args:
 <GLOBAL P-PRSOS <PRSTBL>>
 "Matched indirect objects"
 <GLOBAL P-PRSIS <PRSTBL>>
-"Extra objects for orphaning or temporary use"
+"Extra objects for temporary use"
 <GLOBAL P-XOBJS <PRSTBL>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
@@ -543,85 +546,127 @@ Sets:
   P-NP-DOBJ
   P-NP-IOBJ
   P-OOPS-WN
+  P-OOPS-O-REASON
+  P-CONT
 "
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP)
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL)
     ;"Need to (re)initialize locals here since we use AGAIN"
+    <SET OW ,WINNER>
+    <SET OH ,HERE>
+    <SET OHL ,HERE-LIT>
     <SET NOBJ <>>
     <SET VAL <>>
     <SET DIR <>>
     <SET DIR-WN <>>
-    <SETG HERE <LOC ,WINNER>>
-    <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
     ;"Fill READBUF and LEXBUF"
-    <READLINE>
+    <COND (<L? ,P-CONT 0> <SETG P-CONT 0>)>
+    <COND (,P-CONT
+           <TRACE 1 "[PARSER: continuing from word " N ,P-CONT "]" CR>
+           <SETG READBUF ,HELD-READBUF>
+           <SETG LEXBUF ,HELD-LEXBUF>
+           <COND (<1? ,P-CONT> <SETG P-CONT 0>)
+                 (<N=? ,MODE ,SUPERBRIEF>
+                  ;"Print a blank line between multiple commands"
+                  <COND (<NOT <VERB? TELL>> <CRLF>)>)>)
+          (ELSE
+           <TRACE 1 "[PARSER: fresh input]" CR>
+           <RESET-WINNER>
+           <SETG HERE <LOC ,WINNER>>
+           <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
+           <READLINE T>)>
     
     <IF-DEBUG <SETG TRACE-INDENT 0>>
     <TRACE-DO 1 <DUMPLINE>>
     <TRACE-IN>
     
     <SETG P-LEN <GETB ,LEXBUF 1>>
+    <COND (<0? ,P-LEN>
+           <TELL "..." CR>
+           <RFALSE>)>
     
     ;"Save undo state unless this looks like an undo command"
     <IF-UNDO
-        <COND (,AGAINCALL)
-              (<AND <G=? ,P-LEN 1>
+        <COND (<AND <G=? ,P-LEN 1>
                     <=? <GETWORD? 1> ,W?UNDO>
                     <OR <1? ,P-LEN>
-                        <=? <GETWORD? 2> ,W?PERIOD ,W?THEN>>>)
+                        <=? <GETWORD? 2> ,W?\. ,W?THEN>>>)
               (ELSE
                <TRACE 4 "[saving for UNDO]" CR>
                <SETG USAVE <ISAVE>>
                <COND (<=? ,USAVE 2>
                       <TELL "Previous turn undone." CR CR>
+                      <SETG WINNER .OW>
+                      <SETG HERE .OH>
+                      <SETG HERE-LIT .OHL>
                       <V-LOOK>
                       <AGAIN>)>)>>
-    
-    ;"Handle OOPS"
-    <COND (<AND ,P-LEN <=? <GETWORD? 1> ,W?OOPS>>
-           <COND (<=? ,P-LEN 2>
-                  <COND (,P-OOPS-WN
-                         <TRACE 2 "[handling OOPS]" CR>
-                         <HANDLE-OOPS 2>
-                         <SETG P-LEN <GETB ,LEXBUF 1>>
-                         <TRACE-DO 1 <DUMPLINE>>)
+
+    <COND (<0? ,P-CONT>    
+           ;"Handle OOPS"
+           <COND (<AND ,P-LEN <=? <GETWORD? 1> ,W?OOPS>>
+                  <COND (<=? ,P-LEN 2>
+                         <COND (,P-OOPS-WN
+                                <TRACE 2 "[handling OOPS]" CR>
+                                <HANDLE-OOPS 2>
+                                <SETG P-LEN <GETB ,LEXBUF 1>>
+                                <TRACE-DO 1 <DUMPLINE>>)
+                               (ELSE
+                                <TELL "Nothing to correct." CR>
+                                <RFALSE>)>)
+                        (<=? ,P-LEN 1>
+                         <TELL "It's OK." CR>
+                         <RFALSE>)
                         (ELSE
-                         <TELL "Nothing to correct." CR>
-                         <RFALSE>)>)
-                 (<=? ,P-LEN 1>
-                  <TELL "It's OK." CR>
-                  <RFALSE>)
-                 (ELSE
-                  <TELL "You can only correct one word at a time." CR>
-                  <RFALSE>)>)>
+                         <TELL "You can only correct one word at a time." CR>
+                         <RFALSE>)>)>)>
     
     <SET KEEP 0>
     <SETG P-OOPS-WN 0>
-    <COPY-LEXBUF ,LEXBUF ,OOPS-LEXBUF>
-    <COPY-READBUF ,READBUF ,OOPS-READBUF>
-    ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
-    <COND (<ORPHANING?>
-           <SET O-R <HANDLE-ORPHAN-RESPONSE>>
-           <COND (<=? .O-R ,O-RES-REORPHANED> <TRACE-OUT> <RFALSE>)>
-           <COND (<=? .O-R ,O-RES-FAILED>
-                  <SETG P-O-REASON <>>
-                  <TRACE-OUT>
-                  <RFALSE>)
-                 (<=? .O-R ,O-RES-SET-NP>
-                  ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
-                    we know about the command-to-be when we ask the orphaning question, not
-                    when we get the response?"
-                  <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
-                  <COND (<ORPHANING-PRSI?>
-                         <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
-                         <SETG P-NOBJ 2>
-                         ;"Don't re-match P-NP-DOBJ when we've just orphaned PRSI. Use the saved
-                           match results. There won't be a NP to match if we GWIMmed PRSO."
-                         <SET KEEP 1>)
-                        (ELSE <SETG P-NOBJ 1>)>)
-                 (<=? .O-R ,O-RES-SET-PRSTBL>
-                  <COND (<ORPHANING-PRSI?> <SET KEEP 2>)
-                        (ELSE <SET KEEP 1>)>)>
-           <SETG P-O-REASON <>>)>
+    <SETG P-OOPS-O-REASON ,P-O-REASON>
+    
+    <COND (<0? ,P-CONT>
+           ;"Save command in held buffer for OOPS and THEN"
+           <COND (<N=? ,READBUF ,HELD-READBUF>
+                  <COPY-READBUF ,READBUF ,HELD-READBUF>
+                  <SETG READBUF ,HELD-READBUF>
+                  <COPY-LEXBUF ,LEXBUF ,HELD-LEXBUF>
+                  <SETG LEXBUF ,HELD-LEXBUF>)>
+           ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
+           <COND (<ORPHANING?>
+                  <SET O-R <HANDLE-ORPHAN-RESPONSE>>
+                  <COND (<N=? .O-R ,O-RES-NOT-HANDLED>
+                         <SETG WINNER .OW>
+                         <SETG HERE .OH>
+                         <SETG HERE-LIT .OHL>)>
+                  <COND (<=? .O-R ,O-RES-REORPHANED>
+                         <TRACE-OUT>
+                         <RFALSE>)
+                        (<=? .O-R ,O-RES-FAILED>
+                         <SETG P-O-REASON <>>
+                         <TRACE-OUT>
+                         <RFALSE>)
+                        (<=? .O-R ,O-RES-SET-NP>
+                         ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
+                           we know about the command-to-be when we ask the orphaning question, not
+                           when we get the response?"
+                         <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
+                         <COND (<ORPHANING-PRSI?>
+                                <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
+                                <SETG P-NOBJ 2>
+                                ;"Don't re-match P-NP-DOBJ when we've just orphaned PRSI. Use the saved
+                                  match results. There won't be a NP to match if we GWIMmed PRSO."
+                                <SET KEEP 1>)
+                               (ELSE <SETG P-NOBJ 1>)>)
+                        (<=? .O-R ,O-RES-SET-PRSTBL>
+                         <COND (<ORPHANING-PRSI?> <SET KEEP 2>)
+                               (ELSE <SET KEEP 1>)>)>
+                  <SETG P-O-REASON <>>)>
+                  
+           ;"Translate order syntax (HAL, OPEN THE POD BAY DOOR or TELL HAL TO OPEN THE POD BAY DOOR)
+             into multi-command syntax (\,TELL HAL THEN OPEN THE POD BAY DOOR)."
+           <COND (<CONVERT-ORDER-TO-TELL?>
+                  <SETG P-LEN <GETB ,LEXBUF 1>>)>)>
+    
     ;"Identify parts of speech, parse noun phrases"
     <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
            <SETG P-V <>>
@@ -631,18 +676,24 @@ Sets:
            <SETG P-P1 <>>
            <SETG P-P2 <>>
            ;"Identify the verb, prepositions, and noun phrases"
-           <REPEAT ((I 1) W V)
+           <REPEAT ((I <OR ,P-CONT 1>) W V)
                <COND (<G? .I ,P-LEN>
                       ;"Reached the end of the command"
+                      <SETG P-CONT 0>
                       <RETURN>)
                      (<NOT <OR <SET W <GETWORD? .I>>
                                <AND <PARSE-NUMBER? .I> <SET W ,W?\,NUMBER>>>>
                       ;"Word not in vocabulary"
                       <SETG P-OOPS-WN .I>
-                      <TELL "I don't know the word \"">
-                      <PRINT-WORD .I>
-                      <TELL "\"." CR>
+                      <SETG P-CONT 0>
+                      <TELL "I don't know the word \"" WORD .I "\"." CR>
                       <RFALSE>)
+                     (<=? .W ,W?THEN ,W?\.>
+                      ;"End of command, maybe start of a new one"
+                      <TRACE 3 "['then' word " N .I "]" CR>
+                      <SETG P-CONT <+ .I 1>>
+                      <COND (<G? ,P-CONT ,P-LEN> <SETG P-CONT 0>)>
+                      <RETURN>)
                      (<AND <NOT ,P-V>
                            <SET V <WORD? .W VERB>>
                            <OR <NOT .DIR> <=? .V ,ACT?WALK>>>
@@ -677,30 +728,33 @@ Sets:
                             (<==? .NOBJ 2>
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
                             (ELSE
+                             <SETG P-CONT 0>
                              <TELL "That sentence has too many objects." CR>
                              <RFALSE>)>
                       <TRACE 3 "[PARSE-NOUN-PHRASE returned " N .VAL "]" CR>
+                      <TRACE-OUT>
                       <TRACE-OUT>
                       <COND (.VAL
                              <SET I .VAL>
                              <AGAIN>)
                             (ELSE
-                             <TELL "That noun phrase didn't make sense." CR>
-                             <TRACE-OUT>
+                             <SETG P-CONT 0>
                              <RFALSE>)>)
                      (ELSE
                       ;"Unexpected word type"
                       <SETG P-OOPS-WN .I>
+                      <SETG P-CONT 0>
                       <TELL "I didn't expect the word \"">
                       <PRINT-WORD .I>
                       <TELL "\" there." CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
+           
            <SETG P-NOBJ .NOBJ>
  
            <TRACE-OUT>
-           <TRACE 1 "[PARSER: V=" MATCHING-WORD ,P-V ,PS?VERB ,P1?VERB "(" N ,P-V ") NOBJ=" N ,P-NOBJ
+           <TRACE 1 "[sentence: V=" MATCHING-WORD ,P-V ,PS?VERB ,P1?VERB "(" N ,P-V ") NOBJ=" N ,P-NOBJ
                  " P1=" MATCHING-WORD ,P-P1 ,PS?PREPOSITION 0 "(" N ,P-P1
                  ") DOBJS=+" N <NP-YCNT ,P-NP-DOBJ> "-" N <NP-NCNT ,P-NP-DOBJ>
                  " P2=" MATCHING-WORD ,P-P2 ,PS?PREPOSITION 0 "(" N ,P-P2
@@ -725,11 +779,13 @@ Sets:
                   <RTRUE>)>
            ;"Otherwise, a verb is required and a direction is forbidden."
            <COND (<NOT ,P-V>
+                  <SETG P-CONT 0>
                   <TELL "That sentence has no verb." CR>
                   <TRACE-OUT>
                   <RFALSE>)
                  (.DIR
                   <SETG P-OOPS-WN .DIR-WN>
+                  <SETG P-CONT 0>
                   <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
                   <TRACE-OUT>
                   <RFALSE>)>
@@ -739,6 +795,7 @@ Sets:
            <TRACE 2 "[matching syntax and finding objects, KEEP=" N .KEEP "]" CR>
            <COND (<NOT <AND <MATCH-SYNTAX> <FIND-OBJECTS .KEEP>>>
                   <TRACE-OUT>
+                  <SETG P-CONT 0>
                   <RFALSE>)>)
           (<L? .KEEP 2>
            ;"We already found a syntax line last time, but we need FIND-OBJECTS to
@@ -746,6 +803,7 @@ Sets:
            <TRACE 2 "[only finding objects, KEEP=" N .KEEP "]" CR>
            <COND (<NOT <FIND-OBJECTS .KEEP>>
                   <TRACE-OUT>
+                  <SETG P-CONT 0>
                   <RFALSE>)>)>
     ;"Save command for AGAIN"
     <COND (<NOT <VERB? AGAIN>>
@@ -756,45 +814,177 @@ Sets:
     <TRACE-OUT>
     <RTRUE>>
 
-;"Replaces word P-OOPS-WN in OOPS-LEXBUF (and -READBUF) with word N from the active buffer, then
-  copies the OOPS buffer into the active buffer."
+<DEFAULT-DEFINITION RESET-WINNER
+    <DEFMAC RESET-WINNER ()
+        '<SETG WINNER ,PLAYER>>
+    
+    <DEFMAC ORDERING? ()
+        '<N=? ,WINNER ,PLAYER>>>
+
+;"Replaces word P-OOPS-WN in HELD-LEXBUF (and -READBUF) with word N from the active buffer, then
+  sets the active buffer to the held buffer."
 <ROUTINE HANDLE-OOPS (N "AUX" W SS SL DS DL BL MAX DELTA)
     <SET W <GETWORD? .N>>
     ;"Copy word into LEXBUF"
-    <PUT ,OOPS-LEXBUF <- <* ,P-OOPS-WN 2> 1> .W>
+    <PUT ,HELD-LEXBUF <- <* ,P-OOPS-WN 2> 1> .W>
     ;"Copy word into READBUF"
     <SET SS <GETB ,LEXBUF <+ <* .N 4> 1>>>
     <SET SL <GETB ,LEXBUF <* .N 4>>>
-    <SET DS <GETB ,OOPS-LEXBUF <+ <* ,P-OOPS-WN 4> 1>>>
-    <SET DL <GETB ,OOPS-LEXBUF <* ,P-OOPS-WN 4>>>
-    <PUTB ,OOPS-LEXBUF <* ,P-OOPS-WN 4> .SL>
+    <SET DS <GETB ,HELD-LEXBUF <+ <* ,P-OOPS-WN 4> 1>>>
+    <SET DL <GETB ,HELD-LEXBUF <* ,P-OOPS-WN 4>>>
+    <PUTB ,HELD-LEXBUF <* ,P-OOPS-WN 4> .SL>
     <COND (<L? .SL .DL>
            ;"Copy the new word and overwrite the end of the old one with spaces"
-           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,OOPS-READBUF .DS> .SL>
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,HELD-READBUF .DS> .SL>
            <SET MAX <- <+ .DS .DL> 1>>
            <DO (I <+ .SL 1> .MAX)
-               <PUTB ,OOPS-READBUF .I !\ >>)
+               <PUTB ,HELD-READBUF .I !\ >>)
           (<G? .SL .DL>
            ;"Shift the rest of the buffer up to make room"
-           <SET BL <READBUF-LENGTH ,OOPS-READBUF>>
+           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
            <VERSION? (ZIP <SET BL <+ .BL 1>>)>
            <SET DELTA <- .SL .DL>>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
            <DO (I .BL .DS -1)
-               <PUTB ,OOPS-READBUF <+ .I .DELTA> <GETB ,OOPS-READBUF .I>>>
-           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,OOPS-READBUF .DS> .SL>
+               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,HELD-READBUF .DS> .SL>
            ;"Update pointers to subsequent words"
-           <SET MAX <GETB ,OOPS-LEXBUF 1>>
+           <SET MAX <GETB ,HELD-LEXBUF 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB ,OOPS-LEXBUF
+                      <PUTB ,HELD-LEXBUF
                             <+ <* .I 4> 1>
-                            <+ <GETB ,OOPS-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
-    ;"Copy back into active buffers and clear oops state"
-    <COPY-LEXBUF ,OOPS-LEXBUF ,LEXBUF>
-    <COPY-READBUF ,OOPS-READBUF ,READBUF>
-    <SETG P-OOPS-WN 0>>
+                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+    ;"Activate held buffers, restore orphaning state, and clear oops state"
+    <SETG READBUF ,HELD-READBUF>
+    <SETG LEXBUF ,HELD-LEXBUF>
+    <SETG P-O-REASON ,P-OOPS-O-REASON>
+    <SETG P-OOPS-WN 0>
+    <SETG P-OOPS-O-REASON <>>>
+
+<ROUTINE REPLACE-HELD-WORD (N NEW-WORD "AUX" S OL NL BL MAX DELTA)
+    <TRACE 5 "[replace held word " N .N " with '" B .NEW-WORD "']" CR>
+    ;"Copy word into LEXBUF"
+    <PUT ,HELD-LEXBUF <- <* .N 2> 1> .NEW-WORD>
+    ;"Copy word into READBUF"
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINTB .NEW-WORD>
+    <DIROUT -3>
+    <SET S <GETB ,HELD-LEXBUF <+ <* .N 4> 1>>>
+    <SET OL <GETB ,HELD-LEXBUF <* .N 4>>>
+    <SET NL <GET ,TEMPTABLE 0>>
+    <PUTB ,HELD-LEXBUF <* .N 4> .NL>
+    <COND (<L? .NL .OL>
+           ;"Overwrite the end of the old word with spaces"
+           <SET MAX <- <+ .S .OL> 1>>
+           <DO (I <+ .S .NL 1> .MAX)
+               <PUTB ,HELD-READBUF .I !\ >>)
+          (<G? .NL .OL>
+           ;"Shift the rest of the buffer up to make room"
+           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
+           <VERSION? (ZIP <SET BL <+ .BL 1>>)>
+           <SET DELTA <- .NL .OL>>
+           <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
+                  <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
+           <DO (I .BL .S -1)
+               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
+           ;"Update pointers to subsequent words"
+           <SET MAX <GETB ,HELD-LEXBUF 1>>
+           <COND (<L? .N .MAX>
+                  <DO (I <+ .N 1> .MAX)
+                      <PUTB ,HELD-LEXBUF
+                            <+ <* .I 4> 1>
+                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+    ;"Copy the new word"
+    <TRACE 5 "[at char " N .S "]" CR>
+    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST ,HELD-READBUF .S> .NL>
+    <TRACE-DO 5 <DUMPLINE T>>>
+
+<ROUTINE INSERT-HELD-WORD (N NEW-WORD "AUX" (LEN <GETB ,HELD-LEXBUF 1>) MIN BL S MAX NL DELTA)
+    <TRACE 5 "[insert '" B .NEW-WORD "' as held word " N .N "]" CR>
+    <COND (<L? .N 1> <SET N 1>)
+          (<G? .N .LEN> <SET N <+ .LEN 1>>)>
+    <DIROUT 3 ,TEMPTABLE>
+    <PRINTB .NEW-WORD>
+    <DIROUT -3>
+    <SET NL <GET ,TEMPTABLE 0>>
+    ;"Shift LEXBUF up to make room (sacrificing the last word if needed)"
+    <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN %<- ,LEXBUF-SIZE 1>>)>
+    <COND (<L=? .N .LEN>
+           <SET MIN <* .N 2>>
+           <DO (I <* .LEN 2> .MIN -2)
+               <PUT ,HELD-LEXBUF <+ .I 2> <GET ,HELD-LEXBUF .I>>
+               <PUT ,HELD-LEXBUF <+ .I 1> <GET ,HELD-LEXBUF <- .I 1>>>>)>
+    ;"Write the new entry and set the word count"
+    <COND (<G? .N .LEN> <SET S <+ <READBUF-LENGTH ,HELD-READBUF> 1>>)
+          (ELSE <SET S <GETB ,HELD-LEXBUF <+ <* .N 4> 1>>>)>
+    <PUT ,HELD-LEXBUF <- <* .N 2> 1> .NEW-WORD>
+    <PUTB ,HELD-LEXBUF <* .N 4> .NL>
+    <PUTB ,HELD-LEXBUF <+ <* .N 4> 1> .S>
+    <PUTB ,HELD-LEXBUF 1 <+ .LEN 1>>
+    <COND (<L=? .N .LEN>
+           ;"Shift READBUF up to make room"
+           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
+           <SET DELTA <+ .NL 1>>
+           <VERSION? (ZIP <SET BL <+ .BL 1>>)>
+           <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
+                  <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
+           <VERSION? (ZIP)
+                     (ELSE <PUTB ,HELD-READBUF 1 <+ .BL .DELTA>>)>
+           <DO (I .BL .S -1)
+               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
+           ;"Update pointers to subsequent words"
+           <SET MAX <+ .LEN 1>>
+           <COND (<L? .N .MAX>
+                  <DO (I <+ .N 1> .MAX)
+                      <PUTB ,HELD-LEXBUF
+                            <+ <* .I 4> 1>
+                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+    ;"Write word into READBUF, with space before/after as appropriate"
+    <TRACE 5 "[at char " N .S "]" CR>
+    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST ,HELD-READBUF .S> .NL>
+    <PUTB ,HELD-READBUF
+          <COND (<G? .N .LEN> <- .S 1>) (ELSE <+ .S .NL>)>
+          !\ >
+    <TRACE-DO 5 <DUMPLINE T>>>
+
+;"Checks whether the command is an order, and if so, converts it to multi-command syntax
+  (\,TELL <actor> THEN <command>).
+
+Sets:
+  HELD-READBUF
+  HELD-LEXBUF
+
+Returns:
+  True if the command was converted."
+<ROUTINE CONVERT-ORDER-TO-TELL? ("AUX" P W)
+    <COND (<L? ,P-LEN 2> <RFALSE>)
+          (<AND <STARTS-NOUN-PHRASE? <GETWORD? 1>>
+                <SET P <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ T>>
+                <L? .P ,P-LEN>
+                ;"%<VOC> instead of ,W?\, in the next line to work around a syntax highlighting bug."
+                <=? <GETWORD? .P> %<VOC ",">>
+                <OR <CHKWORD? <SET W <GETWORD? <+ .P 1>>> ,PS?VERB>
+                    <CHKWORD? .W ,PS?DIRECTION>>>
+           <TRACE 2 "[got ACTOR, VERB order syntax]" CR>
+           <TRACE-IN>
+           <REPLACE-HELD-WORD .P ,W?.>
+           <INSERT-HELD-WORD 1 ,W?\,TELL>
+           <TRACE-OUT>
+           <RTRUE>)
+          (<AND <=? <GETWORD? 1> ,W?TELL>
+                <SET P <PARSE-NOUN-PHRASE 2 ,P-NP-XOBJ T>>
+                <L? .P ,P-LEN>
+                <=? <GETWORD? .P> ,W?TO>
+                <OR <CHKWORD? <SET W <GETWORD? <+ .P 1>>> ,PS?VERB>
+                    <CHKWORD? .W ,PS?DIRECTION>>>
+           <TRACE 2 "[got TELL ACTOR TO VERB order syntax]" CR>
+           <TRACE-IN>
+           <REPLACE-HELD-WORD .P ,W?.>
+           <REPLACE-HELD-WORD 1 ,W?\,TELL>
+           <TRACE-OUT>
+           <RTRUE>)>>
 
 ;"PRSO or PRSI are set to this when multiple objects are used."
 <OBJECT MANY-OBJECTS
@@ -904,7 +1094,7 @@ Returns:
         
         Args:
           SRC: A pointer to the source table.
-          DEST: A poitner to the destination table.
+          DEST: A pointer to the destination table.
           LEN: The number of words to copy."
         <ROUTINE COPY-TABLE (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
@@ -966,15 +1156,26 @@ Returns:
 
 If the match fails, an error message may be printed.
 
+Sets:
+  P-OOPS-WN
+
+Uses:
+  P-LEN
+
 Args:
   WN: The 1-based word number where the noun clause starts.
   NP: A NOUN-PHRASE in which to return the parsed result.
+  SILENT?: If true, don't print a message on failure, and don't set any error-related
+    parser state (i.e. P-OOPS-WN). Defaults to false.
 
 Returns:
-  The number of the first word that was not part of the noun phrase,
-  if parsing was successful, or 0 if parsing failed.
-  NP may be left in an invalid state if parsing fails."
-<ROUTINE PARSE-NOUN-PHRASE (WN NP "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT)
+  If parsing is successful, returns a positive number: the number of the first word that is
+  not part of the noun phrase, which will be one greater than P-LEN if the noun phrase consumes
+  the rest of the command.
+  
+  If parsing fails, returns zero, prints an error message (unless SILENT? is true) and may
+  leave NP in an invalid state."
+<ROUTINE PARSE-NOUN-PHRASE (WN NP "OPT" (SILENT? <>) "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT SPEC-WN)
     <TRACE 3 "[PARSE-NOUN-PHRASE starting at word " N .WN "]" CR>
     <TRACE-IN>
     
@@ -983,13 +1184,22 @@ Returns:
     <REPEAT ()
         <COND
             ;"exit loop if we reached the end of the command"
-            (<G? .WN ,P-LEN> <RETURN>)
+            (<G? .WN ,P-LEN>
+             <TRACE 4 "[end of command]" CR>
+             <RETURN>)
             ;"fail if we found an unrecognized word"
             (<NOT <OR <SET W <GETWORD? .WN>>
                       <AND <PARSE-NUMBER? .WN> <SET W ,W?\,NUMBER>>>>
              <TRACE 4 "[stop at unrecognized word: " WORD .WN "]" CR>
+             <COND (<NOT .SILENT?>
+                    <SETG P-OOPS-WN .WN>
+                    <TELL "I don't know the word \"" WORD .WN "\"." CR>)>
              <TRACE-OUT>
              <RFALSE>)
+            ;"exit loop if THEN or period"
+            (<EQUAL? .W ,W?THEN ,W?\.>
+             <TRACE 4 "[THEN at word " N .WN "]" CR>
+             <RETURN>)
             ;"recognize BUT/EXCEPT"
             (<AND <NOT .BUT> <EQUAL? .W ,W?BUT ,W?EXCEPT>>
              <TRACE 4 "[BUT at word " N .WN "]" CR>
@@ -1007,17 +1217,21 @@ Returns:
             (<EQUAL? .W ,W?ALL ,W?ANY ,W?ONE>
              <COND (<OR .MODE .ADJ .NOUN>
                     <TRACE 4 "[too late for mode change at word " N .WN "]" CR>
+                    <COND (<NOT .SILENT?>
+                           <TELL "You can't use \"" B .W "\" there." CR>)>
                     <TRACE-OUT>
                     <RFALSE>)>
              <SET MODE
                   <COND (<==? .W ,W?ALL> ,MCM-ALL)
                         (ELSE ,MCM-ANY)>>
-             <TRACE 4 "[mode change at word " N .WN ", now mode=" N .MODE "]" CR>)
+             <TRACE 4 "[mode change at word " N .WN ", now mode=" N .MODE "]" CR>
+             <SET SPEC-WN .WN>)
             ;"match adjectives, keeping only the first"
             (<VERSION?
                 (ZIP <SET VAL <WORD? .W ADJECTIVE>>)
                 (ELSE <AND <CHKWORD? .W ,PS?ADJECTIVE> <SET VAL .W>>)>
              <TRACE 4 "[adjective '" B .W "' at word " N .WN "]" CR>
+             <SET SPEC-WN .WN>
              <COND
                  ;"if W can also be a noun, treat it as such if we don't
                    already have a noun, and it isn't followed by an adj or noun"
@@ -1032,7 +1246,9 @@ Returns:
                   <TRACE 4 "[treating it as a noun]" CR>
                   <SET NOUN .W>)
                  (<==? .CNT ,P-MAX-OBJSPECS>
-                  <TELL "That phrase mentions too many objects." CR>
+                  <TRACE 4 "[already have " N .CNT " specs]" CR>
+                  <COND (<NOT .SILENT?>
+                         <TELL "That phrase mentions too many objects." CR>)>
                   <TRACE-OUT>
                   <RFALSE>)
                  (<NOT .ADJ>
@@ -1046,12 +1262,17 @@ Returns:
                     <TRACE 4 "[terminating]" CR>
                     <RETURN>)
                    (<==? .CNT ,P-MAX-OBJSPECS>
-                    <TELL "That phrase mentions too many objects." CR>
+                    <TRACE 4 "[already have " N .CNT " specs]" CR>
+                    <COND (<NOT .SILENT?>
+                           <TELL "That phrase mentions too many objects." CR>)>
                     <TRACE-OUT>
                     <RFALSE>)
-                   (ELSE <SET NOUN .W>)>)
+                   (ELSE
+                    <SET NOUN .W>
+                    <SET SPEC-WN .WN>)>)
             ;"recognize AND/comma"
             (<EQUAL? .W ,W?AND ,W?COMMA>
+             <TRACE 4 "[AND at word " N .WN "]" CR>
              <COND (<OR .ADJ .NOUN>
                     <OBJSPEC-ADJ .SPEC .ADJ>
                     <OBJSPEC-NOUN .SPEC .NOUN>
@@ -1070,9 +1291,13 @@ Returns:
              <TRACE 4 "[OF at word " N .WN ", clearing noun]" CR> 
              <SET NOUN <>>)
             ;"skip buzzwords"
-            (<CHKWORD? .W ,PS?BUZZ-WORD>)
+            (<CHKWORD? .W ,PS?BUZZ-WORD>
+             <TRACE 4 "[skip buzzword at word " N .WN "]" CR>
+             <SET SPEC-WN .WN>)
             ;"exit loop if we found any other word type"
-            (ELSE <RETURN>)>
+            (ELSE
+             <TRACE 4 "[bail over type at word " N .WN "]" CR>
+             <RETURN>)>
         <SET WN <+ .WN 1>>>
     ;"store final adj/noun pair"
     <COND (<OR .ADJ .NOUN>
@@ -1085,7 +1310,7 @@ Returns:
     <NP-MODE .NP .MODE>
     <TRACE 2 "[noun phrase parsed: " NOUN-PHRASE .NP "]" CR>
     <TRACE-OUT>
-    .WN>
+    <+ .SPEC-WN 1>>
 
 <CONSTANT SYN-REC-SIZE 8>
 <CONSTANT SYN-NOBJ 0>
@@ -1343,7 +1568,9 @@ Returns:
         <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL "Which way">)
               (<=? .F ,PERSONBIT> <TELL "Whom">)
               (ELSE <TELL "What">)>
-        <TELL " do you want to ">
+        <TELL " do you want">
+        <COND (<ORDERING?> <TELL " " T ,WINNER>)>
+        <TELL " to ">
         <PRINT-VERB>
         <COND (.SP1
                <TELL " " B <GET-PREP-WORD .SP1>>)>
@@ -1374,11 +1601,15 @@ Returns:
 <ROUTINE MANY-CHECK (OBJ OPTS INDIRECT?)
     <COND (<AND <=? .OBJ ,MANY-OBJECTS>
                 <NOT <BTST .OPTS ,SF-MANY>>>
-           <TELL "You can't use multiple ">
-           <COND (.INDIRECT? <TELL "in">)>
-           <TELL "direct objects with \"">
-           <PRINT-VERB>
-           <TELL "\"." CR>
+           <COND (<VERB? TELL>
+                  <TELL "You can only address one person at a time.">)
+                 (ELSE
+                  <TELL "You can't use multiple ">
+                  <COND (.INDIRECT? <TELL "in">)>
+                  <TELL "direct objects with \"">
+                  <PRINT-VERB>
+                  <TELL "\".">)>
+           <CRLF>
            <RFALSE>)>
     <RTRUE>>
 
@@ -1398,9 +1629,6 @@ Returns:
     <SET MAX <GETB .TBL 0>>
     ;"Attempt implicit take if WINNER isn't directly holding the objects"
     <COND (<BTST .OPTS ,SF-TAKE>
-           ;"TODO: Don't implicit take out of a closed container? Or should
-             the container handle this by setting TRYTAKEBIT on its contents?"
-           ;"TODO: Enforce inventory limit; split relevant logic out of V-TAKE."
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
                       <TELL "[taking ">
@@ -1856,11 +2084,12 @@ Returns:
 
 <IF-DEBUG
     ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
-    <ROUTINE DUMPLINE ("AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
+    <ROUTINE DUMPLINE ("OPT" RAW? "AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
         <TELL N .WDS " words:">
         <DO (I 1 .WDS)
             <TELL " ">
             <DUMPWORD <GET .P 0>>
+            <COND (.RAW? <TELL "[\"" WORD .I "\"]">)>
             <SET P <+ .P 4>>>
         <CRLF>>
 
@@ -1914,26 +2143,26 @@ Returns:
                <RETURN <GETB .TBL 1>>)>>
 
 ;"Fills READBUF and LEXBUF by reading a command from the player.
-If ,AGAINCALL is true, no new command is read and the buffers are reused.
 
-Uses:
-  AGAINCALL
+Args:
+  PROMPT?: Whether to print the prompt first.
 
 Sets (contents):
   READBUF
   LEXBUF"
-<ROUTINE READLINE ()
-    ;"skip input if doing an AGAIN"
-    <COND (,AGAINCALL <RETURN>)>
-    <TELL CR "> ">
-    <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
-    ;"The read buffer has a slightly different format on V3."
-    <VERSION? (ZIP)
-              (ELSE
-               <PUTB ,READBUF 1 0>
-               <UPDATE-STATUS-LINE>)>
-    <DO-READ ,READBUF ,LEXBUF>
-    <RTRUE>>
+<DEFAULT-DEFINITION READLINE
+    <ROUTINE READLINE ("OPT" PROMPT?)
+        <COND (.PROMPT? <TELL CR "> ">)>
+        <SETG READBUF ,KBD-READBUF>
+        <SETG LEXBUF ,KBD-LEXBUF>
+        <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
+        ;"The read buffer has a slightly different format on V3."
+        <VERSION? (ZIP)
+                  (ELSE
+                   <PUTB ,READBUF 1 0>
+                   <UPDATE-STATUS-LINE>)>
+        <DO-READ ,READBUF ,LEXBUF>
+        <RTRUE>>>
 
 <VERSION?
     (ZIP
@@ -2301,6 +2530,7 @@ Returns:
   True if RESURRECT? indicated that the game should resume.
   Otherwise, never returns."
 <ROUTINE JIGS-UP (TEXT "AUX" RESP W)
+    <SETG P-CONT 0>
     <TELL .TEXT CR CR>
     <PRINT-GAME-OVER>
     <CRLF>
@@ -2311,9 +2541,7 @@ Returns:
                 (ELSE
                  <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
         <REPEAT ()
-            <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
-            <VERSION? (ZIP <>) (ELSE <PUTB ,READBUF 1 0>)>
-            <DO-READ ,READBUF ,LEXBUF>
+            <READLINE>
             <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
             <COND (<EQUAL? .W ,W?RESTART>
                    <RESTART>)
@@ -2404,8 +2632,7 @@ Returns:
         Returns:
           The ZSCII code of the character entered."
         <ROUTINE GETONECHAR ()
-            <PUTB ,READBUF 0 %<- ,READBUF-SIZE 2>>
-            <DO-READ ,READBUF ,LEXBUF>
+            <READLINE>
             <GETB ,READBUF 1>>)
     (ELSE
         <ROUTINE GETONECHAR ()

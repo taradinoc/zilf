@@ -142,9 +142,7 @@ Args:
         <SET INTERRUPT <CLOCKER>>
         <SET T <+ .T 1>>
         <COND (<OR <G? .T ,STANDARD-WAIT>
-                   <AND .ENDACT>
-                   <AND .INTERRUPT>>
+                   .ENDACT
+                   .INTERRUPT>
                <SETG STANDARD-WAIT .BACKUP-WAIT>
-               ;"To keep clocker from running again after the WAITED turns"
-               <SETG AGAINCALL T>    ;"TODO: make sure this isn't causing an infinite loop"
                <RETURN>)>>>

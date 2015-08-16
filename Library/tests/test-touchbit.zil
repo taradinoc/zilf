@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -23,8 +23,6 @@
     (LDESC "A dusty old apple is here.")
     (SYNONYM APPLE)
     (FLAGS VOWELBIT TAKEBIT EDIBLEBIT)>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     <MOVE ,WINNER ,STARTROOM>

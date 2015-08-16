@@ -2,7 +2,7 @@
 
 <SETG NEW-VOC? T>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -29,8 +29,6 @@
     (SOUTH TO HALLWAY)
     (FLAGS LIGHTBIT)>
 
-<INSERT-FILE "testing">
-
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."
     <MOVE ,WINNER ,STARTROOM>>
@@ -52,7 +50,7 @@
     <EXPECT "That sentence has no verb.|">
     <CHECK <IN? ,WINNER ,STARTROOM>>
     <COMMAND [APPLE \, NORTH]>
-    ;"TODO: EXPECT once ordering is implemented"
+    <EXPECT "Talking to an apple, huh?|">
     <CHECK <IN? ,WINNER ,STARTROOM>>>
 
 <TEST-CASE ("Direction followed by garbage")

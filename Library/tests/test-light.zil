@@ -1,6 +1,6 @@
 <VERSION ZIP>
 
-<INSERT-FILE "parser">
+<INSERT-FILE "testing">
 
 <OBJECT STARTROOM
     (IN ROOMS)
@@ -56,8 +56,6 @@
            <TELL "Turned off." CR>
            <NOW-DARK?>
            <RTRUE>)>>
-
-<INSERT-FILE "testing">
 
 <TEST-SETUP ()
     <MOVE ,WINNER ,STARTROOM>
