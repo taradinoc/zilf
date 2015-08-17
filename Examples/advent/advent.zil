@@ -416,7 +416,6 @@ There is a building in the distance.")
     (WEST TO AT-END-OF-ROAD)
     (OUT TO AT-END-OF-ROAD)
     (IN SORRY "The pipes are too small.")
-    (THINGS (PAIR FOOT DIAMETER SEWER) (PAIR PIPES PIPE) SEWER-PIPES-F)
     (FLAGS LIGHTBIT SACREDBIT)>
 
 <CONSTANT STREAM-FLOWS-OUT
