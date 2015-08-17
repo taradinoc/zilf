@@ -1510,6 +1510,7 @@ Returns:
                          <TRACE-OUT>
                          <RFALSE>)
                         (ELSE
+                         <SETG P-NOBJ 1>
                          <PUT/B ,P-PRSOS 1 ,PRSO>
                          <PUTB ,P-PRSOS 0 1>)>)
                  (ELSE
@@ -1543,6 +1544,7 @@ Returns:
                          <TRACE-OUT>
                          <RFALSE>)
                         (ELSE
+                         <SETG P-NOBJ 2>
                          <PUT/B ,P-PRSIS 1 ,PRSI>
                          <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
