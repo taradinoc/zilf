@@ -3388,9 +3388,22 @@ The only exit is the way you came in.")
 <ROUTINE BEAR-F (ARG)
     <COND (<=? .ARG ,M-WINNER>
            <COND (,BEAR-FRIENDLY
-                  ;"TODO: Respond to FOLLOW ME."
-                  <SETG P-CONT 0>
-                  <TELL "The bear doesn't seem to understand." CR>)
+                  <COND (<VERB? FOLLOW>
+                         <COND (<PRSO? ,PLAYER>
+                                <SETG WINNER ,PLAYER>
+                                <PERFORM ,V?TAKE ,BEAR>
+                                <SETG WINNER ,BEAR>)
+                               (<IN? ,PRSO ,GENERIC-OBJECTS>
+                                <TELL "The bear looks around, puzzled." CR>)
+                               (ELSE
+                                <TELL "The bear glances at " T ,PRSO ", then back at you." CR>)>)
+                        (<VERB? WAIT>
+                         <SETG WINNER ,PLAYER>
+                         <PERFORM ,V?DROP ,BEAR>
+                         <SETG WINNER ,BEAR>)
+                        (ELSE
+                         <SETG P-CONT 0>
+                         <TELL "The bear doesn't seem to understand." CR>)>)
                  (ELSE
                   <SETG P-CONT 0>
                   <TELL "The bear glares at you even more intently, narrowing its eyes." CR>)>)
@@ -3425,6 +3438,8 @@ to calm down considerably and even becomes rather friendly." CR>)
            <COND (<NOT ,BEAR-FRIENDLY> <TELL "Surely you're joking!" CR>)
                  (<FSET? ,GOLDEN-CHAIN ,LOCKEDBIT>
                   <TELL "The bear is still chained to the wall." CR>)
+                 (,BEAR-FOLLOWING
+                  <TELL "The bear is already following you." CR>)
                  (ELSE
                   <SETG BEAR-FOLLOWING T>
                   <QUEUE I-BEAR -1>
@@ -4145,7 +4160,7 @@ Everything disappears in a dense cloud of orange smoke."
 <SYNTAX CATCH OBJECT (FIND PERSONBIT) = V-CATCH>
 <SYNTAX CATCH OBJECT (FIND PERSONBIT) (ON-GROUND IN-ROOM) IN OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
 <SYNTAX CATCH OBJECT (FIND PERSONBIT) (ON-GROUND IN-ROOM) WITH OBJECT (FIND CONTBIT) = V-PUT-IN PRE-PUT-IN>
-<VERB-SYNONYM CATCH CAPTURE>
+<VERB-SYNONYM CATCH CAPTURE LEAD BRING>
 <SYNTAX RELEASE OBJECT (FIND PERSONBIT) = V-RELEASE>
 <VERB-SYNONYM RELEASE FREE>
 
@@ -4397,6 +4412,62 @@ appears out of nowhere!" CR>)>)>)
 
 ;"TODO: Instead of <BE-SPECIFIC>, could we orphan and force the parser to use the
   FEED OBJECT OBJECT syntax?"
+
+;----------------------------------------------------------------------
+
+<SYNTAX FOLLOW OBJECT (FIND PERSONBIT) = V-FOLLOW>
+
+<ROUTINE V-FOLLOW ()
+    <TELL CT ,PRSO " do">
+    <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
+    <TELL "n't seem to be leaving." CR>>
+
+<VERB-SYNONYM WAIT STAY STOP>
+
+;----------------------------------------------------------------------
+"Creatures the player might try to follow when they aren't present"
+;----------------------------------------------------------------------
+
+<OBJECT GENERIC-DWARF
+    (DESC "dwarf")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM DWARF)
+    (ADJECTIVE THREATENING NASTY LITTLE MEAN)
+    (ACTION MISSING-CREATURE-F)>
+
+<OBJECT GENERIC-PIRATE
+    (DESC "pirate")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM PIRATE)
+    (ADJECTIVE BEARDED)
+    (ACTION MISSING-CREATURE-F)>
+
+<OBJECT GENERIC-TROLL
+    (DESC "troll")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM TROLL)
+    (ADJECTIVE BURLY)
+    (ACTION MISSING-CREATURE-F)>
+
+<OBJECT GENERIC-BEAR
+    (DESC "bear")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM BEAR)
+    (ADJECTIVE LARGE TAME FEROCIOUS CAVE)
+    (ACTION MISSING-CREATURE-F)>
+
+<OBJECT GENERIC-SNAKE
+    (DESC "snake")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM SNAKE COBRA ASP)
+    (ADJECTIVE HUGE FIERCE GREEN FEROCIOUS VENOMOUS LARGE BIG KILLER)
+    (ACTION MISSING-CREATURE-F)>
+
+<ROUTINE MISSING-CREATURE-F ()
+    <COND (<VERB? FOLLOW>
+           <TELL CT ,PRSO " is too far away to follow." CR>)
+          (ELSE
+           <TELL CT ,PRSO " isn't here." CR>)>>
 
 ;----------------------------------------------------------------------
 "Help and info commands"
