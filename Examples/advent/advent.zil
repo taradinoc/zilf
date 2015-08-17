@@ -2606,15 +2606,18 @@ and a hands and knees crawl leads west.")
     <COND (<VERB? DROP>
            <COND (<IN? ,VELVET-PILLOW ,HERE>
                   <TELL "(coming to rest, delicately, on " T ,VELVET-PILLOW ")" CR>
-                  <RFALSE>)>
-           <REMOVE ,PRSO>
-           <MOVE ,SHARDS ,HERE>
-           <TELL CT ,PRSO " drops with a delicate crash." CR>)
+                  <RFALSE>)
+                 (<NOT <=? ,HERE ,IN-SOFT-ROOM>>
+                  <REMOVE ,PRSO>
+                  <MOVE ,SHARDS ,HERE>
+                  <TELL CT ,PRSO " drops with a delicate crash." CR>)>)
           (<VERB? ATTACK>
            <REMOVE ,PRSO>
            <MOVE ,SHARDS ,HERE>
            <TELL "You have taken the vase and hurled it delicately to the ground." CR>)
-          (<AND <VERB? PUT-IN> <PRSI? ,MING-VASE>>
+          (<OR <AND <VERB? PUT-IN> <PRSI? ,MING-VASE>>
+               <VERB? FILL>
+               <AND <VERB? FILL-WITH> <PRSO? ,MING-VASE>>>
            <TELL "The vase is too fragile to use as a container." CR>)>>
 
 <OBJECT SHARDS
