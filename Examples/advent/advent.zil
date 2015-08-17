@@ -334,7 +334,7 @@ A small stream flows out of the building and down a gully.")
     (ACTION STREAM-F)
     (FLAGS SPRINGBIT)>
 
-<ROUTINE STREAM-F ()
+<ROUTINE STREAM-F ("AUX" ENDS-HERE? OUTSIDE?)
     <COND (<VERB? DRINK>
            <TELL "The water tastes strongly of ">
            ;"Inspired by a typo that was too amusing to take out..."
@@ -348,10 +348,17 @@ A small stream flows out of the building and down a gully.")
                   <RTRUE>)
                  (ELSE <TELL "You have nothing in which to carry the water." CR>)>)
           (<AND <VERB? PUT-IN> <PRSI? ,STREAM>>
+           <SET ENDS-HERE? <=? ,HERE ,IN-PIT ,AT-SLIT-IN-STREAMBED>>
+           <SET OUTSIDE? <AND <FSET? ,HERE ,LIGHTBIT> <FSET? ,HERE ,SACREDBIT>>>
            <COND (<PRSO? ,MING-VASE>
                   <REMOVE ,PRSO>
-                  <MOVE ,SHARDS ,HERE>
-                  <TELL "The sudden change in temperature has delicately shattered the vase." CR>)
+                  <TELL "The sudden change in temperature has delicately shattered the vase">
+                  <COND (.ENDS-HERE?
+                         <MOVE ,SHARDS ,HERE>
+                         <TELL "." CR>)
+                        (ELSE
+                         <COND (.OUTSIDE? <MOVE ,SHARDS ,AT-SLIT-IN-STREAMBED>)>
+                         <TELL ", and the shards wash away with the stream." CR>)>)
                  (<PRSO? ,BOTTLE>
                   <PERFORM ,V?FILL-WITH ,BOTTLE ,STREAM>
                   <RTRUE>)
@@ -359,8 +366,12 @@ A small stream flows out of the building and down a gully.")
                   <FSET ,WICKER-CAGE ,OPENBIT>
                   <MOVE ,LITTLE-BIRD ,HERE>
                   <TELL CT ,LITTLE-BIRD " splashes cheerfully, then flies out of the water." CR>)
+                 (.ENDS-HERE?
+                  <PERFORM ,V?DROP ,PRSO>
+                  <RTRUE>)
                  (ELSE
-                  <REMOVE ,PRSO>
+                  <COND (.OUTSIDE? <MOVE ,PRSO ,AT-SLIT-IN-STREAMBED>)
+                        (ELSE <REMOVE ,PRSO>)>
                   <COND (<SHORT-REPORT?> <TELL "Washed away." CR>)
                         (ELSE
                          <TELL CT ,PRSO " wash">
@@ -751,7 +762,6 @@ Downstream the streambed is bare rock.")
     (LDESC "You are in a 20-foot depression floored with bare dirt.
 Set into the dirt is a strong steel grate mounted in concrete.
 A dry streambed leads into the depression.")
-    (GLOBAL GRATE)
     (EAST PER RANDOM-FOREST)
     (WEST PER RANDOM-FOREST)
     (SOUTH PER RANDOM-FOREST)
