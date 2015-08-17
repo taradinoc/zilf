@@ -1017,7 +1017,7 @@ Returns:
                  (<=? ,P-NUMBER 5>
                   <TELL "the only number that's part of more than one pair of twin primes">)
                  (<=? ,P-NUMBER 6>
-                  <TELL "a perfect number">)
+                  <TELL "the smallest perfect number">)
                  (<=? ,P-NUMBER 7>
                   <TELL "a 1995 film directed by David Fincher">)
                  (<=? ,P-NUMBER 8>
@@ -1035,10 +1035,15 @@ expressible as the sum of two cubes in two different ways">)
                   <TELL "the combination on my luggage">)
                  (<=? ,P-NUMBER -32768 32767>
                   <TELL "the ">
-                  <COND (<L? ,P-NUMBER 0> <TELL "smallest">)
-                        (ELSE <TELL "largest">)>
-                  <TELL " 16-bit signed integer">)
-                 (ELSE <TELL "the number between " N <- ,P-NUMBER 1> " and " N <+ ,P-NUMBER 1>>)>
+                  <COND (<L? ,P-NUMBER 0> <TELL "min">)
+                        (ELSE <TELL "max">)>
+                  <TELL "imum 16-bit signed integer">)
+                 (ELSE
+                  <TELL "the number between ">
+                  <COND (<G? ,P-NUMBER 0>
+                         <TELL N <- ,P-NUMBER 1> " and " N <+ ,P-NUMBER 1>>)
+                        (ELSE
+                         <TELL N <+ ,P-NUMBER 1> " and " N <- ,P-NUMBER 1>>)>)>
            <TELL ", but that's not important right now." CR>)
           (<AND <=? ,P-V-WORD ,W?TAKE> <=? ,P-NUMBER 5 10>>
            <PERFORM ,V?WAIT>)>>
