@@ -2732,20 +2732,12 @@ Args:
 
 Returns:
   The room that encloses the object, or false if it isn't in a room."
-<ROUTINE META-LOC ML (OBJ "AUX" P)
-    <SET P <LOC .OBJ>>
-    <COND (<0? .P> <RFALSE>)
-          (<IN? .P ,ROOMS>
-           <RETURN .P>)>
+<ROUTINE META-LOC (OBJ)
     <REPEAT ()
-        ;"TODO: infinite loop if P is not a person/container/special object?"
-        <COND (<OR <FSET? .P ,PERSONBIT>
-                   <FSET? .P ,CONTBIT>
-                   <EQUAL? .P ,LOCAL-GLOBALS ,GLOBAL-OBJECTS ,GENERIC-OBJECTS>>
-               <SET P <LOC .P>>)>
-        <COND (<0? .P> <RFALSE>)
-              (<IN? .P ,ROOMS>
-               <RETURN .P .ML>)>>>
+        <SET OBJ <LOC .OBJ>>
+        <COND (<0? .OBJ> <RFALSE>)
+              (<IN? .OBJ ,ROOMS>
+               <RETURN .OBJ>)>>>
 
 ;"Checks whether the player has entered darkness, printing a message if so.
 
