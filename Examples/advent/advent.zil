@@ -592,6 +592,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (DESC "bottle")
     (IN INSIDE-BUILDING)
     (SYNONYM BOTTLE JAR FLASK)
+    (ADJECTIVE EMPTY)
     (DESCFCN BOTTLE-DESCFCN)
     (ACTION BOTTLE-F)
     (CONTFCN BOTTLE-CONTFCN)
