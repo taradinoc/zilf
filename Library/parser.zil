@@ -2613,8 +2613,8 @@ Returns:
 <ROUTINE YES? ("AUX" RESP)
      <PRINTI " (y/n) >">
      <REPEAT ()
-         <SET RESP <GETONECHAR>>
-         <VERSION? (ZIP) (ELSE <PRINTC .RESP> <CRLF>)>
+         <READLINE>
+         <SET RESP <GETB ,READBUF 1>>
          <COND (<EQUAL? .RESP !\Y !\y>
                 <RTRUE>)
                (<EQUAL? .RESP !\N !\n>
@@ -2636,12 +2636,13 @@ Returns:
         
         Returns:
           The ZSCII code of the character entered."
-        <ROUTINE GETONECHAR ()
-            <READLINE>
-            <GETB ,READBUF 1>>)
+        <DEFMAC GETONECHAR ()
+            '<BIND ()
+                <READLINE>
+                <GETB ,READBUF 1>>>)
     (ELSE
-        <ROUTINE GETONECHAR ()
-            <INPUT 1>>)>
+        <DEFMAC GETONECHAR ()
+            '<INPUT 1>>)>
 
 ;"Determines whether an object can be seen by the player.
 
