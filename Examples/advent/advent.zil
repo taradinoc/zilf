@@ -147,10 +147,12 @@ Adapted once more by Jesse McGrew (2015)">>
 <REPLACE-DEFINITION FAILS-HAVE-CHECK?
     <ROUTINE FAILS-HAVE-CHECK? (OBJ)
         <NOT <OR <HELD? .OBJ>
-                 ;"Allow PUT BIRD IN CAGE and PUT WATER/OIL ON <any>."
+                 ;"Allow PUT BIRD IN CAGE, PUT BOTTLED WATER/OIL ON <any>, or
+                   PUT [POOL OF] WATER/OIL IN BOTTLE."
                  <AND <VERB? PUT-IN>
                       <OR <PRSO? ,WATER-IN-BOTTLE ,OIL-IN-BOTTLE>
-                          <AND <PRSO? ,LITTLE-BIRD> <PRSI? ,WICKER-CAGE>>>>
+                          <AND <PRSO? ,LITTLE-BIRD> <PRSI? ,WICKER-CAGE>>
+                          <AND <PRSO? ,STREAM ,OIL> <PRSI? ,BOTTLE>>>>
                  ;"Allow DROP BIRD and DROP BEAR."
                  <AND <VERB? DROP>
                       <PRSO? ,LITTLE-BIRD ,BEAR>>>>>>
@@ -332,6 +334,7 @@ A small stream flows out of the building and down a gully.")
     (SYNONYM STREAM WATER ;BROOK ;RIVER LAKE RESERVOIR)
     (ADJECTIVE SMALL TUMBLING SPLASHING BABBLING RUSHING)
     (ACTION STREAM-F)
+    (GENERIC WATER-GENERIC)
     (FLAGS SPRINGBIT)>
 
 <ROUTINE STREAM-F ("AUX" ENDS-HERE? OUTSIDE?)
@@ -632,7 +635,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
                   <REMOVE .F>
                   <TELL "Your " D ,PRSO " is now empty and the ground is now wet." CR>)>)
           (<AND <VERB? PUT-IN> <PRSI? ,BOTTLE>>
-           <PERFORM ,V?FILL-WITH ,PRSO ,PRSI>)>>
+           <PERFORM ,V?FILL-WITH ,PRSI ,PRSO>)>>
 
 <ROUTINE BOTTLE-DESCFCN (ARG "AUX" F)
     <COND (<=? .ARG ,M-OBJDESC?> <RTRUE>)
@@ -653,6 +656,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (TEXT "It looks like ordinary water to me.")
     (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION WATER-IN-BOTTLE-F)
+    (GENERIC WATER-GENERIC)
     (FLAGS LIQUIDBIT)>
 
 <ROUTINE WATER-IN-BOTTLE-F ()
@@ -664,6 +668,10 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
            <PERFORM ,V?POUR ,PRSO ,PRSI>
            <RTRUE>)>>
 
+<ROUTINE WATER-GENERIC (TBL)
+    <COND (<VERB? DRINK POUR> ,WATER-IN-BOTTLE)
+          (<VERB? PUT-IN> ,STREAM)>>
+
 <OBJECT OIL-IN-BOTTLE
     (DESC "bottled oil")
     (ARTICLE "some")
@@ -672,6 +680,7 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
     (TEXT "It looks like ordinary oil to me.")
     (SIZE 0)    ;"Doesn't count against inventory limit"
     (ACTION OIL-IN-BOTTLE-F)
+    (GENERIC OIL-GENERIC)
     (FLAGS LIQUIDBIT)>
 
 <ROUTINE OIL-IN-BOTTLE-F ()
@@ -682,6 +691,10 @@ I seem to recall there's a vending machine in the maze. Bring some coins with yo
           (<AND <VERB? PUT-ON> <PRSO? ,OIL-IN-BOTTLE>>
            <PERFORM ,V?POUR ,PRSO ,PRSI>
            <RTRUE>)>>
+
+<ROUTINE OIL-GENERIC (TBL)
+    <COND (<VERB? DRINK POUR> ,OIL-IN-BOTTLE)
+          (<VERB? PUT-IN> ,OIL)>>
 
 ;----------------------------------------------------------------------
 
@@ -2059,6 +2072,7 @@ There is a small pool of oil in one corner of the pit.")
     (SYNONYM POOL OIL)
     (TEXT "It looks like ordinary oil.")
     (ACTION OIL-F)
+    (GENERIC OIL-GENERIC)
     (FLAGS NDESCBIT SPRINGBIT)>
 
 <ROUTINE OIL-F ()
