@@ -129,6 +129,7 @@ other versions. These macros let us write the same code for all versions."
 <PROPDEF ARTICLE <>>
 <PROPDEF PRONOUN <>>
 <PROPDEF THINGS <>>
+<PROPDEF GENERIC <>>
 
 "Parser"
 
@@ -1940,6 +1941,10 @@ Returns:
                <COND (<N=? .BITS .OBITS>
                       <SET BITS .OBITS>
                       <AGAIN .BITS-SET>)>
+               <COND (<SET F <APPLY-GENERIC-FCN .OUT>>
+                      <PUT/B .OUT 1 .F>
+                      <PUTB .OUT 0 1>
+                      <RETURN .F>)>
                <WHICH-DO-YOU-MEAN .OUT>
                <COND (<=? .NP ,P-NP-DOBJ> <ORPHAN T AMBIGUOUS PRSO>)
                      (ELSE <ORPHAN T AMBIGUOUS PRSI>)>
@@ -1951,6 +1956,12 @@ Returns:
              <AND <VERB? TAKE DROP>
                   <NOT <OR <FSET? .OBJ ,TAKEBIT>
                        <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
+
+<ROUTINE APPLY-GENERIC-FCN (TBL "AUX" (MAX <GETB .TBL 0>) F R)
+    <DO (I 1 .MAX) (END <RFALSE>)
+        <SET F <GETP <GET/B .TBL .I> ,P?GENERIC>>
+        <COND (<SET R <APPLY .F .TBL>>
+               <RETURN .R>)>>>
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
     <TELL "Which do you mean, ">
