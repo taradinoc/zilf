@@ -2985,7 +2985,7 @@ The only passage goes back toward the south.")
     (LDESC "You are on one side of a large, deep chasm.
 A heavy white mist rising up from below obscures all view of the far side.
 A southwest path leads away from the chasm into a winding corridor.")
-    (GLOBAL RICKETY-BRIDGE WRECKAGE TROLL-SIGN MIST)
+    (GLOBAL RICKETY-BRIDGE WRECKAGE DEAD-BEAR TROLL-SIGN MIST)
     (NE PER CROSS-RICKETY-BRIDGE)
     (SW TO IN-SLOPING-CORRIDOR)
     (DOWN TO IN-SLOPING-CORRIDOR)
@@ -3009,6 +3009,7 @@ A southwest path leads away from the chasm into a winding corridor.")
            <COND (,BEAR-FOLLOWING
                   <REMOVE ,BEAR>
                   <FCLEAR ,WRECKAGE ,INVISIBLE>
+                  <FCLEAR ,DEAD-BEAR ,INVISIBLE>
                   <FSET ,RICKETY-BRIDGE ,INVISIBLE>
                   <FSET ,TROLL-SIGN ,INVISIBLE>
                   <DEQUEUE I-BEAR>
@@ -3096,13 +3097,23 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
 <OBJECT WRECKAGE
     (DESC "wreckage of the bridge")
     (IN LOCAL-GLOBALS)
-    (SYNONYM WRECKAGE BRIDGE BEAR)
-    (ADJECTIVE DEAD)
+    (SYNONYM WRECKAGE BRIDGE)
     (ACTION WRECKAGE-F)
     (FLAGS INVISIBLE)>
 
 <ROUTINE WRECKAGE-F ()
     <TELL "The wreckage is too far below." CR>>
+
+<OBJECT DEAD-BEAR
+    (DESC "dead bear")
+    (IN LOCAL-GLOBALS)
+    (SYNONYM BEAR)
+    (ADJECTIVE DEAD)
+    (ACTION DEAD-BEAR-F)
+    (FLAGS INVISIBLE)>
+
+<ROUTINE DEAD-BEAR-F ()
+    <TELL "The dead bear is too far below." CR>>
 
 ;----------------------------------------------------------------------
 
@@ -3111,7 +3122,7 @@ tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" 
     (IN ROOMS)
     (LDESC "You are on the far side of the chasm.
 A northeast path leads away from the chasm on this side.")
-    (GLOBAL RICKETY-BRIDGE WRECKAGE TROLL-SIGN)
+    (GLOBAL RICKETY-BRIDGE WRECKAGE DEAD-BEAR TROLL-SIGN)
     (SW PER CROSS-RICKETY-BRIDGE)
     (NE TO IN-CORRIDOR)
     (ACTION ON-NE-SIDE-OF-CHASM-F)
