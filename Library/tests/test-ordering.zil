@@ -18,8 +18,8 @@
     (IN STARTROOM)
     (DESC "robot")
     (SYNONYM ROBOT)
-    (FLAGS PERSONBIT)
-    (ACTION ROBOT-F)>
+    (ACTION ROBOT-F)
+    (FLAGS PERSONBIT TRANSBIT)>
 
 <OBJECT RED-CUBE
     (DESC "red cube")
@@ -47,10 +47,12 @@
 
 <ROUTINE ROBOT-F (ARG "AUX" PT)
     <COND (<=? .ARG ,M-WINNER>
-           <COND (<AND <VERB? TAKE>
-                       <FSET? ,PRSO ,TAKEBIT>>
-                  <MOVE ,PRSO ,ROBOT>
-                  <TELL CT ,ROBOT " picks up " T ,PRSO "." CR>)
+           <COND (<AND <VERB? TAKE> <FSET? ,PRSO ,TAKEBIT>>
+                  <COND (<IN? ,PRSO ,ROBOT>
+                         <TELL CT ,ROBOT " already has " T ,PRSO "." CR>)
+                        (ELSE
+                         <MOVE ,PRSO ,ROBOT>
+                         <TELL CT ,ROBOT " picks up " T ,PRSO "." CR>)>)
                  (<AND <VERB? WALK>
                        ,PRSO-DIR
                        <SET PT <GETPT <LOC ,ROBOT> ,PRSO>>
@@ -119,5 +121,11 @@
     <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
     <COMMAND [RED]>
     <EXPECT "The robot picks up the red cube.|">>
+
+<TEST-CASE ("AGAIN after order")
+    <COMMAND [ROBOT \, TAKE RED CUBE]>
+    <EXPECT "The robot picks up the red cube.|">
+    <COMMAND [AGAIN]>
+    <EXPECT "The robot already has the red cube.|">>
 
 <TEST-GO ,STARTROOM>
