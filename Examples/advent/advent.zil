@@ -4437,7 +4437,7 @@ appears out of nowhere!" CR>)>)>)
 ;----------------------------------------------------------------------
 
 <OBJECT GENERIC-DWARF
-    (DESC "dwarf")
+    (DESC "threatening little dwarf")
     (IN GENERIC-OBJECTS)
     (SYNONYM DWARF)
     (ADJECTIVE THREATENING NASTY LITTLE MEAN)
@@ -4451,14 +4451,14 @@ appears out of nowhere!" CR>)>)>)
     (ACTION MISSING-CREATURE-F)>
 
 <OBJECT GENERIC-TROLL
-    (DESC "troll")
+    (DESC "burly troll")
     (IN GENERIC-OBJECTS)
     (SYNONYM TROLL)
     (ADJECTIVE BURLY)
     (ACTION MISSING-CREATURE-F)>
 
 <OBJECT GENERIC-BEAR
-    (DESC "bear")
+    (DESC "large cave bear")
     (IN GENERIC-OBJECTS)
     (SYNONYM BEAR)
     (ADJECTIVE LARGE TAME FEROCIOUS CAVE)
@@ -4474,6 +4474,9 @@ appears out of nowhere!" CR>)>)>)
 <ROUTINE MISSING-CREATURE-F ()
     <COND (<VERB? FOLLOW>
            <TELL CT ,PRSO " is too far away to follow." CR>)
+          (<AND ,PRSI
+                <=? <GETP ,PRSI ,P?ACTION> ,MISSING-CREATURE-F>>
+           <TELL CT ,PRSI " isn't here." CR>)
           (ELSE
            <TELL CT ,PRSO " isn't here." CR>)>>
 
