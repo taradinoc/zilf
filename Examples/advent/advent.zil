@@ -35,6 +35,7 @@ Adapted once more by Jesse McGrew (2015)">>
 <ROUTINE GO ()
     <SETG HERE ,AT-END-OF-ROAD>
     <SETG SCORE 36>
+    <INIT-STATUS-LINE>
     <IF-BETA <SEED-RANDOM>>
     <SETG MODE ,VERBOSE>
     <CRLF> <CRLF>
@@ -42,7 +43,6 @@ Adapted once more by Jesse McGrew (2015)">>
     <COND (<YES?> <CRLF> <SHOW-HINT ,HNT?INSTRUCTIONS> <CRLF>)>
     <CRLF>
     <SETG PREV-SCORE ,SCORE>
-    <INIT-STATUS-LINE>
     <V-VERSION> <CRLF>
     <QUEUE I-DWARF -1>
     <QUEUE I-PIRATE -1>
