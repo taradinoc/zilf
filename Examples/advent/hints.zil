@@ -118,3 +118,18 @@
 
 <DEFMAC HINT-SEEN? ('N)
     <FORM NOT <FORM GET ,HINT-PENALTY-TBL .N>>>
+
+<ROUTINE RESPOND-TO-HINT-REQUEST? ("AUX" (MAX <GET ,HINT-PENALTY-TBL 0>) C S U)
+    <COND (<0? .MAX> <RFALSE>)>
+    <DO (I 1 .MAX)
+        <COND (<AND <IN-HINT-LOCATION? .I>
+                    <OR <NOT <SET C <GET ,HINT-CONDITION-TBL .I>>>
+                        <APPLY .C>>>
+               <COND (<HINT-SEEN? .I>
+                      <OR .S <SET S .I>>)
+                     (ELSE
+                      <SET U .I>
+                      <RETURN>)>)>>
+    <COND (.U <OFFER-HINT .U> <RTRUE>)
+          (.S <SHOW-HINT .S> <RTRUE>)
+          (ELSE <RFALSE>)>>
