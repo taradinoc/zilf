@@ -1776,22 +1776,24 @@ The maze continues at this level.")
 <ROOM PIRATE-DEAD-END
     (DESC "Dead End")
     (IN ROOMS)
-    (LDESC "This is the pirate's dead end.")
+    (LDESC "You have reached a dead end.")
     (SE TO ALIKE-MAZE-13)
     (OUT TO ALIKE-MAZE-13)
     (ACTION PIRATE-DEAD-END-F)
     (FLAGS SACREDBIT)>
 
+<GLOBAL FOUND-TREASURE-CHEST <>>
+
 <ROUTINE PIRATE-DEAD-END-F (RARG)
-    <COND (<=? .RARG ,M-ENTER>
-           <DEQUEUE I-PIRATE>
-           <COND (<AND <IN? ,TREASURE-CHEST ,HERE>
-                       <NOT <FSET? ,TREASURE-CHEST ,TOUCHBIT>>>
-                  <TELL "You've found the pirate's treasure chest!" CR>)>)>>
+    <COND (<AND <=? .RARG ,M-ENTER>
+                <NOT ,FOUND-TREASURE-CHEST>
+                <IN? ,TREASURE-CHEST ,HERE>>
+           <SETG FOUND-TREASURE-CHEST T>
+           <DEQUEUE I-PIRATE>)
+          (ELSE <DEAD-END-ROOMS-F .RARG>)>>
 
 <OBJECT TREASURE-CHEST
     (DESC "treasure chest")
-    (IN PIRATE-DEAD-END)
     (SYNONYM CHEST BOX RICHES TREASURE)
     (ADJECTIVE PIRATE TREASURE PIRATE\'S)
     (FDESC "The pirate's treasure chest is here!")
@@ -3790,6 +3792,7 @@ clatters to the ground." CR>)
            <COND (,PIRATE-SPOTTED <RFALSE>)>
            <SETG PIRATE-SPOTTED T>
            <COND (,PIRATE-STOLE <DEQUEUE I-PIRATE>)>
+           <MOVE ,TREASURE-CHEST ,PIRATE-DEAD-END>
            <TELL CR "There are faint rustling noises from the darkness behind you.
 As you turn toward them, you spot a bearded pirate.
 He is carrying a large chest.||
@@ -3804,6 +3807,7 @@ With that, he vanishes into the gloom." CR>
     ;"We can't move objects in a MAP-SCOPE, so use recursion in a separate routine"
     <NESTED-ROB-TREASURE ,HERE ,PIRATE-DEAD-END>
     <NESTED-ROB-TREASURE ,WINNER ,PIRATE-DEAD-END>
+    <MOVE ,TREASURE-CHEST ,PIRATE-DEAD-END>
     <TELL CR "Out from the shadows behind you pounces a bearded pirate!
 \"Har, har,\" he chortles. \"I'll just take all this booty and hide it away
 with me chest deep in the maze!\"
@@ -3822,7 +3826,8 @@ He snatches your treasure and vanishes into the gloom." CR>>
 <GLOBAL CAVES-CLOSED <>>
 
 <ROUTINE I-CAVE-CLOSER ("AUX" T)
-    ;"Cave starts closing once all treasures have been found."
+    ;"Cave starts closing once all treasures have been handled."
+    ;"TODO: It should start N turns *after* they've all been *discovered*."
     <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
         <SET T <GET/B ,ALL-TREASURES .I>>
         <COND (<NOT <FSET? .T ,TOUCHBIT>> <RFALSE>)>>
