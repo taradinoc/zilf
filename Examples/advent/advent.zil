@@ -126,6 +126,9 @@ Adapted once more by Jesse McGrew (2015)">>
                   ;"DROP BIRD/BEAR is normally blocked by PRE-DROP, so we intercept it here
                     and redirect to RELEASE BIRD/BEAR."
                   <PERFORM ,V?RELEASE ,PRSO>
+                  <RTRUE>)
+                 (<AND <VERB? THINK-ABOUT>
+                       <RESPOND-TO-HINT-REQUEST?>>
                   <RTRUE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
@@ -4537,6 +4540,16 @@ this game and the platform it was built on, including:|
 ;----------------------------------------------------------------------
 "Hints (mostly adaptive, and all of which cost the player points)"
 ;----------------------------------------------------------------------
+
+;"Hints are displayed automatically after a delay if the player seems to be stuck, but the player
+  can also trigger a hint sooner with the HINT command."
+
+<SYNTAX HINT = V-HINT>
+<VERB-SYNONYM HINT HINTS>
+
+<ROUTINE V-HINT ()
+    <COND (<RESPOND-TO-HINT-REQUEST?>)
+          (ELSE <TELL "I'm afraid I have no hints for your current situation." CR>)>>
 
 <INSERT-FILE "hints">
 
