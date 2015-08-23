@@ -2633,7 +2633,14 @@ Returns:
      <PRINTI " (y/n) >">
      <REPEAT ()
          <READLINE>
-         <SET RESP <GETB ,READBUF 1>>
+         <VERSION?
+             (ZIP <SET RESP <GETB ,READBUF 1>>)
+             (EZIP <SET RESP <GETB ,READBUF 1>>)
+             (ELSE
+              <COND (<GETB ,READBUF 1>
+                     <SET RESP <GETB ,READBUF 2>>)
+                    (ELSE
+                     <SET RESP 0>)>)>
          <COND (<EQUAL? .RESP !\Y !\y>
                 <RTRUE>)
                (<EQUAL? .RESP !\N !\n>
