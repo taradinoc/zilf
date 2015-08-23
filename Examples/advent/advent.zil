@@ -4522,13 +4522,16 @@ Woods. This version was ported to ZIL by Jesse McGrew, thanks to prior porting w
 M. Baggett (TADS), Graham Nelson (Inform), Kent Tessman (Hugo), David Given and Arthur O'Dwyer
 (vbccz), among others.|
 |
-Special thanks go out to everyone who helped with testing, advice, and code contributions,
-including:|
+Special thanks go out to everyone who helped with testing, advice, and code contributions for
+this game and the platform it was built on, including:|
 |
     Arthur O'Dwyer|
+    Daniel M. Stelzer|
+    Jonathan Blask|
+    Josh Lawrence|
     Kate Matthews|
     Nick Turner|
-    [TBD]|">
+    Toby Ott|">
     <IF-BETA <TELL "    ...and YOU, beta tester!|">>>
 
 ;----------------------------------------------------------------------
