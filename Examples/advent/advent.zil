@@ -52,18 +52,7 @@ Adapted once more by Jesse McGrew (2015)">>
     <PUTP ,PLAYER ,P?CAPACITY 35> ;"7 objects at default size 5"
     <PUTP ,PLAYER ,P?ACTION ,ADVENT-PLAYER-F>
     <V-LOOK>
-    <REPEAT ()
-        <COND (<PARSER>
-               <PERFORM ,PRSA ,PRSO ,PRSI>
-               <COND (<NOT <GAME-VERB?>>
-                      <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                      <CLOCKER>)>
-               ;"UPDATE-SCORE-AND-NOTIFY is called explicitly instead of using the interrupt
-                 queue: first, because we need to make sure it runs after all other interrupts,
-                 since they might affect the score. Second, because we want it to run even on
-                 GAME-VERB turns, since debugging verbs can move treasures and affect the score."
-               <UPDATE-SCORE-AND-NOTIFY>)>
-        <SETG HERE <LOC ,WINNER>>>>
+    <MAIN-LOOP>>
 
 <IF-BETA
     <CONSTANT FORTUNES
@@ -159,6 +148,14 @@ Adapted once more by Jesse McGrew (2015)">>
                  ;"Allow DROP BIRD and DROP BEAR."
                  <AND <VERB? DROP>
                       <PRSO? ,LITTLE-BIRD ,BEAR>>>>>>
+
+;"Hook into the main loop to call UPDATE-SCORE-AND-NOTIFY directly instead of using
+  the interrupt queue: first, because we need to make sure it runs after all other interrupts,
+  since they might affect the score. Second, because we want it to run even on GAME-VERB turns,
+  since debugging verbs can move treasures and affect the score."
+<REPLACE-DEFINITION HOOK-END-OF-COMMAND
+    <DEFMAC HOOK-END-OF-COMMAND ()
+        '<UPDATE-SCORE-AND-NOTIFY>>>
 
 ;"We replace a few more library sections below."
 <DELAY-DEFINITION DARKNESS-F>
