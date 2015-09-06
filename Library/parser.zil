@@ -526,6 +526,61 @@ Args:
 "Buzzwords"
 <BUZZ A AN AND ANY ALL BUT EXCEPT OF ONE THE THEN UNDO OOPS \. \, \">
 
+"Parser entry points"
+
+;"Reads a command and processes it, repeating forever.
+
+The behavior of MAIN-LOOP can be extended by overriding macros such as HOOK-BEFORE-PARSER.
+These extensions will be respected by other code that simulates the main loop, e.g. V-WAIT."
+<ROUTINE MAIN-LOOP ("AUX" RESULT)
+    <REPEAT ()
+        <COND (<BIND ()
+                   <HOOK-BEFORE-PARSER>
+                   <SET RESULT <PARSER>>
+                   <HOOK-AFTER-PARSER RESULT>
+                   .RESULT>
+               <HOOK-BEFORE-PERFORM>
+               <SET RESULT <PERFORM ,PRSA ,PRSO ,PRSI>>
+               <HOOK-AFTER-PERFORM RESULT>
+               <COND (<NOT <GAME-VERB?>>
+                      <HOOK-BEFORE-M-END>
+                      <SET RESULT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+                      <HOOK-AFTER-M-END RESULT>
+                      <HOOK-BEFORE-CLOCKER>
+                      <SET RESULT <CLOCKER>>
+                      <HOOK-AFTER-CLOCKER RESULT>)>
+               <SETG HERE <LOC ,WINNER>>
+               <HOOK-END-OF-COMMAND>)>
+        <HOOK-END-OF-ITERATION>>>
+
+;"Dummy implementations of MAIN-LOOP's BEFORE hooks."
+<DEFAULT-DEFINITION HOOK-BEFORE-PARSER
+    <DEFMAC HOOK-BEFORE-PARSER () <>>>
+<DEFAULT-DEFINITION HOOK-BEFORE-PERFORM
+    <DEFMAC HOOK-BEFORE-PERFORM () <>>>
+<DEFAULT-DEFINITION HOOK-BEFORE-M-END
+    <DEFMAC HOOK-BEFORE-M-END () <>>>
+<DEFAULT-DEFINITION HOOK-BEFORE-CLOCKER
+    <DEFMAC HOOK-BEFORE-CLOCKER () <>>>
+
+;"Dummy implementations of MAIN-LOOP's AFTER hooks.
+  These take a single parameter, an atom naming the local variable that stores the
+  function's result."
+<DEFAULT-DEFINITION HOOK-AFTER-PARSER
+    <DEFMAC HOOK-AFTER-PARSER (R-ATOM) <>>>
+<DEFAULT-DEFINITION HOOK-AFTER-PERFORM
+    <DEFMAC HOOK-AFTER-PERFORM (R-ATOM) <>>>
+<DEFAULT-DEFINITION HOOK-AFTER-M-END
+    <DEFMAC HOOK-AFTER-M-END (R-ATOM) <>>>
+<DEFAULT-DEFINITION HOOK-AFTER-CLOCKER
+    <DEFMAC HOOK-AFTER-CLOCKER (R-ATOM) <>>>
+
+;"Dummy implementations of miscellaneous MAIN-LOOP hooks."
+<DEFAULT-DEFINITION HOOK-END-OF-COMMAND
+    <DEFMAC HOOK-END-OF-COMMAND () <>>>
+<DEFAULT-DEFINITION HOOK-END-OF-ITERATION
+    <DEFMAC HOOK-END-OF-ITERATION () <>>>
+
 ;"Reads and parses a command.
 
 The primary outputs are PRSA, PRSO (+ PRSO-DIR), and PRSI, suitable

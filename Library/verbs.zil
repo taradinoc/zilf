@@ -1204,15 +1204,19 @@ Returns:
     <SET T 1>
     <TELL "Time passes." CR>
     <REPEAT ()
+        <HOOK-BEFORE-M-END>
         <SET ENDACT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+        <HOOK-AFTER-M-END ENDACT>
+        <HOOK-BEFORE-CLOCKER>
         <SET INTERRUPT <CLOCKER>>
+        <HOOK-AFTER-CLOCKER INTERRUPT>
         <SET T <+ .T 1>>
         <COND (<OR <G? .T ,STANDARD-WAIT>
                    .ENDACT
                    .INTERRUPT>
                <RETURN>)>>>
 
-<ROUTINE V-AGAIN ()
+<ROUTINE V-AGAIN ("AUX" RESULT)
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
     <COND (,PRSA
            <COND (<AND ,PRSO
@@ -1224,12 +1228,19 @@ Returns:
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
                   <RTRUE>)>
-           <PERFORM ,PRSA ,PRSO ,PRSI>
-           ;"TODO: The COND below should be factored out (of V-AGAIN and the standard GO)."
+           <HOOK-BEFORE-PERFORM>
+           <SET RESULT <PERFORM ,PRSA ,PRSO ,PRSI>>
+           <HOOK-AFTER-PERFORM RESULT>
+           ;"TODO: The COND below should be factored out (of V-AGAIN and MAIN-LOOP)."
            <COND (<NOT <GAME-VERB?>>
-                  <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                  <CLOCKER>)>
-           <SETG HERE <LOC ,WINNER>>)
+                  <HOOK-BEFORE-M-END>
+                  <SET RESULT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+                  <HOOK-AFTER-M-END RESULT>
+                  <HOOK-BEFORE-CLOCKER>
+                  <SET RESULT <CLOCKER>>
+                  <HOOK-AFTER-CLOCKER RESULT>)>
+           <SETG HERE <LOC ,WINNER>>
+           <HOOK-END-OF-COMMAND>)
           (ELSE <TELL "Nothing to repeat." CR>)>>
 
 <ROUTINE V-READ ("AUX" T)
