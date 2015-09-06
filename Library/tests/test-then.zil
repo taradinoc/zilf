@@ -83,6 +83,16 @@ You pick up the banana.|
 |
 You wear the hat.|">>
 
+<TEST-CASE ("G THEN G")
+    <COMMAND [TAKE INVENTORY THEN X ME]>
+    <EXPECT "You are empty-handed.|
+|
+You look like you're up for an adventure.|">
+    <COMMAND [G THEN G]>
+    <EXPECT "You look like you're up for an adventure.|
+|
+You look like you're up for an adventure.|">>
+
 ;"TODO: test cases to make sure multi-cmds are interrupted when a command 'fails',
   including preaction conditions, HAVE check, pronouns no longer present"
 

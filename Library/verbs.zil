@@ -1217,16 +1217,19 @@ Returns:
                <RETURN>)>>>
 
 <ROUTINE V-AGAIN ("AUX" RESULT)
+    <SAVE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
     <COND (,PRSA
            <COND (<AND ,PRSO
                        <NOT ,PRSO-DIR>
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSOS <GETB ,P-SYNTAX ,SYN-OPTS1>>>>>
+                  <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
                   <RTRUE>)
                  (<AND ,PRSI
                        <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
+                  <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
                   <RTRUE>)>
            <HOOK-BEFORE-PERFORM>
            <SET RESULT <PERFORM ,PRSA ,PRSO ,PRSI>>
@@ -1241,7 +1244,9 @@ Returns:
                   <HOOK-AFTER-CLOCKER RESULT>)>
            <SETG HERE <LOC ,WINNER>>
            <HOOK-END-OF-COMMAND>)
-          (ELSE <TELL "Nothing to repeat." CR>)>>
+          (ELSE <TELL "Nothing to repeat." CR>)>
+    <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
+    <RTRUE>>
 
 <ROUTINE V-READ ("AUX" T)
     <COND (<NOT <FSET? ,PRSO ,READBIT>> <NOT-POSSIBLE "read"> <RTRUE>)
