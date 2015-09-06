@@ -662,6 +662,7 @@ Sets:
                       <SETG HERE .OH>
                       <SETG HERE-LIT .OHL>
                       <V-LOOK>
+                      <SETG P-CONT 0>
                       <AGAIN>)>)>>
 
     <COND (<0? ,P-CONT>    
