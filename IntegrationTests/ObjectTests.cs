@@ -293,12 +293,24 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TestBitSynonym()
+        public void Bit_Synonym_Should_Work_In_FLAGS()
         {
             AssertRoutine("", "<AND <==? ,MAINBIT ,ALIASBIT> <FSET? ,FOO ,MAINBIT> <FSET? ,BAR ,ALIASBIT>>")
                 .WithGlobal("<BIT-SYNONYM MAINBIT ALIASBIT>")
                 .WithGlobal("<OBJECT FOO (FLAGS MAINBIT)>")
                 .WithGlobal("<OBJECT BAR (FLAGS ALIASBIT)>")
+                .GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void Bit_Synonym_Should_Not_Be_Clobbered_By_FIND()
+        {
+            AssertRoutine("", "<==? ,MAINBIT ,ALIASBIT>")
+                .WithGlobal("<BIT-SYNONYM MAINBIT ALIASBIT>")
+                .WithGlobal("<OBJECT FOO (FLAGS MAINBIT)>")
+                .WithGlobal("<OBJECT BAR (FLAGS ALIASBIT)>")
+                .WithGlobal("<SYNTAX FOO OBJECT (FIND ALIASBIT) = V-FOO>")
+                .WithGlobal("<ROUTINE V-FOO () <>>")
                 .GivesNumber("1");
         }
 

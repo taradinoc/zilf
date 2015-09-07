@@ -67,13 +67,14 @@ namespace Zilf.Compiler
                 DefineProperty(cc, pair.Key);
 
             // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
+            ZilAtom originalFlag;
             var highestFlags =
                 ctx.ZEnvironment.FlagsOrderedLast
                     .Concat(
                         from syn in ctx.ZEnvironment.Syntaxes
                         from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
                         where flag != null
-                        select flag)
+                        select ctx.ZEnvironment.TryGetBitSynonym(flag, out originalFlag) ? originalFlag : flag)
                     .Distinct()
                     .ToList();
 
@@ -841,6 +842,12 @@ namespace Zilf.Compiler
 
             if (flag == null)
                 return null;
+
+            ZilAtom originalFlag;
+            if (cc.Context.ZEnvironment.TryGetBitSynonym(flag, out originalFlag))
+            {
+                flag = originalFlag;
+            }
 
             DefineFlag(cc, flag);
             return cc.Flags[flag];
