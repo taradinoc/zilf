@@ -2245,6 +2245,49 @@ Sets (contents):
         <DO-READ ,READBUF ,LEXBUF>
         <RTRUE>>>
 
+;"Sets temporary values for one or more global variables, runs some code, then restores them.
+
+Example:
+  <WITH-GLOBAL ((WINNER <FOO>)) <BAR>>
+  
+  Expands to:
+  
+  <BIND ((ORIG?WINNER ,WINNER))
+      <SETG WINNER <FOO>>
+      <BAR>
+      <SETG WINNER .ORIG?WINNER>>"
+<DEFMAC WITH-GLOBAL ('TEMPS "ARGS" BODY "AUX" GATOMS TEMPATOMS NEWVALUES BINDINGS SETGS RESTORES)
+    <SET GATOMS <MAPF ,LIST
+                      <FUNCTION (F)
+                          <COND (<OR <NOT <TYPE? .F LIST>>
+                                     <N=? <LENGTH? .F 2> 2>
+                                     <NOT <TYPE? <1 .F> ATOM>>>
+                                 <ERROR BAD-BINDING .F>)
+                                (ELSE <1 .F>)>>
+                      .TEMPS>>
+    <SET TEMPATOMS <MAPF ,LIST
+                         <FUNCTION (A) <PARSE <STRING "ORIG?" <SPNAME .A>>>>
+                         .GATOMS>>
+    <SET NEWVALUES <MAPF ,LIST 2 .TEMPS>>
+    <SET BINDINGS <MAPF ,LIST
+                        <FUNCTION (T G) <LIST .T <CHTYPE .G GVAL>>>
+                        .TEMPATOMS
+                        .GATOMS>>
+    <SET SETGS <MAPF ,LIST
+                     <FUNCTION (G V) <FORM SETG .G .V>>
+                     .GATOMS
+                     .NEWVALUES>>
+    <SET RESTORES <MAPF ,LIST
+                        <FUNCTION (G T) <FORM SETG .G <CHTYPE .T LVAL>>>
+                        .GATOMS
+                        .TEMPATOMS>>
+    ;"And finally..."
+    <FORM BIND (!.BINDINGS ?RESULT)
+          !.SETGS
+          <FORM SET ?RESULT <FORM PROG '() !.BODY>>
+          !.RESTORES
+          '.?RESULT>>
+
 <VERSION?
     (ZIP
      ;"If unlit, change HERE to 'Darkness' temporarily."
