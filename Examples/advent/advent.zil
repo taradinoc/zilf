@@ -4418,6 +4418,23 @@ appears out of nowhere!" CR>)>)>)
 
 ;"TODO: Instead of <BE-SPECIFIC>, could we orphan and force the parser to use the
   FEED OBJECT OBJECT syntax?"
+;"TODO: A better solution built into the parser. [ZILF-79]"
+
+;----------------------------------------------------------------------
+
+<SYNTAX PAY OBJECT (TAKE HAVE HELD CARRIED) (FIND TREASUREBIT) TO OBJECT (FIND PERSONBIT) = V-GIVE>
+<SYNTAX PAY OBJECT (FIND PERSONBIT) OBJECT (TAKE HAVE HELD CARRIED) (FIND TREASUREBIT) = V-SGIVE>
+
+;"Same deal as with FEED above. We want PAY OBJECT to treat the object as a person being paid,
+  not the treasure being given as payment."
+<SYNTAX PAY OBJECT (FIND PERSONBIT) = V-PAY>
+
+<ROUTINE V-PAY ("AUX" O)
+    <COND (<NOT <FSET? ,PRSO ,PERSONBIT>>
+           <NOT-POSSIBLE "pay">)
+          (<SET O <GWIM ,TREASUREBIT -1 <>>>
+           <PERFORM ,V?GIVE .O ,PRSO>)
+          (ELSE <BE-SPECIFIC>)>>
 
 ;----------------------------------------------------------------------
 
