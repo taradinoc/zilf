@@ -263,7 +263,7 @@ Adapted once more by Jesse McGrew (2015)">>
         <SET T <GET/B ,ALL-TREASURES .I>>
         <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
         <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
-              (<IN? .T ,WINNER> <SET NS ,TR-CARRIED>)
+              (<IN? .T ,PLAYER> <SET NS ,TR-CARRIED>)
               (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
               (ELSE <SET NS ,TR-UNFOUND>)>
         <COND (<N=? .OS .NS>
@@ -3392,17 +3392,15 @@ The only exit is the way you came in.")
            <COND (,BEAR-FRIENDLY
                   <COND (<VERB? FOLLOW>
                          <COND (<PRSO? ,PLAYER>
-                                <SETG WINNER ,PLAYER>
-                                <PERFORM ,V?TAKE ,BEAR>
-                                <SETG WINNER ,BEAR>)
+                                <WITH-GLOBAL ((WINNER ,PLAYER)) <PERFORM ,V?TAKE ,BEAR>>
+                                <RTRUE>)
                                (<IN? ,PRSO ,GENERIC-OBJECTS>
                                 <TELL "The bear looks around, puzzled." CR>)
                                (ELSE
                                 <TELL "The bear glances at " T ,PRSO ", then back at you." CR>)>)
                         (<VERB? WAIT>
-                         <SETG WINNER ,PLAYER>
-                         <PERFORM ,V?DROP ,BEAR>
-                         <SETG WINNER ,BEAR>)
+                         <WITH-GLOBAL ((WINNER ,PLAYER)) <PERFORM ,V?DROP ,BEAR>>
+                         <RTRUE>)
                         (ELSE
                          <SETG P-CONT 0>
                          <TELL "The bear doesn't seem to understand." CR>)>)
@@ -3781,10 +3779,13 @@ clatters to the ground." CR>)
            <TELL CR "A bearded pirate appears, catches sight of the dwarf and runs away." CR>
            <RTRUE>)>
     ;"Look for treasure nearby"
-    <MAP-SCOPE (I [STAGES (LOCATION INVENTORY)])
-        <COND (<FSET? .I ,TREASUREBIT>
-               <SET BOOTY .I>
-               <RETURN>)>>
+    ;"MAP-SCOPE searches WINNER and its location, but WINNER might not be the player
+      if this turn was an order, so set it temporarily."
+    <WITH-GLOBAL ((WINNER ,PLAYER))
+        <MAP-SCOPE (I [STAGES (LOCATION INVENTORY)])
+            <COND (<FSET? .I ,TREASUREBIT>
+                   <SET BOOTY .I>
+                   <RETURN>)>>>
     <COND (<NOT .BOOTY>
            <COND (,PIRATE-SPOTTED <RFALSE>)>
            <SETG PIRATE-SPOTTED T>
@@ -3803,7 +3804,7 @@ With that, he vanishes into the gloom." CR>
     <COND (,PIRATE-SPOTTED <DEQUEUE I-PIRATE>)>
     ;"We can't move objects in a MAP-SCOPE, so use recursion in a separate routine"
     <NESTED-ROB-TREASURE ,HERE ,PIRATE-DEAD-END>
-    <NESTED-ROB-TREASURE ,WINNER ,PIRATE-DEAD-END>
+    <NESTED-ROB-TREASURE ,PLAYER ,PIRATE-DEAD-END>
     <MOVE ,TREASURE-CHEST ,PIRATE-DEAD-END>
     <TELL CR "Out from the shadows behind you pounces a bearded pirate!
 \"Har, har,\" he chortles. \"I'll just take all this booty and hide it away
@@ -3845,7 +3846,7 @@ He snatches your treasure and vanishes into the gloom." CR>>
 <ROUTINE I-ENDGAME ("AUX" F)
     <DEQUEUE I-ENDGAME>
     <SETG SCORE <+ ,SCORE 10>>
-    <MAP-CONTENTS (I N ,WINNER) <REMOVE .I>>
+    <MAP-CONTENTS (I N ,PLAYER) <REMOVE .I>>
     <MOVE ,BOTTLE ,AT-NE-END>
     <FSET ,BOTTLE ,NDESCBIT>
     <COND (<SET F <FIRST? ,BOTTLE>> <REMOVE .F>)>
@@ -3865,7 +3866,7 @@ He snatches your treasure and vanishes into the gloom." CR>>
 As the echoes fade, there is a blinding flash of light (and a small
 puff of orange smoke). . .||
 As your eyes refocus, you look around..." CR CR>
-    <GOTO ,AT-NE-END>
+    <WITH-GLOBAL ((WINNER ,PLAYER)) <GOTO ,AT-NE-END>>
     <RTRUE>>
 
 ;----------------------------------------------------------------------
