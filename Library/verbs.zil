@@ -241,25 +241,31 @@
     <TELL " doesn't seem like it will help." CR>>
 
 <ROUTINE NOT-POSSIBLE (V)
+    <SETG P-CONT 0>
     <TELL "That's not something you can " .V "." CR>>
 
 <ROUTINE RHETORICAL ()
     <TELL "That was a rhetorical question." CR>>
 
 <ROUTINE BE-SPECIFIC ()
+    <SETG P-CONT 0>
     <TELL "You'll have to be more specific." CR>>
 
 <ROUTINE SILLY ()
+    <SETG P-CONT 0>
     <TELL "You must be joking." CR>>
 
 <ROUTINE TSD ()
+    <SETG P-CONT 0>
     <TELL "Not here, not now." CR>>
 
 <DEFMAC IF-PLURAL ('O 'IF-PL 'IF-SG)
     <FORM COND <LIST <FORM FSET? .O ',PLURALBIT> .IF-PL> <LIST ELSE .IF-SG>>>
 
 <ROUTINE PRE-REQUIRES-LIGHT ()
-    <COND (<NOT ,HERE-LIT> <TELL "It's too dark to see anything here." CR>)>>
+    <COND (<NOT ,HERE-LIT>
+           <SETG P-CONT 0>
+           <TELL "It's too dark to see anything here." CR>)>>
 
 ;"Action handler routines"
 
@@ -703,39 +709,46 @@ Returns:
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
            <COND (<OR ,HERE-LIT <NOT <DARKNESS-F ,M-DARK-CANT-GO>>>
                   <TELL ,CANT-GO-THAT-WAY CR>)>
+           <SETG P-CONT 0>
            <RTRUE>)
           (<==? <SET PTS <PTSIZE .PT>> ,UEXIT>
            <SET RM <GET/B .PT ,EXIT-RM>>)
           (<==? .PTS ,NEXIT>
            <TELL <GET .PT ,NEXIT-MSG> CR>
+           <SETG P-CONT 0>
            <RTRUE>)
           (<==? .PTS ,FEXIT>
-           <OR <SET RM <APPLY <GET .PT ,FEXIT-RTN>>>
-               <RTRUE>>)
+           <COND (<0? <SET RM <APPLY <GET .PT ,FEXIT-RTN>>>>
+                  <SETG P-CONT 0>
+                  <RTRUE>)>)
           (<==? .PTS ,CEXIT>
            <COND (<VALUE <GETB .PT ,CEXIT-VAR>>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
-                 (<SET RM <GET .PT ,CEXIT-MSG>>
-                  <TELL .RM CR>
-                  <RTRUE>)
-                 (<AND <NOT ,HERE-LIT> <DARKNESS-F ,M-DARK-CANT-GO>>
-                  <RTRUE>)
                  (ELSE
-                  <TELL ,CANT-GO-THAT-WAY CR>
+                  <COND (<SET RM <GET .PT ,CEXIT-MSG>>
+                         <TELL .RM CR>)
+                        (<AND <NOT ,HERE-LIT> <DARKNESS-F ,M-DARK-CANT-GO>>
+                         ;"DARKNESS-F printed a message")
+                        (ELSE
+                         <TELL ,CANT-GO-THAT-WAY CR>)>
+                  <SETG P-CONT 0>
                   <RTRUE>)>)
           (<==? .PTS ,DEXIT>
            <COND (<FSET? <SET D <GET/B .PT ,DEXIT-OBJ>> ,OPENBIT>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
                  (<SET RM <GET .PT ,DEXIT-MSG>>
                   <TELL .RM CR>
+                  <SETG P-CONT 0>
                   <RTRUE>)
                  (ELSE
                   <THIS-IS-IT .D>
                   <TELL "You'll have to open " T .D
                         " first." CR>
+                  <SETG P-CONT 0>
                   <RTRUE>)>)
           (ELSE
            <TELL "Broken exit (" N .PTS ")." CR>
+           <SETG P-CONT 0>
            <RTRUE>)>
     <GOTO .RM>>
 
@@ -748,11 +761,7 @@ Returns:
 
 ;"Performs the WALK action with a direction."
 <ROUTINE DO-WALK (DIR "AUX" ODD R)
-    <SET ODD ,PRSO-DIR>
-    <SETG PRSO-DIR T>
-    <SET R <PERFORM ,V?WALK .DIR>>
-    <SETG PRSO-DIR .ODD>
-    .R>
+    <WITH-GLOBAL ((PRSO-DIR T)) <PERFORM ,V?WALK .DIR>>>
 
 ;"Finds a direction from HERE that leads through the given door.
 
@@ -1005,6 +1014,7 @@ Returns:
 
 <ROUTINE PRE-DROP ()
     <COND (<NOT <IN? ,PRSO ,WINNER>>
+           <SETG P-CONT 0>
            <PRINTR "You don't have that.">)>>
 
 <ROUTINE V-DROP ()
