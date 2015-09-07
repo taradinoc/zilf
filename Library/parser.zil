@@ -1681,6 +1681,7 @@ Returns:
                   <PRINT-VERB>
                   <TELL "\".">)>
            <CRLF>
+           <SETG P-CONT 0>
            <RFALSE>)>
     <RTRUE>>
 
@@ -1726,6 +1727,7 @@ Returns:
                       <TELL "You aren't holding ">
                       <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
                       <TELL "." CR>
+                      <SETG P-CONT 0>
                       <RFALSE>)>>)>
     <RTRUE>>
 
@@ -1752,6 +1754,7 @@ Returns:
     <COND (<BTST .OPTS ,SF-HAVE>
            <COND (<FAILS-HAVE-CHECK? .OBJ>
                   <TELL "You aren't holding " T .OBJ "." CR>
+                  <SETG P-CONT 0>
                   <RFALSE>)>)>
     <RTRUE>>
 
@@ -1785,6 +1788,7 @@ Returns:
                <LIST-OBJECTS .TBL ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
                <TELL " no longer here." CR>
                <TRACE-OUT>
+               <SETG P-CONT 0>
                <RFALSE>)>>
     <TRACE-OUT>
     <RTRUE>>
