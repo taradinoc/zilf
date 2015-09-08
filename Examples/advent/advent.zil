@@ -4445,7 +4445,7 @@ appears out of nowhere!" CR>)>)>)
     <COND (<NOT <FSET? ,PRSO ,PLURALBIT>> <TELL "es">)>
     <TELL "n't seem to be leaving." CR>>
 
-<VERB-SYNONYM WAIT STAY STOP>
+<VERB-SYNONYM WAIT STAY STOP SLEEP REST>
 
 ;----------------------------------------------------------------------
 "Creatures the player might try to follow when they aren't present"
