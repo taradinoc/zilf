@@ -4368,8 +4368,17 @@ appears out of nowhere!" CR>)>)>)
 
 <SYNTAX ATTACK OBJECT (FIND ATTACKBIT) (ON-GROUND IN-ROOM) WITH OBJECT (HAVE HELD CARRIED) = V-STHROW-AT>
 
+<SYNTAX AXE OBJECT (FIND ATTACKBIT) (ON-GROUND IN-ROOM) = V-AXE>
+
 <ROUTINE V-STHROW-AT ()
     <PERFORM ,V?THROW-AT ,PRSI ,PRSO>>
+
+<ROUTINE V-AXE ()
+    <COND (<HELD? ,AXE>
+           <PERFORM ,V?THROW-AT ,AXE ,PRSO>
+           <RTRUE>)
+          (ELSE
+           <TELL "You have no axe." CR>)>>
 
 ;----------------------------------------------------------------------
 
