@@ -4282,6 +4282,15 @@ across the walls of the room.">)>>
 <SYNTAX FOE = V-FOE>
 <SYNTAX FOO = V-FOO>
 <SYNTAX FUM = V-FUM>
+<SYNTAX FEE FIE OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FEE FOE OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FEE FOO OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FEE FUM OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FIE FOE OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FIE FOO OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FIE FUM OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FOE FOO OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
+<SYNTAX FOE FUM OBJECT (FIND KLUDGEBIT) = V-FEE-MULTI>
 <SYNTAX SESAME (SHAZAM HOCUS ABRACADABRA FOOBAR OPEN-SESAME FROTZ) = V-OLD-MAGIC>
 
 ;"PLOVER has too many parts of speech, so these syntaxes are only enabled on V4+,
@@ -4338,6 +4347,9 @@ appears out of nowhere!" CR>)>)>)
 
 <ROUTINE V-OLD-MAGIC ()
     <TELL "Good try, but that is an old worn-out magic word." CR>>
+
+<ROUTINE V-FEE-MULTI ()
+    <TELL "Not so fast." CR>>
 
 ;----------------------------------------------------------------------
 
