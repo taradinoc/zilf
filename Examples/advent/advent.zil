@@ -1,5 +1,5 @@
 ;"Main file for ADVENTURE"
-;"Ported to ZIL by Jesse McGrew, July 2015"
+;"Ported to ZIL by Jesse McGrew, July-September 2015"
 
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
@@ -9,15 +9,15 @@
 ;----------------------------------------------------------------------
 
 <VERSION ZIP>
-<CONSTANT RELEASEID 0>
+<CONSTANT RELEASEID 1>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 <COMPILATION-FLAG DEBUG <>>
-<COMPILATION-FLAG DEBUGGING-VERBS T>
+<COMPILATION-FLAG DEBUGGING-VERBS <>>
 
 ;"BETA and DBMAZE are defined by this game. Do not comment out these lines -- that will
   leave the options stuck *on*."
-<COMPILATION-FLAG BETA T>      ;"Transcript prompt, lucky number, beta title/credits"
+<COMPILATION-FLAG BETA <>>     ;"Transcript prompt, lucky number, beta title/credits"
 <COMPILATION-FLAG DBMAZE <>>   ;"Gives the maze rooms unique names"
 
 <CONSTANT GAME-BANNER
