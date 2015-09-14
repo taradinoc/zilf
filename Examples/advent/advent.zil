@@ -2898,7 +2898,7 @@ Proceed at own risk. [Witt Construction Company]\"")
     (IN IN-ANTEROOM)
     (SYNONYM MAGAZINES ZINES ISSUES TODAY
         ;"In V3, MAGAZINES collides with MAGAZINE anyway."
-        %<VERSION? (ZIP #SPLICE ()) (ELSE #SPLICE (MAGAZINE ZINE ISSUE))>)
+        %<VERSION? (ZIP #SPLICE ()) (ELSE #SPLICE (MAGAZINE ZINE ISSUE MAG MAGS))>)
     (ADJECTIVE RECENT SPELUNKER)
     (ARTICLE "a few")
     (FDESC "There are a few recent issues of \"Spelunker Today\" magazine here.")
@@ -4467,6 +4467,26 @@ appears out of nowhere!" CR>)>)>)
     <TELL "n't seem to be leaving." CR>>
 
 <VERB-SYNONYM WAIT STAY STOP SLEEP REST>
+
+;----------------------------------------------------------------------
+
+<SYNTAX HELLO = V-HELLO>
+<SYNTAX HELLO OBJECT (FIND PERSONBIT) = V-HELLO>
+<SYNTAX SAY HELLO OBJECT (FIND KLUDGEBIT) = V-HELLO>
+
+<SYNONYM HELLO HI>
+
+<ROUTINE V-HELLO ("AUX" WHOM)
+    ;"Here we use GWIM instead of FIND-IN to avoid matching WINNER."
+    <AND <PRSO? ,ROOMS> <SETG PRSO <>>>
+    <SET WHOM <OR ,PRSO <GWIM ,PERSONBIT -1 ,PR?TO>>>
+    <COND (.WHOM
+           <WITH-GLOBAL ((PRSO .WHOM))
+               <COND (<NOT <PRE-TELL>>
+                      <WITH-GLOBAL ((WINNER .WHOM)) <PERFORM ,V?HELLO>>)>>
+           <RTRUE>)
+          (ELSE
+           <TELL "Hello." CR>)>>
 
 ;----------------------------------------------------------------------
 "Creatures the player might try to follow when they aren't present"
