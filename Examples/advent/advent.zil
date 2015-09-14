@@ -3735,6 +3735,7 @@ clatters to the ground." CR>)
                   <THIS-IS-IT ,DWARF>
                   <TELL "The dwarf admires himself in the mirror." CR>)
                  (ELSE
+                  <MOVE ,KNIFE ,HERE>
                   <THIS-IS-IT ,DWARF>
                   <TELL "The dwarf throws a nasty little knife at you, ">
                   <COND (<L=? <RANDOM 1000> 95> <JIGS-UP "and hits!">)
@@ -3742,6 +3743,16 @@ clatters to the ground." CR>)
           (<=? <RANDOM 3> 1>
            <REMOVE ,DWARF>
            <TELL CR "Tiring of this, the dwarf slips away." CR>)>>
+
+<OBJECT KNIFE
+    (DESC "knife")
+    (SYNONYM KNIFE KNIVES)
+    (ADJECTIVE DWARVES DWARF)
+    (ACTION KNIFE-F)
+    (FLAGS NDESCBIT)>
+
+<ROUTINE KNIFE-F ()
+    <TELL "The dwarves' knives vanish as they strike the walls of the cave." CR>>
 
 <OBJECT AXE
     (DESC "dwarvish axe")
