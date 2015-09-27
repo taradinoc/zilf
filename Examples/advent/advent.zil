@@ -1912,7 +1912,7 @@ There is a large hole in the wall above the pit at the end of this room.")
         (ZIP '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL))
         (ELSE '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL 12-FOOT-TALL MURMURING BELLOWING))>
     (ACTION PLANT-STICKING-UP-F)
-    (FLAGS INVISIBLE SPONGEBIT)>
+    (FLAGS INVISIBLE SPONGEBIT PERSONBIT)>
 
 <ROUTINE DESCRIBE-PLANT-STICKING-UP ()
     <THIS-IS-IT ,PLANT-STICKING-UP>
@@ -1927,7 +1927,10 @@ There is a large hole in the wall above the pit at the end of this room.")
            <PERFORM ,V?CLIMB ,PLANT>
            <RTRUE>)
           (<VERB? WATER OIL>
-           <TELL "You can't aim well enough from here." CR>)>>
+           <TELL "You can't aim well enough from here." CR>)
+          (<VERB? TELL HELLO>
+           <SETG P-CONT 0>
+           <TELL "It's not a listening plant." CR>)>>
 
 <OBJECT HOLE-ABOVE-PIT-WEST
     (DESC "hole above pit")
@@ -1970,7 +1973,7 @@ There is a large hole in the wall about 25 feet above you.")
         (ELSE '(ADJECTIVE BEAN GIANT TINY LITTLE TWELVE FOOT TALL 12-FOOT-TALL MURMURING BELLOWING))>
     (DESCFCN PLANT-DESCFCN)
     (ACTION PLANT-F)
-    (FLAGS SPONGEBIT)>
+    (FLAGS SPONGEBIT PERSONBIT)>
 
 <VERSION?
     (ZIP <SYNONYM TWELVE 12-FOOT-TALL>)>
@@ -2029,7 +2032,10 @@ bellowing \"Water!! Water!!\"" CR>)
           (<AND <VERB? GIVE>
                 <PRSO? ,WATER-IN-BOTTLE ,OIL-IN-BOTTLE>>
            <PERFORM ,V?WATER ,PRSI>
-           <RTRUE>)>>
+           <RTRUE>)
+          (<VERB? TELL HELLO>
+           <SETG P-CONT 0>
+           <TELL "It's not a listening plant." CR>)>>
 
 ;----------------------------------------------------------------------
 
