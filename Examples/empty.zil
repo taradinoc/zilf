@@ -16,12 +16,7 @@ An interactive fiction by AUTHOR NAME">
     <SETG HERE ,STARTROOM>
     <MOVE ,PLAYER ,HERE>
     <V-LOOK>
-    <REPEAT ()
-        <COND (<PARSER>
-               <PERFORM ,PRSA ,PRSO ,PRSI>
-               <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-               <OR <GAME-VERB?> <CLOCKER>>)>
-        <SETG HERE <LOC ,WINNER>>>>
+    <MAIN-LOOP>>
 
 <INSERT-FILE "parser">
 
