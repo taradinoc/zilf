@@ -1082,7 +1082,7 @@ A west passage ends here except for a small crack leading on.">
 <OBJECT MIST
     (DESC "mist")
     (IN LOCAL-GLOBALS)
-    (SYNONYM MIST VAPOR WISPS)
+    (SYNONYM MIST VAPOR WISP WISPS)
     (ADJECTIVE WHITE)
     (TEXT "Mist is a white vapor, usually water, seen from time to time in caves.
 It can be found anywhere but is frequently a sign of a deep pit leading down to water.")>
