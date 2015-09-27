@@ -2699,6 +2699,7 @@ An extremely narrow tunnel exits to the west.
 A dark corridor leads northeast.")
     (NE TO IN-DARK-ROOM)
     (WEST PER WEST-FROM-IN-PLOVER-ROOM)
+    (THINGS (EERIE GREEN) LIGHT "You can't tell where it's coming from.")
     (ACTION IN-PLOVER-ROOM-F)
     (FLAGS LIGHTBIT)>
 
