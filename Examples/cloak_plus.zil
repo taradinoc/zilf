@@ -23,20 +23,7 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
     <SETG HERE ,FOYER>
     <MOVE ,PLAYER ,HERE>
     <V-LOOK>
-    <REPEAT ()
-        <COND (<PARSER>
-               <PERFORM ,PRSA ,PRSO ,PRSI>
-               ;"WAIT loops through M-END and CLOCKER in a special way during PERFORM, so skip
-               those routines if WAIT ran this turn"
-               <COND (<NOT <OR ,AGAINCALL <GAME-VERB?>>>
-                      <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                      <CLOCKER>)>
-               ;"backup inputbuffers"
-               <COPY-READBUF>
-               <COPY-LEXBUF>
-               <SETG AGAINCALL 0>)>
-        <SETG HERE <LOC ,WINNER>>
-        <IF-DEBUG <COND (,DTURNS <TELL "Turn # " N ,TURNS CR>)>>>>
+    <MAIN-LOOP>>
 
 <INSERT-FILE "parser">
 
