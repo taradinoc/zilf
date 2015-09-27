@@ -4685,7 +4685,7 @@ There is a way to get by, but you don't have the necessary resources right now."
               ALIKE-MAZE-11 ALIKE-MAZE-12 ALIKE-MAZE-13 ALIKE-MAZE-14
               DEAD-END-1    DEAD-END-2    DEAD-END-3    DEAD-END-5    DEAD-END-5
               DEAD-END-6    DEAD-END-7    DEAD-END-8    DEAD-END-9    DEAD-END-10)
-    (CONDITION <AND <FIRST? ,WINNER> <NOT <OBJ-DROPPED-IN-MAZE?>>>)
+    (CONDITION <AND <FIRST? ,PLAYER> <NOT <OBJ-DROPPED-IN-MAZE?>>>)
     (PROMPT "Do you need help getting out of the maze?")
     (TEXT "You can make the passages look less alike by dropping things.")>
 
@@ -4694,7 +4694,7 @@ There is a way to get by, but you don't have the necessary resources right now."
     <SET MAX <GET .TBL 0>>
     <DO (I 1 .MAX)
         <COND (<AND <SET F <FIRST? <GET .TBL .I>>>
-                    <OR <N=? .F ,WINNER>
+                    <OR <N=? .F ,PLAYER>
                         <NEXT? .F>>>
                <RTRUE>)>>
     <RFALSE>>
