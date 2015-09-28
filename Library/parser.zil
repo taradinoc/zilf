@@ -486,7 +486,7 @@ Args:
           (<1? .L>
            <SETG PRSI <GET/B ,P-PRSIS 1>>)
           (ELSE <SETG PRSI ,MANY-OBJECTS>)>
-    <COND (<N=? ,WINNER .OW>
+    <COND (<N=? ,WINNER .OW <>>
            <SETG HERE <LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>)>>
 
