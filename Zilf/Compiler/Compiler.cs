@@ -3501,12 +3501,28 @@ namespace Zilf.Compiler
             return cc.Game.One;
         }
 
+        /// <summary>
+        /// Contains unique atoms used as special values in <see cref="PreBuildObject(CompileCtx, ZilModelObject)"/>.
+        /// </summary>
+        /// <remarks>
+        /// Since DESC, IN (or LOC), and FLAGS can be used as property names when the property definition
+        /// matches the direction pattern (most commonly seen with IN), these atoms are used to separately
+        /// track whether the names have been used as properties and/or pseudo-properties.
+        /// </remarks>
+        private static class PseudoPropertyAtoms
+        {
+            public static readonly ZilAtom Desc = new ZilAtom("?DESC?", null, StdAtom.None);
+            public static readonly ZilAtom Location = new ZilAtom("?IN/LOC?", null, StdAtom.None);
+            public static readonly ZilAtom Flags = new ZilAtom("?FLAGS?", null, StdAtom.None);
+        }
+
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
         {
             Contract.Requires(cc != null);
             Contract.Requires(model != null);
 
             var globalsByName = cc.Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
+            var propertiesSoFar = new HashSet<ZilAtom>();
 
             var preBuilders = new ComplexPropDef.ElementPreBuilders()
             {
@@ -3577,6 +3593,8 @@ namespace Zilf.Compiler
                             continue;
                         }
 
+                        ZilAtom uniquePropertyName;
+
                         // exclude phony built-in properties
                         /* we also detect directions here, which are tricky for a few reasons:
                          * - they can be implicitly defined by a property spec that looks sufficiently direction-like
@@ -3607,11 +3625,17 @@ namespace Zilf.Compiler
                                     cc.Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine);
                                     if (directionPattern != null)
                                         cc.Context.SetPropDef(atom, directionPattern);
+                                    uniquePropertyName = atom;
                                 }
                                 else
                                 {
                                     isSynonym = true;
+                                    uniquePropertyName = synonym.OriginalWord.Atom;
                                 }
+                            }
+                            else
+                            {
+                                uniquePropertyName = atom;
                             }
                         }
                         else
@@ -3619,15 +3643,34 @@ namespace Zilf.Compiler
                             switch (atom.StdAtom)
                             {
                                 case StdAtom.DESC:
+                                    phony = true;
+                                    uniquePropertyName = PseudoPropertyAtoms.Desc;
+                                    break;
                                 case StdAtom.IN:
                                 case StdAtom.LOC:
+                                    phony = true;
+                                    uniquePropertyName = PseudoPropertyAtoms.Location;
+                                    break;
                                 case StdAtom.FLAGS:
                                     phony = true;
+                                    uniquePropertyName = PseudoPropertyAtoms.Flags;
                                     break;
                                 default:
                                     phony = false;
+                                    uniquePropertyName = atom;
                                     break;
                             }
+                        }
+
+                        if (propertiesSoFar.Contains(uniquePropertyName))
+                        {
+                            Errors.CompError(cc.Context, prop, "duplicate {0} definition: {1}",
+                                phony ? "pseudo-property" : "property",
+                                atom.ToStringContext(cc.Context, false));
+                        }
+                        else
+                        {
+                            propertiesSoFar.Add(uniquePropertyName);
                         }
 
                         if (!phony && !cc.Properties.ContainsKey(atom))
