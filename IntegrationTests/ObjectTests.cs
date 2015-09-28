@@ -533,5 +533,29 @@ namespace IntegrationTests
                     "<=? <GETP ,FOO ,P?NORTHNORTHEAST> ,FOO>",
                     "<=? <GETP ,FOO ,P?NORTHNORTHWEST> ,BAR>");
         }
+
+        [TestMethod]
+        public void Duplicate_Property_Definitions_Should_Not_Be_Allowed()
+        {
+            // user-defined property
+            AssertGlobals(
+                "<OBJECT FOO (MYPROP 1) (MYPROP 2)>")
+                .DoesNotCompile();
+
+            // standard pseudo-properties
+            AssertGlobals(
+                "<OBJECT FOO (FLAGS FOOBIT) (FLAGS BARBIT)>")
+                .DoesNotCompile();
+
+            AssertGlobals(
+                "<OBJECT FOO (DESC \"foo\") (DESC \"bar\")>")
+                .DoesNotCompile();
+
+            AssertGlobals(
+                "<OBJECT ROOM1>",
+                "<OBJECT ROOM2>",
+                "<OBJECT FOO (IN ROOM1) (LOC ROOM2)>")
+                .DoesNotCompile();
+        }
     }
 }
