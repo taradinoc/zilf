@@ -18,6 +18,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace IntegrationTests
 {
@@ -274,7 +275,7 @@ namespace IntegrationTests
         #region Attribute Numbering
 
         [TestMethod]
-        public void TestFindbitsMustBeNonZero()
+        public void Bits_Mentioned_In_FIND_Must_Be_Nonzero()
         {
             AssertGlobals(
                 "<OBJECT FOO (FLAGS F1BIT F2BIT F3BIT F4BIT F5BIT F6BIT F7BIT F8BIT " +
@@ -312,6 +313,34 @@ namespace IntegrationTests
                 .WithGlobal("<SYNTAX FOO OBJECT (FIND ALIASBIT) = V-FOO>")
                 .WithGlobal("<ROUTINE V-FOO () <>>")
                 .GivesNumber("1");
+        }
+
+        [TestMethod]
+        public void Too_Many_Bits_Should_Spoil_The_Build()
+        {
+            var tooManyBits = new StringBuilder();
+
+            // V3 limit: 32 flags
+            for (int i = 0; i < 33; i++)
+            {
+                tooManyBits.AppendFormat(" TESTBIT{0}", i);
+            }
+
+            AssertGlobals(
+                string.Format("<OBJECT FOO (FLAGS {0})>", tooManyBits))
+                .InV3()
+                .DoesNotCompile();
+
+            // V4+ limit: 48 flags
+            for (int i = 32; i < 49; i++)
+            {
+                tooManyBits.AppendFormat(" TESTBIT{0}", i);
+            }
+
+            AssertGlobals(
+                string.Format("<OBJECT FOO (FLAGS {0})>", tooManyBits))
+                .InV4()
+                .DoesNotCompile();
         }
 
         #endregion
