@@ -189,6 +189,13 @@ namespace Zilf.Compiler
             foreach (var pair in ctx.ZEnvironment.BitSynonyms)
                 DefineFlagAlias(cc, pair.Key, pair.Value);
 
+            // enforce limit on number of flags
+            if (cc.UniqueFlags > cc.Game.MaxFlags)
+                Errors.CompError(cc.Context,
+                    "too many flags: {0} defined, only {1} allowed",
+                    cc.UniqueFlags,
+                    cc.Game.MaxFlags);
+
             // FUNNY-GLOBALS?
             const int ReservedGlobalCount = 4;
             if (ctx.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
@@ -894,6 +901,7 @@ namespace Zilf.Compiler
                 // create flag builder
                 IFlagBuilder fb = cc.Game.DefineFlag(flag.ToString());
                 cc.Flags.Add(flag, fb);
+                cc.UniqueFlags++;
 
                 // create constant
                 cc.Constants.Add(flag, fb);

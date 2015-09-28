@@ -78,5 +78,7 @@ namespace Zilf.Compiler
 
         public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>();
         public IOperand SoftGlobalsTable;
+
+        public int UniqueFlags { get; set; }
     }
 }
