@@ -1,4 +1,4 @@
-ZILF 0.6 distribution
+ZILF 0.7 distribution
 
 bin
 	Contains ZILF and ZAPF executables.

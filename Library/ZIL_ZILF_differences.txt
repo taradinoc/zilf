@@ -68,26 +68,18 @@ in the same fashion as a player-called WAIT.
 WHAT'S NOT IMPLEMENTED IN THE ZILF LIBRARY
 --------------------------------------------
 
-The following are not implemented yet as of v 0.6:
+The following are not implemented yet as of v 0.7:
 
 General
-- Prompted disambiguation of similarly named objects
-- TAKE ALL/DROP ALL
-- Player commands with multiple direct objects
-- Player commands ending with a preposition (eg TURN OFF LIGHT works - TURN LIGHT 
-OFF doesn't)
 - All mouse and graphic routines
 
 Properties
 PLURAL (note this is different from PLURALBIT, which is implemented)
-GENERIC
 SDESC
 OWNER
-THINGS
 ADJACENT
 
 Bits
-TRYTAKEBIT
 FLAMEBIT
 BURNBIT
 SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
@@ -96,7 +88,6 @@ VEHBIT
 RLANDBIT
 RWATERBIT
 RAIRBIT
-KLUDGEBIT
 OUTSIDEBIT
 INTEGRALBIT
 PARTBIT
@@ -105,11 +96,8 @@ DROPBIT
 INBIT
 
 Routines
-THIS-IS-IT
 UNTOUCHABLE?
 WITHIN?
 TOUCHING?
 CANT-SEE
 CAPITAL-NOUN?
-
-No OOPS
