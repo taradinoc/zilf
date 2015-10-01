@@ -1777,12 +1777,12 @@ namespace Zilf.Compiler
                     // check argument count
                     ZilObject[] args = form.Skip(1).ToArray();
                     if (args.Length < rtn.ArgSpec.MinArgCount ||
-                        (rtn.ArgSpec.MaxArgCount > 0 && args.Length > rtn.ArgSpec.MaxArgCount))
+                        (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
                     {
                         Errors.CompError(cc.Context, form, ZilError.ArgCountMsg(
                             rtn.Name.ToString(),
                             rtn.ArgSpec.MinArgCount,
-                            rtn.ArgSpec.MaxArgCount));
+                            (int)rtn.ArgSpec.MaxArgCount));
                         return wantResult ? cc.Game.Zero : null;
                     }
 
