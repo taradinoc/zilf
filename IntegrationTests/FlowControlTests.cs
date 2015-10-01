@@ -288,5 +288,57 @@ namespace IntegrationTests
         }
 
         #endregion
+
+        #region Routines
+
+        [TestMethod]
+        public void Routine_With_Too_Many_Arguments_For_Platform_Should_Not_Compile()
+        {
+            AssertRoutine("\"OPT\" A B C D", "<>")
+                .InV3()
+                .DoesNotCompile();
+
+            AssertRoutine("\"OPT\" A B C D", "<>")
+                .InV5()
+                .Compiles();
+
+            AssertRoutine("\"OPT\" A B C D E F G H", "<>")
+                .InV5()
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void Call_With_Too_Many_Arguments_Should_Not_Compile()
+        {
+            AssertRoutine("", "<FOO 1 2 3>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .DoesNotCompile();
+
+            AssertRoutine("", "<FOO 1 2 3>")
+                .WithGlobal("<ROUTINE FOO (X) <>>")
+                .DoesNotCompile();
+
+            AssertRoutine("", "<FOO 1 2 3>")
+                .WithGlobal("<ROUTINE FOO (X Y Z) <>>")
+                .Compiles();
+        }
+
+        [TestMethod]
+        public void APPLY_With_Too_Many_Arguments_For_Platform_Should_Not_Compile()
+        {
+            AssertRoutine("", "<APPLY <> 1 2 3 4>")
+                .InV3()
+                .DoesNotCompile();
+
+            AssertRoutine("", "<APPLY <> 1 2 3 4>")
+                .InV5()
+                .Compiles();
+
+            AssertRoutine("", "<APPLY <> 1 2 3 4 5 6 7 8>")
+                .InV5()
+                .DoesNotCompile();
+        }
+
+        #endregion
     }
 }

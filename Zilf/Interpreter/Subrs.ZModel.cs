@@ -113,6 +113,17 @@ namespace Zilf.Interpreter
                 argList,
                 body,
                 flags);
+
+            var maxArgsAllowed = ctx.ZEnvironment.ZVersion > 3 ? 7 : 3;
+            if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
+            {
+                throw new InterpreterError(
+                    string.Format(
+                        "ROUTINE: too many routine arguments: only {0} allowed in V{1}",
+                        maxArgsAllowed,
+                        ctx.ZEnvironment.ZVersion));
+            }
+
             if (ctx.CallingForm != null)
                 rtn.SourceLine = ctx.CallingForm.SourceLine;
             ctx.SetZVal(atom, rtn);

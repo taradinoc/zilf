@@ -189,7 +189,7 @@ namespace Zilf.Interpreter
             Contract.Invariant(auxArgsStart >= optArgsStart && auxArgsStart <= argAtoms.Length);
             Contract.Invariant(varargsAtom != null || !varargsQuoted);
             Contract.Invariant(MinArgCount >= 0);
-            Contract.Invariant(MaxArgCount == 0 || MaxArgCount >= MinArgCount);
+            Contract.Invariant(MaxArgCount == null || MaxArgCount >= MinArgCount);
         }
 
         public int MinArgCount
@@ -197,9 +197,9 @@ namespace Zilf.Interpreter
             get { return optArgsStart; }
         }
 
-        public int MaxArgCount
+        public int? MaxArgCount
         {
-            get { return (varargsAtom != null) ? 0 : auxArgsStart; }
+            get { return (varargsAtom != null) ? null : (int?)auxArgsStart; }
         }
 
         public IEnumerator<ArgItem> GetEnumerator()
