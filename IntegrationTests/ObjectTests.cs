@@ -544,10 +544,6 @@ namespace IntegrationTests
 
             // standard pseudo-properties
             AssertGlobals(
-                "<OBJECT FOO (FLAGS FOOBIT) (FLAGS BARBIT)>")
-                .DoesNotCompile();
-
-            AssertGlobals(
                 "<OBJECT FOO (DESC \"foo\") (DESC \"bar\")>")
                 .DoesNotCompile();
 
@@ -556,6 +552,16 @@ namespace IntegrationTests
                 "<OBJECT ROOM2>",
                 "<OBJECT FOO (IN ROOM1) (LOC ROOM2)>")
                 .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void Multiple_FLAGS_Definitions_Should_Combine()
+        {
+            AssertGlobals(
+                "<OBJECT FOO (FLAGS FOOBIT) (FLAGS BARBIT)>")
+                .Implies(
+                    "<FSET? ,FOO ,FOOBIT>",
+                    "<FSET? ,FOO ,BARBIT>");
         }
     }
 }
