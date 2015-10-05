@@ -3597,16 +3597,19 @@ namespace Zilf.Compiler
                         // exclude phony built-in properties
                         /* we also detect directions here, which are tricky for a few reasons:
                          * - they can be implicitly defined by a property spec that looks sufficiently direction-like
-                         * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction
+                         * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction -- but (IN "string") is!
                          * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
                          *   is a pattern for directions
                          */
                         bool phony;
                         bool? isSynonym = null;
                         Synonym synonym = null;
+                        bool definedDirection = cc.Context.ZEnvironment.Directions.Contains(atom);
 
-                        if (prop.Rest != null && prop.Rest.Rest != null && !prop.Rest.Rest.IsEmpty &&
-                            (cc.Context.ZEnvironment.Directions.Contains(atom) ||
+                        if (prop.Rest != null && prop.Rest.Rest != null &&
+                            (!prop.Rest.Rest.IsEmpty ||
+                             (definedDirection && !(prop.Rest.First is ZilAtom))) &&
+                            (definedDirection ||
                              (directionPattern != null && directionPattern.Matches(cc.Context, prop))))
                         {
                             // it's a direction
