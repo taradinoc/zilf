@@ -115,13 +115,23 @@ namespace Zilf.Interpreter
                 flags);
 
             var maxArgsAllowed = ctx.ZEnvironment.ZVersion > 3 ? 7 : 3;
-            if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
+            if (rtn.ArgSpec.MinArgCount > maxArgsAllowed)
             {
                 throw new InterpreterError(
                     string.Format(
                         "ROUTINE: too many routine arguments: only {0} allowed in V{1}",
                         maxArgsAllowed,
                         ctx.ZEnvironment.ZVersion));
+            }
+            else if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
+            {
+                var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
+                Errors.TerpWarning(ctx, ctx.CallingForm.SourceLine,
+                    "ROUTINE: only {0} routine arguments allowed in V{1}, so last {2} \"OPT\" argument{3} will never be passed",
+                    maxArgsAllowed,
+                    ctx.ZEnvironment.ZVersion,
+                    affectedArgCount,
+                    affectedArgCount == 1 ? "" : "s");
             }
 
             if (ctx.CallingForm != null)

@@ -95,6 +95,12 @@ namespace IntegrationTests
             return (TThis)this;
         }
 
+        public TThis WithoutWarnings()
+        {
+            expectWarnings = false;
+            return (TThis)this;
+        }
+
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
