@@ -555,6 +555,16 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void IN_Pseudo_Property_Should_Not_Conflict_With_IN_String_NEXIT()
+        {
+            AssertGlobals(
+                "<DIRECTIONS IN>",
+                "<OBJECT ROOMS>",
+                "<OBJECT FOO (IN ROOMS) (IN \"You can't go in.\")>")
+                .Compiles();
+        }
+
+        [TestMethod]
         public void Multiple_FLAGS_Definitions_Should_Combine()
         {
             AssertGlobals(
