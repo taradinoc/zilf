@@ -23,6 +23,14 @@ namespace IntegrationTests
     [TestClass]
     public class FlowControlTests
     {
+        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        {
+            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+
+            return new GlobalsAssertionHelper(globals);
+        }
+
         private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
@@ -292,19 +300,41 @@ namespace IntegrationTests
         #region Routines
 
         [TestMethod]
-        public void Routine_With_Too_Many_Arguments_For_Platform_Should_Not_Compile()
+        public void Routine_With_Too_Many_Required_Arguments_For_Platform_Should_Not_Compile()
         {
-            AssertRoutine("\"OPT\" A B C D", "<>")
+            AssertGlobals(
+                "<ROUTINE FOO (A B C D) <>>")
                 .InV3()
                 .DoesNotCompile();
 
+            AssertGlobals(
+                "<ROUTINE FOO (A B C D) <>>")
+                .InV5()
+                .Compiles();
+
+            AssertGlobals(
+                "<ROUTINE FOO (A B C D E F G H) <>>")
+                .InV5()
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void Routine_With_Too_Many_Optional_Arguments_For_Platform_Should_Warn()
+        {
+            AssertRoutine("\"OPT\" A B C D", "<>")
+                .InV3()
+                .WithWarnings()
+                .Compiles();
+
             AssertRoutine("\"OPT\" A B C D", "<>")
                 .InV5()
+                .WithoutWarnings()
                 .Compiles();
 
             AssertRoutine("\"OPT\" A B C D E F G H", "<>")
                 .InV5()
-                .DoesNotCompile();
+                .WithWarnings()
+                .Compiles();
         }
 
         [TestMethod]
