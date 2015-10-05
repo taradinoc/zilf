@@ -3505,7 +3505,7 @@ namespace Zilf.Compiler
         /// Contains unique atoms used as special values in <see cref="PreBuildObject(CompileCtx, ZilModelObject)"/>.
         /// </summary>
         /// <remarks>
-        /// Since DESC, IN (or LOC), and FLAGS can be used as property names when the property definition
+        /// Since DESC and IN (or LOC) can be used as property names when the property definition
         /// matches the direction pattern (most commonly seen with IN), these atoms are used to separately
         /// track whether the names have been used as properties and/or pseudo-properties.
         /// </remarks>
@@ -3513,7 +3513,6 @@ namespace Zilf.Compiler
         {
             public static readonly ZilAtom Desc = new ZilAtom("?DESC?", null, StdAtom.None);
             public static readonly ZilAtom Location = new ZilAtom("?IN/LOC?", null, StdAtom.None);
-            public static readonly ZilAtom Flags = new ZilAtom("?FLAGS?", null, StdAtom.None);
         }
 
         private static void PreBuildObject(CompileCtx cc, ZilModelObject model)
@@ -3653,7 +3652,8 @@ namespace Zilf.Compiler
                                     break;
                                 case StdAtom.FLAGS:
                                     phony = true;
-                                    uniquePropertyName = PseudoPropertyAtoms.Flags;
+                                    // multiple FLAGS definitions are OK
+                                    uniquePropertyName = null;
                                     break;
                                 default:
                                     phony = false;
@@ -3662,15 +3662,18 @@ namespace Zilf.Compiler
                             }
                         }
 
-                        if (propertiesSoFar.Contains(uniquePropertyName))
+                        if (uniquePropertyName != null)
                         {
-                            Errors.CompError(cc.Context, prop, "duplicate {0} definition: {1}",
-                                phony ? "pseudo-property" : "property",
-                                atom.ToStringContext(cc.Context, false));
-                        }
-                        else
-                        {
-                            propertiesSoFar.Add(uniquePropertyName);
+                            if (propertiesSoFar.Contains(uniquePropertyName))
+                            {
+                                Errors.CompError(cc.Context, prop, "duplicate {0} definition: {1}",
+                                    phony ? "pseudo-property" : "property",
+                                    atom.ToStringContext(cc.Context, false));
+                            }
+                            else
+                            {
+                                propertiesSoFar.Add(uniquePropertyName);
+                            }
                         }
 
                         if (!phony && !cc.Properties.ContainsKey(atom))
