@@ -26,6 +26,7 @@ namespace Zilf.Interpreter
     {
         [Subr("INSERT-FILE")]
         [Subr("FLOAD")]
+        [Subr("XFLOAD")]
         public static ZilObject INSERT_FILE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
