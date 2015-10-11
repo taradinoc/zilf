@@ -61,6 +61,7 @@ namespace Zilf.Interpreter
         private Func<string, FileAccess, Stream> streamOpener;
 
         private readonly ObList rootObList;
+        private readonly Stack<ZilObject> previousLocalObLists;
         private Dictionary<ZilAtom, Binding> localValues;
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
         private readonly Dictionary<AssocPair, ZilObject> associations;
@@ -91,6 +92,7 @@ namespace Zilf.Interpreter
             this.CurrentFile = "<internal>";        // so we can create FileSourceInfos for default PROPDEFs
 
             rootObList = new ObList(ignoreCase);
+            previousLocalObLists = new Stack<ZilObject>();
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             associations = new Dictionary<AssocPair, ZilObject>();
@@ -1151,8 +1153,38 @@ namespace Zilf.Interpreter
 
             return new FileStream(path, mode, fileAccess);
         }
+
+        public void PushObLists(ZilList newObLists)
+        {
+            var atom = GetStdAtom(StdAtom.OBLIST);
+            var old = GetLocalVal(atom);
+
+            if (old == null)
+            {
+                old = new ZilList(null, null);
+            }
+
+            previousLocalObLists.Push(old);
+            SetLocalVal(atom, newObLists);
+        }
+
+        public ZilObject PopObLists()
+        {
+            var atom = GetStdAtom(StdAtom.OBLIST);
+            var old = GetLocalVal(atom);
+
+            ZilObject popped;
+            try
+            {
+                popped = previousLocalObLists.Pop();
+            }
+            catch (InvalidOperationException)
+            {
+                throw new InterpreterError("no previously pushed value for OBLIST");
+            }
+
+            SetLocalVal(atom, popped);
+            return old;
+        }
     }
-
-
-    
 }
