@@ -126,6 +126,31 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject BLOCK(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("BLOCK", 1, 1);
+            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                throw new InterpreterError("BLOCK: arg must be a list");
+
+            ctx.PushObLists((ZilList)args[0]);
+            return args[0];
+        }
+
+        [Subr]
+        public static ZilObject ENDBLOCK(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 0)
+                throw new InterpreterError("ENDBLOCK", 0, 0);
+
+            return ctx.PopObLists();
+        }
+
+        [Subr]
         public static ZilObject SETG(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);

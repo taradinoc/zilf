@@ -65,5 +65,23 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert("<UNPARSE '(\"FOO\" [BAR])>", new ZilString("(\"FOO\" [BAR])"));
         }
+
+        [TestMethod]
+        public void TestBLOCK()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(
+                ctx,
+                @"
+XYZZY!-MY-OBLIST
+<SETG FIRST!- FOO>
+<BLOCK (<GETPROP MY-OBLIST OBLIST> <ROOT>)>
+<SETG SECOND!- FOO>
+<ENDBLOCK>
+<=? ,FIRST!- ,SECOND!->",
+                ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<=? ,SECOND!- FOO!-MY-OBLIST>", ctx.TRUE);
+        }
     }
 }
