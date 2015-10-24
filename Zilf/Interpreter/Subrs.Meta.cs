@@ -435,8 +435,6 @@ namespace Zilf.Interpreter
         [Subr("ENDSECTION")]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
-        [Subr("ENDPACKAGE")]
-        [Subr("USE")]
         [Subr("INCLUDE")]
         [Subr("CHECKPOINT")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)

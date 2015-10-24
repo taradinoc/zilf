@@ -1,0 +1,130 @@
+﻿/* Copyright 2010, 2015 Jesse McGrew
+ * 
+ * This file is part of ZILF.
+ * 
+ * ZILF is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * ZILF is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
+ */
+using System;
+using System.Linq;
+using Zilf.Interpreter.Values;
+using Zilf.Language;
+
+namespace Zilf.Interpreter
+{
+    static partial class Subrs
+    {
+        [Subr]
+        public static ZilObject PACKAGE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("PACKAGE", 1, 1);
+            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
+                throw new InterpreterError("PACKAGE: arg must be a string");
+
+            var pname = ((ZilString)args[0]).Text;
+            if (ctx.PackageObList.Contains(pname))
+                throw new InterpreterError("PACKAGE: already defined: " + pname);
+
+            var externalAtom = ctx.PackageObList[pname];
+            var externalObList = new ObList(ctx.IgnoreCase);
+            ctx.PutProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST), externalObList);
+
+            var iname = "I" + pname;
+            var internalAtom = externalObList[iname];
+            var internalObList = new ObList(ctx.IgnoreCase);
+            ctx.PutProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST), internalObList);
+
+            var curObPath = (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList) ?? new ZilList(null, null);
+            var newObPath = new ZilList(internalObList, new ZilList(externalObList, curObPath));
+            ctx.PushObPath(newObPath);
+
+            return externalAtom;
+        }
+
+        [Subr]
+        public static ZilObject ENDPACKAGE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            return ENDBLOCK(ctx, args);
+        }
+
+        [Subr]
+        public static ZilObject ENTRY(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.ATOM))
+                throw new InterpreterError("ENTRY: all args must be atoms");
+
+            // TODO: validate that we're inside a PACKAGE?
+
+            var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
+            if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
+                ((IStructure)currentObPath).GetLength(1) != null ||
+                currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
+            {
+                throw new InterpreterError("ENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs");
+            }
+
+            var internalObList = (ObList)currentObPath.First;
+            var externalObList = (ObList)currentObPath.Rest.First;
+
+            if (args.Cast<ZilAtom>().Any(a => a.ObList != internalObList))
+                throw new InterpreterError("ENTRY: all atoms must be on internal oblist");
+
+            foreach (ZilAtom atom in args)
+                atom.ObList = externalObList;
+
+            return ctx.TRUE;
+        }
+
+        [Subr]
+        public static ZilObject USE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.STRING))
+                throw new InterpreterError("USE: all args must be strings");
+
+            var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
+            if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                throw new InterpreterError("USE: bad LVAL of OBLIST");
+
+            if (args.Length == 0)
+                return ctx.TRUE;
+
+            var obpathList = obpath.ToList();
+
+            foreach (ZilString packageName in args)
+            {
+                var packageNameAtom = ctx.PackageObList[packageName.Text];
+                var externalObList = ctx.GetProp(packageNameAtom, ctx.GetStdAtom(StdAtom.OBLIST));
+
+                // TODO: load missing package from file
+
+                if (externalObList == null)
+                    throw new InterpreterError("USE: no such package: " + packageName.Text);
+
+                if (!obpathList.Contains(externalObList))
+                    obpathList.Add(externalObList);
+            }
+
+            ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST), new ZilList(obpathList));
+            return ctx.TRUE;
+        }
+    }
+}

@@ -26,7 +26,7 @@ namespace Zilf.Interpreter.Values
     class ZilAtom : ZilObject
     {
         private readonly string text;
-        private readonly ObList list;
+        private ObList list;
         private readonly StdAtom stdAtom;
 
         public ZilAtom(string text, ObList list, StdAtom stdAtom)
@@ -50,7 +50,24 @@ namespace Zilf.Interpreter.Values
 
         public ObList ObList
         {
-            get { return list; }
+            get
+            {
+                return list;
+            }
+            set
+            {
+                if (value != list)
+                {
+                    var oldValue = list;
+                    list = value;
+
+                    if (oldValue != null)
+                        oldValue.Remove(this);
+
+                    if (value != null)
+                        value.Add(this);
+                }
+            }
         }
 
         public StdAtom StdAtom

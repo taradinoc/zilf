@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -107,6 +108,30 @@ namespace Zilf.Interpreter
                 string key = ignoreCase ? pname.ToUpper() : pname;
                 dict[key] = value;
             }
+        }
+
+        internal void Add(ZilAtom newAtom)
+        {
+            Contract.Requires(newAtom != null);
+            Contract.Requires(newAtom.ObList == this);
+
+            var key = newAtom.Text;
+            if (ignoreCase)
+                key = key.ToUpper();
+
+            dict[key] = newAtom;
+        }
+
+        internal void Remove(ZilAtom atom)
+        {
+            Contract.Requires(atom != null);
+            Contract.Requires(atom.ObList != this);
+
+            var key = atom.Text;
+            if (ignoreCase)
+                key = key.ToUpper();
+
+            dict.Remove(key);
         }
     }
 }

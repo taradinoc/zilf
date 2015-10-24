@@ -229,6 +229,7 @@ namespace Zilf.Language
         OPEN,
         OR,
         ORB,
+        PACKAGE,
         PATTERN,
         PER,
         PLTABLE,
