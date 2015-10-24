@@ -1006,14 +1006,21 @@ namespace Zilf.Interpreter
 
         private void InitCompilationFlags()
         {
-            DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), TRUE);
+            Program.Evaluate(this, "<BLOCK (<ROOT>)>");
+            try {
+                DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), TRUE);
 
-            DefineCompilationFlag(GetStdAtom(StdAtom.COLOR), FALSE);
-            DefineCompilationFlag(GetStdAtom(StdAtom.MOUSE), FALSE);
-            DefineCompilationFlag(GetStdAtom(StdAtom.UNDO), FALSE);
-            DefineCompilationFlag(GetStdAtom(StdAtom.DISPLAY), FALSE);
-            DefineCompilationFlag(GetStdAtom(StdAtom.SOUND), FALSE);
-            DefineCompilationFlag(GetStdAtom(StdAtom.MENU), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.COLOR), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.MOUSE), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.UNDO), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.DISPLAY), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.SOUND), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.MENU), FALSE);
+            }
+            finally
+            {
+                Program.Evaluate(this, "<ENDBLOCK>");
+            }
         }
 
         public void DefineCompilationFlag(ZilAtom name, ZilObject value, bool redefine = false)
@@ -1127,7 +1134,16 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(def != null);
 
-            var vector = (ZilVector)Program.Evaluate(this, def, true);
+            Program.Evaluate(this, "<BLOCK (<ROOT>)>");
+            ZilVector vector;
+            try
+            {
+                vector = (ZilVector)Program.Evaluate(this, def, true);
+            }
+            finally
+            {
+                Program.Evaluate(this, "<ENDBLOCK>");
+            }
             var pattern = ComplexPropDef.Parse(vector, this);
             SetPropDef(GetStdAtom(propName), pattern);
         }

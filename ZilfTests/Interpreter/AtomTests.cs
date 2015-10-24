@@ -209,5 +209,27 @@ namespace ZilfTests.Interpreter
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<ROOT>", ctx.RootObList);
         }
+
+        [TestMethod]
+        public void All_Predefined_Atoms_Should_Be_On_ROOT_ObList()
+        {
+            var ctx = new Context();
+
+            var offset = 0;
+
+            foreach (var zo in (ZilList)ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)))
+            {
+                var oblist = zo as ObList;
+                if (oblist == null)
+                    continue;
+
+                var atomList = (ZilList)oblist.GetPrimitive(ctx);
+
+                if (oblist != ctx.RootObList && !atomList.IsEmpty)
+                    Assert.Fail("Expected non-root oblist at offset {0} to be empty, but found: {1}", offset, oblist.ToString());
+
+                offset++;
+            }
+        }
     }
 }
