@@ -698,6 +698,10 @@ namespace Zilf.Interpreter
                 combined = Path.ChangeExtension(combined, ".zil");
                 if (FileExists(combined))
                     return combined;
+
+                combined = Path.ChangeExtension(combined, ".mud");
+                if (FileExists(combined))
+                    return combined;
             }
 
             throw new FileNotFoundException();
