@@ -111,10 +111,18 @@ namespace Zilf.Interpreter
 
             foreach (ZilString packageName in args)
             {
-                var packageNameAtom = ctx.PackageObList[packageName.Text];
-                var externalObList = ctx.GetProp(packageNameAtom, ctx.GetStdAtom(StdAtom.OBLIST));
+                if (!ctx.PackageObList.Contains(packageName.Text))
+                {
+                    // try loading from file
+                    PerformLoadFile(ctx, packageName.Text, "USE");  // throws on failure
+                }
 
-                // TODO: load missing package from file
+                ObList externalObList = null;
+                if (ctx.PackageObList.Contains(packageName.Text))
+                {
+                    var packageNameAtom = ctx.PackageObList[packageName.Text];
+                    externalObList = ctx.GetProp(packageNameAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+                }
 
                 if (externalObList == null)
                     throw new InterpreterError("USE: no such package: " + packageName.Text);

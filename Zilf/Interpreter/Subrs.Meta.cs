@@ -24,22 +24,8 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        [Subr("INSERT-FILE")]
-        [Subr("FLOAD")]
-        [Subr("XFLOAD")]
-        public static ZilObject INSERT_FILE(Context ctx, ZilObject[] args)
+        public static ZilObject PerformLoadFile(Context ctx, string file, string name)
         {
-            SubrContracts(ctx, args);
-            
-            // we ignore arguments after the first
-            if (args.Length == 0)
-                throw new InterpreterError("INSERT-FILE", 1, 0);
-
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
-                throw new InterpreterError("INSERT-FILE: first arg must be a string");
-
-            string file = args[0].ToStringContext(ctx, true);
-
             try
             {
                 string oldFile = ctx.CurrentFile;
@@ -66,13 +52,32 @@ namespace Zilf.Interpreter
             }
             catch (System.IO.FileNotFoundException ex)
             {
-                throw new InterpreterError("INSERT-FILE: file not found: " + file, ex);
+                throw new InterpreterError(name + ": file not found: " + file, ex);
             }
             catch (System.IO.IOException ex)
             {
-                throw new InterpreterError("INSERT-FILE: error loading file: " +
+                throw new InterpreterError(name + ": error loading file: " +
                     ex.Message, ex);
             }
+        }
+
+        [Subr("INSERT-FILE")]
+        [Subr("FLOAD")]
+        [Subr("XFLOAD")]
+        public static ZilObject INSERT_FILE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+         
+            // we ignore arguments after the first
+            if (args.Length == 0)
+                throw new InterpreterError("INSERT-FILE", 1, 0);
+
+            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
+                throw new InterpreterError("INSERT-FILE: first arg must be a string");
+
+            string file = args[0].ToStringContext(ctx, true);
+
+            return PerformLoadFile(ctx, file, "INSERT-FILE");
         }
 
         [Subr("FILE-FLAGS")]

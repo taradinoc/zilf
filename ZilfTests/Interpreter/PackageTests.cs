@@ -22,6 +22,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using System.IO;
 
 namespace ZilfTests.Interpreter
 {
@@ -89,6 +90,55 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ANSWER>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? SECRET>", ctx.FALSE);
+        }
+
+        [TestMethod]
+        public void USE_Tries_To_Load_Unknown_Package()
+        {
+            var ctx = new Context();
+            ctx.IncludePaths.Add("lib");
+
+            const string FileToIntercept = "FOO.zil";
+
+            ctx.InterceptFileExists = path => Path.GetFileName(path) == FileToIntercept;
+            ctx.InterceptOpenFile = (path, writing) =>
+            {
+                if (Path.GetFileName(path) == FileToIntercept)
+                {
+                    const string fileContent = @"
+<PACKAGE ""FOO"">
+<ENTRY ANSWER>
+<SETG ANSWER 42>
+<ENDPACKAGE>";
+                    return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
+                }
+
+                return null;
+            };
+
+            TestHelpers.EvalAndAssert(ctx, @"<USE ""FOO""> ,ANSWER", new ZilFix(42));
+        }
+
+        [TestMethod]
+        public void USE_Fails_If_Unknown_Package_Does_Not_Exist()
+        {
+            var ctx = new Context();
+            ctx.IncludePaths.Add("lib");
+            ctx.InterceptFileExists = path => false;
+            ctx.InterceptOpenFile = (path, writing) => null;
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<USE ""FOO"">");
+        }
+
+        [TestMethod]
+        public void USE_Knows_About_Certain_Packages_By_Default()
+        {
+            var ctx = new Context();
+            ctx.IncludePaths.Add("lib");
+            ctx.InterceptFileExists = path => false;
+            ctx.InterceptOpenFile = (path, writing) => null;
+
+            TestHelpers.EvalAndAssert(ctx, @"<USE ""NEWSTRUC"">", ctx.TRUE);
         }
     }
 }
