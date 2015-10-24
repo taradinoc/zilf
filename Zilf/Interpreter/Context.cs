@@ -106,6 +106,7 @@ namespace Zilf.Interpreter
             InitStdAtoms();
             InitSubrs();
             InitTypeMap();
+            InitPackages();
 
             TRUE = GetStdAtom(StdAtom.T);
             FALSE = new ZilFalse(new ZilList(null, null));
@@ -328,6 +329,12 @@ namespace Zilf.Interpreter
             }
 
             Contract.Assume(stdAtoms.Length > 0);
+        }
+
+        private void InitPackages()
+        {
+            // NEWSTRUC is predefined as an empty package
+            PutProp(packageObList["NEWSTRUC"], GetStdAtom(StdAtom.OBLIST), new ObList(ignoreCase));
         }
 
         private void InitSubrs()
