@@ -187,6 +187,7 @@
     <Compile Include="Interpreter\Subrs.Math.cs" />
     <Compile Include="Interpreter\Subrs.Meta.cs" />
     <Compile Include="Interpreter\Subrs.Output.cs" />
+    <Compile Include="Interpreter\Subrs.Packages.cs" />
     <Compile Include="Interpreter\Subrs.Structures.cs" />
     <Compile Include="Interpreter\Subrs.Types.cs" />
     <Compile Include="Interpreter\Subrs.ZModel.cs" />

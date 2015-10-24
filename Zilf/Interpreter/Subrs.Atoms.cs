@@ -96,10 +96,10 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            // TODO: support 1-argument form of INSERT?
             if (args.Length != 2)
                 throw new InterpreterError("INSERT", 2, 2);
 
+            // TODO: support atom form of INSERT?
             var str = args[0] as ZilString;
             if (str == null)
                 throw new InterpreterError("INSERT: first arg must be a string");
@@ -135,7 +135,7 @@ namespace Zilf.Interpreter
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 throw new InterpreterError("BLOCK: arg must be a list");
 
-            ctx.PushObLists((ZilList)args[0]);
+            ctx.PushObPath((ZilList)args[0]);
             return args[0];
         }
 
@@ -147,7 +147,7 @@ namespace Zilf.Interpreter
             if (args.Length != 0)
                 throw new InterpreterError("ENDBLOCK", 0, 0);
 
-            return ctx.PopObLists();
+            return ctx.PopObPath();
         }
 
         [Subr]

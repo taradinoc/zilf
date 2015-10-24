@@ -60,8 +60,8 @@ namespace Zilf.Interpreter
         private ZilForm callingForm;
         private Func<string, FileAccess, Stream> streamOpener;
 
-        private readonly ObList rootObList;
-        private readonly Stack<ZilObject> previousLocalObLists;
+        private readonly ObList rootObList, packageObList;
+        private readonly Stack<ZilObject> previousObPaths;
         private Dictionary<ZilAtom, Binding> localValues;
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
         private readonly Dictionary<AssocPair, ZilObject> associations;
@@ -92,7 +92,8 @@ namespace Zilf.Interpreter
             this.CurrentFile = "<internal>";        // so we can create FileSourceInfos for default PROPDEFs
 
             rootObList = new ObList(ignoreCase);
-            previousLocalObLists = new Stack<ZilObject>();
+            packageObList = new ObList(ignoreCase);
+            previousObPaths = new Stack<ZilObject>();
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             associations = new Dictionary<AssocPair, ZilObject>();
@@ -117,6 +118,8 @@ namespace Zilf.Interpreter
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
             localValues[olatom] = new Binding(olpath);
 
+            PutProp(GetStdAtom(StdAtom.PACKAGE), GetStdAtom(StdAtom.OBLIST), packageObList);
+
             InitTellPatterns();
             InitPropDefs();
             InitCompilationFlags();
@@ -129,6 +132,7 @@ namespace Zilf.Interpreter
             Contract.Invariant(warningCount >= 0);
             Contract.Invariant(includePaths != null);
             Contract.Invariant(rootObList != null);
+            Contract.Invariant(packageObList != null);
             Contract.Invariant(localValues != null);
             Contract.Invariant(GlobalVals != null);
             Contract.Invariant(associations != null);
@@ -139,6 +143,7 @@ namespace Zilf.Interpreter
             Contract.Invariant(FALSE != null);
 
             Contract.Invariant(RootObList != null);
+            Contract.Invariant(PackageObList != null);
             Contract.Invariant(IncludePaths != null);
             Contract.Invariant(GlobalVals != null);
 
@@ -147,6 +152,11 @@ namespace Zilf.Interpreter
         public ObList RootObList
         {
             get { return rootObList; }
+        }
+
+        public ObList PackageObList
+        {
+            get { return packageObList; }
         }
 
         public RunMode RunMode
@@ -1158,7 +1168,7 @@ namespace Zilf.Interpreter
             return new FileStream(path, mode, fileAccess);
         }
 
-        public void PushObLists(ZilList newObLists)
+        public void PushObPath(ZilList newObPath)
         {
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom);
@@ -1168,11 +1178,11 @@ namespace Zilf.Interpreter
                 old = new ZilList(null, null);
             }
 
-            previousLocalObLists.Push(old);
-            SetLocalVal(atom, newObLists);
+            previousObPaths.Push(old);
+            SetLocalVal(atom, newObPath);
         }
 
-        public ZilObject PopObLists()
+        public ZilObject PopObPath()
         {
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom);
@@ -1180,7 +1190,7 @@ namespace Zilf.Interpreter
             ZilObject popped;
             try
             {
-                popped = previousLocalObLists.Pop();
+                popped = previousObPaths.Pop();
             }
             catch (InvalidOperationException)
             {
