@@ -152,8 +152,7 @@ namespace Zilf.Interpreter.Values
                 if (list == null)
                 {
                     // create new oblist
-                    list = new ObList(ctx.IgnoreCase);
-                    ctx.PutProp(olname, ctx.GetStdAtom(StdAtom.OBLIST), list);
+                    list = ctx.MakeObList(olname);
                 }
             }
 

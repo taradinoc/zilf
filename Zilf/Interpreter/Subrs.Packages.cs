@@ -38,23 +38,57 @@ namespace Zilf.Interpreter
             if (ctx.PackageObList.Contains(pname))
                 throw new InterpreterError("PACKAGE: already defined: " + pname);
 
+            // external oblist
             var externalAtom = ctx.PackageObList[pname];
-            var externalObList = new ObList(ctx.IgnoreCase);
-            ctx.PutProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST), externalObList);
+            var externalObList = ctx.MakeObList(externalAtom);
 
+            // internal oblist
             var iname = "I" + pname;
             var internalAtom = externalObList[iname];
-            var internalObList = new ObList(ctx.IgnoreCase);
-            ctx.PutProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST), internalObList);
+            var internalObList = ctx.MakeObList(internalAtom);
 
+            // new oblist path
             var curObPath = (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList) ?? new ZilList(null, null);
             var newObPath = new ZilList(internalObList, new ZilList(externalObList, curObPath));
             ctx.PushObPath(newObPath);
+
+            // package type
+            ctx.PutProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE), ctx.GetStdAtom(StdAtom.PACKAGE));
 
             return externalAtom;
         }
 
         [Subr]
+        public static ZilObject DEFINITIONS(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("DEFINITIONS", 1, 1);
+            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
+                throw new InterpreterError("DEFINITIONS: arg must be a string");
+
+            var pname = ((ZilString)args[0]).Text;
+            if (ctx.PackageObList.Contains(pname))
+                throw new InterpreterError("DEFINITIONS: already defined: " + pname);
+
+            // external oblist
+            var externalAtom = ctx.PackageObList[pname];
+            var externalObList = ctx.MakeObList(externalAtom);
+
+            // new oblist path
+            var curObPath = (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList) ?? new ZilList(null, null);
+            var newObPath = new ZilList(externalObList, curObPath);
+            ctx.PushObPath(newObPath);
+
+            // package type
+            ctx.PutProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE), ctx.GetStdAtom(StdAtom.DEFINITIONS));
+
+            return externalAtom;
+        }
+
+        [Subr]
+        [Subr("END-DEFINITIONS")]
         public static ZilObject ENDPACKAGE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
@@ -70,8 +104,6 @@ namespace Zilf.Interpreter
             if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.ATOM))
                 throw new InterpreterError("ENTRY: all args must be atoms");
 
-            // TODO: validate that we're inside a PACKAGE?
-
             var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
                 ((IStructure)currentObPath).GetLength(1) != null ||
@@ -82,6 +114,11 @@ namespace Zilf.Interpreter
 
             var internalObList = (ObList)currentObPath.First;
             var externalObList = (ObList)currentObPath.Rest.First;
+
+            // make sure we're inside a PACKAGE
+            var packageAtom = ctx.GetStdAtom(StdAtom.PACKAGE);
+            if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
+                throw new InterpreterError("ENTRY: must be called from within a PACKAGE");
 
             if (args.Cast<ZilAtom>().Any(a => a.ObList != internalObList))
                 throw new InterpreterError("ENTRY: all atoms must be on internal oblist");

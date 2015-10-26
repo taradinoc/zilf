@@ -91,19 +91,24 @@ namespace Zilf.Interpreter
             this.ignoreCase = ignoreCase;
             this.CurrentFile = "<internal>";        // so we can create FileSourceInfos for default PROPDEFs
 
+            // set up the ROOT oblist manually
             rootObList = new ObList(ignoreCase);
-            packageObList = new ObList(ignoreCase);
+            InitStdAtoms();
+            associations = new Dictionary<AssocPair, ZilObject>();
+            PutProp(rootObList, GetStdAtom(StdAtom.OBLIST), GetStdAtom(StdAtom.ROOT));
+            PutProp(GetStdAtom(StdAtom.ROOT), GetStdAtom(StdAtom.OBLIST), rootObList);
+
+            // now we can use MakeObList
+            packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
             previousObPaths = new Stack<ZilObject>();
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
-            associations = new Dictionary<AssocPair, ZilObject>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
 
             zenv = new ZEnvironment(this);
 
             includePaths = new List<string>();
 
-            InitStdAtoms();
             InitSubrs();
             InitTypeMap();
             InitPackages();
@@ -114,7 +119,7 @@ namespace Zilf.Interpreter
             InitConstants();
 
             // initialize OBLIST path
-            ObList userObList = new ObList(ignoreCase);
+            ObList userObList = MakeObList(GetStdAtom(StdAtom.INITIAL));
             ZilList olpath = new ZilList(new ZilObject[] { userObList, rootObList });
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
             localValues[olatom] = new Binding(olpath);
@@ -331,10 +336,21 @@ namespace Zilf.Interpreter
             Contract.Assume(stdAtoms.Length > 0);
         }
 
+        public ObList MakeObList(ZilAtom name)
+        {
+            var result = new ObList(ignoreCase);
+
+            var oblistAtom = GetStdAtom(StdAtom.OBLIST);
+            PutProp(name, oblistAtom, result);
+            PutProp(result, oblistAtom, name);
+
+            return result;
+        }
+
         private void InitPackages()
         {
             // NEWSTRUC is predefined as an empty package
-            PutProp(packageObList["NEWSTRUC"], GetStdAtom(StdAtom.OBLIST), new ObList(ignoreCase));
+            MakeObList(packageObList["NEWSTRUC"]);
         }
 
         private void InitSubrs()

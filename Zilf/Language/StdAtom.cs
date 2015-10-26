@@ -91,6 +91,7 @@ namespace Zilf.Language
         [Atom("DEFAULT-DEFINITION")]
         DEFAULT_DEFINITION,
         DEFINED,
+        DEFINITIONS,
         DEFSTRUCT,
         [Atom("DELAY-DEFINITION")]
         DELAY_DEFINITION,
@@ -167,6 +168,7 @@ namespace Zilf.Language
         [Atom("IN-ZILCH")]
         IN_ZILCH,
         INC,
+        INITIAL,
         INPUT,
         [Atom("INTBL?")]
         INTBL_P,
@@ -285,6 +287,7 @@ namespace Zilf.Language
         ROOMS_FIRST,
         [Atom("ROOMS-LAST")]
         ROOMS_LAST,
+        ROOT,
         ROUTINE,
         RSTACK,
         RTRUE,
