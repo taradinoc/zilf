@@ -165,7 +165,6 @@
     <Compile Include="Interpreter\AgainException.cs" />
     <Compile Include="Interpreter\ArgItem.cs" />
     <Compile Include="Interpreter\ArgSpec.cs" />
-    <Compile Include="Interpreter\AssocPair.cs" />
     <Compile Include="Interpreter\Binding.cs" />
     <Compile Include="Interpreter\ChtypeMethodAttribute.cs" />
     <Compile Include="Interpreter\ControlException.cs" />
