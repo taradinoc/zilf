@@ -75,6 +75,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, ",ANSWER!-FOO!-PACKAGE", new ZilFix(42));
         }
 
+
+        [TestMethod]
+        public void ENTRY_Is_Illegal_Outside_PACKAGE()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<ENTRY ANSWER>");
+        }
+
         [TestMethod]
         public void USE_Imports_External_Lexical_Blocks()
         {
@@ -139,6 +147,42 @@ namespace ZilfTests.Interpreter
             ctx.InterceptOpenFile = (path, writing) => null;
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""NEWSTRUC"">", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void DEFINITIONS_Creates_A_Package_Where_All_Atoms_Are_Exported()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFINITIONS ""FOO"">
+<SETG ANSWER 42>
+<END-DEFINITIONS>");
+
+            TestHelpers.EvalAndAssert(ctx, "<TYPE? <GETPROP FOO!-PACKAGE OBLIST> OBLIST>", ctx.GetStdAtom(StdAtom.OBLIST));
+
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ANSWER>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ANSWER!-FOO!-PACKAGE>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, ",ANSWER!-FOO!-PACKAGE", new ZilFix(42));
+
+            // reset context because we polluted the local oblist with ANSWER
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFINITIONS ""FOO"">
+<SETG ANSWER 42>
+<END-DEFINITIONS>");
+
+            TestHelpers.EvalAndAssert(ctx, @"<USE ""FOO""> ,ANSWER", new ZilFix(42));
+        }
+
+        [TestMethod]
+        public void ENTRY_Is_Illegal_Inside_DEFINITIONS()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"<DEFINITIONS ""FOO"">");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<ENTRY ANSWER>");
         }
     }
 }
