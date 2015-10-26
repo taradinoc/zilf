@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
@@ -58,5 +59,33 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<PUTPROP FOO BAR>", new ZilFix(123));
             TestHelpers.EvalAndAssert(ctx, "<GETPROP FOO BAR>", ctx.FALSE);
         }
+
+        [TestMethod]
+        public void Associations_Should_Not_Keep_Objects_Alive()
+        {
+            var ctx = new Context();
+
+            var foo = new ZilString("FOO");
+            ctx.PutProp(foo, ctx.TRUE, ctx.TRUE);
+
+            var weakRef = new WeakReference<ZilString>(foo);
+            foo = null;
+
+            GC.Collect();
+
+            Assert.IsFalse(weakRef.TryGetTarget(out foo), "Object was not garbage collected");
+        }
+
+        /*
+        // TODO: interning for numeric values - otherwise every time we calculate or parse a number, it's a different instance
+        [TestMethod]
+        public void Associations_Should_Work_With_Separately_Calculated_Numbers()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<PUTPROP 10 4 T>");
+            TestHelpers.EvalAndAssert(ctx, "<GETPROP <* 5 2> <- 11 7>>", ctx.TRUE);
+        }
+        */
     }
 }

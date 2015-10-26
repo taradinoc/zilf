@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
@@ -64,7 +65,7 @@ namespace Zilf.Interpreter
         private readonly Stack<ZilObject> previousObPaths;
         private Dictionary<ZilAtom, Binding> localValues;
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
-        private readonly Dictionary<AssocPair, ZilObject> associations;
+        private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         private readonly ZEnvironment zenv;
 
@@ -94,7 +95,7 @@ namespace Zilf.Interpreter
             // set up the ROOT oblist manually
             rootObList = new ObList(ignoreCase);
             InitStdAtoms();
-            associations = new Dictionary<AssocPair, ZilObject>();
+            associations = new ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>>();
             PutProp(rootObList, GetStdAtom(StdAtom.OBLIST), GetStdAtom(StdAtom.ROOT));
             PutProp(GetStdAtom(StdAtom.ROOT), GetStdAtom(StdAtom.OBLIST), rootObList);
 
@@ -506,9 +507,9 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            AssocPair pair = new AssocPair(first, second);
+            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
             ZilObject result;
-            if (associations.TryGetValue(pair, out result))
+            if (associations.TryGetValue(first, out innerTable) && innerTable.TryGetValue(second, out result))
                 return result;
 
             return null;
@@ -526,11 +527,20 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            AssocPair pair = new AssocPair(first, second);
+            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
             if (value == null)
-                associations.Remove(pair);
+            {
+                if (associations.TryGetValue(first, out innerTable))
+                {
+                    innerTable.Remove(second);
+                }
+            }
             else
-                associations[pair] = value;
+            {
+                innerTable = associations.GetOrCreateValue(first);
+                innerTable.Remove(second);
+                innerTable.Add(second, value);
+            }
         }
 
         /// <summary>
