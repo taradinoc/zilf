@@ -25,6 +25,8 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
+        [Subr("ZPACKAGE")]
+        [Subr("ZZPACKAGE")]
         public static ZilObject PACKAGE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
