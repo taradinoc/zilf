@@ -41,6 +41,8 @@ namespace Zilf.Interpreter
         {
             public ZilAtom NthFunc, PutFunc;
             public int StartOffset;
+            public bool SuppressType, SuppressDefaultCtor;
+            public ZilList CustomCtorSpec;
         }
 
         private struct DefStructField
@@ -112,13 +114,24 @@ namespace Zilf.Interpreter
                 fields.Add(ParseDefStructField(ctx, defaults, offset++, fieldSpec));
             }
 
-            // register the type
-            ctx.RegisterType(name, ctx.GetTypePrim(baseType));
+            if (!defaults.SuppressType)
+            {
+                // register the type
+                ctx.RegisterType(name, ctx.GetTypePrim(baseType));
+            }
 
-            // define constructor macro
-            var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields);
-            Program.Evaluate(ctx, ctorMacroDef, true);
-            // TODO: correct the source locations in the macro
+            if (!defaults.SuppressDefaultCtor)
+            {
+                // define constructor macro
+                var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields);
+                Program.Evaluate(ctx, ctorMacroDef, true);
+                // TODO: correct the source locations in the macro
+            }
+
+            if (defaults.CustomCtorSpec != null)
+            {
+                //XXX define custom constructor macro based on parameters in spec
+            }
 
             // define field access macros
             foreach (var field in fields)
@@ -272,11 +285,17 @@ namespace Zilf.Interpreter
                 var item = fieldList.First;
                 bool quoted = (item is ZilForm && ((ZilForm)item).First == quoteAtom);
 
+                if (quoted && ((ZilForm)item).Rest.First is ZilFix)
+                {
+                    item = ((ZilForm)item).Rest.First;
+                    quoted = false;
+                }
+
                 if (quoted)
                 {
                     var tag = ((ZilForm)item).Rest.First as ZilAtom;
                     if (tag == null)
-                        throw new InterpreterError("DEFSTRUCT: quoted value in field definition must be an atom");
+                        throw new InterpreterError("DEFSTRUCT: quoted value in field definition must be an atom or fix");
 
                     switch (tag.StdAtom)
                     {
@@ -343,6 +362,18 @@ namespace Zilf.Interpreter
                             // nada
                             break;
 
+                        case StdAtom.NOTYPE:
+                            defaults.SuppressType = true;
+                            break;
+
+                        case StdAtom.PRINTTYPE:
+                            // nada
+                            break;
+
+                        case StdAtom.CONSTRUCTOR:
+                            defaults.SuppressDefaultCtor = true;
+                            break;
+
                         default:
                             throw new NotImplementedException("DEFSTRUCT: unrecognized part in defaults section: " + tag);
                     }
@@ -381,12 +412,21 @@ namespace Zilf.Interpreter
                             defaults.StartOffset = fix.Value;
                             break;
 
+                        case StdAtom.PRINTTYPE:
+                            partList = partList.Rest;
+                            // TODO: implement PRINTTYPE
+                            break;
+
+                        case StdAtom.CONSTRUCTOR:
+                            partList = partList.Rest;
+                            defaults.CustomCtorSpec = partList;
+                            break;
+
                         default:
                             throw new InterpreterError("DEFSTRUCT: unrecognized tag in defaults section: " + tag);
                     }
                 }
             }
         }
-
     }
 }
