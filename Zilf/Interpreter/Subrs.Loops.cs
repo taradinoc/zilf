@@ -17,6 +17,7 @@
  */
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -56,15 +57,43 @@ namespace Zilf.Interpreter
             if (args.Length < 2)
                 throw new InterpreterError(name, 2, 0);
 
+            var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
+
             // bind atoms
-            ZilList bindings = args[0] as ZilList;
+            ZilAtom activationAtom = args[0] as ZilAtom;
+            ZilList bindings;
+            IEnumerable<ZilObject> body;
+            string bindingPosition;
+
+            if (activationAtom == null)
+            {
+                bindings = args[0] as ZilList;
+                body = args.Skip(1);
+                bindingPosition = "first";
+            }
+            else
+            {
+                bindings = args[1] as ZilList;
+                body = args.Skip(2);
+                bindingPosition = "second";
+
+                if (args.Length < 3)
+                    throw new InterpreterError(name + ": missing body");
+            }
+
             if (bindings == null || bindings.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(name + ": first arg must be a list of zero or more atom bindings");
+                throw new InterpreterError(string.Format("{0}: {1} arg must be a list of zero or more atom bindings", name, bindingPosition));
 
             Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
 
             try
             {
+                if (activationAtom != null)
+                {
+                    ctx.PushLocalVal(activationAtom, activation);
+                    boundAtoms.Enqueue(activationAtom);
+                }
+
                 foreach (ZilObject b in bindings)
                 {
                     ZilAtom atom;
@@ -110,43 +139,33 @@ namespace Zilf.Interpreter
                     }
                 }
 
+                if (catchy)
+                    ctx.PushEnclosingProgActivation(activation);
+
                 // evaluate body
                 ZilObject result = null;
-                if (catchy)
+                bool again;
+                do
                 {
-                    bool again;
-                    do
+                    again = false;
+                    foreach (var expr in body)
                     {
-                        again = false;
-                        for (int i = 1; i < args.Length; i++)
+                        try
                         {
-                            try
-                            {
-                                result = args[i].Eval(ctx);
-                            }
-                            catch (ReturnException ex)
-                            {
-                                return ex.Value;
-                            }
-                            catch (AgainException)
-                            {
-                                again = true;
-                            }
+                            result = expr.Eval(ctx);
                         }
-                    } while (repeat || again);
+                        catch (ReturnException ex) when (ex.Activation == activation)
+                        {
+                            return ex.Value;
+                        }
+                        catch (AgainException ex) when (ex.Activation == activation)
+                        {
+                            again = true;
+                        }
+                    }
+                } while (repeat || again);
 
-                    Contract.Assert(result != null);
-                }
-                else
-                {
-                    do
-                    {
-                        for (int i = 1; i < args.Length; i++)
-                            result = args[i].Eval(ctx);
-                    } while (repeat);
-
-                    Contract.Assert(result != null);
-                }
+                Contract.Assert(result != null);
 
                 return result;
             }
@@ -154,6 +173,12 @@ namespace Zilf.Interpreter
             {
                 while (boundAtoms.Count > 0)
                     ctx.PopLocalVal(boundAtoms.Dequeue());
+
+                if (activationAtom != null)
+                    ctx.PopLocalVal(activationAtom);
+
+                if (catchy)
+                    ctx.PopEnclosingProgActivation();
             }
         }
 
@@ -162,12 +187,35 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            if (args.Length == 0)
-                throw new ReturnException(ctx.TRUE);
-            else if (args.Length == 1)
-                throw new ReturnException(args[0]);
+            if (args.Length > 2)
+                throw new InterpreterError("RETURN", 0, 2);
+
+            ZilObject value;
+            ZilActivation activation;
+
+            if (args.Length >= 1)
+            {
+                value = args[0];
+            }
             else
-                throw new InterpreterError("RETURN", 0, 1);
+            {
+                value = ctx.TRUE;
+            }
+
+            if (args.Length >= 2)
+            {
+                activation = args[1] as ZilActivation;
+                if (activation == null)
+                    throw new InterpreterError("RETURN: second arg must be an activation");
+            }
+            else
+            {
+                activation = ctx.GetEnclosingProgActivation();
+                if (activation == null)
+                    throw new InterpreterError("RETURN: no enclosing PROG/REPEAT");
+            }
+
+            throw new ReturnException(activation, value);
         }
 
         [Subr]
@@ -175,10 +223,25 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            if (args.Length == 0)
-                throw new AgainException();
+            if (args.Length > 1)
+                throw new InterpreterError("AGAIN", 0, 1);
+
+            ZilActivation activation;
+
+            if (args.Length >= 1)
+            {
+                activation = args[0] as ZilActivation;
+                if (activation == null)
+                    throw new InterpreterError("AGAIN: arg must be an activation");
+            }
             else
-                throw new InterpreterError("AGAIN", 0, 0);
+            {
+                activation = ctx.GetEnclosingProgActivation();
+                if (activation == null)
+                    throw new InterpreterError("AGAIN: no enclosing PROG/REPEAT");
+            }
+
+            throw new AgainException(activation);
         }
     }
 }

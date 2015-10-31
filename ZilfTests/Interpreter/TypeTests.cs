@@ -54,12 +54,14 @@ namespace ZilfTests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("A-FSUBR", ctx), new ZilFSubr(Subrs.QUOTE));
             ctx.SetLocalVal(ZilAtom.Parse("A-FUNCTION", ctx), new ZilFunction(
                 ZilAtom.Parse("MYFUNC", ctx),
+                null,
                 new ZilObject[] { },
                 new ZilObject[] { new ZilFix(3) }
             ));
             ctx.SetLocalVal(ZilAtom.Parse("A-MACRO", ctx), new ZilEvalMacro(
                 new ZilFunction(
                     ZilAtom.Parse("MYMAC", ctx),
+                    null,
                     new ZilObject[] { },
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -95,7 +97,7 @@ namespace ZilfTests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("A-WACKY", ctx),
                 new ZilHash(ZilAtom.Parse("WACKY", ctx), PrimType.LIST, new ZilList(null, null)));
 
-            // TODO: test other ZilObject descendants: ObList, ZilRoutine, ZilConstant, ZilGlobal, ZilTable, ZilModelObject, OffsetString?
+            // TODO: test other ZilObject descendants: ObList, ZilActivation, ZilChannel, ZilRoutine, ZilConstant, ZilGlobal, ZilTable, ZilModelObject, OffsetString?
         }
 
         [TestCleanup]
@@ -246,6 +248,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FALSE>",
                 new ZilFalse(new ZilList(new ZilFunction(
                     null,
+                    null,
                     new ZilObject[] { },
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -313,6 +316,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO LIST>",
                 new ZilList(new ZilFunction(
                     null,
+                    null,
                     new ZilObject[] { },
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -357,6 +361,7 @@ namespace ZilfTests.Interpreter
                 }));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FORM>",
                 new ZilForm(new ZilObject[] { new ZilFunction(
+                    null,
                     null,
                     new ZilObject[] { },
                     new ZilObject[] {
@@ -471,6 +476,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE ((X) '<TYPE X>) FUNCTION>",
                 new ZilFunction(
                     null,
+                    null,
                     new ZilObject[] { ZilAtom.Parse("X", ctx) },
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -504,6 +510,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE (.A-FUNCTION) MACRO>",
                 new ZilEvalMacro(new ZilFunction(
                     ZilAtom.Parse("MYFUNC", ctx),
+                    null,
                     new ZilObject[] { },
                     new ZilObject[] { new ZilFix(3) })));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"Plus\"> MACRO>",
@@ -543,6 +550,7 @@ namespace ZilfTests.Interpreter
                 })));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO SEGMENT>",
                 new ZilSegment(new ZilForm(new ZilObject[] { new ZilFunction(
+                    null,
                     null,
                     new ZilObject[] { },
                     new ZilObject[] {
@@ -771,6 +779,7 @@ namespace ZilfTests.Interpreter
         public void TestFUNCTION()
         {
             TestHelpers.EvalAndAssert("<FUNCTION () 5>", new ZilFunction(
+                null,
                 null,
                 new ZilObject[] { },
                 new ZilObject[] { new ZilFix(5) }

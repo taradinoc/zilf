@@ -30,12 +30,12 @@ namespace Zilf.Interpreter.Values
         private ArgSpec argspec;
         private readonly ZilObject[] body;
 
-        public ZilFunction(ZilAtom name, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body)
+        public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body)
         {
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
             Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
 
-            this.argspec = new ArgSpec(name, argspec);
+            this.argspec = new ArgSpec(name, activationAtom, argspec);
             this.body = body.ToArray();
         }
 
@@ -54,16 +54,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(list != null);
             Contract.Ensures(Contract.Result<ZilFunction>() != null);
 
-            if (list.First != null && list.First.GetTypeAtom(ctx).StdAtom == StdAtom.LIST &&
-                list.Rest != null && list.Rest.First != null)
-            {
-                return new ZilFunction(
-                    null,
-                    (ZilList)list.First,
-                    list.Rest);
-            }
-
-            throw new InterpreterError("List does not match FUNCTION pattern");
+            return (ZilFunction)Subrs.FUNCTION(ctx, list.ToArray());
         }
 
         private string ToString(Func<ZilObject, string> convert)
@@ -116,10 +107,29 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject Apply(Context ctx, ZilObject[] args)
         {
-            argspec.BeginApply(ctx, args, true);
+            return ApplyImpl(ctx, args, true);
+        }
+
+        private ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
+        {
+            var activation = argspec.BeginApply(ctx, args, eval);
             try
             {
-                return ZilObject.EvalProgram(ctx, body);
+                do
+                {
+                    try
+                    {
+                        return ZilObject.EvalProgram(ctx, body);
+                    }
+                    catch (ReturnException ex) when (activation != null && ex.Activation == activation)
+                    {
+                        return ex.Value;
+                    }
+                    catch (AgainException ex) when (activation != null && ex.Activation == activation)
+                    {
+                        // repeat
+                    }
+                } while (true);
             }
             finally
             {
@@ -129,15 +139,7 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            argspec.BeginApply(ctx, args, false);
-            try
-            {
-                return ZilObject.EvalProgram(ctx, body);
-            }
-            finally
-            {
-                argspec.EndApply(ctx);
-            }
+            return ApplyImpl(ctx, args, false);
         }
 
         public override bool Equals(object obj)

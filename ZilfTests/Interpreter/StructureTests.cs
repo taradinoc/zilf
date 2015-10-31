@@ -18,6 +18,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
@@ -130,6 +131,26 @@ namespace ZilfTests.Interpreter
                ZilHash.Parse(ctx, new ZilObject[] { rpointAtom, new ZilVector(new ZilFix(456), new ZilFix(123)) }));
             TestHelpers.EvalAndAssert(ctx, "<RPOINT-Y #RPOINT [234 567]>",
                 new ZilFix(234));
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_NOTYPE()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR 'NOTYPE) (POINT-X FIX) (POINT-Y FIX)>");
+            TestHelpers.EvalAndAssert(ctx, "<POINT-X [123 456]>", new ZilFix(123));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [123 456] POINT>");
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_Suppress_Constructor()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR 'CONSTRUCTOR) (POINT-X FIX) (POINT-Y FIX)>");
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? MAKE-POINT>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<POINT-X <CHTYPE [123 456] POINT>>", new ZilFix(123));
         }
 
         [TestMethod]

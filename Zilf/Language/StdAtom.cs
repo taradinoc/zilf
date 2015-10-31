@@ -37,6 +37,7 @@ namespace Zilf.Language
         Eq,
 
         ACTIONS,
+        ACTIVATION,
         ADD,
         ADECL,
         ADJ,
@@ -173,6 +174,7 @@ namespace Zilf.Language
         INPUT,
         [Atom("INTBL?")]
         INTBL_P,
+        INTERRUPTS,
         IRESTORE,
         IS,
         ISAVE,

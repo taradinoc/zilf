@@ -25,20 +25,33 @@ namespace Zilf.Interpreter
     /// </summary>
     class ReturnException : ControlException
     {
+        private readonly ZilActivation activation;
         private readonly ZilObject value;
 
-        public ReturnException(ZilObject value)
+        public ReturnException(ZilActivation activation, ZilObject value)
             : base("RETURN")
         {
+            Contract.Requires(activation != null);
             Contract.Requires(value != null);
 
+            this.activation = activation;
             this.value = value;
         }
 
         [ContractInvariantMethod]
         private void ObjectInvariant()
         {
+            Contract.Invariant(activation != null);
             Contract.Invariant(value != null);
+        }
+
+        public ZilActivation Activation
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<ZilActivation>() != null);
+                return activation;
+            }
         }
 
         public ZilObject Value

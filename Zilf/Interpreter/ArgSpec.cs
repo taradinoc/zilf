@@ -25,6 +25,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
+    // TODO: tests for ArgSpec
     class ArgSpec : IEnumerable<ArgItem>
     {
         private readonly ZilAtom name;
@@ -36,19 +37,21 @@ namespace Zilf.Interpreter
         private readonly ZilAtom varargsAtom;
         private readonly bool varargsQuoted;
         private readonly ZilAtom quoteAtom;
+        private readonly ZilAtom activationAtom;
 
         public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
-            : this(prev.name, argspec)
+            : this(prev.name, null, argspec)
         {
             Contract.Requires(prev != null);
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
         }
 
-        public ArgSpec(ZilAtom name, IEnumerable<ZilObject> argspec)
+        public ArgSpec(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec)
         {
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
 
             this.name = name;
+            this.activationAtom = activationAtom;
 
             optArgsStart = -1;
             auxArgsStart = -1;
@@ -58,8 +61,13 @@ namespace Zilf.Interpreter
             List<bool> argQuoted = new List<bool>();
             List<ZilObject> argDefaults = new List<ZilObject>();
 
+            const int OO_None = 0;
+            const int OO_Varargs = 1;
+            const int OO_Activation = 2;
+
             int cur = 0;
-            bool gotVarargs = false;
+            int oneOffMode = OO_None;
+
             foreach (ZilObject arg in argspec)
             {
                 // check for arg clause separators: "OPT", "AUX", etc.
@@ -86,22 +94,38 @@ namespace Zilf.Interpreter
                         case "TUPLE":
                             if (varargsAtom != null)
                                 throw new InterpreterError("multiple \"ARGS\" or \"TUPLE\" clauses");
-                            gotVarargs = true;
+                            oneOffMode = OO_Varargs;
                             varargsQuoted = (sep == "ARGS");
+                            continue;
+                        case "NAME":
+                        case "ACT":
+                            if (activationAtom != null)
+                                throw new InterpreterError("multiple \"NAME\" clauses or activation atoms");
+                            oneOffMode = OO_Activation;
                             continue;
                         default:
                             throw new InterpreterError("unexpected clause in arg spec: " + arg.ToString());
                     }
                 }
 
-                if (gotVarargs)
+                // handle one-offs
+                switch (oneOffMode)
                 {
-                    varargsAtom = arg as ZilAtom;
-                    if (varargsAtom == null)
-                        throw new InterpreterError("\"ARGS\" or \"TUPLE\" must be followed by an atom");
+                    case OO_Varargs:
+                        varargsAtom = arg as ZilAtom;
+                        if (varargsAtom == null)
+                            throw new InterpreterError("\"ARGS\" or \"TUPLE\" must be followed by an atom");
 
-                    gotVarargs = false;
-                    continue;
+                        oneOffMode = OO_None;
+                        continue;
+
+                    case OO_Activation:
+                        this.activationAtom = arg as ZilAtom;
+                        if (this.activationAtom == null)
+                            throw new InterpreterError("\"NAME\" or \"ACT\" must be followed by an atom");
+
+                        oneOffMode = OO_None;
+                        continue;
                 }
 
                 // it's a real arg
@@ -301,7 +325,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        public void BeginApply(Context ctx, ZilObject[] args, bool eval)
+        public ZilActivation BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
@@ -342,11 +366,32 @@ namespace Zilf.Interpreter
                     extras = ZilObject.EvalSequence(ctx, extras);
                 ctx.PushLocalVal(varargsAtom, new ZilList(extras));
             }
+
+            ZilActivation activation;
+            if (activationAtom != null)
+            {
+                activation = new ZilActivation(activationAtom);
+                ctx.PushLocalVal(activationAtom, activation);
+            }
+            else
+            {
+                activation = null;
+            }
+
+            // set this to null so RETURN and AGAIN won't use the activation of a PROG outside the newly entered function unless explicitly told to
+            ctx.PushEnclosingProgActivation(null);
+
+            return activation;
         }
 
         public void EndApply(Context ctx)
         {
             Contract.Requires(ctx != null);
+
+            ctx.PopEnclosingProgActivation();
+
+            if (activationAtom != null)
+                ctx.PopLocalVal(activationAtom);
 
             foreach (ZilAtom atom in argAtoms)
                 ctx.PopLocalVal(atom);
@@ -364,6 +409,7 @@ namespace Zilf.Interpreter
             for (int i = 0; i < argAtoms.Length; i++)
             {
                 // TODO: include "ARGS" or "TUPLE"
+                // TODO: include "NAME"
                 // TODO: return ADECLs for args with decls
                 if (i == auxArgsStart)
                     yield return new ZilString("AUX");
@@ -386,6 +432,11 @@ namespace Zilf.Interpreter
 
                 yield return arg;
             }
+        }
+
+        public ZilAtom ActivationAtom
+        {
+            get { return activationAtom; }
         }
     }
 }

@@ -49,6 +49,7 @@ namespace Zilf.Interpreter
             return PerformDefine(ctx, args, "DEFINE20");
         }
 
+        // TODO: merge parsing code for DEFINE, DEFMAC, ROUTINE, and FUNCTION
         private static ZilObject PerformDefine(Context ctx, ZilObject[] args, string name)
         {
             SubrContracts(ctx, args);
@@ -63,12 +64,37 @@ namespace Zilf.Interpreter
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(atom) != null)
                 throw new InterpreterError(name + ": already defined: " + atom.ToStringContext(ctx, false));
 
-            if (args[1].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(name + ": second arg must be a list");
+            ZilAtom activationAtom;
+            ZilList argList;
+            IEnumerable<ZilObject> body;
 
-            ZilFunction func = new ZilFunction(atom,
-                (IEnumerable<ZilObject>)args[1],
-                args.Skip(2));
+            if (args[1] is ZilAtom)
+            {
+                activationAtom = (ZilAtom)args[1];
+                argList = args[2] as ZilList;
+                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError(name + ": third arg must be a list");
+                body = args.Skip(3);
+
+                if (args.Length < 4)
+                    throw new InterpreterError(name + ": missing body");
+            }
+            else if (args[1].GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            {
+                activationAtom = null;
+                argList = (ZilList)args[1];
+                body = args.Skip(2);
+            }
+            else
+            {
+                throw new InterpreterError(name + ": second arg must be an atom or list");
+            }
+
+            ZilFunction func = new ZilFunction(
+                atom,
+                activationAtom,
+                argList,
+                body);
             ctx.SetGlobalVal(atom, func);
             return atom;
         }
@@ -87,12 +113,37 @@ namespace Zilf.Interpreter
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(atom) != null)
                 throw new InterpreterError("DEFMAC: already defined: " + atom.ToStringContext(ctx, false));
 
-            if (args[1].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("DEFMAC: second arg must be a list");
+            ZilAtom activationAtom;
+            ZilList argList;
+            IEnumerable<ZilObject> body;
 
-            ZilFunction func = new ZilFunction(atom,
-                (IEnumerable<ZilObject>)args[1],
-                args.Skip(2));
+            if (args[1] is ZilAtom)
+            {
+                activationAtom = (ZilAtom)args[1];
+                argList = args[2] as ZilList;
+                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("DEFMAC: third arg must be a list");
+                body = args.Skip(3);
+
+                if (args.Length < 4)
+                    throw new InterpreterError("DEFMAC: missing body");
+            }
+            else if (args[1].GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            {
+                activationAtom = null;
+                argList = (ZilList)args[1];
+                body = args.Skip(2);
+            }
+            else
+            {
+                throw new InterpreterError("DEFMAC: second arg must be an atom or list");
+            }
+
+            ZilFunction func = new ZilFunction(
+                atom,
+                activationAtom,
+                argList,
+                body);
             ZilEvalMacro macro = new ZilEvalMacro(func);
             macro.SourceLine = ctx.CallingForm.SourceLine;
             ctx.SetGlobalVal(atom, macro);
