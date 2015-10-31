@@ -32,14 +32,8 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.Interpreter
 {
-
-
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
-
-
-
-
 
     class Context
     {
@@ -81,6 +75,7 @@ namespace Zilf.Interpreter
         public ZilObject FALSE { get; private set; }
 
         private ZilAtom[] stdAtoms;
+        private readonly ZilAtom enclosingProgActivationAtom;
 
         public Context()
             : this(false)
@@ -116,6 +111,9 @@ namespace Zilf.Interpreter
 
             TRUE = GetStdAtom(StdAtom.T);
             FALSE = new ZilFalse(new ZilList(null, null));
+
+            var interruptsObList = MakeObList(GetStdAtom(StdAtom.INTERRUPTS));
+            enclosingProgActivationAtom = interruptsObList["LPROG "];
 
             InitConstants();
 
@@ -1248,6 +1246,21 @@ namespace Zilf.Interpreter
 
             SetLocalVal(atom, popped);
             return old;
+        }
+
+        public ZilActivation GetEnclosingProgActivation()
+        {
+            return GetLocalVal(enclosingProgActivationAtom) as ZilActivation;
+        }
+
+        public void PushEnclosingProgActivation(ZilActivation activation)
+        {
+            PushLocalVal(enclosingProgActivationAtom, activation);
+        }
+
+        public void PopEnclosingProgActivation()
+        {
+            PopLocalVal(enclosingProgActivationAtom);
         }
     }
 }

@@ -16,6 +16,9 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.Contracts;
+using Zilf.Interpreter.Values;
+
 namespace Zilf.Interpreter
 {
     /// <summary>
@@ -23,9 +26,19 @@ namespace Zilf.Interpreter
     /// </summary>
     class AgainException : ControlException
     {
-        public AgainException()
+        private readonly ZilActivation activation;
+
+        public AgainException(ZilActivation activation)
             : base("AGAIN")
         {
+            Contract.Requires(activation != null);
+
+            this.activation = activation;
+        }
+
+        public ZilActivation Activation
+        {
+            get { return activation; }
         }
     }
 }

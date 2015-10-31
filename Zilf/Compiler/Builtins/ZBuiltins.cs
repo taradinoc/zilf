@@ -266,7 +266,7 @@ namespace Zilf.Compiler.Builtins
                     if (arg.IsLVAL())
                     {
                         var atom = (ZilAtom)((ZilForm)arg).Rest.First;
-                        var block = cc.Blocks.First(b => b.Name == atom);
+                        var block = cc.Blocks.FirstOrDefault(b => b.Name == atom);
                         if (block == null)
                         {
                             error(i, "argument must be bound to a block");

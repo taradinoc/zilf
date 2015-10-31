@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
 using Zilf.Language;
 
 namespace ZilfTests.Interpreter
@@ -33,6 +35,47 @@ namespace ZilfTests.Interpreter
         public void VERSION_P_Should_Reject_Empty_Clauses()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<VERSION? ()>");
+        }
+
+        [TestMethod]
+        public void RETURN_And_AGAIN_Require_An_Activation()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO1 () <RETURN 123>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<FOO1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO2 (\"AUX\" (BLAH <>)) <COND (.BLAH <>) (T <SET BLAH T> <AGAIN>)>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<FOO2>");
+
+            // these are OK with a PROG added
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO3 () <PROG () <RETURN 123>>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO3>", new ZilFix(123));
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO4 (\"AUX\" (BLAH <>)) <PROG () <COND (.BLAH <>) (T <SET BLAH T> <AGAIN>)>>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO4>", ctx.FALSE);
+
+            // but not if the PROG is outside the function
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PROG () <FOO1>>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PROG () <FOO2>>");
+        }
+
+        [TestMethod]
+        public void PROG_Can_Bind_An_Activation()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO () <* 10 <PROG P-ACT () <* 2 <BAR .P-ACT>>>>>");
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (A) <RETURN 123 .A>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(1230));
+        }
+
+        [TestMethod]
+        public void PROG_Requires_A_Body()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<PROG ()>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<PROG A ()>");
         }
     }
 }

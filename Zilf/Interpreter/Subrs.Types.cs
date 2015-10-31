@@ -214,12 +214,27 @@ namespace Zilf.Interpreter
 
             if (args.Length < 2)
                 throw new InterpreterError("FUNCTION", 2, 0);
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("FUNCTION: first arg must be a list");
 
-            return new ZilFunction(null,
-                (IEnumerable<ZilObject>)args[0],
-                args.Skip(1));
+            ZilAtom activationAtom = args[0] as ZilAtom;
+            ZilList argList;
+            IEnumerable<ZilObject> body;
+
+            if (activationAtom == null)
+            {
+                argList = args[0] as ZilList;
+                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("FUNCTION: first arg must be a list");
+                body = args.Skip(1);
+            }
+            else
+            {
+                argList = args[1] as ZilList;
+                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("FUNCTION: second arg must be a list");
+                body = args.Skip(2);
+            }
+
+            return new ZilFunction(null, activationAtom, argList, body);
         }
 
         [Subr]

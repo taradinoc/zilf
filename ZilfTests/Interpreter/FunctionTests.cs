@@ -65,6 +65,75 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFINE_With_Activation()
+        {
+            var ctx = new Context();
+
+            // DEFINE with activation-atom syntax
+            TestHelpers.Evaluate(ctx, @"
+<DEFINE FOO FOO-ACT ()
+    <PROG () <RETURN 123 .FOO-ACT>>
+    456>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // DEFINE with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFINE FOO (""NAME"" FOO-ACT)
+    <PROG () <RETURN 123 .FOO-ACT>>
+    456>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // FUNCTION with activation-atom syntax
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    <FUNCTION FOO-ACT ()
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // FUNCTION with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    <FUNCTION (""NAME"" FOO-ACT)
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // #FUNCTION with activation-atom syntax
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    #FUNCTION (FOO-ACT ()
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // #FUNCTION with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    #FUNCTION ((""NAME"" FOO-ACT)
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+        }
+
+        [TestMethod]
+        public void DEFINE_Requires_A_Body()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE FOO ()>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE FOO A ()>");
+        }
+
+        [TestMethod]
         public void TestDEFMAC()
         {
             var ctx = new Context();
@@ -87,6 +156,75 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFMAC>");
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFMAC FOO>");
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFMAC FOO (BAR)>");
+        }
+
+        [TestMethod]
+        public void TestDEFMAC_With_Activation()
+        {
+            var ctx = new Context();
+
+            // DEFMAC with activation-atom syntax
+            TestHelpers.Evaluate(ctx, @"
+<DEFMAC FOO FOO-ACT ()
+    <PROG () <RETURN 123 .FOO-ACT>>
+    456>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // DEFMAC with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFMAC FOO (""NAME"" FOO-ACT)
+    <PROG () <RETURN 123 .FOO-ACT>>
+    456>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // FUNCTION with activation-atom syntax
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    <FUNCTION FOO-ACT ()
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // FUNCTION with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    <FUNCTION (""NAME"" FOO-ACT)
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // #FUNCTION with activation-atom syntax
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    #FUNCTION (FOO-ACT ()
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+
+            // #FUNCTION with "NAME" argument
+            ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG FOO
+    #FUNCTION ((""NAME"" FOO-ACT)
+        <PROG () <RETURN 123 .FOO-ACT>>
+        456)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", new ZilFix(123));
+        }
+
+        [TestMethod]
+        public void DEFMAC_Requires_A_Body()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<DEFMAC FOO ()>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<DEFMAC FOO A ()>");
         }
 
         [TestMethod]

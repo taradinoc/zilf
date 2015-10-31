@@ -322,18 +322,11 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(Contract.ForAll(prog, p => p != null));
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            try
-            {
-                for (int i = 0; i < prog.Length; i++)
-                    if (i == prog.Length - 1)
-                        return prog[i].Eval(ctx);
-                    else
-                        prog[i].Eval(ctx);
-            }
-            catch (ReturnException ex)
-            {
-                return ex.Value;
-            }
+            for (int i = 0; i < prog.Length; i++)
+                if (i == prog.Length - 1)
+                    return prog[i].Eval(ctx);
+                else
+                    prog[i].Eval(ctx);
 
             // shouldn't get here
             throw new ArgumentException("Missing program", "body");

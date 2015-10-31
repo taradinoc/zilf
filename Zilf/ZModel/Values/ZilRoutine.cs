@@ -28,7 +28,7 @@ namespace Zilf.ZModel.Values
 {
     class ZilRoutine : ZilObject
     {
-        private readonly ZilAtom name, activationAtom;
+        private readonly ZilAtom name;
         private readonly ArgSpec argspec;
         private readonly ZilObject[] body;
         private readonly RoutineFlags flags;
@@ -40,8 +40,7 @@ namespace Zilf.ZModel.Values
             Contract.Requires(body != null);
 
             this.name = name;
-            this.activationAtom = activationAtom;
-            this.argspec = new ArgSpec(name, argspec);
+            this.argspec = new ArgSpec(name, activationAtom, argspec);
             this.body = body.ToArray();
             this.flags = flags;
         }
@@ -68,7 +67,7 @@ namespace Zilf.ZModel.Values
 
         public ZilAtom ActivationAtom
         {
-            get { return activationAtom; }
+            get { return argspec.ActivationAtom; }
         }
 
         public RoutineFlags Flags
