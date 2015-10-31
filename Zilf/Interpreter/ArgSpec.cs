@@ -25,19 +25,30 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
-    // TODO: tests for ArgSpec
     class ArgSpec : IEnumerable<ArgItem>
     {
+        // name of the function to which this spec belongs
         private readonly ZilAtom name;
+        // reference to the "QUOTE" atom used for any quoted args
+        private readonly ZilAtom quoteAtom;
+
+        // regular args, "OPT", and "AUX"
         private readonly ZilAtom[] argAtoms;
         private readonly ZilObject[] argDecls;
         private readonly bool[] argQuoted;
         private readonly ZilObject[] argDefaults;
         private readonly int optArgsStart, auxArgsStart;
+
+        // "ARGS" or "TUPLE"
         private readonly ZilAtom varargsAtom;
+        private readonly ZilObject varargsDecl;
         private readonly bool varargsQuoted;
-        private readonly ZilAtom quoteAtom;
+
+        // "NAME"/"ACT"
         private readonly ZilAtom activationAtom;
+
+        // "VALUE"
+        private readonly ZilObject valueDecl;
 
         public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
             : this(prev.name, null, argspec)
@@ -64,6 +75,7 @@ namespace Zilf.Interpreter
             const int OO_None = 0;
             const int OO_Varargs = 1;
             const int OO_Activation = 2;
+            const int OO_Value = 3;
 
             int cur = 0;
             int oneOffMode = OO_None;
@@ -103,6 +115,11 @@ namespace Zilf.Interpreter
                                 throw new InterpreterError("multiple \"NAME\" clauses or activation atoms");
                             oneOffMode = OO_Activation;
                             continue;
+                        case "VALUE":
+                            if (valueDecl != null)
+                                throw new InterpreterError("multiple \"VALUE\" clauses");
+                            oneOffMode = OO_Value;
+                            continue;
                         default:
                             throw new InterpreterError("unexpected clause in arg spec: " + arg.ToString());
                     }
@@ -114,7 +131,18 @@ namespace Zilf.Interpreter
                     case OO_Varargs:
                         varargsAtom = arg as ZilAtom;
                         if (varargsAtom == null)
-                            throw new InterpreterError("\"ARGS\" or \"TUPLE\" must be followed by an atom");
+                        {
+                            var adecl = arg as ZilAdecl;
+                            if (adecl != null)
+                            {
+                                varargsDecl = adecl.Second;
+                                varargsAtom = (ZilAtom)adecl.First;
+                            }
+                            else
+                            {
+                                throw new InterpreterError("\"ARGS\" or \"TUPLE\" must be followed by an atom");
+                            }
+                        }
 
                         oneOffMode = OO_None;
                         continue;
@@ -124,6 +152,11 @@ namespace Zilf.Interpreter
                         if (this.activationAtom == null)
                             throw new InterpreterError("\"NAME\" or \"ACT\" must be followed by an atom");
 
+                        oneOffMode = OO_None;
+                        continue;
+
+                    case OO_Value:
+                        valueDecl = arg;
                         oneOffMode = OO_None;
                         continue;
                 }
@@ -151,6 +184,18 @@ namespace Zilf.Interpreter
                     argValue = null;
                 }
 
+                // could be an ADECL
+                if (argName is ZilAdecl)
+                {
+                    var adecl = (ZilAdecl)argName;
+                    argDecl = adecl.Second;
+                    argName = adecl.First;
+                }
+                else
+                {
+                    argDecl = null;
+                }
+
                 // could be quoted
                 if (argName is ZilForm)
                 {
@@ -164,18 +209,6 @@ namespace Zilf.Interpreter
                     }
                     else
                         throw new InterpreterError("unexpected FORM in arg spec: " + argName.ToString());
-                }
-
-                // could be an ADECL
-                if (argName is ZilAdecl)
-                {
-                    var adecl = (ZilAdecl)argName;
-                    argDecl = adecl.Second;
-                    argName = adecl.First;
-                }
-                else
-                {
-                    argDecl = null;
                 }
 
                 // it'd better be an atom by now
@@ -406,21 +439,43 @@ namespace Zilf.Interpreter
 
         public IEnumerable<ZilObject> AsZilListBody()
         {
+            bool emittedVarargs = false;
+
             for (int i = 0; i < argAtoms.Length; i++)
             {
-                // TODO: include "ARGS" or "TUPLE"
-                // TODO: include "NAME"
-                // TODO: return ADECLs for args with decls
                 if (i == auxArgsStart)
+                {
+                    if (varargsAtom != null)
+                    {
+                        yield return new ZilString(varargsQuoted ? "ARGS" : "TUPLE");
+                        if (varargsDecl == null)
+                        {
+                            yield return varargsAtom;
+                        }
+                        else
+                        {
+                            yield return new ZilAdecl(varargsAtom, varargsDecl);
+                        }
+                        emittedVarargs = true;
+                    }
+
                     yield return new ZilString("AUX");
+                }
                 else if (i == optArgsStart)
+                {
                     yield return new ZilString("OPT");
+                }
 
                 ZilObject arg = argAtoms[i];
 
                 if (argQuoted[i])
                 {
                     arg = new ZilForm(new ZilObject[] { quoteAtom, arg });
+                }
+
+                if (argDecls[i] != null)
+                {
+                    arg = new ZilAdecl(arg, argDecls[i]);
                 }
 
                 if (argDefaults[i] != null)
@@ -431,6 +486,31 @@ namespace Zilf.Interpreter
                 }
 
                 yield return arg;
+            }
+
+            if (varargsAtom != null && !emittedVarargs)
+            {
+                yield return new ZilString(varargsQuoted ? "ARGS" : "TUPLE");
+                if (varargsDecl == null)
+                {
+                    yield return varargsAtom;
+                }
+                else
+                {
+                    yield return new ZilAdecl(varargsAtom, varargsDecl);
+                }
+            }
+
+            if (activationAtom != null)
+            {
+                yield return new ZilString("NAME");
+                yield return activationAtom;
+            }
+
+            if (valueDecl != null)
+            {
+                yield return new ZilString("VALUE");
+                yield return valueDecl;
             }
         }
 
