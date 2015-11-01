@@ -435,11 +435,9 @@ namespace Zilf.Interpreter
         [Subr("ENDLOAD")]
         [Subr("PUT-PURE-HERE")]
         [Subr("DEFAULTS-DEFINED")]
-        [Subr("ZSECTION")]
-        [Subr("ZZSECTION")]
-        [Subr("ENDSECTION")]
-        [Subr("INCLUDE")]
         [Subr("CHECKPOINT")]
+        [Subr("BEGIN-SEGMENT")]
+        [Subr("END-SEGMENT")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);

@@ -173,7 +173,7 @@ namespace ZilfTests.Interpreter
 <SETG ANSWER 42>
 <END-DEFINITIONS>");
 
-            TestHelpers.EvalAndAssert(ctx, @"<USE ""FOO""> ,ANSWER", new ZilFix(42));
+            TestHelpers.EvalAndAssert(ctx, @"<INCLUDE ""FOO""> ,ANSWER", new ZilFix(42));
         }
 
         [TestMethod]
@@ -183,6 +183,28 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, @"<DEFINITIONS ""FOO"">");
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<ENTRY ANSWER>");
+        }
+
+        [TestMethod]
+        public void USE_Rejects_DEFINITIONS_Packages()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+<DEFINITIONS ""FOO"">
+<END-DEFINITIONS>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<USE ""FOO"">");
+        }
+
+        [TestMethod]
+        public void INCLUDE_Rejects_PACKAGE_Packages()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+<PACKAGE ""FOO"">
+<ENDPACKAGE>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<INCLUDE ""FOO"">");
         }
     }
 }
