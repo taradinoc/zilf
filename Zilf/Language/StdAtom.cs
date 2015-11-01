@@ -75,8 +75,8 @@ namespace Zilf.Language
         COMPACT_SYNTAXES_P,
         [Atom("COMPACT-VOCABULARY?")]
         COMPACT_VOCABULARY_P,
-        [Atom("COMPILATION-FLAG-VALUE")]
-        COMPILATION_FLAG_VALUE,
+        [Atom("COMPILATION-FLAGS")]
+        COMPILATION_FLAGS,
         COND,
         CONSTANT,
         CONSTRUCTOR,
