@@ -126,6 +126,40 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject MOBLIST(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("MOBLIST", 1, 1);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError("MOBLIST: arg must be an atom");
+
+            ObList result = ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+            if (result == null)
+                result = ctx.MakeObList(name);
+
+            return result;
+        }
+
+        [Subr("OBLIST?")]
+        public static ZilObject OBLIST_P(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("OBLIST?", 1, 1);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+                throw new InterpreterError("OBLIST?: arg must be an atom");
+
+            return atom.ObList ?? ctx.FALSE;
+        }
+
+        [Subr]
         public static ZilObject BLOCK(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
