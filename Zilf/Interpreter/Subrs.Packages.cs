@@ -61,6 +61,8 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        [Subr("ZSECTION")]
+        [Subr("ZZSECTION")]
         public static ZilObject DEFINITIONS(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
@@ -91,6 +93,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         [Subr("END-DEFINITIONS")]
+        [Subr("ENDSECTION")]
         public static ZilObject ENDPACKAGE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
@@ -136,12 +139,27 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
+            return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
+        }
+
+        [Subr]
+        public static ZilObject INCLUDE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
+        }
+
+        private static ZilObject PerformUse(Context ctx, ZilObject[] args, string name, StdAtom requiredPackageType)
+        {
+            SubrContracts(ctx, args);
+
             if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.STRING))
-                throw new InterpreterError("USE: all args must be strings");
+                throw new InterpreterError(name + ": all args must be strings");
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("USE: bad LVAL of OBLIST");
+                throw new InterpreterError(name + ": bad LVAL of OBLIST");
 
             if (args.Length == 0)
                 return ctx.TRUE;
@@ -153,7 +171,7 @@ namespace Zilf.Interpreter
                 if (!ctx.PackageObList.Contains(packageName.Text))
                 {
                     // try loading from file
-                    PerformLoadFile(ctx, packageName.Text, "USE");  // throws on failure
+                    PerformLoadFile(ctx, packageName.Text, name);  // throws on failure
                 }
 
                 ObList externalObList = null;
@@ -164,7 +182,11 @@ namespace Zilf.Interpreter
                 }
 
                 if (externalObList == null)
-                    throw new InterpreterError("USE: no such package: " + packageName.Text);
+                    throw new InterpreterError(name + ": no such package: " + packageName.Text);
+
+                var pkgTypeAtom = ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) as ZilAtom;
+                if (pkgTypeAtom == null || pkgTypeAtom.StdAtom != requiredPackageType)
+                    throw new InterpreterError(name + ": wrong package type, expected " + ctx.GetStdAtom(requiredPackageType).ToString());
 
                 if (!obpathList.Contains(externalObList))
                     obpathList.Add(externalObList);

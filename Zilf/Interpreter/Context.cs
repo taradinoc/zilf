@@ -348,8 +348,11 @@ namespace Zilf.Interpreter
 
         private void InitPackages()
         {
+            var packageAtom = GetStdAtom(StdAtom.PACKAGE);
+
             // NEWSTRUC is predefined as an empty package
-            MakeObList(packageObList["NEWSTRUC"]);
+            var oblist = MakeObList(packageObList["NEWSTRUC"]);
+            PutProp(oblist, packageAtom, packageAtom);
         }
 
         private void InitSubrs()
