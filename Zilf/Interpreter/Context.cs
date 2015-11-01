@@ -350,9 +350,15 @@ namespace Zilf.Interpreter
         {
             var packageAtom = GetStdAtom(StdAtom.PACKAGE);
 
-            // NEWSTRUC is predefined as an empty package
-            var oblist = MakeObList(packageObList["NEWSTRUC"]);
-            PutProp(oblist, packageAtom, packageAtom);
+            var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH" };
+            ZilObject[] args0 = new ZilObject[0], args1 = new ZilObject[1];
+
+            foreach (var name in emptyPackageNames)
+            {
+                args1[0] = new ZilString(name);
+                Subrs.PACKAGE(this, args1);
+                Subrs.ENDPACKAGE(this, args0);
+            }
         }
 
         private void InitSubrs()
