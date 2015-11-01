@@ -55,7 +55,7 @@ namespace Zilf.Interpreter
         private ZilForm callingForm;
         private Func<string, FileAccess, Stream> streamOpener;
 
-        private readonly ObList rootObList, packageObList;
+        private readonly ObList rootObList, packageObList, compilationFlagsOblist;
         private readonly Stack<ZilObject> previousObPaths;
         private Dictionary<ZilAtom, Binding> localValues;
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
@@ -96,6 +96,7 @@ namespace Zilf.Interpreter
 
             // now we can use MakeObList
             packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
+            compilationFlagsOblist = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
             previousObPaths = new Stack<ZilObject>();
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
@@ -1067,8 +1068,8 @@ namespace Zilf.Interpreter
 
                 // define IF and IFN macros
                 const string MacrosTemplate = @"
-<DEFMAC IF-{0} (""ARGS"" A) <IFFLAG ({0} <FORM BIND '() !.A>)>>
-<DEFMAC IFN-{0} (""ARGS"" A) <IFFLAG ({0} <>) (T <FORM BIND '() !.A>)>>";
+<DEFMAC IF-{0}!- (""ARGS"" A) <IFFLAG ({0} <FORM BIND '() !.A>)>>
+<DEFMAC IFN-{0}!- (""ARGS"" A) <IFFLAG ({0} <>) (T <FORM BIND '() !.A>)>>";
 
                 Program.Evaluate(this, string.Format(MacrosTemplate, name.Text), true);
                 // TODO: correct the source locations in the macros
@@ -1082,12 +1083,14 @@ namespace Zilf.Interpreter
         [Pure]
         public ZilObject GetCompilationFlagValue(ZilAtom name)
         {
-            return GetProp(name, GetStdAtom(StdAtom.COMPILATION_FLAG_VALUE));
+            name = compilationFlagsOblist[name.Text];
+            return GetGlobalVal(name);
         }
 
         private void SetCompilationFlagValue(ZilAtom name, ZilObject value)
         {
-            PutProp(name, GetStdAtom(StdAtom.COMPILATION_FLAG_VALUE), value);
+            name = compilationFlagsOblist[name.Text];
+            SetGlobalVal(name, value);
         }
 
         /// <summary>

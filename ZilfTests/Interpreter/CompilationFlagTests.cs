@@ -108,5 +108,23 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<IFFLAG (UNDO T) (ELSE <>)>", ctx.TRUE);
         }
+
+        [TestMethod]
+        public void Compilation_Flags_Work_Across_Packages()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+<COMPILATION-FLAG OUTER-FLAG <>>
+<PACKAGE ""FOO"">
+<COMPILATION-FLAG FOO-FLAG <>>
+<ENDPACKAGE>");
+
+            TestHelpers.EvalAndAssert(ctx, "<COMPILATION-FLAG-VALUE FOO-FLAG>", ctx.FALSE);
+
+            TestHelpers.Evaluate(ctx, @"<PACKAGE ""BAR"">");
+            TestHelpers.EvalAndAssert(ctx, "<COMPILATION-FLAG-VALUE OUTER-FLAG>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<COMPILATION-FLAG-VALUE FOO-FLAG>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<IFFLAG (OUTER-FLAG 123) (FOO-FLAG 456) (T 789)>", new ZilFix(789));
+        }
     }
 }
