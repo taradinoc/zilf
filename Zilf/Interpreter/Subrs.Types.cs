@@ -67,6 +67,59 @@ namespace Zilf.Interpreter
             return ctx.ChangeType(args[0], atom);
         }
 
+        [Subr]
+        public static ZilObject NEWTYPE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2 || args.Length > 3)
+                throw new InterpreterError("NEWTYPE", 2, 3);
+
+            var name = args[0] as ZilAtom;
+            if (name == null)
+                throw new InterpreterError("NEWTYPE: first arg must be an atom");
+
+            if (ctx.IsRegisteredType(name))
+                throw new InterpreterError("NEWTYPE: already registered: " + name.ToStringContext(ctx, false));
+
+            var primtypeAtom = args[1] as ZilAtom;
+            if (primtypeAtom == null)
+                throw new InterpreterError("NEWTYPE: second arg must be an atom");
+
+            PrimType primtype;
+            switch (primtypeAtom.StdAtom)
+            {
+                case StdAtom.ATOM:
+                    primtype = PrimType.ATOM;
+                    break;
+                case StdAtom.FIX:
+                    primtype = PrimType.FIX;
+                    break;
+                case StdAtom.STRING:
+                    primtype = PrimType.STRING;
+                    break;
+                case StdAtom.LIST:
+                    primtype = PrimType.LIST;
+                    break;
+                case StdAtom.TABLE:
+                    primtype = PrimType.TABLE;
+                    break;
+                case StdAtom.VECTOR:
+                    primtype = PrimType.VECTOR;
+                    break;
+
+                default:
+                    if (ctx.IsRegisteredType(primtypeAtom))
+                        primtype = ctx.GetTypePrim(primtypeAtom);
+                    else
+                        throw new InterpreterError("NEWTYPE: unrecognized primtype: " + primtypeAtom.ToStringContext(ctx, false));
+                    break;
+            }
+
+            ctx.RegisterType(name, primtype);
+            return name;
+        }
+
         [Subr("MAKE-GVAL")]
         public static ZilObject MAKE_GVAL(Context ctx, ZilObject[] args)
         {
