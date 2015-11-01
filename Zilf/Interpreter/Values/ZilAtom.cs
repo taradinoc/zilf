@@ -17,6 +17,7 @@
  */
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Text;
 using Zilf.Language;
 
@@ -166,6 +167,19 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
+        private bool NeedsObListTrailer(IEnumerable<ZilObject> obListPath)
+        {
+            // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
+            // thus, the trailer is only needed if (1) looking up that name returns a different atom first
+            // or (2) no atom by that name can be found in the path.
+
+            foreach (var oblist in obListPath.OfType<ObList>())
+                if (oblist.Contains(this.text))
+                    return oblist[this.text] != this;
+
+            return true;
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder(text.Length);
@@ -181,7 +195,37 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        //XXX ToStringContext
+        public override string ToStringContext(Context ctx, bool friendly)
+        {
+            if (friendly)
+                return ToString();
+
+            var sb = new StringBuilder(ToString());
+            var oblistAtom = ctx.GetStdAtom(StdAtom.OBLIST);
+            var oblistPath = ctx.GetLocalVal(oblistAtom) as IEnumerable<ZilObject>;
+
+            var name = this;
+            var oblist = this.ObList;
+            while (oblist != null && (oblistPath == null || name.NeedsObListTrailer(oblistPath)))
+            {
+                if (oblist == ctx.RootObList)
+                {
+                    sb.Append("!-");
+                    break;
+                }
+
+                name = ctx.GetProp(oblist, oblistAtom) as ZilAtom;
+                if (name == null)
+                    break;
+
+                sb.Append("!-");
+                sb.Append(name.ToString());
+
+                oblist = name.ObList;
+            }
+
+            return sb.ToString();
+        }
 
         public override ZilAtom GetTypeAtom(Context ctx)
         {
