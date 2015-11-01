@@ -942,7 +942,6 @@ namespace Zilf.Interpreter
                     break;
             }
 
-
             var entry = new TypeMapEntry()
             {
                 PrimType = primType,

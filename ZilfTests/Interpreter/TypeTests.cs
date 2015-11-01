@@ -909,5 +909,22 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () #SPLICE (4 5)>");
             TestHelpers.EvalAndAssert(ctx, "<+ <FOO>>", new ZilFix(9));
         }
+
+        [TestMethod]
+        public void TestNEWTYPE()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE FIRSTNAME ATOM>", ZilAtom.Parse("FIRSTNAME", ctx));
+            TestHelpers.EvalAndAssert(ctx, "#FIRSTNAME ALFONSO", new ZilHash(ZilAtom.Parse("FIRSTNAME", ctx), PrimType.ATOM, ZilAtom.Parse("ALFONSO", ctx)));
+            TestHelpers.EvalAndAssert(ctx, "<=? ALFONSO #FIRSTNAME ALFONSO>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE LASTNAME FIRSTNAME>", ZilAtom.Parse("LASTNAME", ctx));
+            TestHelpers.EvalAndAssert(ctx, "#LASTNAME MCBOOMBOOM", new ZilHash(ZilAtom.Parse("LASTNAME", ctx), PrimType.ATOM, ZilAtom.Parse("MCBOOMBOOM", ctx)));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "#LASTNAME 5");
+            TestHelpers.EvalAndAssert(ctx, "<=? #FIRSTNAME MADISON #LASTNAME MADISON>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<=? #LASTNAME SMITH #LASTNAME SMITH>", ctx.TRUE);
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<NEWTYPE MIDDLENAME NOT-A-TYPE>");
+        }
     }
 }
