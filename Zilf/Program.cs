@@ -104,7 +104,10 @@ namespace Zilf
 
                         if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
                         {
-                            Console.WriteLine(Evaluate(ctx, sb.ToString()));
+                            var result = Evaluate(ctx, sb.ToString());
+                            if (result != null)
+                                Console.WriteLine(result.ToStringContext(ctx, false));
+
                             sb.Length = 0;
                         }
                     }

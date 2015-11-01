@@ -231,5 +231,26 @@ namespace ZilfTests.Interpreter
                 offset++;
             }
         }
+
+        [TestMethod]
+        public void Test_ObList_Trailers()
+        {
+            var ctx = new Context();
+            ZilObject zo;
+
+            zo = TestHelpers.Evaluate(ctx, "FOO");
+            Assert.AreEqual("FOO", zo.ToStringContext(ctx, false));
+
+            zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-");
+            Assert.AreEqual("FOO!-BAR", zo.ToStringContext(ctx, false));
+
+            // FOO!-BAR!-INITIAL shadows FOO!-BAR!-
+            zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-INITIAL");
+            Assert.AreEqual("FOO!-BAR", zo.ToStringContext(ctx, false));
+
+            // now FOO!-BAR!- has a trailer
+            zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-");
+            Assert.AreEqual("FOO!-BAR!-", zo.ToStringContext(ctx, false));
+        }
     }
 }

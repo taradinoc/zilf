@@ -125,8 +125,14 @@ namespace Zilf.Interpreter
             if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
                 throw new InterpreterError("ENTRY: must be called from within a PACKAGE");
 
-            if (args.Cast<ZilAtom>().Any(a => a.ObList != internalObList))
-                throw new InterpreterError("ENTRY: all atoms must be on internal oblist");
+            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList);
+            if (onWrongOblist.Any())
+            {
+                throw new InterpreterError(string.Format(
+                    "ENTRY: all atoms must be on internal oblist {0}, failed for {1}",
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
+                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
+            }
 
             foreach (ZilAtom atom in args)
                 atom.ObList = externalObList;
