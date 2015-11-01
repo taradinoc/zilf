@@ -147,6 +147,7 @@ namespace ZilfTests.Interpreter
             ctx.InterceptOpenFile = (path, writing) => null;
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""NEWSTRUC"">", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ZILCH!-PACKAGE>", ctx.TRUE);
         }
 
         [TestMethod]

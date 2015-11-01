@@ -50,9 +50,9 @@ namespace Zilf.Interpreter
             var internalObList = ctx.MakeObList(internalAtom);
 
             // new oblist path
-            var curObPath = (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList) ?? new ZilList(null, null);
-            var newObPath = new ZilList(internalObList, new ZilList(externalObList, curObPath));
+            var newObPath = new ZilList(new ZilObject[] { internalObList, externalObList, ctx.RootObList });
             ctx.PushObPath(newObPath);
+            ctx.SetGlobalVal(externalAtom, newObPath);
 
             // package type
             ctx.PutProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE), ctx.GetStdAtom(StdAtom.PACKAGE));
@@ -81,9 +81,9 @@ namespace Zilf.Interpreter
             var externalObList = ctx.MakeObList(externalAtom);
 
             // new oblist path
-            var curObPath = (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList) ?? new ZilList(null, null);
-            var newObPath = new ZilList(externalObList, curObPath);
+            var newObPath = new ZilList(new ZilObject[] { externalObList, ctx.RootObList });
             ctx.PushObPath(newObPath);
+            ctx.SetGlobalVal(externalAtom, newObPath);
 
             // package type
             ctx.PutProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE), ctx.GetStdAtom(StdAtom.DEFINITIONS));
