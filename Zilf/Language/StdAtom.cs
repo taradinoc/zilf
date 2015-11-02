@@ -78,6 +78,7 @@ namespace Zilf.Language
         [Atom("COMPILATION-FLAGS")]
         COMPILATION_FLAGS,
         COND,
+        CONSOLE,
         CONSTANT,
         CONSTRUCTOR,
         COPYT,
@@ -170,6 +171,7 @@ namespace Zilf.Language
         [Atom("IN-ZILCH")]
         IN_ZILCH,
         INC,
+        INCHAN,
         INITIAL,
         INPUT,
         [Atom("INTBL?")]
@@ -235,6 +237,7 @@ namespace Zilf.Language
         OPEN,
         OR,
         ORB,
+        OUTCHAN,
         PACKAGE,
         PATTERN,
         PER,

@@ -17,35 +17,18 @@
  */
 using System;
 using System.IO;
+using System.Text;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.CHANNEL, PrimType.VECTOR)]
-    class ZilChannel : ZilObject
+    abstract class ZilChannel : ZilObject
     {
-        private readonly FileAccess fileAccess;
-        private readonly string path;
-        private Stream stream;
-
-        public ZilChannel(string path, FileAccess fileAccess)
-        {
-            this.path = path;
-            this.fileAccess = fileAccess;
-        }
-
         [ChtypeMethod]
         public static ZilChannel FromVector(Context ctx, ZilVector vector)
         {
             throw new InterpreterError("CHTYPE to CHANNEL not supported");
-        }
-
-        public override string ToString()
-        {
-            return string.Format(
-                "#CHANNEL [{0} {1}]",
-                fileAccess == FileAccess.Read ? "READ" : "NONE",
-                ZilString.Quote(path));
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -58,21 +41,51 @@ namespace Zilf.Interpreter.Values
             get { return PrimType.VECTOR; }
         }
 
+        public abstract void Reset(Context ctx);
+        public abstract void Close(Context ctx);
+        public abstract long? GetFileLength();
+        public abstract char? ReadChar();
+        public abstract bool WriteChar(char c);
+        public abstract int WriteNewline();
+        public abstract int WriteString(string s);
+    }
+
+    sealed class ZilFileChannel : ZilChannel
+    {
+        private readonly FileAccess fileAccess;
+        private readonly string path;
+        private Stream stream;
+
+        public ZilFileChannel(string path, FileAccess fileAccess)
+        {
+            this.path = path;
+            this.fileAccess = fileAccess;
+        }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "#CHANNEL [{0} {1}]",
+                fileAccess == FileAccess.Read ? "READ" : "NONE",
+                ZilString.Quote(path));
+        }
+
         public override ZilObject GetPrimitive(Context ctx)
         {
-            return new ZilVector(new ZilObject[] {
+            return new ZilVector(new ZilObject[]
+            {
                 ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
                 new ZilString(path)
             });
         }
 
-        public void Open(Context ctx)
+        public override void Reset(Context ctx)
         {
             if (stream == null)
                 stream = ctx.OpenChannelStream(path, fileAccess);
         }
 
-        public void Close(Context ctx)
+        public override void Close(Context ctx)
         {
             if (stream != null)
             {
@@ -87,7 +100,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public long? GetFileLength()
+        public override long? GetFileLength()
         {
             if (stream == null)
             {
@@ -104,7 +117,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public char? ReadChar()
+        public override char? ReadChar()
         {
             if (stream == null)
                 return null;
@@ -112,6 +125,154 @@ namespace Zilf.Interpreter.Values
             var result = stream.ReadByte();
 
             return result == -1 ? (char?)null : (char)result;
+        }
+
+        public override bool WriteChar(char c)
+        {
+            return false;
+        }
+
+        public override int WriteNewline()
+        {
+            return 0;
+        }
+
+        public override int WriteString(string s)
+        {
+            return 0;
+        }
+    }
+
+    sealed class ZilStringChannel : ZilChannel
+    {
+        private readonly StringBuilder sb = new StringBuilder();
+
+        public ZilStringChannel(FileAccess fileAccess)
+        {
+            if (fileAccess != FileAccess.Write)
+                throw new ArgumentException("Only Write mode is supported", "fileAccess");
+        }
+
+        public string String
+        {
+            get { return sb.ToString(); }
+        }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "#CHANNEL [PRINT STRING {0}]",
+                ZilString.Quote(sb.ToString()));
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilVector(new ZilObject[]
+            {
+                ctx.GetStdAtom(StdAtom.PRINT),
+                ctx.GetStdAtom(StdAtom.STRING),
+                new ZilString(sb.ToString()),
+            });
+        }
+
+        public override void Reset(Context ctx)
+        {
+            // nada
+        }
+
+        public override void Close(Context ctx)
+        {
+            // nada
+        }
+
+        public override long? GetFileLength()
+        {
+            return null;
+        }
+
+        public override char? ReadChar()
+        {
+            return null;
+        }
+
+        public override bool WriteChar(char c)
+        {
+            sb.Append(c);
+            return true;
+        }
+
+        public override int WriteNewline()
+        {
+            int oldLen = sb.Length;
+            sb.AppendLine();
+            return sb.Length - oldLen;
+        }
+
+        public override int WriteString(string s)
+        {
+            sb.Append(s);
+            return s.Length;
+        }
+    }
+
+    sealed class ZilConsoleChannel : ZilChannel
+    {
+        public ZilConsoleChannel(FileAccess fileAccess)
+        {
+            if (fileAccess != FileAccess.Write)
+                throw new ArgumentException("Only Write mode is supported", "fileAccess");
+        }
+
+        public override string ToString()
+        {
+            return string.Format("#CHANNEL [PRINT CONSOLE]");
+        }
+
+        public override ZilObject GetPrimitive(Context ctx)
+        {
+            return new ZilVector(new ZilObject[]
+            {
+                ctx.GetStdAtom(StdAtom.PRINT),
+                ctx.GetStdAtom(StdAtom.CONSOLE),
+            });
+        }
+
+        public override void Reset(Context ctx)
+        {
+            // nada
+        }
+
+        public override void Close(Context ctx)
+        {
+            // nada
+        }
+
+        public override long? GetFileLength()
+        {
+            return null;
+        }
+
+        public override char? ReadChar()
+        {
+            return null;
+        }
+
+        public override bool WriteChar(char c)
+        {
+            Console.Write(c);
+            return true;
+        }
+
+        public override int WriteNewline()
+        {
+            Console.WriteLine();
+            return Environment.NewLine.Length;
+        }
+
+        public override int WriteString(string s)
+        {
+            Console.Write(s);
+            return s.Length;
         }
     }
 }
