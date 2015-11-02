@@ -124,7 +124,10 @@ namespace Zilf.Interpreter
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
             localValues[olatom] = new Binding(olpath);
 
-            PutProp(GetStdAtom(StdAtom.PACKAGE), GetStdAtom(StdAtom.OBLIST), packageObList);
+            var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
+            var consoleOutChannel = new ZilConsoleChannel(FileAccess.Write);
+            SetLocalVal(outchanAtom, consoleOutChannel);
+            SetGlobalVal(outchanAtom, consoleOutChannel);
 
             InitTellPatterns();
             InitPropDefs();
