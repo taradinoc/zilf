@@ -56,6 +56,11 @@ namespace ZilfTests.Interpreter
             actual = TestHelpers.Evaluate(ctx, "<PARSE \"+\">");
             Assert.AreSame(expected, actual);
 
+            expected = ctx.PackageObList["+"];
+            actual = TestHelpers.Evaluate(ctx, "<PARSE \"+\" 10 <GETPROP PACKAGE OBLIST>>");
+            Assert.AreSame(expected, actual);
+            Assert.AreNotSame(ctx.GetStdAtom(StdAtom.Plus), actual);
+
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<PARSE>");
             TestHelpers.EvalAndCatch<InterpreterError>("<PARSE \"FOO\" \"BAR\">");
