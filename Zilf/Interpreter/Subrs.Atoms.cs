@@ -48,13 +48,54 @@ namespace Zilf.Interpreter
             // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
             // TODO: implement arbitrary expression parsing?
 
-            if (args.Length != 1)
-                throw new InterpreterError("PARSE", 1, 1);
+            if (args.Length < 1 || args.Length > 3)
+                throw new InterpreterError("PARSE", 1, 3);
 
             if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
                 throw new InterpreterError("PARSE: arg must be a string");
 
-            return ZilAtom.Parse(args[0].ToStringContext(ctx, true), ctx);
+            if (args.Length >= 2)
+            {
+                // we only pretend to implement radix
+                var radix = args[1] as ZilFix;
+                if (radix == null || radix.Value != 10)
+                    throw new InterpreterError("PARSE: second arg must be 10");
+            }
+
+            ZilObject lookupObList;
+            if (args.Length >= 3)
+            {
+                lookupObList = args[2];
+                switch (lookupObList.GetTypeAtom(ctx).StdAtom)
+                {
+                    case StdAtom.OBLIST:
+                        lookupObList = new ZilList(lookupObList, new ZilList(null, null));
+                        break;
+
+                    case StdAtom.LIST:
+                        // OK
+                        break;
+
+                    default:
+                        throw new InterpreterError("PARSE: third arg must be an oblist or list");
+                }
+
+                ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
+            }
+            else
+            {
+                lookupObList = null;
+            }
+
+            try
+            {
+                return ZilAtom.Parse(args[0].ToStringContext(ctx, true), ctx);
+            }
+            finally
+            {
+                if (lookupObList != null)
+                    ctx.PopLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
+            }
         }
 
         // TODO: implement LPARSE?
