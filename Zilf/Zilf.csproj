@@ -254,7 +254,7 @@
     <Compile Include="ZModel\Vocab\VerbSynonym.cs" />
     <Compile Include="ZModel\Vocab\Word.cs" />
     <Compile Include="ZModel\ZEnvironment.cs" />
-    <Compile Include="Compiler\ZilfCompiler.cs" />
+    <Compile Include="Compiler\FrontEnd.cs" />
     <Compile Include="Interpreter\BuiltinTypeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

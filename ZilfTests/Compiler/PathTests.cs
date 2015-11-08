@@ -45,7 +45,7 @@ namespace ZilfTests
 
             public void Compile(string mainZilFile)
             {
-                var compiler = new ZilfCompiler();
+                var compiler = new FrontEnd();
 
                 compiler.CheckingFilePresence += (sender, e) =>
                 {
