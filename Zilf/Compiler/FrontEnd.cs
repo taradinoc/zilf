@@ -51,16 +51,16 @@ namespace Zilf.Compiler
         public bool? Exists { get; set; }
     }
 
-    public struct ZilfCompilationResult
+    public struct FrontEndResult
     {
         public bool Success;
         public int ErrorCount;
         public int WarningCount;
     }
 
-    public sealed class ZilfCompiler
+    public sealed class FrontEnd
     {
-        public ZilfCompiler()
+        public FrontEnd()
         {
             this.IncludePaths = new List<string>();
         }
@@ -107,14 +107,14 @@ namespace Zilf.Compiler
 
         private class ZapStreamFactory : IZapStreamFactory
         {
-            private readonly ZilfCompiler owner;
+            private readonly FrontEnd owner;
             private readonly string mainFile, fwordsFile, dataFile, stringFile;
 
             private const string FrequentWordsSuffix = "_freq";
             private const string DataSuffix = "_data";
             private const string StringSuffix = "_str";
 
-            public ZapStreamFactory(ZilfCompiler owner, string mainFile)
+            public ZapStreamFactory(FrontEnd owner, string mainFile)
             {
                 this.owner = owner;
                 this.mainFile = mainFile;
@@ -191,9 +191,29 @@ namespace Zilf.Compiler
             #endregion
         }
 
-        public ZilfCompilationResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        public FrontEndResult Interpret(string inputFileName)
         {
-            var result = new ZilfCompilationResult();
+            return Interpret(new Context(), inputFileName);
+        }
+
+        internal FrontEndResult Interpret(Context ctx, string inputFileName)
+        {
+            return InterpretOrCompile(ctx, inputFileName, null, false, false);
+        }
+
+        public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        {
+            return Compile(new Context(), inputFileName, outputFileName, wantDebugInfo);
+        }
+
+        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        {
+            return InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
+        }
+
+        private FrontEndResult InterpretOrCompile(Context ctx, string inputFileName, string outputFileName, bool wantCompile, bool wantDebugInfo)
+        {
+            var result = new FrontEndResult();
 
             // open input file
             using (var inputStream = OpenFile(inputFileName, false))
@@ -201,18 +221,15 @@ namespace Zilf.Compiler
                 // evaluate source text
                 ICharStream charStream = new ANTLRInputStream(inputStream);
 
-                var ctx = new Context();
-
                 ctx.CurrentFile = inputFileName;
                 ctx.InterceptOpenFile = this.OpenFile;
                 ctx.InterceptFileExists = this.CheckFileExists;
                 ctx.IncludePaths.AddRange(this.IncludePaths);
                 Zilf.Program.Evaluate(ctx, charStream);
 
-                // check for evaluation errors
-                if (ctx.ErrorCount == 0)
+                // compile, if there were no evaluation errors
+                if (wantCompile && ctx.ErrorCount == 0)
                 {
-                    // generate code
                     ctx.SetDefaultConstants();
 
                     try

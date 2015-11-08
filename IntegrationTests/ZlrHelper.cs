@@ -160,7 +160,7 @@ namespace IntegrationTests
             this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
             this.zilfLogMessages = new List<string>();
 
-            var compiler = new ZilfCompiler();
+            var compiler = new FrontEnd();
             compiler.OpeningFile += (sender, e) =>
             {
                 if (e.FileName == SZilFileName)
@@ -309,7 +309,7 @@ namespace IntegrationTests
                 this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
                 this.zilfLogMessages = new List<string>();
 
-                var compiler = new ZilfCompiler();
+                var compiler = new FrontEnd();
                 compiler.OpeningFile += (sender, e) =>
                 {
                     if (e.Writing)

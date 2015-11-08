@@ -128,55 +128,45 @@ namespace Zilf
             else
             {
                 // interpreter or compiler
-                ICharStream charStream;
+
+                var frontEnd = new FrontEnd();
                 try
                 {
-                    charStream = new ANTLRFileStream(inFile);
-                }
-                catch (FileNotFoundException)
-                {
-                    Console.Error.WriteLine("file not found: " + inFile);
-                    return 1;
-                }
-                catch (IOException ex)
-                {
-                    Console.Error.WriteLine("error loading file: " + ex.Message);
-                    return 1;
-                }
+                    FrontEndResult result;
 
-                ctx.CurrentFile = inFile;
-                Evaluate(ctx, charStream);
-
-                if (ctx.ErrorCount > 0)
-                {
-                    Console.Error.WriteLine("{0} error{1}",
-                        ctx.ErrorCount,
-                        ctx.ErrorCount == 1 ? "" : "s");
-                    return 2;
-                }
-
-                if (ctx.RunMode == RunMode.Compiler)
-                {
-                    // TODO: Rely on ZilfCompiler for all this logic.
-                    ctx.SetDefaultConstants();
-
-                    try
+                    if (ctx.RunMode == RunMode.Compiler)
                     {
-                        var gameBuilder = new Emit.Zap.GameBuilder(ctx.ZEnvironment.ZVersion, outFile, ctx.WantDebugInfo,
-                            ZilfCompiler.MakeGameOptions(ctx));
-                        Zilf.Compiler.Compiler.Compile(ctx, gameBuilder);
+                        result = frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo);
                     }
-                    catch (ZilError ex)
+                    else
                     {
-                        ctx.HandleError(ex);
+                        result = frontEnd.Interpret(ctx, inFile);
                     }
-                    if (ctx.ErrorCount > 0)
+
+                    if (result.WarningCount > 0)
+                    {
+                        Console.Error.WriteLine("{0} warning{1}",
+                            ctx.WarningCount,
+                            ctx.WarningCount == 1 ? "" : "s");
+                    }
+
+                    if (result.ErrorCount > 0)
                     {
                         Console.Error.WriteLine("{0} error{1}",
                             ctx.ErrorCount,
                             ctx.ErrorCount == 1 ? "" : "s");
-                        return 3;
+                        return 2;
                     }
+                }
+                catch (FileNotFoundException ex)
+                {
+                    Console.Error.WriteLine("file not found: " + ex.FileName);
+                    return 1;
+                }
+                catch (IOException ex)
+                {
+                    Console.Error.WriteLine("I/O error: " + ex.Message);
+                    return 1;
                 }
             }
 
