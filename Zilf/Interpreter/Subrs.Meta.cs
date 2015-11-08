@@ -103,6 +103,10 @@ namespace Zilf.Interpreter
                         newFlags |= FileFlags.MdlZil;
                         break;
 
+                    case StdAtom.ZAP_TO_SOURCE_DIRECTORY_P:
+                        // ignore
+                        break;
+
                     default:
                         throw new InterpreterError("FILE-FLAGS: unrecognized flag: " + atom);
                 }
