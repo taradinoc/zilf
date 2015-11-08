@@ -141,6 +141,47 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject RENTRY(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.ATOM))
+                throw new InterpreterError("RENTRY: all args must be atoms");
+
+            var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
+            if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
+                ((IStructure)currentObPath).GetLength(1) != null ||
+                currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
+            {
+                throw new InterpreterError("RENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs");
+            }
+
+            var internalObList = (ObList)currentObPath.First;
+            var externalObList = (ObList)currentObPath.Rest.First;
+
+            // make sure we're inside a PACKAGE or DEFINITIONS
+            var packageAtom = ctx.GetStdAtom(StdAtom.PACKAGE);
+            var internalPackageProp = ctx.GetProp(internalObList, packageAtom);
+            var externalPackageProp = ctx.GetProp(externalObList, packageAtom);
+            if (internalPackageProp != ctx.GetStdAtom(StdAtom.DEFINITIONS) && externalPackageProp != packageAtom)
+                throw new InterpreterError("RENTRY: must be called from within a PACKAGE or DEFINITIONS");
+
+            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList);
+            if (onWrongOblist.Any())
+            {
+                throw new InterpreterError(string.Format(
+                    "RENTRY: all atoms must be on internal oblist {0}, failed for {1}",
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
+                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
+            }
+
+            foreach (ZilAtom atom in args)
+                atom.ObList = ctx.RootObList;
+
+            return ctx.TRUE;
+        }
+
+        [Subr]
         public static ZilObject USE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
