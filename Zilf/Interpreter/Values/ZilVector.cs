@@ -142,7 +142,7 @@ namespace Zilf.Interpreter.Values
             return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
         }

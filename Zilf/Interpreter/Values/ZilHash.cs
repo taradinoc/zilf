@@ -68,9 +68,17 @@ namespace Zilf.Interpreter.Values
             return "#" + type.ToString() + " " + primvalue.ToString();
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
+            var del = ctx.GetPrintTypeDelegate(type);
+            if (del != null)
+            {
+                return del(this);
+            }
+            else
+            {
+                return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
+            }
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)

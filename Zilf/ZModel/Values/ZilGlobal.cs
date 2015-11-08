@@ -53,7 +53,7 @@ namespace Zilf.ZModel.Values
             return "#GLOBAL (" + name.ToString() + " " + value.ToString() + ")";
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return "#GLOBAL (" + name.ToStringContext(ctx, friendly) +
             " " + value.ToStringContext(ctx, friendly) + ")";

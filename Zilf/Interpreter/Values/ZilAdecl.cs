@@ -72,7 +72,7 @@ namespace Zilf.Interpreter.Values
             return First.ToString() + ":" + Second.ToString();
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return First.ToStringContext(ctx, friendly) + ":" + Second.ToStringContext(ctx, friendly);
         }

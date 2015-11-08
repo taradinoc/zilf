@@ -304,11 +304,6 @@ namespace Zilf.Interpreter
             return this.ToString(zo => zo.ToString());
         }
 
-        public string ToStringContext(Context ctx, bool friendly)
-        {
-            return this.ToString(zo => zo.ToStringContext(ctx, friendly));
-        }
-
         public override bool Equals(object obj)
         {
             ArgSpec other = obj as ArgSpec;

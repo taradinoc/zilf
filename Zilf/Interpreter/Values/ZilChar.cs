@@ -54,7 +54,7 @@ namespace Zilf.Interpreter.Values
             return "!\\" + Char;
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             if (friendly)
                 return Char.ToString();

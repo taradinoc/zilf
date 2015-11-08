@@ -129,7 +129,7 @@ namespace Zilf.Interpreter.Values
             return SequenceToString(this, "(", ")", zo => zo.ToString());
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return SequenceToString(this, "(", ")", zo => zo.ToStringContext(ctx, friendly));
         }

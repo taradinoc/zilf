@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -118,6 +119,51 @@ namespace Zilf.Interpreter
 
             ctx.RegisterType(name, primtype);
             return name;
+        }
+
+        [Subr]
+        public static ZilObject PRINTTYPE(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError("PRINTTYPE", 2, 2);
+
+            var atom = args[0] as ZilAtom;
+            if (atom == null)
+                throw new InterpreterError("PRINTTYPE: first arg must be an atom");
+            if (!ctx.IsRegisteredType(atom))
+                throw new InterpreterError("PRINTTYPE: not a registered type: " + atom.ToStringContext(ctx, false));
+
+            ZilObject handler;
+
+            if (args.Length == 1)
+            {
+                handler = ctx.GetPrintType(atom);
+                return handler ?? ctx.FALSE;
+            }
+
+            handler = args[1];
+            switch (ctx.SetPrintType(atom, handler))
+            {
+                case Context.SetPrintTypeResult.OK:
+                    return args[0];
+
+                case Context.SetPrintTypeResult.BadHandlerType:
+                    throw new InterpreterError("PRINTTYPE: second arg must be an atom or applicable");
+
+                case Context.SetPrintTypeResult.OtherTypeNotRegistered:
+                    throw new InterpreterError("PRINTTYPE: not a registered type: " + handler.ToStringContext(ctx, false));
+
+                case Context.SetPrintTypeResult.OtherTypePrimDiffers:
+                    throw new InterpreterError(string.Format(
+                        "PRINTTYPE: primtypes of {0} and {1} differ",
+                        atom.ToStringContext(ctx, false),
+                        handler.ToStringContext(ctx, false)));
+
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         [Subr("MAKE-GVAL")]

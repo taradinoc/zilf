@@ -35,14 +35,20 @@ namespace Zilf.Interpreter
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
 
+    delegate string PrintTypeDelegate(ZilObject zo);
+
     class Context
     {
         private delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
         private class TypeMapEntry
         {
+            public bool IsBuiltin;
             public PrimType PrimType;
             public ChtypeDelegate ChtypeMethod;
+
+            public ZilObject PrintType;
+            public PrintTypeDelegate PrintTypeDelegate;
         }
 
         private RunMode runMode;
@@ -898,6 +904,7 @@ namespace Zilf.Interpreter
 
                 var entry = new TypeMapEntry()
                 {
+                    IsBuiltin = true,
                     PrimType = r.Attr.PrimType,
                     ChtypeMethod = chtypeDelegate,
                 };
@@ -948,6 +955,7 @@ namespace Zilf.Interpreter
 
             var entry = new TypeMapEntry()
             {
+                IsBuiltin = false,
                 PrimType = primType,
                 ChtypeMethod = chtypeDelegate,
             };
@@ -955,16 +963,125 @@ namespace Zilf.Interpreter
             typeMap.Add(atom, entry);
         }
 
+        [Pure]
         public bool IsRegisteredType(ZilAtom atom)
         {
             Contract.Requires(atom != null);
             return typeMap.ContainsKey(atom);
         }
 
-        public PrimType GetTypePrim(ZilAtom atom)
+        public PrimType GetTypePrim(ZilAtom type)
         {
-            Contract.Requires(atom != null);
-            return typeMap[atom].PrimType;
+            Contract.Requires(type != null);
+            return typeMap[type].PrimType;
+        }
+
+        public enum SetPrintTypeResult
+        {
+            OK,
+            OtherTypeNotRegistered,
+            OtherTypePrimDiffers,
+            BadHandlerType,
+        }
+
+        public SetPrintTypeResult SetPrintType(ZilAtom type, ZilObject handler)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+            Contract.Requires(handler != null);
+            var entry = typeMap[type];
+
+            if (handler is ZilAtom)
+            {
+                var otherType = (ZilAtom)handler;
+                TypeMapEntry otherEntry;
+                if (!typeMap.TryGetValue(otherType, out otherEntry))
+                {
+                    return SetPrintTypeResult.OtherTypeNotRegistered;
+                }
+                else if (otherEntry.PrimType != entry.PrimType)
+                {
+                    return SetPrintTypeResult.OtherTypePrimDiffers;
+                }
+                else if (otherEntry.PrintType != null)
+                {
+                    // cloning a type that has a printtype: copy its handler
+                    entry.PrintType = otherEntry.PrintType;
+                    entry.PrintTypeDelegate = otherEntry.PrintTypeDelegate;
+                    return SetPrintTypeResult.OK;
+                }
+                else
+                {
+                    // cloning a type that has no printtype: use the default handler for builtin types, or clear for newtypes
+                    if (otherEntry.IsBuiltin)
+                    {
+                        entry.PrintType = otherType;
+                        entry.PrintTypeDelegate = zo =>
+                        {
+                            return ChangeType(zo, otherType).ToStringContext(this, false, true);
+                        };
+                    }
+                    else
+                    {
+                        entry.PrintType = null;
+                        entry.PrintTypeDelegate = null;
+                    }
+
+                    return SetPrintTypeResult.OK;
+                }
+            }
+            else if (handler is IApplicable)
+            {
+                // setting to ,PRINT means clearing
+                if (handler.Equals(GetGlobalVal(GetStdAtom(StdAtom.PRINT))))
+                {
+                    entry.PrintType = null;
+                    entry.PrintTypeDelegate = null;
+                }
+                else
+                {
+                    entry.PrintType = handler;
+                    entry.PrintTypeDelegate = zo =>
+                    {
+                        var stringChannel = new ZilStringChannel(FileAccess.Write);
+                        var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
+                        PushLocalVal(outchanAtom, stringChannel);
+                        try
+                        {
+                            ((IApplicable)handler).Apply(this, new ZilObject[] { zo });
+                            return stringChannel.String;
+                        }
+                        finally
+                        {
+                            PopLocalVal(outchanAtom);
+                        }
+                    };
+                }
+
+                return SetPrintTypeResult.OK;
+            }
+            else
+            {
+                return SetPrintTypeResult.BadHandlerType;
+            }
+        }
+
+        public ZilObject GetPrintType(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.PrintType;
+        }
+
+        public PrintTypeDelegate GetPrintTypeDelegate(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.PrintTypeDelegate;
         }
 
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)

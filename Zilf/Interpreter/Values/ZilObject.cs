@@ -219,6 +219,7 @@ namespace Zilf.Interpreter.Values
         /// Converts the ZIL object to a string (in reparsable format, if possible).
         /// </summary>
         /// <returns>A string representation of the object.</returns>
+        /// <remarks>This method is unaffected by PRINTTYPE, since it has no context.</remarks>
         public abstract override string ToString();
 
         /// <summary>
@@ -228,8 +229,36 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="friendly">true if the string should be returned without
         /// quotes, escapes, or qualifiers.</param>
+        /// <param name="ignorePrintType">true to ignore any PRINTTYPE set for this type
+        /// and use the built-in formatting.</param>
         /// <returns>A string representation of the object.</returns>
-        public virtual string ToStringContext(Context ctx, bool friendly)
+        /// <remarks>If a PRINTTYPE is used, <paramref name="friendly"/> has no effect.</remarks>
+        public string ToStringContext(Context ctx, bool friendly, bool ignorePrintType = false)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
+            if (!ignorePrintType)
+            {
+                var del = ctx.GetPrintTypeDelegate(GetTypeAtom(ctx));
+                if (del != null)
+                    return del(this);
+            }
+
+            return ToStringContextImpl(ctx, friendly);
+        }
+
+        /// <summary>
+        /// Converts the ZIL object to a string, given a context, and optionally
+        /// in "friendly" (PRINC) format rather than reparsable format.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <param name="friendly">true if the string should be returned without
+        /// quotes, escapes, or qualifiers.</param>
+        /// <returns>A string representation of the object.</returns>
+        /// <remarks>This method is not affected by PRINTTYPE, which is handled
+        /// by <see cref="ToStringContext(Context, bool, bool)"/>.</remarks>
+        protected virtual string ToStringContextImpl(Context ctx, bool friendly)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<string>() != null);

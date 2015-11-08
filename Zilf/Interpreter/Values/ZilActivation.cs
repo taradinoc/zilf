@@ -63,7 +63,7 @@ namespace Zilf.Interpreter.Values
             return string.Format("#ACTIVATION {0}", name.ToString());
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return string.Format("#ACTIVATION {0}", name.ToStringContext(ctx, friendly));
         }
