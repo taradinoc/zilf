@@ -48,8 +48,25 @@ namespace Zilf.Language
                             return (value.GetTypeAtom(ctx) == atom);
                     }
 
+                case StdAtom.FORM:
+                    atom = ((ZilForm)pattern).First as ZilAtom;
+                    if (atom == null)
+                        throw new InterpreterError("FORM in DECL must start with an ATOM");
+
+                    switch (atom.StdAtom)
+                    {
+                        case StdAtom.OR:
+                            foreach (var subpattern in ((ZilForm)pattern).Rest)
+                                if (Check(ctx, value, subpattern))
+                                    return true;
+                            return false;
+
+                        default:
+                            throw new NotImplementedException("unhandled FORM in DECL pattern: " + pattern.ToStringContext(ctx, false));
+                    }
+
                 default:
-                    throw new NotImplementedException("non-ATOM in DECL pattern");
+                    throw new NotImplementedException("non-ATOM in DECL pattern: " + pattern.ToStringContext(ctx, false));
             }
         }
     }
