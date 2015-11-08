@@ -62,6 +62,7 @@
     <Compile Include="Interpreter\CompilationFlagTests.cs" />
     <Compile Include="Interpreter\ArgSpecTests.cs" />
     <Compile Include="Interpreter\OutputTests.cs" />
+    <Compile Include="Interpreter\MdlZilTests.cs" />
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="Compiler\PathTests.cs" />

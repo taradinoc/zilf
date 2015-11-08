@@ -102,6 +102,7 @@ namespace Zilf.Interpreter.Values
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             Context expandCtx = ctx.CloneWithNewLocals();
+            expandCtx.AtTopLevel = false;
             return ((IApplicable)value).Apply(expandCtx, args);
         }
 

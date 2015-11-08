@@ -230,7 +230,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
+            if (ctx.AtTopLevel && (ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
             {
                 return GLOBAL(ctx, args);
             }
