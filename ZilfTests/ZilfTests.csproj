@@ -64,6 +64,7 @@
     <Compile Include="Interpreter\OutputTests.cs" />
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="TableTests.cs" />
+    <Compile Include="Compiler\PathTests.cs" />
     <Compile Include="WordTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
