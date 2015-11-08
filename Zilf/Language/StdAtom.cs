@@ -172,6 +172,8 @@ namespace Zilf.Language
         IN_ZILCH,
         INC,
         INCHAN,
+        [Atom("INIT-ARGS")]
+        INIT_ARGS,
         INITIAL,
         INPUT,
         [Atom("INTBL?")]

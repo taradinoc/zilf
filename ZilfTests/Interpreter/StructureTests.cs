@@ -19,6 +19,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.ZModel.Values;
 
 namespace ZilfTests.Interpreter
 {
@@ -151,6 +152,19 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR 'CONSTRUCTOR) (POINT-X FIX) (POINT-Y FIX)>");
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? MAKE-POINT>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<POINT-X <CHTYPE [123 456] POINT>>", new ZilFix(123));
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_InitArgs()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (TABLE ('INIT-ARGS (PURE))) (POINT-X FIX) (POINT-Y FIX)>");
+            var point = TestHelpers.Evaluate(ctx, "<MAKE-POINT 'POINT-X 123 'POINT-Y 456>");
+
+            var table = point.GetPrimitive(ctx);
+            Assert.IsInstanceOfType(table, typeof(ZilTable));
+            Assert.AreEqual(TableFlags.Pure, ((ZilTable)table).Flags);
         }
 
         [TestMethod]
