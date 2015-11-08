@@ -362,6 +362,8 @@ namespace Zilf.Language
         XORB,
         XZIP,
         YZIP,
+        [Atom("ZAP-TO-SOURCE-DIRECTORY?")]
+        ZAP_TO_SOURCE_DIRECTORY_P,
         [Atom("ZERO?")]
         ZERO_P,
         ZILCH,
