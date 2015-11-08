@@ -113,8 +113,10 @@ namespace Zilf.Interpreter.Values
         private ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
             var activation = argspec.BeginApply(ctx, args, eval);
+            bool wasTopLevel = ctx.AtTopLevel;
             try
             {
+                ctx.AtTopLevel = false;
                 do
                 {
                     try
@@ -133,6 +135,7 @@ namespace Zilf.Interpreter.Values
             }
             finally
             {
+                ctx.AtTopLevel = wasTopLevel;
                 argspec.EndApply(ctx);
             }
         }

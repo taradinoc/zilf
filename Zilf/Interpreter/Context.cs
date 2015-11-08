@@ -59,6 +59,7 @@ namespace Zilf.Interpreter
         private string curFile;
         private FileFlags curFileFlags;
         private ZilForm callingForm;
+        private bool atTopLevel;
         private Func<string, FileAccess, Stream> streamOpener;
 
         private readonly ObList rootObList, packageObList, compilationFlagsOblist;
@@ -138,6 +139,8 @@ namespace Zilf.Interpreter
             InitTellPatterns();
             InitPropDefs();
             InitCompilationFlags();
+
+            atTopLevel = true;
         }
 
         [ContractInvariantMethod]
@@ -277,6 +280,12 @@ namespace Zilf.Interpreter
         {
             get { return callingForm; }
             set { callingForm = value; }
+        }
+
+        public bool AtTopLevel
+        {
+            get { return atTopLevel; }
+            set { atTopLevel = value; }
         }
 
         public Func<string, FileAccess, Stream> StreamOpener
