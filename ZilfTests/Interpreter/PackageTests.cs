@@ -207,5 +207,16 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<INCLUDE ""FOO"">");
         }
+
+        [TestMethod]
+        public void RENTRY_Puts_Atoms_On_Root_ObList()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+<PACKAGE ""FOO"">
+<RENTRY BLAH>");
+
+            TestHelpers.EvalAndAssert(ctx, "<==? BLAH BLAH!->", ctx.TRUE);
+        }
     }
 }
