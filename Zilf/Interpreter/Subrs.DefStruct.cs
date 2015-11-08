@@ -43,6 +43,7 @@ namespace Zilf.Interpreter
             public int StartOffset;
             public bool SuppressType, SuppressDefaultCtor;
             public ZilList CustomCtorSpec;
+            public ZilList InitArgs;
         }
 
         private struct DefStructField
@@ -123,7 +124,28 @@ namespace Zilf.Interpreter
             if (!defaults.SuppressDefaultCtor)
             {
                 // define constructor macro
-                var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields);
+
+                string unparsedInitArgs;
+                if (defaults.InitArgs != null)
+                {
+                    var sb = new StringBuilder();
+
+                    foreach (var zo in defaults.InitArgs)
+                    {
+                        if (sb.Length > 0)
+                            sb.Append(' ');
+
+                        sb.Append(zo.ToStringContext(ctx, false, true));
+                    }
+
+                    unparsedInitArgs = sb.ToString();
+                }
+                else
+                {
+                    unparsedInitArgs = "";
+                }
+
+                var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields, unparsedInitArgs);
                 Program.Evaluate(ctx, ctorMacroDef, true);
                 // TODO: correct the source locations in the macro
             }
@@ -144,7 +166,7 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        private static string MakeDefstructCtorMacro(ZilAtom name, ZilAtom baseType, List<DefStructField> fields)
+        private static string MakeDefstructCtorMacro(ZilAtom name, ZilAtom baseType, List<DefStructField> fields, string unparsedInitArgs)
         {
             Contract.Requires(name != null);
             Contract.Requires(baseType != null);
@@ -164,6 +186,7 @@ namespace Zilf.Interpreter
             // {2} = COND clauses for tags ("existing object" mode, returning a FORM that PUTs into .RESULT)
             // {3} = COND clauses for tags ("new object" mode, PUTting into the temp vector .RESULT-INIT)
             // {4} = base constructor atom
+            // {5} = unparsed INIT-ARGS, or empty string
             const string SMacroTemplate = @"
 <DEFMAC MAKE-{0} (""ARGS"" A ""AUX"" RESULT-INIT)
     <COND (<=? <1 .A> '<QUOTE {0}>>
@@ -189,7 +212,7 @@ namespace Zilf.Interpreter
                <SET A <REST .A 2>>
                <COND {3}
                      (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>
-           <FORM CHTYPE <FORM {4} !.RESULT-INIT> {0}>)>>
+           <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>)>>
 ";
 
             // {0} = tag name
@@ -219,7 +242,8 @@ namespace Zilf.Interpreter
                 fields.Count,
                 existingObjectClauses,
                 newObjectClauses,
-                baseType);
+                baseType,
+                unparsedInitArgs);
         }
 
         private static string MakeDefstructAccessMacro(ZilAtom structName, DefStructField field)
@@ -420,6 +444,11 @@ namespace Zilf.Interpreter
                         case StdAtom.CONSTRUCTOR:
                             partList = partList.Rest;
                             defaults.CustomCtorSpec = partList;
+                            break;
+
+                        case StdAtom.INIT_ARGS:
+                            partList = partList.Rest;
+                            defaults.InitArgs = partList;
                             break;
 
                         default:
