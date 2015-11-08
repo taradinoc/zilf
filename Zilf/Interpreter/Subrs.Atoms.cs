@@ -327,6 +327,17 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        [Subr("DECL?")]
+        public static ZilObject DECL_P(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 2)
+                throw new InterpreterError("DECL?", 2, 2);
+
+            return Decl.Check(ctx, args[0], args[1]) ? ctx.TRUE : ctx.FALSE;
+        }
+
         [Subr]
         public static ZilObject LVAL(Context ctx, ZilObject[] args)
         {
