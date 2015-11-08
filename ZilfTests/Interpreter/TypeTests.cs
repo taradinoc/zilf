@@ -926,5 +926,72 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<NEWTYPE MIDDLENAME NOT-A-TYPE>");
         }
+
+        // Adapted from an example in _The MDL Programming Language_
+        private const string SRomanPrint = @"
+<DEFINE ROMAN-PRINT (ROMAN ""AUX"" (RNUM <CHTYPE .ROMAN FIX>))
+    <COND (<OR <L=? .RNUM 0> <G? .RNUM 3999>>
+           <PRINC .RNUM>)
+          (T
+           <RCPRINT </ .RNUM 1000> '![!\M]>
+           <RCPRINT </ .RNUM  100> '![!\C !\D !\M]>
+           <RCPRINT </ .RNUM   10> '![!\X !\L !\C]>
+           <RCPRINT    .RNUM       '![!\I !\V !\X]>)>>
+
+<DEFINE RCPRINT (MODN V)
+    <SET MODN <MOD .MODN 10>>
+    <COND (<==? 0 .MODN>)
+          (<==? 1 .MODN> <PRINC <1 .V>>)
+          (<==? 2 .MODN> <PRINC <1 .V>> <PRINC <1 .V>>)
+          (<==? 3 .MODN> <PRINC <1 .V>> <PRINC <1 .V>> <PRINC <1 .V>>)
+          (<==? 4 .MODN> <PRINC <1 .V>> <PRINC <2 .V>>)
+          (<==? 5 .MODN> <PRINC <2 .V>>)
+          (<==? 6 .MODN> <PRINC <2 .V>> <PRINC <1 .V>>)
+          (<==? 7 .MODN> <PRINC <2 .V>> <PRINC <1 .V>> <PRINC <1 .V>>)
+          (<==? 8 .MODN> <PRINC <2 .V>> <PRINC <1 .V>> <PRINC <1 .V>> <PRINC <1 .V>>)
+          (<==? 9 .MODN> <PRINC <1 .V>> <PRINC <3 .V>>)>>
+";
+
+        [TestMethod]
+        public void TestPRINTTYPE()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, SRomanPrint);
+            TestHelpers.Evaluate(ctx, "<NEWTYPE ROMAN FIX>");
+            TestHelpers.EvalAndAssert(ctx, "<PRINTTYPE ROMAN ,ROMAN-PRINT>", ZilAtom.Parse("ROMAN", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<==? <PRINTTYPE ROMAN> ,ROMAN-PRINT>", ctx.TRUE);
+
+            var roman = TestHelpers.Evaluate(ctx, "#ROMAN 1984");
+            Assert.AreEqual("MCMLXXXIV", roman.ToStringContext(ctx, false));
+
+            TestHelpers.Evaluate(ctx, "<NEWTYPE ROMAN2 FIX>");
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN2 ROMAN>");
+            // when 2nd arg is a type that already has a custom PRINTTYPE, its current handler is copied
+            TestHelpers.EvalAndAssert(ctx, "<==? <PRINTTYPE ROMAN2> ,ROMAN-PRINT>", ctx.TRUE);
+            var roman2 = TestHelpers.Evaluate(ctx, "#ROMAN2 2015");
+            Assert.AreEqual("MMXV", roman2.ToStringContext(ctx, false));
+
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN ,PRINT>");
+            TestHelpers.EvalAndAssert(ctx, "<=? <PRINTTYPE ROMAN> <>>", ctx.TRUE);
+            Assert.AreEqual("#ROMAN 1984", roman.ToStringContext(ctx, false));
+
+            // changing ROMAN's handler now doesn't affect ROMAN2's, because it was copied earlier
+            Assert.AreEqual("MMXV", roman2.ToStringContext(ctx, false));
+
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN2 FIX>");
+            Assert.AreEqual("2015", roman2.ToStringContext(ctx, false));
+
+            // PRINTTYPE works on built-in types too
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE FIX ,ROMAN-PRINT>");
+            Assert.AreEqual("CXXIII", new ZilFix(123).ToStringContext(ctx, false));
+
+            // but that doesn't affect ROMAN2, which copied FIX's default handler
+            Assert.AreEqual("2015", roman2.ToStringContext(ctx, false));
+
+            // it does affect ROMAN2 if we change it again
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN2 FIX>");
+            Assert.AreEqual("MMXV", roman2.ToStringContext(ctx, false));
+        }
     }
 }

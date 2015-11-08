@@ -47,7 +47,7 @@ namespace Zilf.ZModel.Values
             return "#CONSTANT (" + name.ToString() + " " + value.ToString() + ")";
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return "#CONSTANT (" + name.ToStringContext(ctx, friendly) +
             " " + value.ToStringContext(ctx, friendly) + ")";

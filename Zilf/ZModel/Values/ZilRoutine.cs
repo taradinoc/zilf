@@ -97,7 +97,7 @@ namespace Zilf.ZModel.Values
             return ToString(zo => zo.ToString());
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return ToString(zo => zo.ToStringContext(ctx, friendly));
         }

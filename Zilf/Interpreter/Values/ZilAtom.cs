@@ -195,7 +195,7 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             if (friendly)
                 return ToString();

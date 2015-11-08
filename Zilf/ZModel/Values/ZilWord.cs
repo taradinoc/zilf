@@ -62,7 +62,7 @@ namespace Zilf.ZModel.Values
             return string.Format("#WORD ({0})", value);
         }
 
-        public override string ToStringContext(Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return string.Format("#WORD ({0})", value.ToStringContext(ctx, friendly));
         }
