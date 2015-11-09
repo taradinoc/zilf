@@ -105,6 +105,44 @@
 =Segment	red
 =Hash		red
 .else
+.ifdef LVAL
+=Idle		magenta
+=Comment 	magenta
+=ZString	magenta
+=Quote		magenta
+=Escape 	magenta
+=Atom		magenta
+=AtomSpace	inverse magenta
+=ZConstant	magenta
+=ZConstantSpace	inverse magenta
+=List		magenta
+=Form		magenta
+=Vector		magenta
+=Macro		magenta
+=Local		magenta
+=Global		magenta
+=Segment	magenta
+=Hash		magenta
+.else
+.ifdef GVAL
+=Idle		blue
+=Comment 	blue
+=ZString	blue
+=Quote		blue
+=Escape 	blue
+=Atom		blue
+=AtomSpace	inverse blue
+=ZConstant	blue
+=ZConstantSpace	inverse blue
+=List		blue
+=Form		blue
+=Vector		blue
+=Macro		blue
+=Local		blue
+=Global		blue
+=Segment	blue
+=Hash		blue
+.else
 =Idle
 =Comment 	green
 =ZString 	cyan
@@ -122,6 +160,8 @@
 =Global		blue
 =Segment	bold red
 =Hash		red
+.endif
+.endif
 .endif
 .endif
 .endif
@@ -173,10 +213,13 @@
 	*	atom	noeat
 
 :comment Comment
-	*		idle	noeat call=.expr(COMMENT)
+	*		done	noeat call=.expr(COMMENT)
+
+:done Idle
+	*		idle	noeat return
 
 :quote Quote
-	*		idle	noeat call=.expr(QUOTED)
+	*		done	noeat call=.expr(QUOTED)
 
 :string ZString
 	*		string
@@ -212,20 +255,15 @@
 	" \t\n<>(){}[]:;\"',%#"		idle	noeat return
 
 :lval Local
-	*		lval_rest
-	" \t\n"		lval
-
-:lval_rest Local
-	*				lval_rest
-	" \t\n<>(){}[]:;\"'\\,%#"	idle	noeat return
+# Don't let inner LVAL coloration override outer GVAL in ",.FOO"
+.ifdef GVAL
+	*		done	noeat call=.expr(GVAL)
+.else
+	*		done	noeat call=.expr(LVAL)
+.endif
 
 :gval Global
-	*		gval_rest
-	" \t\n"		gval
-
-:gval_rest Global
-	*				gval_rest
-	" \t\n<>(){}[]:;\"'\\,%#"	idle	noeat return
+	*		done	noeat call=.expr(GVAL)
 
 :form Form
 	*	form_rest	noeat
@@ -303,7 +341,7 @@
 	"<>(){}[]:;\"'\\,%#"	idle	noeat return
 
 :hash_second Hash
-	*			idle	noeat call=.expr(HASH)
+	*			done	noeat call=.expr(HASH)
 	" \t\n"			hash_second
 
 .end
