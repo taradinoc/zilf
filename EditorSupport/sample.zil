@@ -55,6 +55,12 @@ lines">
 . LVAL-WITH-SPACE
 ,GVAL
 , GVAL-WITH-SPACE
+..LVAL-LVAL
+.,LVAL-GVAL
+,,GVAL-GVAL
+,.GVAL-LVAL
+.<LVAL-FORM>
+,<GVAL-FORM>
 
 "=== Segments ==="
 !.SEG-LVAL
