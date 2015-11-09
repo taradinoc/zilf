@@ -218,5 +218,29 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "<==? BLAH BLAH!->", ctx.TRUE);
         }
+
+        [TestMethod]
+        public void ENTRY_Ignores_Atoms_Already_On_External_ObList()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+<PACKAGE ""FOO"">
+BLAH!-FOO!-PACKAGE
+<ENTRY BLAH>");
+
+            TestHelpers.EvalAndAssert(ctx, "<==? BLAH BLAH!-FOO!-PACKAGE>", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void RENTRY_Ignores_Atoms_Already_On_Root_ObList()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, @"
+BLAH!-
+<PACKAGE ""FOO"">
+<RENTRY BLAH>");
+
+            TestHelpers.EvalAndAssert(ctx, "<==? BLAH BLAH!->", ctx.TRUE);
+        }
     }
 }

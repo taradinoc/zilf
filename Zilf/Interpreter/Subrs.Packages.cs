@@ -125,7 +125,7 @@ namespace Zilf.Interpreter
             if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
                 throw new InterpreterError("ENTRY: must be called from within a PACKAGE");
 
-            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList);
+            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList && a.ObList != externalObList);
             if (onWrongOblist.Any())
             {
                 throw new InterpreterError(string.Format(
@@ -166,7 +166,7 @@ namespace Zilf.Interpreter
             if (internalPackageProp != ctx.GetStdAtom(StdAtom.DEFINITIONS) && externalPackageProp != packageAtom)
                 throw new InterpreterError("RENTRY: must be called from within a PACKAGE or DEFINITIONS");
 
-            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList);
+            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
             if (onWrongOblist.Any())
             {
                 throw new InterpreterError(string.Format(
