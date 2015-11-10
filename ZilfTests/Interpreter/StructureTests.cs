@@ -168,6 +168,18 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_Bare_Constructor_Call()
+        {
+            var ctx = new Context();
+            var pointAtom = ZilAtom.Parse("POINT", ctx);
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y FIX)>");
+
+            TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT>",
+                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, new ZilVector(ctx.FALSE, ctx.FALSE) }));
+        }
+
+        [TestMethod]
         public void REST_Of_One_Character_String_Should_Be_Empty_String()
         {
             TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));

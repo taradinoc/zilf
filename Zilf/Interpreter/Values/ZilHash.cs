@@ -49,6 +49,7 @@ namespace Zilf.Interpreter.Values
             get { return type; }
         }
 
+        // TODO: eliminate ZilHash.Parse in favor of Context.ChangeType
         public static ZilObject Parse(Context ctx, ZilObject[] initializer)
         {
             Contract.Requires(ctx != null);
