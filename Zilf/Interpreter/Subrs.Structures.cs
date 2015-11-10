@@ -98,7 +98,7 @@ namespace Zilf.Interpreter
 
             ZilObject result = st[idx.Value - 1];
             if (result == null)
-                throw new InterpreterError("reading past end of structure");
+                throw new InterpreterError("NTH: reading past end of structure");
 
             return result;
         }

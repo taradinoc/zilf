@@ -146,8 +146,16 @@ namespace Zilf.Interpreter
                 }
 
                 var ctorMacroDef = MakeDefstructCtorMacro(name, baseType, fields, unparsedInitArgs);
-                Program.Evaluate(ctx, ctorMacroDef, true);
-                // TODO: correct the source locations in the macro
+                var oldFileName = ctx.CurrentFile;
+                try
+                {
+                    ctx.CurrentFile = string.Format("<constructor for DEFSTRUCT {0}>", name);
+                    Program.Evaluate(ctx, ctorMacroDef, true);
+                }
+                finally
+                {
+                    ctx.CurrentFile = oldFileName;
+                }
             }
 
             if (defaults.CustomCtorSpec != null)
@@ -159,8 +167,16 @@ namespace Zilf.Interpreter
             foreach (var field in fields)
             {
                 var accessMacroDef = MakeDefstructAccessMacro(name, field);
-                Program.Evaluate(ctx, accessMacroDef, true);
-                // TODO: correct the source locations in the macro
+                var oldFileName = ctx.CurrentFile;
+                try
+                {
+                    ctx.CurrentFile = string.Format("<accessor for field {0} of DEFSTRUCT {1}>", field.Name, name);
+                    Program.Evaluate(ctx, accessMacroDef, true);
+                }
+                finally
+                {
+                    ctx.CurrentFile = oldFileName;
+                }
             }
 
             return name;
@@ -189,7 +205,7 @@ namespace Zilf.Interpreter
             // {5} = unparsed INIT-ARGS, or empty string
             const string SMacroTemplate = @"
 <DEFMAC MAKE-{0} (""ARGS"" A ""AUX"" RESULT-INIT)
-    <COND (<=? <1 .A> '<QUOTE {0}>>
+    <COND (<AND <NOT <EMPTY? .A>> <=? <1 .A> '<QUOTE {0}>>>
            <SET RESULT-INIT <2 .A>>
            <SET A <REST .A 2>>
            <FORM BIND <LIST <LIST RESULT .RESULT-INIT>>
