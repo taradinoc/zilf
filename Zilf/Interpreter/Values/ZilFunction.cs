@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -62,19 +63,33 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append("#FUNCTION (");
-            sb.Append(argspec.ToString(convert));
-
-            foreach (ZilObject expr in body)
+            if (Recursion.TryLock(this))
             {
-                sb.Append(' ');
-                sb.Append(convert(expr));
-            }
+                try
+                {
+                    StringBuilder sb = new StringBuilder();
 
-            sb.Append(')');
-            return sb.ToString();
+                    sb.Append("#FUNCTION (");
+                    sb.Append(argspec.ToString(convert));
+
+                    foreach (ZilObject expr in body)
+                    {
+                        sb.Append(' ');
+                        sb.Append(convert(expr));
+                    }
+
+                    sb.Append(')');
+                    return sb.ToString();
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "#FUNCTION...";
+            }
         }
 
         public override string ToString()
@@ -220,5 +235,17 @@ namespace Zilf.Interpreter.Values
         }
 
         #endregion
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            yield return argspec.ToZilList();
+            foreach (var zo in body)
+                yield return zo;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

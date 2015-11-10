@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 
@@ -40,7 +42,21 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return "#FALSE " + value.ToString();
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return "#FALSE " + value.ToString();
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "#FALSE...";
+            }
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -114,5 +130,15 @@ namespace Zilf.Interpreter.Values
         }
 
         #endregion
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            return value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return value.GetEnumerator();
+        }
     }
 }

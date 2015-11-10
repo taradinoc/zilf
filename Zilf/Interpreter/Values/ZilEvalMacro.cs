@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 
@@ -55,7 +57,21 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            return "#MACRO (" + convert(value) + ")";
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return "#MACRO (" + convert(value) + ")";
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "#MACRO...";
+            }
         }
 
         public override string ToString()
@@ -168,5 +184,15 @@ namespace Zilf.Interpreter.Values
         }
 
         #endregion
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            yield return value;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

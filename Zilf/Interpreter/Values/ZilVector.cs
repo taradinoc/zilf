@@ -139,12 +139,40 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "[...]";
+            }
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "[...]";
+            }
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
