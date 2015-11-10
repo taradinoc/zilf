@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Language;
@@ -193,6 +195,17 @@ namespace Zilf.Interpreter.Values
                 return length;
         }
 
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            foreach (var c in Text)
+                yield return new ZilChar(c);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         private class OffsetString : ZilObject, IStructure
         {
             private readonly ZilString orig;
@@ -333,6 +346,17 @@ namespace Zilf.Interpreter.Values
                     return null;
                 else
                     return length;
+            }
+
+            public IEnumerator<ZilObject> GetEnumerator()
+            {
+                for (int i = offset; i < orig.Text.Length; i++)
+                    yield return new ZilChar(orig.Text[i]);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
             }
         }
     }

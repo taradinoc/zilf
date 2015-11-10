@@ -65,24 +65,38 @@ namespace Zilf.Interpreter.Values
 
         private string ToString(Func<ZilObject, string> convert)
         {
-            // check for special forms
-            if (First is ZilAtom && Rest.Rest != null && Rest.Rest.First == null)
+            if (Recursion.TryLock(this))
             {
-                ZilObject arg = ((ZilList)Rest).First;
-
-                switch (((ZilAtom)First).StdAtom)
+                try
                 {
-                    case StdAtom.GVAL:
-                        return "," + arg.ToString();
-                    case StdAtom.LVAL:
-                        return "." + arg.ToString();
-                    case StdAtom.QUOTE:
-                        return "'" + arg.ToString();
+                    // check for special forms
+                    if (First is ZilAtom && Rest.Rest != null && Rest.Rest.First == null)
+                    {
+                        ZilObject arg = ((ZilList)Rest).First;
+
+                        switch (((ZilAtom)First).StdAtom)
+                        {
+                            case StdAtom.GVAL:
+                                return "," + arg.ToString();
+                            case StdAtom.LVAL:
+                                return "." + arg.ToString();
+                            case StdAtom.QUOTE:
+                                return "'" + arg.ToString();
+                        }
+                    }
+
+                    // otherwise display like a list with angle brackets
+                    return ZilList.SequenceToString(this, "<", ">", convert);
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
                 }
             }
-
-            // otherwise display like a list with angle brackets
-            return ZilList.SequenceToString(this, "<", ">", convert);
+            else
+            {
+                return "<...>";
+            }
         }
 
         public override string ToString()

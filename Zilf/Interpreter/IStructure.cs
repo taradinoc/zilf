@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -25,7 +26,7 @@ namespace Zilf.Interpreter
     /// Provides methods common to structured types (LIST, STRING, possibly others).
     /// </summary>
     [ContractClass(typeof(IStructureContracts))]
-    interface IStructure
+    interface IStructure : IEnumerable<ZilObject>
     {
         /// <summary>
         /// Gets the first element of the structure.

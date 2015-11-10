@@ -71,14 +71,28 @@ namespace Zilf.Interpreter.Values
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            var del = ctx.GetPrintTypeDelegate(type);
-            if (del != null)
+            if (Recursion.TryLock(this))
             {
-                return del(this);
+                try
+                {
+                    var del = ctx.GetPrintTypeDelegate(type);
+                    if (del != null)
+                    {
+                        return del(this);
+                    }
+                    else
+                    {
+                        return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
+                    }
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
             }
             else
             {
-                return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
+                return "#" + type.Text + "...";
             }
         }
 

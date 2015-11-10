@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System.Collections;
+using System.Collections.Generic;
+
 namespace Zilf.Interpreter.Values
 {
     class ZilStructuredHash : ZilHash, IStructure
@@ -75,5 +78,15 @@ namespace Zilf.Interpreter.Values
         }
 
         #endregion
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            return ((IStructure)primvalue).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

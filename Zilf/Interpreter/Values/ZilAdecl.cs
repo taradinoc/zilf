@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 
@@ -69,7 +71,21 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return First.ToString() + ":" + Second.ToString();
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return First.ToString() + ":" + Second.ToString();
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return ":...";
+            }
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
@@ -138,5 +154,16 @@ namespace Zilf.Interpreter.Values
         }
 
         #endregion
+
+        public IEnumerator<ZilObject> GetEnumerator()
+        {
+            yield return First;
+            yield return Second;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

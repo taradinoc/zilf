@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 
@@ -62,6 +64,13 @@ namespace Zilf.Interpreter
         {
             Contract.Ensures(Contract.Result<int?>() == null || Contract.Result<int?>().Value <= limit);
             return default(int?);
+        }
+
+        public abstract IEnumerator<ZilObject> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
@@ -126,12 +127,40 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return SequenceToString(this, "(", ")", zo => zo.ToString());
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return SequenceToString(this, "(", ")", zo => zo.ToString());
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "(...)";
+            }
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            return SequenceToString(this, "(", ")", zo => zo.ToStringContext(ctx, friendly));
+            if (Recursion.TryLock(this))
+            {
+                try
+                {
+                    return SequenceToString(this, "(", ")", zo => zo.ToStringContext(ctx, friendly));
+                }
+                finally
+                {
+                    Recursion.Unlock(this);
+                }
+            }
+            else
+            {
+                return "(...)";
+            }
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
