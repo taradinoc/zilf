@@ -180,6 +180,43 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_Positional_Constructor_Argument()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT FOO VECTOR (FOO-A ATOM) (FOO-B <OR FIX FALSE>)>");
+
+            TestHelpers.EvalAndAssert(ctx, "<MAKE-FOO BAR>",
+                ZilHash.Parse(ctx, new ZilObject[]
+                {
+                    ZilAtom.Parse("FOO", ctx),
+                    new ZilVector(ZilAtom.Parse("BAR", ctx), ctx.FALSE),
+                }));
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_Eval_Args()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y <OR FIX FORM>)>");
+
+            TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT-X <+ 1 2> 'POINT-Y '<+ 3 4>>",
+                ZilHash.Parse(ctx, new ZilObject[]
+                {
+                    ZilAtom.Parse("POINT", ctx),
+                    new ZilVector(
+                        new ZilFix(3),
+                        new ZilForm(new ZilObject[]
+                        {
+                            ctx.GetStdAtom(StdAtom.Plus),
+                            new ZilFix(3),
+                            new ZilFix(4),
+                        })),
+                }));
+        }
+
+        [TestMethod]
         public void REST_Of_One_Character_String_Should_Be_Empty_String()
         {
             TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));
