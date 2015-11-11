@@ -90,6 +90,7 @@ namespace Zilf.Language
         CURSET,
         D,
         DEC,
+        DECL,
         DEFAULT,
         [Atom("DEFAULT-DEFINITION")]
         DEFAULT_DEFINITION,

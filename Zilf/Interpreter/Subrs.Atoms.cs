@@ -338,6 +338,17 @@ namespace Zilf.Interpreter
             return Decl.Check(ctx, args[0], args[1]) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [Subr("PUT-DECL")]
+        public static ZilObject PUT_DECL(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 2)
+                throw new InterpreterError("PUT-DECL", 2, 2);
+
+            return PUTPROP(ctx, new ZilObject[] { args[0], ctx.GetStdAtom(StdAtom.DECL), args[1] });
+        }
+
         [Subr]
         public static ZilObject LVAL(Context ctx, ZilObject[] args)
         {
