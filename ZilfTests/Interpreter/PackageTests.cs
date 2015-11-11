@@ -59,6 +59,24 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void Packages_Can_Be_Additively_Defined()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<PACKAGE ""FOO"">
+<SETG ANSWER 42>
+<ENDPACKAGE>
+
+<PACKAGE ""FOO"">
+<SETG DBL-ANSWER 84>
+<ENDPACKAGE>");
+
+            TestHelpers.EvalAndAssert(ctx, ",ANSWER!-IFOO!-FOO!-PACKAGE", new ZilFix(42));
+            TestHelpers.EvalAndAssert(ctx, ",DBL-ANSWER!-IFOO!-FOO!-PACKAGE", new ZilFix(84));
+        }
+
+        [TestMethod]
         public void ENTRY_Puts_Atoms_In_External_Lexical_Blocks()
         {
             var ctx = new Context();

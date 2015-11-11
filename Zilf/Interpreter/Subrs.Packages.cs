@@ -37,17 +37,19 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("PACKAGE: arg must be a string");
 
             var pname = ((ZilString)args[0]).Text;
-            if (ctx.PackageObList.Contains(pname))
-                throw new InterpreterError("PACKAGE: already defined: " + pname);
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
-            var externalObList = ctx.MakeObList(externalAtom);
+            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+            if (externalObList == null)
+                externalObList = ctx.MakeObList(externalAtom);
 
             // internal oblist
             var iname = "I" + pname;
             var internalAtom = externalObList[iname];
-            var internalObList = ctx.MakeObList(internalAtom);
+            var internalObList = ctx.GetProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+            if (internalObList== null)
+                internalObList = ctx.MakeObList(internalAtom);
 
             // new oblist path
             var newObPath = new ZilList(new ZilObject[] { internalObList, externalObList, ctx.RootObList });
@@ -73,12 +75,12 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("DEFINITIONS: arg must be a string");
 
             var pname = ((ZilString)args[0]).Text;
-            if (ctx.PackageObList.Contains(pname))
-                throw new InterpreterError("DEFINITIONS: already defined: " + pname);
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
-            var externalObList = ctx.MakeObList(externalAtom);
+            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+            if (externalObList == null)
+                externalObList = ctx.MakeObList(externalAtom);
 
             // new oblist path
             var newObPath = new ZilList(new ZilObject[] { externalObList, ctx.RootObList });
