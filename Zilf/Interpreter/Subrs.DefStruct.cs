@@ -39,7 +39,7 @@ namespace Zilf.Interpreter
 
         private struct DefStructDefaults
         {
-            public ZilAtom NthFunc, PutFunc;
+            public ZilAtom NthFunc, PutFunc, PrintFunc;
             public int StartOffset;
             public bool SuppressType, SuppressDefaultCtor;
             public ZilList CustomCtorSpec;
@@ -176,6 +176,53 @@ namespace Zilf.Interpreter
                 finally
                 {
                     ctx.CurrentFile = oldFileName;
+                }
+            }
+
+            // set PRINTTYPE
+            if (defaults.PrintFunc != null)
+            {
+                // annoyingly, the argument can be an atom naming a function that hasn't been defined yet
+                var printFuncAtom = defaults.PrintFunc as ZilAtom;
+                if (printFuncAtom != null)
+                {
+                    var handler = ctx.GetGlobalVal(printFuncAtom);
+                    if (handler == null)
+                    {
+                        // #FUNCTION ((X "AUX" (D ,printFuncAtom)) <PRINTTYPE name .D> <APPLY .D .X>)
+                        var xAtom = ctx.GetStdAtom(StdAtom.X);
+                        var dAtom = ctx.GetStdAtom(StdAtom.D);
+                        handler = new ZilFunction(
+                            null,
+                            null,
+                            new ZilObject[]
+                            {
+                                xAtom,
+                                new ZilString("AUX"),
+                                new ZilList(new ZilObject[]
+                                {
+                                    dAtom,
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), printFuncAtom }),
+                                }),
+                            },
+                            new ZilObject[]
+                            {
+                                new ZilForm(new ZilObject[]
+                                {
+                                    ctx.GetStdAtom(StdAtom.PRINTTYPE),
+                                    name,
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom }),
+                                }),
+                                new ZilForm(new ZilObject[]
+                                {
+                                    ctx.GetStdAtom(StdAtom.APPLY),
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom }),
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), xAtom }),
+                                })
+                            });
+                    }
+
+                    ctx.SetPrintType(name, handler);
                 }
             }
 
@@ -407,7 +454,7 @@ namespace Zilf.Interpreter
                             break;
 
                         case StdAtom.PRINTTYPE:
-                            // nada
+                            defaults.PrintFunc = null;
                             break;
 
                         case StdAtom.CONSTRUCTOR:
@@ -454,7 +501,9 @@ namespace Zilf.Interpreter
 
                         case StdAtom.PRINTTYPE:
                             partList = partList.Rest;
-                            // TODO: implement PRINTTYPE
+                            defaults.PrintFunc = partList.First as ZilAtom;
+                            if (defaults.PrintFunc == null)
+                                throw new InterpreterError("DEFSTRUCT: 'PRINTTYPE must be followed by an atom");
                             break;
 
                         case StdAtom.CONSTRUCTOR:
