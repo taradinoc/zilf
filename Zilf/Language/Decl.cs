@@ -62,6 +62,53 @@ namespace Zilf.Language
                             return false;
 
                         default:
+                            if (ctx.IsRegisteredType(atom))
+                            {
+                                if (!Check(ctx, value, atom))
+                                    return false;
+
+                                var structure = value as IStructure;
+                                if (structure == null)
+                                    throw new NotImplementedException("expected a structure for this FORM in DECL: " + pattern.ToStringContext(ctx, false));
+
+                                foreach (var subpattern in ((ZilForm)pattern).Rest)
+                                {
+                                    if (subpattern is ZilVector)
+                                    {
+                                        var vector = (ZilVector)subpattern;
+                                        var len = vector.GetLength();
+                                        if (len > 0 && vector[0] == ctx.GetStdAtom(StdAtom.REST))
+                                        {
+                                            var i = 1;
+                                            while (!structure.IsEmpty())
+                                            {
+                                                if (!Check(ctx, structure.GetFirst(), vector[i]))
+                                                    return false;
+
+                                                i++;
+                                                if (i >= len)
+                                                    i = 1;
+
+                                                structure = structure.GetRest(1);
+                                            }
+                                            return true;
+                                        }
+                                        else
+                                        {
+                                            throw new NotImplementedException("unhandled VECTOR in FORM: " + vector.ToStringContext(ctx, false));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!Check(ctx, structure.GetFirst(), subpattern))
+                                            return false;
+
+                                        structure = structure.GetRest(1);
+                                    }
+                                }
+
+                                return true;
+                            }
                             throw new NotImplementedException("unhandled FORM in DECL pattern: " + pattern.ToStringContext(ctx, false));
                     }
 
