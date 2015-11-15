@@ -50,6 +50,7 @@ namespace Zilf.Interpreter.Values
         public abstract int WriteString(string s);
     }
 
+    [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilFileChannel : ZilChannel
     {
         private readonly FileAccess fileAccess;
@@ -143,6 +144,7 @@ namespace Zilf.Interpreter.Values
         }
     }
 
+    [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilStringChannel : ZilChannel
     {
         private readonly StringBuilder sb = new StringBuilder();
@@ -214,6 +216,7 @@ namespace Zilf.Interpreter.Values
         }
     }
 
+    [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilConsoleChannel : ZilChannel
     {
         public ZilConsoleChannel(FileAccess fileAccess)

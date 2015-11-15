@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
+    [BuiltinMeta]
     class ZilHash : ZilObject
     {
         protected readonly ZilAtom type;

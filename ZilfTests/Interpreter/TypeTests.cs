@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -349,7 +350,7 @@ namespace ZilfTests.Interpreter
         {
             // list-based types can be coerced to FORM
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE FORM>",
-                new ZilForm(new ZilObject[] {}));
+                new ZilForm(new ZilObject[] { }));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FORM>",
                 new ZilForm(new ZilObject[] {
                     new ZilFix(1), new ZilFix(2), new ZilFix(3),
@@ -686,7 +687,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-STRING>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-SEGMENT>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-VECTOR>", ctx.TRUE);
-            
+
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-FIX>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-ATOM>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<STRUCTURED? .A-CHARACTER>", ctx.FALSE);
@@ -992,6 +993,39 @@ namespace ZilfTests.Interpreter
             // it does affect ROMAN2 if we change it again
             TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN2 FIX>");
             Assert.AreEqual("MMXV", roman2.ToStringContext(ctx, false));
+        }
+
+        [TestMethod]
+        public void All_ZilObject_Classes_Have_A_Builtin_Attribute()
+        {
+            var typesMissingAttribute =
+                from t in typeof(ZilObject).Assembly.GetTypes()
+                where typeof(ZilObject).IsAssignableFrom(t) && !t.IsAbstract
+                let builtinTypeAttrs = t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                let builtinAltAttrs = t.GetCustomAttributes(typeof(BuiltinAlternateAttribute), false)
+                let builtinMetaAttrs = t.GetCustomAttributes(typeof(BuiltinMetaAttribute), false)
+                where builtinTypeAttrs.Length + builtinAltAttrs.Length + builtinMetaAttrs.Length != 1
+                select t.Name;
+
+            var missingList = string.Join(", ", typesMissingAttribute);
+            Assert.AreEqual("", missingList, "Some ZilObject classes are missing Builtin{Type|Alternate|Meta}Attribute");
+
+            var alternatesWithBadMainTypes =
+                from t in typeof(ZilObject).Assembly.GetTypes()
+                where typeof(ZilObject).IsAssignableFrom(t) && !t.IsAbstract
+                let builtinAltAttrs = t.GetCustomAttributes(typeof(BuiltinAlternateAttribute), false)
+                where builtinAltAttrs.Length > 0
+                let mainType = ((BuiltinAlternateAttribute)builtinAltAttrs[0]).MainType
+                let mainAttrs = mainType.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                where mainAttrs.Length == 0
+                select new { AlternateType = t.Name, MainType = mainType.Name };
+
+            var alternatesBadList = string.Join(
+                ", ",
+                alternatesWithBadMainTypes.Select(
+                    p => string.Format("{0} (main type {1})", p.AlternateType, p.MainType)));
+
+            Assert.AreEqual("", alternatesBadList, "Some ZilObject classes with BuiltinAlternateAttribute point to main types without BuiltinTypeAttribute");
         }
     }
 }

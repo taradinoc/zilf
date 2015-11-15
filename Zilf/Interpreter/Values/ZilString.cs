@@ -206,6 +206,7 @@ namespace Zilf.Interpreter.Values
             return GetEnumerator();
         }
 
+        [BuiltinAlternate(typeof(ZilString))]
         private class OffsetString : ZilObject, IStructure
         {
             private readonly ZilString orig;

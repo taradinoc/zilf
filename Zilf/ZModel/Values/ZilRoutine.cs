@@ -26,6 +26,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
+    [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
     class ZilRoutine : ZilObject
     {
         private readonly ZilAtom name;
@@ -43,6 +44,19 @@ namespace Zilf.ZModel.Values
             this.argspec = new ArgSpec(name, activationAtom, argspec);
             this.body = body.ToArray();
             this.flags = flags;
+        }
+
+        [ChtypeMethod]
+        public static ZilRoutine FromList(Context ctx, ZilList list)
+        {
+            if (list.IsEmpty || list.Rest.IsEmpty)
+                throw new InterpreterError("list must have at least 2 elements");
+
+            var argList = list.First as ZilList;
+            if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                throw new InterpreterError("first element must be a list");
+
+            return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
         }
 
         public ArgSpec ArgSpec

@@ -166,6 +166,8 @@
     <Compile Include="Interpreter\ArgItem.cs" />
     <Compile Include="Interpreter\ArgSpec.cs" />
     <Compile Include="Interpreter\Binding.cs" />
+    <Compile Include="Interpreter\BuiltinAlternateAttribute.cs" />
+    <Compile Include="Interpreter\BuiltinMetaAttribute.cs" />
     <Compile Include="Interpreter\ChtypeMethodAttribute.cs" />
     <Compile Include="Interpreter\ControlException.cs" />
     <Compile Include="Interpreter\FileFlags.cs" />
