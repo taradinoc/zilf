@@ -55,5 +55,17 @@ namespace ZilfTests.Interpreter
 
             Assert.AreEqual(@"[!\H ""ello"" WORLD]", chan.String);
         }
+
+        [TestMethod]
+        public void TestPRINT_MANY()
+        {
+            var ctx = new Context();
+            var chan = MakeTestChannel(ctx);
+
+            TestHelpers.Evaluate(ctx, @"<PRINT-MANY .OUTCHAN PRINC ""Hello"" !\! PRMANY-CRLF>");
+            TestHelpers.Evaluate(ctx, @"<PRINT-MANY .OUTCHAN PRIN1 ""string"" !\c PRMANY-CRLF>");
+
+            Assert.AreEqual("Hello!\n\"string\"!\\c\n", chan.String);
+        }
     }
 }
