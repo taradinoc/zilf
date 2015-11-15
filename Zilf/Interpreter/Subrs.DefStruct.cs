@@ -301,7 +301,7 @@ namespace Zilf.Interpreter
                             SRequiredArgInitializer,
                             field.Offset - startOffset + 1,
                             arg.Atom.ToStringContext(ctx, false),
-                            field.Default == null ? "<>" : field.Default.ToStringContext(ctx, false));
+                            field.Default == null ? UnparsedDefaultForDecl(ctx, field.Decl) : field.Default.ToStringContext(ctx, false));
                         break;
 
                     case ArgItem.ArgType.Optional:
@@ -310,7 +310,7 @@ namespace Zilf.Interpreter
                             SOptAuxArgInitializer,
                             field.Offset - startOffset + 1,
                             arg.Atom.ToStringContext(ctx, false),
-                            field.Default == null ? "<>" : field.Default.ToStringContext(ctx, false));
+                            field.Default == null ? UnparsedDefaultForDecl(ctx, field.Decl) : field.Default.ToStringContext(ctx, false));
                         break;
 
                     default:
@@ -343,9 +343,37 @@ namespace Zilf.Interpreter
                 resultInitializers);
         }
 
+        private static string UnparsedDefaultForDecl(Context ctx, ZilObject decl)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(decl != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
+            foreach (var zo in LikelyDefaults(ctx))
+            {
+                if (Decl.Check(ctx, zo, decl))
+                    return zo.ToStringContext(ctx, false);
+            }
+
+            return "<>";
+        }
+
+        private static IEnumerable<ZilObject> LikelyDefaults(Context ctx)
+        {
+            Contract.Requires(ctx != null);
+
+            yield return ctx.FALSE;
+            yield return new ZilFix(0);
+            yield return new ZilList(null, null);
+            yield return new ZilVector();
+            yield return new ZilString("");
+            yield return ctx.GetStdAtom(StdAtom.SORRY);
+        }
+
         private static string MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
             string unparsedInitArgs, int startOffset)
         {
+            Contract.Requires(ctx != null);
             Contract.Requires(name != null);
             Contract.Requires(baseType != null);
             Contract.Requires(fields != null);
@@ -442,17 +470,18 @@ namespace Zilf.Interpreter
                 if (field.Default != null)
                 {
                     unparsedDefault = field.Default.ToStringContext(ctx, false, true);
-                    newObjectDefaults.AppendFormat(
-                        SNewObjectDefaultTemplate,
-                        field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
-                    boaConstructorDefaultClauses.AppendFormat(
-                        SBoaConstructorDefaultClauseTemplate,
-                        field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
                 }
                 else
                 {
-                    unparsedDefault = "<>";
+                    unparsedDefault = UnparsedDefaultForDecl(ctx, field.Decl);
                 }
+
+                newObjectDefaults.AppendFormat(
+                    SNewObjectDefaultTemplate,
+                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
+                boaConstructorDefaultClauses.AppendFormat(
+                    SBoaConstructorDefaultClauseTemplate,
+                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
 
                 existingObjectClauses.AppendFormat(
                     SExistingObjectCondClauseTemplate,
