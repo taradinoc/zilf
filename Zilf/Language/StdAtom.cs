@@ -242,6 +242,8 @@ namespace Zilf.Language
         ORB,
         OUTCHAN,
         PACKAGE,
+        [Atom("PARSER-TABLE")]
+        PARSER_TABLE,
         PATTERN,
         PER,
         PLTABLE,
