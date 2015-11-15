@@ -199,6 +199,42 @@ namespace Zilf.Interpreter
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
+        [Subr("USE-WHEN")]
+        public static ZilObject USE_WHEN(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2)
+                throw new InterpreterError("USE-WHEN", 2, 0);
+
+            if (args[0].IsTrue)
+            {
+                return PerformUse(ctx, args.Skip(1).ToArray(), "USE-WHEN", StdAtom.PACKAGE);
+            }
+            else
+            {
+                return args[0];
+            }
+        }
+
+        [Subr("INCLUDE-WHEN")]
+        public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2)
+                throw new InterpreterError("INCLUDE-WHEN", 2, 0);
+
+            if (args[0].IsTrue)
+            {
+                return PerformUse(ctx, args.Skip(1).ToArray(), "INCLUDE-WHEN", StdAtom.DEFINITIONS);
+            }
+            else
+            {
+                return args[0];
+            }
+        }
+
         private static ZilObject PerformUse(Context ctx, ZilObject[] args, string name, StdAtom requiredPackageType)
         {
             SubrContracts(ctx, args);
@@ -242,6 +278,13 @@ namespace Zilf.Interpreter
             }
 
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST), new ZilList(obpathList));
+            return ctx.TRUE;
+        }
+
+        [Subr("COMPILING?")]
+        public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)
+        {
+            // always true
             return ctx.TRUE;
         }
     }
