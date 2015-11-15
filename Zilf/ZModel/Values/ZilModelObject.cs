@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -25,6 +26,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
+    [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
     class ZilModelObject : ZilObject
     {
         private readonly ZilAtom name;
@@ -36,6 +38,24 @@ namespace Zilf.ZModel.Values
             this.name = name;
             this.props = props;
             this.isRoom = isRoom;
+        }
+
+        [ChtypeMethod]
+        public static ZilModelObject FromList(Context ctx, ZilList list)
+        {
+            if (list.IsEmpty)
+                throw new InterpreterError("list must have at least 1 element");
+
+            var atom = list.First as ZilAtom;
+
+            if (atom == null)
+                throw new InterpreterError("first element must be an atom");
+
+            if (list.Rest.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.LIST))
+                throw new InterpreterError("elements after first must be lists");
+
+            // TODO: set isRoom
+            return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);
         }
 
         public ZilAtom Name

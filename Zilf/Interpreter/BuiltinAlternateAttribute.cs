@@ -17,31 +17,30 @@
  */
 
 using System;
-using Zilf.Language;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
     /// <summary>
-    /// Specifies that a class implements a ZILF builtin type.
+    /// Specifies that a class provides an alternate implementation of a ZILF builtin type which
+    /// is implemented by another class.
     /// </summary>
-    /// <seealso cref="ChtypeMethodAttribute"/>
+    /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Class)]
-    sealed class BuiltinTypeAttribute : Attribute
+    sealed class BuiltinAlternateAttribute : Attribute
     {
-        /// <summary>
-        /// Initializes a new BuiltinTypeAttribute with the specified name and primitive type.
-        /// </summary>
-        /// <param name="name">The <see cref="StdAtom"/> representing the type name.</param>
-        /// <param name="primType">The primitive type on which the type is based.</param>
-        /// <remarks>A constructor or static method must be marked with
-        /// <see cref="ChtypeMethodAttribute"/>.</remarks>
-        public BuiltinTypeAttribute(StdAtom name, PrimType primType)
+        public BuiltinAlternateAttribute(Type mainClass)
         {
-            this.Name = name;
-            this.PrimType = primType;
+            Contract.Requires(mainClass != null && typeof(ZilObject).IsAssignableFrom(mainClass));
+
+            this.MainType = mainClass;
         }
 
-        public StdAtom Name { get; private set; }
-        public PrimType PrimType { get; private set; }
+        public Type MainType { get; private set; }
     }
 }

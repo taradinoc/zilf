@@ -24,6 +24,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
+    [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
     class ObList : ZilObject
     {
         private readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
@@ -37,6 +38,34 @@ namespace Zilf.Interpreter
         public ObList(bool ignoreCase)
         {
             this.ignoreCase = ignoreCase;
+        }
+
+        [ChtypeMethod]
+        public static ObList FromList(Context ctx, ZilList list)
+        {
+            var result = new ObList(ctx.IgnoreCase);
+
+            while (!list.IsEmpty)
+            {
+                var pair = list.First as ZilList;
+                list = list.Rest;
+
+                if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
+                    pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
+                {
+                    throw new InterpreterError("list elements must be 2-element lists");
+                }
+
+                var key = pair.First as ZilString;
+                var value = pair.Rest.First as ZilAtom;
+
+                if (key == null || value == null)
+                    throw new InterpreterError("list elements must be string/atom pairs");
+
+                result[key.Text] = value;
+            }
+
+            return result;
         }
 
         public override string ToString()

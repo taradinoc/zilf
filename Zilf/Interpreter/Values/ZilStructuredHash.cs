@@ -20,6 +20,7 @@ using System.Collections.Generic;
 
 namespace Zilf.Interpreter.Values
 {
+    [BuiltinMeta]
     class ZilStructuredHash : ZilHash, IStructure
     {
         public ZilStructuredHash(ZilAtom type, PrimType primtype, ZilObject primvalue)

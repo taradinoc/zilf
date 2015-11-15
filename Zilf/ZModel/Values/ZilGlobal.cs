@@ -21,6 +21,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
+    [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
     class ZilGlobal : ZilObject
     {
         private readonly ZilAtom name;
@@ -32,6 +33,21 @@ namespace Zilf.ZModel.Values
             this.value = value;
             this.StorageType = storageType;
             this.IsWord = true;
+        }
+
+        [ChtypeMethod]
+        public static ZilGlobal FromList(Context ctx, ZilList list)
+        {
+            if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
+                throw new InterpreterError("list must have 2 elements");
+
+            var name = list.First as ZilAtom;
+            var value = list.Rest.First;
+
+            if (name == null)
+                throw new InterpreterError("first element must be an atom");
+
+            return new ZilGlobal(name, value);
         }
 
         public ZilAtom Name
