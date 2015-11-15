@@ -547,6 +547,9 @@ namespace Zilf.Interpreter
                         case StdAtom.PURE:
                             flags |= TableFlags.Pure;
                             break;
+                        case StdAtom.PARSER_TABLE:
+                            // nada
+                            break;
                         default:
                             throw new InterpreterError("ITABLE: unrecognized flag: " + flag);
                     }
@@ -628,7 +631,8 @@ namespace Zilf.Interpreter
                                 type = T_STRING;
                                 break;
                             case StdAtom.KERNEL:
-                                // no idea what this one does
+                            case StdAtom.PARSER_TABLE:
+                                // nada
                                 break;
 
                             case StdAtom.PATTERN:
