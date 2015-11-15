@@ -147,6 +147,63 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        [Subr("PRINT-MANY")]
+        public static ZilObject PRINT_MANY(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2)
+                throw new InterpreterError("PRINT-MANY", 2, 0);
+
+            var channel = args[0];
+            var printer = args[1];
+
+            if (printer is ZilAtom)
+            {
+                var atom = (ZilAtom)printer;
+                printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
+                if (printer == null)
+                    throw new InterpreterError(string.Format(
+                        "PRINT-MANY: {0} has no GVAL or LVAL",
+                        atom.ToStringContext(ctx, false)));
+            }
+
+            var applicablePrinter = printer as IApplicable;
+            if (applicablePrinter == null)
+                throw new InterpreterError("PRINT-MANY: not applicable: " + printer.ToStringContext(ctx, false));
+
+            var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
+            var result = ctx.TRUE;
+
+            ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
+            try
+            {
+                var noArgs = new ZilObject[0];
+                var printArgs = new ZilObject[1];
+
+                for (int i = 2; i < args.Length; i++)
+                {
+                    result = args[i];
+
+                    if (result == crlf)
+                    {
+                        CRLF(ctx, noArgs);
+                    }
+                    else
+                    {
+                        printArgs[0] = result;
+                        applicablePrinter.ApplyNoEval(ctx, printArgs);
+                    }
+                }
+            }
+            finally
+            {
+                ctx.PopLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN));
+            }
+
+            return result;
+        }
+
         [Subr]
         public static ZilObject IMAGE(Context ctx, ZilObject[] args)
         {

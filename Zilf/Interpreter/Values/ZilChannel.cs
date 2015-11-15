@@ -203,9 +203,8 @@ namespace Zilf.Interpreter.Values
 
         public override int WriteNewline()
         {
-            int oldLen = sb.Length;
-            sb.AppendLine();
-            return sb.Length - oldLen;
+            sb.Append('\n');
+            return 1;
         }
 
         public override int WriteString(string s)

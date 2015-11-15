@@ -261,6 +261,8 @@ namespace Zilf.Language
         PRINTN,
         PRINTR,
         PRINTTYPE,
+        [Atom("PRMANY-CRLF")]
+        PRMANY_CRLF,
         PROG,
         PROPDEF,
         PROPSPEC,
