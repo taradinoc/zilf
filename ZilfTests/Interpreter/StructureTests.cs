@@ -195,6 +195,25 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_Custom_Boa_Constructor()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<SETG NEXT-ID 0>
+<DEFSTRUCT RGBA (VECTOR
+                 'CONSTRUCTOR
+                 ('CONSTRUCTOR MAKE-RGBA ('RED 'GREEN 'BLUE ""OPT"" ('ALPHA 255) ""AUX"" (RGBA-ID '<SETG NEXT-ID <+ ,NEXT-ID 1>>))))
+    (RED FIX) (GREEN FIX) (BLUE FIX) (ALPHA FIX) (RGBA-ID FIX)>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<MAKE-RGBA 127 127>");
+            TestHelpers.EvalAndAssert(ctx, "<RED <MAKE-RGBA 10 20 30>>", new ZilFix(10));       // ID 1
+            TestHelpers.EvalAndAssert(ctx, "<RGBA-ID <MAKE-RGBA 11 22 33>>", new ZilFix(2));
+            TestHelpers.EvalAndAssert(ctx, "<ALPHA <MAKE-RGBA 11 22 33>>", new ZilFix(255));    // ID 3
+            TestHelpers.EvalAndAssert(ctx, "<ALPHA <MAKE-RGBA 11 22 33 44>>", new ZilFix(44));  // ID 4
+        }
+
+        [TestMethod]
         public void TestDEFSTRUCT_Eval_Args()
         {
             var ctx = new Context();
