@@ -176,7 +176,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y FIX)>");
 
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT>",
-                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, new ZilVector(ctx.FALSE, ctx.FALSE) }));
+                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, new ZilVector(new ZilFix(0), new ZilFix(0)) }));
         }
 
         [TestMethod]
@@ -236,7 +236,7 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
-        public void TestDEFSTRUCT_Default_Field_Values()
+        public void TestDEFSTRUCT_Explicit_Default_Field_Values()
         {
             var ctx = new Context();
 
@@ -257,6 +257,22 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 11 22>>", new ZilFix(6));
             TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 'POINT <MAKE-POINT 111 222 333> 'POINT-Y 200>>", new ZilFix(333));
             TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(7));
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_Implicit_Default_Field_Values()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFSTRUCT FOO VECTOR (FOO-FIX FIX) (FOO-STRING STRING) (FOO-ATOM ATOM) (FOO-LIST LIST) (FOO-VECTOR VECTOR) (FOO-MULTI <OR LIST FALSE>)>");
+
+            TestHelpers.EvalAndAssert(ctx, "<FOO-FIX <MAKE-FOO>>", new ZilFix(0));
+            TestHelpers.EvalAndAssert(ctx, "<FOO-STRING <MAKE-FOO>>", new ZilString(""));
+            TestHelpers.EvalAndAssert(ctx, "<FOO-ATOM <MAKE-FOO>>", ctx.GetStdAtom(StdAtom.SORRY));
+            TestHelpers.EvalAndAssert(ctx, "<FOO-LIST <MAKE-FOO>>", new ZilList(null, null));
+            TestHelpers.EvalAndAssert(ctx, "<FOO-VECTOR <MAKE-FOO>>", new ZilVector());
+            TestHelpers.EvalAndAssert(ctx, "<FOO-MULTI <MAKE-FOO>>", ctx.FALSE);
         }
 
         // TODO: test 0-based field offsets
