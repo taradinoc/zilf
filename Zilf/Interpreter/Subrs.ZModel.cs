@@ -198,9 +198,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx, args);
 
             // typical form:  <GLOBAL atom-or-adecl default-value>
-            // quirky form:   <GLOBAL atom-or-adecl default-value dummy1 dummy2>
-            if (args.Length != 2 && args.Length != 4)
-                throw new InterpreterError("GLOBAL", 2, 2);
+            // quirky form:   <GLOBAL atom-or-adecl default-value decl [size]>
+            // TODO: use decl and size?
+            if (args.Length < 2 || args.Length > 4)
+                throw new InterpreterError("GLOBAL", 2, 4);
 
             ZilAtom atom = args[0] as ZilAtom;
             if (atom == null)
