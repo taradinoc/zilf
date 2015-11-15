@@ -121,30 +121,29 @@ namespace Zilf.Interpreter
                 ctx.RegisterType(name, ctx.GetTypePrim(baseType));
             }
 
+            string unparsedInitArgs;
+            if (defaults.InitArgs != null)
+            {
+                var sb = new StringBuilder();
+
+                foreach (var zo in defaults.InitArgs)
+                {
+                    if (sb.Length > 0)
+                        sb.Append(' ');
+
+                    sb.Append(zo.ToStringContext(ctx, false, true));
+                }
+
+                unparsedInitArgs = sb.ToString();
+            }
+            else
+            {
+                unparsedInitArgs = "";
+            }
+
+            // define constructor macro
             if (!defaults.SuppressDefaultCtor)
             {
-                // define constructor macro
-
-                string unparsedInitArgs;
-                if (defaults.InitArgs != null)
-                {
-                    var sb = new StringBuilder();
-
-                    foreach (var zo in defaults.InitArgs)
-                    {
-                        if (sb.Length > 0)
-                            sb.Append(' ');
-
-                        sb.Append(zo.ToStringContext(ctx, false, true));
-                    }
-
-                    unparsedInitArgs = sb.ToString();
-                }
-                else
-                {
-                    unparsedInitArgs = "";
-                }
-
                 var ctorMacroDef = MakeDefstructCtorMacro(ctx, name, baseType, fields, unparsedInitArgs, defaults.StartOffset);
                 var oldFileName = ctx.CurrentFile;
                 try
@@ -160,7 +159,30 @@ namespace Zilf.Interpreter
 
             if (defaults.CustomCtorSpec != null)
             {
-                //XXX define custom constructor macro based on parameters in spec
+                if (defaults.CustomCtorSpec.IsEmpty || defaults.CustomCtorSpec.Rest.IsEmpty)
+                    throw new InterpreterError("DEFSTRUCT: not enough elements in 'CONSTRUCTOR spec");
+
+                var ctorName = defaults.CustomCtorSpec.First as ZilAtom;
+                if (ctorName == null)
+                    throw new InterpreterError("DEFSTRUCT: element after 'CONSTRUCTOR must be an atom");
+
+                var argspecList = defaults.CustomCtorSpec.Rest.First as ZilList;
+                if (argspecList == null || argspecList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    throw new InterpreterError("DEFSTRUCT: second element after 'CONSTRUCTOR must be an argument list");
+
+                var argspec = new ArgSpec(ctorName, null, argspecList);
+                var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, unparsedInitArgs, defaults.StartOffset, argspec);
+
+                var oldFileName = ctx.CurrentFile;
+                try
+                {
+                    ctx.CurrentFile = string.Format("<constructor {0} for DEFSTRUCT {1}>", ctorName, name);
+                    Program.Evaluate(ctx, ctorMacroDef, true);
+                }
+                finally
+                {
+                    ctx.CurrentFile = oldFileName;
+                }
             }
 
             // define field access macros
@@ -229,12 +251,105 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        private static string MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
+            List<DefStructField> fields, string unparsedInitArgs, int startOffset, ArgSpec argspec)
+        {
+            Contract.Requires(typeName != null);
+            Contract.Requires(baseType != null);
+            Contract.Requires(fields != null);
+            Contract.Requires(unparsedInitArgs != null);
+
+            // {0} = constructor name
+            // {1} = type name
+            // {2} = argspec
+            // {3} = field count
+            // {4} = base constructor atom
+            // {5} = unparsed INIT-ARGS, or empty string
+            // {6} = PUT statements for fields
+            const string SMacroTemplate = @"
+<DEFMAC {0} {2}
+    <BIND ((RESULT-INIT <IVECTOR {3} <>>))
+        {6}
+        <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {1}>>>";
+
+            var remainingFields = fields.ToDictionary(f => f.Name);
+
+            var resultInitializers = new StringBuilder();
+            foreach (var arg in argspec)
+            {
+                // {0} = offset
+                // {1} = arg name
+                // {2} = default value
+                const string SRequiredArgInitializer = "<PUT .RESULT-INIT {0} .{1}>";
+                const string SOptAuxArgInitializer = "<PUT .RESULT-INIT {0} <COND (<ASSIGNED? {1}> .{1}) (T {2})>>";
+
+                DefStructField field;
+                if (remainingFields.TryGetValue(arg.Atom, out field))
+                {
+                    remainingFields.Remove(arg.Atom);
+                }
+                else
+                {
+                    continue;
+                }
+
+                // generate code
+                switch (arg.Type)
+                {
+                    case ArgItem.ArgType.Required:
+                        resultInitializers.AppendFormat(
+                            SRequiredArgInitializer,
+                            field.Offset - startOffset + 1,
+                            arg.Atom.ToStringContext(ctx, false),
+                            field.Default == null ? "<>" : field.Default.ToStringContext(ctx, false));
+                        break;
+
+                    case ArgItem.ArgType.Optional:
+                    case ArgItem.ArgType.Auxiliary:
+                        resultInitializers.AppendFormat(
+                            SOptAuxArgInitializer,
+                            field.Offset - startOffset + 1,
+                            arg.Atom.ToStringContext(ctx, false),
+                            field.Default == null ? "<>" : field.Default.ToStringContext(ctx, false));
+                        break;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+
+            foreach (var field in remainingFields.Values)
+            {
+                if (field.Default == null)
+                    continue;
+
+                // {0} = offset
+                // {1} = default value
+                const string SOmittedFieldInitializer = "<PUT .RESULT-INIT {0} {1}>";
+                resultInitializers.AppendFormat(
+                    SOmittedFieldInitializer,
+                    field.Offset - startOffset + 1,
+                    field.Default.ToStringContext(ctx, false));
+            }
+
+            return string.Format(
+                SMacroTemplate,
+                ctorName.ToStringContext(ctx, false),
+                typeName.ToStringContext(ctx, false),
+                argspec.ToString(zo => zo.ToStringContext(ctx, false)),
+                fields.Count,
+                baseType.ToStringContext(ctx, false),
+                unparsedInitArgs,
+                resultInitializers);
+        }
+
         private static string MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
             string unparsedInitArgs, int startOffset)
         {
             Contract.Requires(name != null);
             Contract.Requires(baseType != null);
             Contract.Requires(fields != null);
+            Contract.Requires(unparsedInitArgs != null);
 
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
@@ -354,11 +469,11 @@ namespace Zilf.Interpreter
 
             return string.Format(
                 SMacroTemplate,
-                name,
+                name.ToStringContext(ctx, false),
                 fields.Count,
                 existingObjectClauses,
                 newObjectClauses,
-                baseType,
+                baseType.ToStringContext(ctx, false),
                 unparsedInitArgs,
                 boaConstructorClauses,
                 boaConstructorDefaultClauses,
