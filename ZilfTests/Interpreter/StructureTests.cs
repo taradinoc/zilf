@@ -217,6 +217,33 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_Default_Field_Values()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"
+<DEFSTRUCT POINT VECTOR (POINT-X FIX 123) (POINT-Y FIX 456) (POINT-ID FIX <ALLOCATE-ID>)>
+<SETG NEXT-ID 1>
+<DEFINE ALLOCATE-ID (""AUX"" (R ,NEXT-ID))
+    <SETG NEXT-ID <+ ,NEXT-ID 1>>
+    .R>");
+
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(1));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(2));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 'POINT-ID 1001>>", new ZilFix(1001));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(3));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-X <MAKE-POINT 'POINT-Y 0>>", new ZilFix(123));   // ID 4
+            TestHelpers.EvalAndAssert(ctx, "<POINT-Y <MAKE-POINT 'POINT-Y 0>>", new ZilFix(0));     // ID 5
+
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 11 22>>", new ZilFix(6));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 'POINT <MAKE-POINT 111 222 333> 'POINT-Y 200>>", new ZilFix(333));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(7));
+        }
+
+        // TODO: test 0-based field offsets
+        // <DEFSTRUCT POINT (TABLE ('START-OFFSET 0) ('NTH ZGET) ('PUT ZPUT)) (POINT-X FIX 123) (POINT-Y FIX 456) (POINT-ID FIX <ALLOCATE-ID>)>
+
+        [TestMethod]
         public void REST_Of_One_Character_String_Should_Be_Empty_String()
         {
             TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));
