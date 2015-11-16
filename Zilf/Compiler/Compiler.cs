@@ -1660,14 +1660,12 @@ namespace Zilf.Compiler
                         // quirks: local
                         if (cc.Locals.TryGetValue(atom, out local))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such global {0}, using the local instead",
-                                atom.ToStringContext(cc.Context, false));
+                            Errors.CompWarning(cc.Context, form, "no such global {0}, using the local instead", atom);
                             return local;
                         }
 
                         // error
-                        Errors.CompError(cc.Context, form, "undefined global or constant: {0}",
-                            atom.ToStringContext(cc.Context, false));
+                        Errors.CompError(cc.Context, form, "undefined global or constant: {0}", atom);
                         return wantResult ? cc.Game.Zero : null;
                     case StdAtom.LVAL:
                         atom = form.Rest.First as ZilAtom;
@@ -1684,32 +1682,27 @@ namespace Zilf.Compiler
                         // quirks: constant, global, object, or routine
                         if (cc.Constants.TryGetValue(atom, out operand))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the constant instead",
-                                atom.ToStringContext(cc.Context, false));
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the constant instead", atom);
                             return operand;
                         }
                         if (cc.Globals.TryGetValue(atom, out global))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the global instead",
-                                atom.ToStringContext(cc.Context, false));
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the global instead", atom);
                             return global;
                         }
                         if (cc.Objects.TryGetValue(atom, out objbld))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the object instead",
-                                atom.ToStringContext(cc.Context, false));
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the object instead", atom);
                             return objbld;
                         }
                         if (cc.Routines.TryGetValue(atom, out routine))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the routine instead",
-                                atom.ToStringContext(cc.Context, false));
+                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the routine instead", atom);
                             return routine;
                         }
 
                         // error
-                        Errors.CompError(cc.Context, form, "undefined local: {0}",
-                            atom.ToStringContext(cc.Context, false));
+                        Errors.CompError(cc.Context, form, "undefined local: {0}", atom);
                         return wantResult ? cc.Game.Zero : null;
 
                     case StdAtom.ITABLE:
@@ -1803,8 +1796,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    Errors.CompError(cc.Context, form, "unrecognized routine or instruction: {0}",
-                        head.ToStringContext(cc.Context, false));
+                    Errors.CompError(cc.Context, form, "unrecognized routine or instruction: {0}", head);
                 }
                 return wantResult ? cc.Game.Zero : null;
             }
@@ -3296,11 +3288,14 @@ namespace Zilf.Compiler
                     throw new CompilerError("all clauses in IFFLAG must be lists");
 
                 ZilAtom atom;
+                ZilString str;
                 ZilForm form;
                 ZilObject value;
                 bool match, isElse = false;
-                if ((atom = clause.First as ZilAtom) != null &&
-                    (value = cc.Context.GetCompilationFlagValue(atom)) != null)
+                if (((atom = clause.First as ZilAtom) != null &&
+                     (value = cc.Context.GetCompilationFlagValue(atom)) != null) ||
+                    ((str = clause.First as ZilString) != null &&
+                     (value = cc.Context.GetCompilationFlagValue(str.Text)) != null))
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;

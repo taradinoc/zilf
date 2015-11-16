@@ -1210,10 +1210,16 @@ namespace Zilf.Interpreter
         }
 
         [Pure]
-        public ZilObject GetCompilationFlagValue(ZilAtom name)
+        public ZilObject GetCompilationFlagValue(ZilAtom atom)
         {
-            name = compilationFlagsOblist[name.Text];
-            return GetGlobalVal(name);
+            return GetCompilationFlagValue(atom.Text);
+        }
+
+        [Pure]
+        public ZilObject GetCompilationFlagValue(string name)
+        {
+            var atom = compilationFlagsOblist[name];
+            return GetGlobalVal(atom);
         }
 
         private void SetCompilationFlagValue(ZilAtom name, ZilObject value)
