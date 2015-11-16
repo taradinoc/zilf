@@ -92,10 +92,12 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
-        public void COMPILATION_FLAG_VALUE_Should_Reject_Nonexistent_Flag()
+        public void COMPILATION_FLAG_VALUE_Should_Return_FALSE_For_Nonexistent_Flag()
         {
             const string CODE = "<COMPILATION-FLAG-VALUE ASDFGHJKL>";
-            TestHelpers.EvalAndCatch<InterpreterError>(CODE);
+
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, CODE, ctx.FALSE);
         }
 
         [TestMethod]

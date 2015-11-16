@@ -294,12 +294,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            var result = ctx.GetCompilationFlagValue(atom);
-
-            if (result == null)
-                throw new InterpreterError("COMPILATION-FLAG-VALUE: no such flag: " + atom);
-
-            return result;
+            return ctx.GetCompilationFlagValue(atom) ?? ctx.FALSE;
         }
 
         [FSubr("IFFLAG")]
@@ -322,11 +317,14 @@ namespace Zilf.Interpreter
                 bool match;
 
                 ZilAtom atom;
+                ZilString str;
                 ZilForm form;
                 ZilObject value;
 
-                if ((atom = list.First as ZilAtom) != null &&
-                    (value = ctx.GetCompilationFlagValue(atom)) != null)
+                if (((atom = list.First as ZilAtom) != null &&
+                     (value = ctx.GetCompilationFlagValue(atom)) != null) ||
+                    ((str = list.First as ZilString) != null &&
+                    (value = ctx.GetCompilationFlagValue(str.Text)) != null))
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;

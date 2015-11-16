@@ -25,6 +25,10 @@ namespace IntegrationTests
             AssertRoutine("", "<IFFLAG (FOO 123) (ELSE 456)>")
                 .WithGlobal("<COMPILATION-FLAG FOO <>>")
                 .GivesNumber("456");
+
+            AssertRoutine("", "<IFFLAG (\"FOO\" 123) (ELSE 456)>")
+                .WithGlobal("<COMPILATION-FLAG FOO <>>")
+                .GivesNumber("456");
         }
     }
 }
