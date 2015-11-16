@@ -23,6 +23,14 @@ namespace IntegrationTests
     [TestClass]
     public class SyntaxTests
     {
+        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        {
+            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+
+            return new GlobalsAssertionHelper(globals);
+        }
+
         private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
@@ -64,6 +72,28 @@ namespace IntegrationTests
                 .WithGlobal("<SYNTAX TOSS (CHUCK) OBJECT AT OBJECT = V-TOSS>")
                 .InV3()
                 .Outputs("111");
+        }
+
+        [TestMethod]
+        public void NEW_SFLAGS_Defines_New_Scope_Flags()
+        {
+            AssertGlobals(
+                @"<ROUTINE GET-OPTS1 (ACT ""AUX"" (ST <GET ,VERBS <- 255 .ACT>>)) <GETB .ST 6>>",
+                "<CONSTANT SEARCH-DO-TAKE 1>",
+                "<CONSTANT SEARCH-MUST-HAVE 2>",
+                "<CONSTANT SEARCH-MANY 4>",
+                "<CONSTANT SEARCH-STANDARD 8>",
+                "<CONSTANT SEARCH-OPTIONAL 16>",
+                "<CONSTANT SEARCH-ALL ,SEARCH-STANDARD>",
+                @"<SETG NEW-SFLAGS [""STANDARD"" ,SEARCH-STANDARD ""OPTIONAL"" ,SEARCH-OPTIONAL]>",
+                "<ROUTINE V-DUMMY () <>>",
+                "<SYNTAX FOO OBJECT (OPTIONAL) = V-DUMMY>",
+                "<SYNTAX BAR OBJECT (HAVE) = V-DUMMY>",
+                "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>")
+                .Implies(
+                    "<=? <GET-OPTS1 ,ACT?FOO> ,SEARCH-OPTIONAL>",
+                    "<=? <GET-OPTS1 ,ACT?BAR> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE>>",
+                    "<=? <GET-OPTS1 ,ACT?BAZ> <+ ,SEARCH-OPTIONAL ,SEARCH-MUST-HAVE>>");
         }
     }
 }

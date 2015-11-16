@@ -30,7 +30,7 @@ namespace Zilf.ZModel
     {
         public readonly int NumObjects;
         public readonly Word Verb, Preposition1, Preposition2;
-        public readonly ScopeFlags Options1, Options2;
+        public readonly byte Options1, Options2;
         public readonly ZilAtom FindFlag1, FindFlag2;
         public readonly ZilAtom Action, Preaction, ActionName;
         public readonly IList<ZilAtom> Synonyms;
@@ -38,9 +38,9 @@ namespace Zilf.ZModel
         private static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
         public Syntax(ISourceLine src, Word verb, int numObjects, Word prep1, Word prep2,
-        ScopeFlags options1, ScopeFlags options2, ZilAtom findFlag1, ZilAtom findFlag2,
-        ZilAtom action, ZilAtom preaction, ZilAtom actionName,
-        IEnumerable<ZilAtom> synonyms = null)
+            byte options1, byte options2, ZilAtom findFlag1, ZilAtom findFlag2,
+            ZilAtom action, ZilAtom preaction, ZilAtom actionName,
+            IEnumerable<ZilAtom> synonyms = null)
         {
             Contract.Requires(verb != null);
             Contract.Requires(numObjects >= 0 & numObjects <= 2);
@@ -255,8 +255,8 @@ namespace Zilf.ZModel
             Word verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
             Word word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1, src);
             Word word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2, src);
-            ScopeFlags flags1 = ParseScopeFlags(bits1);
-            ScopeFlags flags2 = ParseScopeFlags(bits2);
+            byte flags1 = ScopeFlags.Parse(bits1, ctx);
+            byte flags2 = ScopeFlags.Parse(bits2, ctx);
             ZilAtom findFlag1 = ParseFindFlag(find1);
             ZilAtom findFlag2 = ParseFindFlag(find2);
             IEnumerable<ZilAtom> synAtoms = null;
@@ -317,50 +317,6 @@ namespace Zilf.ZModel
             return atom;
         }
 
-        private static ScopeFlags ParseScopeFlags(ZilList list)
-        {
-            if (list == null)
-                return ScopeFlags.Default;
-
-            ScopeFlags result = ScopeFlags.None;
-
-            foreach (ZilObject obj in list)
-            {
-                ZilAtom atom = obj as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("object options in syntax must be atoms");
-
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.TAKE:
-                        result |= ScopeFlags.Take;
-                        break;
-                    case StdAtom.HAVE:
-                        result |= ScopeFlags.Have;
-                        break;
-                    case StdAtom.MANY:
-                        result |= ScopeFlags.Many;
-                        break;
-                    case StdAtom.HELD:
-                        result |= ScopeFlags.Held;
-                        break;
-                    case StdAtom.CARRIED:
-                        result |= ScopeFlags.Carried;
-                        break;
-                    case StdAtom.ON_GROUND:
-                        result |= ScopeFlags.OnGround;
-                        break;
-                    case StdAtom.IN_ROOM:
-                        result |= ScopeFlags.InRoom;
-                        break;
-                    default:
-                        throw new InterpreterError("unrecognized object option: " + atom.ToString());
-                }
-            }
-
-            return result;
-        }
-
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
@@ -370,9 +326,9 @@ namespace Zilf.ZModel
 
             // object clauses
             var items = new[] {
-new { Prep = Preposition1, Find = FindFlag1, Opts = Options1 },
-new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 },
-};
+                new { Prep = Preposition1, Find = FindFlag1, Opts = Options1 },
+                new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 },
+            };
 
             foreach (var item in items.Take(NumObjects))
             {
@@ -391,12 +347,10 @@ new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 },
                     sb.Append(')');
                 }
 
-                if (item.Opts != ScopeFlags.Default)
-                {
-                    sb.Append(" (");
-                    sb.Append(item.Opts);
-                    sb.Append(')');
-                }
+                // TODO: unparse scope flags
+                sb.Append(" (");
+                sb.Append(item.Opts);
+                sb.Append(')');
             }
 
             // actions
