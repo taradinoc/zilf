@@ -115,7 +115,6 @@ namespace Zilf.Interpreter
 
             InitSubrs();
             InitTypeMap();
-            InitPackages();
 
             TRUE = GetStdAtom(StdAtom.T);
             FALSE = new ZilFalse(new ZilList(null, null));
@@ -139,6 +138,7 @@ namespace Zilf.Interpreter
             InitTellPatterns();
             InitPropDefs();
             InitCompilationFlags();
+            InitPackages();
 
             atTopLevel = true;
         }
@@ -367,8 +367,6 @@ namespace Zilf.Interpreter
 
         private void InitPackages()
         {
-            var packageAtom = GetStdAtom(StdAtom.PACKAGE);
-
             var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH" };
             ZilObject[] args0 = new ZilObject[0], args1 = new ZilObject[1];
 
@@ -378,6 +376,8 @@ namespace Zilf.Interpreter
                 Subrs.PACKAGE(this, args1);
                 Subrs.ENDPACKAGE(this, args0);
             }
+
+            SetGlobalVal(ZilAtom.Parse("ZILCH!-ZILCH!-PACKAGE", this), TRUE);
         }
 
         private void InitSubrs()
