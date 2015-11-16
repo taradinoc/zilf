@@ -250,18 +250,13 @@ namespace IntegrationTests
         [TestMethod]
         public void TestBAND()
         {
+            AssertExpr("<BAND>").GivesNumber("-1");
+            AssertExpr("<BAND 33>").GivesNumber("33");
             AssertExpr("<BAND 33 96>").GivesNumber("32");
+            AssertExpr("<BAND 33 96 64>").GivesNumber("0");
 
             // alias
             AssertExpr("<ANDB 33 96>").GivesNumber("32");
-        }
-
-        [TestMethod]
-        public void TestBAND_Error()
-        {
-            AssertExpr("<BAND>").DoesNotCompile();
-            AssertExpr("<BAND 33>").DoesNotCompile();
-            AssertExpr("<BAND 33 96 64>").DoesNotCompile();
         }
 
         [TestMethod]
@@ -283,18 +278,13 @@ namespace IntegrationTests
         [TestMethod]
         public void TestBOR()
         {
+            AssertExpr("<BOR>").GivesNumber("0");
+            AssertExpr("<BOR 33>").GivesNumber("33");
             AssertExpr("<BOR 33 96>").GivesNumber("97");
+            AssertExpr("<BOR 33 96 64>").GivesNumber("97");
 
             // alias
             AssertExpr("<ORB 33 96>").GivesNumber("97");
-        }
-
-        [TestMethod]
-        public void TestBOR_Error()
-        {
-            AssertExpr("<BOR>").DoesNotCompile();
-            AssertExpr("<BOR 33>").DoesNotCompile();
-            AssertExpr("<BOR 33 96 64>").DoesNotCompile();
         }
 
         [TestMethod]

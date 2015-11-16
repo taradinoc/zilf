@@ -687,8 +687,6 @@ namespace Zilf.Compiler.Builtins
         #region Binary Opcodes
 
         [Builtin("MOD", Data = BinaryOp.Mod)]
-        [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
-        [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
         [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5)]
         [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5)]
         public static IOperand BinaryValueOp(
@@ -733,6 +731,8 @@ namespace Zilf.Compiler.Builtins
         [Builtin("SUB", "-", Data = BinaryOp.Sub)]
         [Builtin("MUL", "*", Data = BinaryOp.Mul)]
         [Builtin("DIV", "/", Data = BinaryOp.Div)]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
         public static IOperand ArithmeticOp(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
@@ -744,6 +744,10 @@ namespace Zilf.Compiler.Builtins
                 case BinaryOp.Mul:
                 case BinaryOp.Div:
                     init = c.cc.Game.One;
+                    break;
+
+                case BinaryOp.And:
+                    init = c.cc.Game.MakeOperand(-1);
                     break;
 
                 default:
@@ -761,6 +765,8 @@ namespace Zilf.Compiler.Builtins
                     {
                         case BinaryOp.Add:
                         case BinaryOp.Mul:
+                        case BinaryOp.And:
+                        case BinaryOp.Or:
                             return args[0];
 
                         case BinaryOp.Sub:
