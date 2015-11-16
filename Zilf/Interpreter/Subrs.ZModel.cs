@@ -73,12 +73,16 @@ namespace Zilf.Interpreter
             if (atom == null)
                 throw new InterpreterError("ROUTINE: first arg must be an atom");
 
-            if (ctx.GetZVal(atom) != null)
+            var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
+            if (ctx.GetZVal(oldAtom) != null)
             {
                 if (ctx.AllowRedefine)
-                    ctx.Redefine(atom);
+                {
+                    ctx.Redefine(oldAtom);
+                    ctx.ZEnvironment.InternGlobalName(atom);
+                }
                 else
-                    throw new InterpreterError("ROUTINE: already defined: " + atom.ToStringContext(ctx, false));
+                    throw new InterpreterError("ROUTINE: already defined: " + oldAtom.ToStringContext(ctx, false));
             }
 
             ZilAtom activationAtom;
@@ -171,12 +175,14 @@ namespace Zilf.Interpreter
                     throw new InterpreterError("CONSTANT: first arg must be an atom (or ADECL'd atom)");
             }
 
-            var previous = ctx.GetZVal(atom);
+            var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
+            var previous = ctx.GetZVal(oldAtom);
             if (previous != null)
             {
                 if (ctx.AllowRedefine)
                 {
-                    ctx.Redefine(atom);
+                    ctx.Redefine(oldAtom);
+                    ctx.ZEnvironment.InternGlobalName(atom);
                 }
                 else if (previous is ZilConstant && ((ZilConstant)previous).Value.Equals(args[1]))
                 {
@@ -185,7 +191,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    throw new InterpreterError("CONSTANT: already defined: " + atom.ToStringContext(ctx, false));
+                    throw new InterpreterError("CONSTANT: already defined: " + oldAtom.ToStringContext(ctx, false));
                 }
             }
 
@@ -214,7 +220,8 @@ namespace Zilf.Interpreter
                     throw new InterpreterError("GLOBAL: first arg must be an atom (or ADECL'd atom)");
             }
 
-            var oldVal = ctx.GetZVal(atom);
+            var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
+            var oldVal = ctx.GetZVal(oldAtom);
             if (oldVal != null)
             {
                 if (ctx.AllowRedefine)
@@ -230,14 +237,15 @@ namespace Zilf.Interpreter
                         }
                     }
 
-                    ctx.Redefine(atom);
+                    ctx.Redefine(oldAtom);
+                    ctx.ZEnvironment.InternGlobalName(atom);
                 }
                 else
-                    throw new InterpreterError("GLOBAL: already defined: " + atom.ToStringContext(ctx, false));
+                    throw new InterpreterError("GLOBAL: already defined: " + oldAtom.ToStringContext(ctx, false));
             }
 
             if (args[1] is ZilTable)
-                ((ZilTable)args[1]).Name = "T?" + atom.ToStringContext(ctx, false);
+                ((ZilTable)args[1]).Name = "T?" + atom.Text;
 
             ZilGlobal g = new ZilGlobal(atom, args[1]);
             ctx.SetZVal(atom, g);
@@ -370,12 +378,16 @@ namespace Zilf.Interpreter
             if (atom == null)
                 throw new InterpreterError(name + ": first arg must be an atom");
 
-            if (ctx.GetZVal(atom) != null)
+            var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
+            if (ctx.GetZVal(oldAtom) != null)
             {
                 if (ctx.AllowRedefine)
+                {
                     ctx.Redefine(atom);
+                    ctx.ZEnvironment.InternGlobalName(atom);
+                }
                 else
-                    throw new InterpreterError(name + ": already defined: " + atom.ToStringContext(ctx, false));
+                    throw new InterpreterError(name + ": already defined: " + oldAtom.ToStringContext(ctx, false));
             }
 
             ZilList[] props = new ZilList[args.Length - 1];
@@ -905,24 +917,30 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<int>() >= 1 && Contract.Result<int>() <= 8);
 
             int newVersion;
-            if (expr is ZilAtom)
+            if (expr is ZilAtom || expr is ZilString)
             {
-                switch (((ZilAtom)expr).StdAtom)
+                string text;
+                if (expr is ZilAtom)
+                    text = ((ZilAtom)expr).Text;
+                else
+                    text = ((ZilString)expr).Text;
+
+                switch (text.ToUpper())
                 {
-                    case StdAtom.ZIP:
+                    case "ZIP":
                         newVersion = 3;
                         break;
-                    case StdAtom.EZIP:
+                    case "EZIP":
                         newVersion = 4;
                         break;
-                    case StdAtom.XZIP:
+                    case "XZIP":
                         newVersion = 5;
                         break;
-                    case StdAtom.YZIP:
+                    case "YZIP":
                         newVersion = 6;
                         break;
                     default:
-                        throw new InterpreterError(name + ": unrecognized atom (must be ZIP, EZIP, XZIP, YZIP)");
+                        throw new InterpreterError(name + ": unrecognized version name (must be ZIP, EZIP, XZIP, YZIP)");
                 }
             }
             else if (expr is ZilFix)
@@ -932,7 +950,9 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(name + ": version number out of range (must be 3-6)");
             }
             else
+            {
                 throw new InterpreterError(name + ": arg must be an atom or a FIX");
+            }
             return newVersion;
         }
 

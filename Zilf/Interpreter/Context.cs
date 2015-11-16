@@ -480,6 +480,7 @@ namespace Zilf.Interpreter
             zenv.Constants.Add(constant);
             SetZVal(atom, constant);
             SetGlobalVal(atom, value);
+            zenv.InternGlobalName(atom);
 
             return constant;
         }
@@ -719,6 +720,8 @@ namespace Zilf.Interpreter
         public void Redefine(ZilAtom atom)
         {
             Contract.Requires(atom != null);
+
+            zenv.InternedGlobalNames.Remove(atom);
 
             ZilObject obj = GetZVal(atom);
 
