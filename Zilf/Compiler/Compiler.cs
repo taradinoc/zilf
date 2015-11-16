@@ -1963,12 +1963,17 @@ namespace Zilf.Compiler
 
                 return result;
             }
+            else if (type == StdAtom.ADECL)
+            {
+                // TODO: check DECL
+                return CompileAsOperandWithBranch(cc, rb, ((ZilAdecl)expr).First, resultStorage, label, polarity, tempVarProvider);
+            }
             else if (type != StdAtom.FORM)
             {
                 var value = CompileConstant(cc, expr);
                 if (value == null)
                 {
-                    Errors.CompError(cc.Context, expr as ZilForm, "unexpected expression in value+predicate context");
+                    Errors.CompError(cc.Context, expr, "unexpected expression in value+predicate context: " + expr.ToStringContext(cc.Context, false));
                 }
                 else
                 {
