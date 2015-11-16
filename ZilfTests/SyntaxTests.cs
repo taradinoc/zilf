@@ -41,10 +41,10 @@ namespace ZilfTests
             Assert.AreEqual(0, syntax.NumObjects);
             Assert.AreEqual(null, syntax.Preposition1);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -65,10 +65,10 @@ namespace ZilfTests
             Assert.AreEqual(1, syntax.NumObjects);
             Assert.AreEqual(null, syntax.Preposition1);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -90,10 +90,10 @@ namespace ZilfTests
             Assert.AreEqual("BY", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-ABIDE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -114,11 +114,11 @@ namespace ZilfTests
             Assert.AreEqual(2, syntax.NumObjects);
             Assert.AreEqual(null, syntax.Preposition1);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual("LIKE", syntax.Preposition2.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition2.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-TREEHORN", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -140,11 +140,11 @@ namespace ZilfTests
             Assert.AreEqual("OUT", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual("FOR", syntax.Preposition2.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition2.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-SWISS-WATCH", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -166,11 +166,11 @@ namespace ZilfTests
             Assert.AreEqual("OUT", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual("FOR", syntax.Preposition2.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition2.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual("PHONEBOOKBIT", syntax.FindFlag2.ToString());
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-SWISS-WATCH", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -192,10 +192,10 @@ namespace ZilfTests
             Assert.AreEqual("AROUND", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual("DUMMYBIT", syntax.FindFlag1.ToString());
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-LOOK-AROUND", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -219,10 +219,10 @@ namespace ZilfTests
             Assert.AreEqual(0, syntax.NumObjects);
             Assert.AreEqual(null, syntax.Preposition1);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-LOOK-AROUND", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -244,10 +244,10 @@ namespace ZilfTests
             Assert.AreEqual("BEHIND", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-SEARCH", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);
@@ -269,10 +269,10 @@ namespace ZilfTests
             Assert.AreEqual("AT", syntax.Preposition1.Atom.ToString());
             Assert.AreEqual(PartOfSpeech.Preposition, syntax.Preposition1.PartOfSpeech & PartOfSpeech.Preposition);
             Assert.AreEqual(null, syntax.FindFlag1);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options1);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.AreEqual(null, syntax.Preposition2);
             Assert.AreEqual(null, syntax.FindFlag2);
-            Assert.AreEqual(ScopeFlags.Default, syntax.Options2);
+            Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-EXAMINE", syntax.Action.ToString());
             Assert.AreEqual(null, syntax.Preaction);

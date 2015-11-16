@@ -219,6 +219,10 @@ namespace Zilf.Language
         MOVES,
         MUL,
         N,
+        [Atom("NEW-PARSER?")]
+        NEW_PARSER_P,
+        [Atom("NEW-SFLAGS")]
+        NEW_SFLAGS,
         [Atom("NEW-VOC?")]
         NEW_VOC_P,
         NEXIT,
@@ -309,6 +313,14 @@ namespace Zilf.Language
         SAVE,
         SCORE,
         SCREEN,
+        [Atom("SEARCH-ALL")]
+        SEARCH_ALL,
+        [Atom("SEARCH-DO-TAKE")]
+        SEARCH_DO_TAKE,
+        [Atom("SEARCH-MANY")]
+        SEARCH_MANY,
+        [Atom("SEARCH-MUST-HAVE")]
+        SEARCH_MUST_HAVE,
         SEGMENT,
         SEMI,
         SERIAL,
