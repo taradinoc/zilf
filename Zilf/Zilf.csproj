@@ -232,6 +232,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Interpreter\Subrs.cs" />
+    <Compile Include="ZModel\AtomNameEqualityComparer.cs" />
     <Compile Include="ZModel\GlobalStorageType.cs" />
     <Compile Include="ZModel\Language.cs" />
     <Compile Include="ZModel\LowCoreField.cs" />

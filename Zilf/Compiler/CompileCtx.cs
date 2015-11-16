@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Emit;
@@ -47,9 +48,19 @@ namespace Zilf.Compiler
             Contract.Requires(ctx != null);
             Contract.Requires(game != null);
 
-            this.Context = ctx;
-            this.Game = game;
-            this.WantDebugInfo = wantDebugInfo;
+            Context = ctx;
+            Game = game;
+            WantDebugInfo = wantDebugInfo;
+
+            var equalizer = new AtomNameEqualityComparer(ctx.IgnoreCase);
+
+            Globals = new Dictionary<ZilAtom, IGlobalBuilder>(equalizer);
+            Constants = new Dictionary<ZilAtom, IOperand>(equalizer);
+            Routines = new Dictionary<ZilAtom, IRoutineBuilder>(equalizer);
+            Objects = new Dictionary<ZilAtom, IObjectBuilder>(equalizer);
+            Properties = new Dictionary<ZilAtom, IPropertyBuilder>(equalizer);
+            Flags = new Dictionary<ZilAtom, IFlagBuilder>(equalizer);
+            SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>(equalizer);
         }
 
         [ContractInvariantMethod]
@@ -67,16 +78,16 @@ namespace Zilf.Compiler
         public readonly Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
         public readonly Stack<Block> Blocks = new Stack<Block>();
 
-        public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals = new Dictionary<ZilAtom, IGlobalBuilder>();
-        public readonly Dictionary<ZilAtom, IOperand> Constants = new Dictionary<ZilAtom, IOperand>();
-        public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines = new Dictionary<ZilAtom, IRoutineBuilder>();
-        public readonly Dictionary<ZilAtom, IObjectBuilder> Objects = new Dictionary<ZilAtom, IObjectBuilder>();
+        public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals;
+        public readonly Dictionary<ZilAtom, IOperand> Constants;
+        public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines;
+        public readonly Dictionary<ZilAtom, IObjectBuilder> Objects;
         public readonly Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
         public readonly Dictionary<Word, IWordBuilder> Vocabulary = new Dictionary<Word, IWordBuilder>();
-        public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties = new Dictionary<ZilAtom, IPropertyBuilder>();
-        public readonly Dictionary<ZilAtom, IFlagBuilder> Flags = new Dictionary<ZilAtom, IFlagBuilder>();
+        public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties;
+        public readonly Dictionary<ZilAtom, IFlagBuilder> Flags;
 
-        public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>();
+        public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals;
         public IOperand SoftGlobalsTable;
 
         public int UniqueFlags { get; set; }

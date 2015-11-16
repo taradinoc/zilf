@@ -47,15 +47,17 @@ namespace Zilf.ZModel
         public readonly List<ZilModelObject> Objects = new List<ZilModelObject>();
         public readonly List<ZilTable> Tables = new List<ZilTable>();
 
-        public readonly Dictionary<ZilAtom, ZilObject> PropertyDefaults = new Dictionary<ZilAtom, ZilObject>();
-        public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms = new Dictionary<ZilAtom, ZilAtom>();
+        public readonly Dictionary<ZilAtom, ZilObject> PropertyDefaults;
+        public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms;
         public readonly List<ZilAtom> FlagsOrderedLast = new List<ZilAtom>();
 
         public readonly List<Syntax> Syntaxes = new List<Syntax>();
-        public readonly Dictionary<ZilAtom, Word> Vocabulary = new Dictionary<ZilAtom, Word>();
+        public readonly Dictionary<ZilAtom, Word> Vocabulary;
         public readonly List<Synonym> Synonyms = new List<Synonym>();
         public readonly List<ZilAtom> Directions = new List<ZilAtom>();
         public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
+
+        public readonly Dictionary<ZilAtom, ZilAtom> InternedGlobalNames;
 
         public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
         public TreeOrdering TreeOrdering = TreeOrdering.Default;
@@ -156,6 +158,13 @@ namespace Zilf.ZModel
             this.Charset0 = defaultLang.Charset0;
             this.Charset1 = defaultLang.Charset1;
             this.Charset2 = defaultLang.Charset2;
+
+            var equalizer = new AtomNameEqualityComparer(ctx.IgnoreCase);
+
+            PropertyDefaults = new Dictionary<ZilAtom, ZilObject>(equalizer);
+            BitSynonyms = new Dictionary<ZilAtom, ZilAtom>(equalizer);
+            Vocabulary = new Dictionary<ZilAtom, Word>(equalizer);
+            InternedGlobalNames = new Dictionary<ZilAtom, ZilAtom>(equalizer);
         }
 
         [ContractInvariantMethod]
@@ -386,7 +395,7 @@ namespace Zilf.ZModel
             /* first, collect objects and note the order(s) in which they were defined and mentioned,
              * where "mentioned" means either defined or used as the IN/LOC/GLOBAL of another object */
 
-            var objectsByName = new Dictionary<ZilAtom, ObjectOrderingEntry>(Objects.Count);
+            var objectsByName = new Dictionary<ZilAtom, ObjectOrderingEntry>(Objects.Count, new AtomNameEqualityComparer(ctx.IgnoreCase));
 
             int definitionOrder = 0, mentionOrder = 0;
 
@@ -777,6 +786,15 @@ namespace Zilf.ZModel
 
             HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
         }
-    }
 
+        public ZilAtom InternGlobalName(ZilAtom atom)
+        {
+            ZilAtom result;
+            if (InternedGlobalNames.TryGetValue(atom, out result))
+                return result;
+
+            InternedGlobalNames.Add(atom, atom);
+            return atom;
+        }
+    }
 }
