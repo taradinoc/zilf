@@ -228,8 +228,15 @@ namespace Zilf.Compiler
                 {
                     value = CompileConstant(cc, constant.Value);
                 }
+
                 if (value == null)
-                    Errors.CompError(ctx, constant, "invalid constant value");
+                {
+                    Errors.CompError(ctx, constant, "invalid value for constant {0}: {1}",
+                        constant.Name,
+                        constant.Value.ToStringContext(ctx, false));
+                    value = gb.Zero;
+                }
+
                 cc.Constants.Add(constant.Name, gb.DefineConstant(constant.Name.ToString(), value));
             }
 
@@ -3813,8 +3820,12 @@ namespace Zilf.Compiler
 
                                         try
                                         {
-                                            ZilAtom dummy;
-                                            if (!cc.Context.ZEnvironment.TryGetBitSynonym(atom, out dummy))
+                                            ZilAtom original;
+                                            if (cc.Context.ZEnvironment.TryGetBitSynonym(atom, out original))
+                                            {
+                                                DefineFlag(cc, original);
+                                            }
+                                            else
                                             {
                                                 DefineFlag(cc, atom);
                                             }

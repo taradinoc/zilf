@@ -316,6 +316,15 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Bit_Synonym_Should_Work_Even_If_Original_Is_Never_Set()
+        {
+            AssertGlobals(
+                "<BIT-SYNONYM MAINBIT ALIASBIT>",
+                "<OBJECT FOO (FLAGS ALIASBIT)>")
+                .Compiles();
+        }
+
+        [TestMethod]
         public void Too_Many_Bits_Should_Spoil_The_Build()
         {
             var tooManyBits = new StringBuilder();
