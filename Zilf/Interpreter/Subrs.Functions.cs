@@ -180,7 +180,12 @@ namespace Zilf.Interpreter
             if (args.Length != 1)
                 throw new InterpreterError("EXPAND", 1, 1);
 
-            return args[0].Expand(ctx);
+            var result = args[0].Expand(ctx);
+
+            if (result == args[0])
+                result = args[0].Eval(ctx);
+
+            return result;
         }
 
         [Subr]
