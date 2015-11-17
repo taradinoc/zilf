@@ -160,42 +160,49 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject Expand(Context ctx)
         {
+            ZilObject target;
+
             if (First is ZilAtom)
             {
                 ZilAtom fa = (ZilAtom)First;
-                ZilObject target = ctx.GetGlobalVal(fa);
+                target = ctx.GetGlobalVal(fa);
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
-                if (target != null && target.GetTypeAtom(ctx).StdAtom == StdAtom.MACRO)
+            }
+            else
+            {
+                target = First;
+            }
+
+            if (target != null && target.GetTypeAtom(ctx).StdAtom == StdAtom.MACRO)
+            {
+                ZilForm oldCF = ctx.CallingForm;
+                ctx.CallingForm = this;
+                try
                 {
-                    ZilForm oldCF = ctx.CallingForm;
-                    ctx.CallingForm = this;
-                    try
-                    {
-                        ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
-                            Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
+                    ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
+                        Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
 
-                        ZilForm resultForm = result as ZilForm;
-                        if (resultForm == null || resultForm == this)
-                            return result;
+                    ZilForm resultForm = result as ZilForm;
+                    if (resultForm == null || resultForm == this)
+                        return result;
 
-                        // set the source info on the expansion to match the macro invocation
-                        resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
-                        return resultForm.Expand(ctx);
-                    }
-                    catch (ZilError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = this.SourceLine;
-                        throw;
-                    }
-                    finally
-                    {
-                        ctx.CallingForm = oldCF;
-                    }
+                    // set the source info on the expansion to match the macro invocation
+                    resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
+                    return resultForm.Expand(ctx);
+                }
+                catch (ZilError ex)
+                {
+                    if (ex.SourceLine == null)
+                        ex.SourceLine = this.SourceLine;
+                    throw;
+                }
+                finally
+                {
+                    ctx.CallingForm = oldCF;
                 }
             }
-            else if (First is ZilFix)
+            else if (target is ZilFix)
             {
                 if (Rest.First != null)
                 {

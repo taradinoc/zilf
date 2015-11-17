@@ -293,16 +293,23 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<EXPAND +>", ctx.GetStdAtom(StdAtom.Plus));
             TestHelpers.EvalAndAssert(ctx, "<EXPAND <>>", ctx.FALSE);
 
-            // lists expand to themselves, not copies
+            // lists expand to copies of themselves
             var list = new ZilList(new ZilObject[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) });
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), list);
             var actual = TestHelpers.Evaluate(ctx, "<EXPAND .T>");
-            Assert.AreSame(list, actual);
+            Assert.AreEqual(list, actual);
+            Assert.AreNotSame(list, actual);
 
             // forms execute when evaluated
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () <FORM BAR>>");
             var expected = new ZilForm(new ZilObject[] { ZilAtom.Parse("BAR", ctx) });
             TestHelpers.EvalAndAssert(ctx, "<EXPAND '<FOO>>", expected);
+            TestHelpers.EvalAndAssert(ctx, "<EXPAND <FORM ,FOO>>", expected);
+
+            // if the form doesn't contain a macro, it still executes
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR () 123>");
+            TestHelpers.EvalAndAssert(ctx, "<EXPAND '<BAR>>", new ZilFix(123));
+            TestHelpers.EvalAndAssert(ctx, "<EXPAND <FORM ,BAR>>", new ZilFix(123));
 
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<EXPAND>");
