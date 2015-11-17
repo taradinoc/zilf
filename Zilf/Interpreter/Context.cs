@@ -1117,6 +1117,13 @@ namespace Zilf.Interpreter
                 return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
             }
 
+            // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
+            if (newType.StdAtom == StdAtom.TABLE && value.PrimType == PrimType.VECTOR)
+            {
+                var vector = (ZilVector)value.GetPrimitive(this);
+                return new ZilTable(1, vector.ToArray(), 0, null);
+            }
+
             // look it up in the typemap
             TypeMapEntry entry;
             if (typeMap.TryGetValue(newType, out entry))

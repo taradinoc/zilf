@@ -20,6 +20,7 @@ using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.ZModel.Values;
 
 namespace ZilfTests.Interpreter
 {
@@ -1026,6 +1027,26 @@ namespace ZilfTests.Interpreter
                     p => string.Format("{0} (main type {1})", p.AlternateType, p.MainType)));
 
             Assert.AreEqual("", alternatesBadList, "Some ZilObject classes with BuiltinAlternateAttribute point to main types without BuiltinTypeAttribute");
+        }
+
+        [TestMethod]
+        public void VECTOR_Can_Be_ChTyped_To_TABLE()
+        {
+            var table = (ZilTable)TestHelpers.Evaluate("<CHTYPE [1 2 3] TABLE>");
+
+            Assert.AreEqual(3, table.ElementCount);
+
+            var array = new ZilObject[3];
+            table.CopyTo(array, zo => zo, null);
+
+            var expected = new ZilObject[]
+            {
+                new ZilFix(1),
+                new ZilFix(2),
+                new ZilFix(3),
+            };
+
+            Assert.IsTrue(expected.SequenceEqual(array), "Unexpected table contents");
         }
     }
 }
