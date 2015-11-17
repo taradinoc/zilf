@@ -38,7 +38,9 @@ namespace Zilf.Interpreter
             ZilChannel channel;
             if (args.Length < 2)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("PRINT: bad OUTCHAN");
             }
@@ -70,7 +72,9 @@ namespace Zilf.Interpreter
             ZilChannel channel;
             if (args.Length < 2)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("PRIN1: bad OUTCHAN");
             }
@@ -100,7 +104,9 @@ namespace Zilf.Interpreter
             ZilChannel channel;
             if (args.Length < 2)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("PRINC: bad OUTCHAN");
             }
@@ -130,7 +136,9 @@ namespace Zilf.Interpreter
             ZilChannel channel;
             if (args.Length < 1)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("CRLF: bad OUTCHAN");
             }
