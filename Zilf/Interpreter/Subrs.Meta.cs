@@ -127,6 +127,7 @@ namespace Zilf.Interpreter
             var name = args[0] as ZilAtom;
             if (name == null)
                 throw new InterpreterError("DELAY-DEFINITION: first arg must be an atom");
+            name = ctx.ZEnvironment.InternGlobalName(name);
 
             if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
                 throw new InterpreterError("DELAY-DEFINITION: section has already been referenced: " + name);
@@ -146,6 +147,7 @@ namespace Zilf.Interpreter
             var name = args[0] as ZilAtom;
             if (name == null)
                 throw new InterpreterError("REPLACE-DEFINITION: first arg must be an atom");
+            name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
             var state = ctx.GetProp(name, replaceAtom);
@@ -187,6 +189,7 @@ namespace Zilf.Interpreter
             var name = args[0] as ZilAtom;
             if (name == null)
                 throw new InterpreterError("DEFAULT-DEFINITION: first arg must be an atom");
+            name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
             var state = ctx.GetProp(name, replaceAtom);
