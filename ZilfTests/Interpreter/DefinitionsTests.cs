@@ -70,5 +70,30 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert(CODE, new ZilFix(789));
         }
+
+        [TestMethod]
+        public void Definition_Block_Names_Are_Shared_Across_Packages()
+        {
+            const string CODE = @"
+FOO!-
+
+<PACKAGE ""FOO"">
+<DELAY-DEFINITION FOO-ROUTINE>
+<ENDPACKAGE>
+
+<PACKAGE ""BAR"">
+<DEFAULT-DEFINITION FOO-ROUTINE
+    <DEFINE FOO () 123>>
+<ENDPACKAGE>
+
+<PACKAGE ""BAZ"">
+<REPLACE-DEFINITION FOO-ROUTINE
+    <DEFINE FOO () 456>>
+<ENDPACKAGE>
+
+<FOO>";
+
+            TestHelpers.EvalAndAssert(CODE, new ZilFix(456));
+        }
     }
 }
