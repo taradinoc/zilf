@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -24,23 +24,28 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
-namespace Zilf.ZModel.Vocab
+namespace Zilf.ZModel.Vocab.OldParser
 {
-    class Word
+    class OldParserWord : IWord
     {
-        public readonly ZilAtom Atom;
+        private readonly ZilAtom atom;
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;
 
         private readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
         private readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
-        public Word(ZilAtom atom)
+        public OldParserWord(ZilAtom atom)
         {
             if (atom == null)
                 throw new ArgumentNullException("atom");
 
-            this.Atom = atom;
+            this.atom = atom;
+        }
+
+        public ZilAtom Atom
+        {
+            get { return atom; }
         }
 
         public override string ToString()
@@ -220,13 +225,13 @@ namespace Zilf.ZModel.Vocab
                 /* The order we trim is mostly arbitrary, except that adjective and object are first
                 * since they can sometimes be recognized without the part-of-speech flags. */
                 var partsToTrim = new[] {
-new { part = PartOfSpeech.Adjective, free = freeAdjective },
-new { part = PartOfSpeech.Object, free = freeObject },
-new { part = PartOfSpeech.Buzzword, free = freeBuzz },
-new { part = PartOfSpeech.Preposition, free = freePrep },
-new { part = PartOfSpeech.Verb, free = false },
-new { part = PartOfSpeech.Direction, free = false },
-};
+                    new { part = PartOfSpeech.Adjective, free = freeAdjective },
+                    new { part = PartOfSpeech.Object, free = freeObject },
+                    new { part = PartOfSpeech.Buzzword, free = freeBuzz },
+                    new { part = PartOfSpeech.Preposition, free = freePrep },
+                    new { part = PartOfSpeech.Verb, free = false },
+                    new { part = PartOfSpeech.Direction, free = false },
+                };
 
                 foreach (var trim in partsToTrim)
                 {
@@ -532,7 +537,7 @@ new { part = PartOfSpeech.Direction, free = false },
             return (this.SynonymTypes & synonymTypes) != 0;
         }
 
-        public void Merge(Context ctx, Word other)
+        public void Merge(Context ctx, OldParserWord other)
         {
             Contract.Requires(ctx != null);
 

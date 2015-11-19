@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010, 2015 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -15,17 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System.Diagnostics.Contracts;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel.Vocab
 {
-    class VerbSynonym : Synonym
+    interface IWord
     {
-        public VerbSynonym(IWord original, IWord synonym)
-            : base(original, synonym)
-        {
-            Contract.Requires(original != null);
-            Contract.Requires(synonym != null);
-        }
+        ZilAtom Atom { get; }
     }
 }

@@ -943,6 +943,13 @@ namespace Zilf.Interpreter
             }
         }
 
+        public void SetZVersion(int newVersion)
+        {
+            ZEnvironment.ZVersion = newVersion;
+            SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? TRUE : FALSE);
+            InitPropDefs();
+        }
+
         public void RegisterType(ZilAtom atom, PrimType primType)
         {
             Contract.Requires(atom != null);

@@ -21,7 +21,7 @@ namespace Zilf.ZModel.Vocab
 {
     class DirSynonym : Synonym
     {
-        public DirSynonym(Word original, Word synonym)
+        public DirSynonym(IWord original, IWord synonym)
             : base(original, synonym)
         {
             Contract.Requires(original != null);

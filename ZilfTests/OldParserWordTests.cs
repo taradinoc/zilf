@@ -23,11 +23,12 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Vocab;
+using Zilf.ZModel.Vocab.OldParser;
 
 namespace ZilfTests
 {
     [TestClass]
-    public class WordTests
+    public class OldParserWordTests
     {
         private static readonly ISourceLine dummySrc = new StringSourceLine("dummy");
 
@@ -36,14 +37,14 @@ namespace ZilfTests
         {
             var atom = new ZilAtom("FOO", new ObList(), StdAtom.None);
 
-            var word = new Word(atom);
+            var word = new OldParserWord(atom);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Ctor_Should_Reject_Null_Atom()
         {
-            var word = new Word(null);
+            var word = new OldParserWord(null);
         }
 
         /// <summary>
@@ -59,10 +60,10 @@ namespace ZilfTests
         /// <item>verbValue (the value to use when setting PartOfSpeech.Verb), and</item>
         /// <item>prepValue (the value to use when setting PartOfSpeech.Preposition).</item>
         /// </list></param>
-        private void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, Word, byte, byte> setPartsOfSpeech)
+        private void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
             Context ctx;
-            Word word;
+            OldParserWord word;
             CreateWordInContext(zversion, newVoc, out ctx, out word);
 
             // set parts of speech
@@ -82,8 +83,8 @@ namespace ZilfTests
         /// <param name="zversion">The Z-machine version to test.</param>
         /// <param name="newVoc">true to test with NEW-VOC? enabled, otherwise false.</param>
         /// <param name="ctx">Returns the new Context.</param>
-        /// <param name="word">Returns a new Word ("FOO") added to the context's ObList.</param>
-        private static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out Word word)
+        /// <param name="word">Returns a new OldParserWord ("FOO") added to the context's ObList.</param>
+        private static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out OldParserWord word)
         {
             // set up context
             ctx = new Context();
@@ -94,7 +95,7 @@ namespace ZilfTests
 
             // create word
             var wordAtom = new ZilAtom("FOO", ctx.RootObList, StdAtom.None);
-            word = new Word(wordAtom);
+            word = new OldParserWord(wordAtom);
         }
 
         [TestMethod]
@@ -134,7 +135,7 @@ namespace ZilfTests
         public void V3_OldVoc_Verb_Prep_Object_Should_Warn()
         {
             Context ctx;
-            Word word;
+            OldParserWord word;
             CreateWordInContext(3, false, out ctx, out word);
 
             word.SetVerb(ctx, dummySrc, 100);
@@ -149,7 +150,7 @@ namespace ZilfTests
         public void V4_OldVoc_Verb_Prep_Object_Should_Warn()
         {
             Context ctx;
-            Word word;
+            OldParserWord word;
             CreateWordInContext(4, false, out ctx, out word);
 
             word.SetVerb(ctx, dummySrc, 100);
@@ -164,7 +165,7 @@ namespace ZilfTests
         public void V4_OldVoc_CompactVocab_Verb_Dir_Should_Warn()
         {
             Context ctx;
-            Word word;
+            OldParserWord word;
             CreateWordInContext(4, false, out ctx, out word);
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
 
@@ -203,7 +204,7 @@ namespace ZilfTests
         public void V3_NewVoc_Verb_Prep_Object_Adj_Should_Warn()
         {
             Context ctx;
-            Word word;
+            OldParserWord word;
             CreateWordInContext(3, true, out ctx, out word);
 
             word.SetVerb(ctx, dummySrc, 100);
@@ -513,7 +514,7 @@ namespace ZilfTests
             {
                 // set up word according to test case
                 Context ctx;
-                Word word;
+                OldParserWord word;
                 CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
 
                 // TODO: catch exceptions in this block to indicate which test failed
@@ -694,7 +695,7 @@ namespace ZilfTests
             {
                 // set up word according to test case
                 Context ctx;
-                Word word;
+                OldParserWord word;
                 CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
                 ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
 

@@ -392,8 +392,7 @@ Compiler switches:
                             ZilString str = node as ZilString;
                             if (str != null && str.Text.StartsWith("EXTENDED") && ctx.ZEnvironment.ZVersion == 3)
                             {
-                                ctx.ZEnvironment.ZVersion = 4;
-                                ctx.InitPropDefs();
+                                ctx.SetZVersion(4);
                             }
 
                             first = false;

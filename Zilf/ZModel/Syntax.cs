@@ -29,7 +29,7 @@ namespace Zilf.ZModel
     class Syntax : IProvideSourceLine
     {
         public readonly int NumObjects;
-        public readonly Word Verb, Preposition1, Preposition2;
+        public readonly IWord Verb, Preposition1, Preposition2;
         public readonly byte Options1, Options2;
         public readonly ZilAtom FindFlag1, FindFlag2;
         public readonly ZilAtom Action, Preaction, ActionName;
@@ -37,7 +37,7 @@ namespace Zilf.ZModel
 
         private static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
-        public Syntax(ISourceLine src, Word verb, int numObjects, Word prep1, Word prep2,
+        public Syntax(ISourceLine src, IWord verb, int numObjects, IWord prep1, IWord prep2,
             byte options1, byte options2, ZilAtom findFlag1, ZilAtom findFlag2,
             ZilAtom action, ZilAtom preaction, ZilAtom actionName,
             IEnumerable<ZilAtom> synonyms = null)
@@ -252,9 +252,9 @@ namespace Zilf.ZModel
                 bits2 = null;
             }
 
-            Word verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
-            Word word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1, src);
-            Word word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2, src);
+            IWord verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
+            IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1, src);
+            IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2, src);
             byte flags1 = ScopeFlags.Parse(bits1, ctx);
             byte flags2 = ScopeFlags.Parse(bits2, ctx);
             ZilAtom findFlag1 = ParseFindFlag(find1);

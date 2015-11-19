@@ -22,10 +22,10 @@ namespace Zilf.ZModel.Vocab
 {
     class Synonym
     {
-        public readonly Word OriginalWord;
-        public readonly Word SynonymWord;
+        public readonly IWord OriginalWord;
+        public readonly IWord SynonymWord;
 
-        public Synonym(Word original, Word synonym)
+        public Synonym(IWord original, IWord synonym)
         {
             Contract.Requires(original != null);
             Contract.Requires(synonym != null);
@@ -45,7 +45,7 @@ namespace Zilf.ZModel.Vocab
         {
             Contract.Requires(ctx != null);
 
-            SynonymWord.Merge(ctx, OriginalWord);
+            ctx.ZEnvironment.VocabFormat.MergeWords(SynonymWord, OriginalWord);
         }
     }
 }
