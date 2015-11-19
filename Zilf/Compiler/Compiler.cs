@@ -130,14 +130,14 @@ namespace Zilf.Compiler
                 ctx.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
             }
 
-            var vocabMerges = new Dictionary<Word, Word>();
+            var vocabMerges = new Dictionary<IWord, IWord>();
             ctx.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
             {
                 cc.Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
                 vocabMerges.Add(duplicateWord, mainWord);
             });
 
-            foreach (Word word in ctx.ZEnvironment.Vocabulary.Values)
+            foreach (IWord word in ctx.ZEnvironment.Vocabulary.Values)
             {
                 DefineWord(cc, word);
             }
@@ -147,13 +147,13 @@ namespace Zilf.Compiler
                 var nameAtom = ZilAtom.Parse(pair.Key, ctx);
                 var symbolAtom = ZilAtom.Parse(pair.Value, ctx);
 
-                Word symbolWord;
+                IWord symbolWord;
 
                 if (ctx.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out symbolWord) && 
                     !ctx.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
                 {
-                    var nameWord = new Word(nameAtom);
-                    nameWord.Merge(ctx, symbolWord);
+                    var nameWord = ctx.ZEnvironment.VocabFormat.CreateWord(nameAtom);
+                    ctx.ZEnvironment.VocabFormat.MergeWords(nameWord, symbolWord);
                     vocabMerges.Add(nameWord, symbolWord);
                 }
             }
@@ -162,7 +162,7 @@ namespace Zilf.Compiler
 
             foreach (var pair in vocabMerges)
             {
-                Word dupWord = pair.Key, mainWord = pair.Value;
+                IWord dupWord = pair.Key, mainWord = pair.Value;
                 cc.Vocabulary[dupWord] = cc.Vocabulary[mainWord];
 
                 foreach (var prefix in wordConstantPrefixes)
@@ -353,12 +353,12 @@ namespace Zilf.Compiler
 
             // build vocabulary
             Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
-            Queue<Word> longWords = (longWordTable == null ? null : new Queue<Word>());
+            Queue<IWord> longWords = (longWordTable == null ? null : new Queue<IWord>());
 
             var builtWords = new HashSet<IWordBuilder>();
             foreach (var pair in cc.Vocabulary)
             {
-                Word word = pair.Key;
+                IWord word = pair.Key;
                 IWordBuilder wb = pair.Value;
 
                 if (builtWords.Contains(wb))
@@ -366,7 +366,7 @@ namespace Zilf.Compiler
 
                 builtWords.Add(wb);
 
-                word.WriteToBuilder(ctx, wb, dirIndexToPropertyOperand);
+                cc.Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, dirIndexToPropertyOperand);
 
                 if (longWords != null && ctx.ZEnvironment.IsLongWord(word))
                 {
@@ -645,17 +645,17 @@ namespace Zilf.Compiler
             Contract.Requires(cc != null);
 
             var ctx = cc.Context;
+            var vf = ctx.ZEnvironment.VocabFormat;
             bool compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
 
             // map all relevant preposition word builders to the preposition ID constants
             var query = from pair in cc.Vocabulary
                         let word = pair.Key
-                        where (word.PartOfSpeech & PartOfSpeech.Preposition) != 0 &&
-                              (compactVocab || !word.IsSynonym(PartOfSpeech.Preposition))
+                        where vf.IsPreposition(word) && (compactVocab || !vf.IsSynonym(word)) 
                         let builder = pair.Value
                         let prAtom = ZilAtom.Parse("PR?" + word.Atom, ctx)
                         let prConstant = cc.Constants.ContainsKey(prAtom) ? cc.Constants[prAtom] : null
-                        let prepValue = word.GetValue(PartOfSpeech.Preposition)
+                        let prepValue = vf.GetPrepositionValue(word)
                         group new { builder, prConstant } by prepValue into g
                         let builders = g.Select(w => w.builder)
                         let constant = g.First(w => w.prConstant != null).prConstant
@@ -677,8 +677,6 @@ namespace Zilf.Compiler
             }
         }
 
-
-
         private static void BuildSyntaxTables(CompileCtx cc)
         {
             Contract.Requires(cc != null);
@@ -696,17 +694,19 @@ namespace Zilf.Compiler
             // compact syntaxes?
             bool compact = cc.Context.GetGlobalOption(StdAtom.COMPACT_SYNTAXES_P);
 
+            var vf = cc.Context.ZEnvironment.VocabFormat;
+
             // verb table
             var query = from s in cc.Context.ZEnvironment.Syntaxes
                         group s by s.Verb into g
-                        orderby g.Key.GetValue(PartOfSpeech.Verb) descending
+                        orderby vf.GetVerbValue(g.Key) descending
                         select g;
 
             Dictionary<ZilAtom, Action> actions = new Dictionary<ZilAtom, Action>();
 
             foreach (var verb in query)
             {
-                int num = verb.Key.GetValue(PartOfSpeech.Verb);
+                int num = vf.GetVerbValue(verb.Key);
 
                 // syntax table
                 ITableBuilder stbl = cc.Game.DefineTable("ST?" + verb.Key.Atom.ToString(), true);
@@ -772,7 +772,7 @@ namespace Zilf.Compiler
                         {
                             if (line.Preposition1 != null)
                             {
-                                byte pn = line.Preposition1.GetValue(PartOfSpeech.Preposition);
+                                byte pn = vf.GetPrepositionValue(line.Preposition1);
                                 stbl.AddByte((byte)((pn & 63) | (line.NumObjects << 6)));
                             }
                             else
@@ -790,7 +790,7 @@ namespace Zilf.Compiler
                                 {
                                     if (line.Preposition2 != null)
                                     {
-                                        byte pn = line.Preposition2.GetValue(PartOfSpeech.Preposition);
+                                        byte pn = vf.GetPrepositionValue(line.Preposition2);
                                         stbl.AddByte((byte)(pn & 63));
                                     }
                                     else
@@ -867,7 +867,7 @@ namespace Zilf.Compiler
             return cc.Flags[flag];
         }
 
-        private static IOperand GetPreposition(CompileCtx cc, Word word)
+        private static IOperand GetPreposition(CompileCtx cc, IWord word)
         {
             Contract.Requires(cc != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || word == null);
@@ -935,7 +935,7 @@ namespace Zilf.Compiler
         /// </summary>
         /// <param name="cc">The CompileCtx.</param>
         /// <param name="word">The Word.</param>
-        private static void DefineWord(CompileCtx cc, Word word)
+        private static void DefineWord(CompileCtx cc, IWord word)
         {
             Contract.Requires(cc != null);
             Contract.Requires(word != null);
@@ -966,36 +966,13 @@ namespace Zilf.Compiler
                 }
             }
 
-            // adjective numbers only exist in V3
-            if (cc.Context.ZEnvironment.ZVersion == 3 &&
-                (word.PartOfSpeech & PartOfSpeech.Adjective) != 0)
+            foreach (var pair in cc.Context.ZEnvironment.VocabFormat.GetVocabConstants(word))
             {
-                string adjConstant = "A?" + rawWord;
-                ZilAtom adjAtom = ZilAtom.Parse(adjConstant, cc.Context);
-                if (!cc.Constants.ContainsKey(adjAtom))
-                    cc.Constants.Add(adjAtom,
-                        cc.Game.DefineConstant(adjConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Adjective))));
-            }
-
-            if ((word.PartOfSpeech & PartOfSpeech.Verb) != 0)
-            {
-                string verbConstant = "ACT?" + rawWord;
-                ZilAtom verbAtom = ZilAtom.Parse(verbConstant, cc.Context);
-                if (!cc.Constants.ContainsKey(verbAtom))
-                    cc.Constants.Add(verbAtom,
-                        cc.Game.DefineConstant(verbConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Verb))));
-            }
-
-            if ((word.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-            {
-                string prepConstant = "PR?" + rawWord;
-                ZilAtom prepAtom = ZilAtom.Parse(prepConstant, cc.Context);
-                if (!cc.Constants.ContainsKey(prepAtom))
-                    cc.Constants.Add(prepAtom,
-                        cc.Game.DefineConstant(prepConstant,
-                            cc.Game.MakeOperand(word.GetValue(PartOfSpeech.Preposition))));
+                var atom = ZilAtom.Parse(pair.Key, cc.Context);
+                if (!cc.Constants.ContainsKey(atom))
+                    cc.Constants.Add(atom,
+                        cc.Game.DefineConstant(pair.Key,
+                            cc.Game.MakeOperand(pair.Value)));
             }
         }
 
@@ -3534,7 +3511,7 @@ namespace Zilf.Compiler
             {
                 CreateVocabWord = (atom, partOfSpeech, src) =>
                 {
-                    Word word;
+                    IWord word;
 
                     switch (partOfSpeech.StdAtom)
                     {
@@ -3884,7 +3861,7 @@ namespace Zilf.Compiler
 
                 GetVocabWord = (atom, partOfSpeech, src) =>
                 {
-                    Word word;
+                    IWord word;
 
                     switch (partOfSpeech.StdAtom)
                     {
@@ -4043,7 +4020,7 @@ namespace Zilf.Compiler
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
+                                IWord word = cc.Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 tb.AddShort(wb);
                                 length += 2;
@@ -4062,7 +4039,7 @@ namespace Zilf.Compiler
                                     break;
                                 }
 
-                                Word word = cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
+                                IWord word = cc.Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
                                 IWordBuilder wb = cc.Vocabulary[word];
                                 if (cc.Context.ZEnvironment.ZVersion == 3)
                                 {
@@ -4086,7 +4063,7 @@ namespace Zilf.Compiler
 
                                 if (str != null)
                                 {
-                                    Word word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine);
+                                    IWord word = cc.Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, cc.Context), prop.SourceLine);
                                     IWordBuilder wb = cc.Vocabulary[word];
                                     tb.AddShort(wb);
                                 }

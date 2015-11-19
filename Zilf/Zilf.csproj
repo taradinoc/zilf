@@ -251,12 +251,15 @@
     <Compile Include="ZModel\Values\ZilWord.cs" />
     <Compile Include="ZModel\Vocab\AdjSynonym.cs" />
     <Compile Include="ZModel\Vocab\DirSynonym.cs" />
+    <Compile Include="ZModel\Vocab\IVocabFormat.cs" />
+    <Compile Include="ZModel\Vocab\IWord.cs" />
+    <Compile Include="ZModel\Vocab\OldParser\OldParserVocabFormat.cs" />
+    <Compile Include="ZModel\Vocab\OldParser\OldParserWord.cs" />
     <Compile Include="ZModel\Vocab\PartOfSpeech.cs" />
     <Compile Include="ZModel\Vocab\PrepSynonym.cs" />
     <Compile Include="ZModel\Vocab\ScopeFlags.cs" />
     <Compile Include="ZModel\Vocab\Synonym.cs" />
     <Compile Include="ZModel\Vocab\VerbSynonym.cs" />
-    <Compile Include="ZModel\Vocab\Word.cs" />
     <Compile Include="ZModel\ZEnvironment.cs" />
     <Compile Include="Compiler\FrontEnd.cs" />
     <Compile Include="Interpreter\BuiltinTypeAttribute.cs" />

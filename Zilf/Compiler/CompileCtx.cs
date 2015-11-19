@@ -83,7 +83,7 @@ namespace Zilf.Compiler
         public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines;
         public readonly Dictionary<ZilAtom, IObjectBuilder> Objects;
         public readonly Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
-        public readonly Dictionary<Word, IWordBuilder> Vocabulary = new Dictionary<Word, IWordBuilder>();
+        public readonly Dictionary<IWord, IWordBuilder> Vocabulary = new Dictionary<IWord, IWordBuilder>();
         public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties;
         public readonly Dictionary<ZilAtom, IFlagBuilder> Flags;
 

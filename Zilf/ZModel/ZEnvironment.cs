@@ -27,6 +27,7 @@ using Zilf.Language;
 using Zilf.StringEncoding;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using Zilf.ZModel.Vocab.OldParser;
 
 namespace Zilf.ZModel
 {
@@ -36,6 +37,7 @@ namespace Zilf.ZModel
     class ZEnvironment
     {
         private readonly Context ctx;
+        private IVocabFormat vocabFormat;
 
         public int ZVersion = 3;
         public bool TimeStatusLine = false;
@@ -52,7 +54,7 @@ namespace Zilf.ZModel
         public readonly List<ZilAtom> FlagsOrderedLast = new List<ZilAtom>();
 
         public readonly List<Syntax> Syntaxes = new List<Syntax>();
-        public readonly Dictionary<ZilAtom, Word> Vocabulary;
+        public readonly Dictionary<ZilAtom, IWord> Vocabulary;
         public readonly List<Synonym> Synonyms = new List<Synonym>();
         public readonly List<ZilAtom> Directions = new List<ZilAtom>();
         public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
@@ -70,17 +72,25 @@ namespace Zilf.ZModel
         /// </summary>
         public ZilAtom LowDirection;
 
-        public byte NextAdjective = 255;    // A?
-        public byte NextBuzzword = 255;     // B?
-        public byte NextPreposition = 255;  // PR?
-        public byte NextVerb = 255;         // ACT? (verb words)
-
         public byte NextAction = 0;         // V? (intentions)
 
         public int HeaderExtensionWords = 0;
 
         private byte[] zcharCountCache;   // char -> # of Z-chars
         private string charset0, charset1, charset2;
+
+        public IVocabFormat VocabFormat
+        {
+            get
+            {
+                if (vocabFormat == null)
+                {
+                    vocabFormat = new OldParserVocabFormat(ctx);
+                }
+
+                return vocabFormat;
+            }
+        }
 
         public string Charset0
         {
@@ -163,7 +173,7 @@ namespace Zilf.ZModel
 
             PropertyDefaults = new Dictionary<ZilAtom, ZilObject>(equalizer);
             BitSynonyms = new Dictionary<ZilAtom, ZilAtom>(equalizer);
-            Vocabulary = new Dictionary<ZilAtom, Word>(equalizer);
+            Vocabulary = new Dictionary<ZilAtom, IWord>(equalizer);
             InternedGlobalNames = new Dictionary<ZilAtom, ZilAtom>(equalizer);
         }
 
@@ -173,108 +183,58 @@ namespace Zilf.ZModel
             Contract.Invariant(this.Language != null);
         }
 
-        public Word GetVocab(ZilAtom text)
+        public IWord GetVocab(ZilAtom text)
         {
-            Word result;
+            IWord result;
 
             if (Vocabulary.TryGetValue(text, out result) == false)
             {
-                result = new Word(text);
+                result = VocabFormat.CreateWord(text);
                 Vocabulary.Add(text, result);
             }
 
             return result;
         }
 
-        public Word GetVocabPreposition(ZilAtom text, ISourceLine location)
+        public IWord GetVocabPreposition(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-
-            if ((result.PartOfSpeech & PartOfSpeech.Preposition) == 0)
-            {
-                if (NextPreposition == 0)
-                    throw new InvalidOperationException("Too many prepositions");
-
-                result.SetPreposition(ctx, location, NextPreposition--);
-            }
-
+            IWord result = GetVocab(text);
+            VocabFormat.MakePreposition(result, location);
             return result;
         }
 
-        public Word GetVocabAdjective(ZilAtom text, ISourceLine location)
+        public IWord GetVocabAdjective(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-            
-            if ((result.PartOfSpeech & PartOfSpeech.Adjective) == 0)
-            {
-                // adjective numbers only exist in V3
-                if (ZVersion == 3)
-                {
-                    if (NextAdjective == 0)
-                        throw new InvalidOperationException("Too many adjectives");
-
-                    result.SetAdjective(ctx, location, NextAdjective--);
-                }
-                else
-                {
-                    result.SetAdjective(ctx, location, 0);
-                }
-            }
-
+            IWord result = GetVocab(text);
+            VocabFormat.MakeAdjective(result, location);
             return result;
         }
 
-        public Word GetVocabNoun(ZilAtom text, ISourceLine location)
+        public IWord GetVocabNoun(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-
-            result.SetObject(ctx, location);
+            IWord result = GetVocab(text);
+            ctx.ZEnvironment.VocabFormat.MakeObject(result, location);
             return result;
         }
 
-        public Word GetVocabBuzzword(ZilAtom text, ISourceLine location)
+        public IWord GetVocabBuzzword(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-
-            if ((result.PartOfSpeech & PartOfSpeech.Buzzword) == 0)
-            {
-                if (NextBuzzword == 0)
-                    throw new InvalidOperationException("Too many buzzwords");
-
-                result.SetBuzzword(ctx, location, NextBuzzword--);
-            }
-
+            IWord result = GetVocab(text);
+            VocabFormat.MakeBuzzword(result, location);
             return result;
         }
 
-        public Word GetVocabVerb(ZilAtom text, ISourceLine location)
+        public IWord GetVocabVerb(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-
-            if ((result.PartOfSpeech & PartOfSpeech.Verb) == 0)
-            {
-                if (NextVerb == 0)
-                    throw new InvalidOperationException("Too many verbs");
-
-                result.SetVerb(ctx, location, NextVerb--);
-            }
-
+            IWord result = GetVocab(text);
+            VocabFormat.MakeVerb(result, location);
             return result;
         }
 
-        public Word GetVocabDirection(ZilAtom text, ISourceLine location)
+        public IWord GetVocabDirection(ZilAtom text, ISourceLine location)
         {
-            Word result = GetVocab(text);
-
-            if ((result.PartOfSpeech & PartOfSpeech.Direction) == 0)
-            {
-                int index = Directions.IndexOf(text);
-                if (index == -1)
-                    throw new ArgumentException("Not a direction");
-
-                result.SetDirection(ctx, location, (byte)index);
-            }
-
+            IWord result = GetVocab(text);
+            VocabFormat.MakeDirection(result, location);
             return result;
         }
 
@@ -628,7 +588,7 @@ namespace Zilf.ZModel
         /// <param name="notifyMerge">A callback to notify the caller that the first word
         /// has absorbed the second, and any references to the second should be retargeted
         /// to the first.</param>
-        public void MergeVocabulary(Action<Word, Word> notifyMerge)
+        public void MergeVocabulary(Action<IWord, IWord> notifyMerge)
         {
             Contract.Ensures(Vocabulary.Count <= Contract.OldValue(Vocabulary.Count));
 
@@ -658,7 +618,7 @@ namespace Zilf.ZModel
                     var words = g.ToArray();
                     for (int i = 1; i < words.Length; i++)
                     {
-                        words[0].Word.Merge(ctx, words[i].Word);
+                        VocabFormat.MergeWords(words[0].Word, words[i].Word);
                         notifyMerge(words[0].Word, words[i].Word);
                         this.Vocabulary[words[i].Atom] = this.Vocabulary[words[0].Atom];
                     }
@@ -666,7 +626,7 @@ namespace Zilf.ZModel
                     // merge back into words[1..N]
                     for (int i = 1; i < words.Length; i++)
                     {
-                        words[i].Word.Merge(ctx, words[0].Word);
+                        VocabFormat.MergeWords(words[i].Word, words[0].Word);
                     }
                 }
             }
@@ -737,7 +697,7 @@ namespace Zilf.ZModel
             }
         }
 
-        public bool IsLongWord(Word word)
+        public bool IsLongWord(IWord word)
         {
             Contract.Requires(word != null);
 

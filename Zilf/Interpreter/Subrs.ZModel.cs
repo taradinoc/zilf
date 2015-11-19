@@ -891,9 +891,7 @@ namespace Zilf.Interpreter
 
             int newVersion = ParseZVersion("VERSION", args[0]);
 
-            ctx.ZEnvironment.ZVersion = newVersion;
-            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? ctx.TRUE : ctx.FALSE);
-            ctx.InitPropDefs();
+            ctx.SetZVersion(newVersion);
 
             if (args.Length > 1)
             {
@@ -1407,10 +1405,10 @@ namespace Zilf.Interpreter
             if (atom == null)
                 throw new InterpreterError(name + STypeError);
 
-            Word oldWord;
+            IWord oldWord;
             if (ctx.ZEnvironment.Vocabulary.TryGetValue(atom, out oldWord) == false)
             {
-                oldWord = new Word(atom);
+                oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(atom);
                 ctx.ZEnvironment.Vocabulary.Add(atom, oldWord);
             }
 
@@ -1423,10 +1421,10 @@ namespace Zilf.Interpreter
                 if (atom == null)
                     throw new InterpreterError(name + STypeError);
 
-                Word newWord;
+                IWord newWord;
                 if (ctx.ZEnvironment.Vocabulary.TryGetValue(atom, out newWord) == false)
                 {
-                    newWord = new Word(atom);
+                    newWord = ctx.ZEnvironment.VocabFormat.CreateWord(atom);
                     ctx.ZEnvironment.Vocabulary.Add(atom, newWord);
                 }
 

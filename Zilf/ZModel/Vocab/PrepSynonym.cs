@@ -21,7 +21,7 @@ namespace Zilf.ZModel.Vocab
 {
     class PrepSynonym : Synonym
     {
-        public PrepSynonym(Word original, Word synonym)
+        public PrepSynonym(IWord original, IWord synonym)
             : base(original, synonym)
         {
             Contract.Requires(original != null);

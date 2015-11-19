@@ -67,7 +67,7 @@
     <Compile Include="SyntaxTests.cs" />
     <Compile Include="TableTests.cs" />
     <Compile Include="Compiler\PathTests.cs" />
-    <Compile Include="WordTests.cs" />
+    <Compile Include="OldParserWordTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
