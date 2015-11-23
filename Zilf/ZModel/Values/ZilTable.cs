@@ -140,6 +140,8 @@ namespace Zilf.ZModel.Values
                 sb.Append("WORDLENGTH ");
             if ((flags & TableFlags.Pure) != 0)
                 sb.Append("PURE ");
+            if ((flags & TableFlags.TempTable) != 0)
+                sb.Append("TEMP-TABLE ");
 
             if (pattern != null)
             {

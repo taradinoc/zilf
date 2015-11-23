@@ -125,5 +125,19 @@ namespace IntegrationTests
                     "<==? <GETB ,TBL 2> 67>",
                     "<==? <GETB ,TBL 3> 89>");
         }
+
+        [TestMethod]
+        public void TEMP_TABLE_Cannot_Be_Used_As_Value()
+        {
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE (TEMP-TABLE) 1 2 3>>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .DoesNotCompile();
+
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE (TEMP-TABLE) 1 2 3>>",
+                "<CONSTANT TBL ,MY-TBL>")
+                .DoesNotCompile();
+        }
     }
 }
