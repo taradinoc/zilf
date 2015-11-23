@@ -24,6 +24,7 @@ using System.Linq;
 using System.Text;
 using Zapf;
 using Zilf.Compiler;
+using Zilf.Interpreter.Values;
 using ZLR.VM;
 
 namespace IntegrationTests
@@ -45,20 +46,31 @@ namespace IntegrationTests
 
     class ZlrHelper
     {
-        public static void RunAndAssert(string code, string input, string expectedOutput, bool? expectWarnings = null)
+        public static void RunAndAssert(string code, string input, string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
             Contract.Requires(code != null);
             Contract.Requires(expectedOutput != null);
 
             var helper = new ZlrHelper(code, input);
-            Assert.IsTrue(helper.Compile(), "Failed to compile");
+            bool compiled;
+            string compileOutput;
+            if (wantCompileOutput)
+            {
+                compiled = helper.Compile(out compileOutput);
+            }
+            else
+            {
+                compiled = helper.Compile();
+                compileOutput = string.Empty;
+            }
+            Assert.IsTrue(compiled, "Failed to compile");
             if (expectWarnings != null)
             {
                 Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0,
                     (bool)expectWarnings ? "Expected warnings" : "Expected no warnings");
             }
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");
-            string actualOutput = helper.Execute();
+            string actualOutput = compileOutput + helper.Execute();
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
@@ -147,6 +159,11 @@ namespace IntegrationTests
 
         public bool Compile()
         {
+            return Compile(null);
+        }
+
+        private bool Compile(Action<FrontEnd> initializeFrontEnd)
+        {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
             using (var wtr = new StreamWriter(codeStream, Encoding.UTF8, 512, true))
@@ -160,8 +177,8 @@ namespace IntegrationTests
             this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
             this.zilfLogMessages = new List<string>();
 
-            var compiler = new FrontEnd();
-            compiler.OpeningFile += (sender, e) =>
+            var frontEnd = new FrontEnd();
+            frontEnd.OpeningFile += (sender, e) =>
             {
                 if (e.FileName == SZilFileName)
                 {
@@ -178,17 +195,20 @@ namespace IntegrationTests
 
                 e.Stream = zilfOutputFiles[e.FileName] = new MemoryStream();
             };
-            compiler.CheckingFilePresence += (sender, e) =>
+            frontEnd.CheckingFilePresence += (sender, e) =>
             {
                 // XXX this isn't right...?
                 e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
             };
 
+            if (initializeFrontEnd != null)
+                initializeFrontEnd(frontEnd);
+
             //XXX need to intercept <INSERT_FILE> too
 
             // run compilation
             PrintZilCode();
-            var result = compiler.Compile(SZilFileName, SMainZapFileName);
+            var result = frontEnd.Compile(SZilFileName, SMainZapFileName);
             this.WarningCount = result.WarningCount;
             if (result.Success)
             {
@@ -200,6 +220,22 @@ namespace IntegrationTests
                 Console.Error.WriteLine();
                 return false;
             }
+        }
+
+        public bool Compile(out string compileOutput)
+        {
+            var channel = new ZilStringChannel(FileAccess.Write);
+
+            var compiled = Compile(fe =>
+            {
+                fe.InitializeContext += (sender, e) =>
+                {
+                    e.Context.SetLocalVal(e.Context.GetStdAtom(Zilf.Language.StdAtom.OUTCHAN), channel);
+                };
+            });
+
+            compileOutput = channel.String;
+            return compiled;
         }
 
         public string GetZapCode()

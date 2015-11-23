@@ -139,5 +139,20 @@ namespace IntegrationTests
                 "<ROUTINE BAR () <FOO>>")
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void IN_ZILCH_Indicates_What_Macro_Expansions_Will_Be_Used_For()
+        {
+            AssertRoutine("", "<HELLO \"Z-machine\">")
+                .WithGlobal(@"
+<DEFMAC HELLO (WHENCE)
+    <FORM BIND '()
+        <FORM <IFFLAG (IN-ZILCH PRINTI) (T PRINC)>
+              <STRING ""Hello from "" .WHENCE>>
+        <FORM CRLF>>>")
+                .WithGlobal("<HELLO \"MDL\">")
+                .CapturingCompileOutput()
+                .Outputs("Hello from MDL\nHello from Z-machine\n");
+        }
     }
 }

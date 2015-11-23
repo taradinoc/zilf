@@ -308,6 +308,9 @@ namespace Zilf.Compiler
                         (routine.Flags & RoutineFlags.CleanStack) != 0));
             }
 
+            // let macros know we're generating code now
+            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.IN_ZILCH), ctx.TRUE, true);
+
             // compile routines
             IRoutineBuilder mainRoutine = null;
 
