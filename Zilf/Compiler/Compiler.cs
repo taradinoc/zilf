@@ -231,7 +231,7 @@ namespace Zilf.Compiler
 
                 if (value == null)
                 {
-                    Errors.CompError(ctx, constant, "invalid value for constant {0}: {1}",
+                    Errors.CompError(ctx, constant, "non-constant value for constant {0}: {1}",
                         constant.Name,
                         constant.Value.ToStringContext(ctx, false));
                     value = gb.Zero;
@@ -287,7 +287,7 @@ namespace Zilf.Compiler
                     IPropertyBuilder pb = cc.Properties[pair.Key];
                     pb.DefaultValue = CompileConstant(cc, pair.Value);
                     if (pb.DefaultValue == null)
-                        throw new CompilerError("default value must be constant");
+                        throw new CompilerError("non-constant default value: {0}", pair.Value.ToStringContext(ctx, false));
                 }
                 catch (ZilError ex)
                 {
@@ -409,7 +409,10 @@ namespace Zilf.Compiler
                 {
                     result = CompileConstant(cc, global.Value);
                     if (result == null)
-                        Errors.CompError(cc.Context, global, "default value must be constant");
+                        Errors.CompError(cc.Context, global,
+                            "non-constant default value for global {0}: {1}",
+                            global.Name,
+                            global.Value.ToStringContext(cc.Context, false));
                 }
                 catch (ZilError ex)
                 {
@@ -1260,6 +1263,11 @@ namespace Zilf.Compiler
                     return cc.Game.Zero;
 
                 case StdAtom.TABLE:
+                    if ((((ZilTable)expr).Flags & TableFlags.TempTable) != 0)
+                    {
+                        // temporary tables aren't compiled
+                        return null;
+                    }
                     return cc.Tables[(ZilTable)expr];
 
                 case StdAtom.CONSTANT:

@@ -43,5 +43,9 @@ namespace Zilf.ZModel.Values
         /// The table is stored in pure (read-only) memory.
         /// </summary>
         Pure = 16,
+        /// <summary>
+        /// The table only exists at compile time and is not written to the data file.
+        /// </summary>
+        TempTable = 32,
     }
 }

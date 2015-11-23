@@ -347,6 +347,8 @@ namespace Zilf.Language
         TAKE,
         TCHARS,
         TELL,
+        [Atom("TEMP-TABLE")]
+        TEMP_TABLE,
         TIME,
         TO,
         [Atom("TRUE-VALUE")]

@@ -563,6 +563,9 @@ namespace Zilf.Interpreter
                         case StdAtom.PARSER_TABLE:
                             // nada
                             break;
+                        case StdAtom.TEMP_TABLE:
+                            flags |= TableFlags.TempTable;
+                            break;
                         default:
                             throw new InterpreterError("ITABLE: unrecognized flag: " + flag);
                     }
@@ -593,7 +596,8 @@ namespace Zilf.Interpreter
             ZilTable tab = new ZilTable(elemCount.Value, initializer, flags, null);
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
-            ctx.ZEnvironment.Tables.Add(tab);
+            if ((flags & TableFlags.TempTable) == 0)
+                ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
 
@@ -614,6 +618,7 @@ namespace Zilf.Interpreter
             const int T_STRING = 2;
             int type = T_WORDS;
             ZilObject[] pattern = null;
+            bool tempTable = false;
 
             int i = 0;
             if (args.Length > 0)
@@ -647,6 +652,9 @@ namespace Zilf.Interpreter
                             case StdAtom.PARSER_TABLE:
                                 // nada
                                 break;
+                            case StdAtom.TEMP_TABLE:
+                                tempTable = true;
+                                break;
 
                             case StdAtom.PATTERN:
                                 list = list.Rest;
@@ -678,6 +686,8 @@ namespace Zilf.Interpreter
                 else
                     flags |= TableFlags.WordLength;
             }
+            if (tempTable)
+                flags |= TableFlags.TempTable;
 
             List<ZilObject> values = new List<ZilObject>(args.Length - i);
             while (i < args.Length)
@@ -699,7 +709,8 @@ namespace Zilf.Interpreter
                 1, values.ToArray(), flags, pattern == null ? null : pattern.ToArray());
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
-            ctx.ZEnvironment.Tables.Add(tab);
+            if (!tempTable)
+                ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
 
