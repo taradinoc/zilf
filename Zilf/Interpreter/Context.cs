@@ -1186,8 +1186,9 @@ namespace Zilf.Interpreter
         private void InitCompilationFlags()
         {
             Program.Evaluate(this, "<BLOCK (<ROOT>)>");
-            try {
-                DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), TRUE);
+            try
+            {
+                DefineCompilationFlag(GetStdAtom(StdAtom.IN_ZILCH), FALSE);
 
                 DefineCompilationFlag(GetStdAtom(StdAtom.COLOR), FALSE);
                 DefineCompilationFlag(GetStdAtom(StdAtom.MOUSE), FALSE);

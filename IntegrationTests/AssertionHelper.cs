@@ -29,6 +29,7 @@ namespace IntegrationTests
         protected StringBuilder miscGlobals = new StringBuilder();
         protected StringBuilder input = new StringBuilder();
         protected bool? expectWarnings = null;
+        protected bool wantCompileOutput = false;
 
         protected AbstractAssertionHelper()
         {
@@ -101,6 +102,12 @@ namespace IntegrationTests
             return (TThis)this;
         }
 
+        public TThis CapturingCompileOutput()
+        {
+            wantCompileOutput = true;
+            return (TThis)this;
+        }
+
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -136,7 +143,7 @@ namespace IntegrationTests
                 GlobalCode(),
                 Expression());
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
         }
 
         public void Implies(params string[] conditions)

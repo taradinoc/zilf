@@ -26,14 +26,14 @@ namespace ZilfTests.Interpreter
     public class CompilationFlagTests
     {
         [TestMethod]
-        public void IN_ZILCH_Flag_Should_Be_Set_By_Default()
+        public void IN_ZILCH_Flag_Should_Be_Off_By_Default()
         {
             const string CODE1 = @"
 <IFFLAG (IN-ZILCH <SETG FOO T>) (T <SETG FOO <>>)>
 ,FOO";
 
             var ctx = new Context();
-            TestHelpers.EvalAndAssert(ctx, CODE1, ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, CODE1, ctx.FALSE);
 
             const string CODE2 = @"
 <SETG BAR 123>
@@ -41,7 +41,7 @@ namespace ZilfTests.Interpreter
 <IFN-IN-ZILCH <SETG BAR <>>>
 ,BAR";
 
-            TestHelpers.EvalAndAssert(ctx, CODE2, ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, CODE2, ctx.FALSE);
         }
 
         [TestMethod]

@@ -51,6 +51,16 @@ namespace Zilf.Compiler
         public bool? Exists { get; set; }
     }
 
+    internal class ContextEventArgs : EventArgs
+    {
+        public ContextEventArgs(Context ctx)
+        {
+            this.Context = ctx;
+        }
+
+        public Context Context { get; private set; }
+    }
+
     public struct FrontEndResult
     {
         public bool Success;
@@ -67,6 +77,7 @@ namespace Zilf.Compiler
         
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
+        internal event EventHandler<ContextEventArgs> InitializeContext;
 
         public IList<string> IncludePaths { get; private set; }
 
@@ -191,9 +202,20 @@ namespace Zilf.Compiler
             #endregion
         }
 
+        private Context NewContext()
+        {
+            var result = new Context();
+
+            var handler = InitializeContext;
+            if (handler != null)
+                handler(this, new ContextEventArgs(result));
+
+            return result;
+        }
+
         public FrontEndResult Interpret(string inputFileName)
         {
-            return Interpret(new Context(), inputFileName);
+            return Interpret(NewContext(), inputFileName);
         }
 
         internal FrontEndResult Interpret(Context ctx, string inputFileName)
@@ -203,7 +225,7 @@ namespace Zilf.Compiler
 
         public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
-            return Compile(new Context(), inputFileName, outputFileName, wantDebugInfo);
+            return Compile(NewContext(), inputFileName, outputFileName, wantDebugInfo);
         }
 
         internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo = false)
