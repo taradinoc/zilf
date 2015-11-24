@@ -367,7 +367,7 @@ namespace Zilf.Interpreter
 
         private void InitPackages()
         {
-            var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH" };
+            var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH", "ZIL" };
             ZilObject[] args0 = new ZilObject[0], args1 = new ZilObject[1];
 
             foreach (var name in emptyPackageNames)
