@@ -200,6 +200,8 @@ namespace Zilf.Language
         LOCAL_GLOBALS,
         [Atom("LONG-WORD-TABLE")]
         LONG_WORD_TABLE,
+        [Atom("LONG-WORDS")]
+        LONG_WORDS,
         [Atom("LOW-DIRECTION")]
         LOW_DIRECTION,
         LTABLE,

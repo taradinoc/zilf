@@ -1196,6 +1196,8 @@ namespace Zilf.Interpreter
                 DefineCompilationFlag(GetStdAtom(StdAtom.DISPLAY), FALSE);
                 DefineCompilationFlag(GetStdAtom(StdAtom.SOUND), FALSE);
                 DefineCompilationFlag(GetStdAtom(StdAtom.MENU), FALSE);
+
+                DefineCompilationFlag(GetStdAtom(StdAtom.LONG_WORDS), FALSE);
             }
             finally
             {

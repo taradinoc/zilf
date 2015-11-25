@@ -63,7 +63,6 @@ namespace Zilf.ZModel
 
         public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
         public TreeOrdering TreeOrdering = TreeOrdering.Default;
-        public bool GenerateLongWords = false;
 
         public readonly List<TellPattern> TellPatterns = new List<TellPattern>();
 

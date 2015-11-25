@@ -241,7 +241,7 @@ namespace Zilf.Compiler
             }
 
             ITableBuilder longWordTable = null;
-            if (ctx.ZEnvironment.GenerateLongWords)
+            if (ctx.GetCompilationFlagOption(StdAtom.LONG_WORDS))
             {
                 longWordTable = cc.Game.DefineTable("LONG-WORD-TABLE", true);
                 cc.Constants.Add(cc.Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
