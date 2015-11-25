@@ -1149,7 +1149,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            ctx.ZEnvironment.GenerateLongWords = true;
+            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.LONG_WORDS), ctx.TRUE, true);
             return ctx.TRUE;
         }
 
