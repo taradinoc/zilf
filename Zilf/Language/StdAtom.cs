@@ -274,6 +274,7 @@ namespace Zilf.Language
         PROG,
         PROPDEF,
         PROPSPEC,
+        PRSTBL,
         PSEUDO,
         PTABLE,
         PTSIZE,

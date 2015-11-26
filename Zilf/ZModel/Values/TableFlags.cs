@@ -47,5 +47,9 @@ namespace Zilf.ZModel.Values
         /// The table only exists at compile time and is not written to the data file.
         /// </summary>
         TempTable = 32,
+        /// <summary>
+        /// The table is lower in memory than other pure tables.
+        /// </summary>
+        ParserTable = 64,
     }
 }

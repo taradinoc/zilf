@@ -139,5 +139,27 @@ namespace IntegrationTests
                 "<CONSTANT TBL ,MY-TBL>")
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void PARSER_TABLEs_Come_Before_Other_Pure_Tables()
+        {
+            AssertGlobals(
+                "<CONSTANT PURE-TBL <TABLE (PURE) 1 2 3>>",
+                "<CONSTANT PARSER-TBL <TABLE (PARSER-TABLE) 1 2 3>>",
+                "<CONSTANT IMPURE-TBL <TABLE 1 2 3>>")
+                .Implies(
+                    "<L? ,IMPURE-TBL ,PARSER-TBL>",
+                    "<L=? <LOWCORE PURBOT> ,PARSER-TBL>",
+                    "<L? ,PARSER-TBL ,PURE-TBL>");
+        }
+
+        [TestMethod]
+        public void PARSER_TABLEs_Start_At_PRSTBL()
+        {
+            AssertGlobals(
+                "<CONSTANT PARSER-TBL <TABLE (PARSER-TABLE) 1 2 3>>")
+                .Implies(
+                    "<=? ,PARSER-TBL ,PRSTBL>");
+        }
     }
 }
