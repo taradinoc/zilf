@@ -1278,12 +1278,15 @@ namespace Zilf.Compiler
                     return cc.Game.Zero;
 
                 case StdAtom.TABLE:
-                    if ((((ZilTable)expr).Flags & TableFlags.TempTable) != 0)
+                    var table = (ZilTable)expr;
+                    ITableBuilder tb;
+                    if (!cc.Tables.TryGetValue(table, out tb))
                     {
-                        // temporary tables aren't compiled
-                        return null;
+                        Contract.Assert((table.Flags & TableFlags.TempTable) != 0);
+                        tb = cc.Game.DefineTable(table.Name, true);
+                        cc.Tables.Add(table, tb);
                     }
-                    return cc.Tables[(ZilTable)expr];
+                    return tb;
 
                 case StdAtom.CONSTANT:
                     return CompileConstant(cc, ((ZilConstant)expr).Value);
