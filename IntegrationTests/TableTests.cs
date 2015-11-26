@@ -127,20 +127,6 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void TEMP_TABLE_Cannot_Be_Used_As_Value()
-        {
-            AssertGlobals(
-                "<SETG MY-TBL <TABLE (TEMP-TABLE) 1 2 3>>",
-                "<GLOBAL TBL ,MY-TBL>")
-                .DoesNotCompile();
-
-            AssertGlobals(
-                "<SETG MY-TBL <TABLE (TEMP-TABLE) 1 2 3>>",
-                "<CONSTANT TBL ,MY-TBL>")
-                .DoesNotCompile();
-        }
-
-        [TestMethod]
         public void PARSER_TABLEs_Come_Before_Other_Pure_Tables()
         {
             AssertGlobals(
