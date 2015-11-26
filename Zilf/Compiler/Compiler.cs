@@ -3076,6 +3076,17 @@ namespace Zilf.Compiler
                 ZilList clause = clauses.First as ZilList;
                 clauses = clauses.Rest as ZilList;
 
+                if (clause is ZilForm)
+                {
+                    // a macro call returning a list or false
+                    var newClause = clause.Expand(cc.Context);
+
+                    if (newClause is ZilFalse)
+                        continue;
+
+                    clause = newClause as ZilList;
+                }
+
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
                     throw new CompilerError("all clauses in COND must be lists");
 
