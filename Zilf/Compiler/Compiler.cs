@@ -97,8 +97,20 @@ namespace Zilf.Compiler
             }
 
             // builders for tables
-            foreach (ZilTable table in ctx.ZEnvironment.Tables)
-                cc.Tables.Add(table, gb.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0));
+            ITableBuilder firstPureTable = null;
+            Func<ZilTable, int> parserTablesFirst = t => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+            foreach (ZilTable table in ctx.ZEnvironment.Tables.OrderBy(parserTablesFirst))
+            {
+                bool pure = (table.Flags & TableFlags.Pure) != 0;
+                var builder = gb.DefineTable(table.Name, pure);
+                cc.Tables.Add(table, builder);
+
+                if (pure && firstPureTable == null)
+                    firstPureTable = builder;
+            }
+
+            if (firstPureTable != null)
+                cc.Constants.Add(ctx.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
 
             // self-inserting breaks
             var siBreaks = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) as ZilString;

@@ -561,7 +561,7 @@ namespace Zilf.Interpreter
                             flags |= TableFlags.Pure;
                             break;
                         case StdAtom.PARSER_TABLE:
-                            // nada
+                            flags |= TableFlags.Pure | TableFlags.ParserTable;
                             break;
                         case StdAtom.TEMP_TABLE:
                             flags |= TableFlags.TempTable;
@@ -619,6 +619,7 @@ namespace Zilf.Interpreter
             int type = T_WORDS;
             ZilObject[] pattern = null;
             bool tempTable = false;
+            bool parserTable = false;
 
             int i = 0;
             if (args.Length > 0)
@@ -649,8 +650,11 @@ namespace Zilf.Interpreter
                                 type = T_STRING;
                                 break;
                             case StdAtom.KERNEL:
-                            case StdAtom.PARSER_TABLE:
                                 // nada
+                                break;
+                            case StdAtom.PARSER_TABLE:
+                                pure = true;
+                                parserTable = true;
                                 break;
                             case StdAtom.TEMP_TABLE:
                                 tempTable = true;
@@ -688,6 +692,8 @@ namespace Zilf.Interpreter
             }
             if (tempTable)
                 flags |= TableFlags.TempTable;
+            if (parserTable)
+                flags |= TableFlags.ParserTable;
 
             List<ZilObject> values = new List<ZilObject>(args.Length - i);
             while (i < args.Length)
