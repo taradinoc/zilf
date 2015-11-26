@@ -281,6 +281,16 @@ namespace IntegrationTests
                 .Compiles();
         }
 
+        [TestMethod]
+        public void COND_Should_Allow_Macro_Clauses()
+        {
+            AssertRoutine("",
+                "<COND <LIVE-CONDITION> <DEAD-CONDITION> <IF-IN-ZILCH (<=? 2 2> <TELL \"2\">)> <IFN-IN-ZILCH (<=? 3 3> <TELL \"3\">)> (T <TELL \"end\">)>")
+                .WithGlobal("<DEFMAC LIVE-CONDITION () '(<=? 0 1> <TELL \"nope\">)>")
+                .WithGlobal("<DEFMAC DEAD-CONDITION () '<>>")
+                .Outputs("2");
+        }
+
         #endregion
 
         #region VERSION?

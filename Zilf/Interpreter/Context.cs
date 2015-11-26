@@ -1217,8 +1217,8 @@ namespace Zilf.Interpreter
 
                 // define IF and IFN macros
                 const string MacrosTemplate = @"
-<DEFMAC IF-{0}!- (""ARGS"" A) <IFFLAG ({0} <FORM BIND '() !.A>)>>
-<DEFMAC IFN-{0}!- (""ARGS"" A) <IFFLAG ({0} <>) (T <FORM BIND '() !.A>)>>";
+<DEFMAC IF-{0}!- (""ARGS"" A) <IFFLAG ({0} <COND (<LENGTH? .A 1> <1 .A>) (T <FORM BIND '() !.A>)>)>>
+<DEFMAC IFN-{0}!- (""ARGS"" A) <IFFLAG ({0} <>) (T <COND (<LENGTH? .A 1> <1 .A>) (T <FORM BIND '() !.A>)>)>>";
 
                 Program.Evaluate(this, string.Format(MacrosTemplate, name.Text), true);
                 // TODO: correct the source locations in the macros
