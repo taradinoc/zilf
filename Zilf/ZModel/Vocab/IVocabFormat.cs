@@ -51,6 +51,7 @@ namespace Zilf.ZModel.Vocab
         void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers);
 
         void MergeWords(IWord dest, IWord src);
+        void MakeSynonym(IWord synonym, IWord original);
         bool IsSynonym(IWord word);
 
         void MakePreposition(IWord word, ISourceLine location);
@@ -196,6 +197,12 @@ namespace Zilf.ZModel.Vocab
         public void MakePreposition(IWord word, ISourceLine location)
         {
             Contract.Requires(word != null);
+        }
+
+        public void MakeSynonym(IWord synonym, IWord original)
+        {
+            Contract.Requires(synonym != null);
+            Contract.Requires(original != null);
         }
 
         public void MakeVerb(IWord word, ISourceLine location)

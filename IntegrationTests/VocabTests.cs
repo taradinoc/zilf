@@ -330,11 +330,26 @@ namespace IntegrationTests
         {
             AssertGlobals(
                 SNewParserBootstrap,
-                @"<NEW-ADD-WORD FOO TOBJECT <> 12345>")
+                "<NEW-ADD-WORD FOO TOBJECT <> 12345>")
                 .Implies(
                     "<=? <GET ,WORD-FLAG-TABLE 0> 2>",
                     "<=? <GET ,WORD-FLAG-TABLE 1> ,W?FOO>",
                     "<=? <GET ,WORD-FLAG-TABLE 2> 12345>");
+        }
+
+        [TestMethod]
+        public void NEW_PARSER_P_Synonyms_Should_Use_Pointers()
+        {
+            AssertGlobals(
+                SNewParserBootstrap,
+                "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
+                "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
+                "<NEW-ADD-WORD FOO TBUZZ>",
+                "<SYNONYM FOO BAR>")
+                .InV4()
+                .Implies(
+                    "<=? <GET ,W?BAR 3> ,W?FOO>",
+                    "<=? <GETB ,W?BAR 8> 0>");
         }
 
         #endregion

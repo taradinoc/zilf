@@ -45,7 +45,7 @@ namespace Zilf.ZModel.Vocab
         {
             Contract.Requires(ctx != null);
 
-            ctx.ZEnvironment.VocabFormat.MergeWords(SynonymWord, OriginalWord);
+            ctx.ZEnvironment.VocabFormat.MakeSynonym(SynonymWord, OriginalWord);
         }
     }
 }

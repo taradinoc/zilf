@@ -193,6 +193,11 @@ namespace Zilf.ZModel.Vocab.OldParser
             return ((OldParserWord)word).SynonymTypes != PartOfSpeech.None;
         }
 
+        public void MakeSynonym(IWord synonym, IWord original)
+        {
+            MergeWords(synonym, original);
+        }
+
         public byte GetPrepositionValue(IWord word)
         {
             return ((OldParserWord)word).GetValue(PartOfSpeech.Preposition);

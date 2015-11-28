@@ -165,7 +165,7 @@ namespace Zilf.Compiler
                     !ctx.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
                 {
                     var nameWord = ctx.ZEnvironment.VocabFormat.CreateWord(nameAtom);
-                    ctx.ZEnvironment.VocabFormat.MergeWords(nameWord, symbolWord);
+                    ctx.ZEnvironment.VocabFormat.MakeSynonym(nameWord, symbolWord);
                     vocabMerges.Add(nameWord, symbolWord);
                 }
             }
