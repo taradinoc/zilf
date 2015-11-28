@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using Zilf.Interpreter;
 
 namespace Zilf.ZModel.Vocab
 {
@@ -26,6 +27,11 @@ namespace Zilf.ZModel.Vocab
         {
             Contract.Requires(original != null);
             Contract.Requires(synonym != null);
+        }
+
+        public override void Apply(Context ctx)
+        {
+            ctx.ZEnvironment.VocabFormat.MakeSynonym(SynonymWord, OriginalWord, PartOfSpeech.Preposition);
         }
     }
 }

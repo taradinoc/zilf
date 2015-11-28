@@ -52,6 +52,7 @@ namespace Zilf.ZModel.Vocab
 
         void MergeWords(IWord dest, IWord src);
         void MakeSynonym(IWord synonym, IWord original);
+        void MakeSynonym(IWord synonymWord, IWord originalWord, PartOfSpeech partOfSpeech);
         bool IsSynonym(IWord word);
 
         void MakePreposition(IWord word, ISourceLine location);
@@ -203,6 +204,15 @@ namespace Zilf.ZModel.Vocab
         {
             Contract.Requires(synonym != null);
             Contract.Requires(original != null);
+        }
+
+        public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
+        {
+            Contract.Requires(synonym != null);
+            Contract.Requires(original != null);
+            Contract.Requires(
+                partOfSpeech == PartOfSpeech.Adjective || partOfSpeech == PartOfSpeech.Direction ||
+                partOfSpeech == PartOfSpeech.Preposition || partOfSpeech == PartOfSpeech.Verb);
         }
 
         public void MakeVerb(IWord word, ISourceLine location)

@@ -312,6 +312,62 @@ namespace Zilf.ZModel.Vocab.NewParser
             nsyn.SemanticStuff = ZilAtom.Parse("W?" + original.Atom, ctx);
         }
 
+        public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
+        {
+            var nsyn = (NewParserWord)synonym;
+            var norig = (NewParserWord)original;
+
+            int classification;
+            switch (partOfSpeech)
+            {
+                case PartOfSpeech.Adjective:
+                    classification = adjClass;
+                    break;
+                case PartOfSpeech.Direction:
+                    classification = dirClass;
+                    break;
+                case PartOfSpeech.Preposition:
+                    classification = prepClass;
+                    break;
+                case PartOfSpeech.Verb:
+                    classification = verbClass;
+                    break;
+                default:
+                    // shouldn't get here due to contract
+                    throw new NotImplementedException();
+            }
+
+            if (!norig.HasClass(classification))
+                throw new InterpreterError(string.Format("word {0} is not a {1}", norig.Atom, partOfSpeech));
+
+            var nclass = nsyn.Classification;
+            var oclass = norig.Classification;
+            if (nclass != 0 && oclass != 0 && (nclass & 0x8000) != (oclass & 0x8000))
+            {
+                throw new InterpreterError(string.Format("incompatible classifications merging words {0} ({1}) <- {2} ({3})",
+                    nsyn.Atom,
+                    nclass,
+                    norig.Atom,
+                    oclass));
+            }
+
+            nsyn.Classification = nclass | oclass;
+
+            switch (partOfSpeech)
+            {
+                case PartOfSpeech.Adjective:
+                    if (ctx.ZEnvironment.ZVersion == 3)
+                        nsyn.AdjId = norig.AdjId;
+                    break;
+                case PartOfSpeech.Direction:
+                    nsyn.DirId = norig.DirId;
+                    break;
+                case PartOfSpeech.Verb:
+                    nsyn.VerbStuff = norig.VerbStuff;
+                    break;
+            }
+        }
+
         public void WriteToBuilder(IWord word, IWordBuilder wb, WriteToBuilderHelpers helpers)
         {
             var zversion = ctx.ZEnvironment.ZVersion;
