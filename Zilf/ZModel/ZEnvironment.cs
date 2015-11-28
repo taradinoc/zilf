@@ -27,6 +27,7 @@ using Zilf.Language;
 using Zilf.StringEncoding;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using Zilf.ZModel.Vocab.NewParser;
 using Zilf.ZModel.Vocab.OldParser;
 
 namespace Zilf.ZModel
@@ -84,7 +85,10 @@ namespace Zilf.ZModel
             {
                 if (vocabFormat == null)
                 {
-                    vocabFormat = new OldParserVocabFormat(ctx);
+                    if (ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
+                        vocabFormat = new NewParserVocabFormat(ctx);
+                    else
+                        vocabFormat = new OldParserVocabFormat(ctx);
                 }
 
                 return vocabFormat;

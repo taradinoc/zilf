@@ -25,6 +25,7 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using Zilf.ZModel.Vocab.NewParser;
 
 namespace Zilf.Interpreter
 {
@@ -1513,6 +1514,73 @@ namespace Zilf.Interpreter
 
             ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args, ctx));
             return ctx.TRUE;
+        }
+
+        #endregion
+
+        #region Z-Code: Version 6 Parser
+
+        [Subr("ADD-WORD")]
+        [Subr("NEW-ADD-WORD")]
+        public static ZilObject NEW_ADD_WORD(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 1 || args.Length > 4)
+                throw new InterpreterError("NEW-ADD-WORD", 1, 4);
+
+            if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
+                throw new InterpreterError("NEW-ADD-WORD: requires NEW-PARSER? option");
+
+            ZilAtom name;
+            if (args[0] is ZilString)
+            {
+                name = ZilAtom.Parse(((ZilString)args[0]).Text, ctx);
+            }
+            else if (args[0] is ZilAtom)
+            {
+                name = (ZilAtom)args[0];
+            }
+            else
+            {
+                throw new InterpreterError("NEW-ADD-WORD: first arg must be a string or atom");
+            }
+
+            ZilAtom type;
+            if (args.Length >= 2)
+            {
+                type = args[1] as ZilAtom;
+                if (type == null)
+                    throw new InterpreterError("NEW-ADD-WORD: second arg must be an atom");
+            }
+            else
+            {
+                type = null;
+            }
+
+            ZilObject value;
+            if (args.Length >= 3)
+            {
+                value = args[2];
+            }
+            else
+            {
+                value = null;
+            }
+
+            ZilFix flags;
+            if (args.Length >= 4)
+            {
+                flags = args[3] as ZilFix;
+                if (flags == null)
+                    throw new InterpreterError("NEW-ADD-WORD: fourth arg must be a FIX");
+            }
+            else
+            {
+                flags = ZilFix.Zero;
+            }
+
+            return ((NewParserVocabFormat)ctx.ZEnvironment.VocabFormat).NewAddWord(name, type, value, flags);
         }
 
         #endregion

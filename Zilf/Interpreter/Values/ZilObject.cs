@@ -271,11 +271,13 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>The type atom.</returns>
+        [Pure]
         public abstract ZilAtom GetTypeAtom(Context ctx);
 
         /// <summary>
         /// Gets a value indicating the type of this object's primitive form.
         /// </summary>
+        [Pure]
         public abstract PrimType PrimType { get; }
 
         /// <summary>

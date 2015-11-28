@@ -363,7 +363,7 @@ namespace Zilf.Interpreter
             Contract.Requires(ctx != null);
 
             yield return ctx.FALSE;
-            yield return new ZilFix(0);
+            yield return ZilFix.Zero;
             yield return new ZilList(null, null);
             yield return new ZilVector();
             yield return new ZilString("");

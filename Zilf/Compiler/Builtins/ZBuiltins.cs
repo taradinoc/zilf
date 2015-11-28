@@ -1988,7 +1988,7 @@ namespace Zilf.Compiler.Builtins
                         handler,
                         new ZilForm(new ZilObject[] {
                             c.cc.Context.GetStdAtom(StdAtom.GETB),
-                            new ZilFix(0),
+                            ZilFix.Zero,
                             new ZilForm(new ZilObject[] {
                                 c.cc.Context.GetStdAtom(StdAtom.LVAL),
                                 tmpAtom
