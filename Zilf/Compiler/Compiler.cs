@@ -353,6 +353,9 @@ namespace Zilf.Compiler
             if (mainRoutine == null)
                 throw new CompilerError("missing 'GO' routine");
 
+            // ...and we're done generating code
+            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.IN_ZILCH), ctx.FALSE, true);
+
             // build objects
             foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInInsertionOrder())
             {
