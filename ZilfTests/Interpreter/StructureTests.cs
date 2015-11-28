@@ -135,6 +135,19 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_PerFieldOffsets_Mixed()
+        {
+            var ctx = new Context();
+            var rpointAtom = ZilAtom.Parse("RPOINT", ctx);
+
+            // RPOINT-FOO's auto-assigned offset should be 1; the fields with per-field offsets don't affect the auto-offset counter
+            TestHelpers.EvalAndAssert(ctx, "<DEFSTRUCT RPOINT (VECTOR 'CONSTRUCTOR) (RPOINT-X FIX 'OFFSET 2) (RPOINT-Y FIX 'OFFSET 1) (RPOINT-FOO FIX)>",
+                rpointAtom);
+            TestHelpers.EvalAndAssert(ctx, "<RPOINT-FOO #RPOINT [234 567]>",
+                new ZilFix(234));
+        }
+
+        [TestMethod]
         public void TestDEFSTRUCT_NOTYPE()
         {
             var ctx = new Context();

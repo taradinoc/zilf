@@ -112,7 +112,7 @@ namespace Zilf.Interpreter
             var offset = defaults.StartOffset;
             foreach (var fieldSpec in args.Skip(2))
             {
-                fields.Add(ParseDefStructField(ctx, defaults, offset++, fieldSpec));
+                fields.Add(ParseDefStructField(ctx, defaults, ref offset, fieldSpec));
             }
 
             if (!defaults.SuppressType)
@@ -535,7 +535,7 @@ namespace Zilf.Interpreter
                 field.Offset);
         }
 
-        private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, int offset, ZilObject fieldSpec)
+        private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset, ZilObject fieldSpec)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(fieldSpec != null);
@@ -564,7 +564,7 @@ namespace Zilf.Interpreter
                 PutFunc = defaults.PutFunc,
             };
 
-            bool gotDefault = false;
+            bool gotDefault = false, gotOffset = false;
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
             for (fieldList = fieldList.Rest; !fieldList.IsEmpty; fieldList = fieldList.Rest)
@@ -606,6 +606,7 @@ namespace Zilf.Interpreter
                             if (fix == null)
                                 throw new InterpreterError("DEFSTRUCT: 'OFFSET must be followed by a FIX");
                             result.Offset = fix.Value;
+                            gotOffset = true;
                             break;
 
                         case StdAtom.NONE:
@@ -626,6 +627,9 @@ namespace Zilf.Interpreter
                     throw new InterpreterError("DEFSTRUCT: unrecognized non-quoted value in field definition: " + item);
                 }
             }
+
+            if (!gotOffset)
+                offset++;
 
             return result;
         }
