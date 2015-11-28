@@ -95,5 +95,13 @@ namespace IntegrationTests
                     "<=? <GET-OPTS1 ,ACT?BAR> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE>>",
                     "<=? <GET-OPTS1 ,ACT?BAZ> <+ ,SEARCH-OPTIONAL ,SEARCH-MUST-HAVE>>");
         }
+
+        [TestMethod]
+        public void Late_Syntax_Tables_Can_Be_Referenced_From_Macros()
+        {
+            AssertRoutine("", "<PRINTN <FOO>>")
+                .WithGlobal("<DEFMAC FOO () <FORM REST ,PRTBL 1>>")
+                .Compiles();
+        }
     }
 }

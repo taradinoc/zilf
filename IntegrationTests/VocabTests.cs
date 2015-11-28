@@ -42,33 +42,6 @@ namespace IntegrationTests
         }
 
         [TestMethod]
-        public void VOC_With_2nd_Arg_Atom_Should_Set_PartOfSpeech()
-        {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
-                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" ADJ>>>")
-                .InV3()
-                .GivesNumber(((int)(PartOfSpeech.Adjective | PartOfSpeech.AdjectiveFirst)).ToString());
-        }
-
-        [TestMethod]
-        public void VOC_With_2nd_Arg_False_Should_Not_Set_PartOfSpeech()
-        {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
-                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" <>>>>")
-                .InV3()
-                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
-        }
-
-        [TestMethod]
-        public void VOC_With_2nd_Arg_Missing_Should_Not_Set_PartOfSpeech()
-        {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
-                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\">>>")
-                .InV3()
-                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
-        }
-
-        [TestMethod]
         public void SIBREAKS_Should_Affect_Lexing()
         {
             AssertRoutine("",
@@ -191,6 +164,55 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
+        {
+            AssertRoutine("",
+                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
+                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
+                .WithGlobal(@"<OBJECT FOO (SYNONYM \,)>")
+                .Outputs(", , ,");
+        }
+
+        [TestMethod]
+        public void Punctuation_Name_Words_Should_Split_From_Symbol_Words_When_Given_Definitions()
+        {
+            AssertRoutine("",
+                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
+                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
+                .WithGlobal(@"<OBJECT FOO (SYNONYM COMMA)>")
+                .Outputs("comma comma ,");
+        }
+
+        #region Old Parser
+
+        [TestMethod]
+        public void VOC_With_2nd_Arg_Atom_Should_Set_PartOfSpeech()
+        {
+            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" ADJ>>>")
+                .InV3()
+                .GivesNumber(((int)(PartOfSpeech.Adjective | PartOfSpeech.AdjectiveFirst)).ToString());
+        }
+
+        [TestMethod]
+        public void VOC_With_2nd_Arg_False_Should_Not_Set_PartOfSpeech()
+        {
+            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" <>>>>")
+                .InV3()
+                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
+        }
+
+        [TestMethod]
+        public void VOC_With_2nd_Arg_Missing_Should_Not_Set_PartOfSpeech()
+        {
+            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+                .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\">>>")
+                .InV3()
+                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
+        }
+
+        [TestMethod]
         public void Colliding_Words_Should_Be_Merged()
         {
             AssertGlobals(
@@ -223,24 +245,98 @@ namespace IntegrationTests
                     "<==? ,A?ABCDEFGHI ,A?ABCDEF>");
         }
 
+        #endregion
+
+        #region New Parser
+
+        private const string SNewParserBootstrap = @"
+<SETG NEW-PARSER? T>
+
+<SETG CLASSIFICATIONS '(ADJ 1 BUZZ 2 DIR 4 NOUN 8 PREP 16 VERB 32)>
+
+<DEFINE GET-CLASSIFICATION (TYPE ""AUX"" P)
+    <COND (<SET P <MEMQ .TYPE ,CLASSIFICATIONS>> <2 .P>)
+          (T <ERROR NO-SUCH-WORD-TYPE!-ERRORS>)>>
+
+<SET-DEFSTRUCT-FILE-DEFAULTS ('START-OFFSET 0) ('PUT ZPUT) ('NTH ZGET)>
+
+<DEFSTRUCT VERB-DATA (TABLE ('INIT-ARGS (TEMP-TABLE)))
+    (VERB-ZERO ANY -1)
+    (VERB-RESERVED FALSE)
+    (VERB-ONE <OR FALSE TABLE>)
+    (VERB-TWO <OR FALSE TABLE>)>
+
+<DEFSTRUCT VWORD (TABLE ('INIT-ARGS (TEMP-TABLE)))
+    (WORD-LEXICAL-WORD ANY)
+    (WORD-CLASSIFICATION-NUMBER FIX)
+    (WORD-FLAGS FIX)
+    (WORD-SEMANTIC-STUFF ANY)
+    (WORD-VERB-STUFF ANY)
+    (WORD-ADJ-ID ANY)
+    (WORD-DIR-ID ANY)>
+";
+
         [TestMethod]
-        public void Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
+        public void Game_Without_Objects_Should_Compile_With_NEW_PARSER_P()
         {
-            AssertRoutine("",
-                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
-                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
-                .WithGlobal(@"<OBJECT FOO (SYNONYM \,)>")
-                .Outputs(", , ,");
+            AssertRoutine("", @"<PRINTR ""Hello, world!"">")
+                .WithGlobal(SNewParserBootstrap)
+                .Outputs("Hello, world!\n");
         }
 
         [TestMethod]
-        public void Punctuation_Name_Words_Should_Split_From_Symbol_Words_When_Given_Definitions()
+        public void NEW_PARSER_P_Should_Affect_Vocab_Word_Size()
         {
-            AssertRoutine("",
-                @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
-                .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
-                .WithGlobal(@"<OBJECT FOO (SYNONYM COMMA)>")
-                .Outputs("comma comma ,");
+            AssertRoutine("", "<GETB ,VOCAB <+ 1 <GETB ,VOCAB 0>>>")
+                .WithGlobal(SNewParserBootstrap)
+                .WithGlobal("<COMPILATION-FLAG WORD-FLAGS-IN-TABLE <>>")
+                .WithGlobal("<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH <>>")
+                .InV3()
+                .GivesNumber("12");
         }
+
+        [TestMethod]
+        public void NEW_PARSER_P_Verbs_Should_Have_Verb_Data()
+        {
+            AssertGlobals(
+                SNewParserBootstrap,
+                "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
+                "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
+                "<ROUTINE V-SING () <>>",
+                "<SYNTAX SING = V-SING>")
+                .InV4()
+                .Implies("<N=? <GET ,W?SING 3> 0>");
+        }
+
+        [TestMethod]
+        public void NEW_PARSER_P_Should_Affect_Syntax_Format()
+        {
+            AssertGlobals(
+                SNewParserBootstrap,
+                "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
+                "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
+                "<ROUTINE V-ATTACK () <>>",
+                "<SYNTAX ATTACK OBJECT WITH OBJECT = V-ATTACK>")
+                .InV4()
+                .Implies(
+                    "<=? <GET <GET ,W?ATTACK 3> 0> -1>",
+                    "<=? <GET <GET ,W?ATTACK 3> 1> 0>",
+                    "<=? <GET <GET ,W?ATTACK 3> 2> 0>",
+                    "<N=? <GET <GET ,W?ATTACK 3> 3> 0>");
+        }
+
+        [TestMethod]
+        public void WORD_FLAG_TABLE_Should_List_Words_And_Flags()
+        {
+            AssertGlobals(
+                SNewParserBootstrap,
+                @"<NEW-ADD-WORD FOO TOBJECT <> 12345>")
+                .Implies(
+                    "<=? <GET ,WORD-FLAG-TABLE 0> 2>",
+                    "<=? <GET ,WORD-FLAG-TABLE 1> ,W?FOO>",
+                    "<=? <GET ,WORD-FLAG-TABLE 2> 12345>");
+        }
+
+        #endregion
     }
 }

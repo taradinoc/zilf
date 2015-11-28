@@ -253,6 +253,8 @@
     <Compile Include="ZModel\Vocab\DirSynonym.cs" />
     <Compile Include="ZModel\Vocab\IVocabFormat.cs" />
     <Compile Include="ZModel\Vocab\IWord.cs" />
+    <Compile Include="ZModel\Vocab\NewParser\NewParserVocabFormat.cs" />
+    <Compile Include="ZModel\Vocab\NewParser\NewParserWord.cs" />
     <Compile Include="ZModel\Vocab\OldParser\OldParserVocabFormat.cs" />
     <Compile Include="ZModel\Vocab\OldParser\OldParserWord.cs" />
     <Compile Include="ZModel\Vocab\PartOfSpeech.cs" />

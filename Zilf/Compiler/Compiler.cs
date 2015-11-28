@@ -190,8 +190,21 @@ namespace Zilf.Compiler
                 }
             }
 
-            // tables for syntax
-            BuildSyntaxTables(cc);
+            // constants and builders for late syntax tables
+            foreach (var name in ctx.ZEnvironment.VocabFormat.GetLateSyntaxTableNames())
+            {
+                var tb = cc.Game.DefineTable(name, true);
+                var atom = ctx.RootObList[name];
+                cc.Constants.Add(atom, tb);
+
+                // this hack lets macros use it as a compile-time value, as long as they don't access its contents
+                ctx.SetGlobalVal(atom, atom);
+            }
+
+            // early syntax tables
+            var syntaxTables = BuildSyntaxTables(cc);
+            foreach (var pair in syntaxTables)
+                cc.Constants.Add(ctx.RootObList[pair.Key], pair.Value);
 
             // now that all the vocabulary is set up, copy values for synonyms
             foreach (Synonym syn in ctx.ZEnvironment.Synonyms)
@@ -209,22 +222,22 @@ namespace Zilf.Compiler
                     cc.Game.MaxFlags);
 
             // FUNNY-GLOBALS?
-            const int ReservedGlobalCount = 4;
+            var reservedGlobals = ctx.ZEnvironment.VocabFormat.GetReservedGlobalNames();
             if (ctx.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
             {
                 // this sets StorageType for all variables, and creates the table and global if needed
-                DoFunnyGlobals(cc, ReservedGlobalCount);
+                DoFunnyGlobals(cc, reservedGlobals.Length);
             }
             else
             {
                 foreach (var g in ctx.ZEnvironment.Globals)
                     g.StorageType = GlobalStorageType.Hard;
 
-                if (ctx.ZEnvironment.Globals.Count > 240 - ReservedGlobalCount)
+                if (ctx.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
                     Errors.CompError(cc.Context,
                         "too many globals: {0} defined, only {1} allowed",
                         ctx.ZEnvironment.Globals.Count,
-                        240 - ReservedGlobalCount);
+                        240 - reservedGlobals.Length);
             }
 
             // builders and values for constants (which may refer to vocabulary,
@@ -275,21 +288,11 @@ namespace Zilf.Compiler
 
             // implicitly defined globals
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
-            glb = cc.Game.DefineGlobal("PREPOSITIONS");
-            glb.DefaultValue = cc.PrepositionTable;
-            cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.PREPOSITIONS), glb);
-
-            glb = cc.Game.DefineGlobal("ACTIONS");
-            glb.DefaultValue = cc.ActionTable;
-            cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.ACTIONS), glb);
-
-            glb = cc.Game.DefineGlobal("PREACTIONS");
-            glb.DefaultValue = cc.PreactionTable;
-            cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.PREACTIONS), glb);
-
-            glb = cc.Game.DefineGlobal("VERBS");
-            glb.DefaultValue = cc.VerbTable;
-            cc.Globals.Add(cc.Context.GetStdAtom(StdAtom.VERBS), glb);
+            foreach (var name in reservedGlobals)
+            {
+                glb = cc.Game.DefineGlobal(name);
+                cc.Globals.Add(ctx.RootObList[name], glb);
+            }
 
             // default values for properties
             foreach (KeyValuePair<ZilAtom, ZilObject> pair in ctx.ZEnvironment.PropertyDefaults)
@@ -367,8 +370,13 @@ namespace Zilf.Compiler
             }
 
             // build vocabulary
-            Func<byte, IOperand> dirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]];
             Queue<IWord> longWords = (longWordTable == null ? null : new Queue<IWord>());
+
+            var helpers = new WriteToBuilderHelpers()
+            {
+                CompileConstant = zo => CompileConstant(cc, zo),
+                DirIndexToPropertyOperand = di => cc.Properties[ctx.ZEnvironment.Directions[di]],
+            };
 
             var builtWords = new HashSet<IWordBuilder>();
             foreach (var pair in cc.Vocabulary)
@@ -381,7 +389,7 @@ namespace Zilf.Compiler
 
                 builtWords.Add(wb);
 
-                cc.Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, dirIndexToPropertyOperand);
+                cc.Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
 
                 if (longWords != null && ctx.ZEnvironment.IsLongWord(word))
                 {
@@ -400,7 +408,7 @@ namespace Zilf.Compiler
                 }
             }
 
-            BuildPrepositionTable(cc);
+            BuildLateSyntaxTables(cc);
 
             // build tables
             foreach (KeyValuePair<ZilTable, ITableBuilder> pair in cc.Tables)
@@ -658,56 +666,31 @@ namespace Zilf.Compiler
             }
         }
 
-        private static void BuildPrepositionTable(CompileCtx cc)
+        private static IDictionary<string, ITableBuilder> BuildSyntaxTables(CompileCtx cc)
         {
-            Contract.Requires(cc != null);
+            var dict = new Dictionary<string, ITableBuilder>();
 
-            var ctx = cc.Context;
-            var vf = ctx.ZEnvironment.VocabFormat;
-            bool compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
+            // TODO: encapsulate this in the VocabFormat classes
+            if (cc.Context.GetGlobalOption(StdAtom.NEW_PARSER_P))
+                BuildNewFormatSyntaxTables(cc, dict);
+            else
+                BuildOldFormatSyntaxTables(cc, dict);
 
-            // map all relevant preposition word builders to the preposition ID constants
-            var query = from pair in cc.Vocabulary
-                        let word = pair.Key
-                        where vf.IsPreposition(word) && (compactVocab || !vf.IsSynonym(word)) 
-                        let builder = pair.Value
-                        let prAtom = ZilAtom.Parse("PR?" + word.Atom, ctx)
-                        let prConstant = cc.Constants.ContainsKey(prAtom) ? cc.Constants[prAtom] : null
-                        let prepValue = vf.GetPrepositionValue(word)
-                        group new { builder, prConstant } by prepValue into g
-                        let builders = g.Select(w => w.builder)
-                        let constant = g.First(w => w.prConstant != null).prConstant
-                        from prep in g
-                        select new { prep.builder, constant };
-            var prepositions = query.ToArray();
-
-            // build the table
-            cc.PrepositionTable.AddShort((short)prepositions.Length);
-
-            foreach (var p in prepositions)
-            {
-                cc.PrepositionTable.AddShort(p.builder);
-
-                if (compactVocab)
-                    cc.PrepositionTable.AddByte(p.constant);
-                else
-                    cc.PrepositionTable.AddShort(p.constant);
-            }
+            return dict;
         }
 
-        private static void BuildSyntaxTables(CompileCtx cc)
+        private static void BuildOldFormatSyntaxTables(CompileCtx cc, IDictionary<string, ITableBuilder> tables)
         {
             Contract.Requires(cc != null);
-            Contract.Ensures(cc.VerbTable != null);
-            Contract.Ensures(cc.ActionTable != null);
-            Contract.Ensures(cc.PreactionTable != null);
-            Contract.Ensures(cc.PrepositionTable != null);
 
             // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
-            cc.VerbTable = cc.Game.DefineTable("VTBL", true);
-            cc.ActionTable = cc.Game.DefineTable("ATBL", true);
-            cc.PreactionTable = cc.Game.DefineTable("PATBL", true);
-            cc.PrepositionTable = cc.Game.DefineTable("PRTBL", true);
+            var verbTable = cc.Game.DefineTable("VTBL", true);
+            var actionTable = cc.Game.DefineTable("ATBL", true);
+            var preactionTable = cc.Game.DefineTable("PATBL", true);
+
+            tables.Add("VTBL", verbTable);
+            tables.Add("ATBL", actionTable);
+            tables.Add("PATBL", preactionTable);
 
             // compact syntaxes?
             bool compact = cc.Context.GetGlobalOption(StdAtom.COMPACT_SYNTAXES_P);
@@ -728,7 +711,7 @@ namespace Zilf.Compiler
 
                 // syntax table
                 ITableBuilder stbl = cc.Game.DefineTable("ST?" + verb.Key.Atom.ToString(), true);
-                cc.VerbTable.AddShort(stbl);
+                verbTable.AddShort(stbl);
 
                 stbl.AddByte((byte)verb.Count());
 
@@ -736,43 +719,7 @@ namespace Zilf.Compiler
                 // first in definition order to create/validate the Actions, second in reverse order to emit the syntax lines
                 foreach (Syntax line in verb)
                 {
-                    try
-                    {
-                        Action act;
-                        if (actions.TryGetValue(line.ActionName, out act) == false)
-                        {
-                            IRoutineBuilder routine;
-                            if (cc.Routines.TryGetValue(line.Action, out routine) == false)
-                                throw new CompilerError("undefined action routine: " + line.Action);
-
-                            IRoutineBuilder preRoutine = null;
-                            if (line.Preaction != null &&
-                                cc.Routines.TryGetValue(line.Preaction, out preRoutine) == false)
-                                throw new CompilerError("undefined preaction routine: " + line.Preaction);
-
-                            ZilAtom actionName = line.ActionName;
-                            int index = cc.Context.ZEnvironment.NextAction++;
-                            IOperand number = cc.Game.MakeOperand(index);
-                            IOperand constant = cc.Game.DefineConstant(actionName.ToString(), number);
-                            cc.Constants.Add(actionName, constant);
-                            if (cc.WantDebugInfo)
-                                cc.Game.DebugFile.MarkAction(constant, line.Action.ToString());
-
-                            act = new Action(index, number, routine, preRoutine, line.Action, line.Preaction);
-                            actions.Add(actionName, act);
-                        }
-                        else
-                        {
-                            WarnIfActionRoutineDiffers(cc, line, "action routine", line.Action, act.RoutineName);
-                            WarnIfActionRoutineDiffers(cc, line, "preaction", line.Preaction, act.PreRoutineName);
-                        }
-                    }
-                    catch (ZilError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = line.SourceLine;
-                        cc.Context.HandleError(ex);
-                    }
+                    ValidateAction(cc, actions, line);
                 }
 
                 foreach (Syntax line in verb.Reverse())
@@ -848,8 +795,175 @@ namespace Zilf.Compiler
                            select a.Value;
             foreach (Action act in actquery)
             {
-                cc.ActionTable.AddShort(act.Routine);
-                cc.PreactionTable.AddShort(act.PreRoutine ?? cc.Game.Zero);
+                actionTable.AddShort(act.Routine);
+                preactionTable.AddShort(act.PreRoutine ?? cc.Game.Zero);
+            }
+        }
+
+        private static void BuildNewFormatSyntaxTables(CompileCtx cc, IDictionary<string, ITableBuilder> tables)
+        {
+            Contract.Requires(cc != null);
+
+            var actionTable = cc.Game.DefineTable("ATBL", true);
+            var preactionTable = cc.Game.DefineTable("PATBL", true);
+
+            tables.Add("ATBL", actionTable);
+            tables.Add("PATBL", preactionTable);
+
+            var vf = cc.Context.ZEnvironment.VocabFormat;
+
+            var query = from s in cc.Context.ZEnvironment.Syntaxes
+                        group s by s.Verb into verbGrouping
+                        let numObjLookup = verbGrouping.ToLookup(s => s.NumObjects)
+                        select new
+                        {
+                            Word = verbGrouping.Key,
+                            Nullary = numObjLookup[0].FirstOrDefault(),
+                            Unary = numObjLookup[1].ToArray(),
+                            Binary = numObjLookup[2].ToArray(),
+                        };
+
+            // syntax lines are emitted in definition order, so we can validate actions and emit syntax lines in one pass
+            var actions = new Dictionary<ZilAtom, Action>();
+
+            foreach (var verb in query)
+            {
+                // syntax table
+                var name = "ACT?" + verb.Word.Atom.ToString();
+                ITableBuilder acttbl = cc.Game.DefineTable(name, true);
+                tables.Add(name, acttbl);
+
+                // 0-object syntaxes
+                if (verb.Nullary != null)
+                {
+                    var act = ValidateAction(cc, actions, verb.Nullary);
+                    acttbl.AddShort(act != null ? act.Constant : cc.Game.Zero);
+                }
+                else
+                {
+                    acttbl.AddShort(-1);
+                }
+
+                // reserved word
+                acttbl.AddShort(0);
+
+                // 1-object syntaxes
+                if (verb.Unary.Length > 0)
+                {
+                    ITableBuilder utbl = cc.Game.DefineTable(null, true);
+                    utbl.AddShort((short)verb.Unary.Length);
+
+                    foreach (var line in verb.Unary)
+                    {
+                        var act = ValidateAction(cc, actions, line);
+                        utbl.AddShort(act.Constant);
+
+                        utbl.AddShort(line.Preposition1 == null ? cc.Game.Zero : cc.Vocabulary[line.Preposition1]);
+                        utbl.AddByte(GetFlag(cc, line.FindFlag1) ?? cc.Game.Zero);
+                        utbl.AddByte((byte)line.Options1);
+                    }
+
+                    acttbl.AddShort(utbl);
+                }
+                else
+                {
+                    acttbl.AddShort(0);
+                }
+
+                // 2-object syntaxes
+                if (verb.Binary.Length > 0)
+                {
+                    ITableBuilder btbl = cc.Game.DefineTable(null, true);
+                    btbl.AddShort((short)verb.Binary.Length);
+
+                    foreach (var line in verb.Binary)
+                    {
+                        var act = ValidateAction(cc, actions, line);
+                        btbl.AddShort(act.Constant);
+
+                        btbl.AddShort(line.Preposition1 == null ? cc.Game.Zero : cc.Vocabulary[line.Preposition1]);
+                        btbl.AddByte(GetFlag(cc, line.FindFlag1) ?? cc.Game.Zero);
+                        btbl.AddByte((byte)line.Options1);
+
+                        btbl.AddShort(line.Preposition2 == null ? cc.Game.Zero : cc.Vocabulary[line.Preposition2]);
+                        btbl.AddByte(GetFlag(cc, line.FindFlag2) ?? cc.Game.Zero);
+                        btbl.AddByte((byte)line.Options2);
+                    }
+
+                    acttbl.AddShort(btbl);
+                }
+                else
+                {
+                    acttbl.AddShort(0);
+                }
+            }
+
+            // action and preaction table
+            var actquery = from a in actions
+                           orderby a.Value.Index
+                           select a.Value;
+            foreach (Action act in actquery)
+            {
+                actionTable.AddShort(act.Routine);
+                preactionTable.AddShort(act.PreRoutine ?? cc.Game.Zero);
+            }
+        }
+
+        private static void BuildLateSyntaxTables(CompileCtx cc)
+        {
+            Contract.Requires(cc != null);
+
+            var helpers = new BuildLateSyntaxTablesHelpers()
+            {
+                CompileConstant = zo => CompileConstant(cc, zo),
+                GetGlobal = atom => cc.Globals[atom],
+                Vocabulary = cc.Vocabulary,
+            };
+
+            cc.Context.ZEnvironment.VocabFormat.BuildLateSyntaxTables(helpers);
+        }
+
+        private static Action ValidateAction(CompileCtx cc, Dictionary<ZilAtom, Action> actions, Syntax line)
+        {
+            try
+            {
+                Action act;
+                if (actions.TryGetValue(line.ActionName, out act) == false)
+                {
+                    IRoutineBuilder routine;
+                    if (cc.Routines.TryGetValue(line.Action, out routine) == false)
+                        throw new CompilerError("undefined action routine: " + line.Action);
+
+                    IRoutineBuilder preRoutine = null;
+                    if (line.Preaction != null &&
+                        cc.Routines.TryGetValue(line.Preaction, out preRoutine) == false)
+                        throw new CompilerError("undefined preaction routine: " + line.Preaction);
+
+                    ZilAtom actionName = line.ActionName;
+                    int index = cc.Context.ZEnvironment.NextAction++;
+                    IOperand number = cc.Game.MakeOperand(index);
+                    IOperand constant = cc.Game.DefineConstant(actionName.ToString(), number);
+                    cc.Constants.Add(actionName, constant);
+                    if (cc.WantDebugInfo)
+                        cc.Game.DebugFile.MarkAction(constant, line.Action.ToString());
+
+                    act = new Action(index, number, routine, preRoutine, line.Action, line.Preaction);
+                    actions.Add(actionName, act);
+                }
+                else
+                {
+                    WarnIfActionRoutineDiffers(cc, line, "action routine", line.Action, act.RoutineName);
+                    WarnIfActionRoutineDiffers(cc, line, "preaction", line.Preaction, act.PreRoutineName);
+                }
+
+                return act;
+            }
+            catch (ZilError ex)
+            {
+                if (ex.SourceLine == null)
+                    ex.SourceLine = line.SourceLine;
+                cc.Context.HandleError(ex);
+                return null;
             }
         }
 

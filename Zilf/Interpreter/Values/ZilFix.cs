@@ -26,6 +26,8 @@ namespace Zilf.Interpreter.Values
     {
         private readonly int value;
 
+        public static readonly ZilFix Zero = new ZilFix(0);
+
         public ZilFix(int value)
         {
             this.value = value;

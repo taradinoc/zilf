@@ -70,8 +70,6 @@ namespace Zilf.Compiler
             Contract.Invariant(Game != null);
         }
 
-        public ITableBuilder VerbTable, ActionTable, PreactionTable, PrepositionTable;
-
         public readonly Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
         public readonly HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
         public readonly Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();

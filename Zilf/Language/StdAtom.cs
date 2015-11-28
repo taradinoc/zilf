@@ -48,6 +48,7 @@ namespace Zilf.Language
         ANY,
         APPLICABLE,
         APPLY,
+        ATBL,
         ATOM,
         B,
         BACK,
@@ -148,6 +149,8 @@ namespace Zilf.Language
         [Atom("G=?")]
         GEq_P,
         GET,
+        [Atom("GET-CLASSIFICATION")]
+        GET_CLASSIFICATION,
         GETB,
         GETP,
         GETPT,
@@ -207,6 +210,10 @@ namespace Zilf.Language
         LTABLE,
         LVAL,
         MACRO,
+        [Atom("MAKE-VERB-DATA")]
+        MAKE_VERB_DATA,
+        [Atom("MAKE-VWORD")]
+        MAKE_VWORD,
         MANY,
         [Atom("MAP-CONTENTS")]
         MAP_CONTENTS,
@@ -243,6 +250,8 @@ namespace Zilf.Language
         OFFSET,
         [Atom("ON-GROUND")]
         ON_GROUND,
+        [Atom("ONE-BYTE-PARTS-OF-SPEECH")]
+        ONE_BYTE_PARTS_OF_SPEECH,
         OPEN,
         OR,
         ORB,
@@ -250,6 +259,7 @@ namespace Zilf.Language
         PACKAGE,
         [Atom("PARSER-TABLE")]
         PARSER_TABLE,
+        PATBL,
         PATTERN,
         PER,
         PLTABLE,
@@ -275,6 +285,7 @@ namespace Zilf.Language
         PROPDEF,
         PROPSPEC,
         PRSTBL,
+        PRTBL,
         PSEUDO,
         PTABLE,
         PTSIZE,
@@ -347,15 +358,22 @@ namespace Zilf.Language
         [Atom("T?")]
         T_P,
         TABLE,
+        TADJ,
         TAKE,
+        TBUZZ,
         TCHARS,
+        TDIR,
         TELL,
         [Atom("TEMP-TABLE")]
         TEMP_TABLE,
         TIME,
         TO,
+        TOBJECT,
+        TPREP,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,
+        TVERB,
+        TZERO,
         UEXIT,
         UNDO,
         [Atom("USE-COLOR?")]
@@ -372,13 +390,39 @@ namespace Zilf.Language
         VALUE,
         VECTOR,
         VERB,
+        [Atom("VERB-POINTER")]
+        VERB_POINTER,
+        [Atom("VERB-STUFF-ID")]
+        VERB_STUFF_ID,
         VERBS,
         VERIFY,
         [Atom("VERSION?")]
         VERSION_P,
         VOC,
         VOCAB,
+        VTBL,
+        VWORD,
         WORD,
+        [Atom("WORD-ADJ-ID")]
+        WORD_ADJ_ID,
+        [Atom("WORD-CLASSIFICATION-NUMBER")]
+        WORD_CLASSIFICATION_NUMBER,
+        [Atom("WORD-DIR-ID")]
+        WORD_DIR_ID,
+        [Atom("WORD-FLAG-TABLE")]
+        WORD_FLAG_TABLE,
+        [Atom("WORD-FLAGS")]
+        WORD_FLAGS,
+        [Atom("WORD-FLAGS-IN-TABLE")]
+        WORD_FLAGS_IN_TABLE,
+        [Atom("WORD-FLAGS-LIST")]
+        WORD_FLAGS_LIST,
+        [Atom("WORD-LEXICAL-WORD")]
+        WORD_LEXICAL_WORD,
+        [Atom("WORD-SEMANTIC-STUFF")]
+        WORD_SEMANTIC_STUFF,
+        [Atom("WORD-VERB-STUFF")]
+        WORD_VERB_STUFF,
         WORDLENGTH,
         X,
         XORB,

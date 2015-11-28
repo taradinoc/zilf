@@ -1198,6 +1198,7 @@ namespace Zilf.Interpreter
                 DefineCompilationFlag(GetStdAtom(StdAtom.MENU), FALSE);
 
                 DefineCompilationFlag(GetStdAtom(StdAtom.LONG_WORDS), FALSE);
+                DefineCompilationFlag(GetStdAtom(StdAtom.WORD_FLAGS_IN_TABLE), TRUE);
             }
             finally
             {
@@ -1227,6 +1228,13 @@ namespace Zilf.Interpreter
             {
                 SetCompilationFlagValue(name, value);
             }
+        }
+
+        [Pure]
+        public bool GetCompilationFlagOption(StdAtom stdAtom)
+        {
+            var value = GetCompilationFlagValue(GetStdAtom(stdAtom));
+            return value != null && value.IsTrue;
         }
 
         [Pure]
