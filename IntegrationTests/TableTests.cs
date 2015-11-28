@@ -127,6 +127,21 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TABLE_With_Words_Can_Be_Overwritten_With_Bytes()
+        {
+            // this also doesn't change the length of the table
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE 12345 6789>>",
+                "<PUTB ,MY-TBL 0 123>",
+                "<PUTB ,MY-TBL 1 45>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? <GETB ,TBL 0> 123>",
+                    "<==? <GETB ,TBL 1> 45>",
+                    "<==? <GET ,TBL 1> 6789>");
+        }
+
+        [TestMethod]
         public void PARSER_TABLEs_Come_Before_Other_Pure_Tables()
         {
             AssertGlobals(

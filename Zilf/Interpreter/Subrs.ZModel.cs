@@ -879,20 +879,8 @@ namespace Zilf.Interpreter
             if (index == null)
                 throw new InterpreterError("PUTB: second arg must be a FIX");
 
-            var value = args[2];
-            switch (value.GetTypeAtom(ctx).StdAtom)
-            {
-                case StdAtom.FIX:
-                case StdAtom.BYTE:
-                    // OK
-                    break;
-
-                default:
-                    throw new InterpreterError("PUTB: third arg must be a FIX or BYTE");
-            }
-
-            table.PutByte(ctx, index.Value, value);
-            return value;
+            table.PutByte(ctx, index.Value, args[2]);
+            return args[2];
         }
 
         #endregion

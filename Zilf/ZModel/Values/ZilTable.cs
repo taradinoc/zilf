@@ -27,11 +27,11 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
     class ZilTable : ZilObject
     {
-        private readonly ZilObject[] pattern;
         private readonly TableFlags flags;
 
         private int repetitions;
         private ZilObject[] initializer;
+        private ZilObject[] pattern;
         private int[] elementToByteOffsets;
 
         public ZilTable(int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
@@ -275,6 +275,34 @@ namespace Zilf.ZModel.Values
             }
         }
 
+        private void ExpandPattern(Context ctx, int index, bool insert)
+        {
+            if (pattern == null || pattern.Length <= index)
+            {
+                var byteAtom = ctx.GetStdAtom(StdAtom.BYTE);
+                var wordAtom = ctx.GetStdAtom(StdAtom.WORD);
+
+                var length = ElementCount;
+                if (insert)
+                    length++;
+
+                var newPattern = new ZilObject[length];
+
+                for (int i = 0, j = 0; i < newPattern.Length; i++, j++)
+                {
+                    newPattern[i] = IsWord(ctx, j) ? wordAtom : byteAtom;
+
+                    if (insert && i == index)
+                    {
+                        newPattern[i + 1] = newPattern[i];
+                        i++;
+                    }
+                }
+
+                pattern = newPattern;
+            }
+        }
+
         private int? ByteOffsetToIndex(Context ctx, int offset)
         {
             Contract.Requires(ctx != null);
@@ -389,21 +417,64 @@ namespace Zilf.ZModel.Values
             Contract.Requires(offset >= 0);
             Contract.Requires(value != null);
 
-            var index = ByteOffsetToIndex(ctx, offset);
-            if (index == null)
-                throw new ArgumentException(string.Format("No element at offset {0}", offset));
-            if (IsWord(ctx, index.Value))
-                throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
-
             if (initializer == null || repetitions > 1)
                 ExpandInitializer(ctx.FALSE);
 
-            if (initializer[index.Value % initializer.Length].GetTypeAtom(ctx).StdAtom == StdAtom.BYTE)
+            var index = ByteOffsetToIndex(ctx, offset);
+            bool second = false;
+            if (index == null)
             {
-                value = ctx.ChangeType(value, ctx.GetStdAtom(StdAtom.BYTE));
+                // might be the second byte of a word
+                index = ByteOffsetToIndex(ctx, offset - 1);
+                if (index != null && IsWord(ctx, index.Value))
+                {
+                    second = true;
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format("No element at offset {0}", offset));
+                }
             }
 
-            initializer[index.Value] = value;
+            if (IsWord(ctx, index.Value))
+            {
+                // split the word into 2 bytes
+                var newInitializer = new ZilObject[initializer.Length + 1];
+                Array.Copy(initializer, newInitializer, index.Value);
+                Array.Copy(initializer, index.Value + 1, newInitializer, index.Value + 2, initializer.Length - index.Value - 1);
+                initializer = newInitializer;
+
+                if (pattern != null)
+                    ExpandPattern(ctx, index.Value, true);
+
+                elementToByteOffsets = null;
+
+                var zeroByte = ctx.ChangeType(ZilFix.Zero, ctx.GetStdAtom(StdAtom.BYTE));
+
+                if (second)
+                {
+                    initializer[index.Value] = zeroByte;
+                    initializer[index.Value + 1] = value;
+
+                    // remember the index we actually used
+                    index++;
+                }
+                else
+                {
+                    initializer[index.Value] = value;
+                    initializer[index.Value + 1] = zeroByte;
+                }
+            }
+            else
+            {
+                initializer[index.Value] = value;
+            }
+
+            if (IsWord(ctx, index.Value))
+            {
+                ExpandPattern(ctx, index.Value, false);
+                pattern[index.Value] = ctx.GetStdAtom(StdAtom.BYTE);
+            }
         }
     }
 }
