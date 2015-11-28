@@ -151,11 +151,6 @@ namespace Zilf.ZModel.Vocab.NewParser
             return ((NewParserWord)word).HasClass(prepClass);
         }
 
-        public bool IsSynonym(IWord word)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool IsVerb(IWord word)
         {
             throw new NotImplementedException();
@@ -274,14 +269,20 @@ namespace Zilf.ZModel.Vocab.NewParser
             var nsrc = (NewParserWord)src;
 
             if ((ndest.Classification & 0x8000) != (nsrc.Classification & 0x8000))
-                throw new InterpreterError("incompatible classifications");
+            {
+                throw new InterpreterError(string.Format("incompatible classifications merging words {0} ({1}) <- {2} ({3})",
+                    ndest.Atom,
+                    ndest.Classification,
+                    nsrc.Atom,
+                    nsrc.Classification));
+            }
 
             if (ctx.ZEnvironment.ZVersion >= 4 &&
                 ((ndest.Classification | nsrc.Classification) & (dirClass | verbClass)) == (dirClass | verbClass) &&
                 (ndest.SemanticStuff != null || ndest.DirId != null) &&
                 (nsrc.SemanticStuff != null || nsrc.DirId != null))
             {
-                throw new InterpreterError("overloaded semantics");
+                throw new InterpreterError(string.Format("overloaded semantics merging words {0} <- {1}", dest.Atom, src.Atom));
             }
 
             ndest.Classification |= nsrc.Classification;
@@ -294,6 +295,21 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if (nsrc.SemanticStuff != null)
                 ndest.SemanticStuff = nsrc.SemanticStuff;
+        }
+
+        public bool IsSynonym(IWord word)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void MakeSynonym(IWord synonym, IWord original)
+        {
+            var nsyn = (NewParserWord)synonym;
+            var norig = (NewParserWord)original;
+
+            nsyn.Classification = 0;
+            nsyn.Flags = 0;
+            nsyn.SemanticStuff = ZilAtom.Parse("W?" + original.Atom, ctx);
         }
 
         public void WriteToBuilder(IWord word, IWordBuilder wb, WriteToBuilderHelpers helpers)
