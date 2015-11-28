@@ -355,35 +355,45 @@ namespace Zilf.ZModel.Vocab.NewParser
                 }
             }
 
-            var verbStuff = nw.VerbStuff;
-            ZilObject verbStuffId;
+            bool verbed = false;
+            if (nw.HasClass(verbClass))
+            {
+                var verbStuff = nw.VerbStuff;
+                ZilObject verbStuffId;
 
-            if (IsVerbPointer(verbStuff))
-            {
-                verbStuffId = verbStuff.GetPrimitive(ctx);
-                if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
-                    verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
-                
-                Contract.Assert(verbStuffId != null);
-                var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
-                wb.AddShort(helpers.CompileConstant(actTableAtom));
-            }
-            else if (TryGetVerbStuffId(verbStuff, out verbStuffId))
-            {
-                if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
-                    verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
+                if (IsVerbPointer(verbStuff))
+                {
+                    verbStuffId = verbStuff.GetPrimitive(ctx);
+                    if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
+                        verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
 
-                Contract.Assert(verbStuffId != null);
-                var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
-                wb.AddShort(helpers.CompileConstant(actTableAtom));
+                    Contract.Assert(verbStuffId != null);
+                    var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
+                    wb.AddShort(helpers.CompileConstant(actTableAtom));
+                    verbed = true;
+                }
+                else if (TryGetVerbStuffId(verbStuff, out verbStuffId))
+                {
+                    if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
+                        verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
+
+                    Contract.Assert(verbStuffId != null);
+                    var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
+                    wb.AddShort(helpers.CompileConstant(actTableAtom));
+                    verbed = true;
+                }
             }
-            else if (zversion == 3)
+
+            if (!verbed)
             {
-                wb.AddShort(0);
-            }
-            else if (needSemanticStuff)
-            {
-                ConditionalAddShort(wb, helpers.CompileConstant, nw.SemanticStuff);
+                if (zversion == 3)
+                {
+                    wb.AddShort(0);
+                }
+                else if (needSemanticStuff)
+                {
+                    ConditionalAddShort(wb, helpers.CompileConstant, nw.SemanticStuff);
+                }
             }
 
             if (!ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
