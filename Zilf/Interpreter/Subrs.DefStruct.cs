@@ -396,12 +396,14 @@ namespace Zilf.Interpreter
             // {5} = unparsed INIT-ARGS, or empty string
             // {6} = COND clauses for indices ("BOA constructor" mode, PUTting into the temp vector .RESULT-INIT)
             // {7} = COND clauses for index defaults
-            // {8} = COND statements for tag defaults
+            // {8} = COND statements for tag defaults ("new object" mode)
+            // {9} = expressions returning a FORM or SPLICE for tag defaults ("existing object" mode)
             const string SMacroTemplate = @"
-<DEFMAC MAKE-{0} (""ARGS"" A ""AUX"" RESULT-INIT)
+<DEFMAC MAKE-{0} (""ARGS"" A ""AUX"" RESULT-INIT SEEN)
     <COND (<AND <NOT <EMPTY? .A>>
                 <=? <1 .A> '<QUOTE {0}>>>
            <SET RESULT-INIT <2 .A>>
+           <SET SEEN '()>
            <SET A <REST .A 2>>
            <FORM BIND <LIST <LIST RESULT .RESULT-INIT>>
                  !<MAPF
@@ -414,6 +416,7 @@ namespace Zilf.Interpreter
                          <SET A <REST .A 2>>
                          <COND {2}
                                (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>>
+                 !<VECTOR {9}>
                  '.RESULT>)
           (<OR <EMPTY? .A>
                <NOT <TYPE? <1 .A> FORM>>
@@ -433,17 +436,17 @@ namespace Zilf.Interpreter
            <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>)
           (T
            <SET RESULT-INIT <IVECTOR {1} <>>>
-           <BIND ((SEEN '()))
-               <REPEAT (N V)
-                   <COND (<LENGTH? .A 0> <RETURN>)
-                         (<LENGTH? .A 1> <ERROR NOT-ENOUGH-ARGS!-ERRORS .A>)>
-                   <SET N <1 .A>>
-                   <SET V <2 .A>>
-                   <SET A <REST .A 2>>
-                   <COND {3}
-                         (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>
-               {8}
-               <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>>)>>
+           <SET SEEN '()>
+           <REPEAT (N V)
+               <COND (<LENGTH? .A 0> <RETURN>)
+                       (<LENGTH? .A 1> <ERROR NOT-ENOUGH-ARGS!-ERRORS .A>)>
+               <SET N <1 .A>>
+               <SET V <2 .A>>
+               <SET A <REST .A 2>>
+               <COND {3}
+                       (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>
+           {8}
+           <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>)>>
 ";
 
             // {0} = tag name
@@ -451,13 +454,15 @@ namespace Zilf.Interpreter
             // {2} = offset in structure (for existing object) or RESULT-INIT (for others)
             // {3} = definition order (1-based)
             // {4} = unparsed default value
-            const string SExistingObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <FORM {1} '.RESULT {2} .V>)";
+            const string SExistingObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <SET SEEN <CONS {0} .SEEN>> <FORM {1} '.RESULT {2} .V>)";
+            const string SExistingObjectDefaultTemplate = "<COND (<MEMQ {0} .SEEN> #SPLICE ()) (T <FORM {1} '.RESULT {2} {4}>)>";
             const string SNewObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <SET SEEN <CONS {0} .SEEN>> <PUT .RESULT-INIT {2} .V>)";
             const string SNewObjectDefaultTemplate = "<OR <MEMQ {0} .SEEN> <PUT .RESULT-INIT {2} {4}>>";
             const string SBoaConstructorCondClauseTemplate = "(<=? .I {3}> <PUT .RESULT-INIT {2} .V>)";
             const string SBoaConstructorDefaultClauseTemplate = "(<=? .I {3}> <PUT .RESULT-INIT {2} {4}>)";
 
             var existingObjectClauses = new StringBuilder();
+            var existingObjectDefaults = new StringBuilder();
             var newObjectClauses = new StringBuilder();
             var newObjectDefaults = new StringBuilder();
             var boaConstructorClauses = new StringBuilder();
@@ -476,6 +481,9 @@ namespace Zilf.Interpreter
                     unparsedDefault = UnparsedDefaultForDecl(ctx, field.Decl);
                 }
 
+                existingObjectDefaults.AppendFormat(
+                    SExistingObjectDefaultTemplate,
+                    field.Name, field.PutFunc, field.Offset, definitionOrder, unparsedDefault);
                 newObjectDefaults.AppendFormat(
                     SNewObjectDefaultTemplate,
                     field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
@@ -506,7 +514,8 @@ namespace Zilf.Interpreter
                 unparsedInitArgs,
                 boaConstructorClauses,
                 boaConstructorDefaultClauses,
-                newObjectDefaults);
+                newObjectDefaults,
+                existingObjectDefaults);
         }
 
         private static string MakeDefstructAccessMacro(ZilAtom structName, DefStructField field)
