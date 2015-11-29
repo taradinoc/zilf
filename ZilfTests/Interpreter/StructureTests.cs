@@ -106,17 +106,18 @@ namespace ZilfTests.Interpreter
             var ctx = new Context();
             var pointAtom = ZilAtom.Parse("POINT", ctx);
 
-            TestHelpers.EvalAndAssert(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y FIX)>",
+            TestHelpers.EvalAndAssert(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX 0) (POINT-Y FIX 0) (POINT-Z FIX 0)>",
                 pointAtom);
 
-            // put values into existing object
-            var vector = new ZilVector(new ZilObject[] { ctx.FALSE, ctx.FALSE });
+            // put values into existing object, setting any omitted fields to default values
+            var vector = new ZilVector(new ZilObject[] { new ZilFix(123), new ZilFix(456), new ZilFix(789) });
             ctx.SetLocalVal(ZilAtom.Parse("MY-VECTOR", ctx),
                 ZilHash.Parse(ctx, new ZilObject[] { pointAtom, vector }));
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT .MY-VECTOR 'POINT-Y 999 'POINT-X 888>",
                 ZilHash.Parse(ctx, new ZilObject[] { pointAtom, vector }));
             Assert.AreEqual(new ZilFix(888), vector[0]);
             Assert.AreEqual(new ZilFix(999), vector[1]);
+            Assert.AreEqual(new ZilFix(0), vector[2]);
         }
 
         [TestMethod]
@@ -268,8 +269,8 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<POINT-Y <MAKE-POINT 'POINT-Y 0>>", new ZilFix(0));     // ID 5
 
             TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 11 22>>", new ZilFix(6));
-            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 'POINT <MAKE-POINT 111 222 333> 'POINT-Y 200>>", new ZilFix(333));
-            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(7));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT 'POINT <MAKE-POINT 111 222 333> 'POINT-Y 200>>", new ZilFix(7));
+            TestHelpers.EvalAndAssert(ctx, "<POINT-ID <MAKE-POINT>>", new ZilFix(8));
         }
 
         [TestMethod]
