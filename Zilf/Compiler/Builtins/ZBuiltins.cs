@@ -543,6 +543,53 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(arg2 != null);
             Contract.Requires(restOfArgs != null);
 
+            if (arg1 is INumericOperand)
+            {
+                var value = ((INumericOperand)arg1).Value;
+
+                if ((arg2 is INumericOperand && ((INumericOperand)arg2).Value == value) ||
+                    restOfArgs.OfType<INumericOperand>().Any(arg => arg.Value == value))
+                {
+                    // we know it's equal, so pop any stack operands and branch accordingly
+                    if (arg2 == c.rb.Stack)
+                        c.rb.EmitPopStack();
+
+                    foreach (var arg in restOfArgs)
+                        if (arg == c.rb.Stack)
+                            c.rb.EmitPopStack();
+
+                    if (c.polarity)
+                        c.rb.Branch(c.label);
+
+                    return;
+                }
+                else if (arg2 is INumericOperand && ((INumericOperand)arg2).Value != value &&
+                    restOfArgs.All(arg => arg is INumericOperand && ((INumericOperand)arg).Value != value))
+                {
+                    // we know it's not equal, and there are no stack operands, so branch accordingly
+                    if (!c.polarity)
+                        c.rb.Branch(c.label);
+
+                    return;
+                }
+
+                // we can't simplify the branch, but we can still skip testing all the constants
+                if (arg2 is INumericOperand || restOfArgs.Any(arg => arg is INumericOperand))
+                {
+                    var queue = new Queue<IOperand>(restOfArgs.Length);
+
+                    if (!(arg2 is INumericOperand))
+                        queue.Enqueue(arg2);
+
+                    foreach (var arg in restOfArgs)
+                        if (!(arg is INumericOperand))
+                            queue.Enqueue(arg);
+
+                    arg2 = queue.Dequeue();
+                    restOfArgs = queue.ToArray();
+                }
+            }
+
             if (restOfArgs.Length <= 2)
             {
                 // TODO: there should really just be one BranchIfEqual with optional params
@@ -922,7 +969,33 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(left != null);
             Contract.Requires(right != null);
 
-            c.rb.Branch(cond, left, right, c.label, c.polarity);
+            var nleft = left as INumericOperand;
+            var nright = right as INumericOperand;
+            if (nleft != null && nright != null)
+            {
+                bool branch;
+                switch (cond)
+                {
+                    case Condition.Greater:
+                        branch = nleft.Value > nright.Value;
+                        break;
+                    case Condition.Less:
+                        branch = nleft.Value < nright.Value;
+                        break;
+                    case Condition.TestBits:
+                        branch = (nleft.Value & nright.Value) == nright.Value;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+
+                if (branch == c.polarity)
+                    c.rb.Branch(c.label);
+            }
+            else
+            {
+                c.rb.Branch(cond, left, right, c.label, c.polarity);
+            }
         }
 
         [Builtin("L=?", Data = Condition.Greater)]
@@ -933,7 +1006,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(left != null);
             Contract.Requires(right != null);
 
-            c.rb.Branch(cond, left, right, c.label, !c.polarity);
+            BinaryPredOp(new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity), cond, left, right);
         }
 
         [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
@@ -1107,7 +1180,15 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(value != null);
 
-            c.rb.BranchIfZero(value, c.label, c.polarity);
+            if (value is INumericOperand)
+            {
+                if ((((INumericOperand)value).Value == 0) == c.polarity)
+                    c.rb.Branch(c.label);
+            }
+            else
+            {
+                c.rb.BranchIfZero(value, c.label, c.polarity);
+            }
         }
 
         [Builtin("1?")]
@@ -1115,7 +1196,15 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(value != null);
 
-            c.rb.BranchIfEqual(value, c.cc.Game.One, c.label, c.polarity);
+            if (value is INumericOperand)
+            {
+                if ((((INumericOperand)value).Value == 1) == c.polarity)
+                    c.rb.Branch(c.label);
+            }
+            else
+            {
+                c.rb.BranchIfEqual(value, c.cc.Game.One, c.label, c.polarity);
+            }
         }
 
         [Builtin("LOC", Data = UnaryOp.GetParent)]

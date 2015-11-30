@@ -432,5 +432,76 @@ namespace IntegrationTests
                 "<BCOM 123>")
                 .GeneratesCodeMatching("RETURN -124");
         }
+
+        [TestMethod]
+        public void Constant_Comparisons_Should_Be_Folded()
+        {
+            // unary comparisons
+            AssertRoutine("",
+                "<0? ,FALSE-VALUE>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<1? <- 6 5>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<T? <+ 1 2 3>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<F? <+ 1 2 3>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RFALSE");
+
+            AssertRoutine("",
+                "<NOT <- 6 4 2>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            // binary comparisons
+            AssertRoutine("",
+                "<L? 1 10>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<G=? ,FALSE-VALUE ,TRUE-VALUE>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RFALSE");
+
+            AssertRoutine("",
+                "<BTST <+ 64 32 8> <+ 32 8>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<BTST <+ 64 32 8> <+ 16 8>>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RFALSE");
+
+            // varargs equality comparisons
+            AssertRoutine("",
+                "<=? 50 10 <- 100 50> 100>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RTRUE");
+
+            AssertRoutine("",
+                "<=? 49 10 <- 100 50> 100>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*RFALSE");
+
+            // here we still have to call the function to get its side effect, but we can ignore its result
+            AssertRoutine("",
+                "<=? 50 10 <- 100 50> <FOO>>")
+                .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
+                .WithGlobal("<ROUTINE FOO () 100>")
+                .GeneratesCodeMatching(@"\.FUNCT TEST\?ROUTINE\r?\n\s*CALL FOO >STACK\r?\n\s*FSTACK\r?\n\s*RTRUE");
+
+            // here we can't simplify the branch, because <FOO> might return 49, but we can skip testing the constants
+            AssertRoutine("",
+                "<=? 49 10 <- 100 50> <FOO>>")
+                .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
+                .WithGlobal("<ROUTINE FOO () 100>")
+                .GeneratesCodeMatching(@"EQUAL\? 49,STACK (/TRUE|\\FALSE)");
+
+            AssertRoutine("",
+                "<=? 49 1 <FOO> 2 <FOO> 3 <FOO> 4 <FOO> 5>")
+                .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
+                .WithGlobal("<ROUTINE FOO () 100>")
+                .GeneratesCodeMatching(@"EQUAL\? 49(,(STACK|\?TMP(\?\d+)?)){3} /TRUE\r?\n\s*EQUAL\? 49,(STACK|\?TMP(\?\d+)?) (/TRUE|\\FALSE)");
+        }
     }
 }

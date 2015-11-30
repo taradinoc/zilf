@@ -91,7 +91,7 @@ namespace Zilf.Compiler
                 IOperand value = Compiler.CompileConstant(cc, exprs[i]);
                 if (value == null)
                 {
-                    // not a constant
+                    // could still be a constant if it compiles to a constant operand
                     value = Compiler.CompileAsOperand(cc, rb, exprs[i], src);
 
                     if (IsLocalVariableRef(exprs[i]))
@@ -118,7 +118,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
-                        needTemp = true;
+                        needTemp = !(value is INumericOperand);
                     }
                 }
 

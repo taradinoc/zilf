@@ -2280,7 +2280,16 @@ namespace Zilf.Compiler
             else if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, cc, rb, form, rb.Stack);
-                rb.BranchIfZero(result, label, !polarity);
+                var numericResult = result as INumericOperand;
+                if (numericResult != null)
+                {
+                    if ((numericResult.Value != 0) == polarity)
+                        rb.Branch(label);
+                }
+                else
+                {
+                    rb.BranchIfZero(result, label, !polarity);
+                }
                 return;
             }
             else if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
@@ -2332,7 +2341,16 @@ namespace Zilf.Compiler
 
                 default:
                     op1 = CompileAsOperand(cc, rb, form, form.SourceLine);
-                    rb.BranchIfZero(op1, label, !polarity);
+                    var numericResult = op1 as INumericOperand;
+                    if (numericResult != null)
+                    {
+                        if ((numericResult.Value != 0) == polarity)
+                            rb.Branch(label);
+                    }
+                    else
+                    {
+                        rb.BranchIfZero(op1, label, !polarity);
+                    }
                     break;
             }
         }
