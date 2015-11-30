@@ -503,5 +503,31 @@ namespace IntegrationTests
                 .WithGlobal("<ROUTINE FOO () 100>")
                 .GeneratesCodeMatching(@"EQUAL\? 49(,(STACK|\?TMP(\?\d+)?)){3} /TRUE\r?\n\s*EQUAL\? 49,(STACK|\?TMP(\?\d+)?) (/TRUE|\\FALSE)");
         }
+
+        [TestMethod]
+        public void BAND_In_Predicate_Context_With_Power_Of_Two_Should_Be_Optimized()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BAND .X 4> <RTRUE>)>")
+                .GeneratesCodeMatching(@"BTST X,4 (/TRUE|\\FALSE)");
+
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BAND 4 .X> <RTRUE>)>")
+                .GeneratesCodeMatching(@"BTST X,4 (/TRUE|\\FALSE)");
+
+            // BAND with zero is never true
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BAND 0 .X> <RTRUE>)>")
+                .GeneratesCodeMatching("RFALSE");
+
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BAND .X 0> <RTRUE>)>")
+                .GeneratesCodeMatching("RFALSE");
+
+            // doesn't work with non-powers-of-two
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BAND .X 6> <RTRUE>)>")
+                .GeneratesCodeMatching(@"BAND X,6 >STACK\r?\n\s*ZERO\? STACK (\\TRUE|/FALSE)");
+        }
     }
 }
