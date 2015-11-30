@@ -108,6 +108,28 @@ namespace Zilf.Emit
         OppositeTest,
     }
 
+    /// <summary>
+    /// Indicates whether a plain instruction controls a conditional branch.
+    /// </summary>
+    enum ControlsConditionResult
+    {
+        /// <summary>
+        /// The plain instruction is unrelated to the conditional branch,
+        /// or it has additional side effects besides controlling the branch.
+        /// </summary>
+        Unrelated,
+        /// <summary>
+        /// The plain instruction causes the condition to branch (if its polarity
+        /// is positive), with no other side effects.
+        /// </summary>
+        CausesBranchIfPositive,
+        /// <summary>
+        /// The plain instruction causes the condition to fall through (if its
+        /// polarity is positive), with no other side effects.
+        /// </summary>
+        CausesNoOpIfPositive,
+    }
+
     interface IPeepholeCombiner<TCode>
     {
         /// <summary>
@@ -151,6 +173,17 @@ namespace Zilf.Emit
         /// <returns>A value indicating whether the branches are related and
         /// whether they have the same polarity.</returns>
         SameTestResult AreSameTest(TCode a, TCode b);
+
+        /// <summary>
+        /// Determines whether a plain instruction serves only to create a
+        /// condition that will be immediately checked by a conditional branch.
+        /// </summary>
+        /// <param name="a">The first instruction.</param>
+        /// <param name="b">The second instruction.</param>
+        /// <returns>A value indicating whether the branch tests a condition
+        /// created by the first instruction and, if so, whether it causes
+        /// the branch to become unconditional or no-op.</returns>
+        ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b);
 
         /// <summary>
         /// Allocates a new label.
@@ -689,6 +722,74 @@ namespace Zilf.Emit
                             line.Label = oldLabel;
                             if (line.Label != null)
                                 labelMap[line.Label] = line;
+                            changed = true;
+                        }
+                    }
+
+                    if (!delete && combiner != null && line.Type == PeepholeLineType.Plain && node.Next != null)
+                    {
+                        ControlsConditionResult controlsCondResult;
+
+                        if (IsInvertibleBranch(node.Next.Value.Type) &&
+                            (controlsCondResult = combiner.ControlsConditionalBranch(line.Code, node.Next.Value.Code)) != ControlsConditionResult.Unrelated)
+                        {
+                            // handle "push constant then fall through to a conditional branch that tests it"
+                            line.Code = combiner.SynthesizeBranchAlways();
+                            line.Type = PeepholeLineType.BranchAlways;
+
+                            var polarity = node.Next.Value.Type == PeepholeLineType.BranchPositive;
+                            if ((controlsCondResult == ControlsConditionResult.CausesBranchIfPositive) == polarity)
+                            {
+                                // branch to condition's target
+                                line.TargetLabel = node.Next.Value.TargetLabel;
+                                line.TargetLine = node.Next.Value.TargetLine;
+                            }
+                            else
+                            {
+                                // branch to instruction after condition
+                                var lineAfterCondition = node.Next.Next.Value;
+                                if (lineAfterCondition.Label == null)
+                                {
+                                    lineAfterCondition.Label = combiner.NewLabel();
+                                    labelMap[lineAfterCondition.Label] = lineAfterCondition;
+                                }
+
+                                line.TargetLabel = lineAfterCondition.Label;
+                                line.TargetLine = lineAfterCondition;
+                                usedLabels[line.TargetLabel] = true;
+                            }
+
+                            changed = true;
+                        }
+                        else if (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine != null &&
+                            (controlsCondResult = combiner.ControlsConditionalBranch(line.Code, node.Next.Value.TargetLine.Code)) != ControlsConditionResult.Unrelated)
+                        {
+                            // handle "push constant then jump to a conditional branch that tests it"
+                            line.Code = combiner.SynthesizeBranchAlways();
+                            line.Type = PeepholeLineType.BranchAlways;
+
+                            var polarity = node.Next.Value.TargetLine.Type == PeepholeLineType.BranchPositive;
+                            if ((controlsCondResult == ControlsConditionResult.CausesBranchIfPositive) == polarity)
+                            {
+                                // branch to condition's target
+                                line.TargetLabel = node.Next.Value.TargetLine.TargetLabel;
+                                line.TargetLine = node.Next.Value.TargetLine.TargetLine;
+                            }
+                            else
+                            {
+                                // branch to instruction after condition
+                                var lineAfterCondition = lines.Find(node.Next.Value.TargetLine).Next.Value;
+                                if (lineAfterCondition.Label == null)
+                                {
+                                    lineAfterCondition.Label = combiner.NewLabel();
+                                    labelMap[lineAfterCondition.Label] = lineAfterCondition;
+                                }
+
+                                line.TargetLabel = lineAfterCondition.Label;
+                                line.TargetLine = lineAfterCondition;
+                                usedLabels[line.TargetLabel] = true;
+                            }
+
                             changed = true;
                         }
                     }

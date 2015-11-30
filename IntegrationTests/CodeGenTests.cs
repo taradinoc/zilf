@@ -541,5 +541,13 @@ namespace IntegrationTests
                 "<BOR <BOR 96 .X> 48>")
                 .GeneratesCodeMatching("BOR X,112 >STACK");
         }
+
+        [TestMethod]
+        public void Predicate_Inside_BIND_Does_Not_Rely_On_PUSH()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<COND (<BIND ((Y <* 2 .X>)) <G? .Y 123>> <RTRUE>)>")
+                .GeneratesCodeMatching(@"GRTR\? Y,123 (/TRUE|\\FALSE)");
+        }
     }
 }
