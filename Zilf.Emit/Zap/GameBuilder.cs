@@ -10,8 +10,8 @@ namespace Zilf.Emit.Zap
     {
         private const string INDENT = "\t";
 
-        internal static readonly LiteralOperand ZERO = new LiteralOperand("0");
-        internal static readonly LiteralOperand ONE = new LiteralOperand("1");
+        internal static readonly NumericOperand ZERO = new NumericOperand(0);
+        internal static readonly NumericOperand ONE = new NumericOperand(1);
         internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
 
         // TODO: share unicode translation table with Zapf
@@ -314,7 +314,10 @@ namespace Zilf.Emit.Zap
 
             constants.Add(name, value);
             symbols.Add(name, "constant");
-            return new LiteralOperand(name);
+            if (value is INumericOperand)
+                return new NumericConstantOperand(name, ((INumericOperand)value).Value);
+            else
+                return new LiteralOperand(name);
         }
 
         public IGlobalBuilder DefineGlobal(string name)

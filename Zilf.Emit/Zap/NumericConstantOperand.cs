@@ -1,17 +1,19 @@
-namespace Zilf.Emit.Zap
+﻿namespace Zilf.Emit.Zap
 {
-    class NumericOperand : INumericOperand
+    class NumericConstantOperand : INumericOperand
     {
+        private readonly string literal;
         private readonly int value;
 
-        public NumericOperand(int value)
+        public NumericConstantOperand(string literal, int value)
         {
+            this.literal = literal;
             this.value = value;
         }
 
         public override string ToString()
         {
-            return value.ToString();
+            return literal;
         }
 
         public int Value
