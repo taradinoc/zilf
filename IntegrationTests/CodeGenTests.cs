@@ -529,5 +529,17 @@ namespace IntegrationTests
                 "<COND (<BAND .X 6> <RTRUE>)>")
                 .GeneratesCodeMatching(@"BAND X,6 >STACK\r?\n\s*ZERO\? STACK (\\TRUE|/FALSE)");
         }
+
+        [TestMethod]
+        public void Stacked_BAND_Or_BOR_Should_Collapse()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<BAND 48 <BAND .X 96>>")
+                .GeneratesCodeMatching("BAND X,32 >STACK");
+
+            AssertRoutine("\"AUX\" X",
+                "<BOR <BOR 96 .X> 48>")
+                .GeneratesCodeMatching("BOR X,112 >STACK");
+        }
     }
 }
