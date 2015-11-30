@@ -1586,6 +1586,23 @@ namespace Zilf.Emit.Zap
                 return SameTestResult.Unrelated;
             }
 
+            public ControlsConditionResult ControlsConditionalBranch(ZapCode a, ZapCode b)
+            {
+                /* if 'a' pushes a constant and 'b' is ZERO? testing the stack, the
+                 * answer depends on the value of the constant. */
+                int value;
+                if (a.Text.StartsWith("PUSH ") && int.TryParse(a.Text.Substring(5), out value) &&
+                    b.Text == "ZERO? STACK")
+                {
+                    if (value == 0)
+                        return ControlsConditionResult.CausesBranchIfPositive;
+                    else
+                        return ControlsConditionResult.CausesNoOpIfPositive;
+                }
+
+                return ControlsConditionResult.Unrelated;
+            }
+
             public ILabel NewLabel()
             {
                 return routineBuilder.DefineLabel();
