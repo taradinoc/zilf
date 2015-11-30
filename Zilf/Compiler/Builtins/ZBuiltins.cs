@@ -935,6 +935,63 @@ namespace Zilf.Compiler.Builtins
             return cc.Game.MakeOperand(value);
         }
 
+        [Builtin("BAND", "ANDB")]
+        public static void BinaryAndPredOp(PredCall c, IOperand left, IOperand right)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(right != null);
+
+            var nleft = left as INumericOperand;
+            var nright = right as INumericOperand;
+
+            // if both are constants, we can fully optimize
+            if (nleft != null && nright != null)
+            {
+                var result = (short)(nleft.Value) & (short)(nright.Value);
+                if ((result != 0) == c.polarity)
+                    c.rb.Branch(c.label);
+
+                return;
+            }
+
+            // if one is a constant power of two, we can use BTST
+            if (nleft != null || nright != null)
+            {
+                IOperand variable;
+                INumericOperand constant;
+
+                if (nleft != null)
+                {
+                    constant = nleft;
+                    variable = right;
+                }
+                else
+                {
+                    constant = nright;
+                    variable = left;
+                }
+
+                if (constant.Value == 0)
+                {
+                    // always false
+                    if (c.polarity == false)
+                        c.rb.Branch(c.label);
+
+                    return;
+                }
+                else if ((constant.Value & (constant.Value - 1)) == 0)
+                {
+                    // power of two
+                    c.rb.Branch(Condition.TestBits, variable, constant, c.label, c.polarity);
+                    return;
+                }
+            }
+
+            // otherwise use BAND and ZERO?
+            c.rb.EmitBinary(BinaryOp.And, left, right, c.rb.Stack);
+            c.rb.BranchIfZero(c.rb.Stack, c.label, !c.polarity);
+        }
+
         // TODO: REST with a constant table argument should produce a constant operand (<REST MYTABLE 2> -> "MYTABLE+2")
         [Builtin("REST", "ZREST", Data = BinaryOp.Add)]
         [Builtin("BACK", "ZBACK", Data = BinaryOp.Sub)]
