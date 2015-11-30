@@ -394,5 +394,43 @@ namespace IntegrationTests
                 @"<GLOBAL \,TELLTAB2 <ITABLE 1>>")
                 .GeneratesCodeMatching(@"\A(?:(?!,TELL).)*\Z");
         }
+
+        [TestMethod]
+        public void Constant_Arithmetic_Operations_Should_Be_Folded()
+        {
+            // binary operators
+            AssertRoutine("",
+                "<+ 1 <* 2 3> <* 4 5>>")
+                .GeneratesCodeMatching("RETURN 27");
+
+            AssertRoutine("",
+                "<+ ,EIGHT ,SIXTEEN>")
+                .WithGlobal("<CONSTANT EIGHT 8>")
+                .WithGlobal("<CONSTANT SIXTEEN 16>")
+                .GeneratesCodeMatching("RETURN 24");
+
+            AssertRoutine("",
+                "<MOD 1000 16>")
+                .GeneratesCodeMatching("RETURN 8");
+
+            AssertRoutine("",
+                "<ASH -32768 -2>")
+                .InV5()
+                .GeneratesCodeMatching("RETURN -8192");
+
+            AssertRoutine("",
+                "<LSH -32768 -2>")
+                .InV5()
+                .GeneratesCodeMatching("RETURN 8192");
+
+            AssertRoutine("",
+                "<XORB 25 -1>")
+                .GeneratesCodeMatching("RETURN -26");
+
+            // unary operators
+            AssertRoutine("",
+                "<BCOM 123>")
+                .GeneratesCodeMatching("RETURN -124");
+        }
     }
 }

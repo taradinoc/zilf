@@ -696,8 +696,33 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(right != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            c.rb.EmitBinary(op, left, right, c.resultStorage);
-            return c.resultStorage;
+            var nleft = left as INumericOperand;
+            var nright = right as INumericOperand;
+            if (nleft != null && nright != null)
+            {
+                switch (op)
+                {
+                    case BinaryOp.Mod:
+                        return c.cc.Game.MakeOperand((short)(nleft.Value % nright.Value));
+                    case BinaryOp.ArtShift:
+                        if (nright.Value < 0)
+                            return c.cc.Game.MakeOperand((short)(nleft.Value >> -nright.Value));
+                        else
+                            return c.cc.Game.MakeOperand((short)(nleft.Value << nright.Value));
+                    case BinaryOp.LogShift:
+                        if (nright.Value < 0)
+                            return c.cc.Game.MakeOperand((short)((ushort)nleft.Value >> -nright.Value));
+                        else
+                            return c.cc.Game.MakeOperand((short)((ushort)nleft.Value << nright.Value));
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                c.rb.EmitBinary(op, left, right, c.resultStorage);
+                return c.resultStorage;
+            }
         }
 
         [Builtin("XORB")]
@@ -723,8 +748,16 @@ namespace Zilf.Compiler.Builtins
             }
 
             var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.resultStorage);
-            c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
-            return c.resultStorage;
+
+            if (storage is INumericOperand)
+            {
+                return c.cc.Game.MakeOperand((short)(~((INumericOperand)storage).Value));
+            }
+            else
+            {
+                c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
+                return c.resultStorage;
+            }
         }
 
         [Builtin("ADD", "+", Data = BinaryOp.Add)]
@@ -737,6 +770,46 @@ namespace Zilf.Compiler.Builtins
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
             Contract.Requires(args != null);
+
+            if (args.Length > 0)
+            {
+                short foldedInit;
+                Func<short, short, short> foldedOp;
+
+                switch (op)
+                {
+                    case BinaryOp.Add:
+                        foldedOp = (a, b) => (short)(a + b);
+                        foldedInit = 0;
+                        break;
+                    case BinaryOp.Sub:
+                        foldedOp = (a, b) => (short)(a - b);
+                        foldedInit = 0;
+                        break;
+                    case BinaryOp.Mul:
+                        foldedOp = (a, b) => (short)(a * b);
+                        foldedInit = 1;
+                        break;
+                    case BinaryOp.Div:
+                        foldedOp = (a, b) => (short)(a / b);
+                        foldedInit = 1;
+                        break;
+                    case BinaryOp.And:
+                        foldedOp = (a, b) => (short)(a & b);
+                        foldedInit = -1;
+                        break;
+                    case BinaryOp.Or:
+                        foldedOp = (a, b) => (short)(a | b);
+                        foldedInit = 0;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+
+                var folded = FoldConstantArithmetic(c.cc, foldedInit, foldedOp, args);
+                if (folded != null)
+                    return folded;
+            }
 
             IOperand init;
             switch (op)
@@ -793,6 +866,28 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        private static IOperand FoldConstantArithmetic(CompileCtx cc, short init, Func<short, short, short> op, IOperand[] args)
+        {
+            Contract.Requires(cc != null);
+            Contract.Requires(op != null);
+            Contract.Requires(args != null);
+            Contract.Requires(args.Length > 0);
+
+            // make sure all args are constants
+            foreach (var arg in args)
+                if (!(arg is INumericOperand))
+                    return null;
+
+            if (args.Length == 1)
+                return cc.Game.MakeOperand(op(init, (short)((INumericOperand)args[0]).Value));
+
+            short value = (short)((INumericOperand)args[0]).Value;
+            for (int i = 1; i < args.Length; i++)
+                value = op(value, (short)((INumericOperand)args[i]).Value);
+
+            return cc.Game.MakeOperand(value);
+        }
+
         // TODO: REST with a constant table argument should produce a constant operand (<REST MYTABLE 2> -> "MYTABLE+2")
         [Builtin("REST", "ZREST", Data = BinaryOp.Add)]
         [Builtin("BACK", "ZBACK", Data = BinaryOp.Sub)]
@@ -802,7 +897,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(left != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            return BinaryValueOp(c, op, left, right ?? c.cc.Game.One);
+            return ArithmeticOp(c, op, left, right ?? c.cc.Game.One);
         }
 
         [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, HasSideEffect = true)]
@@ -981,6 +1076,11 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(value != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
+
+            if (op == UnaryOp.Not && value is INumericOperand)
+            {
+                return c.cc.Game.MakeOperand((short)(~((INumericOperand)value).Value));
+            }
 
             c.rb.EmitUnary(op, value, c.resultStorage);
             return c.resultStorage;
