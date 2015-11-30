@@ -1306,11 +1306,20 @@ namespace Zilf.Emit.Zap
                     });
             }
 
+            private static CombinerResult<ZapCode> Consume(int numberOfLines)
+            {
+                return new CombinerResult<ZapCode>(numberOfLines, Enumerable.Empty<CombinableLine<ZapCode>>());
+            }
+
             private static readonly Regex equalZeroRegex = new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
+            private static readonly Regex bandConstantToStackRegex = new Regex(@"^BAND (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+            private static readonly Regex bandConstantWithStackRegex = new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+            private static readonly Regex borConstantToStackRegex = new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+            private static readonly Regex borConstantWithStackRegex = new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
 
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                System.Text.RegularExpressions.Match rm = null;
+                System.Text.RegularExpressions.Match rm = null, rm2 = null;
 
                 BeginMatch(lines);
                 try
@@ -1467,6 +1476,66 @@ namespace Zilf.Emit.Zap
                     {
                         // PRINTI + (CRLF + RTRUE) => PRINTR
                         return Combine2to1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
+                    }
+
+                    // BAND v,c >STACK + ZERO? STACK /L =>
+                    //     when c == 0:              simple branch
+                    //     when c is a power of two: BTST v,c \L
+                    if (Match(a => (rm = bandConstantToStackRegex.Match(a.Code.Text)).Success,
+                              b => b.Code.Text == "ZERO? STACK"))
+                    {
+                        var variable = rm.Groups["var"].Value;
+                        Contract.Assume(variable != null);
+                        var constantValue = int.Parse(rm.Groups["const"].Value);
+
+                        if (constantValue == 0)
+                        {
+                            if (rm.Groups["var"].Value != "STACK")
+                            {
+                                if (matches[1].Type == PeepholeLineType.BranchPositive)
+                                    return Combine2to1("JUMP", PeepholeLineType.BranchAlways, matches[1].Target);
+                                else
+                                    return Consume(2);
+                            }
+                        }
+                        else if ((constantValue & (constantValue - 1)) == 0)
+                        {
+                            PeepholeLineType oppositeType;
+                            if (matches[1].Type == PeepholeLineType.BranchPositive)
+                                oppositeType = PeepholeLineType.BranchNegative;
+                            else
+                                oppositeType = PeepholeLineType.BranchPositive;
+
+                            return Combine2to1("BTST " + variable + "," + constantValue, oppositeType);
+                        }
+                    }
+
+                    // BAND v,c1 >STACK + BAND STACK,c2 >dest => BAND v,(c1&c2) >dest
+                    if (Match(a => (rm = bandConstantToStackRegex.Match(a.Code.Text)).Success,
+                              b => (rm2 = bandConstantWithStackRegex.Match(b.Code.Text)).Success))
+                    {
+                        var variable = rm.Groups["var"].Value;
+                        var dest = rm2.Groups["dest"].Value;
+                        Contract.Assume(variable != null);
+                        Contract.Assume(dest != null);
+                        var constant1 = int.Parse(rm.Groups["const"].Value);
+                        var constant2 = int.Parse(rm2.Groups["const"].Value);
+                        var combined = constant1 & constant2;
+                        return Combine2to1("BAND " + variable + "," + combined + " >" + dest);
+                    }
+
+                    // BOR v,c1 >STACK + BOR STACK,c2 >dest => BOR v,(c1|c2) >dest
+                    if (Match(a => (rm = borConstantToStackRegex.Match(a.Code.Text)).Success,
+                              b => (rm2 = borConstantWithStackRegex.Match(b.Code.Text)).Success))
+                    {
+                        var variable = rm.Groups["var"].Value;
+                        var dest = rm2.Groups["dest"].Value;
+                        Contract.Assume(variable != null);
+                        Contract.Assume(dest != null);
+                        var constant1 = int.Parse(rm.Groups["const"].Value);
+                        var constant2 = int.Parse(rm2.Groups["const"].Value);
+                        var combined = constant1 | constant2;
+                        return Combine2to1("BOR " + variable + "," + combined + " >" + dest);
                     }
 
                     // no matches
