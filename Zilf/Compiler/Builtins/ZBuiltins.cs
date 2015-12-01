@@ -482,7 +482,14 @@ namespace Zilf.Compiler.Builtins
 
                 // call the spec method to generate code for the builtin
                 var builtinParams = MakeBuiltinMethodParams(cc, spec, builtinParamInfos, call, validatedArgs);
-                return spec.Method.Invoke(null, builtinParams.ToArray());
+                try
+                {
+                    return spec.Method.Invoke(null, builtinParams.ToArray());
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is ZilError)
+                {
+                    throw ex.InnerException;
+                }
             }
         }
 
