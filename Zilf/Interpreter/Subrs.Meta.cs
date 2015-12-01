@@ -443,6 +443,10 @@ namespace Zilf.Interpreter
         [Subr("CHECKPOINT")]
         [Subr("BEGIN-SEGMENT")]
         [Subr("END-SEGMENT")]
+        [Subr("DEFINE-SEGMENT")]
+        [Subr("FREQUENT-WORDS?")]
+        [Subr("NEVER-ZAP-TO-SOURCE-DIRECTORY?")]
+        [Subr("ASK-FOR-PICTURE-FILE?")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
