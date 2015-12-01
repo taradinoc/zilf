@@ -54,6 +54,7 @@ namespace Zilf.Language
         BACK,
         BAND,
         BCOM,
+        BIG,
         BIND,
         BOR,
         BTST,

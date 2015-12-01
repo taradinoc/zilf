@@ -1119,6 +1119,10 @@ namespace Zilf.Interpreter
                         flag = StdAtom.USE_MENUS_P;
                         break;
 
+                    case StdAtom.BIG:
+                        // ignore
+                        continue;
+
                     default:
                         throw new InterpreterError("ZIP-OPTIONS: unrecognized option " + atom);
                 }
