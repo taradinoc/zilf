@@ -670,6 +670,13 @@ namespace Zilf.Interpreter
                                 ValidateTablePattern(name, pattern);
                                 break;
 
+                            case StdAtom.SEGMENT:
+                                // ignore
+                                list = list.Rest;
+                                if (list.IsEmpty)
+                                    throw new InterpreterError(name + ": expected a value after SEGMENT");
+                                break;
+
                             default:
                                 throw new InterpreterError(name + ": unrecognized flag: " + flag);
                         }
