@@ -172,6 +172,17 @@ namespace Zilf.Interpreter
             return args[0].Eval(ctx);
         }
 
+        [Subr("EVAL-IN-SEGMENT")]
+        public static ZilObject EVAL_IN_SEGMENT(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 2 || args.Length > 3)
+                throw new InterpreterError("EVAL-IN-SEGMENT", 2, 3);
+
+            return args[1].Eval(ctx);
+        }
+
         [Subr]
         public static ZilObject EXPAND(Context ctx, ZilObject[] args)
         {
