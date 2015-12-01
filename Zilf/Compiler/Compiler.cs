@@ -2644,7 +2644,10 @@ namespace Zilf.Compiler
                 {
                     // only want the result of the last statement (if any)
                     bool wantThisResult = wantResult && !repeat && args.Rest.IsEmpty;
-                    ZilForm form = args.First as ZilForm;
+                    var stmt = args.First;
+                    if (stmt is ZilAdecl)
+                        stmt = ((ZilAdecl)stmt).First;
+                    ZilForm form = stmt as ZilForm;
                     IOperand result;
                     if (form != null)
                     {
@@ -2658,9 +2661,9 @@ namespace Zilf.Compiler
                     }
                     else if (wantThisResult)
                     {
-                        result = CompileConstant(cc, args.First);
+                        result = CompileConstant(cc, stmt);
                         if (result == null)
-                            throw new CompilerError("unexpected value as statement");
+                            throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
 
                         rb.EmitStore(rb.Stack, result);
                     }
@@ -3257,7 +3260,10 @@ namespace Zilf.Compiler
                 {
                     // only want the result of the last statement (if any)
                     bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                    ZilForm form = clause.First as ZilForm;
+                    var stmt = clause.First;
+                    if (stmt is ZilAdecl)
+                        stmt = ((ZilAdecl)stmt).First;
+                    ZilForm form = stmt as ZilForm;
                     IOperand result;
                     if (form != null)
                     {
@@ -3271,9 +3277,9 @@ namespace Zilf.Compiler
                     }
                     else if (wantResult)
                     {
-                        result = CompileConstant(cc, clause.First);
+                        result = CompileConstant(cc, stmt);
                         if (result == null)
-                            throw new CompilerError("unexpected value as statement");
+                            throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
 
                         rb.EmitStore(resultStorage, result);
                     }
@@ -3381,7 +3387,10 @@ namespace Zilf.Compiler
                     {
                         // only want the result of the last statement (if any)
                         bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                        ZilForm form = clause.First as ZilForm;
+                        var stmt = clause.First;
+                        if (stmt is ZilAdecl)
+                            stmt = ((ZilAdecl)stmt).First;
+                        ZilForm form = stmt as ZilForm;
                         IOperand result;
                         if (form != null)
                         {
@@ -3395,9 +3404,9 @@ namespace Zilf.Compiler
                         }
                         else if (wantResult)
                         {
-                            result = CompileConstant(cc, clause.First);
+                            result = CompileConstant(cc, stmt);
                             if (result == null)
-                                throw new CompilerError("unexpected value as statement");
+                                throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
 
                             rb.EmitStore(resultStorage, result);
                         }
@@ -3478,7 +3487,10 @@ namespace Zilf.Compiler
                     {
                         // only want the result of the last statement (if any)
                         bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                        ZilForm innerForm = clause.First as ZilForm;
+                        var stmt = clause.First;
+                        if (stmt is ZilAdecl)
+                            stmt = ((ZilAdecl)stmt).First;
+                        ZilForm innerForm = stmt as ZilForm;
                         IOperand result;
                         if (innerForm != null)
                         {
@@ -3492,9 +3504,9 @@ namespace Zilf.Compiler
                         }
                         else if (wantResult)
                         {
-                            result = CompileConstant(cc, clause.First);
+                            result = CompileConstant(cc, stmt);
                             if (result == null)
-                                throw new CompilerError("unexpected value as statement");
+                                throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
 
                             rb.EmitStore(resultStorage, result);
                         }
