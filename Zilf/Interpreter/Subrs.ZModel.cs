@@ -1134,15 +1134,6 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [Subr("FREQUENT-WORDS?")]
-        public static ZilObject FREQUENT_WORDS_P(Context ctx, ZilObject[] args)
-        {
-            SubrContracts(ctx, args);
-
-            // nada - we always generate frequent words
-            return ctx.TRUE;
-        }
-
         [Subr("LONG-WORDS?")]
         public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
         {
