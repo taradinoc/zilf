@@ -35,6 +35,8 @@ namespace Zapf
         public byte ZVersion, ZFlags;
         public ushort ZFlags2;
 
+        public int FunctionsOffset, StringsOffset;
+
         public int ErrorCount;
 
         public Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> OpcodeDict;
@@ -529,6 +531,16 @@ namespace Zapf
             }
         }
 
+        public bool UsePackingOffsets
+        {
+            get { return ZVersion == 6 || ZVersion == 7; }
+        }
+
+        public int PackingOffsetDivisor
+        {
+            get { return 8; }
+        }
+
         public void BeginReassemblyScope(int nodeIndex, Symbol symbol)
         {
             reassemblyLabels.Clear();
@@ -674,6 +686,14 @@ namespace Zapf
 
         public void CheckForUndefinedSymbols()
         {
+            // define FOFF and SOFF for V6-7
+            if (UsePackingOffsets)
+            {
+                GlobalSymbols["FOFF"] = new Symbol("FOFF", SymbolType.Constant, FunctionsOffset / PackingOffsetDivisor);
+                GlobalSymbols["SOFF"] = new Symbol("SOFF", SymbolType.Constant, StringsOffset / PackingOffsetDivisor);
+            }
+
+            // now look for any remaining undefined symbols
             var offenders = new HashSet<string>();
 
             foreach (var f in Fixups)
@@ -696,6 +716,9 @@ namespace Zapf
 
             globalVarCount = 0;
             objectCount = 0;
+
+            FunctionsOffset = 0;
+            StringsOffset = 0;
         }
 
         public void HandleSeriousError(SeriousError ser)

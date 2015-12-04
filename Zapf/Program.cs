@@ -88,7 +88,10 @@ namespace Zapf
                     var query = from s in ctx.GlobalSymbols.Values
                                 where s.Type == SymbolType.Function || s.Type == SymbolType.Label ||
                                       s.Type == SymbolType.String
-                                let addr = (s.Type == SymbolType.Label) ? s.Value : s.Value * ctx.PackingDivisor
+                                let addr =
+                                    (s.Type == SymbolType.Label) ? s.Value
+                                    : (s.Type == SymbolType.Function) ? s.Value * ctx.PackingDivisor + ctx.FunctionsOffset
+                                    : /* (s.Type == SymbolType.String) ? */ s.Value * ctx.PackingDivisor + ctx.StringsOffset
                                 orderby addr
                                 select new { Name = s.Name, Address = addr };
 
@@ -188,9 +191,7 @@ namespace Zapf
 
             int effectiveVersion = zversion;
 
-            if (zversion == 7)
-                effectiveVersion = 6;
-            else if (zversion == 8)
+            if (zversion == 7 || zversion == 8)
                 effectiveVersion = 5;
 
             foreach (FieldInfo fi in fields)
@@ -1376,7 +1377,7 @@ General switches:
             AlignRoutine(ctx);
 
             Symbol sym;
-            int paddr = ctx.Position / ctx.PackingDivisor;
+            int paddr = (ctx.Position - ctx.FunctionsOffset) / ctx.PackingDivisor;
             if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
             {
                 sym = new Symbol(name, SymbolType.Function, paddr);
@@ -1412,10 +1413,29 @@ General switches:
             }
         }
 
+        private static void AlignPacked(Context ctx, ref int offset)
+        {
+            if (ctx.UsePackingOffsets && offset == 0)
+            {
+                // offset has to be a multiple of 8, and at least 8 bytes before the current position so its packed address is nonzero
+                while (ctx.Position % ctx.PackingOffsetDivisor != 0 || ctx.Position < ctx.PackingOffsetDivisor)
+                    ctx.WriteByte(0);
+
+                offset = ctx.Position - ctx.PackingOffsetDivisor;
+            }
+
+            while ((ctx.Position - offset) % ctx.PackingDivisor != 0)
+                ctx.WriteByte(0);
+        }
+
         private static void AlignRoutine(Context ctx)
         {
-            while (ctx.Position % ctx.PackingDivisor != 0)
-                ctx.WriteByte(0);
+            AlignPacked(ctx, ref ctx.FunctionsOffset);
+        }
+
+        private static void AlignString(Context ctx)
+        {
+            AlignPacked(ctx, ref ctx.StringsOffset);
         }
 
         private static void PackString(Context ctx, GstrDirective node)
@@ -1425,7 +1445,7 @@ General switches:
             AlignString(ctx);
 
             Symbol sym;
-            int paddr = ctx.Position / ctx.PackingDivisor;
+            int paddr = (ctx.Position - ctx.StringsOffset) / ctx.PackingDivisor;
             if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
             {
                 sym = new Symbol(name, SymbolType.String, paddr);
@@ -1447,12 +1467,6 @@ General switches:
             }
 
             ctx.WriteZString(node.Text, false);
-        }
-
-        private static void AlignString(Context ctx)
-        {
-            while (ctx.Position % ctx.PackingDivisor != 0)
-                ctx.WriteByte(0);
         }
 
         private static void AddAbbreviation(Context ctx, FstrDirective node)
