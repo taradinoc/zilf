@@ -12,18 +12,19 @@ namespace Zilf.Emit.Zap
             public bool SoundEffects { get; set; }
         }
 
-        public sealed class V4 : GameOptions
+        public abstract class V4Plus : GameOptions
         {
             public bool SoundEffects { get; set; }
         }
 
-        public sealed class V5 : GameOptions
+        public sealed class V4 : V4Plus { }
+
+        public abstract class V5Plus : V4Plus
         {
             public bool DisplayOps { get; set; }
             public bool Undo { get; set; }
             public bool Mouse { get; set; }
             public bool Color { get; set; }
-            public bool SoundEffects { get; set; }
 
             public ITableBuilder HeaderExtensionTable { get; set; }
 
@@ -33,6 +34,13 @@ namespace Zilf.Emit.Zap
 
             public int LanguageId { get; set; }
             public char? LanguageEscapeChar { get; set; }
+        }
+
+        public sealed class V5 : V5Plus { }
+
+        public sealed class V6 : V5Plus
+        {
+            public bool Menus { get; set; }
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit
@@ -104,6 +105,7 @@ namespace Zilf.Emit
 
         void EmitStore(IVariable dest, IOperand src);
         void EmitPopStack();
+        void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity);
 
         void Finish();
     }
@@ -277,6 +279,10 @@ namespace Zilf.Emit
         /// Returns from the routine that produced a catch token.
         /// </summary>
         Throw,
+        /// <summary>
+        /// Throws away left items from the top of user stack right.
+        /// </summary>
+        FlushUserStack,
     }
 
     public enum UnaryOp
@@ -361,6 +367,14 @@ namespace Zilf.Emit
         /// Checks whether a Unicode character can be input or output.
         /// </summary>
         CheckUnicode,
+        /// <summary>
+        /// Returns a value popped from the given user stack.
+        /// </summary>
+        PopUserStack,
+        /// <summary>
+        /// Throws away the given number of values from the top of the main stack.
+        /// </summary>
+        FlushStack,
     }
 
     public enum NullaryOp
@@ -723,6 +737,13 @@ namespace Zilf.Emit
         public void EmitPopStack()
         {
             throw new System.NotImplementedException();
+        }
+
+        public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(stack != null);
+            Contract.Requires(label != null);
         }
 
         public void Finish()

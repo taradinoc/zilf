@@ -397,6 +397,12 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.CheckUnicode:
                     opcode = "CHECKU";
                     break;
+                case UnaryOp.FlushStack:
+                    opcode = "FSTACK";
+                    break;
+                case UnaryOp.PopUserStack:
+                    opcode = "POP";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -518,6 +524,9 @@ namespace Zilf.Emit.Zap
                     break;
                 case BinaryOp.StoreIndirect:
                     opcode = "SET";
+                    break;
+                case BinaryOp.FlushUserStack:
+                    opcode = "FSTACK";
                     break;
                 default:
                     throw new NotImplementedException();
@@ -1027,6 +1036,12 @@ namespace Zilf.Emit.Zap
             }
         }
 
+        public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
+        {
+            AddLine($"XPUSH {value},{stack}", label,
+                polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
+        }
+
         public void Finish()
         {
             game.WriteOutput(string.Empty);
@@ -1079,8 +1094,10 @@ namespace Zilf.Emit.Zap
 
             game.WriteOutput(sb.ToString());
 
-            if (entryPoint)
+            if (entryPoint && game.zversion != 6 && game.zversion != 7)
+            {
                 game.WriteOutput("START::");
+            }
 
             // write preamble
             var preamble = new PeepholeBuffer<ZapCode>();

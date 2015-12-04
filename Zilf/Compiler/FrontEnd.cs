@@ -309,19 +309,30 @@ namespace Zilf.Compiler
 
                     var doLang = zenv.LanguageEscapeChar != null;
 
-                    return new Zilf.Emit.Zap.GameOptions.V5()
+                    GameOptions.V5Plus v5plus;
+                    if (zenv.ZVersion == 6)
                     {
-                        DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P),
-                        Undo = ctx.GetGlobalOption(StdAtom.USE_UNDO_P),
-                        Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P),
-                        Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P),
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
-                        Charset0 = doCharset ? zenv.Charset0 : null,
-                        Charset1 = doCharset ? zenv.Charset1 : null,
-                        Charset2 = doCharset ? zenv.Charset2 : null,
-                        LanguageId = doLang ? zenv.Language.Id : 0,
-                        LanguageEscapeChar = doLang ? zenv.LanguageEscapeChar : null,
-                    };
+                        var v6 = new GameOptions.V6();
+                        v5plus = v6;
+
+                        v6.Menus = ctx.GetGlobalOption(StdAtom.USE_MENUS_P);
+                    }
+                    else
+                    {
+                        v5plus = new GameOptions.V5();
+                    }
+
+                    v5plus.DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P);
+                    v5plus.Undo = ctx.GetGlobalOption(StdAtom.USE_UNDO_P);
+                    v5plus.Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P);
+                    v5plus.Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P);
+                    v5plus.SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P);
+                    v5plus.Charset0 = doCharset ? zenv.Charset0 : null;
+                    v5plus.Charset1 = doCharset ? zenv.Charset1 : null;
+                    v5plus.Charset2 = doCharset ? zenv.Charset2 : null;
+                    v5plus.LanguageId = doLang ? zenv.Language.Id : 0;
+                    v5plus.LanguageEscapeChar = doLang ? zenv.LanguageEscapeChar : null;
+                    return v5plus;
 
                 default:
                     return null;

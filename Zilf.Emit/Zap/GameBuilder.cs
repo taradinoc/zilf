@@ -118,6 +118,8 @@ namespace Zilf.Emit.Zap
         internal readonly DebugFileBuilder debug;
         private readonly GameOptions options;
 
+        private IRoutineBuilder entryRoutine;
+
         private Stream stream;
         private TextWriter writer;
 
@@ -136,13 +138,14 @@ namespace Zilf.Emit.Zap
             this.zversion = zversion;
             this.streamFactory = streamFactory;
 
-            var optionsType = GetOptionsTypeForZVersion(zversion);
+            Type requiredOptionsType, concreteOptionsType;
+            GetOptionsTypeForZVersion(zversion, out requiredOptionsType, out concreteOptionsType);
 
             if (options != null)
             {
                 const string SOptionsNotCompatible = "Options not compatible with this Z-machine version";
 
-                if (optionsType.IsAssignableFrom(options.GetType()))
+                if (requiredOptionsType.IsAssignableFrom(options.GetType()))
                 {
                     this.options = options;
                 }
@@ -153,7 +156,7 @@ namespace Zilf.Emit.Zap
             }
             else
             {
-                this.options = (GameOptions)Activator.CreateInstance(optionsType);
+                this.options = (GameOptions)Activator.CreateInstance(concreteOptionsType);
             }
 
             debug = wantDebugInfo ? new DebugFileBuilder() : null;
@@ -164,21 +167,31 @@ namespace Zilf.Emit.Zap
             Begin();
         }
 
-        private static Type GetOptionsTypeForZVersion(int zversion)
+        private static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
         {
             switch (zversion)
             {
                 case 3:
-                    return typeof(GameOptions.V3);
+                    requiredOptionsType = typeof(GameOptions.V3);
+                    concreteOptionsType = typeof(GameOptions.V3);
+                    break;
 
                 case 4:
-                    return typeof(GameOptions.V4);
+                    requiredOptionsType = typeof(GameOptions.V4Plus);
+                    concreteOptionsType = typeof(GameOptions.V4);
+                    break;
 
                 case 5:
-                case 6:
                 case 7:
                 case 8:
-                    return typeof(GameOptions.V5);
+                    requiredOptionsType = typeof(GameOptions.V5Plus);
+                    concreteOptionsType = typeof(GameOptions.V5);
+                    break;
+
+                case 6:
+                    requiredOptionsType = typeof(GameOptions.V6);
+                    concreteOptionsType = typeof(GameOptions.V6);
+                    break;
 
                 default:
                     throw new ArgumentOutOfRangeException("zversion");
@@ -219,7 +232,7 @@ namespace Zilf.Emit.Zap
                 else
                 {
                     // character set
-                    var v5options = (GameOptions.V5)options;
+                    var v5options = (GameOptions.V5Plus)options;
                     if (v5options.LanguageEscapeChar != null)
                     {
                         writer.WriteLine(INDENT + ".LANG {0},{1}", v5options.LanguageId, (ushort)v5options.LanguageEscapeChar);
@@ -252,8 +265,8 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".WORD 0");       // $22 screen width (units)
                     writer.WriteLine(INDENT + ".WORD 0");       // $24 screen height (units)
                     writer.WriteLine(INDENT + ".WORD 0");       // $26 font width/height (units) (height/width in V6)
-                    writer.WriteLine(INDENT + ".WORD 0");       // $28 routines offset (V6)
-                    writer.WriteLine(INDENT + ".WORD 0");       // $2A strings offset (V6)
+                    writer.WriteLine(INDENT + ".WORD {0}", zversion == 6 ? "FOFF" : "0");     // $28 routines offset (V6)
+                    writer.WriteLine(INDENT + ".WORD {0}", zversion == 6 ? "SOFF" : "0");     // $2A strings offset (V6)
                     writer.WriteLine(INDENT + ".WORD 0");       // $2C default background/foreground color
                     writer.WriteLine(INDENT + ".WORD TCHARS");  // $2E terminating characters table
                     writer.WriteLine(INDENT + ".WORD 0");       // $30 output stream 3 width accumulator (V6)
@@ -357,9 +370,16 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, "name");
 
+            if (entryPoint && entryRoutine != null)
+                throw new ArgumentException("Entry routine already defined");
+
             RoutineBuilder result = new RoutineBuilder(this, name, entryPoint, cleanStack);
             routines.Add(result);
             symbols.Add(name, "routine");
+
+            if (entryPoint)
+                entryRoutine = result;
+
             return result;
         }
 
@@ -640,42 +660,44 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + "FLAGS=0");
 
             ushort flags2 = 0;
-            bool defineExtab = true, defineTchars = true, defineChrset = false;
+            bool defineExtab = true, defineTchars = true, defineChrset = false, defineStart = false;
 
-            switch (zversion)
+            if (zversion >= 5)
             {
-                case 5:
-                case 7:
-                case 8:
-                    var v5options = (GameOptions.V5)options;
-                    if (v5options.DisplayOps)
-                    {
-                        flags2 |= 8;
-                    }
-                    if (v5options.Undo)
-                    {
-                        flags2 |= 16;
-                    }
-                    if (v5options.Mouse)
-                    {
-                        flags2 |= 32;
-                    }
-                    if (v5options.Color)
-                    {
-                        flags2 |= 64;
-                    }
-                    if (v5options.SoundEffects)
-                    {
-                        flags2 |= 128;
-                    }
-                    defineExtab = v5options.HeaderExtensionTable == null;
-                    defineTchars = !symbols.ContainsKey("TCHARS");
-                    defineChrset = v5options.Charset0 == null && v5options.Charset1 == null && v5options.Charset2 == null;
-                    break;
+                var v5options = (GameOptions.V5Plus)options;
+                if (v5options.DisplayOps)
+                {
+                    flags2 |= 8;
+                }
+                if (v5options.Undo)
+                {
+                    flags2 |= 16;
+                }
+                if (v5options.Mouse)
+                {
+                    flags2 |= 32;
+                }
+                if (v5options.Color)
+                {
+                    flags2 |= 64;
+                }
+                if (v5options.SoundEffects)
+                {
+                    flags2 |= 128;
+                }
+                defineExtab = v5options.HeaderExtensionTable == null;
+                defineTchars = !symbols.ContainsKey("TCHARS");
+                defineChrset = v5options.Charset0 == null && v5options.Charset1 == null && v5options.Charset2 == null;
 
-                case 6:
-                    //XXX
-                    break;
+                if (zversion == 6)
+                {
+                    var v6options = (GameOptions.V6)options;
+                    if (v6options.Menus)
+                    {
+                        flags2 |= 256;
+                    }
+                    defineStart = true;
+                }
             }
 
             writer.WriteLine(INDENT + "FLAGS2={0}", flags2);
@@ -686,6 +708,8 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + "TCHARS=0");
             if (defineChrset)
                 writer.WriteLine(INDENT + "CHRSET=0");
+            if (defineStart)
+                writer.WriteLine(INDENT + "START=" + entryRoutine);
 
             // flags
             if (flags.Count > 0)
@@ -860,7 +884,7 @@ namespace Zilf.Emit.Zap
         {
             if (zversion >= 5)
             {
-                var v5options = (GameOptions.V5)options;
+                var v5options = (GameOptions.V5Plus)options;
                 if (v5options.Charset0 != null || v5options.Charset1 != null || v5options.Charset2 != null)
                 {
                     writer.WriteLine();
