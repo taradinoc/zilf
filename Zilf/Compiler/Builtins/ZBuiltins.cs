@@ -1647,6 +1647,35 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitStore(c.rb.Stack, value);
         }
 
+        [Builtin("XPUSH", MinVersion = 6, HasSideEffect = true)]
+        public static void XpushPredOp(PredCall c, IOperand value, IOperand stack)
+        {
+            Contract.Requires(value != null);
+            Contract.Requires(stack != null);
+
+            c.rb.EmitPushUserStack(value, stack, c.label, c.polarity);
+        }
+
+        [Builtin("POP", MinVersion = 6, HasSideEffect = true)]
+        public static IOperand PopValueOp(ValueCall c, IOperand stack = null)
+        {
+            if (stack == null)
+                c.rb.EmitStore(c.resultStorage, c.rb.Stack);
+            else
+                c.rb.EmitUnary(UnaryOp.PopUserStack, stack, c.resultStorage);
+
+            return c.resultStorage;
+        }
+
+        [Builtin("FSTACK", MinVersion = 6, HasSideEffect = true)]
+        public static void FstackVoidOp(VoidCall c, IOperand count, IOperand stack = null)
+        {
+            if (stack == null)
+                c.rb.EmitUnary(UnaryOp.FlushStack, count, null);
+            else
+                c.rb.EmitBinary(BinaryOp.FlushUserStack, count, stack, null);
+        }
+
         // TODO: support the IVariable, SoftGlobal, and IOperand versions side by side? that way we can skip emitting an instruction for <VALUE VARNAME>
         /*[Builtin("VALUE")]
         public static IOperand ValueOp_Variable(ValueCall c, [Variable] IVariable var)

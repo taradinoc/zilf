@@ -739,9 +739,16 @@ namespace IntegrationTests
         public void TestFSTACK_V6()
         {
             // only the V6 version is supported in ZIL
-            Assert.Inconclusive(); 
-            AssertExpr("<FSTACK 0>").InV6().Compiles();
-            AssertExpr("<FSTACK 0 0>").InV6().Compiles();
+            AssertRoutine("",
+                "<PUSH 123> <PUSH 0> <PUSH 0> <PUSH 0> <FSTACK 3> <POP>")
+                .InV6()
+                .GivesNumber("123");
+
+            AssertRoutine("",
+                "<FSTACK 3 ,MY-STACK> <GET ,MY-STACK 0>")
+                .WithGlobal("<GLOBAL MY-STACK <TABLE 0 4 3 2 1>>")
+                .InV6()
+                .GivesNumber("3");
         }
 
         [TestMethod]
@@ -1525,18 +1532,24 @@ namespace IntegrationTests
         [TestMethod]
         public void TestPOP_V6()
         {
-            // only exists in V6+
-            Assert.Inconclusive();
-            
             // V6 to V6
             // 0 to 1 operands
-            AssertExpr("<POP>").InV6().Compiles();
-            AssertExpr("<POP 0>").InV6().Compiles();
+            AssertRoutine("\"AUX\" X", "<PUSH 123> <SET X <POP>> .X")
+                .InV6()
+                .GivesNumber("123");
+
+            AssertExpr("<POP ,MY-STACK>")
+                .WithGlobal("<GLOBAL MY-STACK <TABLE 3 0 0 0 123>>")
+                .InV6()
+                .GivesNumber("123");
         }
 
         [TestMethod]
         public void TestPOP_Error()
         {
+            // only exists in V6+
+            AssertExpr("<POP>").InV5().DoesNotCompile();
+
             // V6 to V6
             // 0 to 1 operands
             AssertExpr("<POP 0 0>").InV6().DoesNotCompile();
@@ -2550,17 +2563,9 @@ namespace IntegrationTests
         [TestMethod]
         public void TestXPUSH_V6()
         {
-            // only exists in V6+
-            Assert.Inconclusive();
-            
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<XPUSH>").InV6().Compiles();
-            AssertExpr("<XPUSH 0>").InV6().Compiles();
+            // 2 to 2 operands
             AssertExpr("<XPUSH 0 0>").InV6().Compiles();
-            AssertExpr("<XPUSH 0 0 0>").InV6().Compiles();
-            AssertExpr("<XPUSH 0 0 0 0>").InV6().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -2570,9 +2575,10 @@ namespace IntegrationTests
             AssertExpr("<XPUSH>").InV5().DoesNotCompile();
 
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<XPUSH 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 2 to 2 operands
+            AssertExpr("<XPUSH>").InV6().DoesNotCompile();
+            AssertExpr("<XPUSH 0>").InV6().DoesNotCompile();
+            AssertExpr("<XPUSH 0 0 0>").InV6().DoesNotCompile();
         }
 
         [TestMethod]
