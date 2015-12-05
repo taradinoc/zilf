@@ -79,6 +79,30 @@ namespace Zilf.ZModel
         private byte[] zcharCountCache;   // char -> # of Z-chars
         private string charset0, charset1, charset2;
 
+        /// <summary>
+        /// Compares a Z-machine version number against a range,
+        /// treating versions 7 and 8 the same as 5.
+        /// </summary>
+        /// <param name="candidate">The version number to check.</param>
+        /// <param name="rangeMin">The minimum allowed version.</param>
+        /// <param name="rangeMax">The maximum allowed version,
+        /// or null to allow any version above <paramref name="rangeMin"/>.</param>
+        /// <returns><b>true</b> if <paramref name="candidate"/> is within the range;
+        /// otherwise <b>false</b>.</returns>
+        public static bool VersionMatches(int candidate, int rangeMin, int? rangeMax)
+        {
+            // treat V7-8 just like V5 for the purpose of this check
+            if (candidate == 7 || candidate == 8)
+                candidate = 5;
+
+            return (candidate >= rangeMin) && (rangeMax == null || candidate <= rangeMax);
+        }
+
+        public bool VersionMatches(int rangeMin, int? rangeMax)
+        {
+            return VersionMatches(this.ZVersion, rangeMin, rangeMax);
+        }
+
         public IVocabFormat VocabFormat
         {
             get

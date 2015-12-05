@@ -73,7 +73,7 @@ namespace Zilf.Compiler.Builtins
         {
             // is there a match with this zversion but any arg count?
             var wrongArgCount =
-                builtins[name].Where(s => BuiltinSpec.VersionMatches(
+                builtins[name].Where(s => ZEnvironment.VersionMatches(
                     zversion, s.Attr.MinVersion, s.Attr.MaxVersion))
                 .ToArray();
             if (wrongArgCount.Length > 0)
@@ -2166,7 +2166,7 @@ namespace Zilf.Compiler.Builtins
                     Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
                     return false;
                 }
-                else if (field.MinVersion > ctx.ZEnvironment.ZVersion)
+                else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
                     Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
                     return false;
@@ -2212,7 +2212,7 @@ namespace Zilf.Compiler.Builtins
                     Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
                     return false;
                 }
-                else if (field.MinVersion > ctx.ZEnvironment.ZVersion)
+                else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
                     Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
                     return false;
