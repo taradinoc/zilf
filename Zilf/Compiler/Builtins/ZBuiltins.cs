@@ -699,6 +699,33 @@ namespace Zilf.Compiler.Builtins
 
         #region Ternary Opcodes
 
+        [Builtin("DISPLAY", Data = TernaryOp.DrawPicture, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("WINPOS", Data = TernaryOp.MoveWindow, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("WINPUT", Data = TernaryOp.PutWindowProperty, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true)]
+        public static void TernaryVoidOp(
+            VoidCall c, [Data] TernaryOp op,
+            IOperand left, IOperand center, IOperand right)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(center != null);
+            Contract.Requires(right != null);
+
+            c.rb.EmitTernary(op, left, center, right, null);
+        }
+
+        [Builtin("MARGIN", Data = TernaryOp.SetMargins, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("WINATTR", Data = TernaryOp.WindowStyle, MinVersion = 6, HasSideEffect = true)]
+        public static void TernaryOptionalVoidOp(
+            VoidCall c, [Data] TernaryOp op,
+            IOperand left, IOperand center, IOperand right = null)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(center != null);
+
+            c.rb.EmitTernary(op, left, center, right ?? c.cc.Game.Zero, null);
+        }
+
         [Builtin("PUT", "ZPUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
         [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
         public static void TernaryTableVoidOp(
@@ -743,6 +770,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("MOD", Data = BinaryOp.Mod)]
         [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5)]
         [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5)]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6)]
         public static IOperand BinaryValueOp(
             ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
@@ -768,15 +796,11 @@ namespace Zilf.Compiler.Builtins
                             return c.cc.Game.MakeOperand((short)((ushort)nleft.Value >> -nright.Value));
                         else
                             return c.cc.Game.MakeOperand((short)((ushort)nleft.Value << nright.Value));
-                    default:
-                        throw new NotImplementedException();
                 }
             }
-            else
-            {
-                c.rb.EmitBinary(op, left, right, c.resultStorage);
-                return c.resultStorage;
-            }
+
+            c.rb.EmitBinary(op, left, right, c.resultStorage);
+            return c.resultStorage;
         }
 
         [Builtin("XORB")]
@@ -1011,10 +1035,11 @@ namespace Zilf.Compiler.Builtins
             return ArithmeticOp(c, op, left, right ?? c.cc.Game.One);
         }
 
-        [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, HasSideEffect = true)]
+        [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true)]
         [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true)]
         [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true)]
         [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true)]
+        [Builtin("SCROLL", Data = BinaryOp.ScrollWindow, MinVersion = 6, HasSideEffect = true)]
         public static void BinaryVoidOp(
             VoidCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
@@ -1023,6 +1048,18 @@ namespace Zilf.Compiler.Builtins
 
             c.rb.EmitBinary(op, left, right, null);
         }
+
+        [Builtin("CURSET", MinVersion = 6, HasSideEffect = true)]
+        public static void CursetVoidOp(VoidCall c, IOperand line, IOperand column = null, IOperand window = null)
+        {
+            Contract.Requires(line != null);
+
+            if (window != null)
+                c.rb.EmitTernary(TernaryOp.SetCursor, line, column, window, null);
+            else
+                c.rb.EmitBinary(BinaryOp.SetCursor, line, column ?? c.cc.Game.Zero, null);
+        }
+
 
         [Builtin("GRTR?", "G?", Data = Condition.Greater)]
         [Builtin("LESS?", "L?", Data = Condition.Less)]
@@ -1082,6 +1119,15 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(right != null);
 
             c.rb.Branch(cond, left, right, c.label, c.polarity);
+        }
+
+        [Builtin("PICINF", MinVersion = 6, HasSideEffect = true)]
+        public static void PicinfPredOp(PredCall c, IOperand left, [Table] IOperand right)
+        {
+            Contract.Requires(left != null);
+            Contract.Requires(right != null);
+
+            c.rb.Branch(Condition.PictureData, left, right, c.label, c.polarity);
         }
 
         [Builtin("DLESS?", Data = Condition.Less, HasSideEffect = true)]
@@ -1231,6 +1277,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("SCREEN", Data = UnaryOp.SelectWindow, HasSideEffect = true)]
         [Builtin("SPLIT", Data = UnaryOp.SplitWindow, HasSideEffect = true)]
         [Builtin("ERASE", Data = UnaryOp.EraseLine, MinVersion = 4, HasSideEffect = true)]
+        [Builtin("MOUSE-LIMIT", Data = UnaryOp.MouseWindow, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryVoidOp(
             VoidCall c, [Data] UnaryOp op, IOperand value)
         {
@@ -1335,6 +1382,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
+        [Builtin("PICSET", Data = UnaryOp.PictureTable, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryTableVoidOp(
             VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
@@ -1799,13 +1847,17 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(dummy != null);
 
-            if (!(c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value == 1))
+            if (c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value != 1)
             {
                 Errors.CompError(c.cc.Context, c.form, "INPUT: argument 1 must be 1");
                 return c.cc.Game.Zero;
             }
 
             c.rb.EmitReadChar(interval, routine, c.resultStorage);
+
+            if (dummy == c.rb.Stack)
+                c.rb.EmitPopStack();
+
             return c.resultStorage;
         }
 

@@ -142,6 +142,13 @@ namespace Zilf.Emit
         /// new value &lt; right.
         /// </summary>
         DecCheck,
+        /// <summary>
+        /// Write height/width of picture left into array right and branch if the
+        /// picture number is valid. (Or if left is 0, write number of available
+        /// pictures and release number of picture file, and branch if any pictures
+        /// are available.)
+        /// </summary>
+        PictureData,
 
         /// <summary>
         /// Branch if at least this many arguments were passed in.
@@ -184,6 +191,37 @@ namespace Zilf.Emit
         /// corrupting the source array.
         /// </remarks>
         CopyTable,
+        /// <summary>
+        /// Changes the property center of window left to the value given by right.
+        /// </summary>
+        PutWindowProperty,
+        /// <summary>
+        /// Draws picture number left at Y-position center, X-position right (or
+        /// the cursor's Y or X position if either are zero).
+        /// </summary>
+        DrawPicture,
+        /// <summary>
+        /// Sets or changes the style attributes of window left, according to the
+        /// attributes given by center and the operation given by right.
+        /// </summary>
+        WindowStyle,
+        /// <summary>
+        /// Moves window left to Y-position center, X-position right.
+        /// </summary>
+        MoveWindow,
+        /// <summary>
+        /// Changes the size of window left to height center, width right.
+        /// </summary>
+        WindowSize,
+        /// <summary>
+        /// Sets the margins for the window given by right: the new left margin is
+        /// given by left, and the new right margin is given by center.
+        /// </summary>
+        SetMargins,
+        /// <summary>
+        /// Sets the cursor position in window right to Y-position left, X-position center.
+        /// </summary>
+        SetCursor,
     }
 
     public enum BinaryOp
@@ -283,6 +321,14 @@ namespace Zilf.Emit
         /// Throws away left items from the top of user stack right.
         /// </summary>
         FlushUserStack,
+        /// <summary>
+        /// Reads the property right from window left.
+        /// </summary>
+        GetWindowProperty,
+        /// <summary>
+        /// Scrolls window left by the number of pixels given by right.
+        /// </summary>
+        ScrollWindow,
     }
 
     public enum UnaryOp
@@ -375,6 +421,14 @@ namespace Zilf.Emit
         /// Throws away the given number of values from the top of the main stack.
         /// </summary>
         FlushStack,
+        /// <summary>
+        /// Caches the pictures listed in the given table.
+        /// </summary>
+        PictureTable,
+        /// <summary>
+        /// Constrains the mouse pointer to the bounds of the given window.
+        /// </summary>
+        MouseWindow,
     }
 
     public enum NullaryOp

@@ -1006,10 +1006,6 @@ namespace IntegrationTests
             // 0 to 4 operands
             AssertExpr("<INPUT>").InV4().DoesNotCompile();
             AssertExpr("<INPUT 0 0 0 0>").InV4().DoesNotCompile();
-
-            // first argument must be a literal 1
-            AssertExpr("<INPUT 0>").InV4().DoesNotCompile();
-            AssertExpr("<INPUT <+ 1 0>>").InV4().DoesNotCompile();
         }
 
         [TestMethod]
