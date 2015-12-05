@@ -620,7 +620,7 @@ namespace Zilf.Compiler
             var size = cc.Context.ZEnvironment.HeaderExtensionWords;
             if (size > 0)
             {
-                var v5options = cc.Game.Options as Zilf.Emit.Zap.GameOptions.V5;
+                var v5options = cc.Game.Options as Zilf.Emit.Zap.GameOptions.V5Plus;
                 if (v5options != null)
                 {
                     var extab = cc.Game.DefineTable("EXTAB", false);
