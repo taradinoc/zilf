@@ -189,6 +189,9 @@ namespace Zilf.Emit.Zap
                 case Condition.TestBits:
                     opcode = "BTST";
                     break;
+                case Condition.PictureData:
+                    opcode = "PICINF";
+                    break;
 
                 case Condition.ArgProvided:
                     opcode = "ASSIGNED?";
@@ -403,6 +406,12 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.PopUserStack:
                     opcode = "POP";
                     break;
+                case UnaryOp.PictureTable:
+                    opcode = "PICSET";
+                    break;
+                case UnaryOp.MouseWindow:
+                    opcode = "MOUSE-LIMIT";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -528,6 +537,12 @@ namespace Zilf.Emit.Zap
                 case BinaryOp.FlushUserStack:
                     opcode = "FSTACK";
                     break;
+                case BinaryOp.GetWindowProperty:
+                    opcode = "WINGET";
+                    break;
+                case BinaryOp.ScrollWindow:
+                    opcode = "SCROLL";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -560,6 +575,27 @@ namespace Zilf.Emit.Zap
                     break;
                 case TernaryOp.CopyTable:
                     opcode = "COPYT";
+                    break;
+                case TernaryOp.PutWindowProperty:
+                    opcode = "WINPUT";
+                    break;
+                case TernaryOp.DrawPicture:
+                    opcode = "DISPLAY";
+                    break;
+                case TernaryOp.WindowStyle:
+                    opcode = "WINATTR";
+                    break;
+                case TernaryOp.MoveWindow:
+                    opcode = "WINPOS";
+                    break;
+                case TernaryOp.WindowSize:
+                    opcode = "WINSIZE";
+                    break;
+                case TernaryOp.SetMargins:
+                    opcode = "MARGIN";
+                    break;
+                case TernaryOp.SetCursor:
+                    opcode = "CURSET";
                     break;
                 default:
                     throw new NotImplementedException();
