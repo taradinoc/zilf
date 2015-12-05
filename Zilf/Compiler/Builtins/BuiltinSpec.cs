@@ -22,6 +22,7 @@ using System.Reflection;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.ZModel;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -158,18 +159,9 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        public static bool VersionMatches(int candidate, int rangeMin, int rangeMax)
-        {
-            // treat V7-8 just like V5 for the purpose of this check
-            if (candidate == 7 || candidate == 8)
-                candidate = 5;
-
-            return (candidate >= rangeMin) && (candidate <= rangeMax);
-        }
-
         public bool AppliesTo(int zversion, int argCount, Type callType = null)
         {
-            if (!VersionMatches(zversion, Attr.MinVersion, Attr.MaxVersion))
+            if (!ZEnvironment.VersionMatches(zversion, Attr.MinVersion, Attr.MaxVersion))
                 return false;
 
             if (argCount < MinArgs || (MaxArgs != null && argCount > MaxArgs))
