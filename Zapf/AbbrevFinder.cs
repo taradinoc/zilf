@@ -186,7 +186,7 @@ namespace Zapf
                     yield break;
 
                 var query =
-                    from p in words.AsParallel()
+                    from p in words.AsParallel().WithExecutionMode(ParallelExecutionMode.ForceParallelism)
                     let count = CountAppearances(p.Value.Pattern)
                     let overallSavings = (count - 1) * p.Value.Savings - 2
                     orderby overallSavings descending
@@ -232,11 +232,12 @@ namespace Zapf
                     if (numResults >= max)
                         yield break;
 
-                    int idx;
-                    while ((idx = r.Pattern.FindIn(allText)) >= 0)
+                    int idx, lastIdx = 0;
+                    while ((idx = r.Pattern.FindIn(allText, lastIdx)) >= 0)
                     {
                         allText.Remove(idx, word.Length);
                         allText.Insert(idx, '\0');
+                        lastIdx = idx + 1;
                     }
 
                     var newText = new StringBuilder(allText.Length);
