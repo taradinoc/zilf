@@ -950,7 +950,7 @@ namespace Zilf.Compiler
                     if (cc.WantDebugInfo)
                         cc.Game.DebugFile.MarkAction(constant, line.Action.ToString());
 
-                    act = new Action(index, number, routine, preRoutine, line.Action, line.Preaction);
+                    act = new Action(index, constant, routine, preRoutine, line.Action, line.Preaction);
                     actions.Add(actionName, act);
                 }
                 else
