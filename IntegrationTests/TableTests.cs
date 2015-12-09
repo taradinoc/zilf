@@ -112,6 +112,20 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void TABLE_Length_Words_Should_Be_Accessible_At_Compile_Time()
+        {
+            AssertGlobals(
+                "<SETG MY-TBL <LTABLE 100 200 300 400>>",
+                "<GLOBAL ORIG-LENGTH <ZGET ,MY-TBL 0>>",
+                "<ZPUT ,MY-TBL 0 -1>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? ,ORIG-LENGTH 4>",
+                    "<==? <GET ,TBL 0> -1>",
+                    "<==? <GET ,TBL 4> 400>");
+        }
+
+        [TestMethod]
         public void TABLE_With_Adjacent_Bytes_Can_Be_Overwritten_With_Words()
         {
             // this doesn't change the length of the table (in bytes)

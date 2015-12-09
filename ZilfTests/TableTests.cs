@@ -44,5 +44,15 @@ namespace ZilfTests
             Assert.IsNotNull(table);
             Assert.AreEqual(4, table.ElementCount);
         }
+
+        [TestMethod]
+        public void TestLTABLE()
+        {
+            var ctx = new Context();
+            var table = (ZilTable)Program.Evaluate(ctx, "<LTABLE 3 2 1 0>", true);
+
+            Assert.IsNotNull(table);
+            Assert.AreEqual(5, table.ElementCount);
+        }
     }
 }

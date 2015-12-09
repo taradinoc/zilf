@@ -1111,54 +1111,15 @@ namespace Zilf.Compiler
             }
         }
 
-        private enum OperandSize
-        {
-            Any,
-            Byte,
-            Word,
-        }
-
         private struct TableElementOperand
         {
             public readonly IOperand Operand;
-            public readonly OperandSize ForceSize;
+            public readonly bool? IsWord;
 
-            public TableElementOperand(IOperand operand, OperandSize forceSize)
+            public TableElementOperand(IOperand operand, bool? isWord)
             {
                 this.Operand = operand;
-                this.ForceSize = forceSize;
-            }
-        }
-
-        private static IEnumerable<int> InterpretTablePattern(ZilObject[] pattern)
-        {
-            foreach (var item in pattern)
-            {
-                var atom = item as ZilAtom;
-                if (atom != null)
-                {
-                    // BYTE or WORD
-                    if (atom.StdAtom == StdAtom.BYTE)
-                        yield return 1;
-                    else
-                        yield return 2;
-                }
-                else
-                {
-                    // [REST {BYTE/WORD}...]
-                    var vector = (ZilVector)item;
-                    while (true)
-                    {
-                        for (int i = 1; i < vector.GetLength(); i++)
-                        {
-                            atom = (ZilAtom)vector[i];
-                            if (atom.StdAtom == StdAtom.BYTE)
-                                yield return 1;
-                            else
-                                yield return 2;
-                        }
-                    }
-                }
+                this.IsWord = isWord;
             }
         }
 
@@ -1171,7 +1132,7 @@ namespace Zilf.Compiler
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {
                 IOperand[] values = new IOperand[zt.ElementCount];
-                zt.CopyTo(values, zo => CompileConstant(cc, zo), cc.Game.Zero);
+                zt.CopyTo(values, (zo, isWord) => CompileConstant(cc, zo), cc.Game.Zero, cc.Context);
 
                 tb.AddByte((byte)(zt.ElementCount / 3));
                 tb.AddByte(0);
@@ -1184,101 +1145,47 @@ namespace Zilf.Compiler
             }
             else
             {
-                if ((zt.Flags & TableFlags.ByteLength) != 0)
-                    tb.AddByte((byte)zt.ElementCount);
-                else if ((zt.Flags & TableFlags.WordLength) != 0)
-                    tb.AddShort((short)zt.ElementCount);
-
                 TableElementOperand?[] values = new TableElementOperand?[zt.ElementCount];
-                Func<ZilObject, TableElementOperand?> convertElement = zo =>
+                TableToArrayElementConverter<TableElementOperand?> convertElement = (zo, isWord) =>
                 {
-                    // #BYTE 123 always compiles as a byte, even in a word table
-                    OperandSize forceSize;
-                    switch (zo.GetTypeAtom(cc.Context).StdAtom)
-                    {
-                        case StdAtom.BYTE:
-                            forceSize = OperandSize.Byte;
-                            break;
-                        case StdAtom.WORD:
-                            forceSize = OperandSize.Word;
-                            break;
-                        default:
-                            forceSize = OperandSize.Any;
-                            break;
-                    }
-
                     // it's usually a constant value
                     var constVal = CompileConstant(cc, zo);
                     if (constVal != null)
-                        return new TableElementOperand(constVal, forceSize);
+                        return new TableElementOperand(constVal, isWord);
 
                     // but we'll also allow a global name if the global contains a table
                     IGlobalBuilder global;
                     if (zo is ZilAtom && cc.Globals.TryGetValue((ZilAtom)zo, out global) && global.DefaultValue is ITableBuilder)
-                        return new TableElementOperand(global.DefaultValue, forceSize);
+                        return new TableElementOperand(global.DefaultValue, isWord);
 
                     return null;
                 };
-                var defaultFiller = new TableElementOperand(cc.Game.Zero, OperandSize.Any);
-                zt.CopyTo(values, convertElement, defaultFiller);
+                var defaultFiller = new TableElementOperand(cc.Game.Zero, null);
+                zt.CopyTo(values, convertElement, defaultFiller, cc.Context);
 
                 for (int i = 0; i < values.Length; i++)
+                {
                     if (values[i] == null)
                     {
                         var rawElements = new ZilObject[zt.ElementCount];
-                        zt.CopyTo(rawElements, zo => zo, null);
+                        zt.CopyTo(rawElements, (zo, isWord) => zo, null, cc.Context);
                         Errors.CompError(cc.Context, zt.SourceLine,
                             "non-constant in table initializer at element {0}: {1}", i, rawElements[i]);
                         values[i] = defaultFiller;
                     }
-
-                if (zt.Pattern != null)
-                {
-                    var sequence = InterpretTablePattern(zt.Pattern);
-                    using (var enumerator = sequence.GetEnumerator())
-                    {
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            if (!enumerator.MoveNext())
-                            {
-                                Errors.CompError(cc.Context, zt.SourceLine,
-                                    "table pattern is too short");
-                                break;
-                            }
-
-                            if (enumerator.Current == 1)
-                                tb.AddByte(values[i].Value.Operand);
-                            else
-                                tb.AddShort(values[i].Value.Operand);
-                        }
-                    }
                 }
-                else if ((zt.Flags & TableFlags.Byte) != 0)
+
+                bool defaultWord = (zt.Flags & TableFlags.Byte) == 0;
+
+                for (int i = 0; i < values.Length; i++)
                 {
-                    for (int i = 0; i < values.Length; i++)
+                    if (values[i].Value.IsWord ?? defaultWord)
                     {
-                        if (values[i].Value.ForceSize == OperandSize.Word)
-                        {
-                            tb.AddShort(values[i].Value.Operand);
-                        }
-                        else
-                        {
-                            tb.AddByte(values[i].Value.Operand);
-                        }
+                        tb.AddShort(values[i].Value.Operand);
                     }
-                }
-                else
-                {
-                    for (int i = 0; i < values.Length; i++)
+                    else
                     {
-                        if (values[i].Value.ForceSize == OperandSize.Byte)
-                        {
-                            tb.AddByte(values[i].Value.Operand);
-                        }
-                        else
-                        {
-                            tb.AddShort(values[i].Value.Operand);
-                        }
+                        tb.AddByte(values[i].Value.Operand);
                     }
                 }
             }
