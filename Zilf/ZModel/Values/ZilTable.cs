@@ -24,10 +24,19 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
+    /// <summary>
+    /// Converts a table element from <see cref="ZilObject"/> to another type.
+    /// </summary>
+    /// <typeparam name="T">The destination type.</typeparam>
+    /// <param name="tableElement">The original table element.</param>
+    /// <param name="isWord"><b>true</b> if the table element is a word; <b>false</b> if it's a byte.</param>
+    /// <returns>The converted element.</returns>
+    delegate T TableToArrayElementConverter<T>(ZilObject tableElement, bool isWord);
+
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
     class ZilTable : ZilObject
     {
-        private readonly TableFlags flags;
+        private TableFlags flags;
 
         private int repetitions;
         private ZilObject[] initializer;
@@ -48,9 +57,9 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public ZilTable(ZilTable other)
             : this(other.repetitions,
-            other.initializer == null ? null : (ZilObject[])other.initializer.Clone(),
-            other.flags,
-            other.pattern == null ? null : (ZilObject[])other.pattern.Clone())
+                   other.initializer == null ? null : (ZilObject[])other.initializer.Clone(),
+                   other.flags,
+                   other.pattern == null ? null : (ZilObject[])other.pattern.Clone())
         {
             Contract.Requires(other != null);
 
@@ -67,25 +76,12 @@ namespace Zilf.ZModel.Values
 
         public string Name { get; set; }
 
-        public int ElementCount
-        {
-            // TODO: account for initial length markers?
-
-            [Pure]
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-
-                if (initializer != null)
-                {
-                    return repetitions * initializer.Length;
-                }
-                else
-                {
-                    return repetitions;
-                }
-            }
-        }
+        [Pure]
+        private bool HasLengthPrefix => (flags & (TableFlags.ByteLength | TableFlags.WordLength)) != 0;
+        [Pure]
+        private int ElementCountWithoutLength => initializer == null ? repetitions : repetitions * initializer.Length;
+        [Pure]
+        public int ElementCount => ElementCountWithoutLength + (HasLengthPrefix ? 1 : 0);
 
         public TableFlags Flags
         {
@@ -97,26 +93,42 @@ namespace Zilf.ZModel.Values
             get { return pattern; }
         }
 
-        public void CopyTo<T>(T[] array, Func<ZilObject, T> convert, T defaultFiller)
+        public void CopyTo<T>(T[] array, TableToArrayElementConverter<T> convert, T defaultFiller, Context ctx)
         {
             Contract.Requires(array != null);
             Contract.Requires(array.Length >= ElementCount);
             Contract.Requires(convert != null);
+            Contract.Requires(ctx != null);
+
+            int start;
+
+            if (HasLengthPrefix)
+            {
+                array[0] = convert(new ZilFix(ElementCountWithoutLength), (flags & TableFlags.ByteLength) == 0);
+                start = 1;
+            }
+            else
+            {
+                start = 0;
+            }
 
             if (initializer != null)
             {
-                for (int i = 0; i < repetitions; i++)
+                int i = 0;
+
+                for (int r = 0; r < repetitions; r++)
                 {
                     for (int j = 0; j < initializer.Length; j++)
                     {
-                        array[i * initializer.Length + j] = convert(initializer[j]);
+                        array[start + i] = convert(initializer[j], IsWord(ctx, i));
+                        i++;
                     }
                 }
             }
             else
             {
                 for (int i = 0; i < repetitions; i++)
-                    array[i] = defaultFiller;
+                    array[start + i] = defaultFiller;
             }
         }
 
@@ -197,11 +209,18 @@ namespace Zilf.ZModel.Values
             return this;
         }
 
+        /// <summary>
+        /// Returns a value indicating whether the given element is a word rather than a byte.
+        /// </summary>
+        /// <param name="ctx">The context.</param>
+        /// <param name="index">The element index, or -1 to check the length prefix.</param>
+        /// <returns></returns>
         private bool IsWord(Context ctx, int index)
         {
-            // TODO: account for initial length markers?
+            if (index == -1 && HasLengthPrefix)
+                return (flags & TableFlags.WordLength) != 0;
 
-            if (index < 0 || index >= ElementCount)
+            if (index < 0 || index >= ElementCountWithoutLength)
                 throw new ArgumentOutOfRangeException("index");
 
             if ((flags & TableFlags.Lexv) != 0)
@@ -282,7 +301,7 @@ namespace Zilf.ZModel.Values
                 var byteAtom = ctx.GetStdAtom(StdAtom.BYTE);
                 var wordAtom = ctx.GetStdAtom(StdAtom.WORD);
 
-                var length = ElementCount;
+                var length = ElementCountWithoutLength;
                 if (insert)
                     length++;
 
@@ -303,18 +322,42 @@ namespace Zilf.ZModel.Values
             }
         }
 
+        /// <summary>
+        /// Returns the index of the table element located at the given byte offset.
+        /// </summary>
+        /// <param name="ctx">The context.</param>
+        /// <param name="offset">The byte offset.</param>
+        /// <returns>-1 if the length prefix is at the given offset, or a 0-based index if a table element
+        /// is at the given offset, or <b>null</b> if </returns>
         private int? ByteOffsetToIndex(Context ctx, int offset)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(offset >= 0);
-            Contract.Ensures(Contract.Result<int?>() == null || (Contract.Result<int?>().Value >= 0 && Contract.Result<int?>().Value < ElementCount));
+            Contract.Ensures(Contract.Result<int?>() == null || (Contract.Result<int?>().Value >= -1 && Contract.Result<int?>().Value < ElementCountWithoutLength));
+            Contract.Ensures(Contract.Result<int?>() >= 0 || HasLengthPrefix);
 
-            // TODO: account for initial length markers?
+            // account for initial length markers
+            if ((flags & TableFlags.ByteLength) != 0)
+            {
+                if (offset == 0)
+                    return -1;
+
+                offset--;
+            }
+            else if ((flags & TableFlags.WordLength) != 0)
+            {
+                if (offset == 0)
+                    return -1;
+                else if (offset == 1)
+                    return null;
+
+                offset -= 2;
+            }
 
             // initialize cache if necessary
             if (elementToByteOffsets == null)
             {
-                elementToByteOffsets = new int[ElementCount];
+                elementToByteOffsets = new int[ElementCountWithoutLength];
                 for (int i = 0, nextOffset = 0; i < elementToByteOffsets.Length; i++)
                 {
                     elementToByteOffsets[i] = nextOffset;
@@ -348,6 +391,9 @@ namespace Zilf.ZModel.Values
             if (!IsWord(ctx, index.Value))
                 throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
+            if (index == -1)
+                return new ZilFix(ElementCountWithoutLength);
+
             if (initializer == null)
                 return null;
 
@@ -366,6 +412,12 @@ namespace Zilf.ZModel.Values
             var index = ByteOffsetToIndex(ctx, offset);
             if (index == null)
                 throw new ArgumentException(string.Format("No element at offset {0}", offset));
+
+            if (index == -1)
+            {
+                ExpandLengthPrefix(ctx);
+                index = 0;
+            }
 
             if (!IsWord(ctx, index.Value))
             {
@@ -405,6 +457,9 @@ namespace Zilf.ZModel.Values
             if (IsWord(ctx, index.Value))
                 throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
 
+            if (index == -1)
+                return new ZilFix((byte)ElementCountWithoutLength);
+
             if (initializer == null)
                 return null;
 
@@ -434,6 +489,12 @@ namespace Zilf.ZModel.Values
                 {
                     throw new ArgumentException(string.Format("No element at offset {0}", offset));
                 }
+            }
+
+            if (index == -1)
+            {
+                ExpandLengthPrefix(ctx);
+                index = 0;
             }
 
             if (IsWord(ctx, index.Value))
@@ -475,6 +536,33 @@ namespace Zilf.ZModel.Values
                 ExpandPattern(ctx, index.Value, false);
                 pattern[index.Value] = ctx.GetStdAtom(StdAtom.BYTE);
             }
+        }
+
+        private void ExpandLengthPrefix(Context ctx)
+        {
+            if (!HasLengthPrefix)
+                return;
+
+            ExpandInitializer(ctx.FALSE);
+            ExpandPattern(ctx, 0, true);
+
+            // add length to beginning of initializer
+            var countWithoutLength = ElementCountWithoutLength;
+
+            var newInitializer = new ZilObject[countWithoutLength + 1];
+            newInitializer[0] = new ZilFix(countWithoutLength);
+            Array.Copy(initializer, 0, newInitializer, 1, countWithoutLength);
+
+            initializer = newInitializer;
+
+            // set width of the length element in pattern
+            if ((flags & TableFlags.ByteLength) != 0)
+                pattern[0] = ctx.GetStdAtom(StdAtom.BYTE);
+            else
+                pattern[0] = ctx.GetStdAtom(StdAtom.WORD);
+
+            // clear length prefix flags
+            flags &= ~(TableFlags.ByteLength | TableFlags.WordLength);
         }
     }
 }

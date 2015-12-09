@@ -1032,12 +1032,13 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void VECTOR_Can_Be_ChTyped_To_TABLE()
         {
-            var table = (ZilTable)TestHelpers.Evaluate("<CHTYPE [1 2 3] TABLE>");
+            var ctx = new Context();
+            var table = (ZilTable)TestHelpers.Evaluate(ctx, "<CHTYPE [1 2 3] TABLE>");
 
             Assert.AreEqual(3, table.ElementCount);
 
             var array = new ZilObject[3];
-            table.CopyTo(array, zo => zo, null);
+            table.CopyTo(array, (zo, isWord) => zo, null, ctx);
 
             var expected = new ZilObject[]
             {
