@@ -22,6 +22,11 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
+    interface IChannelWithHPos
+    {
+        int HPos { get; }
+    }
+
     [BuiltinType(StdAtom.CHANNEL, PrimType.VECTOR)]
     abstract class ZilChannel : ZilObject
     {
@@ -217,7 +222,7 @@ namespace Zilf.Interpreter.Values
     }
 
     [BuiltinAlternate(typeof(ZilChannel))]
-    sealed class ZilConsoleChannel : ZilChannel
+    sealed class ZilConsoleChannel : ZilChannel, IChannelWithHPos
     {
         public ZilConsoleChannel(FileAccess fileAccess)
         {
@@ -275,6 +280,11 @@ namespace Zilf.Interpreter.Values
         {
             Console.Write(s);
             return s.Length;
+        }
+
+        public int HPos
+        {
+            get { return Console.CursorLeft; }
         }
     }
 }

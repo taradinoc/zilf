@@ -288,7 +288,7 @@ namespace Zilf.Interpreter
 
             var channel = args[0] as ZilChannel;
             if (channel == null)
-                throw new InterpreterError("CLOSE: arg must be a CHANNEL");
+                throw new InterpreterError("CLOSE: arg must be a channel");
 
             channel.Close(ctx);
             return channel;
@@ -304,7 +304,7 @@ namespace Zilf.Interpreter
 
             var chan = args[0] as ZilChannel;
             if (chan == null)
-                throw new InterpreterError("FILE-LENGTH: arg must be a CHANNEL");
+                throw new InterpreterError("FILE-LENGTH: arg must be a channel");
 
             var length = chan.GetFileLength();
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
@@ -325,7 +325,7 @@ namespace Zilf.Interpreter
 
             var channel = args[1] as ZilChannel;
             if (channel == null)
-                throw new InterpreterError("READSTRING: second arg must be a CHANNEL");
+                throw new InterpreterError("READSTRING: second arg must be a channel");
 
             int maxLength = dest.Text.Length;
             ZilString stopChars = null;
@@ -363,6 +363,75 @@ namespace Zilf.Interpreter
             buffer.Append(dest.Text.Substring(readCount));
             dest.Text = buffer.ToString();
             return new ZilFix(readCount);
+        }
+
+        [Subr("M-HPOS")]
+        public static ZilObject M_HPOS(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 1)
+                throw new InterpreterError("M-HPOS", 1, 1);
+
+            var channel = args[0] as ZilChannel;
+            if (channel == null)
+                throw new InterpreterError("M-HPOS: arg must be a channel");
+
+            var hposChannel = channel as IChannelWithHPos;
+            if (hposChannel == null)
+                throw new InterpreterError("M-HPOS: not supported by this type of channel");
+
+            return new ZilFix(hposChannel.HPos);
+        }
+
+        [Subr("INDENT-TO")]
+        public static ZilObject INDENT_TO(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length < 1 || args.Length > 2)
+                throw new InterpreterError("INDENT-TO", 1, 2);
+
+            var position = args[0] as ZilFix;
+            if (position == null)
+                throw new InterpreterError("INDENT-TO: first arg must be a FIX");
+            if (position.Value <= 0)
+                throw new InterpreterError("INDENT:TO: first arg must be positive");
+
+            ZilChannel channel;
+            if (args.Length < 2)
+            {
+                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                if (channel == null)
+                    throw new InterpreterError("INDENT-TO: bad OUTCHAN");
+            }
+            else
+            {
+                channel = args[1] as ZilChannel;
+                if (channel == null)
+                    throw new InterpreterError("INDENT-TO: second arg must be a channel");
+            }
+
+            var hposChannel = channel as IChannelWithHPos;
+            if (hposChannel == null)
+                throw new InterpreterError("INDENT-TO: not supported by this type of channel");
+
+            var cur = hposChannel.HPos;
+            while (cur < position.Value)
+            {
+                channel.WriteChar(' ');
+
+                var next = hposChannel.HPos;
+                if (next <= cur)
+                {
+                    // didn't move, or wrapped around
+                    break;
+                }
+
+                cur = next;
+            }
+
+            return args[0];
         }
     }
 }
