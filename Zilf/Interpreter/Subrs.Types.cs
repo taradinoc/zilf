@@ -222,6 +222,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        [Subr("TUPLE")]
         public static ZilObject VECTOR(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
