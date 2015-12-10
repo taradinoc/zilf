@@ -260,6 +260,7 @@ namespace Zilf.Language
         PACKAGE,
         [Atom("PARSER-TABLE")]
         PARSER_TABLE,
+        PARTICLE,
         PATBL,
         PATTERN,
         PER,

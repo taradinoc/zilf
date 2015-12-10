@@ -62,6 +62,9 @@ namespace Zilf.ZModel.Vocab
         void MakeVerb(IWord word, ISourceLine location);
         void MakeDirection(IWord word, ISourceLine location);
 
+        // Used for prepositions defined in syntax lines, as opposed to ones defined with VOC.
+        void MakeSyntaxPreposition(IWord word, ISourceLine location);
+
         bool IsPreposition(IWord word);
         bool IsAdjective(IWord word);
         bool IsObject(IWord word);
@@ -196,6 +199,11 @@ namespace Zilf.ZModel.Vocab
         }
 
         public void MakePreposition(IWord word, ISourceLine location)
+        {
+            Contract.Requires(word != null);
+        }
+
+        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
         {
             Contract.Requires(word != null);
         }

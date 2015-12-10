@@ -33,7 +33,7 @@ namespace Zilf.ZModel.Vocab.NewParser
     class NewParserVocabFormat : IVocabFormat
     {
         private readonly Context ctx;
-        private readonly int adjClass, buzzClass, dirClass, objectClass, prepClass, verbClass;
+        private readonly int adjClass, buzzClass, dirClass, objectClass, particleClass, prepClass, verbClass;
 
         private byte nextAdjective = 255;
 
@@ -45,6 +45,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             buzzClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TBUZZ)).Value;
             dirClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TDIR)).Value;
             objectClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TOBJECT)).Value;
+            particleClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.PARTICLE)).Value;
             prepClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TPREP)).Value;
             verbClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TVERB)).Value;
 
@@ -238,6 +239,20 @@ namespace Zilf.ZModel.Vocab.NewParser
                 NewAddWord(
                     nw.Atom,
                     ctx.GetStdAtom(StdAtom.TPREP),
+                    null,
+                    ZilFix.Zero);
+            }
+        }
+
+        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
+        {
+            var nw = (NewParserWord)word;
+
+            if (!nw.HasClass(particleClass))
+            {
+                NewAddWord(
+                    nw.Atom,
+                    ctx.GetStdAtom(StdAtom.PARTICLE),
                     null,
                     ZilFix.Zero);
             }

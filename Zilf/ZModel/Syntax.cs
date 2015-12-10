@@ -253,8 +253,8 @@ namespace Zilf.ZModel
             }
 
             IWord verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
-            IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep1, src);
-            IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabPreposition(prep2, src);
+            IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
+            IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
             byte flags1 = ScopeFlags.Parse(bits1, ctx);
             byte flags2 = ScopeFlags.Parse(bits2, ctx);
             ZilAtom findFlag1 = ParseFindFlag(find1);

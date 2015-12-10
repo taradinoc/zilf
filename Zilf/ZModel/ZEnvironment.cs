@@ -265,6 +265,13 @@ namespace Zilf.ZModel
             return result;
         }
 
+        public IWord GetVocabSyntaxPreposition(ZilAtom text, ISourceLine location)
+        {
+            IWord result = GetVocab(text);
+            VocabFormat.MakeSyntaxPreposition(result, location);
+            return result;
+        }
+
         /*public void SortObjects()
         {
             // apply FIRST/LAST
