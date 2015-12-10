@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
                             new Antlr.Runtime.ANTLRInputStream(stream);
                         Program.Evaluate(ctx, inputStream);
                     }
-                    return new ZilString("DONE");
+                    return ZilString.FromString("DONE");
                 }
                 finally
                 {

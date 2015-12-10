@@ -51,7 +51,7 @@ namespace ZilfTests.Interpreter
                 new ZilFix(1),
                 new ZilFix(2),
             }));
-            ctx.SetLocalVal(ZilAtom.Parse("A-STRING", ctx), new ZilString("hello"));
+            ctx.SetLocalVal(ZilAtom.Parse("A-STRING", ctx), ZilString.FromString("hello"));
             ctx.SetLocalVal(ZilAtom.Parse("A-SUBR", ctx), new ZilSubr(Subrs.Plus));
             ctx.SetLocalVal(ZilAtom.Parse("A-FSUBR", ctx), new ZilFSubr(Subrs.QUOTE));
             ctx.SetLocalVal(ZilAtom.Parse("A-FUNCTION", ctx), new ZilFunction(
@@ -84,7 +84,7 @@ namespace ZilfTests.Interpreter
                 new ZilFix(42),
             }));
             ctx.SetLocalVal(ZilAtom.Parse("A-ADECL", ctx), new ZilAdecl(
-                new ZilString("FIDO"),
+                ZilString.FromString("FIDO"),
                 ZilAtom.Parse("DOG", ctx)
             ));
 
@@ -397,9 +397,9 @@ namespace ZilfTests.Interpreter
         {
             // string-based types can be coerced to STRING
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SUBR STRING>",
-                new ZilString("Plus"));
+                ZilString.FromString("Plus"));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR STRING>",
-                new ZilString("QUOTE"));
+                ZilString.FromString("QUOTE"));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL STRING>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM STRING>");
@@ -607,7 +607,7 @@ namespace ZilfTests.Interpreter
             // vector-based types can be coerced to VECTOR
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-ADECL VECTOR>",
                 new ZilVector(new ZilObject[] {
-                    new ZilString("FIDO"),
+                    ZilString.FromString("FIDO"),
                     ZilAtom.Parse("DOG", ctx),
                 })
             );
@@ -801,10 +801,10 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestSTRING()
         {
-            TestHelpers.EvalAndAssert("<STRING>", new ZilString(""));
-            TestHelpers.EvalAndAssert("<STRING !\\A !\\B>", new ZilString("AB"));
-            TestHelpers.EvalAndAssert("<STRING \"hello\">", new ZilString("hello"));
-            TestHelpers.EvalAndAssert("<STRING \"hel\" \"lo\" !\\!>", new ZilString("hello!"));
+            TestHelpers.EvalAndAssert("<STRING>", ZilString.FromString(""));
+            TestHelpers.EvalAndAssert("<STRING !\\A !\\B>", ZilString.FromString("AB"));
+            TestHelpers.EvalAndAssert("<STRING \"hello\">", ZilString.FromString("hello"));
+            TestHelpers.EvalAndAssert("<STRING \"hel\" \"lo\" !\\!>", ZilString.FromString("hello!"));
 
             // arguments must be characters or strings
             TestHelpers.EvalAndCatch<InterpreterError>("<STRING 123>");
@@ -860,7 +860,7 @@ namespace ZilfTests.Interpreter
         public void TestCustomType_SEMI()
         {
             TestHelpers.EvalAndAssert(ctx, "<TYPE #SEMI \"hello world\">", ctx.GetStdAtom(StdAtom.SEMI));
-            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #SEMI \"hello world\" STRING>", new ZilString("hello world"));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE #SEMI \"hello world\" STRING>", ZilString.FromString("hello world"));
 
             TestHelpers.EvalAndCatch<InterpreterError>("#SEMI (foo)");
 

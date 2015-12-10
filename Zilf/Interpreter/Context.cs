@@ -372,7 +372,7 @@ namespace Zilf.Interpreter
 
             foreach (var name in emptyPackageNames)
             {
-                args1[0] = new ZilString(name);
+                args1[0] = ZilString.FromString(name);
                 Subrs.PACKAGE(this, args1);
                 Subrs.ENDPACKAGE(this, args0);
             }
@@ -418,10 +418,10 @@ namespace Zilf.Interpreter
             // compile-time constants
             globalValues.Add(GetStdAtom(StdAtom.ZILCH), TRUE);
             globalValues.Add(GetStdAtom(StdAtom.ZILF), TRUE);
-            globalValues.Add(GetStdAtom(StdAtom.ZIL_VERSION), new ZilString(Program.VERSION));
+            globalValues.Add(GetStdAtom(StdAtom.ZIL_VERSION), ZilString.FromString(Program.VERSION));
             globalValues.Add(GetStdAtom(StdAtom.PREDGEN), TRUE);
             globalValues.Add(GetStdAtom(StdAtom.PLUS_MODE), zenv.ZVersion > 3 ? TRUE : FALSE);
-            globalValues.Add(GetStdAtom(StdAtom.SIBREAKS), new ZilString(",.\""));
+            globalValues.Add(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
@@ -820,8 +820,8 @@ namespace Zilf.Interpreter
             Contract.Ensures(typeMap.Count > 0);
 
             var query = from t in typeof(ZilObject).Assembly.GetTypes()
-                        where !t.IsAbstract && typeof(ZilObject).IsAssignableFrom(t)
-                        from BuiltinTypeAttribute a in t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                        where typeof(ZilObject).IsAssignableFrom(t)
+                        from a in t.GetCustomAttributes<BuiltinTypeAttribute>(false)
                         select new { Type = t, Attr = a };
 
             Type[] chtypeParamTypes = { typeof(Context), null };
@@ -1113,6 +1113,8 @@ namespace Zilf.Interpreter
             if (value.GetTypeAtom(this) == newType)
                 return value;
 
+            // TODO: standardize special cases
+
             /* hacky special cases for GVAL and LVAL:
              * <CHTYPE FOO GVAL> gives '<GVAL FOO> rather than #GVAL FOO
              */
@@ -1128,7 +1130,7 @@ namespace Zilf.Interpreter
             if (newType.StdAtom == StdAtom.TABLE && value.PrimType == PrimType.VECTOR)
             {
                 var vector = (ZilVector)value.GetPrimitive(this);
-                return new ZilTable(1, vector.ToArray(), 0, null);
+                return ZilTable.Create(1, vector.ToArray(), 0, null);
             }
 
             // look it up in the typemap

@@ -282,7 +282,7 @@ namespace ZilfTests.Interpreter
 <DEFSTRUCT FOO VECTOR (FOO-FIX FIX) (FOO-STRING STRING) (FOO-ATOM ATOM) (FOO-LIST LIST) (FOO-VECTOR VECTOR) (FOO-MULTI <OR LIST FALSE>)>");
 
             TestHelpers.EvalAndAssert(ctx, "<FOO-FIX <MAKE-FOO>>", new ZilFix(0));
-            TestHelpers.EvalAndAssert(ctx, "<FOO-STRING <MAKE-FOO>>", new ZilString(""));
+            TestHelpers.EvalAndAssert(ctx, "<FOO-STRING <MAKE-FOO>>", ZilString.FromString(""));
             TestHelpers.EvalAndAssert(ctx, "<FOO-ATOM <MAKE-FOO>>", ctx.GetStdAtom(StdAtom.SORRY));
             TestHelpers.EvalAndAssert(ctx, "<FOO-LIST <MAKE-FOO>>", new ZilList(null, null));
             TestHelpers.EvalAndAssert(ctx, "<FOO-VECTOR <MAKE-FOO>>", new ZilVector());
@@ -295,8 +295,8 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void REST_Of_One_Character_String_Should_Be_Empty_String()
         {
-            TestHelpers.EvalAndAssert("<REST \"x\">", new ZilString(""));
-            TestHelpers.EvalAndAssert("<REST <REST \"xx\">>", new ZilString(""));
+            TestHelpers.EvalAndAssert("<REST \"x\">", ZilString.FromString(""));
+            TestHelpers.EvalAndAssert("<REST <REST \"xx\">>", ZilString.FromString(""));
         }
 
         [TestMethod]
@@ -321,7 +321,22 @@ namespace ZilfTests.Interpreter
         public void ISTRING_Should_Evaluate_Initializer_Each_Time()
         {
             TestHelpers.EvalAndAssert("<SET X 64> <ISTRING 3 '<ASCII <SET X <+ .X 1>>>>",
-                new ZilString("ABC"));
+                ZilString.FromString("ABC"));
+        }
+
+        [TestMethod]
+        public void REST_Of_String_Should_Be_A_ZilString_Instance()
+        {
+            // this isn't usually visible to the user code, but it's needed because of all the "if (foo is ZilString)" validations
+            var rested = TestHelpers.Evaluate("<REST \"hello\">");
+            Assert.IsInstanceOfType(rested, typeof(ZilString));
+        }
+
+        [TestMethod]
+        public void ZREST_Of_Table_Should_Be_A_ZilTable_Instance()
+        {
+            var rested = TestHelpers.Evaluate("<ZREST <TABLE 1 2 3> 2>");
+            Assert.IsInstanceOfType(rested, typeof(ZilTable));
         }
     }
 }

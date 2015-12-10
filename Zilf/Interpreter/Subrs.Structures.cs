@@ -287,7 +287,7 @@ namespace Zilf.Interpreter
                         return new ZilList(((ZilList)primitive).Skip(rest).Take(amount));
 
                     case PrimType.STRING:
-                        return new ZilString(((ZilString)primitive).Text.Substring(rest, amount));
+                        return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, amount));
 
                     case PrimType.TABLE:
                         throw new InterpreterError("SUBSTRUC: primtype TABLE not supported");

@@ -61,9 +61,9 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestUNPARSE()
         {
-            TestHelpers.EvalAndAssert("<UNPARSE 123>", new ZilString("123"));
+            TestHelpers.EvalAndAssert("<UNPARSE 123>", ZilString.FromString("123"));
 
-            TestHelpers.EvalAndAssert("<UNPARSE '(\"FOO\" [BAR])>", new ZilString("(\"FOO\" [BAR])"));
+            TestHelpers.EvalAndAssert("<UNPARSE '(\"FOO\" [BAR])>", ZilString.FromString("(\"FOO\" [BAR])"));
         }
 
         [TestMethod]

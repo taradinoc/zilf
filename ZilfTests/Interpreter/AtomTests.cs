@@ -28,8 +28,8 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestSPNAME()
         {
-            TestHelpers.EvalAndAssert("<SPNAME FOO>", new ZilString("FOO"));
-            TestHelpers.EvalAndAssert("<SPNAME +>", new ZilString("+"));
+            TestHelpers.EvalAndAssert("<SPNAME FOO>", ZilString.FromString("FOO"));
+            TestHelpers.EvalAndAssert("<SPNAME +>", ZilString.FromString("+"));
 
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<SPNAME>");
@@ -205,7 +205,7 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestINSERT()
         {
-            TestHelpers.EvalAndAssert("<SPNAME <INSERT \"FOO\" <ROOT>>>", new ZilString("FOO"));
+            TestHelpers.EvalAndAssert("<SPNAME <INSERT \"FOO\" <ROOT>>>", ZilString.FromString("FOO"));
         }
 
         [TestMethod]

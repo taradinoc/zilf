@@ -247,7 +247,7 @@ namespace ZilfTests.Interpreter
         {
             // most values eval to themselves
             TestHelpers.EvalAndAssert("<EVAL 123>", new ZilFix(123));
-            TestHelpers.EvalAndAssert("<EVAL \"hello\">", new ZilString("hello"));
+            TestHelpers.EvalAndAssert("<EVAL \"hello\">", ZilString.FromString("hello"));
 
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<EVAL +>", ctx.GetStdAtom(StdAtom.Plus));
@@ -287,7 +287,7 @@ namespace ZilfTests.Interpreter
         {
             // most values expand to themselves
             TestHelpers.EvalAndAssert("<EXPAND 123>", new ZilFix(123));
-            TestHelpers.EvalAndAssert("<EXPAND \"hello\">", new ZilString("hello"));
+            TestHelpers.EvalAndAssert("<EXPAND \"hello\">", ZilString.FromString("hello"));
 
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<EXPAND +>", ctx.GetStdAtom(StdAtom.Plus));

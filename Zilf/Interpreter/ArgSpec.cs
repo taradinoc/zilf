@@ -442,7 +442,7 @@ namespace Zilf.Interpreter
                 {
                     if (varargsAtom != null)
                     {
-                        yield return new ZilString(varargsQuoted ? "ARGS" : "TUPLE");
+                        yield return ZilString.FromString(varargsQuoted ? "ARGS" : "TUPLE");
                         if (varargsDecl == null)
                         {
                             yield return varargsAtom;
@@ -454,11 +454,11 @@ namespace Zilf.Interpreter
                         emittedVarargs = true;
                     }
 
-                    yield return new ZilString("AUX");
+                    yield return ZilString.FromString("AUX");
                 }
                 else if (i == optArgsStart)
                 {
-                    yield return new ZilString("OPT");
+                    yield return ZilString.FromString("OPT");
                 }
 
                 ZilObject arg = argAtoms[i];
@@ -485,7 +485,7 @@ namespace Zilf.Interpreter
 
             if (varargsAtom != null && !emittedVarargs)
             {
-                yield return new ZilString(varargsQuoted ? "ARGS" : "TUPLE");
+                yield return ZilString.FromString(varargsQuoted ? "ARGS" : "TUPLE");
                 if (varargsDecl == null)
                 {
                     yield return varargsAtom;
@@ -498,13 +498,13 @@ namespace Zilf.Interpreter
 
             if (activationAtom != null)
             {
-                yield return new ZilString("NAME");
+                yield return ZilString.FromString("NAME");
                 yield return activationAtom;
             }
 
             if (valueDecl != null)
             {
-                yield return new ZilString("VALUE");
+                yield return ZilString.FromString("VALUE");
                 yield return valueDecl;
             }
         }

@@ -25,20 +25,22 @@ using Zilf.Language;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.STRING, PrimType.STRING)]
-    class ZilString : ZilObject, IStructure
+    [ContractClass(typeof(ZilStringContracts))]
+    abstract class ZilString : ZilObject, IStructure
     {
-        public string Text;
-
-        public ZilString(string text)
-        {
-            this.Text = text;
-        }
+        public abstract string Text { get; set; }
 
         [ChtypeMethod]
-        public ZilString(ZilString other)
-            : this(other.Text)
+        public static ZilString FromString(Context ctx, ZilString other)
         {
             Contract.Requires(other != null);
+
+            return new OriginalString(other.Text);
+        }
+
+        public static ZilString FromString(string text)
+        {
+            return new OriginalString(text);
         }
 
         public static ZilString Parse(string str)
@@ -63,10 +65,10 @@ namespace Zilf.Interpreter.Values
                 }
             }
 
-            return new ZilString(sb.ToString());
+            return new OriginalString(sb.ToString());
         }
 
-        public override string ToString()
+        public sealed override string ToString()
         {
             return Quote(Text);
         }
@@ -99,7 +101,7 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
+        protected sealed override string ToStringContextImpl(Context ctx, bool friendly)
         {
             if (friendly)
                 return Text;
@@ -112,9 +114,6 @@ namespace Zilf.Interpreter.Values
             if (obj is ZilString)
                 return ((ZilString)obj).Text.Equals(this.Text);
 
-            if (obj is OffsetString)
-                return obj.Equals(this);
-
             return false;
         }
 
@@ -123,83 +122,29 @@ namespace Zilf.Interpreter.Values
             return Text.GetHashCode();
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
+        public sealed override ZilAtom GetTypeAtom(Context ctx)
         {
             return ctx.GetStdAtom(StdAtom.STRING);
         }
 
-        public override PrimType PrimType
+        public sealed override PrimType PrimType
         {
             get { return PrimType.STRING; }
         }
 
-        public override ZilObject GetPrimitive(Context ctx)
+        public abstract ZilObject this[int index] { get; set; }
+
+        public sealed override ZilObject GetPrimitive(Context ctx)
         {
             return this;
         }
 
-        ZilObject IStructure.GetFirst()
-        {
-            if (Text.Length == 0)
-                return null;
-            else
-                return new ZilChar(Text[0]);
-        }
-
-        IStructure IStructure.GetRest(int skip)
-        {
-            if (Text.Length < skip)
-                return null;
-            else
-                return new OffsetString(this, skip);
-        }
-
-        bool IStructure.IsEmpty()
-        {
-            return Text.Length == 0;
-        }
-
-        ZilObject IStructure.this[int index]
-        {
-            get
-            {
-                if (index >= 0 && index < Text.Length)
-                    return new ZilChar(Text[index]);
-                else
-                    return null;
-            }
-            set
-            {
-                ZilChar ch = value as ZilChar;
-                if (ch == null)
-                    throw new InterpreterError("elements of a string must be characters");
-                if (index >= 0 && index < Text.Length)
-                    Text = Text.Substring(0, index) + ch.Char +
-                           Text.Substring(index + 1, Text.Length - index - 1);
-                else
-                    throw new InterpreterError("writing past end of string");
-            }
-        }
-
-        int IStructure.GetLength()
-        {
-            return Text.Length;
-        }
-
-        int? IStructure.GetLength(int limit)
-        {
-            int length = Text.Length;
-            if (length > limit)
-                return null;
-            else
-                return length;
-        }
-
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            foreach (var c in Text)
-                yield return new ZilChar(c);
-        }
+        public abstract ZilObject GetFirst();
+        public abstract IStructure GetRest(int skip);
+        public abstract bool IsEmpty();
+        public abstract int GetLength();
+        public abstract int? GetLength(int limit);
+        public abstract IEnumerator<ZilObject> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -207,90 +152,119 @@ namespace Zilf.Interpreter.Values
         }
 
         [BuiltinAlternate(typeof(ZilString))]
-        private class OffsetString : ZilObject, IStructure
+        private sealed class OriginalString : ZilString
         {
-            private readonly ZilString orig;
+            public OriginalString(string text)
+            {
+                this.Text = text;
+            }
+
+            public override string Text { get; set; }
+
+            public override ZilObject GetFirst()
+            {
+                if (Text.Length == 0)
+                    return null;
+                else
+                    return new ZilChar(Text[0]);
+            }
+
+            public override IStructure GetRest(int skip)
+            {
+                if (Text.Length < skip)
+                    return null;
+                else
+                    return new OffsetString(this, skip);
+            }
+
+            public override bool IsEmpty()
+            {
+                return Text.Length == 0;
+            }
+
+            public override ZilObject this[int index]
+            {
+                get
+                {
+                    if (index >= 0 && index < Text.Length)
+                        return new ZilChar(Text[index]);
+                    else
+                        return null;
+                }
+                set
+                {
+                    ZilChar ch = value as ZilChar;
+                    if (ch == null)
+                        throw new InterpreterError("elements of a string must be characters");
+                    if (index >= 0 && index < Text.Length)
+                        Text = Text.Substring(0, index) + ch.Char +
+                               Text.Substring(index + 1, Text.Length - index - 1);
+                    else
+                        throw new InterpreterError("writing past end of string");
+                }
+            }
+
+            public override int GetLength()
+            {
+                return Text.Length;
+            }
+
+            public override int? GetLength(int limit)
+            {
+                int length = Text.Length;
+                if (length > limit)
+                    return null;
+                else
+                    return length;
+            }
+
+            public override IEnumerator<ZilObject> GetEnumerator()
+            {
+                foreach (var c in Text)
+                    yield return new ZilChar(c);
+            }
+        }
+
+        [BuiltinAlternate(typeof(ZilString))]
+        private class OffsetString : ZilString
+        {
+            private readonly OriginalString orig;
             private readonly int offset;
 
-            public OffsetString(ZilString orig, int offset)
+            public OffsetString(OriginalString orig, int offset)
             {
                 this.orig = orig;
                 this.offset = offset;
             }
 
-            public override string ToString()
+            public override string Text
             {
-                StringBuilder sb = new StringBuilder(orig.Text.Length - offset + 2);
-                sb.Append('"');
-
-                for (int i = offset; i < orig.Text.Length; i++)
+                get
                 {
-                    char c = orig.Text[i];
-                    switch (c)
-                    {
-                        case '"':
-                            sb.Append("\\\"");
-                            break;
-                        case '\\':
-                            sb.Append("\\\\");
-                            break;
-                        default:
-                            sb.Append(c);
-                            break;
-                    }
-                }
-
-                sb.Append('"');
-                return sb.ToString();
-            }
-
-            protected override string ToStringContextImpl(Context ctx, bool friendly)
-            {
-                if (friendly)
                     return orig.Text.Substring(offset);
-                else
-                    return ToString();
+                }
+                set
+                {
+                    orig.Text = orig.Text.Substring(0, offset) + value;
+                }
             }
 
             public override bool Equals(object obj)
             {
-                if (obj is OffsetString)
-                {
-                    OffsetString other = (OffsetString)obj;
-                    if (other.orig == this.orig && other.offset == this.offset)
-                        return true;
+                var other = obj as OffsetString;
+                if (other != null && other.orig == this.orig && other.offset == this.offset)
+                    return true;
 
-                    return other.orig.Text.Substring(other.offset).Equals(
-                        this.orig.Text.Substring(this.offset));
-                }
-
-                if (obj is ZilString)
-                    return orig.Text.Substring(offset).Equals(((ZilString)obj).Text);
-
-                return false;
+                return base.Equals(obj);
             }
 
             public override int GetHashCode()
             {
-                return orig.Text.Substring(offset).GetHashCode();
+                // make the compiler happy
+                return base.GetHashCode();
             }
 
-            public override ZilAtom GetTypeAtom(Context ctx)
-            {
-                return ctx.GetStdAtom(StdAtom.STRING);
-            }
-
-            public override PrimType PrimType
-            {
-                get { return PrimType.STRING; }
-            }
-
-            public override ZilObject GetPrimitive(Context ctx)
-            {
-                return new ZilString(orig.Text.Substring(offset));
-            }
-
-            ZilObject IStructure.GetFirst()
+            public override ZilObject GetFirst()
             {
                 if (offset >= orig.Text.Length)
                     return null;
@@ -298,7 +272,7 @@ namespace Zilf.Interpreter.Values
                     return new ZilChar(orig.Text[offset]);
             }
 
-            IStructure IStructure.GetRest(int skip)
+            public override IStructure GetRest(int skip)
             {
                 if (offset > orig.Text.Length - skip)
                     return null;
@@ -306,12 +280,12 @@ namespace Zilf.Interpreter.Values
                     return new OffsetString(orig, offset + skip);
             }
 
-            bool IStructure.IsEmpty()
+            public override bool IsEmpty()
             {
                 return offset >= orig.Text.Length;
             }
 
-            ZilObject IStructure.this[int index]
+            public override ZilObject this[int index]
             {
                 get
                 {
@@ -326,21 +300,29 @@ namespace Zilf.Interpreter.Values
                     ZilChar ch = value as ZilChar;
                     if (ch == null)
                         throw new InterpreterError("elements of a string must be characters");
+
                     index += offset;
+
                     if (index >= 0 && index < orig.Text.Length)
-                        orig.Text = orig.Text.Substring(0, index) + ch.Char +
-                                    orig.Text.Substring(index + 1, orig.Text.Length - index - 1);
+                    {
+                        orig.Text =
+                            orig.Text.Substring(0, index) +
+                            ch.Char +
+                            orig.Text.Substring(index + 1, orig.Text.Length - index - 1);
+                    }
                     else
+                    {
                         throw new InterpreterError("writing past end of string");
+                    }
                 }
             }
 
-            int IStructure.GetLength()
+            public override int GetLength()
             {
                 return Math.Max(orig.Text.Length - offset, 0);
             }
 
-            int? IStructure.GetLength(int limit)
+            public override int? GetLength(int limit)
             {
                 int length = Math.Max(orig.Text.Length - offset, 0);
                 if (length > limit)
@@ -349,15 +331,30 @@ namespace Zilf.Interpreter.Values
                     return length;
             }
 
-            public IEnumerator<ZilObject> GetEnumerator()
+            public override IEnumerator<ZilObject> GetEnumerator()
             {
                 for (int i = offset; i < orig.Text.Length; i++)
                     yield return new ZilChar(orig.Text[i]);
             }
+        }
+    }
 
-            IEnumerator IEnumerable.GetEnumerator()
+    [ContractClassFor(typeof(ZilString))]
+    abstract class ZilStringContracts : ZilString
+    {
+        public override string Text
+        {
+            get
             {
-                return GetEnumerator();
+                Contract.Ensures(Contract.Result<string>() != null);
+                return default(string);
+            }
+
+            set
+            {
+                Contract.Requires(value != null);
+                Contract.Requires(value.Length == Text.Length);
+                Contract.Ensures(Text == value);
             }
         }
     }
