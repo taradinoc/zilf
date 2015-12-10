@@ -37,7 +37,7 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(
                 new ZilObject[]
                 {
-                    new ZilString("NAME"),
+                    ZilString.FromString("NAME"),
                     ZilAtom.Parse("ACT", ctx),
                 },
                 spec.AsZilListBody().ToArray());
@@ -48,12 +48,12 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { new ZilString("ARGS"), ZilAtom.Parse("A", ctx) });
+            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx) });
 
             CollectionAssert.AreEqual(
                 new ZilObject[]
                 {
-                    new ZilString("ARGS"),
+                    ZilString.FromString("ARGS"),
                     ZilAtom.Parse("A", ctx),
                 },
                 spec.AsZilListBody().ToArray());
@@ -64,12 +64,12 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { new ZilString("TUPLE"), ZilAtom.Parse("A", ctx) });
+            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx) });
 
             CollectionAssert.AreEqual(
                 new ZilObject[]
                 {
-                    new ZilString("TUPLE"),
+                    ZilString.FromString("TUPLE"),
                     ZilAtom.Parse("A", ctx),
                 },
                 spec.AsZilListBody().ToArray());
@@ -82,7 +82,7 @@ namespace ZilfTests.Interpreter
 
             var spec1 = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
-                new ZilString("ARGS"),
+                ZilString.FromString("ARGS"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
                     ctx.GetStdAtom(StdAtom.LIST)),
@@ -90,7 +90,7 @@ namespace ZilfTests.Interpreter
 
             var spec2 = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
-                new ZilString("TUPLE"),
+                ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
                     ctx.GetStdAtom(StdAtom.LIST)),
@@ -113,7 +113,7 @@ namespace ZilfTests.Interpreter
                         ZilAtom.Parse("A2", ctx),
                     }),
                     ctx.GetStdAtom(StdAtom.FORM)),
-                new ZilString("TUPLE"),
+                ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A3", ctx),
                     ctx.GetStdAtom(StdAtom.LIST)),
@@ -130,7 +130,7 @@ namespace ZilfTests.Interpreter
                             ZilAtom.Parse("A2", ctx),
                         }),
                         ctx.GetStdAtom(StdAtom.FORM)),
-                    new ZilString("TUPLE"),
+                    ZilString.FromString("TUPLE"),
                     new ZilAdecl(
                         ZilAtom.Parse("A3", ctx),
                         ctx.GetStdAtom(StdAtom.LIST)),
@@ -146,11 +146,11 @@ namespace ZilfTests.Interpreter
 
             var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
-                new ZilString("AUX"),
+                ZilString.FromString("AUX"),
                 ZilAtom.Parse("X", ctx),
-                new ZilString("NAME"),
+                ZilString.FromString("NAME"),
                 ZilAtom.Parse("N", ctx),
-                new ZilString("VALUE"),
+                ZilString.FromString("VALUE"),
                 new ZilForm(new ZilObject[]
                 {
                     ctx.GetStdAtom(StdAtom.OR),
@@ -162,11 +162,11 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(
                 new ZilObject[]
                 {
-                    new ZilString("AUX"),
+                    ZilString.FromString("AUX"),
                     ZilAtom.Parse("X", ctx),
-                    new ZilString("NAME"),
+                    ZilString.FromString("NAME"),
                     ZilAtom.Parse("N", ctx),
-                    new ZilString("VALUE"),
+                    ZilString.FromString("VALUE"),
                     new ZilForm(new ZilObject[]
                     {
                         ctx.GetStdAtom(StdAtom.OR),

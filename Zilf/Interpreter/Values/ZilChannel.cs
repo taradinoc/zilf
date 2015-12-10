@@ -81,7 +81,7 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(new ZilObject[]
             {
                 ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
-                new ZilString(path)
+                ZilString.FromString(path)
             });
         }
 
@@ -178,7 +178,7 @@ namespace Zilf.Interpreter.Values
             {
                 ctx.GetStdAtom(StdAtom.PRINT),
                 ctx.GetStdAtom(StdAtom.STRING),
-                new ZilString(sb.ToString()),
+                ZilString.FromString(sb.ToString()),
             });
         }
 

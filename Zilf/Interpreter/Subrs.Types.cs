@@ -358,7 +358,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return new ZilString(sb.ToString());
+            return ZilString.FromString(sb.ToString());
         }
 
         [Subr]
@@ -387,7 +387,7 @@ namespace Zilf.Interpreter
                     contents.Add('\0');
             }
 
-            return new ZilString(new string(contents.ToArray()));
+            return ZilString.FromString(new string(contents.ToArray()));
         }
 
         [Subr]

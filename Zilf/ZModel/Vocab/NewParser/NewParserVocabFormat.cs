@@ -73,7 +73,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             var form = new ZilForm(new ZilObject[]
             {
                 ctx.GetStdAtom(StdAtom.MAKE_VWORD),
-                new ZilString(atom.Text),
+                ZilString.FromString(atom.Text),
                 ZilFix.Zero,
                 ZilFix.Zero,
             });
@@ -571,7 +571,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var form = new ZilForm(new ZilObject[]
                 {
                     ctx.GetStdAtom(StdAtom.MAKE_VWORD),
-                    new ZilString(name.Text),
+                    ZilString.FromString(name.Text),
                     classification,
                     flags,
                 });

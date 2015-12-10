@@ -594,7 +594,7 @@ namespace Zilf.Interpreter
                 Array.Copy(args, i, initializer, 0, initializer.Length);
             }
 
-            ZilTable tab = new ZilTable(elemCount.Value, initializer, flags, null);
+            ZilTable tab = ZilTable.Create(elemCount.Value, initializer, flags, null);
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
@@ -719,7 +719,7 @@ namespace Zilf.Interpreter
                 i++;
             }
 
-            ZilTable tab = new ZilTable(
+            ZilTable tab = ZilTable.Create(
                 1, values.ToArray(), flags, pattern == null ? null : pattern.ToArray());
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
@@ -888,6 +888,28 @@ namespace Zilf.Interpreter
 
             table.PutByte(ctx, index.Value, args[2]);
             return args[2];
+        }
+
+        [Subr]
+        public static ZilObject ZREST(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx, args);
+
+            if (args.Length != 2)
+                throw new InterpreterError("ZREST", 2, 2);
+
+            var table = args[0] as ZilTable;
+            if (table == null)
+                throw new InterpreterError("ZREST: first arg must be a table");
+
+            var bytes = args[1] as ZilFix;
+            if (bytes == null)
+                throw new InterpreterError("ZREST: second arg must be a FIX");
+
+            if (bytes.Value < 0)
+                throw new InterpreterError("ZREST: second arg must not be negative");
+
+            return table.OffsetByBytes(ctx, bytes.Value);
         }
 
         #endregion
@@ -1217,7 +1239,7 @@ namespace Zilf.Interpreter
                     break;
             }
 
-            return new ZilString(alphabetStr);
+            return ZilString.FromString(alphabetStr);
         }
 
         [Subr]

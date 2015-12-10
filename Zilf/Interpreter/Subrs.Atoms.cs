@@ -37,7 +37,7 @@ namespace Zilf.Interpreter
             if (atom == null)
                 throw new InterpreterError("SPNAME: arg must be an atom");
 
-            return new ZilString(atom.Text);
+            return ZilString.FromString(atom.Text);
         }
 
         [Subr]
@@ -110,7 +110,7 @@ namespace Zilf.Interpreter
             if (args.Length != 1)
                 throw new InterpreterError("UNPARSE", 1, 1);
 
-            return new ZilString(args[0].ToStringContext(ctx, false));
+            return ZilString.FromString(args[0].ToStringContext(ctx, false));
         }
 
         [Subr]

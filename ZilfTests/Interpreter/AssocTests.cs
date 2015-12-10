@@ -65,7 +65,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var foo = new ZilString("FOO");
+            var foo = ZilString.FromString("FOO");
             ctx.PutProp(foo, ctx.TRUE, ctx.TRUE);
 
             var weakRef = new WeakReference<ZilString>(foo);

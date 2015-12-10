@@ -72,7 +72,7 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            return new ZilString(handler.Method.Name);
+            return ZilString.FromString(handler.Method.Name);
         }
 
         public virtual ZilObject Apply(Context ctx, ZilObject[] args)

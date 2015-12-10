@@ -176,5 +176,19 @@ namespace IntegrationTests
                 .Implies(
                     "<=? ,PARSER-TBL ,PRSTBL>");
         }
+
+        [TestMethod]
+        public void ZREST_Creates_A_Compile_Time_Offset_Table()
+        {
+            AssertGlobals(
+                "<SETG MY-TBL <TABLE 100 200 300>>",
+                "<GLOBAL TBL ,MY-TBL>",
+                "<SETG RESTED <ZREST ,MY-TBL 2>>",
+                "<CONSTANT RESTED-OLD-0 <ZGET ,RESTED 0>>",
+                "<ZPUT ,RESTED 1 345>")
+                .Implies(
+                    "<=? ,RESTED-OLD-0 200>",
+                    "<=? <GET ,TBL 2> 345>");
+        }
     }
 }

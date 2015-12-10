@@ -220,7 +220,7 @@ namespace Zilf.Interpreter
                             new ZilObject[]
                             {
                                 xAtom,
-                                new ZilString("AUX"),
+                                ZilString.FromString("AUX"),
                                 new ZilList(new ZilObject[]
                                 {
                                     dAtom,
@@ -366,7 +366,7 @@ namespace Zilf.Interpreter
             yield return ZilFix.Zero;
             yield return new ZilList(null, null);
             yield return new ZilVector();
-            yield return new ZilString("");
+            yield return ZilString.FromString("");
             yield return ctx.GetStdAtom(StdAtom.SORRY);
         }
 

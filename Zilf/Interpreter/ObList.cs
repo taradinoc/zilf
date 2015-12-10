@@ -105,7 +105,7 @@ namespace Zilf.Interpreter
             var result = new List<ZilObject>(dict.Count);
 
             foreach (var pair in dict)
-                result.Add(new ZilList(new ZilString(pair.Key),
+                result.Add(new ZilList(ZilString.FromString(pair.Key),
                     new ZilList(pair.Value,
                         new ZilList(null, null))));
 
