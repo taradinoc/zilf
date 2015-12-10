@@ -156,6 +156,33 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Round_Tripping_Table_Elements_Between_Bytes_And_Words_Preserves_Widths()
+        {
+            AssertGlobals(
+                "<SETG MY-TBL <LTABLE 1 2 3>>",
+                "<PUTB ,MY-TBL 2 100>",
+                "<ZPUT ,MY-TBL 1 1>",
+                "<GLOBAL TBL ,MY-TBL>")
+                .Implies(
+                    "<==? <GET ,TBL 0> 3>",
+                    "<==? <GET ,TBL 1> 1>",
+                    "<==? <GET ,TBL 2> 2>",
+                    "<==? <GET ,TBL 3> 3>");
+
+            AssertGlobals(
+              "<SETG MY-TBL <LTABLE (BYTE) 1 2 3>>",
+              "<ZPUT ,MY-TBL 1 2>",
+              "<PUTB ,MY-TBL 2 2>",
+              "<PUTB ,MY-TBL 3 3>",
+              "<GLOBAL TBL ,MY-TBL>")
+              .Implies(
+                  "<==? <GETB ,TBL 0> 3>",
+                  "<==? <GETB ,TBL 1> 1>",
+                  "<==? <GETB ,TBL 2> 2>",
+                  "<==? <GETB ,TBL 3> 3>");
+        }
+
+        [TestMethod]
         public void PARSER_TABLEs_Come_Before_Other_Pure_Tables()
         {
             AssertGlobals(

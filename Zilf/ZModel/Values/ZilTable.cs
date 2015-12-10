@@ -461,6 +461,7 @@ namespace Zilf.ZModel.Values
                     if (index2 == null || IsWord(ctx, index2.Value))
                         throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
+                    // remove one of the bytes from the initializer...
                     if (initializer == null || repetitions > 1)
                         ExpandInitializer(ctx.FALSE);
 
@@ -468,16 +469,39 @@ namespace Zilf.ZModel.Values
                     Array.Copy(initializer, newInitializer, index.Value);
                     Array.Copy(initializer, index.Value + 2, newInitializer, index.Value + 1, initializer.Length - index.Value - 2);
                     initializer = newInitializer;
-                    elementToByteOffsets = null;
 
-                    initializer[index.Value] = new ZilWord(value);
+                    // ...and the pattern, if appropriate. then store the new value.
+                    if (pattern != null)
+                    {
+                        ExpandPattern(ctx, index.Value, false);
+                        var newPattern = new ZilObject[pattern.Length - 1];
+                        Array.Copy(pattern, newPattern, index.Value);
+                        Array.Copy(pattern, index.Value + 2, newPattern, index.Value + 1, pattern.Length - index.Value - 2);
+                        pattern = newPattern;
+
+                        initializer[index.Value] = value;
+                        pattern[index.Value] = ctx.GetStdAtom(StdAtom.WORD);
+                    }
+                    else
+                    {
+                        initializer[index.Value] = new ZilWord(value);
+                    }
+
+                    elementToByteOffsets = null;
                 }
                 else
                 {
                     if (initializer == null || repetitions > 1)
                         ExpandInitializer(ctx.FALSE);
 
-                    initializer[index.Value] = value;
+                    if (initializer[index.Value] is ZilWord)
+                    {
+                        initializer[index.Value] = new ZilWord(value);
+                    }
+                    else
+                    {
+                        initializer[index.Value] = value;
+                    }
                 }
             }
 
