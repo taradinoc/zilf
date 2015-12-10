@@ -61,7 +61,11 @@ namespace Zilf.ZModel.Vocab.OldParser
 
                 result.SetPreposition(ctx, location, nextPreposition--);
             }
+        }
 
+        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
+        {
+            MakePreposition(word, location);
         }
 
         public void MakeAdjective(IWord word, ISourceLine location)
