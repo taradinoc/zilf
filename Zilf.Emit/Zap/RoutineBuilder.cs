@@ -458,7 +458,7 @@ namespace Zilf.Emit.Zap
                 AddLine("DEC '" + result.ToString(), null, PeepholeLineType.Plain);
                 return;
             }
-            else if (op == BinaryOp.StoreIndirect && right == Stack)
+            else if (op == BinaryOp.StoreIndirect && right == Stack && game.zversion != 6)
             {
                 AddLine("POP " + left.ToString(), null, PeepholeLineType.Plain);
                 return;
@@ -1045,11 +1045,20 @@ namespace Zilf.Emit.Zap
             if (dest != src)
             {
                 if (dest == STACK)
+                {
                     AddLine("PUSH " + src.ToString(), null, PeepholeLineType.Plain);
+                }
                 else if (src == STACK)
-                    AddLine("POP '" + dest.ToString(), null, PeepholeLineType.Plain);
+                {
+                    if (game.zversion == 6)
+                        AddLine("POP >" + dest.ToString(), null, PeepholeLineType.Plain);
+                    else
+                        AddLine("POP '" + dest.ToString(), null, PeepholeLineType.Plain);
+                }
                 else
+                {
                     AddLine(string.Format("SET '{0},{1}", dest, src), null, PeepholeLineType.Plain);
+                }
             }
         }
 
@@ -1369,6 +1378,7 @@ namespace Zilf.Emit.Zap
             private static readonly Regex bandConstantWithStackRegex = new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
             private static readonly Regex borConstantToStackRegex = new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
             private static readonly Regex borConstantWithStackRegex = new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+            private static readonly Regex popToVariableRegex = new Regex(@"^POP ['>]");
 
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
@@ -1404,7 +1414,7 @@ namespace Zilf.Emit.Zap
                         }
                     }
 
-                    if (Match(a => a.Code.Text.EndsWith(">STACK"), b => b.Code.Text.StartsWith("POP '")))
+                    if (Match(a => a.Code.Text.EndsWith(">STACK"), b => popToVariableRegex.IsMatch(b.Code.Text)))
                     {
                         // >STACK + POP 'dest => >dest
                         var a = matches[0].Code.Text;
@@ -1412,7 +1422,7 @@ namespace Zilf.Emit.Zap
                         return Combine2to1(a.Substring(0, a.Length - 5) + b.Substring(5));
                     }
 
-                    if (Match(a => a.Code.Text.StartsWith("PUSH "), b => b.Code.Text.StartsWith("POP '")))
+                    if (Match(a => a.Code.Text.StartsWith("PUSH "), b => popToVariableRegex.IsMatch(b.Code.Text)))
                     {
                         // PUSH + POP 'dest => SET 'dest
                         var a = matches[0].Code.Text;
