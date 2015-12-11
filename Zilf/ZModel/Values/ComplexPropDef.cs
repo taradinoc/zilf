@@ -468,7 +468,7 @@ namespace Zilf.ZModel.Values
 
                 case OutputElementType.Room:
                     if (ctx.ZEnvironment.ZVersion == 3 ||
-                        ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsLast ||
+                        ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsFirst ||
                         ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsAndLocalGlobalsFirst)
                     {
                         return 1;
