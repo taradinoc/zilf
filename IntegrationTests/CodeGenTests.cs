@@ -549,5 +549,35 @@ namespace IntegrationTests
                 "<COND (<BIND ((Y <* 2 .X>)) <G? .Y 123>> <RTRUE>)>")
                 .GeneratesCodeMatching(@"GRTR\? Y,123 (/TRUE|\\FALSE)");
         }
+
+        [TestMethod]
+        public void POP_In_V6_Stores()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<SET X <BIND ((F <FOO 0 0>)) <OR <FOO .F .F> 123>>>")
+                .WithGlobal("<ROUTINE FOO (X Y) <>>")
+                .InV6()
+                .GeneratesCodeMatching(@"POP >X");
+        }
+
+        [TestMethod]
+        public void IndirectStore_From_Stack_In_V5_Uses_POP()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<SETG .X <FOO>> <RTRUE>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .InV5()
+                .GeneratesCodeMatching(@"POP X");
+        }
+
+        [TestMethod]
+        public void IndirectStore_From_Stack_In_V6_Uses_SET()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<SETG .X <FOO>> <RTRUE>")
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .InV6()
+                .GeneratesCodeMatching(@"SET X,STACK");
+        }
     }
 }
