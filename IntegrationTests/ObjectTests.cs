@@ -544,6 +544,20 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void ROOM_In_PROPDEF_Should_Be_One_Byte_When_ORDER_OBJECTS_Is_ROOMS_FIRST()
+        {
+            AssertGlobals(
+                "<ORDER-OBJECTS? ROOMS-FIRST>",
+                "<DIRECTIONS NORTH>",
+                "<PROPDEF DIRECTIONS <> (DIR TO R:ROOM = (UEXIT 1) (REXIT <ROOM .R>))>",
+                "<OBJECT FOO (NORTH TO BAR)>",
+                "<OBJECT BAR>")
+                .InV5()
+                .Implies(
+                    "<=? <PTSIZE <GETPT ,FOO ,P?NORTH>> 1>");
+        }
+
+        [TestMethod]
         public void Duplicate_Property_Definitions_Should_Not_Be_Allowed()
         {
             // user-defined property
