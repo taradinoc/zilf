@@ -275,19 +275,21 @@ namespace Zapf
         {
             if (InVocab)
             {
+                // restore stream
                 byte[] buffer = ((MemoryStream)stream).GetBuffer();
                 int bufLen = (int)stream.Length;
 
                 stream = prevStream;
                 prevStream = null;
+                InVocab = false;
 
                 // sort vocab words
                 // we use an insertion sort because ZILF's vocab table is mostly sorted already
                 int records = bufLen / vocabRecSize;
                 byte[] temp = new byte[vocabRecSize];
 
-                int[] newIndex = new int[records];
-                newIndex[0] = 0;
+                int[] newIndexes = new int[records];
+                newIndexes[0] = 0;
 
                 for (int i = 1; i < records; i++)
                 {
@@ -300,13 +302,13 @@ namespace Zapf
                         Array.Copy(temp, 0, buffer, home * vocabRecSize, vocabRecSize);
 
                         for (int j = 0; j < i; j++)
-                            if (newIndex[j] >= home && newIndex[j] < i)
-                                newIndex[j]++;
-                        newIndex[i] = home;
+                            if (newIndexes[j] >= home && newIndexes[j] < i)
+                                newIndexes[j]++;
+                        newIndexes[i] = home;
                     }
                     else
                     {
-                        newIndex[i] = i;
+                        newIndexes[i] = i;
                     }
                 }
 
@@ -315,9 +317,7 @@ namespace Zapf
                 {
                     if (sym.Type == SymbolType.Label && sym.Value >= vocabStart && sym.Value < position)
                     {
-                        int offset = sym.Value - vocabStart;
-                        if (offset % vocabRecSize == 0)
-                            sym.Value = vocabStart + newIndex[offset / vocabRecSize] * vocabRecSize;
+                        sym.Value = MapVocabAddress(sym.Value, newIndexes);
                     }
                 }
 
@@ -335,13 +335,43 @@ namespace Zapf
 
                 if (stream != null)
                     stream.Write(buffer, 0, bufLen);
-            }
 
-            InVocab = false;
+                // apply fixups
+                var vocabEnd = position;
+                var goners = new HashSet<Fixup>();
+
+                foreach (var f in Fixups)
+                {
+                    if (f.Location >= vocabStart && f.Location < vocabEnd)
+                    {
+                        Symbol sym;
+                        if (GlobalSymbols.TryGetValue(f.Symbol, out sym) && sym.Type == SymbolType.Label &&
+                            sym.Value >= vocabStart && sym.Value < vocabEnd)
+                        {
+                            Position = MapVocabAddress(f.Location, newIndexes);
+                            WriteWord((ushort)sym.Value);
+                        }
+
+                        goners.Add(f);
+                    }
+                }
+
+                Fixups.RemoveAll(f => goners.Contains(f));
+                Position = vocabEnd;
+            }
 
             vocabStart = -1;
             vocabRecSize = 0;
             vocabKeySize = 0;
+        }
+
+        private int MapVocabAddress(int oldAddress, int[] newIndexes)
+        {
+            var oldOffsetFromVocab = oldAddress - vocabStart;
+            var oldIndex = oldOffsetFromVocab / vocabRecSize;
+            var offsetWithinEntry = oldOffsetFromVocab % vocabRecSize;
+            var newIndex = newIndexes[oldIndex];
+            return vocabStart + (newIndex * vocabRecSize) + offsetWithinEntry;
         }
 
         private int VocabSearch(byte[] buffer, int numRecs, int keyRec)
@@ -481,7 +511,12 @@ namespace Zapf
                 position = value;
 
                 if (stream != null)
+                {
+                    if (InVocab)
+                        throw new InvalidOperationException("Cannot seek while inside vocab section");
+
                     stream.Seek(value, SeekOrigin.Begin);
+                }
             }
         }
 

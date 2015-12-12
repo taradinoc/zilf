@@ -1068,10 +1068,24 @@ General switches:
                     }
                     if (node is ByteDirective)
                     {
+                        if (sym.Type == SymbolType.Label && ctx.InVocab)
+                        {
+                            Errors.ThrowFatal(elements[i], "global label refs inside vocab secion must be assembled as words");
+                        }
+
                         ctx.WriteByte((byte)sym.Value);
                     }
                     else
                     {
+                        if (sym.Type == SymbolType.Label && ctx.InVocab)
+                        {
+                            // global labels inside the vocab table need to be fixed up at .VOCEND,
+                            // since they may refer to other vocab words
+                            var fixup = new Fixup(sym.Name);
+                            fixup.Location = ctx.Position;
+                            ctx.Fixups.Add(fixup);
+                        }
+
                         ctx.WriteWord((ushort)sym.Value);
                     }
                 }

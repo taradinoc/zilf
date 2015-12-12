@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Zapf;
 
@@ -27,6 +28,12 @@ namespace ZapfTests
     internal static class TestHelper
     {
         public static bool Assemble(string code)
+        {
+            MemoryStream dummy;
+            return Assemble(code, out dummy);
+        }
+
+        public static bool Assemble(string code, out MemoryStream storyFile)
         {
             const string InputFileName = "Input.zap";
             const string OutputFileName = "Output.z#";
@@ -61,7 +68,19 @@ namespace ZapfTests
             };
 
             // run assembly
-            return assembler.Assemble(InputFileName, OutputFileName);
+            if (assembler.Assemble(InputFileName, OutputFileName))
+            {
+                storyFile = (from pair in outputFiles
+                             let ext = Path.GetExtension(pair.Key)
+                             where ext.Length == 3 && ext.StartsWith(".z")
+                             select pair.Value).Single();
+                return true;
+            }
+            else
+            {
+                storyFile = null;
+                return false;
+            }
         }
     }
 }
