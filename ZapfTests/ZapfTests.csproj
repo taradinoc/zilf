@@ -40,7 +40,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Reference\Antlr\Antlr3.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -48,11 +50,16 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestHelper.cs" />
     <Compile Include="LimitTests.cs" />
+    <Compile Include="VocabTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zapf\Zapf.csproj">
       <Project>{c4379053-b0c7-4826-ac41-cea59a743b15}</Project>
       <Name>Zapf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+      <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
+      <Name>Zilf.StringEncoding</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
