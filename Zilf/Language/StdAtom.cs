@@ -312,6 +312,7 @@ namespace Zilf.Language
         RETURN,
         [Atom("REVERSE-DEFINED")]
         REVERSE_DEFINED,
+        REWRITER,
         REXIT,
         RFALSE,
         ROOM,
