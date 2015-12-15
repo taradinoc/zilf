@@ -154,5 +154,25 @@ namespace IntegrationTests
                 .CapturingCompileOutput()
                 .Outputs("Hello from MDL\nHello from Z-machine\n");
         }
+
+        [TestMethod]
+        public void ROUTINE_REWRITER_Can_Rewrite_Routines()
+        {
+            const string SMyRewriter = @"
+<DEFINE MY-REWRITER (NAME ARGS BODY)
+    <COND (<N==? .NAME GO>
+           <SET BODY
+              (<FORM TELL ""Arg: "" <FORM LVAL <1 .ARGS>> CR>
+               <FORM BIND ((RES <FORM PROG '() !.BODY>)) <FORM TELL ""Return: "" N '.RES CR> '.RES>)>
+           <LIST .ARGS !.BODY>)>>";
+
+            AssertRoutine("NAME", "<TELL \"Hello, \" .NAME \".\" CR>")
+                .WithGlobal(SMyRewriter)
+                .WithGlobal("<PUTPROP ROUTINE REWRITER ,MY-REWRITER>")
+                .WhenCalledWith("\"world\"")
+                .Outputs("Arg: world\nHello, world.\nReturn: 1\n");
+
+            // TODO: make sure rewritten routine has the same routine flags as the original
+        }
     }
 }

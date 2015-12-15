@@ -1342,6 +1342,42 @@ namespace Zilf.Compiler
             }
         }
 
+        private static ZilRoutine MaybeRewriteRoutine(Context ctx, ZilRoutine origRoutine)
+        {
+            var rewriter = ctx.GetProp(ctx.GetStdAtom(StdAtom.ROUTINE), ctx.GetStdAtom(StdAtom.REWRITER)) as IApplicable;
+
+            if (rewriter != null)
+            {
+                var result = rewriter.ApplyNoEval(ctx, new ZilObject[] {
+                    origRoutine.Name,
+                    origRoutine.ArgSpec.ToZilList(),
+                    new ZilList(origRoutine.Body),
+                });
+
+                switch (result.GetTypeAtom(ctx).StdAtom)
+                {
+                    case StdAtom.LIST:
+                        var list = (ZilList)result;
+                        ZilList args, body;
+                        if (((IStructure)list).GetLength(1) <= 1 || (args = list.First as ZilList) == null ||
+                            args.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                        {
+                            throw new InterpreterError("routine rewriter result must contain an arg spec and a body");
+                        }
+                        body = list.Rest;
+                        return new ZilRoutine(origRoutine.Name, null, args, body, origRoutine.Flags);
+
+                    case StdAtom.FALSE:
+                        break;
+
+                    default:
+                        throw new InterpreterError("routine rewriter must return a LIST or FALSE");
+                }
+            }
+
+            return origRoutine;
+        }
+
         private static void BuildRoutine(CompileCtx cc, ZilRoutine routine,
             IGameBuilder gb, IRoutineBuilder rb, bool entryPoint)
         {
@@ -1349,6 +1385,9 @@ namespace Zilf.Compiler
             Contract.Requires(routine != null);
             Contract.Requires(gb != null);
             Contract.Requires(rb != null);
+
+            // give the user a chance to rewrite the routine
+            routine = MaybeRewriteRoutine(cc.Context, routine);
 
             // set up arguments and locals
             cc.Locals.Clear();
