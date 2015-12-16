@@ -53,6 +53,7 @@ namespace Zilf.Interpreter
             public int Offset;
             public ZilObject Decl;
             public ZilObject Default;
+            public bool NoDefault;
         }
 
         [FSubr]
@@ -277,6 +278,8 @@ namespace Zilf.Interpreter
             var resultInitializers = new StringBuilder();
             foreach (var arg in argspec)
             {
+                // NOTE: we don't handle NoDefault ('NONE) here because this ctor allocates a new object
+
                 // {0} = offset
                 // {1} = arg name
                 // {2} = default value
@@ -456,6 +459,7 @@ namespace Zilf.Interpreter
             // {4} = unparsed default value
             const string SExistingObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <SET SEEN <CONS {0} .SEEN>> <FORM {1} '.RESULT {2} .V>)";
             const string SExistingObjectDefaultTemplate = "<COND (<MEMQ {0} .SEEN> #SPLICE ()) (T <FORM {1} '.RESULT {2} {4}>)>";
+            const string SExistingObjectDefaultTemplate_NoDefault = "#SPLICE ()";
             const string SNewObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <SET SEEN <CONS {0} .SEEN>> <PUT .RESULT-INIT {2} .V>)";
             const string SNewObjectDefaultTemplate = "<OR <MEMQ {0} .SEEN> <PUT .RESULT-INIT {2} {4}>>";
             const string SBoaConstructorCondClauseTemplate = "(<=? .I {3}> <PUT .RESULT-INIT {2} .V>)";
@@ -482,7 +486,7 @@ namespace Zilf.Interpreter
                 }
 
                 existingObjectDefaults.AppendFormat(
-                    SExistingObjectDefaultTemplate,
+                    field.NoDefault ? SExistingObjectDefaultTemplate_NoDefault : SExistingObjectDefaultTemplate,
                     field.Name, field.PutFunc, field.Offset, definitionOrder, unparsedDefault);
                 newObjectDefaults.AppendFormat(
                     SNewObjectDefaultTemplate,
@@ -619,7 +623,10 @@ namespace Zilf.Interpreter
                             break;
 
                         case StdAtom.NONE:
-                            // nada
+                            if (gotDefault)
+                                throw new InterpreterError("DEFSTRUCT: 'NONE is not allowed after a default field value");
+                            result.NoDefault = true;
+                            gotDefault = true;
                             break;
 
                         default:
