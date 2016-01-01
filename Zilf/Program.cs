@@ -45,7 +45,11 @@ namespace Zilf
                 return 1;       // ParseArgs signaled an error
 
             if (!ctx.Quiet)
-                Console.WriteLine(VERSION);
+            {
+                Console.Write(VERSION);
+                Console.Write(" built ");
+                Console.WriteLine(RetrieveLinkerTimestamp());
+            }
 
             if (ctx.RunMode == RunMode.Interactive)
             {
@@ -171,6 +175,27 @@ namespace Zilf
             }
 
             return 0;
+        }
+
+        private static DateTime RetrieveLinkerTimestamp()
+        {
+            // http://stackoverflow.com/questions/1600962/displaying-the-build-date
+            string filePath = System.Reflection.Assembly.GetCallingAssembly().Location;
+            const int c_PeHeaderOffset = 60;
+            const int c_LinkerTimestampOffset = 8;
+            byte[] b = new byte[2048];
+
+            using (var s = new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+            {
+                s.Read(b, 0, 2048);
+            }
+
+            int i = System.BitConverter.ToInt32(b, c_PeHeaderOffset);
+            int secondsSince1970 = System.BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
+            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0);
+            dt = dt.AddSeconds(secondsSince1970);
+            dt = dt.ToLocalTime();
+            return dt;
         }
 
         private static Context ParseArgs(string[] args, out string inFile, out string outFile)
