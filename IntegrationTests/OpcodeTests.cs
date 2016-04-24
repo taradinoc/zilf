@@ -1446,6 +1446,9 @@ namespace IntegrationTests
         {
             AssertExpr("<NOT>").DoesNotCompile();
             AssertExpr("<NOT 0 0>").DoesNotCompile();
+
+            AssertExpr("<COND (<NOT>)>").DoesNotCompile();
+            AssertExpr("<COND (<NOT 0 0>)>").DoesNotCompile();
         }
 
         [TestMethod]
