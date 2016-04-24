@@ -2273,11 +2273,25 @@ namespace Zilf.Compiler
             {
                 case StdAtom.NOT:
                 case StdAtom.F_P:
-                    CompileCondition(cc, rb, args[0], form.SourceLine, label, !polarity);
+                    if (args.Length == 1)
+                    {
+                        CompileCondition(cc, rb, args[0], form.SourceLine, label, !polarity);
+                    }
+                    else
+                    {
+                        Errors.CompError(cc.Context, expr.SourceLine ?? src, "NOT/F? requires exactly one argument");
+                    }
                     break;
 
                 case StdAtom.T_P:
-                    CompileCondition(cc, rb, args[0], form.SourceLine, label, polarity);
+                    if (args.Length == 1)
+                    {
+                        CompileCondition(cc, rb, args[0], form.SourceLine, label, polarity);
+                    }
+                    else
+                    {
+                        Errors.CompError(cc.Context, expr.SourceLine ?? src, "NOT/F? requires exactly one argument");
+                    }
                     break;
 
                 case StdAtom.OR:
