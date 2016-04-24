@@ -198,11 +198,23 @@ red cube: Taken.|">
     <EXPECT "You pick up the blue cube.|">
     <CHECK <IN? ,BLUE-CUBE ,WINNER>>>
 
-<TEST-CASE ("Missing second noun")
+<TEST-CASE ("Missing noun: number")
+    <COMMAND [GET]>
+    <EXPECT "What do you want to get?|">
+    <COMMAND ["244"]>
+    <EXPECT "That's not something you can pick up.|">>
+
+<TEST-CASE ("Missing second noun: single object")
     <COMMAND [THROW RED CUBE]>
     <EXPECT "[taking the red cube]|What do you want to throw the red cube at?|">
     <COMMAND [BLUE CUBE]>
     <EXPECT "Taking your frustration out on the blue cube doesn't seem like it will help.|">>
+
+<TEST-CASE ("Missing second noun: number")
+    <COMMAND [THROW RED CUBE]>
+    <EXPECT "[taking the red cube]|What do you want to throw the red cube at?|">
+    <COMMAND ["244"]>
+    <EXPECT "Taking your frustration out on the number doesn't seem like it will help.|">>
 
 <TEST-CASE ("GWIMmed PRSO, disambiguated PRSI")
     <MOVE ,BLUE-CUBE ,WINNER>
