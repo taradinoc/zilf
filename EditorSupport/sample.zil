@@ -103,6 +103,8 @@ lines">
 #BYTE 255
 #HASH ATOM
 
+"=== False ==="
+<>
 
 "=== Atoms ==="
 FOO
@@ -118,7 +120,7 @@ ATOM\ WITH\ INNER\ SPACES
 
 "=== Atoms that start out looking like numbers ==="
 1234567890?
--1234567890?		
+-1234567890?
 123-
 -123-
 --123
