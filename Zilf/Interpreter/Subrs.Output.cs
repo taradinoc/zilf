@@ -395,8 +395,8 @@ namespace Zilf.Interpreter
             var position = args[0] as ZilFix;
             if (position == null)
                 throw new InterpreterError("INDENT-TO: first arg must be a FIX");
-            if (position.Value <= 0)
-                throw new InterpreterError("INDENT:TO: first arg must be positive");
+            if (position.Value < 0)
+                throw new InterpreterError("INDENT-TO: first arg must be non-negative");
 
             ZilChannel channel;
             if (args.Length < 2)
