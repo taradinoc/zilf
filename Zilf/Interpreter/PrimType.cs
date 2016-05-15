@@ -41,7 +41,7 @@ namespace Zilf.Interpreter
         /// </summary>
         LIST,
         /// <summary>
-        /// The primitive type is <see cref="ZilTable"/>.
+        /// The primitive type is <see cref="ZModel.Values.ZilTable"/>.
         /// </summary>
         TABLE,
         /// <summary>
