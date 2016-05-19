@@ -52,8 +52,8 @@ namespace ZilfTests.Interpreter
                 new ZilFix(2),
             }));
             ctx.SetLocalVal(ZilAtom.Parse("A-STRING", ctx), ZilString.FromString("hello"));
-            ctx.SetLocalVal(ZilAtom.Parse("A-SUBR", ctx), new ZilSubr(Subrs.Plus));
-            ctx.SetLocalVal(ZilAtom.Parse("A-FSUBR", ctx), new ZilFSubr(Subrs.QUOTE));
+            ctx.SetLocalVal(ZilAtom.Parse("A-SUBR", ctx), ZilSubr.FromString(ctx, "+"));
+            ctx.SetLocalVal(ZilAtom.Parse("A-FSUBR", ctx), ZilFSubr.FromString(ctx, "QUOTE"));
             ctx.SetLocalVal(ZilAtom.Parse("A-FUNCTION", ctx), new ZilFunction(
                 ZilAtom.Parse("MYFUNC", ctx),
                 null,
@@ -140,9 +140,11 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TYPE '(1 2)>", ctx.GetStdAtom(StdAtom.LIST));
             TestHelpers.EvalAndAssert(ctx, "<TYPE '<+ 1 2>>", ctx.GetStdAtom(StdAtom.FORM));
             TestHelpers.EvalAndAssert(ctx, "<TYPE \"HELLO\">", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #SUBR \"+\">", ctx.GetStdAtom(StdAtom.SUBR));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE #FSUBR \"QUOTE\">", ctx.GetStdAtom(StdAtom.FSUBR));
             TestHelpers.EvalAndAssert(ctx, "<TYPE '!<FOO>>", ctx.GetStdAtom(StdAtom.SEGMENT));
             TestHelpers.EvalAndAssert(ctx, "<TYPE [1 2 3]>", ctx.GetStdAtom(StdAtom.VECTOR));
-            // no literals for SUBR, FSUBR, FUNCTION, MACRO, WACKY
+            // no literals for FUNCTION, MACRO, WACKY
 
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<TYPE>");
@@ -397,7 +399,7 @@ namespace ZilfTests.Interpreter
         {
             // string-based types can be coerced to STRING
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SUBR STRING>",
-                ZilString.FromString("Plus"));
+                ZilString.FromString("+"));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR STRING>",
                 ZilString.FromString("QUOTE"));
 
@@ -419,10 +421,10 @@ namespace ZilfTests.Interpreter
         public void TestCHTYPE_to_SUBR()
         {
             // string-based types can be coerced to SUBR if they name an appropriate Subrs method
-            TestHelpers.EvalAndAssert(ctx, "<CHTYPE \"Plus\" SUBR>",
-                new ZilSubr(Subrs.Plus));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE \"+\" SUBR>",
+                ZilSubr.FromString(ctx, "+"));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FSUBR SUBR>",
-                new ZilSubr(Subrs.QUOTE));
+                ZilSubr.FromString(ctx, "QUOTE"));
 
             // arbitrary strings and non-matching methods can't
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"\" SUBR>");
@@ -448,9 +450,9 @@ namespace ZilfTests.Interpreter
         {
             // string-based types can be coerced to FSUBR if they name an appropriate Subrs method
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE \"DEFINE\" FSUBR>",
-                new ZilFSubr(Subrs.DEFINE));
+                ZilFSubr.FromString(ctx, "DEFINE"));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SUBR FSUBR>",
-                new ZilFSubr(Subrs.Plus));
+                ZilFSubr.FromString(ctx, "+"));
 
             // arbitrary strings and non-matching methods can't
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE \"\" FSUBR>");
@@ -515,8 +517,8 @@ namespace ZilfTests.Interpreter
                     null,
                     new ZilObject[] { },
                     new ZilObject[] { new ZilFix(3) })));
-            TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"Plus\"> MACRO>",
-                new ZilEvalMacro(new ZilSubr(Subrs.Plus)));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"+\"> MACRO>",
+                new ZilEvalMacro(ZilSubr.FromString(ctx, "+")));
 
             // arbitrary lists and other values can't
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL MACRO>");

@@ -26,6 +26,7 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        // TODO: clean up arg handling for DEFINE
         [FSubr]
         public static ZilObject DEFINE(Context ctx, ZilObject[] args)
         {
@@ -151,50 +152,39 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject QUOTE(Context ctx, ZilObject[] args)
+        public static ZilObject QUOTE(Context ctx, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("QUOTE", 1, 1);
-
-            return args[0];
+            return value;
         }
 
         [Subr]
-        public static ZilObject EVAL(Context ctx, ZilObject[] args)
+        public static ZilObject EVAL(Context ctx, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("EVAL", 1, 1);
-
-            return args[0].Eval(ctx);
+            return value.Eval(ctx);
         }
 
         [Subr("EVAL-IN-SEGMENT")]
-        public static ZilObject EVAL_IN_SEGMENT(Context ctx, ZilObject[] args)
+        public static ZilObject EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
+            ZilObject value, ZilObject dummy2 = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError("EVAL-IN-SEGMENT", 2, 3);
-
-            return args[1].Eval(ctx);
+            return value.Eval(ctx);
         }
 
         [Subr]
-        public static ZilObject EXPAND(Context ctx, ZilObject[] args)
+        public static ZilObject EXPAND(Context ctx, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("EXPAND", 1, 1);
+            var result = value.Expand(ctx);
 
-            var result = args[0].Expand(ctx);
-
-            if (result == args[0])
-                result = args[0].Eval(ctx);
+            if (result == value)
+                result = value.Eval(ctx);
 
             return result;
         }

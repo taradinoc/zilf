@@ -27,16 +27,9 @@ namespace Zilf.Interpreter
         [Subr]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
-        public static ZilObject PACKAGE(Context ctx, ZilObject[] args)
+        public static ZilObject PACKAGE(Context ctx, string pname)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("PACKAGE", 1, 1);
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
-                throw new InterpreterError("PACKAGE: arg must be a string");
-
-            var pname = ((ZilString)args[0]).Text;
+            SubrContracts(ctx);
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
@@ -48,7 +41,7 @@ namespace Zilf.Interpreter
             var iname = "I" + pname;
             var internalAtom = externalObList[iname];
             var internalObList = ctx.GetProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-            if (internalObList== null)
+            if (internalObList == null)
                 internalObList = ctx.MakeObList(internalAtom);
 
             // new oblist path
@@ -96,11 +89,11 @@ namespace Zilf.Interpreter
         [Subr]
         [Subr("END-DEFINITIONS")]
         [Subr("ENDSECTION")]
-        public static ZilObject ENDPACKAGE(Context ctx, ZilObject[] args)
+        public static ZilObject ENDPACKAGE(Context ctx)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return ENDBLOCK(ctx, args);
+            return ENDBLOCK(ctx);
         }
 
         [Subr]
