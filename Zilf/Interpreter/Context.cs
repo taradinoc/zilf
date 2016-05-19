@@ -68,6 +68,7 @@ namespace Zilf.Interpreter
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
         private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
+        private readonly Dictionary<string, SubrDelegate> subrDelegates;
         private readonly ZEnvironment zenv;
 
         private RoutineFlags nextRoutineFlags;
@@ -108,6 +109,7 @@ namespace Zilf.Interpreter
             localValues = new Dictionary<ZilAtom, Binding>();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
+            subrDelegates = new Dictionary<string, SubrDelegate>();
 
             zenv = new ZEnvironment(this);
 
@@ -368,13 +370,11 @@ namespace Zilf.Interpreter
         private void InitPackages()
         {
             var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH", "ZIL" };
-            ZilObject[] args0 = new ZilObject[0], args1 = new ZilObject[1];
 
             foreach (var name in emptyPackageNames)
             {
-                args1[0] = ZilString.FromString(name);
-                Subrs.PACKAGE(this, args1);
-                Subrs.ENDPACKAGE(this, args0);
+                Subrs.PACKAGE(this, name);
+                Subrs.ENDPACKAGE(this);
             }
 
             SetGlobalVal(ZilAtom.Parse("ZILCH!-ZILCH!-PACKAGE", this), TRUE);
@@ -391,24 +391,32 @@ namespace Zilf.Interpreter
                 if (attrs.Length == 0)
                     continue;
 
-                Subrs.SubrDelegate del =
-                    (Subrs.SubrDelegate)Delegate.CreateDelegate(typeof(Subrs.SubrDelegate), mi);
+                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi);
 
                 foreach (Subrs.SubrAttribute attr in attrs)
                 {
+                    string name = attr.Name ?? mi.Name;
+
+                    subrDelegates.Add(name, del);
+
                     ZilSubr sub;
                     if (attr is Subrs.FSubrAttribute)
-                        sub = new ZilFSubr(del);
+                        sub = new ZilFSubr(name, del);
                     else
-                        sub = new ZilSubr(del);
-
-                    string name = attr.Name ?? mi.Name;
+                        sub = new ZilSubr(name, del);
 
                     // can't use ZilAtom.Parse here because the OBLIST path isn't set up
                     ZilAtom atom = rootObList[name];
                     globalValues.Add(atom, sub);
                 }
             }
+        }
+
+        public SubrDelegate GetSubrDelegate(string name)
+        {
+            SubrDelegate result;
+            subrDelegates.TryGetValue(name, out result);
+            return result;
         }
 
         private void InitConstants()

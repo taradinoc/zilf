@@ -26,17 +26,9 @@ namespace Zilf.Interpreter
     {
         [Subr]
         [Subr("PNAME")]
-        public static ZilObject SPNAME(Context ctx, ZilObject[] args)
+        public static ZilObject SPNAME(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("SPNAME", 1, 1);
-
-            ZilAtom atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("SPNAME: arg must be an atom");
-
+            SubrContracts(ctx);
             return ZilString.FromString(atom.Text);
         }
 
@@ -101,82 +93,46 @@ namespace Zilf.Interpreter
         // TODO: implement LPARSE?
 
         [Subr]
-        public static ZilObject UNPARSE(Context ctx, ZilObject[] args)
+        public static ZilObject UNPARSE(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // in MDL, this takes an optional second argument (radix), but we don't bother
 
-            if (args.Length != 1)
-                throw new InterpreterError("UNPARSE", 1, 1);
-
-            return ZilString.FromString(args[0].ToStringContext(ctx, false));
+            return ZilString.FromString(arg.ToStringContext(ctx, false));
         }
 
         [Subr]
-        public static ZilObject LOOKUP(Context ctx, ZilObject[] args)
+        public static ZilObject LOOKUP(Context ctx, string str, ObList oblist)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 2)
-                throw new InterpreterError("LOOKUP", 2, 2);
-
-            var str = args[0] as ZilString;
-            if (str == null)
-                throw new InterpreterError("LOOKUP: first arg must be a string");
-
-            var oblist = args[1] as ObList;
-            if (oblist == null)
-                throw new InterpreterError("LOOKUP: second arg must be an OBLIST");
-
-            return oblist.Contains(str.Text) ? oblist[str.Text] : ctx.FALSE;
+            SubrContracts(ctx);
+            return oblist.Contains(str) ? oblist[str] : ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject INSERT(Context ctx, ZilObject[] args)
+        public static ZilObject INSERT(Context ctx, string str, ObList oblist)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("INSERT", 2, 2);
+            if (oblist.Contains(str))
+                throw new InterpreterError(string.Format(
+                    "INSERT: OBLIST already contains an atom named '{0}'", str));
 
-            // TODO: support atom form of INSERT?
-            var str = args[0] as ZilString;
-            if (str == null)
-                throw new InterpreterError("INSERT: first arg must be a string");
-
-            var oblist = args[1] as ObList;
-            if (oblist == null)
-                throw new InterpreterError("INSERT: second arg must be an OBLIST");
-
-            if (oblist.Contains(str.Text))
-                throw new InterpreterError(string.Format("INSERT: OBLIST already contains an atom named '{0}'", str.Text));
-
-            return oblist[str.Text];
+            return oblist[str];
         }
 
         [Subr]
-        public static ZilObject ROOT(Context ctx, ZilObject[] args)
+        public static ZilObject ROOT(Context ctx)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 0)
-                throw new InterpreterError("ROOT", 0, 0);
+            SubrContracts(ctx);
 
             return ctx.RootObList;
         }
 
         [Subr]
-        public static ZilObject MOBLIST(Context ctx, ZilObject[] args)
+        public static ZilObject MOBLIST(Context ctx, ZilAtom name)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("MOBLIST", 1, 1);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("MOBLIST: arg must be an atom");
+            SubrContracts(ctx);
 
             ObList result = ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
             if (result == null)
@@ -186,45 +142,31 @@ namespace Zilf.Interpreter
         }
 
         [Subr("OBLIST?")]
-        public static ZilObject OBLIST_P(Context ctx, ZilObject[] args)
+        public static ZilObject OBLIST_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("OBLIST?", 1, 1);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("OBLIST?: arg must be an atom");
+            SubrContracts(ctx);
 
             return atom.ObList ?? ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject BLOCK(Context ctx, ZilObject[] args)
+        public static ZilObject BLOCK(Context ctx, ZilList list)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("BLOCK", 1, 1);
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("BLOCK: arg must be a list");
-
-            ctx.PushObPath((ZilList)args[0]);
-            return args[0];
+            ctx.PushObPath(list);
+            return list;
         }
 
         [Subr]
-        public static ZilObject ENDBLOCK(Context ctx, ZilObject[] args)
+        public static ZilObject ENDBLOCK(Context ctx)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 0)
-                throw new InterpreterError("ENDBLOCK", 0, 0);
+            SubrContracts(ctx);
 
             return ctx.PopObPath();
         }
 
+        // TODO: clean up arg handling for SETG
         [Subr]
         public static ZilObject SETG(Context ctx, ZilObject[] args)
         {
@@ -267,53 +209,31 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject SET(Context ctx, ZilObject[] args)
+        public static ZilObject SET(Context ctx, ZilAtom atom, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("SET", 2, 2);
-
-            if (!(args[0] is ZilAtom))
-                throw new InterpreterError("SET: first arg must be an atom");
-
-            if (args[1] == null)
-                throw new ArgumentNullException();
-
-            ctx.SetLocalVal((ZilAtom)args[0], args[1]);
-            return args[1];
+            ctx.SetLocalVal(atom, value);
+            return value;
         }
 
         [Subr]
-        public static ZilObject GVAL(Context ctx, ZilObject[] args)
+        public static ZilObject GVAL(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("GVAL", 1, 1);
-
-            if (!(args[0] is ZilAtom))
-                throw new InterpreterError("GVAL: arg must be an atom");
-
-            ZilObject result = ctx.GetGlobalVal((ZilAtom)args[0]);
+            ZilObject result = ctx.GetGlobalVal(atom);
             if (result == null)
                 throw new InterpreterError("atom has no global value: " +
-                    args[0].ToStringContext(ctx, false));
+                    atom.ToStringContext(ctx, false));
 
             return result;
         }
 
         [Subr("GASSIGNED?")]
-        public static ZilObject GASSIGNED_P(Context ctx, ZilObject[] args)
+        public static ZilObject GASSIGNED_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("GASSIGNED?", 1, 1);
-
-            ZilAtom atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("GASSIGNED?: arg must be an atom");
+            SubrContracts(ctx);
 
             return ctx.GetGlobalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
@@ -328,78 +248,56 @@ namespace Zilf.Interpreter
         }
 
         [Subr("DECL?")]
-        public static ZilObject DECL_P(Context ctx, ZilObject[] args)
+        public static ZilObject DECL_P(Context ctx, ZilObject value, ZilObject pattern)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("DECL?", 2, 2);
-
-            return Decl.Check(ctx, args[0], args[1]) ? ctx.TRUE : ctx.FALSE;
+            return Decl.Check(ctx, value, pattern) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("PUT-DECL")]
-        public static ZilObject PUT_DECL(Context ctx, ZilObject[] args)
+        public static ZilObject PUT_DECL(Context ctx, ZilObject item, ZilObject pattern)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("PUT-DECL", 2, 2);
-
-            return PUTPROP(ctx, new ZilObject[] { args[0], ctx.GetStdAtom(StdAtom.DECL), args[1] });
+            return PUTPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL), pattern);
         }
 
         [Subr]
-        public static ZilObject LVAL(Context ctx, ZilObject[] args)
+        public static ZilObject LVAL(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("LVAL", 1, 1);
-
-            if (!(args[0] is ZilAtom))
-                throw new InterpreterError("LVAL: arg must be an atom");
-
-            ZilObject result = ctx.GetLocalVal((ZilAtom)args[0]);
+            ZilObject result = ctx.GetLocalVal(atom);
             if (result == null)
                 throw new InterpreterError("atom has no local value: " +
-                    args[0].ToStringContext(ctx, false));
+                    atom.ToStringContext(ctx, false));
 
             return result;
         }
 
         [Subr("ASSIGNED?")]
-        public static ZilObject ASSIGNED_P(Context ctx, ZilObject[] args)
+        public static ZilObject ASSIGNED_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("ASSIGNED?", 1, 1);
-
-            ZilAtom atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("ASSIGNED?: arg must be an atom");
+            SubrContracts(ctx);
 
             return ctx.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject GETPROP(Context ctx, ZilObject[] args)
+        public static ZilObject GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject wtf = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError("GETPROP", 2, 3);
-
-            var result = ctx.GetProp(args[0], args[1]);
+            var result = ctx.GetProp(item, indicator);
 
             if (result != null)
             {
                 return result;
             }
-            else if (args.Length > 2)
+            else if (wtf != null)
             {
-                return args[2].Eval(ctx);
+                return wtf.Eval(ctx);
             }
             else
             {
@@ -408,25 +306,22 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject PUTPROP(Context ctx, ZilObject[] args)
+        public static ZilObject PUTPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject value = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError("PUTPROP", 2, 3);
-
-            if (args.Length == 2)
+            if (value == null)
             {
                 // clear, and return previous value or <>
-                var result = ctx.GetProp(args[0], args[1]);
-                ctx.PutProp(args[0], args[1], null);
+                var result = ctx.GetProp(item, indicator);
+                ctx.PutProp(item, indicator, null);
                 return result ?? ctx.FALSE;
             }
             else
             {
                 // set, and return first arg
-                ctx.PutProp(args[0], args[1], args[2]);
-                return args[0];
+                ctx.PutProp(item, indicator, value);
+                return item;
             }
         }
     }

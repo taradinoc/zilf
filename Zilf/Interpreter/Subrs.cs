@@ -22,10 +22,10 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
+    delegate ZilObject SubrDelegate(string name, Context ctx, ZilObject[] args);
+
     static partial class Subrs
     {
-        public delegate ZilObject SubrDelegate(Context ctx, ZilObject[] args);
-
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public class SubrAttribute : Attribute
         {
@@ -68,7 +68,11 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
         }
 
-
-
+        [ContractAbbreviator]
+        private static void SubrContracts(Context ctx)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+        }
     }
 }

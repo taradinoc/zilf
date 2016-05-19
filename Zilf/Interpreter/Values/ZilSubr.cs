@@ -26,10 +26,12 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.SUBR, PrimType.STRING)]
     class ZilSubr : ZilObject, IApplicable
     {
-        protected readonly Subrs.SubrDelegate handler;
+        protected readonly string name;
+        protected readonly SubrDelegate handler;
 
-        public ZilSubr(Subrs.SubrDelegate handler)
+        public ZilSubr(string name, SubrDelegate handler)
         {
+            this.name = name;
             this.handler = handler;
         }
 
@@ -38,26 +40,28 @@ namespace Zilf.Interpreter.Values
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
+            Contract.Ensures(Contract.Result<ZilSubr>() != null);
 
-            var name = str.ToStringContext(ctx, true);
-            MethodInfo mi = typeof(Subrs).GetMethod(name, BindingFlags.Static | BindingFlags.Public);
-            if (mi != null)
+            return FromString(ctx, str.ToStringContext(ctx, true));
+        }
+
+        public static ZilSubr FromString(Context ctx, string name)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ZilSubr>() != null);
+
+            var del = ctx.GetSubrDelegate(name);
+            if (del != null)
             {
-                object[] attrs = mi.GetCustomAttributes(typeof(Subrs.SubrAttribute), false);
-                if (attrs.Length == 1)
-                {
-                    Subrs.SubrDelegate del = (Subrs.SubrDelegate)Delegate.CreateDelegate(
-                        typeof(Subrs.SubrDelegate), mi);
-
-                    return new ZilSubr(del);
-                }
+                return new ZilSubr(name, del);
             }
             throw new InterpreterError("unrecognized SUBR name: " + name);
         }
 
         public override string ToString()
         {
-            return "#SUBR \"" + handler.Method.Name + "\"";
+            return $"#SUBR \"{name}\"";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -72,19 +76,19 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            return ZilString.FromString(handler.Method.Name);
+            return ZilString.FromString(name);
         }
 
         public virtual ZilObject Apply(Context ctx, ZilObject[] args)
         {
-            var result = handler(ctx, EvalSequence(ctx, args).ToArray());
+            var result = handler(name, ctx, EvalSequence(ctx, args).ToArray());
             Contract.Assume(result != null);
             return result;
         }
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            var result = handler(ctx, args);
+            var result = handler(name, ctx, args);
             Contract.Assume(result != null);
             return result;
         }
@@ -92,7 +96,12 @@ namespace Zilf.Interpreter.Values
         public override bool Equals(object obj)
         {
             ZilSubr other = obj as ZilSubr;
-            return other != null && other.GetType() == this.GetType() && other.handler.Equals(this.handler);
+
+            return
+                other != null &&
+                other.GetType() == this.GetType() &&
+                other.name.Equals(this.name) &&
+                other.handler.Equals(this.handler);
         }
 
         public override int GetHashCode()

@@ -25,8 +25,8 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FSUBR, PrimType.STRING)]
     class ZilFSubr : ZilSubr, IApplicable
     {
-        public ZilFSubr(Subrs.SubrDelegate handler)
-            : base(handler)
+        public ZilFSubr(string name, SubrDelegate handler)
+            : base(name, handler)
         {
         }
 
@@ -37,25 +37,26 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(str != null);
             Contract.Ensures(Contract.Result<ZilFSubr>() != null);
 
-            var name = str.ToStringContext(ctx, true);
-            MethodInfo mi = typeof(Subrs).GetMethod(name, BindingFlags.Static | BindingFlags.Public);
-            if (mi != null)
-            {
-                object[] attrs = mi.GetCustomAttributes(typeof(Subrs.SubrAttribute), false);
-                if (attrs.Length == 1)
-                {
-                    Subrs.SubrDelegate del = (Subrs.SubrDelegate)Delegate.CreateDelegate(
-                        typeof(Subrs.SubrDelegate), mi);
+            return FromString(ctx, str.ToStringContext(ctx, true));
+        }
 
-                    return new ZilFSubr(del);
-                }
+        public static new ZilFSubr FromString(Context ctx, string name)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ZilFSubr>() != null);
+
+            var del = ctx.GetSubrDelegate(name);
+            if (del != null)
+            {
+                return new ZilFSubr(name, del);
             }
             throw new InterpreterError("unrecognized FSUBR name: " + name);
         }
 
         public override string ToString()
         {
-            return "#FSUBR \"" + handler.Method.Name + "\"";
+            return $"#FSUBR \"{name}\"";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
