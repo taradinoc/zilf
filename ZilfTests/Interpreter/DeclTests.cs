@@ -60,5 +60,18 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DECL? '<OR FIX FALSE> ''<OR FIX FALSE>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? 123 ''<OR FIX FALSE>>", ctx.FALSE);
         }
+
+        [TestMethod]
+        public void Test_Segment_DECL()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '<LIST FIX FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '!<LIST FIX FIX>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2) '!<LIST FIX FIX>>", ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2) '!<LIST [REST FIX FIX]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '!<LIST [REST FIX FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3 4) '!<LIST [REST FIX FIX]>>", ctx.TRUE);
+        }
     }
 }
