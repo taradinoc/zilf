@@ -293,7 +293,7 @@ namespace Zilf.Interpreter
                 // decode as a ZilObject[] containing all remaining args
                 defaultValue = EmptyZilObjectArray;
 
-                return new DecodingStepInfo
+                result = new DecodingStepInfo
                 {
                     Step = (a, i, c) =>
                     {
@@ -342,15 +342,34 @@ namespace Zilf.Interpreter
 
                 cb.AddDeclConstraint(declWrapper);
 
-                result.Step = (a, i, c) =>
+                // for array (varargs) parameters, the decl is checked against a LIST containing all the args
+                if (pi.ParameterType.IsArray)
                 {
-                    if (!Decl.Check(c.Context, a[i], declWrapper.GetPattern(c.Context)))
+                    result.Step = (a, i, c) =>
                     {
-                        c.Error(errmsg);
-                    }
+                        var prevConsumed = prevStep(a, i, c);
+                        var list = new ZilList(a.Skip(i).Take(prevConsumed));
 
-                    return prevStep(a, i, c);
-                };
+                        if (!Decl.Check(c.Context, list, declWrapper.GetPattern(c.Context)))
+                        {
+                            c.Error(errmsg);
+                        }
+
+                        return prevConsumed;
+                    };
+                }
+                else
+                {
+                    result.Step = (a, i, c) =>
+                    {
+                        if (!Decl.Check(c.Context, a[i], declWrapper.GetPattern(c.Context)))
+                        {
+                            c.Error(errmsg);
+                        }
+
+                        return prevStep(a, i, c);
+                    };
+                }
             }
 
             if (pi.IsOptional)
@@ -511,6 +530,12 @@ namespace Zilf.Interpreter
                 var next = step(args, argIndex, callbacks);
                 Contract.Assert(next >= argIndex);
                 argIndex = next;
+            }
+
+            if (argIndex < args.Length)
+            {
+                // TODO: clarify error message (argument count might be fine but types are wrong)
+                throw new ArgumentCountError(name, lowerBound, upperBound ?? 0, argIndex);
             }
 
             return result.ToArray();

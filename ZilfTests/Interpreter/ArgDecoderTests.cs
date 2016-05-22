@@ -247,6 +247,18 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_OptionalArg_TooManyArgs()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntArg));
+
+            ZilObject[] args = { ZilString.FromString("not an int") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        [TestMethod]
         public void Test_DeclArg_Pass()
         {
             var methodInfo = GetMethod(nameof(Dummy_DeclArg));
@@ -292,6 +304,49 @@ namespace ZilfTests.Interpreter
         }
 
         private ZilObject Dummy_MultiOptionalDeclArgs(Context ctx, [Decl("'1")] int one = 1, [Decl("'2")] int two = 2)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_DeclArg_VarArgs_Pass()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_DeclVarArgs));
+
+            ZilObject[] args = {
+                new ZilFix(1),
+                ZilAtom.Parse("MONEY", ctx),
+                new ZilFix(2),
+                ZilAtom.Parse("SHOW", ctx),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+
+            Assert.AreEqual(actual.Length, 2);
+            Assert.AreEqual(actual[0], ctx);
+            Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
+            CollectionAssert.AreEqual(args, (ZilObject[])actual[1]);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
+        public void Test_DeclArg_VarArgs_Fail()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_DeclVarArgs));
+
+            ZilObject[] args = {
+                new ZilFix(1),
+                new ZilFix(2),
+                ZilAtom.Parse("MONEY", ctx),
+                ZilAtom.Parse("SHOW", ctx),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        private ZilObject Dummy_DeclVarArgs(Context ctx, [Decl("<LIST [REST FIX ATOM]>")] ZilObject[] args)
         {
             return null;
         }

@@ -32,7 +32,9 @@ namespace Zilf.Language
 
             ZilAtom atom;
 
-            switch (pattern.GetTypeAtom(ctx).StdAtom)
+            var ptype = pattern.GetTypeAtom(ctx).StdAtom;
+
+            switch (ptype)
             {
                 case StdAtom.ATOM:
                     atom = (ZilAtom)pattern;
@@ -47,6 +49,10 @@ namespace Zilf.Language
                         default:
                             return (value.GetTypeAtom(ctx) == atom);
                     }
+
+                case StdAtom.SEGMENT:
+                    pattern = ((ZilSegment)pattern).Form;
+                    goto case StdAtom.FORM;
 
                 case StdAtom.FORM:
                     atom = ((ZilForm)pattern).First as ZilAtom;
@@ -94,6 +100,13 @@ namespace Zilf.Language
 
                                                 structure = structure.GetRest(1);
                                             }
+
+                                            // !<FOO [REST A B C]> must repeat A B C a whole number of times
+                                            if (ptype == StdAtom.SEGMENT && i != 1)
+                                            {
+                                                return false;
+                                            }
+
                                             return true;
                                         }
                                         else
@@ -108,6 +121,11 @@ namespace Zilf.Language
 
                                         structure = structure.GetRest(1);
                                     }
+                                }
+
+                                if (ptype == StdAtom.SEGMENT && !structure.IsEmpty())
+                                {
+                                    return false;
                                 }
 
                                 return true;

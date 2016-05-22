@@ -195,6 +195,22 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestGDECL()
+        {
+            var ctx = new Context();
+
+            TestHelpers.EvalAndAssert(ctx, "<GDECL (FOO) BAR>", ctx.FALSE);
+
+            // must have an even number of arguments
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<GDECL (FOO)>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<GDECL (FOO) BAR (BAZ)>");
+
+            // odd numbered arguments must be lists of atoms
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<GDECL FOO BAR>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<GDECL [FOO] BAR>");
+        }
+
+        [TestMethod]
         public void TestLOOKUP()
         {
             var ctx = new Context();

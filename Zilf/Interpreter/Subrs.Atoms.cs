@@ -193,7 +193,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject GDECL(Context ctx, ZilObject[] args)
+        public static ZilObject GDECL(Context ctx, [Decl("!<LIST [REST <LIST [REST ATOM]> ANY]>")] ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
