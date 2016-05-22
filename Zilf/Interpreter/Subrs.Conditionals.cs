@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -24,36 +25,24 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [FSubr]
-        public static ZilObject COND(Context ctx, [Decl("<LIST ANY>"), Required] ZilObject[] /*XXX ZilList[] */ args)
+        public static ZilObject COND(Context ctx, [Decl("<LIST <LIST ANY> [REST <LIST ANY>]>")] ZilList[] args)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length < 1)
-                throw new InterpreterError("COND", 1, 0);
+            SubrContracts(ctx);
+            Contract.Requires(Contract.ForAll(args, a => a != null && !a.IsEmpty));
 
             ZilObject result = null;
 
-            foreach (ZilObject zo in args)
+            foreach (ZilList zl in args)
             {
-                if (zo.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+                result = zl.First.Eval(ctx);
+
+                if (result.IsTrue)
                 {
-                    ZilList zl = (ZilList)zo;
+                    foreach (ZilObject inner in zl.Skip(1))
+                        result = inner.Eval(ctx);
 
-                    if (zl.IsEmpty)
-                        throw new InterpreterError("COND: lists must be non-empty");
-
-                    result = zl.First.Eval(ctx);
-
-                    if (result.IsTrue)
-                    {
-                        foreach (ZilObject inner in zl.Skip(1))
-                            result = inner.Eval(ctx);
-
-                        return result;
-                    }
+                    return result;
                 }
-                else
-                    throw new InterpreterError("COND: args must be lists");
             }
 
             return result;
