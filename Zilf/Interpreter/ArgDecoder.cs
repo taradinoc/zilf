@@ -270,7 +270,7 @@ namespace Zilf.Interpreter
                     UpperBound = 1,
                 };
             }
-            else if (pi.ParameterType.IsArray && typeof(ZilObject).IsAssignableFrom(pi.ParameterType.GetElementType()))
+            else if (pi.ParameterType.IsArray && IsZilObjectType(pi.ParameterType.GetElementType()))
             {
                 // decode as an array containing all remaining args
                 var eltype = pi.ParameterType.GetElementType();
@@ -289,8 +289,7 @@ namespace Zilf.Interpreter
                     UpperBound = null,
                 };
             }
-            else if (typeof(ZilObject).IsAssignableFrom(pi.ParameterType) ||
-                pi.ParameterType == typeof(IApplicable) || pi.ParameterType == typeof(IStructure))
+            else if (IsZilObjectType(pi.ParameterType))
             {
                 var zoType = pi.ParameterType;
 
@@ -397,6 +396,12 @@ namespace Zilf.Interpreter
 
             errmsg = cb.ToString();
             return result;
+        }
+
+        private static bool IsZilObjectType(Type t)
+        {
+            return typeof(ZilObject).IsAssignableFrom(t) ||
+                t == typeof(IApplicable) || t == typeof(IStructure);
         }
 
         public static ArgDecoder FromMethodInfo(MethodInfo methodInfo)

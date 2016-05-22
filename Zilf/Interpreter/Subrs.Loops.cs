@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -25,65 +26,51 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        [FSubr]
-        public static ZilObject PROG(Context ctx, ZilObject[] args)
-        {
-            SubrContracts(ctx, args);
+        private const string SBindingsDecl = "<LIST [REST <OR ATOM <ADECL ATOM> !<LIST <OR ATOM <ADECL ATOM>> ANY>>]>";
 
-            return PerformProg(ctx, args, "PROG", false, true);
+        [FSubr]
+        public static ZilObject PROG(Context ctx,
+            [Optional] ZilAtom activationAtom,
+            [Decl(SBindingsDecl)] ZilList bindings,
+            [Decl("<LIST ANY>")] ZilObject[] body)
+        {
+            SubrContracts(ctx);
+
+            return PerformProg(ctx, activationAtom, bindings, body, "PROG", false, true);
         }
 
         [FSubr]
-        public static ZilObject REPEAT(Context ctx, ZilObject[] args)
+        public static ZilObject REPEAT(Context ctx,
+            [Optional] ZilAtom activationAtom,
+            [Decl(SBindingsDecl)] ZilList bindings,
+            [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformProg(ctx, args, "REPEAT", true, true);
+            return PerformProg(ctx, activationAtom, bindings, body, "REPEAT", true, true);
         }
 
         [FSubr]
-        public static ZilObject BIND(Context ctx, ZilObject[] args)
+        public static ZilObject BIND(Context ctx,
+            [Optional] ZilAtom activationAtom,
+            [Decl(SBindingsDecl)] ZilList bindings,
+            [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformProg(ctx, args, "BIND", false, false);
+            return PerformProg(ctx, activationAtom, bindings, body, "BIND", false, false);
         }
 
-        private static ZilObject PerformProg(Context ctx, ZilObject[] args, string name, bool repeat, bool catchy)
+        private static ZilObject PerformProg(Context ctx, ZilAtom activationAtom,
+            ZilList bindings, ZilObject[] body, string name, bool repeat, bool catchy)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
+            Contract.Requires(bindings != null);
             Contract.Requires(name != null);
-
-            if (args.Length < 2)
-                throw new InterpreterError(name, 2, 0);
 
             var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
 
             // bind atoms
-            ZilAtom activationAtom = args[0] as ZilAtom;
-            ZilList bindings;
-            IEnumerable<ZilObject> body;
-            string bindingPosition;
-
-            if (activationAtom == null)
-            {
-                bindings = args[0] as ZilList;
-                body = args.Skip(1);
-                bindingPosition = "first";
-            }
-            else
-            {
-                bindings = args[1] as ZilList;
-                body = args.Skip(2);
-                bindingPosition = "second";
-
-                if (args.Length < 3)
-                    throw new InterpreterError(name + ": missing body");
-            }
-
-            if (bindings == null || bindings.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(string.Format("{0}: {1} arg must be a list of zero or more atom bindings", name, bindingPosition));
-
             Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
 
             try
@@ -183,32 +170,15 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject RETURN(Context ctx, ZilObject[] args)
+        public static ZilObject RETURN(Context ctx, ZilObject value = null, ZilActivation activation = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length > 2)
-                throw new InterpreterError("RETURN", 0, 2);
-
-            ZilObject value;
-            ZilActivation activation;
-
-            if (args.Length >= 1)
-            {
-                value = args[0];
-            }
-            else
-            {
+            if (value == null) {
                 value = ctx.TRUE;
             }
 
-            if (args.Length >= 2)
-            {
-                activation = args[1] as ZilActivation;
-                if (activation == null)
-                    throw new InterpreterError("RETURN: second arg must be an activation");
-            }
-            else
+            if (activation == null)
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
@@ -219,22 +189,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject AGAIN(Context ctx, ZilObject[] args)
+        public static ZilObject AGAIN(Context ctx, ZilActivation activation = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length > 1)
-                throw new InterpreterError("AGAIN", 0, 1);
-
-            ZilActivation activation;
-
-            if (args.Length >= 1)
-            {
-                activation = args[0] as ZilActivation;
-                if (activation == null)
-                    throw new InterpreterError("AGAIN: arg must be an activation");
-            }
-            else
+            if (activation == null)
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
