@@ -51,5 +51,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(FOO BAR) '<LIST STRING [REST FIX]>>", ctx.FALSE);
         }
 
+        [TestMethod]
+        public void Test_QUOTE_DECL()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<DECL? FOO ''FOO>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? FOO ''BAR>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '<OR FIX FALSE> ''<OR FIX FALSE>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? 123 ''<OR FIX FALSE>>", ctx.FALSE);
+        }
     }
 }

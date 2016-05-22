@@ -24,7 +24,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [FSubr]
-        public static ZilObject COND(Context ctx, ZilObject[] args)
+        public static ZilObject COND(Context ctx, [Decl("<LIST ANY>"), Required] ZilObject[] /*XXX ZilList[] */ args)
         {
             SubrContracts(ctx, args);
 

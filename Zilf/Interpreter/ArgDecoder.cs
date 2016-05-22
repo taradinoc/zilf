@@ -50,6 +50,33 @@ namespace Zilf.Interpreter
         }
     }
 
+    [AttributeUsage(AttributeTargets.Parameter)]
+    class DeclAttribute : Attribute
+    {
+        public DeclAttribute(string pattern)
+        {
+            this.Pattern = pattern;
+        }
+
+        public string Pattern { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Parameter)]
+    class RequiredAttribute : Attribute
+    {
+        public RequiredAttribute()
+            : this(1)
+        {
+        }
+
+        public RequiredAttribute(int count)
+        {
+            this.Count = count;
+        }
+
+        public int Count { get; }
+    }
+
     class ArgDecoder
     {
         // calls ready for each decoded value, returns number of arguments consumed
@@ -92,6 +119,12 @@ namespace Zilf.Interpreter
             {
                 parts.Add("PRIMTYPE " + primtype.ToString());
                 preds.Add((zo, _) => zo.PrimType == primtype);
+            }
+
+            public void AddDeclConstraint(DeclWrapper decl)
+            {
+                parts.Add("matching pattern " + decl);
+                preds.Add((zo, ctx) => Decl.Check(ctx, zo, decl.GetPattern(ctx)));
             }
 
             public Func<ZilObject, Context, bool> GetDelegate()
@@ -301,6 +334,25 @@ namespace Zilf.Interpreter
             }
 
             // modifiers
+            var declAttr = pi.GetCustomAttribute<DeclAttribute>();
+            if (declAttr != null)
+            {
+                var prevStep = result.Step;
+                var declWrapper = new DeclWrapper(declAttr.Pattern);
+
+                cb.AddDeclConstraint(declWrapper);
+
+                result.Step = (a, i, c) =>
+                {
+                    if (!Decl.Check(c.Context, a[i], declWrapper.GetPattern(c.Context)))
+                    {
+                        c.Error(errmsg);
+                    }
+
+                    return prevStep(a, i, c);
+                };
+            }
+
             if (pi.IsOptional)
             {
                 result.LowerBound = 0;
@@ -414,6 +466,50 @@ namespace Zilf.Interpreter
             }
 
             return result.ToArray();
+        }
+
+        private class DeclWrapper
+        {
+            private string declText;
+            private ZilObject decl;
+
+            public DeclWrapper(string declText)
+            {
+                Contract.Requires(!string.IsNullOrWhiteSpace(declText));
+
+                this.declText = declText;
+            }
+
+            [ContractInvariantMethod]
+            private void ObjectInvariant()
+            {
+                Contract.Invariant((declText != null && decl == null) || (declText == null && decl != null));
+            }
+
+            public override string ToString()
+            {
+                if (declText != null)
+                {
+                    return declText;
+                }
+
+                return decl.ToString();
+            }
+
+            public ZilObject GetPattern(Context ctx)
+            {
+                Contract.Requires(ctx != null);
+                Contract.Ensures(decl != null);
+
+                if (decl == null)
+                {
+                    // TODO: parse decl without evaluating anything
+                    decl = Program.Evaluate(ctx, $"<QUOTE {declText}>", true);
+                    declText = null;
+                }
+
+                return decl;
+            }
         }
     }
 }

@@ -246,6 +246,56 @@ namespace ZilfTests.Interpreter
             return null;
         }
 
+        [TestMethod]
+        public void Test_DeclArg_Pass()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_DeclArg));
+
+            ZilObject[] args = { ctx.GetStdAtom(StdAtom.ZILF) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, args[0] };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
+        public void Test_DeclArg_Fail()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_DeclArg));
+
+            ZilObject[] args = { ctx.GetStdAtom(StdAtom.ZILCH) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        private ZilObject Dummy_DeclArg(Context ctx, [Decl("'ZILF")] ZilAtom foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_DeclArg_OptionalMiddle()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_MultiOptionalDeclArgs));
+
+            ZilObject[] args = { new ZilFix(2) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, 1, 2 };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private ZilObject Dummy_MultiOptionalDeclArgs(Context ctx, [Decl("'1")] int one = 1, [Decl("'2")] int two = 2)
+        {
+            return null;
+        }
+
         #region Messages
 
         [TestMethod]
