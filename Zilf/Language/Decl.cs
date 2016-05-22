@@ -61,6 +61,9 @@ namespace Zilf.Language
                                     return true;
                             return false;
 
+                        case StdAtom.QUOTE:
+                            return ((ZilForm)pattern).Rest.First.Equals(value);
+
                         default:
                             if (ctx.IsRegisteredType(atom))
                             {
