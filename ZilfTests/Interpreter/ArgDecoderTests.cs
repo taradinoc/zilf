@@ -351,6 +351,25 @@ namespace ZilfTests.Interpreter
             return null;
         }
 
+        [TestMethod]
+        public void Test_ApplicableArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_ApplicableArg));
+
+            ZilObject[] args = { new ZilFix(1), new ZilSubr("+", ctx.GetSubrDelegate("+")) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, new ZilFix(1), new ZilSubr("+", ctx.GetSubrDelegate("+")) };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private ZilObject Dummy_ApplicableArg(Context ctx, IApplicable ap1, IApplicable ap2)
+        {
+            return null;
+        }
+
         #region WrapMethodInfo
 
         [TestMethod]
