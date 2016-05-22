@@ -25,19 +25,23 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilObject MAPF(Context ctx, ZilObject[] args)
+        public static ZilObject MAPF(Context ctx,
+            [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
+            IApplicable loopf, IStructure[] structs)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformMap(ctx, args, true);
+            return PerformMap(ctx, finalf, loopf, structs, true);
         }
 
         [Subr]
-        public static ZilObject MAPR(Context ctx, ZilObject[] args)
+        public static ZilObject MAPR(Context ctx,
+            [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
+            IApplicable loopf, IStructure[] structs)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformMap(ctx, args, false);
+            return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
         private class MapRetException : ControlException
@@ -99,35 +103,16 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static ZilObject PerformMap(Context ctx, ZilObject[] args, bool first)
+        private static ZilObject PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             string name = first ? "MAPF" : "MAPR";
 
-            if (args.Length < 2)
-                throw new InterpreterError(name + ": expected at least 2 args");
+            IApplicable finalf_app = finalf as IApplicable;
 
-            IApplicable finalf = args[0] as IApplicable;
-
-            if (finalf == null && args[0].IsTrue)
-                throw new InterpreterError(name + ": first arg must be FALSE or an applicable object");
-
-            IApplicable loopf = args[1] as IApplicable;
-
-            if (loopf == null)
-                throw new InterpreterError(name + ": second arg must be an applicable object");
-
-            int numStructs = args.Length - 2;
-            IStructure[] structs = new IStructure[numStructs];
+            int numStructs = structs.Length;
             ZilObject[] loopArgs = new ZilObject[numStructs];
-
-            for (int i = 0; i < numStructs; i++)
-            {
-                structs[i] = args[i + 2] as IStructure;
-                if (structs[i] == null)
-                    throw new InterpreterError(name + ": args after first two must be structures");
-            }
 
             List<ZilObject> results = new List<ZilObject>();
 
@@ -177,8 +162,8 @@ namespace Zilf.Interpreter
             }
 
             // apply final function
-            if (finalf != null)
-                return finalf.ApplyNoEval(ctx, results.ToArray());
+            if (finalf_app != null)
+                return finalf_app.ApplyNoEval(ctx, results.ToArray());
 
             if (results.Count > 0)
                 return results[results.Count - 1];
@@ -203,14 +188,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MAPLEAVE(Context ctx, ZilObject[] args)
+        public static ZilObject MAPLEAVE(Context ctx, ZilObject value = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length > 1)
-                throw new InterpreterError("MAPLEAVE", 0, 1);
-
-            throw new MapLeaveException(args.Length == 0 ? ctx.TRUE : args[0]);
+            throw new MapLeaveException(value ?? ctx.TRUE);
         }
     }
 }
