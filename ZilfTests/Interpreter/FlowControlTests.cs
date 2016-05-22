@@ -26,6 +26,12 @@ namespace ZilfTests.Interpreter
     public class FlowControlTests
     {
         [TestMethod]
+        public void COND_Requires_At_Least_One_Clause()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<COND>");
+        }
+
+        [TestMethod]
         public void COND_Should_Reject_Empty_Clauses()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<COND ()>");

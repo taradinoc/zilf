@@ -61,22 +61,6 @@ namespace Zilf.Interpreter
         public string Pattern { get; }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    class RequiredAttribute : Attribute
-    {
-        public RequiredAttribute()
-            : this(1)
-        {
-        }
-
-        public RequiredAttribute(int count)
-        {
-            this.Count = count;
-        }
-
-        public int Count { get; }
-    }
-
     class ArgDecoder
     {
         // calls ready for each decoded value, returns number of arguments consumed
@@ -158,8 +142,6 @@ namespace Zilf.Interpreter
         private readonly int lowerBound;
         private readonly int? upperBound;
         private readonly int lastRequiredStepIndex;
-
-        private static readonly ZilObject[] EmptyZilObjectArray = { };
 
         private ArgDecoder(object[] methodAttributes, ParameterInfo[] parameters)
         {
@@ -288,16 +270,17 @@ namespace Zilf.Interpreter
                     UpperBound = 1,
                 };
             }
-            else if (pi.ParameterType == typeof(ZilObject[]))
+            else if (pi.ParameterType.IsArray && typeof(ZilObject).IsAssignableFrom(pi.ParameterType.GetElementType()))
             {
-                // decode as a ZilObject[] containing all remaining args
-                defaultValue = EmptyZilObjectArray;
+                // decode as an array containing all remaining args
+                var eltype = pi.ParameterType.GetElementType();
+                defaultValue = Array.CreateInstance(eltype, 0);
 
                 result = new DecodingStepInfo
                 {
                     Step = (a, i, c) =>
                     {
-                        var array = new ZilObject[a.Length - i];
+                        var array = Array.CreateInstance(eltype, a.Length - i);
                         Array.Copy(a, i, array, 0, array.Length);
                         c.Ready(array);
                         return a.Length;
@@ -397,6 +380,8 @@ namespace Zilf.Interpreter
                     }
                 };
             }
+
+            // TODO: handle RequiredAttribute
 
             errmsg = cb.ToString();
             return result;

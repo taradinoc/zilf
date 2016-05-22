@@ -116,6 +116,9 @@ namespace Zilf.Language
                                     }
                                     else
                                     {
+                                        if (structure.IsEmpty())
+                                            return false;
+
                                         if (!Check(ctx, structure.GetFirst(), subpattern))
                                             return false;
 
