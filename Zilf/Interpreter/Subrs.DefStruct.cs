@@ -56,19 +56,23 @@ namespace Zilf.Interpreter
             public bool NoDefault;
         }
 
-        [FSubr]
-        public static ZilObject DEFSTRUCT(Context ctx, ZilObject[] args)
-        {
-            SubrContracts(ctx, args);
+        private const string SDefstructDefaultsDecl =
+            @"<LIST ATOM [REST <OR ''NODECL ''NOTYPE ''PRINTTYPE ''CONSTRUCTOR
+                                   <LIST ''NTH ATOM> <LIST ''PUT ATOM> <LIST ''START-OFFSET FIX>
+                                   <LIST ''PRINTTYPE ATOM> <LIST ''CONSTRUCTOR> <LIST ''INIT-ARGS>>]>";
+        private const string SDefstructFieldSpecDecl =
+            @"<LIST ATOM ANY [REST <OR FORM LIST ATOM FIX FALSE>]>";
 
-            if (args.Length < 3)
-                throw new InterpreterError("DEFSTRUCT", 3, 0);
+        [FSubr]
+        public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
+            [Decl("<OR ATOM " + SDefstructDefaultsDecl + ">")]
+            ZilObject baseTypeOrDefaults,
+            [Decl("<LIST " + SDefstructFieldSpecDecl + " [REST " + SDefstructFieldSpecDecl + "]>")]
+            ZilObject[] fieldSpecs)
+        {
+            SubrContracts(ctx);
 
             // new type name
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("DEFSTRUCT: first arg must be an atom");
-
             if (ctx.IsRegisteredType(name))
                 throw new InterpreterError("DEFSTRUCT: type is already registered: " + name);
 
@@ -85,22 +89,21 @@ namespace Zilf.Interpreter
             if (fileDefaultList != null && fileDefaultList.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                 ParseDefStructDefaults(ctx, fileDefaultList, ref defaults);
 
-            switch (args[1].GetTypeAtom(ctx).StdAtom)
+            switch (baseTypeOrDefaults.GetTypeAtom(ctx).StdAtom)
             {
                 case StdAtom.ATOM:
-                    baseType = (ZilAtom)args[1];
+                    baseType = (ZilAtom)baseTypeOrDefaults;
                     break;
 
                 case StdAtom.LIST:
-                    var defaultList = (ZilList)args[1];
-                    baseType = defaultList.First as ZilAtom;
-                    if (baseType == null)
-                        throw new InterpreterError("DEFSTRUCT: first element of defaults list must be a type atom");
+                    var defaultList = (ZilList)baseTypeOrDefaults;
+                    baseType = (ZilAtom)defaultList.First;
                     ParseDefStructDefaults(ctx, defaultList.Rest, ref defaults);
                     break;
 
                 default:
-                    throw new InterpreterError("DEFSTRUCT: second arg must be an atom or list");
+                    // shouldn't get here
+                    throw new NotImplementedException();
             }
 
             if (!ctx.IsRegisteredType(baseType))
@@ -111,7 +114,7 @@ namespace Zilf.Interpreter
             // field definitions
             var fields = new List<DefStructField>();
             var offset = defaults.StartOffset;
-            foreach (var fieldSpec in args.Skip(2))
+            foreach (var fieldSpec in fieldSpecs)
             {
                 fields.Add(ParseDefStructField(ctx, defaults, ref offset, fieldSpec));
             }

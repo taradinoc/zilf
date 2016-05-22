@@ -289,11 +289,23 @@ namespace Zilf.Interpreter
                     UpperBound = null,
                 };
             }
-            else if (typeof(ZilObject).IsAssignableFrom(pi.ParameterType))
+            else if (typeof(ZilObject).IsAssignableFrom(pi.ParameterType) ||
+                pi.ParameterType == typeof(IApplicable) || pi.ParameterType == typeof(IStructure))
             {
                 var zoType = pi.ParameterType;
 
-                cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
+                if (pi.ParameterType == typeof(IApplicable))
+                {
+                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
+                }
+                else if (pi.ParameterType == typeof(IStructure))
+                {
+                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
+                }
+                else
+                {
+                    cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
+                }
 
                 result = new DecodingStepInfo
                 {
