@@ -403,6 +403,17 @@ namespace Zilf.Interpreter
 
         public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo)
         {
+            Contract.Requires(methodInfo.IsStatic);
+            Contract.Ensures(Contract.Result<SubrDelegate>() != null);
+
+            return WrapMethodAsSubrDelegate(methodInfo, null);
+        }
+
+        private static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Dictionary<MethodInfo, SubrDelegate> alreadyDone)
+        {
+            Contract.Requires(methodInfo.IsStatic);
+            Contract.Ensures(Contract.Result<SubrDelegate>() != null);
+
             var parameters = methodInfo.GetParameters();
 
             if (parameters.Length == 3 &&
@@ -430,6 +441,43 @@ namespace Zilf.Interpreter
                     throw new NotImplementedException();
                 }
             };
+
+            // handle MdlZilRedirectAttribute
+            var redirectAttr = methodInfo.GetCustomAttribute<Subrs.MdlZilRedirectAttribute>();
+
+            if (redirectAttr != null)
+            {
+                var targetMethodInfo = redirectAttr.Type.GetMethod(redirectAttr.Target, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (targetMethodInfo == null)
+                    throw new InvalidOperationException("Can't find redirect target " + redirectAttr.Target);
+
+                alreadyDone = alreadyDone ?? new Dictionary<MethodInfo, SubrDelegate>();
+                alreadyDone.Add(methodInfo, del);
+
+                SubrDelegate targetDel;
+                if (alreadyDone.TryGetValue(targetMethodInfo, out targetDel) == false)
+                {
+                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, alreadyDone);
+
+                    if (!alreadyDone.ContainsKey(targetMethodInfo))
+                        alreadyDone.Add(targetMethodInfo, targetDel);
+                }
+
+                var prevDel = del;
+                var topLevelOnly = redirectAttr.TopLevelOnly;
+
+                del = (name, ctx, args) =>
+                {
+                    if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0 &&
+                        (!topLevelOnly || ctx.AtTopLevel))
+                    {
+                        return targetDel(name, ctx, args);
+                    }
+
+                    return prevDel(name, ctx, args);
+                };
+            }
 
             return del;
         }
