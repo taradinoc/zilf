@@ -29,21 +29,16 @@ namespace Zilf.Interpreter
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public class SubrAttribute : Attribute
         {
-            private readonly string name;
-
             public SubrAttribute()
             {
             }
 
             public SubrAttribute(string name)
             {
-                this.name = name;
+                this.Name = name;
             }
 
-            public string Name
-            {
-                get { return name; }
-            }
+            public string Name { get; }
         }
 
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
@@ -57,6 +52,24 @@ namespace Zilf.Interpreter
                 : base(name)
             {
             }
+        }
+
+        [AttributeUsage(AttributeTargets.Method)]
+        public class MdlZilRedirectAttribute : Attribute
+        {
+            public MdlZilRedirectAttribute(Type type, string target)
+            {
+                Contract.Requires(type != null);
+                Contract.Requires(!string.IsNullOrWhiteSpace(target));
+
+                this.Type = type;
+                this.Target = target;
+            }
+
+            public Type Type { get; }
+            public string Target { get; }
+
+            public bool TopLevelOnly { get; set; }
         }
 
         [ContractAbbreviator]

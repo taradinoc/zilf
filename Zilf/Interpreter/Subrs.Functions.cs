@@ -28,18 +28,12 @@ namespace Zilf.Interpreter
     {
         // TODO: clean up arg handling for DEFINE
         [FSubr]
+        [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
         public static ZilObject DEFINE(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
-            if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
-            {
-                return ROUTINE(ctx, args);
-            }
-            else
-            {
-                return PerformDefine(ctx, args, "DEFINE");
-            }
+            return PerformDefine(ctx, args, "DEFINE");
         }
 
         [FSubr]

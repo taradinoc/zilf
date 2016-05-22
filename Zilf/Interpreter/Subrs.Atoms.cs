@@ -33,44 +33,21 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject PARSE(Context ctx, ZilObject[] args)
+        public static ZilObject PARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
+            [Decl("<OR OBLIST LIST>")] ZilObject lookupObList = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
             // TODO: implement arbitrary expression parsing?
 
-            if (args.Length < 1 || args.Length > 3)
-                throw new InterpreterError("PARSE", 1, 3);
+            // we only pretend to implement radix. the decl and default should guarantee it's 10.
+            Contract.Assert(radix == 10);
 
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
-                throw new InterpreterError("PARSE: arg must be a string");
-
-            if (args.Length >= 2)
+            if (lookupObList != null)
             {
-                // we only pretend to implement radix
-                var radix = args[1] as ZilFix;
-                if (radix == null || radix.Value != 10)
-                    throw new InterpreterError("PARSE: second arg must be 10");
-            }
-
-            ZilObject lookupObList;
-            if (args.Length >= 3)
-            {
-                lookupObList = args[2];
-                switch (lookupObList.GetTypeAtom(ctx).StdAtom)
-                {
-                    case StdAtom.OBLIST:
-                        lookupObList = new ZilList(lookupObList, new ZilList(null, null));
-                        break;
-
-                    case StdAtom.LIST:
-                        // OK
-                        break;
-
-                    default:
-                        throw new InterpreterError("PARSE: third arg must be an oblist or list");
-                }
+                if (lookupObList is ObList)
+                    lookupObList = new ZilList(lookupObList, new ZilList(null, null));
 
                 ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
             }
@@ -81,7 +58,7 @@ namespace Zilf.Interpreter
 
             try
             {
-                return ZilAtom.Parse(args[0].ToStringContext(ctx, true), ctx);
+                return ZilAtom.Parse(text, ctx);
             }
             finally
             {
@@ -166,46 +143,23 @@ namespace Zilf.Interpreter
             return ctx.PopObPath();
         }
 
-        // TODO: clean up arg handling for SETG
         [Subr]
-        public static ZilObject SETG(Context ctx, ZilObject[] args)
+        [MdlZilRedirect(typeof(Subrs), nameof(GLOBAL), TopLevelOnly = true)]
+        public static ZilObject SETG(Context ctx, ZilAtom atom, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (ctx.AtTopLevel && (ctx.CurrentFileFlags & FileFlags.MdlZil) != 0)
-            {
-                return GLOBAL(ctx, args);
-            }
-            else
-            {
-                return PerformSetg(ctx, args, "SETG");
-            }
+            ctx.SetGlobalVal(atom, value);
+            return value;
         }
 
         [Subr]
-        public static ZilObject SETG20(Context ctx, ZilObject[] args)
+        public static ZilObject SETG20(Context ctx, ZilAtom atom, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSetg(ctx, args, "SETG20");
-        }
-
-        private static ZilObject PerformSetg(Context ctx, ZilObject[] args, string name)
-        {
-            SubrContracts(ctx, args);
-            Contract.Requires(name != null);
-
-            if (args.Length != 2)
-                throw new InterpreterError(name, 2, 2);
-
-            if (!(args[0] is ZilAtom))
-                throw new InterpreterError(name + ": first arg must be an atom");
-
-            if (args[1] == null)
-                throw new ArgumentNullException();
-
-            ctx.SetGlobalVal((ZilAtom)args[0], args[1]);
-            return args[1];
+            ctx.SetGlobalVal(atom, value);
+            return value;
         }
 
         [Subr]

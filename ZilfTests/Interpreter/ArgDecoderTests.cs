@@ -296,6 +296,37 @@ namespace ZilfTests.Interpreter
             return null;
         }
 
+        #region WrapMethodInfo
+
+        [TestMethod]
+        public void Test_MdlZilRedirect()
+        {
+            ctx.CurrentFileFlags |= FileFlags.MdlZil;
+
+            var methodInfo = GetMethod(nameof(Dummy_MdlZilRedirect_From));
+
+            ZilObject[] args = { new ZilFix(123) };
+
+            var del = ArgDecoder.WrapMethodAsSubrDelegate(methodInfo);
+            var actual = del("dummy", ctx, args);
+            var expected = new ZilFix(246);
+
+            Assert.AreEqual(expected, actual);
+        }
+
+        [Subrs.MdlZilRedirect(typeof(ArgDecoderTests), nameof(Dummy_MdlZilRedirect_To))]
+        private ZilObject Dummy_MdlZilRedirect_From(Context ctx)
+        {
+            return ctx.FALSE;
+        }
+
+        private static ZilObject Dummy_MdlZilRedirect_To(Context ctx, int num)
+        {
+            return new ZilFix(num * 2);
+        }
+
+        #endregion
+
         #region Messages
 
         [TestMethod]
