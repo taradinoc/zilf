@@ -58,16 +58,9 @@ namespace Zilf.Interpreter
         [Subr]
         [Subr("ZSECTION")]
         [Subr("ZZSECTION")]
-        public static ZilObject DEFINITIONS(Context ctx, ZilObject[] args)
+        public static ZilObject DEFINITIONS(Context ctx, string pname)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("DEFINITIONS", 1, 1);
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
-                throw new InterpreterError("DEFINITIONS: arg must be a string");
-
-            var pname = ((ZilString)args[0]).Text;
+            SubrContracts(ctx);
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
@@ -97,12 +90,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject ENTRY(Context ctx, ZilObject[] args)
+        public static ZilObject ENTRY(Context ctx, ZilAtom[] args)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.ATOM))
-                throw new InterpreterError("ENTRY: all args must be atoms");
+            SubrContracts(ctx);
 
             var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
@@ -120,7 +110,7 @@ namespace Zilf.Interpreter
             if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
                 throw new InterpreterError("ENTRY: must be called from within a PACKAGE");
 
-            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList && a.ObList != externalObList);
+            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != externalObList);
             if (onWrongOblist.Any())
             {
                 throw new InterpreterError(string.Format(
@@ -129,19 +119,16 @@ namespace Zilf.Interpreter
                     string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
             }
 
-            foreach (ZilAtom atom in args)
+            foreach (var atom in args)
                 atom.ObList = externalObList;
 
             return ctx.TRUE;
         }
 
         [Subr]
-        public static ZilObject RENTRY(Context ctx, ZilObject[] args)
+        public static ZilObject RENTRY(Context ctx, ZilAtom[] args)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.ATOM))
-                throw new InterpreterError("RENTRY: all args must be atoms");
+            SubrContracts(ctx);
 
             var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
@@ -161,7 +148,7 @@ namespace Zilf.Interpreter
             if (internalPackageProp != ctx.GetStdAtom(StdAtom.DEFINITIONS) && externalPackageProp != packageAtom)
                 throw new InterpreterError("RENTRY: must be called from within a PACKAGE or DEFINITIONS");
 
-            var onWrongOblist = args.Cast<ZilAtom>().Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
+            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
             if (onWrongOblist.Any())
             {
                 throw new InterpreterError(string.Format(
@@ -170,70 +157,61 @@ namespace Zilf.Interpreter
                     string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
             }
 
-            foreach (ZilAtom atom in args)
+            foreach (var atom in args)
                 atom.ObList = ctx.RootObList;
 
             return ctx.TRUE;
         }
 
         [Subr]
-        public static ZilObject USE(Context ctx, ZilObject[] args)
+        public static ZilObject USE(Context ctx, string[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
         }
 
         [Subr]
-        public static ZilObject INCLUDE(Context ctx, ZilObject[] args)
+        public static ZilObject INCLUDE(Context ctx, string[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
         [Subr("USE-WHEN")]
-        public static ZilObject USE_WHEN(Context ctx, ZilObject[] args)
+        public static ZilObject USE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("USE-WHEN", 2, 0);
-
-            if (args[0].IsTrue)
+            if (condition.IsTrue)
             {
-                return PerformUse(ctx, args.Skip(1).ToArray(), "USE-WHEN", StdAtom.PACKAGE);
+                return PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE);
             }
             else
             {
-                return args[0];
+                return condition;
             }
         }
 
         [Subr("INCLUDE-WHEN")]
-        public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject[] args)
+        public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("INCLUDE-WHEN", 2, 0);
-
-            if (args[0].IsTrue)
+            if (condition.IsTrue)
             {
-                return PerformUse(ctx, args.Skip(1).ToArray(), "INCLUDE-WHEN", StdAtom.DEFINITIONS);
+                return PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS);
             }
             else
             {
-                return args[0];
+                return condition;
             }
         }
 
-        private static ZilObject PerformUse(Context ctx, ZilObject[] args, string name, StdAtom requiredPackageType)
+        private static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.STRING))
-                throw new InterpreterError(name + ": all args must be strings");
+            SubrContracts(ctx);
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
@@ -244,23 +222,23 @@ namespace Zilf.Interpreter
 
             var obpathList = obpath.ToList();
 
-            foreach (ZilString packageName in args)
+            foreach (var packageName in args)
             {
-                if (!ctx.PackageObList.Contains(packageName.Text))
+                if (!ctx.PackageObList.Contains(packageName))
                 {
                     // try loading from file
-                    PerformLoadFile(ctx, packageName.Text, name);  // throws on failure
+                    PerformLoadFile(ctx, packageName, name);  // throws on failure
                 }
 
                 ObList externalObList = null;
-                if (ctx.PackageObList.Contains(packageName.Text))
+                if (ctx.PackageObList.Contains(packageName))
                 {
-                    var packageNameAtom = ctx.PackageObList[packageName.Text];
+                    var packageNameAtom = ctx.PackageObList[packageName];
                     externalObList = ctx.GetProp(packageNameAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
                 }
 
                 if (externalObList == null)
-                    throw new InterpreterError(name + ": no such package: " + packageName.Text);
+                    throw new InterpreterError(name + ": no such package: " + packageName);
 
                 var pkgTypeAtom = ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) as ZilAtom;
                 if (pkgTypeAtom == null || pkgTypeAtom.StdAtom != requiredPackageType)
