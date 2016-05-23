@@ -322,9 +322,39 @@ namespace Zilf.Interpreter
                     UpperBound = 1,
                 };
             }
+            else if (pi.ParameterType == typeof(int[]))
+            {
+                cb.AddTypeConstraint(StdAtom.FIX);
+
+                defaultValue = new int[0];
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        var array = new int[a.Length - i];
+                        for (int j = 0; j < a.Length; j++)
+                        {
+                            var fix = a[i + j] as ZilFix;
+                            if (fix == null)
+                            {
+                                c.Error(errmsg);
+                            }
+                            else
+                            {
+                                array[j] = fix.Value;
+                            }
+                        }
+                        c.Ready(array);
+                        return a.Length;
+                    },
+                    LowerBound = 0,
+                    UpperBound = null,
+                };
+            }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Unhandled parameter type: {pi.ParameterType}");
             }
 
             // modifiers
@@ -391,8 +421,6 @@ namespace Zilf.Interpreter
                     }
                 };
             }
-
-            // TODO: handle RequiredAttribute
 
             errmsg = cb.ToString();
             return result;
