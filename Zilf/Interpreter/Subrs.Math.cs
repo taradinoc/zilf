@@ -25,14 +25,10 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        private static ZilObject PerformArithmetic(int init, string name, Func<int, int, int> op,
-            ZilObject[] args)
+        private static ZilObject PerformArithmetic(int init, Func<int, int, int> op, int[] args)
         {
-            Contract.Requires(name != null);
             Contract.Requires(op != null);
             Contract.Requires(args != null);
-
-            const string STypeError = "every arg must be a FIX";
 
             switch (args.Length)
             {
@@ -40,23 +36,14 @@ namespace Zilf.Interpreter
                     return new ZilFix(init);
 
                 case 1:
-                    if (!(args[0] is ZilFix))
-                        throw new InterpreterError(name + ": " + STypeError);
-                    else
-                        return new ZilFix(op(init, ((ZilFix)args[0]).Value));
+                    return new ZilFix(op(init, args[0]));
 
                 default:
-                    if (!(args[0] is ZilFix))
-                        throw new InterpreterError(name + ": " + STypeError);
-
-                    int result = ((ZilFix)args[0]).Value;
+                    int result = args[0];
 
                     for (int i = 1; i < args.Length; i++)
                     {
-                        if (!(args[i] is ZilFix))
-                            throw new InterpreterError(name + ": " + STypeError);
-
-                        result = op(result, ((ZilFix)args[i]).Value);
+                        result = op(result, args[i]);
                     }
 
                     return new ZilFix(result);
@@ -64,37 +51,37 @@ namespace Zilf.Interpreter
         }
 
         [Subr("+")]
-        public static ZilObject Plus(Context ctx, ZilObject[] args)
+        public static ZilObject Plus(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(0, "+", (x, y) => x + y, args);
+            return PerformArithmetic(0, (x, y) => x + y, args);
         }
 
         [Subr("-")]
-        public static ZilObject Minus(Context ctx, ZilObject[] args)
+        public static ZilObject Minus(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(0, "-", (x, y) => x - y, args);
+            return PerformArithmetic(0, (x, y) => x - y, args);
         }
 
         [Subr("*")]
-        public static ZilObject Times(Context ctx, ZilObject[] args)
+        public static ZilObject Times(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(1, "*", (x, y) => x * y, args);
+            return PerformArithmetic(1, (x, y) => x * y, args);
         }
 
         [Subr("/")]
-        public static ZilObject Divide(Context ctx, ZilObject[] args)
+        public static ZilObject Divide(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             try
             {
-                return PerformArithmetic(1, "/", (x, y) => x / y, args);
+                return PerformArithmetic(1, (x, y) => x / y, args);
             }
             catch (DivideByZeroException)
             {
@@ -103,22 +90,13 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MOD(Context ctx, ZilObject[] args)
+        public static ZilObject MOD(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 2)
-                throw new InterpreterError("MOD", 2, 2);
-
-            var a = args[0] as ZilFix;
-            var b = args[1] as ZilFix;
-
-            if (a == null || b == null)
-                throw new InterpreterError("MOD: every arg must be a FIX");
+            SubrContracts(ctx);
 
             try
             {
-                return new ZilFix(a.Value % b.Value);
+                return new ZilFix(a % b);
             }
             catch (DivideByZeroException)
             {
@@ -127,96 +105,75 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject LSH(Context ctx, ZilObject[] args)
+        public static ZilObject LSH(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // "Logical shift", not left shift.
             // Positive shifts left, negative shifts right.
-            
-            if (args.Length != 2)
-                throw new InterpreterError("LSH", 2, 2);
-
-            var a = args[0] as ZilFix;
-            var b = args[1] as ZilFix;
-
-            if (a == null || b == null)
-                throw new InterpreterError("LSH: every arg must be a FIX");
 
             int result;
 
-            if (b.Value >= 0)
+            if (b >= 0)
             {
-                int count = b.Value % 256;
-                result = count >= 32 ? 0 : a.Value << count;
+                int count = b % 256;
+                result = count >= 32 ? 0 : a << count;
             }
             else
             {
-                int count = -b.Value % 256;
-                result = count >= 32 ? 0 : (int)((uint)a.Value >> count);
+                int count = -b % 256;
+                result = count >= 32 ? 0 : (int)((uint)a >> count);
             }
 
             return new ZilFix(result);
         }
 
         [Subr]
-        public static ZilObject ORB(Context ctx, ZilObject[] args)
+        public static ZilObject ORB(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(0, "ORB", (x, y) => x | y, args);
+            return PerformArithmetic(0, (x, y) => x | y, args);
         }
 
         [Subr]
-        public static ZilObject ANDB(Context ctx, ZilObject[] args)
+        public static ZilObject ANDB(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(-1, "ANDB", (x, y) => x & y, args);
+            return PerformArithmetic(-1, (x, y) => x & y, args);
         }
 
         [Subr]
-        public static ZilObject XORB(Context ctx, ZilObject[] args)
+        public static ZilObject XORB(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(0, "XORB", (x, y) => x ^ y, args);
+            return PerformArithmetic(0, (x, y) => x ^ y, args);
         }
 
         [Subr]
-        public static ZilObject EQVB(Context ctx, ZilObject[] args)
+        public static ZilObject EQVB(Context ctx, int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformArithmetic(-1, "EQVB", (x, y) => ~(x ^ y), args);
+            return PerformArithmetic(-1, (x, y) => ~(x ^ y), args);
         }
 
         [Subr]
-        public static ZilObject MIN(Context ctx, ZilObject[] args)
+        public static ZilObject MIN(Context ctx, [Decl("<LIST FIX>")] int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1)
-                throw new InterpreterError("MIN", 1, 0);
-
-            if (!args.All(zo => zo is ZilFix))
-                throw new InterpreterError("MIN: all args must be FIXes");
-
-            return args.OrderBy(zo => ((ZilFix)zo).Value).First();
+            return new ZilFix(args.Min());
         }
 
         [Subr]
-        public static ZilObject MAX(Context ctx, ZilObject[] args)
+        public static ZilObject MAX(Context ctx, [Decl("<LIST FIX>")] int[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1)
-                throw new InterpreterError("MAX", 1, 0);
-
-            if (!args.All(zo => zo is ZilFix))
-                throw new InterpreterError("MAX: all args must be FIXes");
-
-            return args.OrderByDescending(zo => ((ZilFix)zo).Value).First();
+            return new ZilFix(args.Max());
         }
 
 
@@ -255,148 +212,106 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject NOT(Context ctx, ZilObject[] args)
+        public static ZilObject NOT(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("NOT", 1, 1);
-
-            return args[0].IsTrue ? ctx.FALSE : ctx.TRUE;
+            return arg.IsTrue ? ctx.FALSE : ctx.TRUE;
         }
 
         [Subr("=?")]
-        public static ZilObject Eq_P(Context ctx, ZilObject[] args)
+        public static ZilObject Eq_P(Context ctx, ZilObject a, ZilObject b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("=?", 2, 2);
-
-            return args[0].Equals(args[1]) ? ctx.TRUE : ctx.FALSE;
+            return a.Equals(b) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("N=?")]
-        public static ZilObject NEq_P(Context ctx, ZilObject[] args)
+        public static ZilObject NEq_P(Context ctx, ZilObject a, ZilObject b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("N=?", 2, 2);
-
-            return args[0].Equals(args[1]) ? ctx.FALSE : ctx.TRUE;
+            return a.Equals(b) ? ctx.FALSE : ctx.TRUE;
         }
 
         [Subr("==?")]
-        public static ZilObject Eeq_P(Context ctx, ZilObject[] args)
+        public static ZilObject Eeq_P(Context ctx, ZilObject a, ZilObject b)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 2)
-                throw new InterpreterError("==?", 2, 2);
+            SubrContracts(ctx);
 
             bool equal;
-            if (args[0] is IStructure)
-                equal = (args[0] == args[1]);
+            if (a is IStructure)
+                equal = (a == b);
             else
-                equal = args[0].Equals(args[1]);
+                equal = a.Equals(b);
 
             return equal ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("N==?")]
-        public static ZilObject NEeq_P(Context ctx, ZilObject[] args)
+        public static ZilObject NEeq_P(Context ctx, ZilObject a, ZilObject b)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 2)
-                throw new InterpreterError("N==?", 2, 2);
+            SubrContracts(ctx);
 
             bool equal;
-            if (args[0] is IStructure)
-                equal = (args[0] == args[1]);
+            if (a is IStructure)
+                equal = (a == b);
             else
-                equal = args[0].Equals(args[1]);
+                equal = a.Equals(b);
 
             return equal ? ctx.FALSE : ctx.TRUE;
         }
 
-        private static ZilObject PerformComparison(Context ctx, string name, Func<int, int, bool> op, ZilObject[] args)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Requires(op != null);
-            Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
-
-            const string STypeError = "every arg must be a FIX";
-
-            if (args.Length != 2)
-                throw new InterpreterError(name, 2, 2);
-
-            if (!(args[0] is ZilFix && args[1] is ZilFix))
-                throw new InterpreterError(name + ": " + STypeError);
-
-            int value1 = ((ZilFix)args[0]).Value;
-            int value2 = ((ZilFix)args[1]).Value;
-
-            return op(value1, value2) ? ctx.TRUE : ctx.FALSE;
-        }
-
         [Subr("L?")]
-        public static ZilObject L_P(Context ctx, ZilObject[] args)
+        public static ZilObject L_P(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformComparison(ctx, "L?", (a, b) => a < b, args);
+            return a < b ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("L=?")]
-        public static ZilObject LEq_P(Context ctx, ZilObject[] args)
+        public static ZilObject LEq_P(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformComparison(ctx, "L=?", (a, b) => a <= b, args);
+            return a <= b ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("G?")]
-        public static ZilObject G_P(Context ctx, ZilObject[] args)
+        public static ZilObject G_P(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformComparison(ctx, "G?", (a, b) => a > b, args);
+            return a > b ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("G=?")]
-        public static ZilObject GEq_P(Context ctx, ZilObject[] args)
+        public static ZilObject GEq_P(Context ctx, int a, int b)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformComparison(ctx, "G=?", (a, b) => a >= b, args);
+            return a >= b ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("0?")]
-        public static ZilObject Zero_P(Context ctx, ZilObject[] args)
+        public static ZilObject Zero_P(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("0?", 1, 1);
-
-            if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 0)
+            if (arg is ZilFix && ((ZilFix)arg).Value == 0)
                 return ctx.TRUE;
             else
                 return ctx.FALSE;
         }
 
         [Subr("1?")]
-        public static ZilObject One_P(Context ctx, ZilObject[] args)
+        public static ZilObject One_P(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("1?", 1, 1);
-
-            if (args[0] is ZilFix && ((ZilFix)args[0]).Value == 1)
+            if (arg is ZilFix && ((ZilFix)arg).Value == 1)
                 return ctx.TRUE;
             else
                 return ctx.FALSE;

@@ -112,7 +112,7 @@ namespace ZilfTests.Interpreter
 
             Assert.AreEqual(expected.Length, actual.Length);
             Assert.AreEqual(expected[0], actual[0]);
-            Assert.IsInstanceOfType(expected[1], typeof(ZilObject[]));
+            Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
             CollectionAssert.AreEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
         }
 
@@ -160,6 +160,28 @@ namespace ZilfTests.Interpreter
         }
 
         private ZilObject Dummy_IntArgs(Context ctx, int foo, int bar)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_IntArrayArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntArrayArg));
+
+            ZilObject[] args = { new ZilFix(123), new ZilFix(456) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, new int[] { 123, 456 } };
+
+            Assert.AreEqual(2, actual.Length);
+            Assert.AreEqual(expected[0], actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(int[]));
+            CollectionAssert.AreEqual((int[])expected[1], (int[])actual[1]);
+        }
+
+        private ZilObject Dummy_IntArrayArg(Context ctx, int[] foo)
         {
             return null;
         }
@@ -370,8 +392,6 @@ namespace ZilfTests.Interpreter
             return null;
         }
 
-        #region WrapMethodInfo
-
         [TestMethod]
         public void Test_MdlZilRedirect()
         {
@@ -399,10 +419,6 @@ namespace ZilfTests.Interpreter
             return new ZilFix(num * 2);
         }
 
-        #endregion
-
-        #region Messages
-
         [TestMethod]
         public void Test_PNAME_WrongArgType_Message()
         {
@@ -421,7 +437,5 @@ namespace ZilfTests.Interpreter
 
             Assert.Fail("Expected ArgumentTypeError");
         }
-
-        #endregion
     }
 }
