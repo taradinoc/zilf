@@ -28,15 +28,11 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilObject PRINT(Context ctx, ZilObject[] args)
+        public static ZilObject PRINT(Context ctx, ZilObject value, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("PRINT", 1, 2);
-
-            ZilChannel channel;
-            if (args.Length < 2)
+            if (channel == null)
             {
                 channel =
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
@@ -44,33 +40,23 @@ namespace Zilf.Interpreter
                 if (channel == null)
                     throw new InterpreterError("PRINT: bad OUTCHAN");
             }
-            else
-            {
-                channel = args[1] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("PRINT: second arg must be a channel");
-            }
 
-            var str = args[0].ToStringContext(ctx, false);
+            var str = value.ToStringContext(ctx, false);
 
             // TODO: check for I/O error
             channel.WriteNewline();
             channel.WriteString(str);
             channel.WriteChar(' ');
 
-            return args[0];
+            return value;
         }
 
         [Subr]
-        public static ZilObject PRIN1(Context ctx, ZilObject[] args)
+        public static ZilObject PRIN1(Context ctx, ZilObject value, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("PRIN1", 1, 2);
-
-            ZilChannel channel;
-            if (args.Length < 2)
+            if (channel == null)
             {
                 channel =
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
@@ -78,31 +64,21 @@ namespace Zilf.Interpreter
                 if (channel == null)
                     throw new InterpreterError("PRIN1: bad OUTCHAN");
             }
-            else
-            {
-                channel = args[1] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("PRIN1: second arg must be a channel");
-            }
 
-            var str = args[0].ToStringContext(ctx, false);
+            var str = value.ToStringContext(ctx, false);
 
             // TODO: check for I/O error
             channel.WriteString(str);
 
-            return args[0];
+            return value;
         }
 
         [Subr]
-        public static ZilObject PRINC(Context ctx, ZilObject[] args)
+        public static ZilObject PRINC(Context ctx, ZilObject value, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("PRINC", 1, 2);
-
-            ZilChannel channel;
-            if (args.Length < 2)
+            if (channel == null)
             {
                 channel =
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
@@ -110,43 +86,27 @@ namespace Zilf.Interpreter
                 if (channel == null)
                     throw new InterpreterError("PRINC: bad OUTCHAN");
             }
-            else
-            {
-                channel = args[1] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("PRINC: second arg must be a channel");
-            }
 
-            var str = args[0].ToStringContext(ctx, true);
+            var str = value.ToStringContext(ctx, true);
 
             // TODO: check for I/O error
             channel.WriteString(str);
 
-            return args[0];
+            return value;
         }
 
         [Subr]
-        public static ZilObject CRLF(Context ctx, ZilObject[] args)
+        public static ZilObject CRLF(Context ctx, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length > 1)
-                throw new InterpreterError("CRLF", 0, 1);
-
-            ZilChannel channel;
-            if (args.Length < 1)
+            if (channel == null)
             {
                 channel =
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("CRLF: bad OUTCHAN");
-            }
-            else
-            {
-                channel = args[0] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("CRLF: arg must be a channel");
             }
 
             // TODO: check for I/O error
@@ -156,15 +116,10 @@ namespace Zilf.Interpreter
         }
 
         [Subr("PRINT-MANY")]
-        public static ZilObject PRINT_MANY(Context ctx, ZilObject[] args)
+        public static ZilObject PRINT_MANY(Context ctx, ZilChannel channel,
+            [Decl("<OR ATOM APPLICABLE>")] ZilObject printer, ZilObject[] items)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length < 2)
-                throw new InterpreterError("PRINT-MANY", 2, 0);
-
-            var channel = args[0];
-            var printer = args[1];
+            SubrContracts(ctx);
 
             if (printer is ZilAtom)
             {
@@ -186,16 +141,15 @@ namespace Zilf.Interpreter
             ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
             try
             {
-                var noArgs = new ZilObject[0];
                 var printArgs = new ZilObject[1];
 
-                for (int i = 2; i < args.Length; i++)
+                foreach (var item in items)
                 {
-                    result = args[i];
+                    result = item;
 
                     if (result == crlf)
                     {
-                        CRLF(ctx, noArgs);
+                        CRLF(ctx);
                     }
                     else
                     {
@@ -213,29 +167,17 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject IMAGE(Context ctx, ZilObject[] args)
+        public static ZilObject IMAGE(Context ctx, ZilFix ch, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("IMAGE", 1, 2);
-
-            ZilFix ch = args[0] as ZilFix;
-            if (ch == null)
-                throw new InterpreterError("IMAGE: first arg must be a FIX");
-
-            ZilChannel channel;
-            if (args.Length < 2)
+            if (channel == null)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("IMAGE: bad OUTCHAN");
-            }
-            else
-            {
-                channel = args[1] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("IMAGE: second arg must be a channel");
             }
 
             // TODO: check for I/O error
@@ -247,22 +189,12 @@ namespace Zilf.Interpreter
         private static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
 
         [Subr]
-        public static ZilObject OPEN(Context ctx, ZilObject[] args)
+        public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
+            Contract.Requires(mode == "READ");
 
-            if (args.Length != 2)
-                throw new InterpreterError("OPEN", 2, 2);
-
-            var mode = args[0] as ZilString;
-            if (mode == null || mode.Text != "READ")
-                throw new InterpreterError("OPEN: first arg must be \"READ\"");
-
-            var path = args[1] as ZilString;
-            if (path == null)
-                throw new InterpreterError("OPEN: second arg must be a STRING");
-
-            var result = new ZilFileChannel(ConvertPath(path.Text), FileAccess.Read);
+            var result = new ZilFileChannel(ConvertPath(path), FileAccess.Read);
             result.Reset(ctx);
             return result;
         }
@@ -279,64 +211,40 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject CLOSE(Context ctx, ZilObject[] args)
+        public static ZilObject CLOSE(Context ctx, ZilChannel channel)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("CLOSE", 1, 1);
-
-            var channel = args[0] as ZilChannel;
-            if (channel == null)
-                throw new InterpreterError("CLOSE: arg must be a channel");
+            SubrContracts(ctx);
 
             channel.Close(ctx);
             return channel;
         }
 
         [Subr("FILE-LENGTH")]
-        public static ZilObject FILE_LENGTH(Context ctx, ZilObject[] args)
+        public static ZilObject FILE_LENGTH(Context ctx, ZilChannel channel)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("FILE-LENGTH", 1, 1);
-
-            var chan = args[0] as ZilChannel;
-            if (chan == null)
-                throw new InterpreterError("FILE-LENGTH: arg must be a channel");
-
-            var length = chan.GetFileLength();
+            var length = channel.GetFileLength();
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
         }
 
         [Subr]
-        public static ZilObject READSTRING(Context ctx, ZilObject[] args)
+        public static ZilObject READSTRING(Context ctx, ZilString dest, ZilChannel channel,
+            [Decl("<OR FIX STRING>")] ZilObject maxLengthOrStopChars = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // TODO: support 1- and 4-argument forms?
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError("READSTRING", 2, 3);
-
-            var dest = args[0] as ZilString;
-            if (dest == null)
-                throw new InterpreterError("READSTRING: first arg must be a STRING");
-
-            var channel = args[1] as ZilChannel;
-            if (channel == null)
-                throw new InterpreterError("READSTRING: second arg must be a channel");
 
             int maxLength = dest.Text.Length;
             ZilString stopChars = null;
 
-            if (args.Length >= 3)
+            if (maxLengthOrStopChars != null)
             {
-                var maxLengthFix = args[2] as ZilFix;
-                stopChars = args[2] as ZilString;
+                var maxLengthFix = maxLengthOrStopChars as ZilFix;
+                stopChars = maxLengthOrStopChars as ZilString;
 
-                if (maxLengthFix == null && stopChars == null)
-                    throw new InterpreterError("READSTRING: third arg must be a FIX or STRING");
+                Contract.Assert(maxLengthFix != null || stopChars != null);
 
                 if (maxLengthFix != null)
                     maxLength = Math.Min(maxLengthFix.Value, maxLength);
@@ -366,16 +274,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr("M-HPOS")]
-        public static ZilObject M_HPOS(Context ctx, ZilObject[] args)
+        public static ZilObject M_HPOS(Context ctx, ZilChannel channel)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("M-HPOS", 1, 1);
-
-            var channel = args[0] as ZilChannel;
-            if (channel == null)
-                throw new InterpreterError("M-HPOS: arg must be a channel");
+            SubrContracts(ctx);
 
             var hposChannel = channel as IChannelWithHPos;
             if (hposChannel == null)
@@ -385,31 +286,20 @@ namespace Zilf.Interpreter
         }
 
         [Subr("INDENT-TO")]
-        public static ZilObject INDENT_TO(Context ctx, ZilObject[] args)
+        public static ZilObject INDENT_TO(Context ctx, ZilFix position, ZilChannel channel = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("INDENT-TO", 1, 2);
-
-            var position = args[0] as ZilFix;
-            if (position == null)
-                throw new InterpreterError("INDENT-TO: first arg must be a FIX");
             if (position.Value < 0)
                 throw new InterpreterError("INDENT-TO: first arg must be non-negative");
 
-            ZilChannel channel;
-            if (args.Length < 2)
+            if (channel == null)
             {
-                channel = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
+                channel =
+                    ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
                     throw new InterpreterError("INDENT-TO: bad OUTCHAN");
-            }
-            else
-            {
-                channel = args[1] as ZilChannel;
-                if (channel == null)
-                    throw new InterpreterError("INDENT-TO: second arg must be a channel");
             }
 
             var hposChannel = channel as IChannelWithHPos;
@@ -431,7 +321,7 @@ namespace Zilf.Interpreter
                 cur = next;
             }
 
-            return args[0];
+            return position;
         }
     }
 }

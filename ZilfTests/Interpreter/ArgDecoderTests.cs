@@ -206,6 +206,28 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void Test_StringArrayArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_StringArrayArg));
+
+            ZilObject[] args = { ZilString.FromString("hello") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, new string[] { "hello" } };
+
+            Assert.AreEqual(2, actual.Length);
+            Assert.AreEqual(expected[0], actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(string[]));
+            CollectionAssert.AreEqual((string[])expected[1], (string[])actual[1]);
+        }
+
+        private ZilObject Dummy_StringArrayArg(Context ctx, string[] foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
         public void Test_FormArg()
         {
             var methodInfo = GetMethod(nameof(Dummy_FormArg));

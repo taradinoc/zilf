@@ -379,6 +379,36 @@ namespace Zilf.Interpreter
                     UpperBound = null,
                 };
             }
+            else if (pi.ParameterType == typeof(string[]))
+            {
+                cb.AddTypeConstraint(StdAtom.STRING);
+
+                defaultValue = new string[0];
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        var array = new string[a.Length - i];
+                        for (int j = 0; j < a.Length; j++)
+                        {
+                            var str = a[i + j] as ZilString;
+                            if (str == null)
+                            {
+                                c.Error(errmsg);
+                            }
+                            else
+                            {
+                                array[j] = str.Text;
+                            }
+                        }
+                        c.Ready(array);
+                        return a.Length;
+                    },
+                    LowerBound = 0,
+                    UpperBound = null,
+                };
+            }
             else
             {
                 throw new NotImplementedException($"Unhandled parameter type: {pi.ParameterType}");
