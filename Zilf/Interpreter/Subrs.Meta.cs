@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -64,35 +65,24 @@ namespace Zilf.Interpreter
         [Subr("INSERT-FILE")]
         [Subr("FLOAD")]
         [Subr("XFLOAD")]
-        public static ZilObject INSERT_FILE(Context ctx, ZilObject[] args)
+        public static ZilObject INSERT_FILE(Context ctx, string file, ZilObject[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
          
             // we ignore arguments after the first
-            if (args.Length == 0)
-                throw new InterpreterError("INSERT-FILE", 1, 0);
-
-            if (args[0].GetTypeAtom(ctx).StdAtom != StdAtom.STRING)
-                throw new InterpreterError("INSERT-FILE: first arg must be a string");
-
-            string file = args[0].ToStringContext(ctx, true);
 
             return PerformLoadFile(ctx, file, "INSERT-FILE");
         }
 
         [Subr("FILE-FLAGS")]
-        public static ZilObject FILE_FLAGS(Context ctx, ZilObject[] args)
+        public static ZilObject FILE_FLAGS(Context ctx, ZilAtom[] flags)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             var newFlags = FileFlags.None;
 
-            foreach (var arg in args)
+            foreach (var atom in flags)
             {
-                var atom = arg as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("FILE-FLAGS: all args must be atoms");
-
                 switch (atom.StdAtom)
                 {
                     case StdAtom.CLEAN_STACK_P:
@@ -117,16 +107,10 @@ namespace Zilf.Interpreter
         }
 
         [Subr("DELAY-DEFINITION")]
-        public static ZilObject DELAY_DEFINITION(Context ctx, ZilObject[] args)
+        public static ZilObject DELAY_DEFINITION(Context ctx, ZilAtom name)
         {
-            SubrContracts(ctx, args); 
+            SubrContracts(ctx); 
             
-            if (args.Length != 1)
-                throw new InterpreterError("DELAY-DEFINITION", 1, 1);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("DELAY-DEFINITION: first arg must be an atom");
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
@@ -137,16 +121,10 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("REPLACE-DEFINITION")]
-        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilObject[] args)
+        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilAtom name, [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("REPLACE-DEFINITION", 2, 0);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("REPLACE-DEFINITION: first arg must be an atom");
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
@@ -155,14 +133,14 @@ namespace Zilf.Interpreter
             if (state == null)
             {
                 // store the replacement now, insert it at the DEFAULT-DEFINITION
-                ctx.PutProp(name, replaceAtom, new ZilVector(args.Skip(1).ToArray()));
+                ctx.PutProp(name, replaceAtom, new ZilVector(body));
                 return name;
             }
             else if (state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
             {
                 // insert the replacement now
                 ctx.PutProp(name, replaceAtom, replaceAtom);
-                return ZilObject.EvalProgram(ctx, args.Skip(1).ToArray());
+                return ZilObject.EvalProgram(ctx, body);
             }
             else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
             {
@@ -179,16 +157,10 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("DEFAULT-DEFINITION")]
-        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilObject[] args)
+        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("DEFAULT-DEFINITION", 2, 0);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("DEFAULT-DEFINITION: first arg must be an atom");
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
@@ -198,7 +170,7 @@ namespace Zilf.Interpreter
             {
                 // no replacement, insert the default now
                 ctx.PutProp(name, replaceAtom, ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION));
-                return ZilObject.EvalProgram(ctx, args.Skip(1).ToArray());
+                return ZilObject.EvalProgram(ctx, body);
             }
             else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
             {
@@ -222,100 +194,63 @@ namespace Zilf.Interpreter
         }
 
         [Subr("COMPILATION-FLAG")]
-        public static ZilObject COMPILATION_FLAG(Context ctx, ZilObject[] args)
+        public static ZilObject COMPILATION_FLAG(Context ctx,
+            [Decl("<OR ATOM STRING>")] ZilObject name, ZilObject value = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("COMPILATION-FLAG", 1, 2);
-
-            var atom = args[0] as ZilAtom;
+            var atom = name as ZilAtom;
             if (atom == null)
             {
-                var str = args[0] as ZilString;
-                if (str != null)
-                {
-                    atom = ZilAtom.Parse(str.Text, ctx);
-                }
-                else
-                {
-                    throw new InterpreterError("COMPILATION-FLAG: flag name must be an atom or string");
-                }
+                var str = (ZilString)name;
+                atom = ZilAtom.Parse(str.Text, ctx);
             }
 
-            var value = (args.Length >= 2) ? args[1] : ctx.TRUE;
-
-            ctx.DefineCompilationFlag(atom, value, redefine: true);
+            ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, redefine: true);
             return atom;
         }
 
         [Subr("COMPILATION-FLAG-DEFAULT")]
-        public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx, ZilObject[] args)
+        public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx,
+            [Decl("<OR ATOM STRING>")] ZilObject name, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("COMPILATION-FLAG-DEFAULT", 2, 2);
-
-            var atom = args[0] as ZilAtom;
+            var atom = name as ZilAtom;
             if (atom == null)
             {
-                var str = args[0] as ZilString;
-                if (str != null)
-                {
-                    atom = ZilAtom.Parse(str.Text, ctx);
-                }
-                else
-                {
-                    throw new InterpreterError("COMPILATION-FLAG: flag name must be an atom or string");
-                }
+                var str = (ZilString)name;
+                atom = ZilAtom.Parse(str.Text, ctx);
             }
 
-            ctx.DefineCompilationFlag(atom, args[1], redefine: false);
+            ctx.DefineCompilationFlag(atom, value, redefine: false);
             return atom;
         }
 
         [Subr("COMPILATION-FLAG-VALUE")]
-        public static ZilObject COMPILATION_FLAG_VALUE(Context ctx, ZilObject[] args)
+        public static ZilObject COMPILATION_FLAG_VALUE(Context ctx,
+            [Decl("<OR ATOM STRING>")] ZilObject name)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("COMPILATION-FLAG-VALUE", 1, 1);
-
-            var atom = args[0] as ZilAtom;
+            var atom = name as ZilAtom;
             if (atom == null)
             {
-                var str = args[0] as ZilString;
-                if (str != null)
-                {
-                    atom = ZilAtom.Parse(str.Text, ctx);
-                }
-                else
-                {
-                    throw new InterpreterError("COMPILATION-FLAG-VALUE: flag name must be an atom or string");
-                }
+                var str = (ZilString)name;
+                atom = ZilAtom.Parse(str.Text, ctx);
             }
 
             return ctx.GetCompilationFlagValue(atom) ?? ctx.FALSE;
         }
 
         [FSubr("IFFLAG")]
-        public static ZilObject IFFLAG(Context ctx, ZilObject[] args)
+        public static ZilObject IFFLAG(Context ctx, [Decl("<LIST <LIST ANY> [REST <LIST ANY>]>")] ZilList[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1)
-                throw new InterpreterError("IFFLAG", 1, 0);
-
-            foreach (var clause in args)
+            foreach (var list in args)
             {
-                var list = clause as ZilList;
-                if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("IFFLAG: args must be lists");
-
-                if (list.IsEmpty)
-                    throw new InterpreterError("IFFLAG: lists must be non-empty");
+                Contract.Assert(!list.IsEmpty);
 
                 bool match;
 
@@ -386,50 +321,47 @@ namespace Zilf.Interpreter
         }
 
         [Subr("TIME")]
-        public static ZilObject TIME(Context ctx, ZilObject[] args)
+        public static ZilObject TIME(Context ctx)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // TODO: measure actual CPU time
             return new ZilFix(1);
         }
 
         [Subr("QUIT")]
-        public static ZilObject QUIT(Context ctx, ZilObject[] args)
+        public static ZilObject QUIT(Context ctx, ZilObject exitCode = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length == 0)
-                Environment.Exit(0);
-            else if (args[0] is ZilFix)
-                Environment.Exit(((ZilFix)args[0]).Value);
+            int code;
+            if (exitCode == null)
+            {
+                code = 0;
+            }
+            else if (exitCode is ZilFix)
+            {
+                code = ((ZilFix)exitCode).Value;
+            }
             else
-                Environment.Exit(4);
+            {
+                code = 4;
+            }
 
+            Environment.Exit(code);
+
+            // shouldn't get here
             return ctx.TRUE;
         }
 
         [Subr]
         [Subr("STACK")]
-        public static ZilObject ID(Context ctx, ZilObject[] args)
+        [Subr("SNAME")]
+        public static ZilObject ID(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("ID", 1, 1);
-
-            return args[0];
-        }
-
-        [Subr]
-        public static ZilObject SNAME(Context ctx, ZilObject[] args)
-        {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("SNAME", 1, 1);
-
-            return args[0];
+            return arg;
         }
 
         [Subr("GC-MON")]

@@ -276,10 +276,34 @@ namespace Zilf.Interpreter
                 var eltype = pi.ParameterType.GetElementType();
                 defaultValue = Array.CreateInstance(eltype, 0);
 
+                if (eltype == typeof(IApplicable))
+                {
+                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
+                }
+                else if (eltype == typeof(IStructure))
+                {
+                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
+                }
+                else if (eltype != typeof(ZilObject))
+                {
+                    var builtinAttr = eltype.GetCustomAttribute<BuiltinTypeAttribute>();
+                    if (builtinAttr == null)
+                        throw new InvalidOperationException($"Type {eltype} is missing a BuiltinTypeAttribute");
+                    cb.AddTypeConstraint(builtinAttr.Name);
+                }
+
                 result = new DecodingStepInfo
                 {
                     Step = (a, i, c) =>
                     {
+                        for (int j = i; j < a.Length; j++)
+                        {
+                            if (!eltype.IsInstanceOfType(a[j]))
+                            {
+                                c.Error(errmsg);
+                            }
+                        }
+
                         var array = Array.CreateInstance(eltype, a.Length - i);
                         Array.Copy(a, i, array, 0, array.Length);
                         c.Ready(array);
@@ -301,8 +325,11 @@ namespace Zilf.Interpreter
                 {
                     cb.AddTypeConstraint(StdAtom.STRUCTURED);
                 }
-                else
+                else if (pi.ParameterType != typeof(ZilObject))
                 {
+                    var builtinAttr = pi.ParameterType.GetCustomAttribute<BuiltinTypeAttribute>();
+                    if (builtinAttr == null)
+                        throw new InvalidOperationException($"Type {pi.ParameterType} is missing a BuiltinTypeAttribute");
                     cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
                 }
 

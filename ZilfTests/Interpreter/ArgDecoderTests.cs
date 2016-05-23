@@ -393,6 +393,40 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
+        public void Test_AtomArg_Fail()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_AtomArg));
+
+            ZilObject[] args = { new ZilFix(123) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        private ZilObject Dummy_AtomArg(Context ctx, ZilAtom foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
+        public void Test_AtomArrayArg_Fail()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_AtomArrayArg));
+
+            ZilObject[] args = { new ZilFix(123) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        private ZilObject Dummy_AtomArrayArg(Context ctx, ZilAtom[] foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
         public void Test_MdlZilRedirect()
         {
             ctx.CurrentFileFlags |= FileFlags.MdlZil;
