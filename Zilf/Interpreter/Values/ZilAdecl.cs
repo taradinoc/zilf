@@ -118,39 +118,71 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject GetFirst()
         {
-            throw new NotImplementedException();
+            return First;
         }
 
         public IStructure GetRest(int skip)
         {
-            throw new NotImplementedException();
+            switch (skip)
+            {
+                case 0:
+                    return this;
+
+                case 1:
+                    return new ZilVector(Second);
+
+                default:
+                    return null;
+            }
         }
 
         public bool IsEmpty()
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public ZilObject this[int index]
         {
             get
             {
-                throw new NotImplementedException();
+                switch (index)
+                {
+                    case 0:
+                        return First;
+
+                    case 1:
+                        return Second;
+
+                    default:
+                        return null;
+                }
             }
             set
             {
-                throw new NotImplementedException();
+                switch (index)
+                {
+                    case 0:
+                        First = value;
+                        break;
+
+                    case 1:
+                        Second = value;
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException("index", "writing past end of ADECL");
+                }
             }
         }
 
         public int GetLength()
         {
-            throw new NotImplementedException();
+            return 2;
         }
 
         public int? GetLength(int limit)
         {
-            throw new NotImplementedException();
+            return 2 <= limit ? 2 : (int?)null;
         }
 
         #endregion

@@ -24,10 +24,17 @@ namespace ZilfTests.Interpreter
     [TestClass]
     public class DeclTests
     {
+        private Context ctx;
+
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            ctx = new Context();
+        }
+
         [TestMethod]
         public void Test_Simple_DECL()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<DECL? 1 FIX>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? \"hi\" STRING>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? FOO STRING>", ctx.FALSE);
@@ -36,7 +43,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_OR_DECL()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<DECL? 1 '<OR FIX FALSE>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? \"hi\" '<OR VECTOR STRING>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? FOO '<OR STRING FIX>>", ctx.FALSE);
@@ -45,16 +51,37 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_Structure_DECL()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1) '<LIST FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1) '<LIST ATOM>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '<1> '<LIST FIX>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '<1> '<<OR FORM LIST> FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '<1> '<<OR <PRIMTYPE LIST> <PRIMTYPE STRING>> FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1) '<<PRIMTYPE LIST> FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '<1> '<<PRIMTYPE LIST> FIX>>", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void Test_REST_DECL()
+        {
             TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING FIX [REST FIX]>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(FOO BAR) '<LIST STRING [REST FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(FOO BAR) '<LIST ATOM [REST FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(FOO BAR) '<LIST ATOM ATOM [REST FIX]>>", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void Test_OPT_DECL()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(FOO BAR) '<LIST [OPT FIX FIX] [REST ATOM]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 FOO BAR) '<LIST [OPT FIX FIX] [REST ATOM]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 FOO BAR) '<LIST [OPT FIX] [REST ATOM]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 FOO BAR) '<LIST [OPT FIX FIX] [REST ATOM]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2) '<LIST [OPT FIX FIX] [REST ATOM]>>", ctx.TRUE);
         }
 
         [TestMethod]
         public void Test_QUOTE_DECL()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<DECL? FOO ''FOO>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? FOO ''BAR>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '<OR FIX FALSE> ''<OR FIX FALSE>>", ctx.TRUE);
@@ -64,7 +91,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_Segment_DECL()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '<LIST FIX FIX>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '!<LIST FIX FIX>>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2) '!<LIST FIX FIX>>", ctx.TRUE);

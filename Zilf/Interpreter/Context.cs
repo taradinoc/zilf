@@ -997,6 +997,11 @@ namespace Zilf.Interpreter
             return typeMap.ContainsKey(atom);
         }
 
+        /// <summary>
+        /// Gets the <see cref="PrimType"/> of a type atom.
+        /// </summary>
+        /// <param name="type">The name of a built-in type or a NEWTYPE.</param>
+        /// <returns>The <see cref="PrimType"/> of the given type.</returns>
         public PrimType GetTypePrim(ZilAtom type)
         {
             Contract.Requires(type != null);

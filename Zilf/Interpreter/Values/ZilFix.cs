@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
@@ -86,11 +87,31 @@ namespace Zilf.Interpreter.Values
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
             if (args.Length == 1)
-                return Subrs.NTH(ctx, new ZilObject[] { args[0], this });
+            {
+                try
+                {
+                    return Subrs.NTH(ctx, (IStructure)args[0], this.value);
+                }
+                catch (InvalidCastException)
+                {
+                    throw new InterpreterError("expected a structured value after the FIX");
+                }
+            }
             else if (args.Length == 2)
-                return Subrs.PUT(ctx, new ZilObject[] { args[0], this, args[1] });
+            {
+                try
+                {
+                    return Subrs.PUT(ctx, (IStructure)args[0], this.value, args[1]);
+                }
+                catch (InvalidCastException)
+                {
+                    throw new InterpreterError("expected a structured value after the FIX");
+                }
+            }
             else
+            {
                 throw new InterpreterError("expected 1 or 2 args after a FIX");
+            }
         }
 
         #endregion

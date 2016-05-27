@@ -27,7 +27,6 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        // TODO: clean up arg handling for DEFINE
         [FSubr]
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
         public static ZilObject DEFINE(Context ctx, ZilAtom name,

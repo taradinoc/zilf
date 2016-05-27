@@ -94,9 +94,24 @@ namespace Zilf.Interpreter
 
             public void AddTypeConstraint(StdAtom typeAtom)
             {
-                //XXX probably good enough for builtin types, but should get the real name from the attribute
-                parts.Add("TYPE " + typeAtom.ToString());
-                preds.Add((zo, ctx) => zo.GetTypeAtom(ctx).StdAtom == typeAtom);
+                switch (typeAtom)
+                {
+                    case StdAtom.APPLICABLE:
+                        parts.Add("applicable object");
+                        preds.Add((zo, ctx) => zo is IApplicable);
+                        break;
+
+                    case StdAtom.STRUCTURED:
+                        parts.Add("structured object");
+                        preds.Add((zo, ctx) => zo is IStructure);
+                        break;
+
+                    default:
+                        //XXX probably good enough for builtin types, but should get the real name from the attribute
+                        parts.Add("TYPE " + typeAtom.ToString());
+                        preds.Add((zo, ctx) => zo.GetTypeAtom(ctx).StdAtom == typeAtom);
+                        break;
+                }
             }
 
             public void AddPrimTypeConstraint(PrimType primtype)

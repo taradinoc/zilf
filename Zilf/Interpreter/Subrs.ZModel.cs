@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -35,18 +36,14 @@ namespace Zilf.Interpreter
         #region Z-Code: Routines, Objects, Constants, Globals
 
         [Subr("ROUTINE-FLAGS")]
-        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilObject[] args)
+        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilAtom[] flags)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             var newFlags = RoutineFlags.None;
 
-            foreach (var arg in args)
+            foreach (var atom in flags)
             {
-                var atom = arg as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ROUTINE-FLAGS: all args must be atoms");
-
                 switch (atom.StdAtom)
                 {
                     case StdAtom.CLEAN_STACK_P:
@@ -63,57 +60,29 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject ROUTINE(Context ctx, ZilObject[] args)
+        public static ZilObject ROUTINE(Context ctx, ZilAtom name,
+            [Optional] ZilAtom activationAtom, ZilList argList,
+            [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 3)
-                throw new InterpreterError("ROUTINE", 3, 0);
-
-            ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("ROUTINE: first arg must be an atom");
-
-            var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
+            var oldAtom = ctx.ZEnvironment.InternGlobalName(name);
             if (ctx.GetZVal(oldAtom) != null)
             {
                 if (ctx.AllowRedefine)
                 {
                     ctx.Redefine(oldAtom);
-                    ctx.ZEnvironment.InternGlobalName(atom);
+                    ctx.ZEnvironment.InternGlobalName(name);
                 }
                 else
                     throw new InterpreterError("ROUTINE: already defined: " + oldAtom.ToStringContext(ctx, false));
-            }
-
-            ZilAtom activationAtom;
-            ZilList argList;
-            IEnumerable<ZilObject> body;
-
-            if (args[1] is ZilAtom)
-            {
-                activationAtom = (ZilAtom)args[1];
-                argList = args[2] as ZilList;
-                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("ROUTINE: third arg must be a list");
-                body = args.Skip(3);
-            }
-            else if (args[1].GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
-            {
-                activationAtom = null;
-                argList = (ZilList)args[1];
-                body = args.Skip(2);
-            }
-            else
-            {
-                throw new InterpreterError("ROUTINE: second arg must be an atom or list");
             }
 
             var flags = CombineFlags(ctx.CurrentFileFlags, ctx.NextRoutineFlags);
             ctx.NextRoutineFlags = RoutineFlags.None;
 
             ZilRoutine rtn = new ZilRoutine(
-                atom,
+                name,
                 activationAtom,
                 argList,
                 body,
@@ -141,9 +110,9 @@ namespace Zilf.Interpreter
 
             if (ctx.CallingForm != null)
                 rtn.SourceLine = ctx.CallingForm.SourceLine;
-            ctx.SetZVal(atom, rtn);
+            ctx.SetZVal(name, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);
-            return atom;
+            return name;
         }
 
         private static RoutineFlags CombineFlags(FileFlags fileFlags, RoutineFlags routineFlags)
@@ -158,22 +127,15 @@ namespace Zilf.Interpreter
 
         [Subr]
         [Subr("MSETG")]
-        public static ZilObject CONSTANT(Context ctx, ZilObject[] args)
+        public static ZilObject CONSTANT(Context ctx,
+            [Decl("<OR ATOM <ADECL ATOM>>")] ZilObject name, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("CONSTANT", 2, 2);
-
-            ZilAtom atom = args[0] as ZilAtom;
+            ZilAtom atom = name as ZilAtom;
             if (atom == null)
             {
-                var adecl = args[0] as ZilAdecl;
-                if (adecl != null)
-                    atom = adecl.First as ZilAtom;
-
-                if (atom == null)
-                    throw new InterpreterError("CONSTANT: first arg must be an atom (or ADECL'd atom)");
+                atom = ((ZilAdecl)name).First as ZilAtom;
             }
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
@@ -185,7 +147,7 @@ namespace Zilf.Interpreter
                     ctx.Redefine(oldAtom);
                     ctx.ZEnvironment.InternGlobalName(atom);
                 }
-                else if (previous is ZilConstant && ((ZilConstant)previous).Value.Equals(args[1]))
+                else if (previous is ZilConstant && ((ZilConstant)previous).Value.Equals(value))
                 {
                     // silently ignore duplicate constants as long as the values are equal
                     return previous;
@@ -196,29 +158,24 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return ctx.AddZConstant(atom, args[1]);
+            return ctx.AddZConstant(atom, value);
         }
 
         [Subr]
-        public static ZilObject GLOBAL(Context ctx, ZilObject[] args)
+        public static ZilObject GLOBAL(Context ctx,
+            [Decl("<OR ATOM <ADECL ATOM>>")] ZilObject name, ZilObject defaultValue,
+            ZilObject decl = null, ZilAtom size = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // typical form:  <GLOBAL atom-or-adecl default-value>
             // quirky form:   <GLOBAL atom-or-adecl default-value decl [size]>
             // TODO: use decl and size?
-            if (args.Length < 2 || args.Length > 4)
-                throw new InterpreterError("GLOBAL", 2, 4);
 
-            ZilAtom atom = args[0] as ZilAtom;
+            ZilAtom atom = name as ZilAtom;
             if (atom == null)
             {
-                var adecl = args[0] as ZilAdecl;
-                if (adecl != null)
-                    atom = adecl.First as ZilAtom;
-
-                if (atom == null)
-                    throw new InterpreterError("GLOBAL: first arg must be an atom (or ADECL'd atom)");
+                atom = (ZilAtom)((ZilAdecl)name).First;
             }
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
@@ -229,12 +186,12 @@ namespace Zilf.Interpreter
                 {
                     if (oldVal is ZilGlobal)
                     {
-                        var defaultValue = ((ZilGlobal)oldVal).Value;
-                        if (defaultValue is ZilTable)
+                        var oldDefault = ((ZilGlobal)oldVal).Value;
+                        if (oldDefault is ZilTable)
                         {
                             // prevent errors about duplicate symbol T?GLOBAL-NAME
                             // TODO: undefine the table if it hasn't been referenced anywhere yet
-                            ((ZilTable)defaultValue).Name = null;
+                            ((ZilTable)oldDefault).Name = null;
                         }
                     }
 
@@ -245,42 +202,31 @@ namespace Zilf.Interpreter
                     throw new InterpreterError("GLOBAL: already defined: " + oldAtom.ToStringContext(ctx, false));
             }
 
-            if (args[1] is ZilTable)
-                ((ZilTable)args[1]).Name = "T?" + atom.Text;
+            if (defaultValue is ZilTable)
+                ((ZilTable)defaultValue).Name = "T?" + atom.Text;
 
-            ZilGlobal g = new ZilGlobal(atom, args[1]);
+            ZilGlobal g = new ZilGlobal(atom, defaultValue);
             ctx.SetZVal(atom, g);
             ctx.ZEnvironment.Globals.Add(g);
             return g;
         }
 
         [Subr("DEFINE-GLOBALS")]
-        public static ZilObject DEFINE_GLOBALS(Context ctx, ZilObject[] args)
+        public static ZilObject DEFINE_GLOBALS(Context ctx, ZilAtom groupName,
+            [Decl(@"<LIST [REST <OR <LIST <OR ATOM <ADECL ATOM>> [OPT <OR 'BYTE 'WORD> ANY]>
+                                    <LIST <OR ATOM <ADECL ATOM>> [OPT ANY <OR 'BYTE 'WORD>]>>]>")]
+            ZilList[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("DEFINE-GLOBALS", 2, 0);
-
-            for (int i = 1; i < args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
-                var spec = args[i] as ZilList;
-                if (spec == null || spec.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("DEFINE-GLOBALS: following arguments must be lists");
-
-                var length = ((IStructure)spec).GetLength(3);
-                if (length == null || length < 1)
-                    throw new InterpreterError("DEFINE-GLOBALS: global spec must have 1 to 3 elements");
+                var spec = args[i];
 
                 var name = spec.First as ZilAtom;
                 if (name == null)
                 {
-                    var nameAdecl = spec.First as ZilAdecl;
-                    if (nameAdecl != null)
-                        name = nameAdecl.First as ZilAtom;
-
-                    if (name == null)
-                        throw new InterpreterError("DEFINE-GLOBALS: global names must be atoms or ADECLs");
+                    name = (ZilAtom)((ZilAdecl)spec.First).First;
                 }
 
                 spec = spec.Rest;
