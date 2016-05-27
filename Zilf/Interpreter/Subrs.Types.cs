@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -27,127 +28,68 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilObject TYPE(Context ctx, ZilObject[] args)
+        public static ZilObject TYPE(Context ctx, ZilObject value)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("TYPE", 1, 1);
-
-            return args[0].GetTypeAtom(ctx);
+            return value.GetTypeAtom(ctx);
         }
 
         [Subr("TYPE?")]
-        public static ZilObject TYPE_P(Context ctx, ZilObject[] args)
+        public static ZilObject TYPE_P(Context ctx, ZilObject value, [Decl("<LIST ATOM>")] ZilAtom[] types)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("TYPE?", 2, 0);
-
-            ZilAtom type = args[0].GetTypeAtom(ctx);
-            for (int i = 1; i < args.Length; i++)
-                if (args[i] == type)
-                    return type;
-
-            return ctx.FALSE;
+            var type = value.GetTypeAtom(ctx);
+            return types.FirstOrDefault(a => a == type) ?? ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject CHTYPE(Context ctx, ZilObject[] args)
+        public static ZilObject CHTYPE(Context ctx, ZilObject value, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("CHTYPE", 2, 2);
-
-            ZilAtom atom = args[1] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("CHTYPE: second arg must be an atom");
-
-            return ctx.ChangeType(args[0], atom);
+            return ctx.ChangeType(value, atom);
         }
 
         [Subr]
-        public static ZilObject NEWTYPE(Context ctx, ZilObject[] args)
+        public static ZilObject NEWTYPE(Context ctx, ZilAtom name, ZilAtom primtypeAtom, ZilObject decl = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2 || args.Length > 3)
-                throw new InterpreterError("NEWTYPE", 2, 3);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("NEWTYPE: first arg must be an atom");
+            // TODO: do something with the decl
 
             if (ctx.IsRegisteredType(name))
                 throw new InterpreterError("NEWTYPE: already registered: " + name.ToStringContext(ctx, false));
 
-            var primtypeAtom = args[1] as ZilAtom;
-            if (primtypeAtom == null)
-                throw new InterpreterError("NEWTYPE: second arg must be an atom");
-
             PrimType primtype;
-            switch (primtypeAtom.StdAtom)
-            {
-                case StdAtom.ATOM:
-                    primtype = PrimType.ATOM;
-                    break;
-                case StdAtom.FIX:
-                    primtype = PrimType.FIX;
-                    break;
-                case StdAtom.STRING:
-                    primtype = PrimType.STRING;
-                    break;
-                case StdAtom.LIST:
-                    primtype = PrimType.LIST;
-                    break;
-                case StdAtom.TABLE:
-                    primtype = PrimType.TABLE;
-                    break;
-                case StdAtom.VECTOR:
-                    primtype = PrimType.VECTOR;
-                    break;
-
-                default:
-                    if (ctx.IsRegisteredType(primtypeAtom))
-                        primtype = ctx.GetTypePrim(primtypeAtom);
-                    else
-                        throw new InterpreterError("NEWTYPE: unrecognized primtype: " + primtypeAtom.ToStringContext(ctx, false));
-                    break;
-            }
+            if (ctx.IsRegisteredType(primtypeAtom))
+                primtype = ctx.GetTypePrim(primtypeAtom);
+            else
+                throw new InterpreterError("NEWTYPE: unrecognized primtype: " + primtypeAtom.ToStringContext(ctx, false));
 
             ctx.RegisterType(name, primtype);
             return name;
         }
 
         [Subr]
-        public static ZilObject PRINTTYPE(Context ctx, ZilObject[] args)
+        public static ZilObject PRINTTYPE(Context ctx, ZilAtom atom,
+            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("PRINTTYPE", 2, 2);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("PRINTTYPE: first arg must be an atom");
             if (!ctx.IsRegisteredType(atom))
                 throw new InterpreterError("PRINTTYPE: not a registered type: " + atom.ToStringContext(ctx, false));
 
-            ZilObject handler;
-
-            if (args.Length == 1)
+            if (handler == null)
             {
-                handler = ctx.GetPrintType(atom);
-                return handler ?? ctx.FALSE;
+                return ctx.GetPrintType(atom) ?? ctx.FALSE;
             }
 
-            handler = args[1];
             switch (ctx.SetPrintType(atom, handler))
             {
                 case Context.SetPrintTypeResult.OK:
-                    return args[0];
+                    return atom;
 
                 case Context.SetPrintTypeResult.BadHandlerType:
                     throw new InterpreterError("PRINTTYPE: second arg must be an atom or applicable");
@@ -167,36 +109,27 @@ namespace Zilf.Interpreter
         }
 
         [Subr("MAKE-GVAL")]
-        public static ZilObject MAKE_GVAL(Context ctx, ZilObject[] args)
+        public static ZilObject MAKE_GVAL(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("MAKE-GVAL", 1, 1);
-
-            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), args[0] }) { SourceLine = SourceLines.MakeGval };
+            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), arg }) { SourceLine = SourceLines.MakeGval };
         }
 
         [Subr("APPLICABLE?")]
-        public static ZilObject APPLICABLE_P(Context ctx, ZilObject[] args)
+        public static ZilObject APPLICABLE_P(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("APPLICABLE?", 1, 1);
-
-            return (args[0] is IApplicable) ? ctx.TRUE : ctx.FALSE;
+            return (arg is IApplicable) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("STRUCTURED?")]
-        public static ZilObject STRUCTURED_P(Context ctx, ZilObject[] args)
+        public static ZilObject STRUCTURED_P(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("STRUCTURED?", 1, 1);
-
-            return (args[0] is IStructure) ? ctx.TRUE : ctx.FALSE;
+            return (arg is IStructure) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr]
@@ -231,22 +164,18 @@ namespace Zilf.Interpreter
         }
         
         [Subr]
-        public static ZilObject ILIST(Context ctx, ZilObject[] args)
+        public static ZilObject ILIST(Context ctx, int count, ZilObject init = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("ILIST", 1, 2);
-
-            var count = args[0] as ZilFix;
-            if (count == null || count.Value < 0)
+            if (count < 0)
                 throw new InterpreterError("ILIST: first arg must be a non-negative FIX");
 
-            var contents = new List<ZilObject>(count.Value);
-            for (int i = 0; i < count.Value; i++)
+            var contents = new List<ZilObject>(count);
+            for (int i = 0; i < count; i++)
             {
-                if (args.Length >= 2)
-                    contents.Add(args[1].Eval(ctx));
+                if (init != null)
+                    contents.Add(init.Eval(ctx));
                 else
                     contents.Add(ctx.FALSE);
             }
@@ -255,22 +184,18 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject IVECTOR(Context ctx, ZilObject[] args)
+        public static ZilObject IVECTOR(Context ctx, int count, ZilObject init=null )
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("IVECTOR", 1, 2);
-
-            var count = args[0] as ZilFix;
-            if (count == null || count.Value < 0)
+            if (count < 0)
                 throw new InterpreterError("IVECTOR: first arg must be a non-negative FIX");
 
-            var contents = new List<ZilObject>(count.Value);
-            for (int i = 0; i < count.Value; i++)
+            var contents = new List<ZilObject>(count);
+            for (int i = 0; i < count; i++)
             {
-                if (args.Length >= 2)
-                    contents.Add(args[1].Eval(ctx));
+                if (init != null)
+                    contents.Add(init.Eval(ctx));
                 else
                     contents.Add(ctx.FALSE);
             }
@@ -279,66 +204,36 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject BYTE(Context ctx, ZilObject[] args)
+        public static ZilObject BYTE(Context ctx, ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("BYTE", 1, 1);
-
-            return ctx.ChangeType(args[0], ctx.GetStdAtom(StdAtom.BYTE));
+            return ctx.ChangeType(arg, ctx.GetStdAtom(StdAtom.BYTE));
         }
 
         [Subr]
-        public static ZilObject CONS(Context ctx, ZilObject[] args)
+        public static ZilObject CONS(Context ctx, ZilObject first, ZilList rest)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("CONS", 2, 2);
+            if (rest.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                rest = new ZilList(rest);
 
-            ZilList list = args[1] as ZilList;
-            if (list == null)
-                throw new InterpreterError("CONS: second arg must be a list");
-
-            if (list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                list = new ZilList(list);
-
-            return new ZilList(args[0], list);
+            return new ZilList(first, rest);
         }
 
         [FSubr]
-        public static ZilObject FUNCTION(Context ctx, ZilObject[] args)
+        public static ZilObject FUNCTION(Context ctx, [Optional] ZilAtom activationAtom,
+            ZilList argList, [Decl("<LIST ANY>")] ZilObject[] body)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length < 2)
-                throw new InterpreterError("FUNCTION", 2, 0);
-
-            ZilAtom activationAtom = args[0] as ZilAtom;
-            ZilList argList;
-            IEnumerable<ZilObject> body;
-
-            if (activationAtom == null)
-            {
-                argList = args[0] as ZilList;
-                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("FUNCTION: first arg must be a list");
-                body = args.Skip(1);
-            }
-            else
-            {
-                argList = args[1] as ZilList;
-                if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("FUNCTION: second arg must be a list");
-                body = args.Skip(2);
-            }
+            SubrContracts(ctx);
 
             return new ZilFunction(null, activationAtom, argList, body);
         }
 
         [Subr]
-        public static ZilObject STRING(Context ctx, ZilObject[] args)
+        public static ZilObject STRING(Context ctx,
+            [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
@@ -354,7 +249,8 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError("STRING: all args must be strings or characters");
+                        // shouldn't get here
+                        throw new NotImplementedException();
                 }
             }
 
@@ -362,23 +258,19 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject ISTRING(Context ctx, ZilObject[] args)
+        public static ZilObject ISTRING(Context ctx, int count, ZilObject init = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("STRING", 1, 2);
-
-            var count = args[0] as ZilFix;
-            if (count == null || count.Value < 0)
+            if (count < 0)
                 throw new InterpreterError("ISTRING: first arg must be a non-negative FIX");
 
-            var contents = new List<char>(count.Value);
-            for (int i = 0; i < count.Value; i++)
+            var contents = new List<char>(count);
+            for (int i = 0; i < count; i++)
             {
-                if (args.Length >= 2)
+                if (init != null)
                 {
-                    var ch = args[1].Eval(ctx) as ZilChar;
+                    var ch = init.Eval(ctx) as ZilChar;
                     if (ch == null)
                         throw new InterpreterError("ISTRING: iterated values must be CHARACTERs");
                     contents.Add(ch.Char);
@@ -391,22 +283,15 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject ASCII(Context ctx, ZilObject[] args)
+        public static ZilObject ASCII(Context ctx, [Decl("<OR CHARACTER FIX>")] ZilObject arg)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("ASCII", 1, 1);
-
-            ZilChar ch = args[0] as ZilChar;
+            ZilChar ch = arg as ZilChar;
             if (ch != null)
                 return new ZilFix(ch.Char);
 
-            ZilFix fix = args[0] as ZilFix;
-            if (fix != null)
-                return new ZilChar((char)fix.Value);
-
-            throw new InterpreterError("ASCII: arg must be a character or FIX");
+            return new ZilChar((char)((ZilFix)arg).Value);
         }
 
     }

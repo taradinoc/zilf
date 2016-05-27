@@ -339,5 +339,57 @@ namespace ZilfTests.Interpreter
             var rested = TestHelpers.Evaluate("<ZREST <TABLE 1 2 3> 2>");
             Assert.IsInstanceOfType(rested, typeof(ZilTable));
         }
+
+        [TestMethod]
+        public void SUBSTRUC_With_One_Argument_Returns_A_Primitive_Copy()
+        {
+            TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3)>",
+                new ZilList(new[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) }));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20>>",
+                new ZilVector(new ZilFix(10), new ZilFix(20)));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\">",
+                ZilString.FromString("Hello"));
+        }
+
+        [TestMethod]
+        public void SUBSTRUC_With_Two_Arguments_Returns_A_RESTed_Primitive_Copy()
+        {
+            TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3) 2>",
+                new ZilList(new[] { new ZilFix(3) }));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20> 0>",
+                new ZilVector(new ZilFix(10), new ZilFix(20)));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\" 3>",
+                ZilString.FromString("lo"));
+        }
+
+        [TestMethod]
+        public void SUBSTRUC_With_Three_Arguments_Limits_Copying()
+        {
+            TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3) 2 0>",
+                new ZilList(null, null));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20> 0 1>",
+                new ZilVector(new ZilFix(10)));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\" 1 3>",
+                ZilString.FromString("ell"));
+        }
+
+        [TestMethod]
+        public void SUBSTRUC_With_Four_Arguments_Copies_Into_An_Existing_Structure()
+        {
+            TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3) 2 0 '(4 5 6)>",
+                new ZilList(new[] { new ZilFix(4), new ZilFix(5), new ZilFix(6) }));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20> 0 1 '[30 40]>",
+                new ZilVector(new ZilFix(10), new ZilFix(40)));
+
+            TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\" 1 3 \"Leeroy\">",
+                ZilString.FromString("ellroy"));
+        }
     }
 }

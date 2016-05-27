@@ -55,7 +55,8 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(list != null);
             Contract.Ensures(Contract.Result<ZilFunction>() != null);
 
-            return (ZilFunction)Subrs.FUNCTION(ctx, list.ToArray());
+            return (ZilFunction)ctx.GetSubrDelegate("FUNCTION")
+                .Invoke("FUNCTION", ctx, list.ToArray());
         }
 
         private string ToString(Func<ZilObject, string> convert)

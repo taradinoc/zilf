@@ -254,6 +254,8 @@ namespace Zilf.Language
         [Atom("ONE-BYTE-PARTS-OF-SPEECH")]
         ONE_BYTE_PARTS_OF_SPEECH,
         OPEN,
+        OPT,
+        OPTIONAL,
         OR,
         ORB,
         OUTCHAN,
@@ -273,6 +275,7 @@ namespace Zilf.Language
         PREPOSITIONS,
         [Atom("PRESERVE-SPACES?")]
         PRESERVE_SPACES_P,
+        PRIMTYPE,
         PRINT,
         PRINTB,
         PRINTC,
