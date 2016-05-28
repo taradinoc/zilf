@@ -285,6 +285,24 @@ namespace Zilf.Interpreter
                     UpperBound = 1,
                 };
             }
+            else if (pi.ParameterType == typeof(bool) || pi.ParameterType == typeof(bool?))
+            {
+                if (pi.ParameterType == typeof(bool))
+                {
+                    defaultValue = false;
+                }
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        c.Ready(a[i].IsTrue);
+                        return i + 1;
+                    },
+                    LowerBound = 1,
+                    UpperBound = 1,
+                };
+            }
             else if (pi.ParameterType.IsArray && IsZilObjectType(pi.ParameterType.GetElementType()))
             {
                 // decode as an array containing all remaining args

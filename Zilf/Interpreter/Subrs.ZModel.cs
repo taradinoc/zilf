@@ -297,33 +297,28 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject OBJECT(Context ctx, ZilObject[] args)
+        public static ZilObject OBJECT(Context ctx, ZilAtom name,
+            [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformObject(ctx, args, false);
+            return PerformObject(ctx, name, props, false);
         }
 
         [Subr]
-        public static ZilObject ROOM(Context ctx, ZilObject[] args)
+        public static ZilObject ROOM(Context ctx, ZilAtom name,
+            [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformObject(ctx, args, true);
+            return PerformObject(ctx, name, props, true);
         }
 
-        private static ZilObject PerformObject(Context ctx, ZilObject[] args, bool isRoom)
+        private static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             string name = isRoom ? "ROOM" : "OBJECT";
-
-            if (args.Length < 1)
-                throw new InterpreterError(name, 1, 0);
-
-            ZilAtom atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError(name + ": first arg must be an atom");
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             if (ctx.GetZVal(oldAtom) != null)
@@ -337,14 +332,6 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(name + ": already defined: " + oldAtom.ToStringContext(ctx, false));
             }
 
-            ZilList[] props = new ZilList[args.Length - 1];
-            for (int i = 0; i < props.Length; i++)
-            {
-                props[i] = args[i + 1] as ZilList;
-                if (props[i] == null || props[i].GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError(name + ": all property definitions must be lists");
-            }
-
             ZilModelObject zmo = new ZilModelObject(atom, props, isRoom);
             if (ctx.CallingForm != null)
                 zmo.SourceLine = ctx.CallingForm.SourceLine;
@@ -354,28 +341,21 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject PROPDEF(Context ctx, ZilObject[] args)
+        public static ZilObject PROPDEF(Context ctx, ZilAtom atom, ZilObject defaultValue, ZilObject[] spec)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length < 2)
-                throw new InterpreterError("PROPDEF", 2, 0);
-
-            ZilAtom atom = args[0].Eval(ctx) as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("PROPDEF: first arg must be an atom");
+            SubrContracts(ctx);
 
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
                 Errors.TerpWarning(ctx, null,
                     "overriding default value for property '{0}'",
                     atom);
 
-            ctx.ZEnvironment.PropertyDefaults[atom] = args[1].Eval(ctx);
+            ctx.ZEnvironment.PropertyDefaults[atom] = defaultValue.Eval(ctx);
 
             // complex property patterns
-            if (args.Length >= 3)
+            if (spec.Length > 0)
             {
-                var pattern = ComplexPropDef.Parse(args.Skip(2), ctx);
+                var pattern = ComplexPropDef.Parse(spec, ctx);
                 ctx.SetPropDef(atom, pattern);
             }
 
@@ -383,39 +363,25 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject ZSTART(Context ctx, ZilObject[] args)
+        public static ZilObject ZSTART(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length != 1)
-                throw new InterpreterError("ZSTART", 1, 1);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError("ZSTART: arg must be an atom");
+            SubrContracts(ctx);
 
             ctx.ZEnvironment.EntryRoutineName = atom;
-            return args[0];
+            return atom;
         }
 
         [Subr("BIT-SYNONYM")]
-        public static ZilObject BIT_SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject BIT_SYNONYM(Context ctx, ZilAtom first,
+            [Decl("<LIST ATOM [REST ATOM]>")] ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("BIT-SYNONYM", 2, 0);
-
-            if (!args.All(a => a is ZilAtom))
-                throw new InterpreterError("BIT-SYNONYM: all args must be atoms");
-
-            var first = (ZilAtom)args[0];
             ZilAtom original;
-
             if (ctx.ZEnvironment.TryGetBitSynonym(first, out original))
                 first = original;
 
-            foreach (var synonym in args.Skip(1).Cast<ZilAtom>())
+            foreach (var synonym in synonyms)
             {
                 if (ctx.GetZVal(synonym) != null)
                     throw new InterpreterError("BIT-SYNONYM: symbol is already defined: " + synonym);
@@ -431,9 +397,13 @@ namespace Zilf.Interpreter
         #region Z-Code: Tables
 
         [Subr]
-        public static ZilObject ITABLE(Context ctx, ZilObject[] args)
+        public static ZilObject ITABLE(Context ctx,
+            [Optional] ZilAtom specifier,
+            int count,
+            [Optional, Decl("<LIST [REST ATOM]>")] ZilList flagList,
+            ZilObject[] initializer)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // Syntax:
             //    <ITABLE [specifier] count [(flags...)] [init...]>
@@ -444,16 +414,12 @@ namespace Zilf.Interpreter
             // 'init' is a sequence of values to be repeated 'count' times.
             // values are compiled as words unless BYTE/LEXV flag is specified.
 
-            if (args.Length < 1)
-                throw new InterpreterError("ITABLE", 1, 0);
-
-            int i = 0;
             TableFlags flags = 0;
 
             // optional specifier
-            if (args[i] is ZilAtom)
+            if (specifier != null)
             {
-                switch (((ZilAtom)args[i]).StdAtom)
+                switch (specifier.StdAtom)
                 {
                     case StdAtom.NONE:
                         // no change
@@ -467,28 +433,20 @@ namespace Zilf.Interpreter
                     default:
                         throw new InterpreterError("ITABLE: specifier must be NONE, BYTE, or WORD");
                 }
-
-                i++;
             }
 
             // element count
-            ZilFix elemCount;
-            if (i >= args.Length || (elemCount = args[i] as ZilFix) == null)
-                throw new InterpreterError("ITABLE: missing element count");
-            if (elemCount.Value < 1)
+            if (count < 1)
                 throw new InterpreterError("ITABLE: invalid table size");
-            i++;
 
             // optional flags
-            if (i < args.Length && args[i] is ZilList)
+            if (flagList != null)
             {
                 bool gotLength = false;
 
-                foreach (ZilObject obj in (ZilList)args[i])
+                foreach (ZilObject obj in flagList)
                 {
-                    ZilAtom flag = obj as ZilAtom;
-                    if (flag == null)
-                        throw new InterpreterError("ITABLE: flags must be atoms");
+                    ZilAtom flag = (ZilAtom)obj;
 
                     switch (flag.StdAtom)
                     {
@@ -525,22 +483,12 @@ namespace Zilf.Interpreter
                     else
                         flags |= TableFlags.WordLength;
                 }
-
-                i++;
             }
 
-            ZilObject[] initializer;
-            if (i >= args.Length)
-            {
+            if (initializer.Length == 0)
                 initializer = null;
-            }
-            else
-            {
-                initializer = new ZilObject[args.Length - i];
-                Array.Copy(args, i, initializer, 0, initializer.Length);
-            }
 
-            ZilTable tab = ZilTable.Create(elemCount.Value, initializer, flags, null);
+            ZilTable tab = ZilTable.Create(count, initializer, flags, null);
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
@@ -548,10 +496,10 @@ namespace Zilf.Interpreter
             return tab;
         }
 
-        private static ZilTable PerformTable(Context ctx, ZilObject[] args,
+        private static ZilTable PerformTable(Context ctx, ZilList flagList, ZilObject[] values,
             bool pure, bool wantLength)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
             // syntax:
             //    <[P][L]TABLE [(flags...)] values...>
@@ -568,67 +516,60 @@ namespace Zilf.Interpreter
             bool tempTable = false;
             bool parserTable = false;
 
-            int i = 0;
-            if (args.Length > 0)
+            if (flagList != null)
             {
-                if (args[0].GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+                while (!flagList.IsEmpty)
                 {
-                    i++;
+                    ZilAtom flag = flagList.First as ZilAtom;
+                    if (flag == null)
+                        throw new InterpreterError(name + ": flags must be atoms");
 
-                    var list = (ZilList)args[0];
-                    while (!list.IsEmpty)
+                    switch (flag.StdAtom)
                     {
-                        ZilAtom flag = list.First as ZilAtom;
-                        if (flag == null)
-                            throw new InterpreterError(name + ": flags must be atoms");
+                        case StdAtom.LENGTH:
+                            wantLength = true;
+                            break;
+                        case StdAtom.PURE:
+                            pure = true;
+                            break;
+                        case StdAtom.BYTE:
+                            type = T_BYTES;
+                            break;
+                        case StdAtom.STRING:
+                            type = T_STRING;
+                            break;
+                        case StdAtom.KERNEL:
+                            // nada
+                            break;
+                        case StdAtom.PARSER_TABLE:
+                            pure = true;
+                            parserTable = true;
+                            break;
+                        case StdAtom.TEMP_TABLE:
+                            tempTable = true;
+                            break;
 
-                        switch (flag.StdAtom)
-                        {
-                            case StdAtom.LENGTH:
-                                wantLength = true;
-                                break;
-                            case StdAtom.PURE:
-                                pure = true;
-                                break;
-                            case StdAtom.BYTE:
-                                type = T_BYTES;
-                                break;
-                            case StdAtom.STRING:
-                                type = T_STRING;
-                                break;
-                            case StdAtom.KERNEL:
-                                // nada
-                                break;
-                            case StdAtom.PARSER_TABLE:
-                                pure = true;
-                                parserTable = true;
-                                break;
-                            case StdAtom.TEMP_TABLE:
-                                tempTable = true;
-                                break;
+                        case StdAtom.PATTERN:
+                            flagList = flagList.Rest;
+                            ZilList patternList;
+                            if (flagList.IsEmpty || (patternList = flagList.First as ZilList) == null)
+                                throw new InterpreterError(name + ": expected a list after PATTERN");
+                            pattern = patternList.ToArray();
+                            ValidateTablePattern(name, pattern);
+                            break;
 
-                            case StdAtom.PATTERN:
-                                list = list.Rest;
-                                ZilList patternList;
-                                if (list.IsEmpty || (patternList = list.First as ZilList) == null)
-                                    throw new InterpreterError(name + ": expected a list after PATTERN");
-                                pattern = patternList.ToArray();
-                                ValidateTablePattern(name, pattern);
-                                break;
+                        case StdAtom.SEGMENT:
+                            // ignore
+                            flagList = flagList.Rest;
+                            if (flagList.IsEmpty)
+                                throw new InterpreterError(name + ": expected a value after SEGMENT");
+                            break;
 
-                            case StdAtom.SEGMENT:
-                                // ignore
-                                list = list.Rest;
-                                if (list.IsEmpty)
-                                    throw new InterpreterError(name + ": expected a value after SEGMENT");
-                                break;
-
-                            default:
-                                throw new InterpreterError(name + ": unrecognized flag: " + flag);
-                        }
-
-                        list = list.Rest;
+                        default:
+                            throw new InterpreterError(name + ": unrecognized flag: " + flag);
                     }
+
+                    flagList = flagList.Rest;
                 }
             }
 
@@ -649,24 +590,21 @@ namespace Zilf.Interpreter
             if (parserTable)
                 flags |= TableFlags.ParserTable;
 
-            List<ZilObject> values = new List<ZilObject>(args.Length - i);
-            while (i < args.Length)
+            List<ZilObject> newValues = new List<ZilObject>(values.Length);
+            foreach (var val in values)
             {
-                ZilObject val = args[i];
                 if (type == T_STRING && val.GetTypeAtom(ctx).StdAtom == StdAtom.STRING)
                 {
                     string str = val.ToStringContext(ctx, true);
                     foreach (char c in str)
-                        values.Add(new ZilFix(c));
+                        newValues.Add(new ZilFix(c));
                 }
                 else
-                    values.Add(val);
-
-                i++;
+                    newValues.Add(val);
             }
 
             ZilTable tab = ZilTable.Create(
-                1, values.ToArray(), flags, pattern == null ? null : pattern.ToArray());
+                1, newValues.ToArray(), flags, pattern == null ? null : pattern.ToArray());
             if (ctx.CallingForm != null)
                 tab.SourceLine = ctx.CallingForm.SourceLine;
             if (!tempTable)
@@ -723,139 +661,88 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject TABLE(Context ctx, ZilObject[] args)
+        public static ZilObject TABLE(Context ctx, [Optional] ZilList flagList, ZilObject[] values)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformTable(ctx, args, false, false);
+            return PerformTable(ctx, flagList, values, false, false);
         }
 
         [Subr]
-        public static ZilObject LTABLE(Context ctx, ZilObject[] args)
+        public static ZilObject LTABLE(Context ctx, [Optional] ZilList flagList, ZilObject[] values)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformTable(ctx, args, false, true);
+            return PerformTable(ctx, flagList, values, false, true);
         }
 
         [Subr]
-        public static ZilObject PTABLE(Context ctx, ZilObject[] args)
+        public static ZilObject PTABLE(Context ctx, [Optional] ZilList flagList, ZilObject[] values)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformTable(ctx, args, true, false);
+            return PerformTable(ctx, flagList, values, true, false);
         }
 
         [Subr]
-        public static ZilObject PLTABLE(Context ctx, ZilObject[] args)
+        public static ZilObject PLTABLE(Context ctx, [Optional] ZilList flagList, ZilObject[] values)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformTable(ctx, args, true, true);
+            return PerformTable(ctx, flagList, values, true, true);
         }
 
         [Subr]
-        public static ZilObject ZGET(Context ctx, ZilObject[] args)
+        public static ZilObject ZGET(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("ZGET", 2, 2);
+            var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
-                throw new InterpreterError("ZGET: first arg must be a TABLE or derived type");
-
-            var table = (ZilTable)args[0].GetPrimitive(ctx);
-
-            var index = args[1] as ZilFix;
-            if (index == null)
-                throw new InterpreterError("ZGET: second arg must be a FIX");
-
-            return table.GetWord(ctx, index.Value) ?? ctx.FALSE;
+            return table.GetWord(ctx, index) ?? ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject ZPUT(Context ctx, ZilObject[] args)
+        public static ZilObject ZPUT(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index, ZilObject newValue)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 3)
-                throw new InterpreterError("ZPUT", 3, 3);
+            var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
-                throw new InterpreterError("ZPUT: first arg must be a TABLE or derived type");
-
-            var table = (ZilTable)args[0].GetPrimitive(ctx);
-
-            var index = args[1] as ZilFix;
-            if (index == null)
-                throw new InterpreterError("ZPUT: second arg must be a FIX");
-
-            table.PutWord(ctx, index.Value, args[2]);
-            return args[2];
+            table.PutWord(ctx, index, newValue);
+            return newValue;
         }
 
         [Subr]
-        public static ZilObject GETB(Context ctx, ZilObject[] args)
+        public static ZilObject GETB(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("GETB", 2, 2);
+            var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
-                throw new InterpreterError("GETB: first arg must be a TABLE or derived type");
-
-            var table = (ZilTable)args[0].GetPrimitive(ctx);
-
-            var index = args[1] as ZilFix;
-            if (index == null)
-                throw new InterpreterError("GETB: second arg must be a FIX");
-
-            return table.GetByte(ctx, index.Value) ?? ctx.FALSE;
+            return table.GetByte(ctx, index) ?? ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject PUTB(Context ctx, ZilObject[] args)
+        public static ZilObject PUTB(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index, ZilObject newValue)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 3)
-                throw new InterpreterError("PUTB", 3, 3);
+            var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (ctx.GetTypePrim(args[0].GetTypeAtom(ctx)) != PrimType.TABLE)
-                throw new InterpreterError("PUTB: first arg must be a TABLE or derived type");
-
-            var table = (ZilTable)args[0].GetPrimitive(ctx);
-
-            var index = args[1] as ZilFix;
-            if (index == null)
-                throw new InterpreterError("PUTB: second arg must be a FIX");
-
-            table.PutByte(ctx, index.Value, args[2]);
-            return args[2];
+            table.PutByte(ctx, index, newValue);
+            return newValue;
         }
 
         [Subr]
-        public static ZilObject ZREST(Context ctx, ZilObject[] args)
+        public static ZilObject ZREST(Context ctx, ZilTable table, int bytes)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 2)
-                throw new InterpreterError("ZREST", 2, 2);
-
-            var table = args[0] as ZilTable;
-            if (table == null)
-                throw new InterpreterError("ZREST: first arg must be a table");
-
-            var bytes = args[1] as ZilFix;
-            if (bytes == null)
-                throw new InterpreterError("ZREST: second arg must be a FIX");
-
-            if (bytes.Value < 0)
+            if (bytes < 0)
                 throw new InterpreterError("ZREST: second arg must not be negative");
 
-            return table.OffsetByBytes(ctx, bytes.Value);
+            return table.OffsetByBytes(ctx, bytes);
         }
 
         #endregion
@@ -863,23 +750,18 @@ namespace Zilf.Interpreter
         #region Z-Code: Version, Options, Capabilities
 
         [Subr]
-        public static ZilObject VERSION(Context ctx, ZilObject[] args)
+        public static ZilObject VERSION(Context ctx,
+            ZilObject versionExpr,
+            [Decl("'TIME")] ZilAtom time = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("VERSION", 1, 2);
-
-            int newVersion = ParseZVersion("VERSION", args[0]);
+            int newVersion = ParseZVersion("VERSION", versionExpr);
 
             ctx.SetZVersion(newVersion);
 
-            if (args.Length > 1)
+            if (time != null)
             {
-                var atom = args[1] as ZilAtom;
-                if (atom == null || atom.StdAtom != StdAtom.TIME)
-                    throw new InterpreterError("VERSION: second arg must be the atom TIME");
-
                 if (ctx.ZEnvironment.ZVersion != 3)
                     throw new InterpreterError("VERSION: TIME is only meaningful in version 3");
 
@@ -936,31 +818,25 @@ namespace Zilf.Interpreter
         }
 
         [Subr("CHECK-VERSION?")]
-        public static ZilObject CHECK_VERSION_P(Context ctx, ZilObject[] args)
+        public static ZilObject CHECK_VERSION_P(Context ctx, ZilObject versionExpr)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("CHECK-VERSION?", 1, 1);
-
-            int version = ParseZVersion("CHECK-VERSION?", args[0]);
+            int version = ParseZVersion("CHECK-VERSION?", versionExpr);
             return ctx.ZEnvironment.ZVersion == version ? ctx.TRUE : ctx.FALSE;
         }
 
         [FSubr("VERSION?")]
-        public static ZilObject VERSION_P(Context ctx, ZilObject[] args)
+        public static ZilObject VERSION_P(Context ctx, 
+            [Decl("<LIST [REST <LIST ANY>]>")] ZilList[] clauses)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1)
-                throw new InterpreterError("VERSION?", 1, 0);
+            var tAtom = ctx.GetStdAtom(StdAtom.T);
+            var elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
 
-            ZilAtom tAtom = ctx.GetStdAtom(StdAtom.T);
-            ZilAtom elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
-
-            foreach (ZilObject clause in args)
+            foreach (var list in clauses)
             {
-                ZilList list = clause as ZilList;
                 if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     throw new InterpreterError("VERSION?: args must be lists");
 
@@ -970,8 +846,8 @@ namespace Zilf.Interpreter
                 if (list.First == tAtom || list.First == elseAtom ||
                     ParseZVersion("VERSION?", list.First) == ctx.ZEnvironment.ZVersion)
                 {
-                    ZilObject result = list.First;
-                    foreach (ZilObject expr in list.Rest)
+                    var result = list.First;
+                    foreach (var expr in list.Rest)
                         result = expr.Eval(ctx);
                     return result;
                 }
@@ -981,91 +857,66 @@ namespace Zilf.Interpreter
         }
 
         [Subr("ORDER-OBJECTS?")]
-        public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilObject[] args)
+        public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1)
-                throw new InterpreterError("ORDER-OBJECTS?", 1, 0);
-
-            if (args[0] is ZilAtom)
+            switch (atom.StdAtom)
             {
-                switch (((ZilAtom)args[0]).StdAtom)
-                {
-                    case StdAtom.DEFINED:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.Defined;
-                        return args[0];
-                    case StdAtom.ROOMS_FIRST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsFirst;
-                        return args[0];
-                    case StdAtom.ROOMS_AND_LGS_FIRST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsAndLocalGlobalsFirst;
-                        return args[0];
-                    case StdAtom.ROOMS_LAST:
-                        ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsLast;
-                        return args[0];
-                }
+                case StdAtom.DEFINED:
+                    ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.Defined;
+                    return atom;
+                case StdAtom.ROOMS_FIRST:
+                    ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsFirst;
+                    return atom;
+                case StdAtom.ROOMS_AND_LGS_FIRST:
+                    ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsAndLocalGlobalsFirst;
+                    return atom;
+                case StdAtom.ROOMS_LAST:
+                    ctx.ZEnvironment.ObjectOrdering = ObjectOrdering.RoomsLast;
+                    return atom;
             }
 
             throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
         }
 
         [Subr("ORDER-TREE?")]
-        public static ZilObject ORDER_TREE_P(Context ctx, ZilObject[] args)
+        public static ZilObject ORDER_TREE_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length != 1)
-                throw new InterpreterError("ORDER-TREE?", 1, 1);
-
-            if (args[0] is ZilAtom)
+            switch (atom.StdAtom)
             {
-                switch (((ZilAtom)args[0]).StdAtom)
-                {
-                    case StdAtom.REVERSE_DEFINED:
-                        ctx.ZEnvironment.TreeOrdering = TreeOrdering.ReverseDefined;
-                        return args[0];
-                }
+                case StdAtom.REVERSE_DEFINED:
+                    ctx.ZEnvironment.TreeOrdering = TreeOrdering.ReverseDefined;
+                    return atom;
             }
 
             throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
         }
 
         [Subr("ORDER-FLAGS?")]
-        public static ZilObject ORDER_FLAGS_P(Context ctx, ZilObject[] args)
+        public static ZilObject ORDER_FLAGS_P(Context ctx,
+            [Decl("'LAST")] ZilAtom order,
+            [Decl("<LIST ATOM>")] ZilAtom[] objects)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("ORDER-FLAGS?", 2, 0);
-
-            var atom = args[0] as ZilAtom;
-            if (atom == null || atom.StdAtom != StdAtom.LAST)
-                throw new InterpreterError("ORDER-FLAGS?: first arg must be LAST");
-
-            for (int i = 1; i < args.Length; i++)
+            foreach (var atom in objects)
             {
-                atom = args[i] as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ORDER-FLAGS?: all args must be atoms");
-
                 ctx.ZEnvironment.FlagsOrderedLast.Add(atom);
             }
 
-            return args[0];
+            return order;
         }
 
         [Subr("ZIP-OPTIONS")]
-        public static ZilObject ZIP_OPTIONS(Context ctx, ZilObject[] args)
+        public static ZilObject ZIP_OPTIONS(Context ctx, ZilAtom[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            foreach (var arg in args)
+            foreach (var atom in args)
             {
-                var atom = arg as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError("ZIP-OPTIONS: all args must be atoms");
-
                 StdAtom flag;
 
                 switch (atom.StdAtom)
@@ -1110,42 +961,37 @@ namespace Zilf.Interpreter
         }
 
         [Subr("LONG-WORDS?")]
-        public static ZilObject LONG_WORDS_P(Context ctx, ZilObject[] args)
+        public static ZilObject LONG_WORDS_P(Context ctx, bool enabled = true)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.LONG_WORDS), ctx.TRUE, true);
+            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.LONG_WORDS),
+                enabled ? ctx.TRUE : ctx.FALSE, true);
             return ctx.TRUE;
         }
 
         [Subr("FUNNY-GLOBALS?")]
-        public static ZilObject FUNNY_GLOBALS_P(Context ctx, ZilObject[] args)
+        public static ZilObject FUNNY_GLOBALS_P(Context ctx, bool enabled = true)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P), ctx.TRUE);
+            ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P),
+                enabled ? ctx.TRUE : ctx.FALSE);
             return ctx.TRUE;
         }
 
         [Subr]
-        public static ZilObject CHRSET(Context ctx, ZilObject[] args)
+        public static ZilObject CHRSET(Context ctx, int alphabetNum,
+            [Decl("<LIST <OR STRING CHARACTER FIX BYTE> [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 2)
-                throw new InterpreterError("CHRSET", 2, 0);
-
-            var fix = args[0] as ZilFix;
-            if (fix == null)
-                throw new InterpreterError("CHRSET: first arg must be a FIX");
-
-            var alphabetNum = fix.Value;
             if (alphabetNum < 0 || alphabetNum > 2)
                 throw new InterpreterError("CHRSET: alphabet number must be between 0 and 2");
 
             var sb = new StringBuilder(26);
 
-            foreach (var item in args.Skip(1))
+            foreach (var item in args)
             {
                 var primitive = item.GetPrimitive(ctx);
                 switch (item.GetTypeAtom(ctx).StdAtom)
@@ -1161,7 +1007,9 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError("CHRSET: alphabet components must be STRING, CHARACTER, FIX, or BYTE");
+                        // shouldn't get here
+                        Contract.Assert(false);
+                        throw new NotImplementedException();
                 }
             }
 
@@ -1189,41 +1037,13 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject LANGUAGE(Context ctx, ZilObject[] args)
+        public static ZilObject LANGUAGE(Context ctx, ZilAtom name, char escapeChar = '%', bool changeChrset = true)
         {
-            if (args.Length < 1 || args.Length > 3)
-                throw new InterpreterError("LANGUAGE", 1, 3);
-
-            var name = args[0] as ZilAtom;
-            if (name == null)
-                throw new InterpreterError("LANGUAGE: first arg must be an atom");
+            SubrContracts(ctx);
 
             var language = ZModel.Language.Get(name.Text);
             if (language == null)
                 throw new InterpreterError("LANGUAGE: unrecognized language: " + name.Text);
-
-            char escapeChar;
-            if (args.Length >= 2)
-            {
-                var ch = args[1] as ZilChar;
-                if (ch == null)
-                    throw new InterpreterError("LANGUAGE: second arg must be a CHARACTER");
-                escapeChar = ch.Char;
-            }
-            else
-            {
-                escapeChar = '%';
-            }
-
-            bool changeChrset;
-            if (args.Length >= 3)
-            {
-                changeChrset = args[2].IsTrue;
-            }
-            else
-            {
-                changeChrset = true;
-            }
 
             // update language, escape char, and possibly charset
             ctx.ZEnvironment.Language = language;
@@ -1236,7 +1056,7 @@ namespace Zilf.Interpreter
                 ctx.ZEnvironment.Charset2 = language.Charset2;
             }
 
-            return args[0];
+            return name;
         }
 
         #endregion
@@ -1244,15 +1064,9 @@ namespace Zilf.Interpreter
         #region Z-Code: Vocabulary and Syntax
 
         [Subr]
-        public static ZilObject DIRECTIONS(Context ctx, ZilObject[] args)
+        public static ZilObject DIRECTIONS(Context ctx, [Decl("<LIST ATOM>")] ZilAtom[] args)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length == 0)
-                throw new InterpreterError("DIRECTIONS", 1, 0);
-
-            if (!args.All(zo => zo is ZilAtom))
-                throw new InterpreterError("DIRECTIONS: all args must be atoms");
+            SubrContracts(ctx);
 
             // if a PROPSPEC is set for DIRECTIONS, it'll be copied to the new direction properties
             var propspecAtom = ctx.GetStdAtom(StdAtom.PROPSPEC);
@@ -1272,15 +1086,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject BUZZ(Context ctx, ZilObject[] args)
+        public static ZilObject BUZZ(Context ctx, [Decl("<LIST ATOM>")] ZilAtom[] args)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length == 0)
-                throw new InterpreterError("BUZZ", 1, 0);
-
-            if (!args.All(zo => zo is ZilAtom))
-                throw new InterpreterError("BUZZ: all args must be atoms");
+            SubrContracts(ctx);
 
             foreach (ZilAtom arg in args)
                 ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.CallingForm.SourceLine));
@@ -1289,27 +1097,17 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject VOC(Context ctx, ZilObject[] args)
+        public static ZilObject VOC(Context ctx, string text, [Decl("<OR FALSE ATOM>")] ZilObject type = null)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            if (args.Length < 1 || args.Length > 2)
-                throw new InterpreterError("VOC", 1, 2);
-
-            var text = args[0] as ZilString;
-            if (text == null)
-                throw new InterpreterError("VOC: first arg must be a string");
-
-            var atom = ZilAtom.Parse(text.Text, ctx);
+            var atom = ZilAtom.Parse(text, ctx);
             var word = ctx.ZEnvironment.GetVocab(atom);
 
-            if (args.Length > 1 && !(args[1] is ZilFalse))
+            var typeAtom = type as ZilAtom;
+            if (typeAtom != null)
             {
-                var type = args[1] as ZilAtom;
-                if (type == null)
-                    throw new InterpreterError("VOC: second arg must be FALSE or an atom");
-
-                switch (type.StdAtom)
+                switch (typeAtom.StdAtom)
                 {
                     case StdAtom.ADJ:
                     case StdAtom.ADJECTIVE:
@@ -1358,50 +1156,39 @@ namespace Zilf.Interpreter
 
             if (syntax.Synonyms.Count > 0)
             {
-                var synonymArgs = Enumerable.Repeat(syntax.Verb.Atom, 1).Concat(syntax.Synonyms).ToArray();
-                PerformSynonym(ctx, synonymArgs, "SYNTAX (verb synonyms)", typeof(VerbSynonym));
+                PerformSynonym(ctx, syntax.Verb.Atom, syntax.Synonyms.ToArray(), "SYNTAX (verb synonyms)", typeof(VerbSynonym));
             }
 
             return syntax.Verb.Atom;
         }
 
-        private static ZilObject PerformSynonym(Context ctx, ZilObject[] args,
+        private static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms,
             string name, Type synonymType)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
+            Contract.Requires(original != null);
+            Contract.Requires(synonyms != null);
+            Contract.Requires(Contract.ForAll(synonyms, s => s != null));
             Contract.Requires(name != null);
             Contract.Requires(synonymType != null);
 
-            if (args.Length < 1)
-                throw new InterpreterError(name, 1, 0);
-
-            const string STypeError = ": args must be atoms";
-
-            ZilAtom atom = args[0] as ZilAtom;
-            if (atom == null)
-                throw new InterpreterError(name + STypeError);
-
             IWord oldWord;
-            if (ctx.ZEnvironment.Vocabulary.TryGetValue(atom, out oldWord) == false)
+            if (ctx.ZEnvironment.Vocabulary.TryGetValue(original, out oldWord) == false)
             {
-                oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(atom);
-                ctx.ZEnvironment.Vocabulary.Add(atom, oldWord);
+                oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(original);
+                ctx.ZEnvironment.Vocabulary.Add(original, oldWord);
             }
 
             object[] ctorArgs = new object[2];
             ctorArgs[0] = oldWord;
 
-            for (int i = 1; i < args.Length; i++)
+            foreach (var synonym in synonyms)
             {
-                atom = args[i] as ZilAtom;
-                if (atom == null)
-                    throw new InterpreterError(name + STypeError);
-
                 IWord newWord;
-                if (ctx.ZEnvironment.Vocabulary.TryGetValue(atom, out newWord) == false)
+                if (ctx.ZEnvironment.Vocabulary.TryGetValue(synonym, out newWord) == false)
                 {
-                    newWord = ctx.ZEnvironment.VocabFormat.CreateWord(atom);
-                    ctx.ZEnvironment.Vocabulary.Add(atom, newWord);
+                    newWord = ctx.ZEnvironment.VocabFormat.CreateWord(synonym);
+                    ctx.ZEnvironment.Vocabulary.Add(synonym, newWord);
                 }
 
                 ctorArgs[1] = newWord;
@@ -1409,47 +1196,47 @@ namespace Zilf.Interpreter
                     synonymType, ctorArgs));
             }
 
-            return atom;
+            return original;
         }
 
         [Subr]
-        public static ZilObject SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSynonym(ctx, args, "SYNONYM", typeof(Synonym));
+            return PerformSynonym(ctx, original, synonyms, "SYNONYM", typeof(Synonym));
         }
 
         [Subr("VERB-SYNONYM")]
-        public static ZilObject VERB_SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject VERB_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSynonym(ctx, args, "VERB-SYNONYM", typeof(VerbSynonym));
+            return PerformSynonym(ctx, original, synonyms, "VERB-SYNONYM", typeof(VerbSynonym));
         }
 
         [Subr("PREP-SYNONYM")]
-        public static ZilObject PREP_SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject PREP_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSynonym(ctx, args, "PREP-SYNONYM", typeof(PrepSynonym));
+            return PerformSynonym(ctx, original, synonyms, "PREP-SYNONYM", typeof(PrepSynonym));
         }
 
         [Subr("ADJ-SYNONYM")]
-        public static ZilObject ADJ_SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject ADJ_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSynonym(ctx, args, "ADJ-SYNONYM", typeof(AdjSynonym));
+            return PerformSynonym(ctx, original, synonyms, "ADJ-SYNONYM", typeof(AdjSynonym));
         }
 
         [Subr("DIR-SYNONYM")]
-        public static ZilObject DIR_SYNONYM(Context ctx, ZilObject[] args)
+        public static ZilObject DIR_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            return PerformSynonym(ctx, args, "DIR-SYNONYM", typeof(DirSynonym));
+            return PerformSynonym(ctx, original, synonyms, "DIR-SYNONYM", typeof(DirSynonym));
         }
 
         #endregion
@@ -1480,65 +1267,20 @@ namespace Zilf.Interpreter
 
         [Subr("ADD-WORD")]
         [Subr("NEW-ADD-WORD")]
-        public static ZilObject NEW_ADD_WORD(Context ctx, ZilObject[] args)
+        public static ZilObject NEW_ADD_WORD(Context ctx,
+            [Decl("<OR STRING ATOM>")] ZilObject name,
+            ZilAtom type = null,
+            ZilObject value = null,
+            ZilFix flags = null)
         {
-            SubrContracts(ctx, args);
-
-            if (args.Length < 1 || args.Length > 4)
-                throw new InterpreterError("NEW-ADD-WORD", 1, 4);
+            SubrContracts(ctx);
 
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                 throw new InterpreterError("NEW-ADD-WORD: requires NEW-PARSER? option");
 
-            ZilAtom name;
-            if (args[0] is ZilString)
-            {
-                name = ZilAtom.Parse(((ZilString)args[0]).Text, ctx);
-            }
-            else if (args[0] is ZilAtom)
-            {
-                name = (ZilAtom)args[0];
-            }
-            else
-            {
-                throw new InterpreterError("NEW-ADD-WORD: first arg must be a string or atom");
-            }
-
-            ZilAtom type;
-            if (args.Length >= 2)
-            {
-                type = args[1] as ZilAtom;
-                if (type == null)
-                    throw new InterpreterError("NEW-ADD-WORD: second arg must be an atom");
-            }
-            else
-            {
-                type = null;
-            }
-
-            ZilObject value;
-            if (args.Length >= 3)
-            {
-                value = args[2];
-            }
-            else
-            {
-                value = null;
-            }
-
-            ZilFix flags;
-            if (args.Length >= 4)
-            {
-                flags = args[3] as ZilFix;
-                if (flags == null)
-                    throw new InterpreterError("NEW-ADD-WORD: fourth arg must be a FIX");
-            }
-            else
-            {
-                flags = ZilFix.Zero;
-            }
-
-            return ((NewParserVocabFormat)ctx.ZEnvironment.VocabFormat).NewAddWord(name, type, value, flags);
+            var nameAtom = name as ZilAtom ?? ZilAtom.Parse(((ZilString)name).Text, ctx);
+            flags = flags ?? ZilFix.Zero;
+            return ((NewParserVocabFormat)ctx.ZEnvironment.VocabFormat).NewAddWord(nameAtom, type, value, flags);
         }
 
         #endregion
