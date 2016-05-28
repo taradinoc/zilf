@@ -3500,37 +3500,7 @@ namespace Zilf.Compiler
             var type = ((ZilAtom)form.First).StdAtom;
             var args = form.Rest;
 
-            ZilTable table;
-
-            var oldCF = cc.Context.CallingForm;
-            cc.Context.CallingForm = form;
-            try
-            {
-                switch (type)
-                {
-                    case StdAtom.ITABLE:
-                        table = (ZilTable)Subrs.ITABLE(cc.Context, args.ToArray());
-                        break;
-                    case StdAtom.TABLE:
-                        table = (ZilTable)Subrs.TABLE(cc.Context, args.ToArray());
-                        break;
-                    case StdAtom.PTABLE:
-                        table = (ZilTable)Subrs.PTABLE(cc.Context, args.ToArray());
-                        break;
-                    case StdAtom.LTABLE:
-                        table = (ZilTable)Subrs.LTABLE(cc.Context, args.ToArray());
-                        break;
-                    case StdAtom.PLTABLE:
-                        table = (ZilTable)Subrs.PLTABLE(cc.Context, args.ToArray());
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-            finally
-            {
-                cc.Context.CallingForm = oldCF;
-            }
+            var table = (ZilTable)form.Eval(cc.Context);
 
             var tableBuilder = cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
             cc.Tables.Add(table, tableBuilder);
