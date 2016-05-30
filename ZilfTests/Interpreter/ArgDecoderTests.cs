@@ -35,7 +35,7 @@ namespace ZilfTests.Interpreter
         {
             ctx = new Context();
         }
-      
+
         private static MethodInfo GetMethod(string name)
         {
             return typeof(ArgDecoderTests).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -491,7 +491,322 @@ namespace ZilfTests.Interpreter
                 return;
             }
 
-            Assert.Fail("Expected ArgumentTypeError");
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
+        [TestMethod]
+        public void Test_StructArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] {
+                    new ZilFix(123), ZilString.FromString("hi")
+                }),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, new IntStringStruct { arg1 = 123, arg2 = "hi" } };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_StructArg_Fail_TooFewArgs()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] { new ZilFix(123) }),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_StructArg_Fail_TooManyArgs()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] {
+                    new ZilFix(123),
+                    ZilString.FromString("hi"),
+                    ZilString.FromString("oops"),
+                }),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Fail_WrongStructureType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: expected TYPE LIST";
+
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
+
+            ZilObject[] args = {
+                new ZilVector(new ZilFix(123), ZilString.FromString("hi")),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Fail_WrongElementType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: element 2: expected TYPE STRING";
+
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] {
+                    new ZilFix(123), ctx.FALSE,
+                }),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct IntStringStruct
+        {
+            public int arg1;
+            public string arg2;
+        }
+
+        private ZilObject Dummy_IntStringStructArg(Context ctx, IntStringStruct foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Array()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringStructArrayArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] {
+                    new ZilFix(1), ZilString.FromString("money")
+                }),
+                new ZilList(new ZilObject[] {
+                    new ZilFix(2), ZilString.FromString("show")
+                }),
+                new ZilList(new ZilObject[] {
+                    new ZilFix(3), ZilString.FromString("ready")
+                }),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = {
+                ctx,
+                new IntStringStruct[] {
+                    new IntStringStruct { arg1 = 1, arg2 = "money" },
+                    new IntStringStruct { arg1 = 2, arg2 = "show" },
+                    new IntStringStruct { arg1 = 3, arg2 = "ready" },
+                },
+            };
+
+            Assert.AreEqual(2, actual.Length);
+            Assert.AreEqual(expected[0], actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(IntStringStruct[]));
+            CollectionAssert.AreEqual((IntStringStruct[])expected[1], (IntStringStruct[])actual[1]);
+        }
+
+        private ZilObject Dummy_IntStringStructArrayArg(Context ctx, IntStringStruct[] foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Nested()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
+
+            ZilObject[] args = {
+                new ZilVector(
+                    new ZilFix(123),
+                    new ZilList(new ZilObject[]
+                    {
+                        new ZilFix(456),
+                        ZilString.FromString("foo"),
+                    })
+                ),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = {
+                ctx,
+                new OuterStruct
+                {
+                    arg1 = 123,
+                    arg2 = new IntStringStruct
+                    {
+                        arg1 = 456,
+                        arg2 = "foo",
+                    },
+                },
+            };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Nested_Fail_WrongStructureType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: element 2: expected TYPE LIST";
+
+            var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
+
+            ZilObject[] args = {
+                new ZilVector(
+                    new ZilFix(123),
+                    new ZilVector(
+                        new ZilFix(456),
+                        ZilString.FromString("foo")
+                    )
+                ),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+            }
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Nested_Fail_WrongElementType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: element 2: element 1: expected TYPE FIX";
+
+            var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
+
+            ZilObject[] args = {
+                new ZilVector(
+                    new ZilFix(123),
+                    new ZilList(new ZilObject[] {
+                        ZilString.FromString("foo"),
+                        ZilString.FromString("bar"),
+                    })
+                ),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+            }
+        }
+
+        [ZilStructuredParam(StdAtom.VECTOR)]
+        private struct OuterStruct
+        {
+            public int arg1;
+            public IntStringStruct arg2;
+        }
+
+        private ZilObject Dummy_OuterStructArg(Context ctx, OuterStruct foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_StructArg_Optional()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalStructArrayArg));
+
+            ZilObject[] args = {
+                new ZilVector(
+                    ZilString.FromString("o'clock"),
+                    new ZilFix(4),
+                    ZilString.FromString("o'clock"))
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = {
+                ctx,
+                new OptionalStruct {
+                    arg1 = 1,
+                    arg2 = 2,
+                    arg3 = 3,
+                    arg4 = "o'clock",
+                    arg5 = 4,
+                    arg6 = "o'clock",
+                    arg7 = "rock",
+                },
+            };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [ZilStructuredParam(StdAtom.VECTOR)]
+        private struct OptionalStruct
+        {
+            [ZilOptional(Default = 1)]
+            public int arg1;
+            [ZilOptional(Default = 2)]
+            public int arg2;
+            [ZilOptional(Default = 3)]
+            public int arg3;
+
+            public string arg4;
+
+            [ZilOptional(Default = 111)]
+            public int arg5;
+            [ZilOptional(Default = "blah")]
+            public string arg6;
+
+            [ZilOptional(Default = "rock")]
+            public string arg7;
+        }
+
+        private ZilObject Dummy_OptionalStructArrayArg(Context ctx, OptionalStruct foo)
+        {
+            return null;
         }
     }
 }
