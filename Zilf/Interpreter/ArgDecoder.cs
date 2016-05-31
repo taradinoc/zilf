@@ -384,102 +384,61 @@ namespace Zilf.Interpreter
                     UpperBound = 1,
                 };
             }
-            else if (paramType == typeof(int) || paramType == typeof(int?))
+            else if (IsZilObjectType(paramType))
             {
-                cb.AddTypeConstraint(StdAtom.FIX);
+                var zoType = paramType;
 
-                if (paramType == typeof(int))
+                if (paramType == typeof(IApplicable))
                 {
-                    defaultValue = 0;
+                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
+                }
+                else if (paramType == typeof(IStructure))
+                {
+                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
+                }
+                else if (paramType != typeof(ZilObject))
+                {
+                    var builtinAttr = paramType.GetCustomAttribute<BuiltinTypeAttribute>();
+                    if (builtinAttr == null)
+                        throw new InvalidOperationException($"Type {paramType} is missing a BuiltinTypeAttribute");
+                    cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
                 }
 
                 result = new DecodingStepInfo
                 {
                     Step = (a, i, c) =>
                     {
-                        var fix = a[i] as ZilFix;
-                        if (fix == null)
+                        if (!zoType.IsInstanceOfType(a[i]))
                         {
                             c.Error(errmsg);
                         }
-                        else
-                        {
-                            c.Ready(fix.Value);
-                        }
+
+                        c.Ready(a[i]);
                         return i + 1;
                     },
                     LowerBound = 1,
                     UpperBound = 1,
                 };
+            }
+            else if (paramType == typeof(int) || paramType == typeof(int?))
+            {
+                result = PrepareOneNullableConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
+                    cb, paramType, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(string))
             {
-                cb.AddTypeConstraint(StdAtom.STRING);
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var str = a[i] as ZilString;
-                        if (str == null)
-                        {
-                            c.Error(errmsg);
-                        }
-                        else
-                        {
-                            c.Ready(str.Text);
-                        }
-                        return i + 1;
-                    },
-                    LowerBound = 1,
-                    UpperBound = 1,
-                };
+                result = PrepareOneConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
+                    cb, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(char) || paramType == typeof(char?))
             {
-                cb.AddTypeConstraint(StdAtom.CHARACTER);
-
-                if (paramType == typeof(char))
-                {
-                    defaultValue = '\0';
-                }
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var ch = a[i] as ZilChar;
-                        if (ch == null)
-                        {
-                            c.Error(errmsg);
-                        }
-                        else
-                        {
-                            c.Ready(ch.Char);
-                        }
-                        return i + 1;
-                    },
-                    LowerBound = 1,
-                    UpperBound = 1,
-                };
+                result = PrepareOneNullableConversion<ZilChar, char>(StdAtom.CHARACTER, ch => ch.Char,
+                    cb, paramType, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(bool) || paramType == typeof(bool?))
             {
-                if (paramType == typeof(bool))
-                {
-                    defaultValue = false;
-                }
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        c.Ready(a[i].IsTrue);
-                        return i + 1;
-                    },
-                    LowerBound = 1,
-                    UpperBound = 1,
-                };
+                result = PrepareOneNullableConversion<ZilObject, bool>(null, zo => zo.IsTrue,
+                    cb, paramType, () => errmsg, out defaultValue);
             }
             else if (paramType.IsArray && IsZilObjectType(paramType.GetElementType()))
             {
@@ -533,119 +492,15 @@ namespace Zilf.Interpreter
                 if (isRequired)
                     result.LowerBound = 1;
             }
-            else if (IsZilObjectType(paramType))
-            {
-                var zoType = paramType;
-
-                if (paramType == typeof(IApplicable))
-                {
-                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
-                }
-                else if (paramType == typeof(IStructure))
-                {
-                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
-                }
-                else if (paramType != typeof(ZilObject))
-                {
-                    var builtinAttr = paramType.GetCustomAttribute<BuiltinTypeAttribute>();
-                    if (builtinAttr == null)
-                        throw new InvalidOperationException($"Type {paramType} is missing a BuiltinTypeAttribute");
-                    cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
-                }
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        if (!zoType.IsInstanceOfType(a[i]))
-                        {
-                            c.Error(errmsg);
-                        }
-
-                        c.Ready(a[i]);
-                        return i + 1;
-                    },
-                    LowerBound = 1,
-                    UpperBound = 1,
-                };
-            }
             else if (paramType == typeof(int[]))
             {
-                cb.AddTypeConstraint(StdAtom.FIX);
-
-                defaultValue = new int[0];
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var array = new int[a.Length - i];
-
-                        if (isRequired && array.Length == 0)
-                        {
-                            c.Error(errmsg);
-                        }
-
-                        for (int j = 0; j < array.Length; j++)
-                        {
-                            var fix = a[i + j] as ZilFix;
-                            if (fix == null)
-                            {
-                                c.Error(errmsg);
-                            }
-                            else
-                            {
-                                array[j] = fix.Value;
-                            }
-                        }
-                        c.Ready(array);
-                        return a.Length;
-                    },
-                    LowerBound = 0,
-                    UpperBound = null,
-                };
-
-                if (isRequired)
-                    result.LowerBound = 1;
+                result = PrepareOneArrayConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
+                    cb, isRequired, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(string[]))
             {
-                cb.AddTypeConstraint(StdAtom.STRING);
-
-                defaultValue = new string[0];
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var array = new string[a.Length - i];
-
-                        if (isRequired && array.Length == 0)
-                        {
-                            c.Error(errmsg);
-                        }
-
-                        for (int j = 0; j < array.Length; j++)
-                        {
-                            var str = a[i + j] as ZilString;
-                            if (str == null)
-                            {
-                                c.Error(errmsg);
-                            }
-                            else
-                            {
-                                array[j] = str.Text;
-                            }
-                        }
-                        c.Ready(array);
-                        return a.Length;
-                    },
-                    LowerBound = 0,
-                    UpperBound = null,
-                };
-
-                if (isRequired)
-                    result.LowerBound = 1;
+                result = PrepareOneArrayConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
+                    cb, isRequired, () => errmsg, out defaultValue);
             }
             else
             {
@@ -715,6 +570,131 @@ namespace Zilf.Interpreter
             }
 
             errmsg = cb.ToString();
+            return result;
+        }
+
+        private static DecodingStepInfo PrepareOneConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
+            Func<string> errmsg, out object defaultValue)
+            where TZil : ZilObject
+        {
+            if (typeAtom != null)
+            {
+                cb.AddTypeConstraint(typeAtom.Value);
+            }
+
+            defaultValue = default(TValue);
+
+            return new DecodingStepInfo
+            {
+                Step = (a, i, c) =>
+                {
+                    var zo = a[i] as TZil;
+                    if (zo == null)
+                    {
+                        c.Error(errmsg());
+                    }
+                    else
+                    {
+                        c.Ready(convert(zo));
+                    }
+                    return i + 1;
+                },
+                LowerBound = 1,
+                UpperBound = 1,
+            };
+        }
+
+        private static DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
+            Type paramType, Func<string> errmsg, out object defaultValue)
+            where TZil : ZilObject
+            where TValue : struct
+        {
+            if (typeAtom != null)
+            {
+                cb.AddTypeConstraint(typeAtom.Value);
+            }
+
+            if (paramType == typeof(TValue))
+            {
+                defaultValue = default(TValue);
+            }
+            else if (paramType == typeof(TValue?))
+            {
+                defaultValue = null;
+            }
+            else
+            {
+                throw new ArgumentException(
+                    $"Expected {typeof(TValue)} or {typeof(TValue?)} but got {paramType}", "paramType");
+            }
+
+            return new DecodingStepInfo
+            {
+                Step = (a, i, c) =>
+                {
+                    var zo = a[i] as TZil;
+                    if (zo == null)
+                    {
+                        c.Error(errmsg());
+                    }
+                    else
+                    {
+                        c.Ready(convert(zo));
+                    }
+                    return i + 1;
+                },
+                LowerBound = 1,
+                UpperBound = 1,
+            };
+        }
+
+        private static DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
+            bool isRequired, Func<string> errmsg, out object defaultValue)
+            where TZil : ZilObject
+        {
+            if (typeAtom != null)
+            {
+                cb.AddTypeConstraint(typeAtom.Value);
+            }
+
+            defaultValue = new int[0];
+
+            var result = new DecodingStepInfo
+            {
+                Step = (a, i, c) =>
+                {
+                    var array = new TValue[a.Length - i];
+
+                    if (isRequired && array.Length == 0)
+                    {
+                        c.Error(errmsg());
+                    }
+
+                    for (int j = 0; j < array.Length; j++)
+                    {
+                        var zo = a[i + j] as TZil;
+                        if (zo == null)
+                        {
+                            c.Error(errmsg());
+                        }
+                        else
+                        {
+                            array[j] = convert(zo);
+                        }
+                    }
+                    c.Ready(array);
+                    return a.Length;
+                },
+                LowerBound = 0,
+                UpperBound = null,
+            };
+
+            if (isRequired)
+                result.LowerBound = 1;
+
             return result;
         }
 
