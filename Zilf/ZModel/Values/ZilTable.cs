@@ -155,11 +155,6 @@ namespace Zilf.ZModel.Values
 
             public override void CopyTo<T>(T[] array, TableToArrayElementConverter<T> convert, T defaultFiller, Context ctx)
             {
-                Contract.Requires(array != null);
-                Contract.Requires(array.Length >= ElementCount);
-                Contract.Requires(convert != null);
-                Contract.Requires(ctx != null);
-
                 int start;
 
                 if (HasLengthPrefix)
@@ -414,9 +409,6 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetWord(Context ctx, int offset)
             {
-                Contract.Requires(ctx != null);
-                Contract.Requires(offset >= 0);
-
                 // convert word offset to byte offset
                 offset *= 2;
 
@@ -437,10 +429,6 @@ namespace Zilf.ZModel.Values
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
             {
-                Contract.Requires(ctx != null);
-                Contract.Requires(offset >= 0);
-                Contract.Requires(value != null);
-
                 // convert word offset to byte offset
                 offset *= 2;
 
@@ -507,9 +495,6 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetByte(Context ctx, int offset)
             {
-                Contract.Requires(ctx != null);
-                Contract.Requires(offset >= 0);
-
                 var index = ByteOffsetToIndex(ctx, offset);
                 if (index == null)
                     throw new ArgumentException(string.Format("No element at offset {0}", offset));
@@ -527,10 +512,6 @@ namespace Zilf.ZModel.Values
 
             public override void PutByte(Context ctx, int offset, ZilObject value)
             {
-                Contract.Requires(ctx != null);
-                Contract.Requires(offset >= 0);
-                Contract.Requires(value != null);
-
                 if (initializer == null || repetitions > 1)
                     ExpandInitializer(ctx.FALSE);
 
