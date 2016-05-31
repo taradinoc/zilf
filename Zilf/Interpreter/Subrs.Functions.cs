@@ -31,7 +31,7 @@ namespace Zilf.Interpreter
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
         public static ZilObject DEFINE(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -41,7 +41,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject DEFINE20(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -69,7 +69,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject DEFMAC(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Decl("<LIST ANY>")]ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 

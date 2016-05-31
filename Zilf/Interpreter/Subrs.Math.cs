@@ -161,7 +161,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MIN(Context ctx, [Decl("<LIST FIX>")] int[] args)
+        public static ZilObject MIN(Context ctx, [Required] int[] args)
         {
             SubrContracts(ctx);
 
@@ -169,7 +169,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MAX(Context ctx, [Decl("<LIST FIX>")] int[] args)
+        public static ZilObject MAX(Context ctx, [Required] int[] args)
         {
             SubrContracts(ctx);
 

@@ -36,7 +36,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr("TYPE?")]
-        public static ZilObject TYPE_P(Context ctx, ZilObject value, [Decl("<LIST ATOM>")] ZilAtom[] types)
+        public static ZilObject TYPE_P(Context ctx, ZilObject value, [Required] ZilAtom[] types)
         {
             SubrContracts(ctx);
 
@@ -224,7 +224,7 @@ namespace Zilf.Interpreter
 
         [FSubr]
         public static ZilObject FUNCTION(Context ctx, [Optional] ZilAtom activationAtom,
-            ZilList argList, [Decl("<LIST ANY>")] ZilObject[] body)
+            ZilList argList, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 

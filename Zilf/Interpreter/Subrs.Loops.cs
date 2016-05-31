@@ -32,7 +32,7 @@ namespace Zilf.Interpreter
         public static ZilObject PROG(Context ctx,
             [Optional] ZilAtom activationAtom,
             [Decl(SBindingsDecl)] ZilList bindings,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -43,7 +43,7 @@ namespace Zilf.Interpreter
         public static ZilObject REPEAT(Context ctx,
             [Optional] ZilAtom activationAtom,
             [Decl(SBindingsDecl)] ZilList bindings,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -54,7 +54,7 @@ namespace Zilf.Interpreter
         public static ZilObject BIND(Context ctx,
             [Optional] ZilAtom activationAtom,
             [Decl(SBindingsDecl)] ZilList bindings,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 

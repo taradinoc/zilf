@@ -25,20 +25,19 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [FSubr]
-        public static ZilObject COND(Context ctx, [Decl("<LIST <LIST ANY> [REST <LIST ANY>]>")] ZilList[] args)
+        public static ZilObject COND(Context ctx, [Required] CondClause[] clauses)
         {
             SubrContracts(ctx);
-            Contract.Requires(Contract.ForAll(args, a => a != null && !a.IsEmpty));
 
             ZilObject result = null;
 
-            foreach (ZilList zl in args)
+            foreach (var clause in clauses)
             {
-                result = zl.First.Eval(ctx);
+                result = clause.Condition.Eval(ctx);
 
                 if (result.IsTrue)
                 {
-                    foreach (ZilObject inner in zl.Skip(1))
+                    foreach (var inner in clause.Body)
                         result = inner.Eval(ctx);
 
                     return result;
@@ -46,6 +45,13 @@ namespace Zilf.Interpreter
             }
 
             return result;
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        public struct CondClause
+        {
+            public ZilObject Condition;
+            public ZilObject[] Body;
         }
 
         [FSubr]

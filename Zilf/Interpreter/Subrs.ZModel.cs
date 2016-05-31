@@ -62,7 +62,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject ROUTINE(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Decl("<LIST ANY>")] ZilObject[] body)
+            [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -373,7 +373,7 @@ namespace Zilf.Interpreter
 
         [Subr("BIT-SYNONYM")]
         public static ZilObject BIT_SYNONYM(Context ctx, ZilAtom first,
-            [Decl("<LIST ATOM [REST ATOM]>")] ZilAtom[] synonyms)
+            [Required] ZilAtom[] synonyms)
         {
             SubrContracts(ctx);
 
@@ -828,26 +828,20 @@ namespace Zilf.Interpreter
 
         [FSubr("VERSION?")]
         public static ZilObject VERSION_P(Context ctx, 
-            [Decl("<LIST [REST <LIST ANY>]>")] ZilList[] clauses)
+            CondClause[] clauses)
         {
             SubrContracts(ctx);
 
             var tAtom = ctx.GetStdAtom(StdAtom.T);
             var elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
 
-            foreach (var list in clauses)
+            foreach (var clause in clauses)
             {
-                if (list == null || list.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("VERSION?: args must be lists");
-
-                if (list.IsEmpty)
-                    throw new InterpreterError("VERSION?: lists must be non-empty");
-
-                if (list.First == tAtom || list.First == elseAtom ||
-                    ParseZVersion("VERSION?", list.First) == ctx.ZEnvironment.ZVersion)
+                if (clause.Condition == tAtom || clause.Condition == elseAtom ||
+                    ParseZVersion("VERSION?", clause.Condition) == ctx.ZEnvironment.ZVersion)
                 {
-                    var result = list.First;
-                    foreach (var expr in list.Rest)
+                    var result = clause.Condition;
+                    foreach (var expr in clause.Body)
                         result = expr.Eval(ctx);
                     return result;
                 }
@@ -898,7 +892,7 @@ namespace Zilf.Interpreter
         [Subr("ORDER-FLAGS?")]
         public static ZilObject ORDER_FLAGS_P(Context ctx,
             [Decl("'LAST")] ZilAtom order,
-            [Decl("<LIST ATOM>")] ZilAtom[] objects)
+            [Required] ZilAtom[] objects)
         {
             SubrContracts(ctx);
 
@@ -982,7 +976,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject CHRSET(Context ctx, int alphabetNum,
-            [Decl("<LIST <OR STRING CHARACTER FIX BYTE> [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
+            [Required, Decl("<LIST [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
         {
             SubrContracts(ctx);
 
@@ -1064,7 +1058,7 @@ namespace Zilf.Interpreter
         #region Z-Code: Vocabulary and Syntax
 
         [Subr]
-        public static ZilObject DIRECTIONS(Context ctx, [Decl("<LIST ATOM>")] ZilAtom[] args)
+        public static ZilObject DIRECTIONS(Context ctx, [Required] ZilAtom[] args)
         {
             SubrContracts(ctx);
 
@@ -1086,7 +1080,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject BUZZ(Context ctx, [Decl("<LIST ATOM>")] ZilAtom[] args)
+        public static ZilObject BUZZ(Context ctx, [Required] ZilAtom[] args)
         {
             SubrContracts(ctx);
 
