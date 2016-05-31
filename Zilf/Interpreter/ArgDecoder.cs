@@ -99,7 +99,7 @@ namespace Zilf.Interpreter
         }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class DeclAttribute : Attribute
     {
         public DeclAttribute(string pattern)
@@ -108,6 +108,11 @@ namespace Zilf.Interpreter
         }
 
         public string Pattern { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
+    sealed class RequiredAttribute : Attribute
+    {
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
@@ -317,6 +322,12 @@ namespace Zilf.Interpreter
             object defaultValue = null;
             ZilStructuredParamAttribute zilParamAttr;
 
+            bool isRequired = customAttributes.OfType<RequiredAttribute>().Any();
+            if (isRequired && isOptional)
+            {
+                throw new InvalidOperationException("A parameter can't be both optional and required");
+            }
+
             if (paramType.IsValueType &&
                 (zilParamAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
@@ -338,6 +349,12 @@ namespace Zilf.Interpreter
                     Step = (a, i, c) =>
                     {
                         var array = Array.CreateInstance(elemType, a.Length - i);
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
                         c.Ready(array);
 
                         int elemIndex = 0;
@@ -353,6 +370,9 @@ namespace Zilf.Interpreter
                     LowerBound = 0,
                     UpperBound = null,
                 };
+
+                if (isRequired)
+                    result.LowerBound = 1;
             }
             else if (paramType == typeof(ZilObject))
             {
@@ -496,6 +516,12 @@ namespace Zilf.Interpreter
                         }
 
                         var array = Array.CreateInstance(eltype, a.Length - i);
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
                         Array.Copy(a, i, array, 0, array.Length);
                         c.Ready(array);
                         return a.Length;
@@ -503,6 +529,9 @@ namespace Zilf.Interpreter
                     LowerBound = 0,
                     UpperBound = null,
                 };
+
+                if (isRequired)
+                    result.LowerBound = 1;
             }
             else if (IsZilObjectType(paramType))
             {
@@ -551,6 +580,12 @@ namespace Zilf.Interpreter
                     Step = (a, i, c) =>
                     {
                         var array = new int[a.Length - i];
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
                         for (int j = 0; j < array.Length; j++)
                         {
                             var fix = a[i + j] as ZilFix;
@@ -569,6 +604,9 @@ namespace Zilf.Interpreter
                     LowerBound = 0,
                     UpperBound = null,
                 };
+
+                if (isRequired)
+                    result.LowerBound = 1;
             }
             else if (paramType == typeof(string[]))
             {
@@ -581,6 +619,12 @@ namespace Zilf.Interpreter
                     Step = (a, i, c) =>
                     {
                         var array = new string[a.Length - i];
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
                         for (int j = 0; j < array.Length; j++)
                         {
                             var str = a[i + j] as ZilString;
@@ -599,6 +643,9 @@ namespace Zilf.Interpreter
                     LowerBound = 0,
                     UpperBound = null,
                 };
+
+                if (isRequired)
+                    result.LowerBound = 1;
             }
             else
             {

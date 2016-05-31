@@ -67,7 +67,7 @@ namespace Zilf.Interpreter
         public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
             [Decl("<OR ATOM " + SDefstructDefaultsDecl + ">")]
             ZilObject baseTypeOrDefaults,
-            [Decl("<LIST " + SDefstructFieldSpecDecl + " [REST " + SDefstructFieldSpecDecl + "]>")]
+            [Required, Decl("<LIST [REST " + SDefstructFieldSpecDecl + "]>")]
             ZilObject[] fieldSpecs)
         {
             SubrContracts(ctx);

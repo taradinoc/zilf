@@ -121,7 +121,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("REPLACE-DEFINITION")]
-        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilAtom name, [Decl("<LIST ANY>")] ZilObject[] body)
+        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -157,7 +157,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("DEFAULT-DEFINITION")]
-        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Decl("<LIST ANY>")] ZilObject[] body)
+        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -244,14 +244,12 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("IFFLAG")]
-        public static ZilObject IFFLAG(Context ctx, [Decl("<LIST <LIST ANY> [REST <LIST ANY>]>")] ZilList[] args)
+        public static ZilObject IFFLAG(Context ctx, [Required] CondClause[] args)
         {
             SubrContracts(ctx);
 
-            foreach (var list in args)
+            foreach (var clause in args)
             {
-                Contract.Assert(!list.IsEmpty);
-
                 bool match;
 
                 ZilAtom atom;
@@ -259,15 +257,15 @@ namespace Zilf.Interpreter
                 ZilForm form;
                 ZilObject value;
 
-                if (((atom = list.First as ZilAtom) != null &&
+                if (((atom = clause.Condition as ZilAtom) != null &&
                      (value = ctx.GetCompilationFlagValue(atom)) != null) ||
-                    ((str = list.First as ZilString) != null &&
+                    ((str = clause.Condition as ZilString) != null &&
                     (value = ctx.GetCompilationFlagValue(str.Text)) != null))
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;
                 }
-                else if ((form = list.First as ZilForm) != null)
+                else if ((form = clause.Condition as ZilForm) != null)
                 {
                     form = SubstituteIfflagForm(ctx, form);
                     match = form.Eval(ctx).IsTrue;
@@ -279,8 +277,8 @@ namespace Zilf.Interpreter
 
                 if (match)
                 {
-                    var result = list.First;
-                    foreach (var expr in list.Rest)
+                    var result = clause.Condition;
+                    foreach (var expr in clause.Body)
                         result = expr.Eval(ctx);
                     return result;
                 }

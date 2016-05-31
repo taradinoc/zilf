@@ -122,6 +122,23 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_ZilObjectArrayArg_Required_Fail()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_RequiredZilObjectArrayArg));
+
+            ZilObject[] args = { };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        private ZilObject Dummy_RequiredZilObjectArrayArg(Context ctx, [Required] ZilObject[] args)
+        {
+            return null;
+        }
+
+        [TestMethod]
         public void Test_IntArg()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntArgs));
