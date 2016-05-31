@@ -154,12 +154,18 @@ namespace Zilf.Interpreter.Values
         [BuiltinAlternate(typeof(ZilString))]
         private sealed class OriginalString : ZilString
         {
+            private string text;
+
             public OriginalString(string text)
             {
-                this.Text = text;
+                this.text = text;
             }
 
-            public override string Text { get; set; }
+            public override string Text
+            {
+                get { return text; }
+                set { text = value; }
+            }
 
             public override ZilObject GetFirst()
             {
