@@ -248,14 +248,12 @@ namespace Zilf.Interpreter
         private readonly DecodingStep[] steps;
         private readonly int lowerBound;
         private readonly int? upperBound;
-        private readonly int lastRequiredStepIndex; // TODO: delete this
 
         private ArgDecoder(object[] methodAttributes, ParameterInfo[] parameters)
         {
             steps = new DecodingStep[parameters.Length - 1];
             lowerBound = 0;
             upperBound = 0;
-            lastRequiredStepIndex = -1;
 
             // skip first arg (Context)
             for (int i = 1; i < parameters.Length; i++)
@@ -264,11 +262,6 @@ namespace Zilf.Interpreter
                 steps[i - 1] = stepInfo.Step;
 
                 lowerBound += stepInfo.LowerBound;
-
-                if (lowerBound > 0)
-                {
-                    lastRequiredStepIndex = i - 1;
-                }
 
                 if (stepInfo.UpperBound == null)
                 {
@@ -363,40 +356,9 @@ namespace Zilf.Interpreter
             }
             else if (eitherAttr != null && paramType.IsArray)
             {
-                // TODO: refactor, merge this with the equivalent for PrepareOneStructured
                 var elemType = paramType.GetElementType();
                 var innerStep = PrepareOneEither(elemType, eitherAttr.Types, cb, () => errmsg).Step;
-                defaultValue = Array.CreateInstance(elemType, 0);
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var array = Array.CreateInstance(elemType, a.Length - i);
-
-                        if (isRequired && array.Length == 0)
-                        {
-                            c.Error(errmsg);
-                        }
-
-                        c.Ready(array);
-
-                        int elemIndex = 0;
-                        c.Ready = obj => array.SetValue(obj, elemIndex);
-
-                        for (; elemIndex < array.Length; elemIndex++)
-                        {
-                            innerStep(a, i + elemIndex, c);
-                        }
-
-                        return a.Length;
-                    },
-                    LowerBound = 0,
-                    UpperBound = null,
-                };
-
-                if (isRequired)
-                    result.LowerBound = 1;
+                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
             }
             else if (paramType.IsValueType &&
                 (zilParamAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
@@ -412,37 +374,7 @@ namespace Zilf.Interpreter
 
                 var elemType = paramType.GetElementType();
                 var innerStep = PrepareOneStructured(elemType).Step;
-                defaultValue = Array.CreateInstance(elemType, 0);
-
-                result = new DecodingStepInfo
-                {
-                    Step = (a, i, c) =>
-                    {
-                        var array = Array.CreateInstance(elemType, a.Length - i);
-
-                        if (isRequired && array.Length == 0)
-                        {
-                            c.Error(errmsg);
-                        }
-
-                        c.Ready(array);
-
-                        int elemIndex = 0;
-                        c.Ready = obj => array.SetValue(obj, elemIndex);
-
-                        for (; elemIndex < array.Length; elemIndex++)
-                        {
-                            innerStep(a, i + elemIndex, c);
-                        }
-
-                        return a.Length;
-                    },
-                    LowerBound = 0,
-                    UpperBound = null,
-                };
-
-                if (isRequired)
-                    result.LowerBound = 1;
+                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(ZilObject))
             {
@@ -640,6 +572,44 @@ namespace Zilf.Interpreter
             }
 
             errmsg = cb.ToString();
+            return result;
+        }
+
+        private static DecodingStepInfo PrepareOneArrayFromInnerStep(
+            Type elemType, DecodingStep innerStep, bool isRequired,
+            Func<string> errmsg, out object defaultValue)
+        {
+            DecodingStepInfo result = new DecodingStepInfo
+            {
+                Step = (a, i, c) =>
+                {
+                    var array = Array.CreateInstance(elemType, a.Length - i);
+
+                    if (isRequired && array.Length == 0)
+                    {
+                        c.Error(errmsg());
+                    }
+
+                    c.Ready(array);
+
+                    int elemIndex = 0;
+                    c.Ready = obj => array.SetValue(obj, elemIndex);
+
+                    for (; elemIndex < array.Length; elemIndex++)
+                    {
+                        innerStep(a, i + elemIndex, c);
+                    }
+
+                    return a.Length;
+                },
+                LowerBound = 0,
+                UpperBound = null,
+            };
+
+            if (isRequired)
+                result.LowerBound = 1;
+
+            defaultValue = Array.CreateInstance(elemType, 0);
             return result;
         }
 
