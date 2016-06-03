@@ -132,6 +132,17 @@ namespace Zilf.Interpreter
         public object Default { get; set; }
     }
 
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
+    sealed class EitherAttribute : Attribute
+    {
+        public EitherAttribute(params Type[] types)
+        {
+            this.Types = types;
+        }
+
+        public Type[] Types { get; }
+    }
+
     class ArgDecoder
     {
         // calls ready for each decoded value, returns number of arguments consumed
@@ -196,6 +207,15 @@ namespace Zilf.Interpreter
             {
                 parts.Add("matching pattern " + decl);
                 preds.Add((zo, ctx) => Decl.Check(ctx, zo, decl.GetPattern(ctx)));
+            }
+
+            public void AddEitherConstraint(IEnumerable<ConstraintsBuilder> cbs)
+            {
+                parts.Add(string.Join(" or ", cbs.Select(cb => "(" + cb.ToString() + ")")));
+
+                var subPreds = cbs.SelectMany(cb => cb.preds).ToArray();
+                if (subPreds.Length > 0)
+                    preds.Add((zo, ctx) => subPreds.Any(p => p(zo, ctx)));
             }
 
             public Func<ZilObject, Context, bool> GetDelegate()
@@ -314,13 +334,20 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        private static DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes, bool isOptional, object defaultValueWhenOptional)
+        private static DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
+            bool isOptional, object defaultValueWhenOptional, ConstraintsBuilder cb = null)
         {
             DecodingStepInfo result;
-            ConstraintsBuilder cb = new ConstraintsBuilder();
-            string errmsg = null;
             object defaultValue = null;
             ZilStructuredParamAttribute zilParamAttr;
+            EitherAttribute eitherAttr;
+
+            if (cb == null)
+                cb = new ConstraintsBuilder();
+
+            /* errmsg is generated from the constraints set on cb. its value isn't set until the end
+             * of the method, so it should only be read inside a closure that will be executed later. */
+            string errmsg = null;
 
             bool isRequired = customAttributes.OfType<RequiredAttribute>().Any();
             if (isRequired && isOptional)
@@ -328,7 +355,50 @@ namespace Zilf.Interpreter
                 throw new InvalidOperationException("A parameter can't be both optional and required");
             }
 
-            if (paramType.IsValueType &&
+            if ((eitherAttr = customAttributes.OfType<EitherAttribute>().SingleOrDefault()) != null &&
+                !paramType.IsArray)
+            {
+                // PrepareOneEither adds constraints to cb
+                result = PrepareOneEither(paramType, eitherAttr.Types, cb, () => errmsg);
+            }
+            else if (eitherAttr != null && paramType.IsArray)
+            {
+                // TODO: refactor, merge this with the equivalent for PrepareOneStructured
+                var elemType = paramType.GetElementType();
+                var innerStep = PrepareOneEither(elemType, eitherAttr.Types, cb, () => errmsg).Step;
+                defaultValue = Array.CreateInstance(elemType, 0);
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        var array = Array.CreateInstance(elemType, a.Length - i);
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
+                        c.Ready(array);
+
+                        int elemIndex = 0;
+                        c.Ready = obj => array.SetValue(obj, elemIndex);
+
+                        for (; elemIndex < array.Length; elemIndex++)
+                        {
+                            innerStep(a, i + elemIndex, c);
+                        }
+
+                        return a.Length;
+                    },
+                    LowerBound = 0,
+                    UpperBound = null,
+                };
+
+                if (isRequired)
+                    result.LowerBound = 1;
+            }
+            else if (paramType.IsValueType &&
                 (zilParamAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
                 cb.AddTypeConstraint(zilParamAttr.TypeAtom);
@@ -358,10 +428,10 @@ namespace Zilf.Interpreter
                         c.Ready(array);
 
                         int elemIndex = 0;
+                        c.Ready = obj => array.SetValue(obj, elemIndex);
 
                         for (; elemIndex < array.Length; elemIndex++)
                         {
-                            c.Ready = obj => array.SetValue(obj, elemIndex);
                             innerStep(a, i + elemIndex, c);
                         }
 
@@ -704,7 +774,6 @@ namespace Zilf.Interpreter
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
             Contract.Requires(structType.IsLayoutSequential);
-            Contract.Requires(structType.GetCustomAttribute<ZilStructuredParamAttribute>() != null);
 
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>().TypeAtom;
 
@@ -785,6 +854,75 @@ namespace Zilf.Interpreter
 
                     outerReady(output);
                     return i + 1;
+                },
+            };
+
+            return result;
+        }
+
+        // TODO: cache the result
+        private static DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes,
+            ConstraintsBuilder cb, Func<string> errmsg)
+        {
+            Contract.Requires(paramType != null);
+            Contract.Requires(inputTypes != null);
+            Contract.Requires(inputTypes.Length > 0);
+            Contract.Requires(Contract.ForAll(inputTypes, t => paramType.IsAssignableFrom(t)));
+
+            var choices = new DecodingStep[inputTypes.Length];
+            int? lowerBound = null;
+            int? upperBound = 0;
+            var innerCbs = new List<ConstraintsBuilder>(inputTypes.Length);
+
+            var noAttributes = new object[0];
+            for (int i = 0; i < inputTypes.Length; i++)
+            {
+                var innerCb = new ConstraintsBuilder();
+                innerCbs.Add(innerCb);
+
+                DecodingStepInfo stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null, innerCb);
+                choices[i] = stepInfo.Step;
+
+                if (lowerBound == null || stepInfo.LowerBound < lowerBound)
+                {
+                    lowerBound = stepInfo.LowerBound;
+                }
+
+                if (stepInfo.UpperBound == null || stepInfo.UpperBound > upperBound)
+                {
+                    upperBound = stepInfo.UpperBound;
+                }
+            }
+
+            cb.AddEitherConstraint(innerCbs);
+
+            var result = new DecodingStepInfo
+            {
+                LowerBound = (int)lowerBound,
+                UpperBound = upperBound,
+
+                Step = (a, i, c) =>
+                {
+                    ArgumentDecodingError exception = null;
+
+                    for (int choiceIndex = 0; choiceIndex < choices.Length; choiceIndex++)
+                    {
+                        var step = choices[choiceIndex];
+                        try
+                        {
+                            return step(a, i, c);
+                        }
+                        catch (ArgumentDecodingError ex)
+                        {
+                            exception = ex;
+                            continue;
+                        }
+                    }
+
+                    c.Error(errmsg());
+
+                    // shouldn't get here
+                    throw new NotImplementedException();
                 },
             };
 
