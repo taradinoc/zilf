@@ -38,7 +38,9 @@ namespace ZilfTests.Interpreter
 
         private static MethodInfo GetMethod(string name)
         {
-            return typeof(ArgDecoderTests).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
+            return typeof(ArgDecoderTests).GetMethod(
+                name,
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [TestMethod]
@@ -289,7 +291,7 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
-        public void Test_OptionalArg_AnotherType()
+        public void Test_OptionalArg_Omitted()
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
 
@@ -298,6 +300,20 @@ namespace ZilfTests.Interpreter
             var decoder = ArgDecoder.FromMethodInfo(methodInfo);
             object[] actual = decoder.Decode("dummy", ctx, args);
             object[] expected = { ctx, 69105, "hello" };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void Test_OptionalArg_Provided()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
+
+            ZilObject[] args = { new ZilFix(42), ZilString.FromString("hello") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, 42, "hello" };
 
             CollectionAssert.AreEqual(expected, actual);
         }
@@ -482,7 +498,7 @@ namespace ZilfTests.Interpreter
         }
 
         [Subrs.MdlZilRedirect(typeof(ArgDecoderTests), nameof(Dummy_MdlZilRedirect_To))]
-        private ZilObject Dummy_MdlZilRedirect_From(Context ctx)
+        private static ZilObject Dummy_MdlZilRedirect_From(Context ctx)
         {
             return ctx.FALSE;
         }
@@ -822,6 +838,106 @@ namespace ZilfTests.Interpreter
         }
 
         private ZilObject Dummy_OptionalStructArrayArg(Context ctx, OptionalStruct foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_Int()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntOrStringOrIntStringArg));
+
+            ZilObject[] args = { new ZilFix(123) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, 123 };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_String()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntOrStringOrIntStringArg));
+
+            ZilObject[] args = { ZilString.FromString("hi") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, "hi" };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_IntString()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntOrStringOrIntStringArg));
+
+            ZilObject[] args = {
+                new ZilList(new ZilObject[] { new ZilFix(23), ZilString.FromString("skidoo") })
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = {
+                ctx,
+                new IntStringStruct { arg1 = 23, arg2 = "skidoo" },
+            };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private ZilObject Dummy_IntOrStringOrIntStringArg(Context ctx,
+            [Either(typeof(int), typeof(string), typeof(IntStringStruct))] object foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_Optional_Omitted()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntOrStringThenAtomArg));
+
+            ZilObject[] args = { ctx.TRUE };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, null, ctx.TRUE };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
+        public void Test_EitherArg_Optional_WrongType()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntOrStringThenAtomArg));
+
+            ZilObject[] args = { ctx.FALSE };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_Optional_Provided()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntOrStringThenAtomArg));
+
+            ZilObject[] args = { new ZilFix(123), ctx.TRUE };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, 123, ctx.TRUE };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private ZilObject Dummy_OptionalIntOrStringThenAtomArg(Context ctx,
+            [Optional, Either(typeof(int), typeof(string))] object foo,
+            ZilAtom bar)
         {
             return null;
         }

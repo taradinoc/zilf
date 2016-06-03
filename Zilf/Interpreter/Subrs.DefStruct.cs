@@ -63,10 +63,74 @@ namespace Zilf.Interpreter
         private const string SDefstructFieldSpecDecl =
             @"<LIST ATOM ANY [REST <OR FORM LIST ATOM FIX FALSE>]>";
 
+#pragma warning disable 649     // field is never assigned and will always have its default value
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct DefStructDefaultsParam
+        {
+            public ZilAtom BaseType;
+
+            [Either(typeof(EmptyClause), typeof(AtomClause), typeof(FixClause), typeof(VarargsClause))]
+            public object[] Clauses;
+        }
+
+        [ZilStructuredParam(StdAtom.FORM)]
+        private struct EmptyClause
+        {
+            [Decl("'QUOTE")]
+            public ZilAtom QuoteAtom;
+            [Decl("<OR 'NODECL 'NOTYPE 'PRINTTYPE 'CONSTRUCTOR>")]
+            public ZilAtom Atom;
+
+            public StdAtom ClauseType
+            {
+                get { return Atom.StdAtom; }
+            }
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct AtomClause
+        {
+            [Decl("<OR ''NTH ''PUT ''PRINTTYPE>")]
+            public ZilForm Form;
+            public ZilAtom Atom;
+
+            public StdAtom ClauseType
+            {
+                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+            }
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct FixClause
+        {
+            [Decl("''START-OFFSET")]
+            public ZilForm Form;
+            public int Fix;
+
+            public StdAtom ClauseType
+            {
+                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+            }
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct VarargsClause
+        {
+            [Decl("<OR ''CONSTRUCTOR ''INIT-ARGS>")]
+            public ZilForm Form;
+            public ZilObject[] Body;
+
+            public StdAtom ClauseType
+            {
+                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+            }
+        }
+#pragma warning restore 649
+
         [FSubr]
         public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
-            [Decl("<OR ATOM " + SDefstructDefaultsDecl + ">")]
-            ZilObject baseTypeOrDefaults,
+            [Either(typeof(ZilAtom), typeof(DefStructDefaultsParam))]
+            object baseTypeOrDefaults,
             [Required, Decl("<LIST [REST " + SDefstructFieldSpecDecl + "]>")]
             ZilObject[] fieldSpecs)
         {
@@ -89,21 +153,20 @@ namespace Zilf.Interpreter
             if (fileDefaultList != null && fileDefaultList.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                 ParseDefStructDefaults(ctx, fileDefaultList, ref defaults);
 
-            switch (baseTypeOrDefaults.GetTypeAtom(ctx).StdAtom)
+            if (baseTypeOrDefaults is ZilAtom)
             {
-                case StdAtom.ATOM:
-                    baseType = (ZilAtom)baseTypeOrDefaults;
-                    break;
-
-                case StdAtom.LIST:
-                    var defaultList = (ZilList)baseTypeOrDefaults;
-                    baseType = (ZilAtom)defaultList.First;
-                    ParseDefStructDefaults(ctx, defaultList.Rest, ref defaults);
-                    break;
-
-                default:
-                    // shouldn't get here
-                    throw new NotImplementedException();
+                baseType = (ZilAtom)baseTypeOrDefaults;
+            }
+            else if (baseTypeOrDefaults is DefStructDefaultsParam)
+            {
+                var defaultsParam = (DefStructDefaultsParam)baseTypeOrDefaults;
+                baseType = defaultsParam.BaseType;
+                ParseDefStructDefaults(ctx, defaultsParam, ref defaults);
+            }
+            else
+            {
+                // shouldn't get here
+                throw new NotImplementedException();
             }
 
             if (!ctx.IsRegisteredType(baseType))
@@ -742,6 +805,101 @@ namespace Zilf.Interpreter
                         default:
                             throw new InterpreterError("DEFSTRUCT: unrecognized tag in defaults section: " + tag);
                     }
+                }
+            }
+        }
+
+        private static void ParseDefStructDefaults(Context ctx, DefStructDefaultsParam param, ref DefStructDefaults defaults)
+        {
+            Contract.Requires(ctx != null);
+
+            foreach (var clause in param.Clauses)
+            {
+                if (clause is EmptyClause)
+                {
+                    var ec = (EmptyClause)clause;
+                    switch (ec.ClauseType)
+                    {
+                        case StdAtom.NODECL:
+                            // nada
+                            break;
+
+                        case StdAtom.NOTYPE:
+                            defaults.SuppressType = true;
+                            break;
+
+                        case StdAtom.PRINTTYPE:
+                            defaults.PrintFunc = null;
+                            break;
+
+                        case StdAtom.CONSTRUCTOR:
+                            defaults.SuppressDefaultCtor = true;
+                            break;
+
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (clause is AtomClause)
+                {
+                    var ac = (AtomClause)clause;
+                    switch (ac.ClauseType)
+                    {
+                        case StdAtom.NTH:
+                            defaults.NthFunc = ac.Atom;
+                            break;
+
+                        case StdAtom.PUT:
+                            defaults.PutFunc = ac.Atom;
+                            break;
+
+                        case StdAtom.PRINTTYPE:
+                            defaults.PrintFunc = ac.Atom;
+                            break;
+
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (clause is FixClause)
+                {
+                    var fc = (FixClause)clause;
+                    switch (fc.ClauseType)
+                    {
+                        case StdAtom.START_OFFSET:
+                            defaults.StartOffset = fc.Fix;
+                            break;
+
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (clause is VarargsClause)
+                {
+                    var vc = (VarargsClause)clause;
+                    var body = new ZilList(vc.Body);
+                    switch (vc.ClauseType)
+                    {
+                        case StdAtom.CONSTRUCTOR:
+                            defaults.CustomCtorSpec = body;
+                            break;
+
+                        case StdAtom.INIT_ARGS:
+                            defaults.InitArgs = body;
+                            break;
+
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else
+                {
+                    // shouldn't get here
+                    throw new NotImplementedException();
                 }
             }
         }
