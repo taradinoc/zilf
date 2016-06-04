@@ -941,5 +941,62 @@ namespace ZilfTests.Interpreter
         {
             return null;
         }
+
+        [TestMethod]
+        public void Test_SequenceArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringSequenceArg));
+
+            ZilObject[] args = { new ZilFix(1), ZilString.FromString("money") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, new IntStringSequence { arg1 = 1, arg2 = "money" } };
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [ZilSequenceParam]
+        private struct IntStringSequence
+        {
+            public int arg1;
+            public string arg2;
+        }
+
+        private ZilObject Dummy_IntStringSequenceArg(Context ctx, IntStringSequence foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_SequenceArrayArg()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_IntStringSequenceArrayArg));
+
+            ZilObject[] args = {
+                new ZilFix(1), ZilString.FromString("money"),
+                new ZilFix(2), ZilString.FromString("show"),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = {
+                ctx,
+                new[] {
+                    new IntStringSequence { arg1 = 1, arg2 = "money" },
+                    new IntStringSequence { arg1 = 2, arg2 = "show" },
+                },
+            };
+
+            Assert.AreEqual(2, actual.Length);
+            Assert.AreEqual(expected[0], actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(IntStringSequence[]));
+            CollectionAssert.AreEqual((IntStringSequence[])expected[1], (IntStringSequence[])actual[1]);
+        }
+
+        private ZilObject Dummy_IntStringSequenceArrayArg(Context ctx, IntStringSequence[] foo)
+        {
+            return null;
+        }
     }
 }

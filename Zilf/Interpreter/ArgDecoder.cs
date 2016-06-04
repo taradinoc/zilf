@@ -143,9 +143,28 @@ namespace Zilf.Interpreter
         public Type[] Types { get; }
     }
 
+    [AttributeUsage(AttributeTargets.Struct)]
+    sealed class ZilSequenceParamAttribute : Attribute
+    {
+    }
+
     class ArgDecoder
     {
-        // calls ready for each decoded value, returns number of arguments consumed
+        /// <summary>
+        /// A function that decodes some number of <see cref="ZilObject"/> arguments into objects,
+        /// calling <see cref="DecodingStepCallbacks.Ready"/> for each object produced, and then
+        /// returns the index of the next argument.
+        /// </summary>
+        /// <param name="arguments">An array of arguments to be processed.</param>
+        /// <param name="index">The index within <paramref name="arguments"/> of the first argument
+        /// to be processed.</param>
+        /// <param name="cb">A <see cref="DecodingStepCallbacks"/> structure containing context
+        /// for the step. The <see cref="DecodingStepCallbacks.Ready"/> delegate will be called
+        /// for each object produced.</param>
+        /// <returns>The index of the first argument, greater than or equal to <paramref name="index"/>,
+        /// that was not processed. This may point past the end of <paramref name="arguments"/>
+        /// if the step consumed all input arguments, or it may be equal to <paramref name="index"/>
+        /// if the step consumed none.</returns>
         private delegate int DecodingStep(ZilObject[] arguments, int index, DecodingStepCallbacks cb);
 
         private struct DecodingStepCallbacks
@@ -190,7 +209,6 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        //XXX probably good enough for builtin types, but should get the real name from the attribute
                         parts.Add("TYPE " + typeAtom.ToString());
                         preds.Add((zo, ctx) => zo.GetTypeAtom(ctx).StdAtom == typeAtom);
                         break;
@@ -332,7 +350,8 @@ namespace Zilf.Interpreter
         {
             DecodingStepInfo result;
             object defaultValue = null;
-            ZilStructuredParamAttribute zilParamAttr;
+            ZilStructuredParamAttribute zilStructAttr;
+            ZilSequenceParamAttribute sequenceAttr;
             EitherAttribute eitherAttr;
 
             if (cb == null)
@@ -361,19 +380,32 @@ namespace Zilf.Interpreter
                 result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
             }
             else if (paramType.IsValueType &&
-                (zilParamAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
+                (zilStructAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
-                cb.AddTypeConstraint(zilParamAttr.TypeAtom);
+                cb.AddTypeConstraint(zilStructAttr.TypeAtom);
 
                 result = PrepareOneStructured(paramType);
             }
             else if (paramType.IsArray &&
-                (zilParamAttr = paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
+                (zilStructAttr = paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
-                cb.AddTypeConstraint(zilParamAttr.TypeAtom);
+                cb.AddTypeConstraint(zilStructAttr.TypeAtom);
 
                 var elemType = paramType.GetElementType();
                 var innerStep = PrepareOneStructured(elemType).Step;
+                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
+            }
+            else if (paramType.IsValueType &&
+                (sequenceAttr = paramType.GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
+            {
+                // PrepareOneSequence adds constraints to cb
+                result = PrepareOneSequence(paramType, cb, () => errmsg);
+            }
+            else if (paramType.IsArray &&
+                (sequenceAttr = paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
+            {
+                var elemType = paramType.GetElementType();
+                var innerStep = PrepareOneSequence(elemType, cb, () => errmsg).Step;
                 result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
             }
             else if (paramType == typeof(ZilObject))
@@ -583,24 +615,35 @@ namespace Zilf.Interpreter
             {
                 Step = (a, i, c) =>
                 {
-                    var array = Array.CreateInstance(elemType, a.Length - i);
-
-                    if (isRequired && array.Length == 0)
+                    if (isRequired && a.Length <= i)
                     {
                         c.Error(errmsg());
                     }
 
-                    c.Ready(array);
+                    /* Unlike other array decoder types, this one has to handle
+                     * the possibility that the inner step will consume multiple
+                     * arguments. */
 
-                    int elemIndex = 0;
-                    c.Ready = obj => array.SetValue(obj, elemIndex);
+                    var output = new System.Collections.ArrayList(a.Length - i);
+                    var outerReady = c.Ready;
 
-                    for (; elemIndex < array.Length; elemIndex++)
+                    c.Ready = obj => output.Add(obj);
+
+                    while (i < a.Length)
                     {
-                        innerStep(a, i + elemIndex, c);
+                        var next = innerStep(a, i, c);
+                        Contract.Assert(next >= i);
+
+                        if (next == i)
+                        {
+                            throw new ArgumentTypeError(c.Site, i, errmsg());
+                        }
+
+                        i = next;
                     }
 
-                    return a.Length;
+                    outerReady(output.ToArray(elemType));
+                    return i;
                 },
                 LowerBound = 0,
                 UpperBound = null,
@@ -747,30 +790,10 @@ namespace Zilf.Interpreter
 
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>().TypeAtom;
 
-            var fields = structType.GetFields()
-                .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
-                .ToArray();
-
-            var steps = new DecodingStep[fields.Length];
-            int lowerBound = 0;
-            int? upperBound = null;
-
-            for (int i = 0; i < fields.Length; i++)
-            {
-                DecodingStepInfo stepInfo = PrepareOne(fields[i]);
-                steps[i] = stepInfo.Step;
-
-                lowerBound += stepInfo.LowerBound;
-
-                if (stepInfo.UpperBound == null)
-                {
-                    upperBound = null;
-                }
-                else
-                {
-                    upperBound += stepInfo.UpperBound;
-                }
-            }
+            FieldInfo[] fields;
+            int lowerBound;
+            int? upperBound;
+            var steps = PrepareStepsFromStruct(structType, out fields, out lowerBound, out upperBound);
 
             var result = new DecodingStepInfo
             {
@@ -830,7 +853,44 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        // TODO: cache the result
+        private static DecodingStep[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+        {
+            Contract.Requires(structType != null);
+            Contract.Requires(structType.IsValueType);
+            Contract.Requires(structType.IsLayoutSequential);
+            Contract.Ensures(Contract.ValueAtReturn(out fields) != null);
+            Contract.Ensures(Contract.Result<DecodingStep[]>() != null);
+            Contract.Ensures(Contract.ValueAtReturn(out fields).Length == Contract.Result<DecodingStep[]>().Length);
+            Contract.Ensures(!(Contract.ValueAtReturn(out lowerBound) >= 0));
+            Contract.Ensures(!(Contract.ValueAtReturn(out upperBound) < 0));
+
+            fields = structType.GetFields()
+                .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
+                .ToArray();
+            var steps = new DecodingStep[fields.Length];
+            lowerBound = 0;
+            upperBound = null;
+            for (int i = 0; i < fields.Length; i++)
+            {
+                DecodingStepInfo stepInfo = PrepareOne(fields[i]);
+                steps[i] = stepInfo.Step;
+
+                lowerBound += stepInfo.LowerBound;
+
+                if (stepInfo.UpperBound == null)
+                {
+                    upperBound = null;
+                }
+                else
+                {
+                    upperBound += stepInfo.UpperBound;
+                }
+            }
+
+            return steps;
+        }
+
+        // TODO: cache the result?
         private static DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes,
             ConstraintsBuilder cb, Func<string> errmsg)
         {
@@ -893,6 +953,53 @@ namespace Zilf.Interpreter
 
                     // shouldn't get here
                     throw new NotImplementedException();
+                },
+            };
+
+            return result;
+        }
+
+        // TODO: cache the result?
+        private static DecodingStepInfo PrepareOneSequence(Type seqType, ConstraintsBuilder cb, Func<string> errmsg)
+        {
+            Contract.Requires(seqType != null);
+            Contract.Requires(seqType.IsValueType);
+            Contract.Requires(seqType.IsLayoutSequential);
+
+            FieldInfo[] fields;
+            int lowerBound;
+            int? upperBound;
+            var steps = PrepareStepsFromStruct(seqType, out fields, out lowerBound, out upperBound);
+
+            var result = new DecodingStepInfo
+            {
+                LowerBound = lowerBound,
+                UpperBound = upperBound,
+
+                Step = (a, i, c) =>
+                {
+                    if (a.Length - i < lowerBound)
+                    {
+                        throw new ArgumentCountError(c.Site, lowerBound, upperBound ?? 0, a.Length - i);
+                    }
+
+                    var output = Activator.CreateInstance(seqType);
+
+                    var stepIndex = 0;
+
+                    var outerReady = c.Ready;
+                    c.Ready = obj => fields[stepIndex].SetValue(output, obj);
+
+                    for (; stepIndex < steps.Length; stepIndex++)
+                    {
+                        var step = steps[stepIndex];
+                        var next = step(a, i, c);
+                        Contract.Assert(next >= i);
+                        i = next;
+                    }
+
+                    outerReady(output);
+                    return i;
                 },
             };
 
