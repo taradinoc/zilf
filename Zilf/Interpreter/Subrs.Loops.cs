@@ -26,12 +26,81 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        private const string SBindingsDecl = "<LIST [REST <OR ATOM <ADECL ATOM> !<LIST <OR ATOM <ADECL ATOM>> ANY>>]>";
+        public static class BindingParams
+        {
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct BindingList
+            {
+                public Binding[] Bindings;
+            }
+
+            [ZilSequenceParam]
+            public struct Binding
+            {
+                [Either(typeof(BindingName), typeof(BindingWithInitializer))]
+                public object Content;
+
+                public ZilAtom Atom
+                {
+                    get
+                    {
+                        if (Content is BindingName)
+                            return ((BindingName)Content).Atom;
+
+                        return ((BindingWithInitializer)Content).Name.Atom;
+                    }
+                }
+
+                public ZilObject Initializer
+                {
+                    get
+                    {
+                        if (Content is BindingWithInitializer)
+                            return ((BindingWithInitializer)Content).Initializer;
+
+                        return null;
+                    }
+                }
+            }
+
+            [ZilSequenceParam]
+            public struct BindingName
+            {
+                [Either(typeof(ZilAtom), typeof(BindingAdecl))]
+                public object Content;
+
+                public ZilAtom Atom
+                {
+                    get
+                    {
+                        var atom = Content as ZilAtom;
+                        if (atom != null)
+                            return atom;
+
+                        return ((BindingAdecl)Content).Atom;
+                    }
+                }
+            }
+
+            [ZilStructuredParam(StdAtom.ADECL)]
+            public struct BindingAdecl
+            {
+                public ZilAtom Atom;
+                public ZilObject Decl;
+            }
+
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct BindingWithInitializer
+            {
+                public BindingName Name;
+                public ZilObject Initializer;
+            }
+        }
 
         [FSubr]
         public static ZilObject PROG(Context ctx,
             [Optional] ZilAtom activationAtom,
-            [Decl(SBindingsDecl)] ZilList bindings,
+            BindingParams.BindingList bindings,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
@@ -42,7 +111,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject REPEAT(Context ctx,
             [Optional] ZilAtom activationAtom,
-            [Decl(SBindingsDecl)] ZilList bindings,
+            BindingParams.BindingList bindings,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
@@ -53,7 +122,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject BIND(Context ctx,
             [Optional] ZilAtom activationAtom,
-            [Decl(SBindingsDecl)] ZilList bindings,
+            BindingParams.BindingList bindings,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
@@ -62,10 +131,9 @@ namespace Zilf.Interpreter
         }
 
         private static ZilObject PerformProg(Context ctx, ZilAtom activationAtom,
-            ZilList bindings, ZilObject[] body, string name, bool repeat, bool catchy)
+            BindingParams.BindingList bindings, ZilObject[] body, string name, bool repeat, bool catchy)
         {
             SubrContracts(ctx);
-            Contract.Requires(bindings != null);
             Contract.Requires(name != null);
 
             var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
@@ -81,49 +149,13 @@ namespace Zilf.Interpreter
                     boundAtoms.Enqueue(activationAtom);
                 }
 
-                foreach (ZilObject b in bindings)
+                foreach (var b in bindings.Bindings)
                 {
-                    ZilAtom atom;
-                    ZilList list;
-                    ZilObject value;
+                    var atom = b.Atom;
+                    var value = b.Initializer?.Eval(ctx);
 
-                    switch (b.GetTypeAtom(ctx).StdAtom)
-                    {
-                        case StdAtom.ATOM:
-                            ctx.PushLocalVal((ZilAtom)b, null);
-                            boundAtoms.Enqueue((ZilAtom)b);
-                            break;
-
-                        case StdAtom.ADECL:
-                            atom = ((ZilAdecl)b).First as ZilAtom;
-                            if (atom == null)
-                                throw new InterpreterError(name + ": invalid atom binding: " + b);
-                            ctx.PushLocalVal(atom, null);
-                            boundAtoms.Enqueue(atom);
-                            break;
-
-                        case StdAtom.LIST:
-                            list = (ZilList)b;
-                            if (list.First == null || list.Rest == null ||
-                                list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
-                                throw new InterpreterError(name + ": binding with value must be a 2-element list");
-                            atom = list.First as ZilAtom;
-                            if (atom == null)
-                            {
-                                var adecl = list.First as ZilAdecl;
-                                if (adecl != null)
-                                    atom = adecl.First as ZilAtom;
-                            }
-                            if (atom == null)
-                                throw new InterpreterError(name + ": invalid atom binding: " + b);
-                            value = list.Rest.First;
-                            ctx.PushLocalVal(atom, value.Eval(ctx));
-                            boundAtoms.Enqueue(atom);
-                            break;
-
-                        default:
-                            throw new InterpreterError(name + ": elements of binding list must be atoms or lists");
-                    }
+                    ctx.PushLocalVal(atom, value);
+                    boundAtoms.Enqueue(atom);
                 }
 
                 if (catchy)

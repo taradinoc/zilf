@@ -125,18 +125,66 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        public static class AtomParams
+        {
+            [ZilSequenceParam]
+            public struct AdeclOrAtom
+            {
+                [Decl("<OR ATOM <ADECL ATOM>>"), Either(typeof(ZilAtom), typeof(ZilAdecl))]
+                public ZilObject Content;
+
+                public ZilAtom Atom
+                {
+                    get
+                    {
+                        var atom = Content as ZilAtom;
+                        if (atom != null)
+                            return atom;
+
+                        return (ZilAtom)((ZilAdecl)Content).First;
+                    }
+                }
+
+                public ZilObject Decl
+                {
+                    get
+                    {
+                        var adecl = Content as ZilAdecl;
+                        return adecl?.Second;
+                    }
+                }
+            }
+
+            [ZilSequenceParam]
+            public struct StringOrAtom
+            {
+                [Either(typeof(ZilAtom), typeof(string))]
+                public object Content;
+
+                public ZilAtom GetAtom(Context ctx)
+                {
+                    var atom = Content as ZilAtom;
+                    if (atom != null)
+                        return atom;
+
+                    return ZilAtom.Parse((string)Content, ctx);
+                }
+
+                public override string ToString()
+                {
+                    return Content.ToString();
+                }
+            }
+        }
+
         [Subr]
         [Subr("MSETG")]
         public static ZilObject CONSTANT(Context ctx,
-            [Decl("<OR ATOM <ADECL ATOM>>")] ZilObject name, ZilObject value)
+            AtomParams.AdeclOrAtom name, ZilObject value)
         {
             SubrContracts(ctx);
 
-            ZilAtom atom = name as ZilAtom;
-            if (atom == null)
-            {
-                atom = ((ZilAdecl)name).First as ZilAtom;
-            }
+            var atom = name.Atom;
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var previous = ctx.GetZVal(oldAtom);
@@ -163,7 +211,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject GLOBAL(Context ctx,
-            [Decl("<OR ATOM <ADECL ATOM>>")] ZilObject name, ZilObject defaultValue,
+            AtomParams.AdeclOrAtom name, ZilObject defaultValue,
             ZilObject decl = null, ZilAtom size = null)
         {
             SubrContracts(ctx);
@@ -172,11 +220,7 @@ namespace Zilf.Interpreter
             // quirky form:   <GLOBAL atom-or-adecl default-value decl [size]>
             // TODO: use decl and size?
 
-            ZilAtom atom = name as ZilAtom;
-            if (atom == null)
-            {
-                atom = (ZilAtom)((ZilAdecl)name).First;
-            }
+            var atom = name.Atom;
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var oldVal = ctx.GetZVal(oldAtom);
@@ -211,67 +255,35 @@ namespace Zilf.Interpreter
             return g;
         }
 
+        public static class DefineGlobalsParams
+        {
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct GlobalSpec
+            {
+                public AtomParams.AdeclOrAtom Name;
+
+                [ZilOptional, Decl("<OR 'BYTE 'WORD>")]
+                public ZilAtom Size;
+
+                [ZilOptional]
+                public ZilObject Initializer;
+            }
+        }
+
         [Subr("DEFINE-GLOBALS")]
         public static ZilObject DEFINE_GLOBALS(Context ctx, ZilAtom groupName,
-            [Decl(@"<LIST [REST <OR <LIST <OR ATOM <ADECL ATOM>> [OPT <OR 'BYTE 'WORD> ANY]>
-                                    <LIST <OR ATOM <ADECL ATOM>> [OPT ANY <OR 'BYTE 'WORD>]>>]>")]
-            ZilList[] args)
+            DefineGlobalsParams.GlobalSpec[] args)
         {
             SubrContracts(ctx);
 
-            for (int i = 0; i < args.Length; i++)
+            foreach (var spec in args)
             {
-                var spec = args[i];
-
-                var name = spec.First as ZilAtom;
-                if (name == null)
-                {
-                    name = (ZilAtom)((ZilAdecl)spec.First).First;
-                }
-
-                spec = spec.Rest;
-
-                // BYTE/WORD (before default value)
-                ZilAtom sizeAtom = null;
-                if (!spec.IsEmpty)
-                {
-                    sizeAtom = spec.First as ZilAtom;
-                    if (sizeAtom != null && (sizeAtom.StdAtom == StdAtom.BYTE || sizeAtom.StdAtom == StdAtom.WORD))
-                    {
-                        spec = spec.Rest;
-                    }
-                    else
-                    {
-                        sizeAtom = null;
-                    }
-                }
-
-                // default value
-                ZilObject defaultValue = null;
-                if (!spec.IsEmpty)
-                {
-                    defaultValue = spec.First;
-                    spec = spec.Rest;
-                }
-
-                // BYTE/WORD (after default value)
-                if (sizeAtom == null && !spec.IsEmpty)
-                {
-                    sizeAtom = spec.First as ZilAtom;
-                    if (sizeAtom != null && (sizeAtom.StdAtom == StdAtom.BYTE || sizeAtom.StdAtom == StdAtom.WORD))
-                    {
-                        spec = spec.Rest;
-                    }
-                    else
-                    {
-                        sizeAtom = null;
-                    }
-                }
+                var name = spec.Name.Atom;
 
                 // create global and macros
                 var globalAtom = ZilAtom.Parse("G?" + name, ctx);
-                ZilGlobal g = new ZilGlobal(globalAtom, defaultValue ?? ctx.FALSE);
-                if (sizeAtom != null && sizeAtom.StdAtom == StdAtom.BYTE)
+                ZilGlobal g = new ZilGlobal(globalAtom, spec.Initializer ?? ctx.FALSE);
+                if (spec.Size?.StdAtom == StdAtom.BYTE)
                 {
                     g.IsWord = false;
                 }
@@ -1262,7 +1274,7 @@ namespace Zilf.Interpreter
         [Subr("ADD-WORD")]
         [Subr("NEW-ADD-WORD")]
         public static ZilObject NEW_ADD_WORD(Context ctx,
-            [Decl("<OR STRING ATOM>")] ZilObject name,
+            AtomParams.StringOrAtom name,
             ZilAtom type = null,
             ZilObject value = null,
             ZilFix flags = null)
@@ -1272,7 +1284,7 @@ namespace Zilf.Interpreter
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                 throw new InterpreterError("NEW-ADD-WORD: requires NEW-PARSER? option");
 
-            var nameAtom = name as ZilAtom ?? ZilAtom.Parse(((ZilString)name).Text, ctx);
+            var nameAtom = name.GetAtom(ctx);
             flags = flags ?? ZilFix.Zero;
             return ((NewParserVocabFormat)ctx.ZEnvironment.VocabFormat).NewAddWord(nameAtom, type, value, flags);
         }
