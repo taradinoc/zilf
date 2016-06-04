@@ -34,7 +34,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject PARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
-            [Decl("<OR OBLIST LIST>")] ZilObject lookupObList = null)
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
         {
             SubrContracts(ctx);
 

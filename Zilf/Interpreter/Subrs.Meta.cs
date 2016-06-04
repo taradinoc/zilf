@@ -195,51 +195,33 @@ namespace Zilf.Interpreter
 
         [Subr("COMPILATION-FLAG")]
         public static ZilObject COMPILATION_FLAG(Context ctx,
-            [Decl("<OR ATOM STRING>")] ZilObject name, ZilObject value = null)
+            AtomParams.StringOrAtom name, ZilObject value = null)
         {
             SubrContracts(ctx);
 
-            var atom = name as ZilAtom;
-            if (atom == null)
-            {
-                var str = (ZilString)name;
-                atom = ZilAtom.Parse(str.Text, ctx);
-            }
-
+            var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, redefine: true);
             return atom;
         }
 
         [Subr("COMPILATION-FLAG-DEFAULT")]
         public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx,
-            [Decl("<OR ATOM STRING>")] ZilObject name, ZilObject value)
+            AtomParams.StringOrAtom name, ZilObject value)
         {
             SubrContracts(ctx);
 
-            var atom = name as ZilAtom;
-            if (atom == null)
-            {
-                var str = (ZilString)name;
-                atom = ZilAtom.Parse(str.Text, ctx);
-            }
-
+            var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value, redefine: false);
             return atom;
         }
 
         [Subr("COMPILATION-FLAG-VALUE")]
         public static ZilObject COMPILATION_FLAG_VALUE(Context ctx,
-            [Decl("<OR ATOM STRING>")] ZilObject name)
+            AtomParams.StringOrAtom name)
         {
             SubrContracts(ctx);
 
-            var atom = name as ZilAtom;
-            if (atom == null)
-            {
-                var str = (ZilString)name;
-                atom = ZilAtom.Parse(str.Text, ctx);
-            }
-
+            var atom = name.GetAtom(ctx);
             return ctx.GetCompilationFlagValue(atom) ?? ctx.FALSE;
         }
 
