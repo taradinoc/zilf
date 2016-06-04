@@ -27,6 +27,7 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        // TODO: use ArgDecoder
         [FSubr("SET-DEFSTRUCT-FILE-DEFAULTS")]
         public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS(Context ctx, ZilObject[] args)
         {
@@ -63,76 +64,129 @@ namespace Zilf.Interpreter
         private const string SDefstructFieldSpecDecl =
             @"<LIST ATOM ANY [REST <OR FORM LIST ATOM FIX FALSE>]>";
 
+        public static class DefStructParams
+        {
 #pragma warning disable 649     // field is never assigned and will always have its default value
-        [ZilStructuredParam(StdAtom.LIST)]
-        private struct DefStructDefaultsParam
-        {
-            public ZilAtom BaseType;
-
-            [Either(typeof(EmptyClause), typeof(AtomClause), typeof(FixClause), typeof(VarargsClause))]
-            public object[] Clauses;
-        }
-
-        [ZilStructuredParam(StdAtom.FORM)]
-        private struct EmptyClause
-        {
-            [Decl("'QUOTE")]
-            public ZilAtom QuoteAtom;
-            [Decl("<OR 'NODECL 'NOTYPE 'PRINTTYPE 'CONSTRUCTOR>")]
-            public ZilAtom Atom;
-
-            public StdAtom ClauseType
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct DefaultsList
             {
-                get { return Atom.StdAtom; }
+                public ZilAtom BaseType;
+
+                [Either(typeof(NullaryDefaultClause), typeof(AtomDefaultClause),
+                    typeof(FixDefaultClause), typeof(VarargsDefaultClause))]
+                public object[] Clauses;
             }
-        }
 
-        [ZilStructuredParam(StdAtom.LIST)]
-        private struct AtomClause
-        {
-            [Decl("<OR ''NTH ''PUT ''PRINTTYPE>")]
-            public ZilForm Form;
-            public ZilAtom Atom;
-
-            public StdAtom ClauseType
+            [ZilStructuredParam(StdAtom.FORM)]
+            public struct NullaryDefaultClause
             {
-                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                [Decl("'QUOTE")]
+                public ZilAtom QuoteAtom;
+                [Decl("<OR 'NODECL 'NOTYPE 'PRINTTYPE 'CONSTRUCTOR>")]
+                public ZilAtom Atom;
+
+                public StdAtom ClauseType
+                {
+                    get { return Atom.StdAtom; }
+                }
             }
-        }
 
-        [ZilStructuredParam(StdAtom.LIST)]
-        private struct FixClause
-        {
-            [Decl("''START-OFFSET")]
-            public ZilForm Form;
-            public int Fix;
-
-            public StdAtom ClauseType
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct AtomDefaultClause
             {
-                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                [Decl("<OR ''NTH ''PUT ''PRINTTYPE>")]
+                public ZilForm Form;
+                public ZilAtom Atom;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
             }
-        }
 
-        [ZilStructuredParam(StdAtom.LIST)]
-        private struct VarargsClause
-        {
-            [Decl("<OR ''CONSTRUCTOR ''INIT-ARGS>")]
-            public ZilForm Form;
-            public ZilObject[] Body;
-
-            public StdAtom ClauseType
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct FixDefaultClause
             {
-                get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                [Decl("''START-OFFSET")]
+                public ZilForm Form;
+                public int Fix;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
+            }
+
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct VarargsDefaultClause
+            {
+                [Decl("<OR ''CONSTRUCTOR ''INIT-ARGS>")]
+                public ZilForm Form;
+                public ZilObject[] Body;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
+            }
+
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct FieldSpecList
+            {
+                public ZilAtom Name;
+                public ZilObject Decl;
+
+                [Either(typeof(NullaryFieldSequence), typeof(AtomFieldSequence),
+                    typeof(FixFieldSequence), typeof(ZilObject))]
+                public object[] Parts;
+            }
+
+            [ZilSequenceParam]
+            public struct NullaryFieldSequence
+            {
+                [Decl("''NONE")]
+                public ZilForm Form;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
+            }
+
+            [ZilSequenceParam]
+            public struct AtomFieldSequence
+            {
+                [Decl("<OR ''NTH ''PUT>")]
+                public ZilForm Form;
+                public ZilAtom Atom;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
+            }
+
+            [ZilSequenceParam]
+            public struct FixFieldSequence
+            {
+                [Decl("''OFFSET")]
+                public ZilForm Form;
+                public int Fix;
+
+                public StdAtom ClauseType
+                {
+                    get { return ((ZilAtom)Form.Rest.First).StdAtom; }
+                }
             }
         }
 #pragma warning restore 649
 
         [FSubr]
         public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
-            [Either(typeof(ZilAtom), typeof(DefStructDefaultsParam))]
+            [Either(typeof(ZilAtom), typeof(DefStructParams.DefaultsList))]
             object baseTypeOrDefaults,
-            [Required, Decl("<LIST [REST " + SDefstructFieldSpecDecl + "]>")]
-            ZilObject[] fieldSpecs)
+            [Required]
+            DefStructParams.FieldSpecList[] fieldSpecs)
         {
             SubrContracts(ctx);
 
@@ -157,9 +211,9 @@ namespace Zilf.Interpreter
             {
                 baseType = (ZilAtom)baseTypeOrDefaults;
             }
-            else if (baseTypeOrDefaults is DefStructDefaultsParam)
+            else if (baseTypeOrDefaults is DefStructParams.DefaultsList)
             {
-                var defaultsParam = (DefStructDefaultsParam)baseTypeOrDefaults;
+                var defaultsParam = (DefStructParams.DefaultsList)baseTypeOrDefaults;
                 baseType = defaultsParam.BaseType;
                 ParseDefStructDefaults(ctx, defaultsParam, ref defaults);
             }
@@ -614,80 +668,65 @@ namespace Zilf.Interpreter
                 field.Offset);
         }
 
-        private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset, ZilObject fieldSpec)
+        private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset,
+            DefStructParams.FieldSpecList fieldSpec)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(fieldSpec != null);
-
-            var fieldList = fieldSpec as ZilList;
-
-            if (fieldList == null || fieldList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("DEFSTRUCT: field definitions must be lists");
-
-            var fieldName = fieldList.First as ZilAtom;
-            if (fieldName == null)
-                throw new InterpreterError("DEFSTRUCT: field names must be atoms");
-
-            fieldList = fieldList.Rest;
-
-            ZilObject fieldDecl;
-            if (fieldList == null || (fieldDecl = fieldList.First) == null)
-                throw new InterpreterError("DEFSTRUCT: field name must be followed by a decl");
 
             var result = new DefStructField()
             {
-                Decl = fieldDecl,
-                Name = fieldName,
+                Decl = fieldSpec.Decl,
+                Name = fieldSpec.Name,
                 NthFunc = defaults.NthFunc,
                 Offset = offset,
                 PutFunc = defaults.PutFunc,
             };
 
             bool gotDefault = false, gotOffset = false;
-            var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
-            for (fieldList = fieldList.Rest; !fieldList.IsEmpty; fieldList = fieldList.Rest)
+            foreach (var part in fieldSpec.Parts)
             {
-                var item = fieldList.First;
-                bool quoted = (item is ZilForm && ((ZilForm)item).First == quoteAtom);
-
-                if (quoted && ((ZilForm)item).Rest.First is ZilFix)
+                if (part is DefStructParams.AtomFieldSequence)
                 {
-                    item = ((ZilForm)item).Rest.First;
-                    quoted = false;
-                }
+                    var af = (DefStructParams.AtomFieldSequence)part;
 
-                if (quoted)
-                {
-                    var tag = ((ZilForm)item).Rest.First as ZilAtom;
-                    if (tag == null)
-                        throw new InterpreterError("DEFSTRUCT: quoted value in field definition must be an atom or fix");
-
-                    switch (tag.StdAtom)
+                    switch (af.ClauseType)
                     {
                         case StdAtom.NTH:
-                            fieldList = fieldList.Rest;
-                            result.NthFunc = fieldList.First as ZilAtom;
-                            if (result.NthFunc == null)
-                                throw new InterpreterError("DEFSTRUCT: 'NTH must be followed by an atom");
+                            result.NthFunc = af.Atom;
                             break;
 
                         case StdAtom.PUT:
-                            fieldList = fieldList.Rest;
-                            result.PutFunc = fieldList.First as ZilAtom;
-                            if (result.PutFunc == null)
-                                throw new InterpreterError("DEFSTRUCT: 'PUT must be followed by an atom");
+                            result.PutFunc = af.Atom;
                             break;
 
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (part is DefStructParams.FixFieldSequence)
+                {
+                    var ff = (DefStructParams.FixFieldSequence)part;
+
+                    switch (ff.ClauseType)
+                    {
                         case StdAtom.OFFSET:
-                            fieldList = fieldList.Rest;
-                            var fix = fieldList.First as ZilFix;
-                            if (fix == null)
-                                throw new InterpreterError("DEFSTRUCT: 'OFFSET must be followed by a FIX");
-                            result.Offset = fix.Value;
+                            result.Offset = ff.Fix;
                             gotOffset = true;
                             break;
 
+                        default:
+                            // shouldn't get here
+                            throw new NotImplementedException();
+                    }
+                }
+                else if (part is DefStructParams.NullaryFieldSequence)
+                {
+                    var nf = (DefStructParams.NullaryFieldSequence)part;
+
+                    switch (nf.ClauseType)
+                    {
                         case StdAtom.NONE:
                             if (gotDefault)
                                 throw new InterpreterError("DEFSTRUCT: 'NONE is not allowed after a default field value");
@@ -696,17 +735,18 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError("DEFSTRUCT: unrecognized tag in field definition: " + tag);
+                            // shouldn't get here
+                            throw new NotImplementedException();
                     }
                 }
-                else if (!gotDefault)
+                else if (part is ZilObject && !gotDefault)
                 {
-                    result.Default = item;
+                    result.Default = (ZilObject)part;
                     gotDefault = true;
                 }
                 else
                 {
-                    throw new InterpreterError("DEFSTRUCT: unrecognized non-quoted value in field definition: " + item);
+                    throw new InterpreterError("DEFSTRUCT: unrecognized non-quoted value in field definition: " + part);
                 }
             }
 
@@ -716,6 +756,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
         private static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
         {
             Contract.Requires(ctx != null);
@@ -809,15 +850,15 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static void ParseDefStructDefaults(Context ctx, DefStructDefaultsParam param, ref DefStructDefaults defaults)
+        private static void ParseDefStructDefaults(Context ctx, DefStructParams.DefaultsList param, ref DefStructDefaults defaults)
         {
             Contract.Requires(ctx != null);
 
             foreach (var clause in param.Clauses)
             {
-                if (clause is EmptyClause)
+                if (clause is DefStructParams.NullaryDefaultClause)
                 {
-                    var ec = (EmptyClause)clause;
+                    var ec = (DefStructParams.NullaryDefaultClause)clause;
                     switch (ec.ClauseType)
                     {
                         case StdAtom.NODECL:
@@ -841,9 +882,9 @@ namespace Zilf.Interpreter
                             throw new NotImplementedException();
                     }
                 }
-                else if (clause is AtomClause)
+                else if (clause is DefStructParams.AtomDefaultClause)
                 {
-                    var ac = (AtomClause)clause;
+                    var ac = (DefStructParams.AtomDefaultClause)clause;
                     switch (ac.ClauseType)
                     {
                         case StdAtom.NTH:
@@ -863,9 +904,9 @@ namespace Zilf.Interpreter
                             throw new NotImplementedException();
                     }
                 }
-                else if (clause is FixClause)
+                else if (clause is DefStructParams.FixDefaultClause)
                 {
-                    var fc = (FixClause)clause;
+                    var fc = (DefStructParams.FixDefaultClause)clause;
                     switch (fc.ClauseType)
                     {
                         case StdAtom.START_OFFSET:
@@ -877,9 +918,9 @@ namespace Zilf.Interpreter
                             throw new NotImplementedException();
                     }
                 }
-                else if (clause is VarargsClause)
+                else if (clause is DefStructParams.VarargsDefaultClause)
                 {
-                    var vc = (VarargsClause)clause;
+                    var vc = (DefStructParams.VarargsDefaultClause)clause;
                     var body = new ZilList(vc.Body);
                     switch (vc.ClauseType)
                     {
