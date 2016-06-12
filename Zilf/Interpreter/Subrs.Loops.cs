@@ -141,12 +141,12 @@ namespace Zilf.Interpreter
             // bind atoms
             Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
 
+            var innerEnv = ctx.PushEnvironment();
             try
             {
                 if (activationAtom != null)
                 {
-                    ctx.PushLocalVal(activationAtom, activation);
-                    boundAtoms.Enqueue(activationAtom);
+                    innerEnv.Rebind(activationAtom, activation);
                 }
 
                 foreach (var b in bindings.Bindings)
@@ -154,12 +154,11 @@ namespace Zilf.Interpreter
                     var atom = b.Atom;
                     var value = b.Initializer?.Eval(ctx);
 
-                    ctx.PushLocalVal(atom, value);
-                    boundAtoms.Enqueue(atom);
+                    innerEnv.Rebind(atom, value);
                 }
 
                 if (catchy)
-                    ctx.PushEnclosingProgActivation(activation);
+                    innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
 
                 // evaluate body
                 ZilObject result = null;
@@ -190,14 +189,7 @@ namespace Zilf.Interpreter
             }
             finally
             {
-                while (boundAtoms.Count > 0)
-                    ctx.PopLocalVal(boundAtoms.Dequeue());
-
-                if (activationAtom != null)
-                    ctx.PopLocalVal(activationAtom);
-
-                if (catchy)
-                    ctx.PopEnclosingProgActivation();
+                ctx.PopEnvironment();
             }
         }
 

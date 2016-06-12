@@ -116,8 +116,13 @@ namespace Zilf.Interpreter.Values
 
         private static ZilObject[] EmptyObjArray = new ZilObject[0];
 
-        public override ZilObject Eval(Context ctx)
+        public override ZilObject Eval(Context ctx, LocalEnvironment environment = null)
         {
+            if (environment != null)
+            {
+                return ctx.ExecuteInEnvironment(environment, () => this.Eval(ctx));
+            }
+
             if (First == null)
                 throw new NotImplementedException("Can't evaluate null");
 

@@ -362,6 +362,9 @@ namespace Zilf.Interpreter
             // expand segments
             args = ZilObject.ExpandSegments(ctx, args).ToArray();
 
+            var outerEnv = ctx.LocalEnvironment;
+            var innerEnv = ctx.PushEnvironment();
+
             if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
                 throw new InterpreterError(
                     name == null ? "user-defined function" : name.ToString(),
@@ -369,26 +372,26 @@ namespace Zilf.Interpreter
 
             for (int i = 0; i < optArgsStart; i++)
             {
-                ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx);
-                ctx.PushLocalVal(argAtoms[i], value);
+                ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
+                innerEnv.Rebind(argAtoms[i], value);
             }
 
             for (int i = optArgsStart; i < auxArgsStart; i++)
             {
                 if (i < args.Length)
                 {
-                    ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx);
-                    ctx.PushLocalVal(argAtoms[i], value);
+                    ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
+                    innerEnv.Rebind(argAtoms[i], value);
                 }
                 else
                 {
-                    ctx.PushLocalVal(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
+                    innerEnv.Rebind(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
                 }
             }
 
             for (int i = auxArgsStart; i < argAtoms.Length; i++)
             {
-                ctx.PushLocalVal(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
+                innerEnv.Rebind(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
             }
 
             if (varargsAtom != null)
@@ -396,22 +399,24 @@ namespace Zilf.Interpreter
                 var extras = args.Skip(auxArgsStart);
                 if (eval && !varargsQuoted)
                     extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
-                ctx.PushLocalVal(varargsAtom, new ZilList(extras));
+                innerEnv.Rebind(varargsAtom, new ZilList(extras));
             }
 
             ZilActivation activation;
             if (activationAtom != null)
             {
                 activation = new ZilActivation(activationAtom);
-                ctx.PushLocalVal(activationAtom, activation);
+                innerEnv.Rebind(activationAtom, activation);
             }
             else
             {
                 activation = null;
             }
 
-            // set this to null so RETURN and AGAIN won't use the activation of a PROG outside the newly entered function unless explicitly told to
-            ctx.PushEnclosingProgActivation(null);
+            /* make an unassigned binding so RETURN and AGAIN won't use the
+             * activation of a PROG outside the newly entered function unless
+             * explicitly told to */
+            innerEnv.Rebind(ctx.EnclosingProgActivationAtom, null);
 
             return activation;
         }
@@ -420,13 +425,7 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(ctx != null);
 
-            ctx.PopEnclosingProgActivation();
-
-            if (activationAtom != null)
-                ctx.PopLocalVal(activationAtom);
-
-            foreach (ZilAtom atom in argAtoms)
-                ctx.PopLocalVal(atom);
+            ctx.PopEnvironment();
         }
 
         public ZilList ToZilList()

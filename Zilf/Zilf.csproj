@@ -199,6 +199,7 @@
     <Compile Include="Interpreter\Values\ZilAtom.cs" />
     <Compile Include="Interpreter\Values\ZilChannel.cs" />
     <Compile Include="Interpreter\Values\ZilChar.cs" />
+    <Compile Include="Interpreter\LocalEnvironment.cs" />
     <Compile Include="Interpreter\Values\ZilEvalMacro.cs" />
     <Compile Include="Interpreter\Values\ZilFalse.cs" />
     <Compile Include="Interpreter\Values\ZilFix.cs" />

@@ -181,9 +181,9 @@ namespace Zilf.Interpreter.Values
                 return new ZilList(First, Rest);
         }
 
-        public override ZilObject Eval(Context ctx)
+        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
         {
-            return new ZilList(EvalSequence(ctx, this)) { SourceLine = this.SourceLine };
+            return new ZilList(EvalSequence(ctx, this, environment)) { SourceLine = this.SourceLine };
         }
 
         public IEnumerator<ZilObject> GetEnumerator()

@@ -108,10 +108,10 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(First, Second);
         }
 
-        public override ZilObject Eval(Context ctx)
+        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
         {
             // TODO: check decl (Second) after evaluating First
-            return First.Eval(ctx);
+            return First.Eval(ctx, environment);
         }
 
         #region IStructure Members

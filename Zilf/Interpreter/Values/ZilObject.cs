@@ -292,8 +292,10 @@ namespace Zilf.Interpreter.Values
         /// Evaluates an object: performs function calls, duplicates lists, etc.
         /// </summary>
         /// <param name="ctx">The current context.</param>
+        /// <param name="environment">The environment in which to evaluate the object,
+        /// or <b>null</b> to use the current environment.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
-        public virtual ZilObject Eval(Context ctx)
+        public virtual ZilObject Eval(Context ctx, LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -364,7 +366,8 @@ namespace Zilf.Interpreter.Values
             throw new ArgumentException("Missing program", "body");
         }
 
-        public static IEnumerable<ZilObject> ExpandOrEvalWithSplice(Context ctx, ZilObject obj)
+        public static IEnumerable<ZilObject> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
+            LocalEnvironment environment)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(obj != null);
@@ -374,7 +377,7 @@ namespace Zilf.Interpreter.Values
 
             if (seg != null)
             {
-                var result = seg.Form.Eval(ctx) as IEnumerable<ZilObject>;
+                var result = seg.Form.Eval(ctx, environment) as IEnumerable<ZilObject>;
 
                 if (result != null)
                     return result;
@@ -383,7 +386,7 @@ namespace Zilf.Interpreter.Values
             }
             else
             {
-                var result = obj.Eval(ctx);
+                var result = obj.Eval(ctx, environment);
 
                 if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
                 {
@@ -401,15 +404,18 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
+        /// <param name="environment">The environment in which to evaluate the expressions,
+        /// or <b>null</b> to use the current environment.</param>
         /// <returns>A sequence of evaluation results.</returns>
         /// <remarks>The values obtained by expanding segment references are not evaluated in turn.</remarks>
-        public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
+        public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence,
+            LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo));
+            return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo, environment));
         }
 
         public static IEnumerable<ZilObject> EvalWithSplice(Context ctx, ZilObject obj)

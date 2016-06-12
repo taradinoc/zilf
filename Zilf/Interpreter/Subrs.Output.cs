@@ -138,9 +138,11 @@ namespace Zilf.Interpreter
             var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
             var result = ctx.TRUE;
 
-            ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
+            var innerEnv = ctx.PushEnvironment();
             try
             {
+                innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
+
                 var printArgs = new ZilObject[1];
 
                 foreach (var item in items)
@@ -160,7 +162,7 @@ namespace Zilf.Interpreter
             }
             finally
             {
-                ctx.PopLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN));
+                ctx.PopEnvironment();
             }
 
             return result;

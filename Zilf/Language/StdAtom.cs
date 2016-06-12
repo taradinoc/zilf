@@ -119,6 +119,7 @@ namespace Zilf.Language
         [Atom("DO-FUNNY-GLOBALS?")]
         DO_FUNNY_GLOBALS_P,
         ELSE,
+        ENVIRONMENT,
         [Atom("EQUAL?")]
         EQUAL_P,
         EZIP,
