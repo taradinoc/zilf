@@ -402,7 +402,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <returns>A sequence of evaluation results.</returns>
-        /// <remarks>The valued obtained by expanding segment references are not evaluated in turn.</remarks>
+        /// <remarks>The values obtained by expanding segment references are not evaluated in turn.</remarks>
         public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
@@ -410,6 +410,48 @@ namespace Zilf.Interpreter.Values
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
             return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo));
+        }
+
+        public static IEnumerable<ZilObject> EvalWithSplice(Context ctx, ZilObject obj)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(obj != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
+            var seg = obj as ZilSegment;
+
+            if (seg != null)
+            {
+                return Enumerable.Repeat(seg, 1);
+            }
+            else
+            {
+                var result = obj.Eval(ctx);
+
+                if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
+                {
+                    return (IEnumerable<ZilObject>)result.GetPrimitive(ctx);
+                }
+                else
+                {
+                    return Enumerable.Repeat(result, 1);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Evaluates a sequence of expressions without expanding segment references.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <param name="sequence">The sequence to evaluate.</param>
+        /// <returns>A sequence of evaluation results.</returns>
+        public static IEnumerable<ZilObject> EvalSequenceLeavingSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(sequence != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
+            return sequence.SelectMany(zo => EvalWithSplice(ctx, zo));
         }
 
         public static IEnumerable<ZilObject> ExpandIfSegment(Context ctx, ZilObject obj)

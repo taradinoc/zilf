@@ -394,6 +394,18 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <+ !.A>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
             TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+
+            // but not double-expanded
+            ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <1 .A>>");
+            TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
+            TestHelpers.Evaluate(ctx, "<SET X '(!.L)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO !.X>",
+                new ZilSegment(
+                    new ZilForm(new[] {
+                        ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("L", ctx)
+                    })
+                ));
         }
     }
 }
