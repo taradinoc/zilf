@@ -368,5 +368,32 @@ namespace ZilfTests.Interpreter
 
             Assert.AreEqual(new ZilList(expectedItems), ctx.GetLocalVal(atom));
         }
+
+        [TestMethod]
+        public void SEGMENT_In_FUNCTION_Call_Should_Be_Expanded()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A B C) <+ .A .B .C>>");
+            TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+
+            // it should be expanded even when the arg is quoted
+            ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO ('A 'B 'C) <+ .A .B .C>>");
+            TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+
+            // or with "ARGS"
+            ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"ARGS\" A) <+ !.A>>");
+            TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+
+            // or with "TUPLE"
+            ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <+ !.A>>");
+            TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+        }
     }
 }

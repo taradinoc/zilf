@@ -356,7 +356,11 @@ namespace Zilf.Interpreter
         public ZilActivation BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(args != null && Contract.ForAll(args, a => a != null));
+            Contract.Requires(args != null);
+            Contract.Requires(Contract.ForAll(args, a => a != null));
+
+            // expand segments
+            args = ZilObject.ExpandSegments(ctx, args).ToArray();
 
             if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
                 throw new InterpreterError(

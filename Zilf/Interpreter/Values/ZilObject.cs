@@ -15,10 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using Antlr.Runtime.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using Antlr.Runtime.Tree;
+using System.Linq;
 using Zilf.Language;
 using Zilf.Language.Lexing;
 
@@ -363,45 +364,90 @@ namespace Zilf.Interpreter.Values
             throw new ArgumentException("Missing program", "body");
         }
 
+        public static IEnumerable<ZilObject> ExpandOrEvalWithSplice(Context ctx, ZilObject obj)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(obj != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
+            var seg = obj as ZilSegment;
+
+            if (seg != null)
+            {
+                var result = seg.Form.Eval(ctx) as IEnumerable<ZilObject>;
+
+                if (result != null)
+                    return result;
+
+                throw new InterpreterError("segment evaluation must return a structure");
+            }
+            else
+            {
+                var result = obj.Eval(ctx);
+
+                if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
+                {
+                    return (IEnumerable<ZilObject>)result.GetPrimitive(ctx);
+                }
+                else
+                {
+                    return Enumerable.Repeat(result, 1);
+                }
+            }
+        }
+
         /// <summary>
         /// Evaluates a sequence of expressions, expanding segment references (!.X) when encountered.
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <returns>A sequence of evaluation results.</returns>
+        /// <remarks>The valued obtained by expanding segment references are not evaluated in turn.</remarks>
         public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
-            //Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            foreach (ZilObject obj in sequence)
+            return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo));
+        }
+
+        public static IEnumerable<ZilObject> ExpandIfSegment(Context ctx, ZilObject obj)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(obj != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
+            var seg = obj as ZilSegment;
+
+            if (seg != null)
             {
-                if (obj is ZilSegment)
-                {
-                    ZilObject result = ((ZilSegment)obj).Form.Eval(ctx);
-                    if (result is IEnumerable<ZilObject>)
-                    {
-                        foreach (ZilObject inner in (IEnumerable<ZilObject>)result)
-                            yield return inner;
-                    }
-                    else
-                        throw new InterpreterError("segment evaluation must return a structure");
-                }
-                else
-                {
-                    var result = obj.Eval(ctx);
-                    if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
-                    {
-                        foreach (ZilObject inner in (IEnumerable<ZilObject>)result.GetPrimitive(ctx))
-                            yield return inner;
-                    }
-                    else
-                    {
-                        yield return result;
-                    }
-                }
+                var result = seg.Form.Eval(ctx) as IEnumerable<ZilObject>;
+
+                if (result != null)
+                    return result;
+
+                throw new InterpreterError("segment evaluation must return a structure");
             }
+            else
+            {
+                return Enumerable.Repeat(obj, 1);
+            }
+        }
+
+        /// <summary>
+        /// Expands segment references (!.X) in a sequence of expressions, leaving the rest unchanged.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <param name="sequence">The sequence of expressions.</param>
+        /// <returns>A sequence of resulting expressions.</returns>
+        public static IEnumerable<ZilObject> ExpandSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(sequence != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+
+            return sequence.SelectMany(zo => ExpandIfSegment(ctx, zo));
         }
     }
 }
