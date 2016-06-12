@@ -395,7 +395,7 @@ namespace Zilf.Interpreter
             {
                 var extras = args.Skip(auxArgsStart);
                 if (eval && !varargsQuoted)
-                    extras = ZilObject.EvalSequence(ctx, extras);
+                    extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
                 ctx.PushLocalVal(varargsAtom, new ZilList(extras));
             }
 
