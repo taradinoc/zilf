@@ -44,26 +44,24 @@ namespace Zilf.Interpreter
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
             Contract.Assert(radix == 10);
 
-            if (lookupObList != null)
+            if (lookupObList == null)
             {
-                if (lookupObList is ObList)
-                    lookupObList = new ZilList(lookupObList, new ZilList(null, null));
-
-                ctx.PushLocalVal(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
-            }
-            else
-            {
-                lookupObList = null;
+                return ZilAtom.Parse(text, ctx);
             }
 
+            if (lookupObList is ObList)
+                lookupObList = new ZilList(lookupObList, new ZilList(null, null));
+
+            var innerEnv = ctx.PushEnvironment();
             try
             {
+                innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
                 return ZilAtom.Parse(text, ctx);
             }
             finally
             {
                 if (lookupObList != null)
-                    ctx.PopLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
+                    ctx.PopEnvironment();
             }
         }
 

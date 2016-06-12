@@ -111,10 +111,5 @@ namespace Zilf.Interpreter.Values
         {
             return primvalue;
         }
-
-        public override ZilObject Eval(Context ctx)
-        {
-            return this;
-        }
     }
 }

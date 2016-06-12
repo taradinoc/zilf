@@ -190,9 +190,9 @@ namespace Zilf.Interpreter.Values
             return this;
         }
 
-        public override ZilObject Eval(Context ctx)
+        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
         {
-            return new ZilVector(EvalSequence(ctx, this).ToArray()) { SourceLine = this.SourceLine };
+            return new ZilVector(EvalSequence(ctx, this, environment).ToArray()) { SourceLine = this.SourceLine };
         }
 
         #region IEnumerable<ZilObject> Members

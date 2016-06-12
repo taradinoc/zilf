@@ -64,7 +64,7 @@ namespace Zilf.Interpreter
 
         private readonly ObList rootObList, packageObList, compilationFlagsOblist;
         private readonly Stack<ZilObject> previousObPaths;
-        private Dictionary<ZilAtom, Binding> localValues;
+        private LocalEnvironment localEnvironment;
         private readonly Dictionary<ZilAtom, ZilObject> globalValues;
         private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
@@ -106,7 +106,7 @@ namespace Zilf.Interpreter
             packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
             compilationFlagsOblist = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
             previousObPaths = new Stack<ZilObject>();
-            localValues = new Dictionary<ZilAtom, Binding>();
+            localEnvironment = new LocalEnvironment();
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
             subrDelegates = new Dictionary<string, SubrDelegate>();
@@ -130,7 +130,7 @@ namespace Zilf.Interpreter
             ObList userObList = MakeObList(GetStdAtom(StdAtom.INITIAL));
             ZilList olpath = new ZilList(new ZilObject[] { userObList, rootObList });
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
-            localValues[olatom] = new Binding(olpath);
+            localEnvironment.Rebind(olatom, olpath);
 
             var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
             var consoleOutChannel = new ZilConsoleChannel(FileAccess.Write);
@@ -153,7 +153,7 @@ namespace Zilf.Interpreter
             Contract.Invariant(includePaths != null);
             Contract.Invariant(rootObList != null);
             Contract.Invariant(packageObList != null);
-            Contract.Invariant(localValues != null);
+            Contract.Invariant(localEnvironment != null);
             Contract.Invariant(GlobalVals != null);
             Contract.Invariant(associations != null);
             Contract.Invariant(typeMap != null);
@@ -494,31 +494,6 @@ namespace Zilf.Interpreter
         }
 
         /// <summary>
-        /// Copies the context and creates a new, empty local binding environment.
-        /// </summary>
-        /// <returns>The newly created context, which shares everything with
-        /// this context except the local bindings. Only the OBLIST local is copied.</returns>
-        public Context CloneWithNewLocals()
-        {
-            Contract.Ensures(Contract.Result<Context>() != null);
-            Contract.Ensures(Contract.Result<Context>().localValues.Count == 1);
-
-            Context result = (Context)MemberwiseClone();
-            result.localValues = new Dictionary<ZilAtom, Binding>();
-
-            ZilAtom oblistAtom = GetStdAtom(StdAtom.OBLIST);
-            Binding binding;
-            if (localValues.TryGetValue(oblistAtom, out binding) == true)
-            {
-                while (binding.Prev != null)
-                    binding = binding.Prev;
-                result.localValues.Add(oblistAtom, binding);
-            }
-
-            return result;
-        }
-
-        /// <summary>
         /// Gets the specified standard atom.
         /// </summary>
         /// <param name="id">The identifier of the standard atom.</param>
@@ -586,11 +561,7 @@ namespace Zilf.Interpreter
         [Pure]
         public ZilObject GetLocalVal(ZilAtom atom)
         {
-            Binding b;
-            if (localValues.TryGetValue(atom, out b))
-                return b.Value;
-            else
-                return null;
+            return localEnvironment.GetLocalVal(atom);
         }
 
         /// <summary>
@@ -603,44 +574,76 @@ namespace Zilf.Interpreter
             Contract.Requires(atom != null);
             Contract.Ensures(GetLocalVal(atom) == value);
 
-            Binding b;
-            if (localValues.TryGetValue(atom, out b))
-                b.Value = value;
-            else if (value != null)
-                localValues[atom] = new Binding(value);
+            localEnvironment.SetLocalVal(atom, value);
         }
 
-        /// <summary>
-        /// Creates a new local binding for an atom.
-        /// </summary>
-        /// <param name="atom">The atom.</param>
-        /// <param name="value">The new local value for the atom, or null.</param>
-        public void PushLocalVal(ZilAtom atom, ZilObject value)
+        public LocalEnvironment PushEnvironment()
         {
-            Contract.Requires(atom != null);
-            Contract.Ensures(GetLocalVal(atom) == value);
+            Contract.Ensures(Contract.Result<LocalEnvironment>() != null);
 
-            Binding newb = new Binding(value);
-            localValues.TryGetValue(atom, out newb.Prev);
-            localValues[atom] = newb;
+            var result = new LocalEnvironment(localEnvironment);
+            localEnvironment = result;
+            return result;
         }
 
-        /// <summary>
-        /// Removes the most recent local binding for an atom.
-        /// </summary>
-        /// <param name="atom">The atom.</param>
-        public void PopLocalVal(ZilAtom atom)
+        public void PopEnvironment()
         {
-            Contract.Requires(atom != null);
+            if (localEnvironment.Parent == null)
+                throw new InvalidOperationException("no parent environment to restore");
 
-            Binding b;
-            if (localValues.TryGetValue(atom, out b))
+            localEnvironment = localEnvironment.Parent;
+        }
+
+        public T ExecuteInEnvironment<T>(LocalEnvironment tempEnvironment, Func<T> func)
+        {
+            var prev = localEnvironment;
+            try
             {
-                if (b.Prev == null)
-                    localValues.Remove(atom);
-                else
-                    localValues[atom] = b.Prev;
+                localEnvironment = tempEnvironment;
+                return func();
             }
+            finally
+            {
+                localEnvironment = prev;
+            }
+        }
+
+        /// <summary>
+        /// Executes a delegate in a fresh local environment containing
+        /// only the OBLIST value from the current environment.
+        /// </summary>
+        /// <typeparam name="T">The return type of the delegate.</typeparam>
+        /// <param name="func">The delegate to execute.</param>
+        /// <returns>The value returned by the delegate.</returns>
+        /// <remarks>The MDL documentation refers to the macro expansion environment as a
+        /// "top level environment", but for the purposes of MDL-ZIL?, the environment is
+        /// not considered "top level" (i.e. SUBR names are not redirected).</remarks>
+        public T ExecuteInMacroEnvironment<T>(Func<T> func)
+        {
+            var oblistAtom = GetStdAtom(StdAtom.OBLIST);
+
+            var rootEnvironment = localEnvironment;
+            while (rootEnvironment.Parent != null && rootEnvironment.Parent.IsLocalBound(oblistAtom))
+                rootEnvironment = rootEnvironment.Parent;
+
+            var macroEnv = new LocalEnvironment();
+            macroEnv.SetLocalVal(oblistAtom, rootEnvironment.GetLocalVal(oblistAtom));
+
+            var wasTopLevel = atTopLevel;
+            try
+            {
+                atTopLevel = false;
+                return ExecuteInEnvironment(macroEnv, func);
+            }
+            finally
+            {
+                atTopLevel = wasTopLevel;
+            }
+        }
+
+        public LocalEnvironment LocalEnvironment
+        {
+            get { return localEnvironment; }
         }
 
         /// <summary>
@@ -1077,15 +1080,16 @@ namespace Zilf.Interpreter
                     {
                         var stringChannel = new ZilStringChannel(FileAccess.Write);
                         var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
-                        PushLocalVal(outchanAtom, stringChannel);
+                        var innerEnv = PushEnvironment();
                         try
                         {
+                            innerEnv.Rebind(outchanAtom, stringChannel);
                             ((IApplicable)handler).Apply(this, new ZilObject[] { zo });
                             return stringChannel.String;
                         }
                         finally
                         {
-                            PopLocalVal(outchanAtom);
+                            PopEnvironment();
                         }
                     };
                 }
@@ -1442,14 +1446,9 @@ namespace Zilf.Interpreter
             return GetLocalVal(enclosingProgActivationAtom) as ZilActivation;
         }
 
-        public void PushEnclosingProgActivation(ZilActivation activation)
+        public ZilAtom EnclosingProgActivationAtom
         {
-            PushLocalVal(enclosingProgActivationAtom, activation);
-        }
-
-        public void PopEnclosingProgActivation()
-        {
-            PopLocalVal(enclosingProgActivationAtom);
+            get { return enclosingProgActivationAtom; }
         }
     }
 }

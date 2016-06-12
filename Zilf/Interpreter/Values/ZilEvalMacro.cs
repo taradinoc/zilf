@@ -117,9 +117,8 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            Context expandCtx = ctx.CloneWithNewLocals();
-            expandCtx.AtTopLevel = false;
-            return ((IApplicable)value).Apply(expandCtx, args);
+            return ctx.ExecuteInMacroEnvironment(
+                () => ((IApplicable)value).Apply(ctx, args));
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
@@ -128,8 +127,8 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            Context expandCtx = ctx.CloneWithNewLocals();
-            return ((IApplicable)value).ApplyNoEval(expandCtx, args);
+            return ctx.ExecuteInMacroEnvironment(
+                () => ((IApplicable)value).ApplyNoEval(ctx, args));
         }
 
         public override bool Equals(object obj)

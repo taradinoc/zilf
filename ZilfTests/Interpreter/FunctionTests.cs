@@ -407,5 +407,29 @@ namespace ZilfTests.Interpreter
                     })
                 ));
         }
+
+        [TestMethod]
+        public void FUNCTION_Parameter_Atoms_Should_Not_Be_Bound_While_Arguments_Are_Being_Evaluated()
+        {
+            var ctx = new Context();
+            var foo = ZilAtom.Parse("FOO", ctx);
+            var bar = ZilAtom.Parse("BAR", ctx);
+
+            TestHelpers.Evaluate(ctx, "<DEFINE PAIR (A B) <LIST .A .B>>");
+            TestHelpers.Evaluate(ctx, "<SET A BAR>");
+            TestHelpers.EvalAndAssert(ctx, "<PAIR FOO .A>", new ZilList(new[] { foo, bar }));
+        }
+
+        [TestMethod]
+        public void OPT_And_AUX_Parameter_Defaults_Can_Refer_To_Earlier_Values()
+        {
+            var ctx = new Context();
+            var foo = ZilAtom.Parse("FOO", ctx);
+            var bar = ZilAtom.Parse("BAR", ctx);
+
+            TestHelpers.Evaluate(ctx, "<DEFINE PAIR2 (A \"OPT\" (B .A) \"AUX\" (C .B)) <LIST .A .B .C>>");
+            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO>", new ZilList(new[] { foo, foo, foo }));
+            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO BAR>", new ZilList(new[] { foo, bar, bar }));
+        }
     }
 }
