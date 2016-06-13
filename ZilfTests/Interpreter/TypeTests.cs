@@ -33,6 +33,7 @@ namespace ZilfTests.Interpreter
         public void Initialize()
         {
             ctx = new Context();
+            ctx.RegisterType(ZilAtom.Parse("WACKY", ctx), PrimType.LIST);
 
             // monad types
             ctx.SetLocalVal(ZilAtom.Parse("A-ATOM", ctx), ZilAtom.Parse("FOO", ctx));
@@ -162,6 +163,72 @@ namespace ZilfTests.Interpreter
             // must have at least 2 arguments
             TestHelpers.EvalAndCatch<InterpreterError>("<TYPE?>");
             TestHelpers.EvalAndCatch<InterpreterError>("<TYPE? FOO>");
+        }
+
+        [TestMethod]
+        public void TestPRIMTYPE()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-ADECL>", ctx.GetStdAtom(StdAtom.VECTOR));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-ATOM>", ctx.GetStdAtom(StdAtom.ATOM));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-CHARACTER>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-FALSE>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-FIX>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-LIST>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-FORM>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-STRING>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-SUBR>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-FSUBR>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-FUNCTION>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-MACRO>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-SEGMENT>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-VECTOR>", ctx.GetStdAtom(StdAtom.VECTOR));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE .A-WACKY>", ctx.GetStdAtom(StdAtom.LIST));
+
+            // literals
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE <QUOTE 5:FIX>>", ctx.GetStdAtom(StdAtom.VECTOR));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE FOO>", ctx.GetStdAtom(StdAtom.ATOM));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE !\\c>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE <>>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE 5>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE '(1 2)>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE '<+ 1 2>>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE \"HELLO\">", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE #SUBR \"+\">", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE #FSUBR \"QUOTE\">", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE '!<FOO>>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<PRIMTYPE [1 2 3]>", ctx.GetStdAtom(StdAtom.VECTOR));
+            // no literals for FUNCTION, MACRO, WACKY
+
+            // must have 1 argument
+            TestHelpers.EvalAndCatch<InterpreterError>("<PRIMTYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<PRIMTYPE FOO BAR>");
+        }
+
+        [TestMethod]
+        public void TestTYPEPRIM()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM ADECL>", ctx.GetStdAtom(StdAtom.VECTOR));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM ATOM>", ctx.GetStdAtom(StdAtom.ATOM));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM CHARACTER>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM FALSE>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM FIX>", ctx.GetStdAtom(StdAtom.FIX));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM LIST>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM FORM>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM STRING>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM SUBR>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM FSUBR>", ctx.GetStdAtom(StdAtom.STRING));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM FUNCTION>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM MACRO>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM SEGMENT>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM VECTOR>", ctx.GetStdAtom(StdAtom.VECTOR));
+            TestHelpers.EvalAndAssert(ctx, "<TYPEPRIM WACKY>", ctx.GetStdAtom(StdAtom.LIST));
+
+            // error if not a registered type
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<TYPEPRIM XYZZY>");
+
+            // must have 1 argument
+            TestHelpers.EvalAndCatch<InterpreterError>("<TYPEPRIM>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<TYPEPRIM FOO BAR>");
         }
 
         [TestMethod]
@@ -584,23 +651,22 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
-        public void TestCHTYPE_to_WACKY()
+        public void TestCHTYPE_to_Unregistered_Type()
         {
-            // since WACKY isn't a registered type, we can't change anything to it
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT WACKY>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR WACKY>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-CHARACTER NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FIX NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FALSE NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-LIST NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FORM NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-STRING NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SUBR NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FSUBR NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-FUNCTION NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-MACRO NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-SEGMENT NOT-A-TYPE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-VECTOR NOT-A-TYPE>");
         }
 
         [TestMethod]

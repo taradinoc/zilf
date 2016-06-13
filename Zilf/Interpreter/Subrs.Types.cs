@@ -44,6 +44,46 @@ namespace Zilf.Interpreter
             return types.FirstOrDefault(a => a == type) ?? ctx.FALSE;
         }
 
+        private static StdAtom PrimTypeToType(PrimType pt)
+        {
+            switch (pt)
+            {
+                case PrimType.ATOM:
+                    return StdAtom.ATOM;
+                case PrimType.FIX:
+                    return StdAtom.FIX;
+                case PrimType.LIST:
+                    return StdAtom.LIST;
+                case PrimType.STRING:
+                    return StdAtom.STRING;
+                case PrimType.TABLE:
+                    return StdAtom.TABLE;
+                case PrimType.VECTOR:
+                    return StdAtom.VECTOR;
+                default:
+                    throw new NotImplementedException("unknown primtype " + pt);
+            }
+        }
+
+        [Subr]
+        public static ZilObject PRIMTYPE(Context ctx, ZilObject value)
+        {
+            SubrContracts(ctx);
+
+            return ctx.GetStdAtom(PrimTypeToType(value.PrimType));
+        }
+
+        [Subr]
+        public static ZilObject TYPEPRIM(Context ctx, ZilAtom type)
+        {
+            SubrContracts(ctx);
+
+            if (!ctx.IsRegisteredType(type))
+                throw new InterpreterError("TYPEPRIM: not a registered type: " + type.ToStringContext(ctx, false));
+
+            return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
+        }
+
         [Subr]
         public static ZilObject CHTYPE(Context ctx, ZilObject value, ZilAtom atom)
         {
