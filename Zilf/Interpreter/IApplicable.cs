@@ -28,18 +28,15 @@ namespace Zilf.Interpreter
     interface IApplicable
     {
         /// <summary>
-        /// Applies the object to the given arguments.
+        /// Applies the object to the given arguments, after evaluating them and/or expanding segments if appropriate.
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The unevaluated arguments.</param>
         /// <returns>The result of the application.</returns>
-        /// <remarks>
-        /// For FSUBRs, this is the same as <see cref="ApplyNoEval"/>.
-        /// </remarks>
         ZilObject Apply(Context ctx, ZilObject[] args);
 
         /// <summary>
-        /// Applies the object to the given arguments, which have already been evaluated.
+        /// Applies the object to the given arguments, without evaluating or expanding them.
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The arguments.</param>

@@ -359,8 +359,11 @@ namespace Zilf.Interpreter
             Contract.Requires(args != null);
             Contract.Requires(Contract.ForAll(args, a => a != null));
 
-            // expand segments
-            args = ZilObject.ExpandSegments(ctx, args).ToArray();
+            if (eval)
+            {
+                // expand segments
+                args = ZilObject.ExpandSegments(ctx, args).ToArray();
+            }
 
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();

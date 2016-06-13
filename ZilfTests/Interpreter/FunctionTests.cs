@@ -370,7 +370,7 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
-        public void SEGMENT_In_FUNCTION_Call_Should_Be_Expanded()
+        public void SEGMENT_In_FUNCTION_Call_Should_Be_Expanded_When_In_Calling_FORM()
         {
             var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (A B C) <+ .A .B .C>>");
@@ -394,9 +394,13 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <+ !.A>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
             TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+        }
 
-            // but not double-expanded
-            ctx = new Context();
+        [TestMethod]
+        public void SEGMENT_In_FUNCTION_Call_Should_Not_Be_Expanded_When_Not_In_Calling_FORM()
+        {
+            // shouldn't expand a second segment returned by expanding a first segment
+            var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <1 .A>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
             TestHelpers.Evaluate(ctx, "<SET X '(!.L)>");
@@ -406,6 +410,11 @@ namespace ZilfTests.Interpreter
                         ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("L", ctx)
                     })
                 ));
+
+            // shouldn't expand a segment passed to a MAPF function from the input list
+            ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<MAPF ,STRING <FUNCTION (I) <UNPARSE .I>> '(!<FOO>)>",
+                ZilString.FromString("!<FOO>"));
         }
 
         [TestMethod]
