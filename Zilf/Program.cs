@@ -334,7 +334,13 @@ namespace Zilf
             {
                 ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
             }
+
             ctx.IncludePaths.AddRange(includePaths);
+
+            if (ctx.IncludePaths.Count == 0)
+            {
+                ctx.IncludePaths.Add(Environment.CurrentDirectory);
+            }
 
             ctx.TraceRoutines = traceRoutines;
             ctx.WantDebugInfo = debugInfo;
