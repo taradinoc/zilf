@@ -153,6 +153,27 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestVALUE()
+        {
+            var ctx = new Context();
+            var foo = ZilAtom.Parse("FOO", ctx);
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<VALUE FOO>");
+
+            ctx.SetGlobalVal(foo, new ZilFix(123));
+            TestHelpers.EvalAndAssert(ctx, "<VALUE FOO>", new ZilFix(123));
+
+            ctx.SetLocalVal(foo, new ZilFix(456));
+            TestHelpers.EvalAndAssert(ctx, "<VALUE FOO>", new ZilFix(456));
+
+            ctx.SetLocalVal(foo, null);
+            TestHelpers.EvalAndAssert(ctx, "<VALUE FOO>", new ZilFix(123));
+
+            ctx.SetGlobalVal(foo, null);
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<VALUE FOO>");
+        }
+
+        [TestMethod]
         public void TestGASSIGNED_P()
         {
             var ctx = new Context();
