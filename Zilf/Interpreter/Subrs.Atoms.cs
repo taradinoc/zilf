@@ -255,6 +255,19 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject VALUE(Context ctx, ZilAtom atom)
+        {
+            SubrContracts(ctx);
+
+            var result = ctx.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
+            if (result == null)
+                throw new InterpreterError("atom has no local or global value: " +
+                    atom.ToStringContext(ctx, false));
+
+            return result;
+        }
+
+        [Subr]
         public static ZilObject GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject wtf = null)
         {
             SubrContracts(ctx);
