@@ -190,6 +190,15 @@ namespace Zilf.Interpreter
             return ctx.GetGlobalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
+        [Subr]
+        public static ZilObject GUNASSIGN(Context ctx, ZilAtom atom)
+        {
+            SubrContracts(ctx);
+
+            ctx.SetGlobalVal(atom, null);
+            return atom;
+        }
+
         [FSubr]
         public static ZilObject GDECL(Context ctx, [Decl("!<LIST [REST <LIST [REST ATOM]> ANY]>")] ZilObject[] args)
         {
@@ -226,6 +235,15 @@ namespace Zilf.Interpreter
                     atom.ToStringContext(ctx, false));
 
             return result;
+        }
+
+        [Subr]
+        public static ZilObject UNASSIGN(Context ctx, ZilAtom atom)
+        {
+            SubrContracts(ctx);
+
+            ctx.SetLocalVal(atom, null);
+            return atom;
         }
 
         [Subr("ASSIGNED?")]

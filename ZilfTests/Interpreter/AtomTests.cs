@@ -195,6 +195,32 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestGUNASSIGN()
+        {
+            var ctx = new Context();
+
+            var foo = ZilAtom.Parse("FOO", ctx);
+            ctx.SetGlobalVal(foo, new ZilFix(123));
+
+            TestHelpers.Evaluate(ctx, "<GUNASSIGN FOO>");
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? FOO>", ctx.FALSE);
+            TestHelpers.EvalAndCatch<InterpreterError>("<GVAL FOO>");
+        }
+
+        [TestMethod]
+        public void TestUNASSIGN()
+        {
+            var ctx = new Context();
+
+            var foo = ZilAtom.Parse("FOO", ctx);
+            ctx.SetLocalVal(foo, new ZilFix(123));
+
+            TestHelpers.Evaluate(ctx, "<UNASSIGN FOO>");
+            TestHelpers.EvalAndAssert(ctx, "<ASSIGNED? FOO>", ctx.FALSE);
+            TestHelpers.EvalAndCatch<InterpreterError>("<LVAL FOO>");
+        }
+
+        [TestMethod]
         public void TestGDECL()
         {
             var ctx = new Context();
