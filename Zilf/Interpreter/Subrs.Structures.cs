@@ -74,7 +74,15 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            st[idx - 1] = newValue;
+            try
+            {
+                st[idx - 1] = newValue;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new InterpreterError("PUT: writing past end of structure", ex);
+            }
+
             return newValue;
         }
 

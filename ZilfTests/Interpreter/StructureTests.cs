@@ -391,5 +391,11 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\" 1 3 \"Leeroy\">",
                 ZilString.FromString("ellroy"));
         }
+
+        [TestMethod]
+        public void PUT_Past_End_Of_LIST_Should_Throw()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<PUT '(1 2 3) 4 FOO>");
+        }
     }
 }
