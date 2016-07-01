@@ -1000,6 +1000,11 @@ namespace Zilf.Interpreter
             return typeMap.ContainsKey(atom);
         }
 
+        public IEnumerable<ZilAtom> RegisteredTypes
+        {
+            get { return typeMap.Keys; }
+        }
+
         /// <summary>
         /// Gets the <see cref="PrimType"/> of a type atom.
         /// </summary>
