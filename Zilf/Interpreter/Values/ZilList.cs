@@ -256,10 +256,10 @@ namespace Zilf.Interpreter.Values
             }
             set
             {
-                IStructure rested = ((IStructure)this).GetRest(index);
-                if (rested == null)
+                var rested = ((IStructure)this).GetRest(index) as ZilList;
+                if (rested == null || rested.IsEmpty)
                     throw new ArgumentOutOfRangeException("index", "writing past end of list");
-                ((ZilList)rested).First = value;
+                rested.First = value;
             }
         }
 
