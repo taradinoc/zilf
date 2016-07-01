@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -955,7 +956,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestApplicableFIX()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<SET O <LIST <FORM + 1 2>>> <1 .O>",
                 new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) }));
         }
@@ -963,7 +963,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestEvalStructures()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "(<+ 1 2> <+ 3 4>)",
                 new ZilList(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
             TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
@@ -975,7 +974,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestSPLICE()
         {
-            var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () #SPLICE (4 5)>");
             TestHelpers.EvalAndAssert(ctx, "<+ <FOO>>", new ZilFix(9));
         }
@@ -983,7 +981,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestNEWTYPE()
         {
-            var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<NEWTYPE FIRSTNAME ATOM>", ZilAtom.Parse("FIRSTNAME", ctx));
             TestHelpers.EvalAndAssert(ctx, "#FIRSTNAME ALFONSO", new ZilHash(ZilAtom.Parse("FIRSTNAME", ctx), PrimType.ATOM, ZilAtom.Parse("ALFONSO", ctx)));
             TestHelpers.EvalAndAssert(ctx, "<=? ALFONSO #FIRSTNAME ALFONSO>", ctx.FALSE);
@@ -1025,8 +1022,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestPRINTTYPE()
         {
-            var ctx = new Context();
-
             TestHelpers.Evaluate(ctx, SRomanPrint);
             TestHelpers.Evaluate(ctx, "<NEWTYPE ROMAN FIX>");
             TestHelpers.EvalAndAssert(ctx, "<PRINTTYPE ROMAN ,ROMAN-PRINT>", ZilAtom.Parse("ROMAN", ctx));
@@ -1100,7 +1095,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void VECTOR_Can_Be_ChTyped_To_TABLE()
         {
-            var ctx = new Context();
             var table = (ZilTable)TestHelpers.Evaluate(ctx, "<CHTYPE [1 2 3] TABLE>");
 
             Assert.AreEqual(3, table.ElementCount);
@@ -1116,6 +1110,45 @@ namespace ZilfTests.Interpreter
             };
 
             Assert.IsTrue(expected.SequenceEqual(array), "Unexpected table contents");
+        }
+
+        [TestMethod]
+        public void TestALLTYPES_And_VALID_TYPE_P()
+        {
+            string[] expectedTypes =
+            {
+                "FIX", "SUBR", "FSUBR", "FUNCTION", "MACRO", "ADECL", "ATOM", "CHARACTER",
+                "FALSE", "LIST", "FORM", "STRING", "SEGMENT", "VECTOR", "WACKY",
+            };
+
+            const string unexpectedType = "NOT-A-TYPE";
+
+            var allTypes = TestHelpers.Evaluate(ctx, "<ALLTYPES>");
+
+            Assert.IsInstanceOfType(allTypes, typeof(ZilVector));
+
+            var allTypesVector = (ZilVector)allTypes;
+            var returnedTypes = new HashSet<ZilAtom>();
+
+            var len = allTypesVector.GetLength();
+            for (int i = 0; i < len; i++)
+            {
+                var item = allTypesVector[i];
+                Assert.IsInstanceOfType(item, typeof(ZilAtom));
+                returnedTypes.Add((ZilAtom)item);
+            }
+
+            foreach (var typeName in expectedTypes)
+            {
+                var atom = ZilAtom.Parse(typeName, ctx);
+                Assert.IsTrue(returnedTypes.Contains(atom));
+
+                TestHelpers.EvalAndAssert(ctx, $"<VALID-TYPE? {typeName}>", atom);
+            }
+
+            Assert.IsFalse(returnedTypes.Contains(ZilAtom.Parse(unexpectedType, ctx)));
+
+            TestHelpers.EvalAndAssert(ctx, $"<VALID-TYPE? {unexpectedType}>", ctx.FALSE);
         }
     }
 }

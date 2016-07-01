@@ -113,6 +113,22 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject ALLTYPES(Context ctx)
+        {
+            SubrContracts(ctx);
+
+            return new ZilVector(ctx.RegisteredTypes.ToArray());
+        }
+
+        [Subr("VALID-TYPE?")]
+        public static ZilObject VALID_TYPE_P(Context ctx, ZilAtom atom)
+        {
+            SubrContracts(ctx);
+
+            return ctx.IsRegisteredType(atom) ? atom : ctx.FALSE;
+        }
+
+        [Subr]
         public static ZilObject PRINTTYPE(Context ctx, ZilAtom atom,
             [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
         {
