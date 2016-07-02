@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
@@ -113,12 +112,20 @@ namespace Zilf.Interpreter.Values
             StringBuilder sb = new StringBuilder(2);
             sb.Append(start);
 
+            if (items is ZilList)
+            {
+                items = ((ZilList)items).EnumerateNonRecursive();
+            }
+
             foreach (ZilObject obj in items)
             {
                 if (sb.Length > 1)
                     sb.Append(' ');
 
-                sb.Append(convert(obj));
+                if (obj == null)
+                    sb.Append("...");
+                else
+                    sb.Append(convert(obj));
             }
 
             sb.Append(end);
@@ -201,8 +208,34 @@ namespace Zilf.Interpreter.Values
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Enumerates the items of the list, yielding a final <b>null</b> instead of repeating if the list is recursive.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<ZilObject> EnumerateNonRecursive()
+        {
+            var seen = new HashSet<ZilList>(IdentityEqualityComparer<ZilList>.Instance);
+            var list = this;
+
+            while (!list.IsEmpty)
+            {
+                if (seen.Contains(list))
+                {
+                    yield return null;
+                    yield break;
+                }
+
+                seen.Add(list);
+                yield return list.First;
+                list = list.Rest;
+            }
+        }
+
         public override bool Equals(object obj)
         {
+            if (obj == this)
+                return true;
+
             ZilList other = obj as ZilList;
             if (other == null)
                 return false;
@@ -221,8 +254,13 @@ namespace Zilf.Interpreter.Values
         public override int GetHashCode()
         {
             int result = (int)StdAtom.LIST;
-            foreach (ZilObject obj in this)
+            foreach (ZilObject obj in this.EnumerateNonRecursive())
+            {
+                if (obj == null)
+                    break;
+
                 result = result * 31 + obj.GetHashCode();
+            }
             return result;
         }
 
