@@ -83,7 +83,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("PUT: writing past end of structure", ex);
             }
 
-            return newValue;
+            return (ZilObject)st;
         }
 
         [Subr]

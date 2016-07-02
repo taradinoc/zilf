@@ -363,8 +363,8 @@ namespace ZilfTests.Interpreter
                 new ZilFix(3), new ZilFix(6), new ZilFix(9),
             };
 
-            TestHelpers.EvalAndAssert(ctx, "<MAPR ,VECTOR <FUNCTION (L) <1 .L <* 3 <1 .L>>>> .FOO>",
-                new ZilVector(expectedItems));
+            TestHelpers.EvalAndAssert(ctx, "<MAPR ,VECTOR <FUNCTION (L) <1 .L <* 3 <1 .L>>> FOO> .FOO>",
+                new ZilVector(atom, atom, atom));
 
             Assert.AreEqual(new ZilList(expectedItems), ctx.GetLocalVal(atom));
         }
