@@ -36,6 +36,7 @@ namespace Zilf.Interpreter
     delegate bool FileExistsDelegate(string filename);
 
     delegate string PrintTypeDelegate(ZilObject zo);
+    delegate ZilObject EvalTypeDelegate(ZilObject zo);
 
     class Context
     {
@@ -49,6 +50,9 @@ namespace Zilf.Interpreter
 
             public ZilObject PrintType;
             public PrintTypeDelegate PrintTypeDelegate;
+
+            public ZilObject EvalType;
+            public EvalTypeDelegate EvalTypeDelegate;
         }
 
         private RunMode runMode;
@@ -1016,7 +1020,7 @@ namespace Zilf.Interpreter
             return typeMap[type].PrimType;
         }
 
-        public enum SetPrintTypeResult
+        public enum SetTypeHandlerResult
         {
             OK,
             OtherTypeNotRegistered,
@@ -1024,11 +1028,77 @@ namespace Zilf.Interpreter
             BadHandlerType,
         }
 
-        public SetPrintTypeResult SetPrintType(ZilAtom type, ZilObject handler)
+        public SetTypeHandlerResult SetPrintType(ZilAtom type, ZilObject handler)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
             Contract.Requires(handler != null);
+
+            return SetTypeHandler(type, handler,
+                StdAtom.PRINT,
+                e => e.PrintType,
+                e => e.PrintTypeDelegate,
+                (e, h) => e.PrintType = h,
+                (e, d) => e.PrintTypeDelegate = d,
+                (ctx, t, otherType) => zo =>
+                {
+                    return ctx.ChangeType(zo, otherType).ToStringContext(ctx, false, true);
+                },
+                (ctx, t, applicable) => zo =>
+                {
+                    var stringChannel = new ZilStringChannel(FileAccess.Write);
+                    var outchanAtom = ctx.GetStdAtom(StdAtom.OUTCHAN);
+                    var innerEnv = ctx.PushEnvironment();
+                    try
+                    {
+                        innerEnv.Rebind(outchanAtom, stringChannel);
+                        applicable.Apply(ctx, new ZilObject[] { zo });
+                        return stringChannel.String;
+                    }
+                    finally
+                    {
+                        ctx.PopEnvironment();
+                    }
+                });
+        }
+
+        public SetTypeHandlerResult SetEvalType(ZilAtom type, ZilObject handler)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+            Contract.Requires(handler != null);
+
+            return SetTypeHandler(type, handler,
+                StdAtom.EVAL,
+                e => e.EvalType,
+                e => e.EvalTypeDelegate,
+                (e, h) => e.EvalType = h,
+                (e, d) => e.EvalTypeDelegate = d,
+                (ctx, t, otherType) => zo =>
+                {
+                    return ctx.ChangeType(zo, otherType).EvalAsOtherType(ctx, t);
+                },
+                (ctx, t, applicable) => zo =>
+                {
+                    return applicable.ApplyNoEval(ctx, new[] { zo });
+                });
+        }
+
+        private SetTypeHandlerResult SetTypeHandler<TDelegate>(ZilAtom type, ZilObject handler,
+            StdAtom clearIndicator,
+            Func<TypeMapEntry, ZilObject> getHandler,
+            Func<TypeMapEntry, TDelegate> getDelegate,
+            Action<TypeMapEntry, ZilObject> setHandler,
+            Action<TypeMapEntry, TDelegate> setDelegate,
+            Func<Context, ZilAtom, ZilAtom, TDelegate> makeDelegateFromOtherType,
+            Func<Context, ZilAtom, IApplicable, TDelegate> makeDelegateFromApplicable)
+            where TDelegate : class
+        {
+            Contract.Requires(typeof(TDelegate).IsSubclassOf(typeof(Delegate)));
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+            Contract.Requires(handler != null);
+
             var entry = typeMap[type];
 
             if (handler is ZilAtom)
@@ -1037,73 +1107,55 @@ namespace Zilf.Interpreter
                 TypeMapEntry otherEntry;
                 if (!typeMap.TryGetValue(otherType, out otherEntry))
                 {
-                    return SetPrintTypeResult.OtherTypeNotRegistered;
+                    return SetTypeHandlerResult.OtherTypeNotRegistered;
                 }
                 else if (otherEntry.PrimType != entry.PrimType)
                 {
-                    return SetPrintTypeResult.OtherTypePrimDiffers;
+                    return SetTypeHandlerResult.OtherTypePrimDiffers;
                 }
-                else if (otherEntry.PrintType != null)
+                else if (getHandler(otherEntry) != null)
                 {
-                    // cloning a type that has a printtype: copy its handler
-                    entry.PrintType = otherEntry.PrintType;
-                    entry.PrintTypeDelegate = otherEntry.PrintTypeDelegate;
-                    return SetPrintTypeResult.OK;
+                    // cloning a type that has a handler: copy its handler
+                    setHandler(entry, getHandler(otherEntry));
+                    setDelegate(entry, getDelegate(otherEntry));
+                    return SetTypeHandlerResult.OK;
                 }
                 else
                 {
-                    // cloning a type that has no printtype: use the default handler for builtin types, or clear for newtypes
+                    // cloning a type that has no handler: use the default handler for builtin types, or clear for newtypes
                     if (otherEntry.IsBuiltin)
                     {
-                        entry.PrintType = otherType;
-                        entry.PrintTypeDelegate = zo =>
-                        {
-                            return ChangeType(zo, otherType).ToStringContext(this, false, true);
-                        };
+                        setHandler(entry, otherType);
+                        setDelegate(entry, makeDelegateFromOtherType(this, type, otherType));
                     }
                     else
                     {
-                        entry.PrintType = null;
-                        entry.PrintTypeDelegate = null;
+                        setHandler(entry, null);
+                        setDelegate(entry, null);
                     }
 
-                    return SetPrintTypeResult.OK;
+                    return SetTypeHandlerResult.OK;
                 }
             }
             else if (handler is IApplicable)
             {
-                // setting to ,PRINT means clearing
-                if (handler.Equals(GetGlobalVal(GetStdAtom(StdAtom.PRINT))))
+                // setting to <GVAL clearIndicator> means clearing
+                if (handler.Equals(GetGlobalVal(GetStdAtom(clearIndicator))))
                 {
-                    entry.PrintType = null;
-                    entry.PrintTypeDelegate = null;
+                    setHandler(entry, null);
+                    setDelegate(entry, null);
                 }
                 else
                 {
-                    entry.PrintType = handler;
-                    entry.PrintTypeDelegate = zo =>
-                    {
-                        var stringChannel = new ZilStringChannel(FileAccess.Write);
-                        var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
-                        var innerEnv = PushEnvironment();
-                        try
-                        {
-                            innerEnv.Rebind(outchanAtom, stringChannel);
-                            ((IApplicable)handler).Apply(this, new ZilObject[] { zo });
-                            return stringChannel.String;
-                        }
-                        finally
-                        {
-                            PopEnvironment();
-                        }
-                    };
+                    setHandler(entry, handler);
+                    setDelegate(entry, makeDelegateFromApplicable(this, type, (IApplicable)handler));
                 }
 
-                return SetPrintTypeResult.OK;
+                return SetTypeHandlerResult.OK;
             }
             else
             {
-                return SetPrintTypeResult.BadHandlerType;
+                return SetTypeHandlerResult.BadHandlerType;
             }
         }
 
@@ -1123,6 +1175,24 @@ namespace Zilf.Interpreter
 
             var entry = typeMap[type];
             return entry.PrintTypeDelegate;
+        }
+
+        public ZilObject GetEvalType(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.EvalType;
+        }
+
+        public EvalTypeDelegate GetEvalTypeDelegate(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.EvalTypeDelegate;
         }
 
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)

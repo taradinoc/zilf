@@ -134,30 +134,51 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            return PerformTypeHandler(ctx, atom, handler,
+                "PRINTTYPE",
+                (c, a) => c.GetPrintType(a),
+                (c, a, h) => c.SetPrintType(a, h));
+        }
+
+        [Subr]
+        public static ZilObject EVALTYPE(Context ctx, ZilAtom atom,
+            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        {
+            SubrContracts(ctx);
+
+            return PerformTypeHandler(ctx, atom, handler,
+                "EVALTYPE",
+                (c, a) => c.GetEvalType(a),
+                (c, a, h) => c.SetEvalType(a, h));
+        }
+
+        private static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject handler,
+            string name,
+            Func<Context, ZilAtom, ZilObject> getter,
+            Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
+        {
             if (!ctx.IsRegisteredType(atom))
-                throw new InterpreterError("PRINTTYPE: not a registered type: " + atom.ToStringContext(ctx, false));
+                throw new InterpreterError($"{name}: not a registered type: {atom.ToStringContext(ctx, false)}");
 
             if (handler == null)
             {
-                return ctx.GetPrintType(atom) ?? ctx.FALSE;
+                return getter(ctx, atom) ?? ctx.FALSE;
             }
 
-            switch (ctx.SetPrintType(atom, handler))
+            switch (setter(ctx, atom, handler))
             {
-                case Context.SetPrintTypeResult.OK:
+                case Context.SetTypeHandlerResult.OK:
                     return atom;
 
-                case Context.SetPrintTypeResult.BadHandlerType:
-                    throw new InterpreterError("PRINTTYPE: second arg must be an atom or applicable");
+                case Context.SetTypeHandlerResult.BadHandlerType:
+                    throw new InterpreterError($"{name}: second arg must be an atom or applicable");
 
-                case Context.SetPrintTypeResult.OtherTypeNotRegistered:
-                    throw new InterpreterError("PRINTTYPE: not a registered type: " + handler.ToStringContext(ctx, false));
+                case Context.SetTypeHandlerResult.OtherTypeNotRegistered:
+                    throw new InterpreterError($"{name}: not a registered type: {handler.ToStringContext(ctx, false)}");
 
-                case Context.SetPrintTypeResult.OtherTypePrimDiffers:
-                    throw new InterpreterError(string.Format(
-                        "PRINTTYPE: primtypes of {0} and {1} differ",
-                        atom.ToStringContext(ctx, false),
-                        handler.ToStringContext(ctx, false)));
+                case Context.SetTypeHandlerResult.OtherTypePrimDiffers:
+                    throw new InterpreterError(
+                        $"{name}: primtypes of {atom.ToStringContext(ctx, false)} and {handler.ToStringContext(ctx, false)} differ");
 
                 default:
                     throw new NotImplementedException();

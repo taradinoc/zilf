@@ -108,7 +108,7 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(First, Second);
         }
 
-        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             // TODO: check decl (Second) after evaluating First
             return First.Eval(ctx, environment);

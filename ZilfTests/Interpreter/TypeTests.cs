@@ -1060,6 +1060,29 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestEVALTYPE()
+        {
+            var gritch = ZilAtom.Parse("GRITCH", ctx);
+
+            TestHelpers.Evaluate(ctx, "<NEWTYPE GRITCH LIST>");
+            TestHelpers.EvalAndAssert(ctx, "<EVALTYPE GRITCH>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<EVALTYPE GRITCH LIST>", gritch);
+            TestHelpers.EvalAndAssert(ctx, "<EVALTYPE GRITCH>", ctx.GetStdAtom(StdAtom.LIST));
+            TestHelpers.EvalAndAssert(ctx, "#GRITCH (A <+ 1 2 3> !<SET A \"ABC\">)",
+                new ZilStructuredHash(gritch, PrimType.LIST, new ZilList(new ZilObject[]
+                {
+                    ZilAtom.Parse("A", ctx),
+                    new ZilFix(6),
+                    new ZilChar('A'),
+                    new ZilChar('B'),
+                    new ZilChar('C'),
+                })));
+
+            TestHelpers.Evaluate(ctx, "<EVALTYPE LIST FORM>");
+            TestHelpers.EvalAndAssert(ctx, "(+ 1 2)", new ZilFix(3));
+        }
+
+        [TestMethod]
         public void All_ZilObject_Classes_Have_A_Builtin_Attribute()
         {
             var typesMissingAttribute =

@@ -116,7 +116,7 @@ namespace Zilf.Interpreter.Values
 
         private static ZilObject[] EmptyObjArray = new ZilObject[0];
 
-        public override ZilObject Eval(Context ctx, LocalEnvironment environment = null)
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             if (environment != null)
             {

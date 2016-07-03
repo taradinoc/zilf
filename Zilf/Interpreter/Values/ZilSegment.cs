@@ -82,7 +82,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(form);
         }
 
-        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             throw new InterpreterError("a SEGMENT can only be evaluated inside a structure");
         }
