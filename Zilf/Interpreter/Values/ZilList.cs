@@ -188,9 +188,12 @@ namespace Zilf.Interpreter.Values
                 return new ZilList(First, Rest);
         }
 
-        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            return new ZilList(EvalSequence(ctx, this, environment)) { SourceLine = this.SourceLine };
+            ZilObject result = new ZilList(EvalSequence(ctx, this, environment)) { SourceLine = this.SourceLine };
+            if (originalType != null)
+                result = ctx.ChangeType(result, originalType);
+            return result;
         }
 
         public IEnumerator<ZilObject> GetEnumerator()

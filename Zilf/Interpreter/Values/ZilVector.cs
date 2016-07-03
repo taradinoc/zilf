@@ -190,9 +190,12 @@ namespace Zilf.Interpreter.Values
             return this;
         }
 
-        public override ZilObject Eval(Context ctx, LocalEnvironment environment)
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            return new ZilVector(EvalSequence(ctx, this, environment).ToArray()) { SourceLine = this.SourceLine };
+            ZilObject result = new ZilVector(EvalSequence(ctx, this, environment).ToArray()) { SourceLine = this.SourceLine };
+            if (originalType != null)
+                result = ctx.ChangeType(result, originalType);
+            return result;
         }
 
         #region IEnumerable<ZilObject> Members

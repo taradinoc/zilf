@@ -295,11 +295,73 @@ namespace Zilf.Interpreter.Values
         /// <param name="environment">The environment in which to evaluate the object,
         /// or <b>null</b> to use the current environment.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
-        public virtual ZilObject Eval(Context ctx, LocalEnvironment environment = null)
+        public ZilObject Eval(Context ctx, LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
+            var del = ctx.GetEvalTypeDelegate(GetTypeAtom(ctx));
+            if (del != null)
+            {
+                if (environment != null)
+                {
+                    return ctx.ExecuteInEnvironment(environment, () => del(this));
+                }
+                else
+                {
+                    return del(this);
+                }
+            }
+            else
+            {
+                return EvalImpl(ctx, environment, null);
+            }
+        }
+
+        /// <summary>
+        /// Evaluates an object on behalf of another type.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <param name="originalType">The type of the original object, which must have the
+        /// same primtype.</param>
+        /// <returns>The result of evaluating the object.</returns>
+        /// <remarks>This is invoked when the original type has an EVALTYPE pointing to this
+        /// type. The object being evaluated is temporarily CHTYPEd to this type in order to
+        /// call this method. <see cref="EvalImpl(Context, LocalEnvironment, ZilAtom)"/> may
+        /// use the knowledge of the original type to return a different result; for example,
+        /// <see cref="ZilList.EvalImpl(Context, LocalEnvironment, ZilAtom)"/> returns a list
+        /// CHTYPEd to the original type.</remarks>
+        internal ZilObject EvalAsOtherType(Context ctx, ZilAtom originalType)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(originalType != null);
+            Contract.Requires(ctx.IsRegisteredType(originalType));
+            Contract.Requires(ctx.GetTypePrim(originalType) == this.PrimType);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
+            return EvalImpl(ctx, null, originalType);
+        }
+
+        /// <summary>
+        /// Evaluates an object: performs function calls, duplicates lists, etc.
+        /// </summary>
+        /// <param name="ctx">The current context.</param>
+        /// <param name="environment">The environment in which to evaluate the object,
+        /// or <b>null</b> to use the current environment.</param>
+        /// <param name="originalType">The type atom of the original object being evaluated, if
+        /// EVALTYPE processing has caused it to be changed to the current type, or <b>null</b> in
+        /// the usual case.</param>
+        /// <returns>The result of evaluating this object, which may be the same object.</returns>
+        /// <remarks>
+        /// <para>EVALTYPE is handled by <see cref="Eval(Context, LocalEnvironment)"/>.</para>
+        /// <para><paramref name="originalType"/> is set to a type atom in cases where one type has
+        /// its EVALTYPE set to the name of another type. When evaluating an object of the first type,
+        /// it is CHTYPEd to the second type, and the second type's EvalImpl is called with the first
+        /// type as a parameter. EvalImpl may use this to produce an object of the appropriate type;
+        /// for example, see <see cref="ZilList.EvalImpl(Context, LocalEnvironment)"/>.</para>
+        /// </remarks>
+        protected virtual ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        {
             return this;
         }
 

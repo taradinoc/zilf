@@ -122,6 +122,7 @@ namespace Zilf.Language
         ENVIRONMENT,
         [Atom("EQUAL?")]
         EQUAL_P,
+        EVAL,
         EZIP,
         [Atom("F?")]
         F_P,
