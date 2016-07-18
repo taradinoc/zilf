@@ -131,7 +131,7 @@ namespace Zilf.Interpreter
                         atom.ToStringContext(ctx, false)));
             }
 
-            var applicablePrinter = printer as IApplicable;
+            var applicablePrinter = printer.AsApplicable(ctx);
             if (applicablePrinter == null)
                 throw new InterpreterError("PRINT-MANY: not applicable: " + printer.ToStringContext(ctx, false));
 

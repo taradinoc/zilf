@@ -30,9 +30,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilEvalMacro(ZilObject value)
         {
-            if (!(value is IApplicable))
-                throw new ArgumentException("Arg must be an applicable object");
-
             this.value = value;
         }
 
@@ -43,7 +40,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(list != null);
             Contract.Ensures(Contract.Result<ZilEvalMacro>() != null);
 
-            if (list.First != null && list.First is IApplicable &&
+            if (list.First != null && list.First.IsApplicable(ctx) &&
                 list.Rest != null && list.Rest.First == null)
             {
                 return new ZilEvalMacro(list.First);
@@ -118,7 +115,7 @@ namespace Zilf.Interpreter.Values
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             return ctx.ExecuteInMacroEnvironment(
-                () => ((IApplicable)value).Apply(ctx, args));
+                () => value.AsApplicable(ctx).Apply(ctx, args));
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
@@ -128,7 +125,7 @@ namespace Zilf.Interpreter.Values
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             return ctx.ExecuteInMacroEnvironment(
-                () => ((IApplicable)value).ApplyNoEval(ctx, args));
+                () => value.AsApplicable(ctx).ApplyNoEval(ctx, args));
         }
 
         public override bool Equals(object obj)

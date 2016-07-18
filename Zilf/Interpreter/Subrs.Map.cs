@@ -109,7 +109,7 @@ namespace Zilf.Interpreter
 
             string name = first ? "MAPF" : "MAPR";
 
-            IApplicable finalf_app = finalf as IApplicable;
+            var finalf_app = finalf.AsApplicable(ctx);
 
             int numStructs = structs.Length;
             ZilObject[] loopArgs = new ZilObject[numStructs];

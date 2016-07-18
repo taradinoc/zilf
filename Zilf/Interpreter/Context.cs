@@ -37,6 +37,7 @@ namespace Zilf.Interpreter
 
     delegate string PrintTypeDelegate(ZilObject zo);
     delegate ZilObject EvalTypeDelegate(ZilObject zo);
+    delegate ZilObject ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
     class Context
     {
@@ -53,6 +54,9 @@ namespace Zilf.Interpreter
 
             public ZilObject EvalType;
             public EvalTypeDelegate EvalTypeDelegate;
+
+            public ZilObject ApplyType;
+            public ApplyTypeDelegate ApplyTypeDelegate;
         }
 
         private RunMode runMode;
@@ -1084,6 +1088,35 @@ namespace Zilf.Interpreter
                 });
         }
 
+        public SetTypeHandlerResult SetApplyType(ZilAtom type, ZilObject handler)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+            Contract.Requires(handler != null);
+
+            return SetTypeHandler(type, handler,
+                StdAtom.APPLY,
+                e => e.ApplyType,
+                e => e.ApplyTypeDelegate,
+                (e, h) => e.ApplyType = h,
+                (e, d) => e.ApplyTypeDelegate = d,
+                (ctx, t, otherType) => (zo, args) =>
+                {
+                    var chtyped = ctx.ChangeType(zo, otherType).AsApplicable(ctx);
+                    if (chtyped != null)
+                        return chtyped.ApplyNoEval(ctx, args);
+                    else
+                        throw new InterpreterError($"CHTYPE to {otherType} did not produce an applicable object");
+                },
+                (ctx, t, applicable) => (zo, args) =>
+                {
+                    var innerArgs = new ZilObject[args.Length + 1];
+                    innerArgs[0] = zo;
+                    Array.Copy(args, 0, innerArgs, 1, args.Length);
+                    return applicable.ApplyNoEval(ctx, innerArgs);
+                });
+        }
+
         private SetTypeHandlerResult SetTypeHandler<TDelegate>(ZilAtom type, ZilObject handler,
             StdAtom clearIndicator,
             Func<TypeMapEntry, ZilObject> getHandler,
@@ -1137,7 +1170,7 @@ namespace Zilf.Interpreter
                     return SetTypeHandlerResult.OK;
                 }
             }
-            else if (handler is IApplicable)
+            else if (handler.IsApplicable(this))
             {
                 // setting to <GVAL clearIndicator> means clearing
                 if (handler.Equals(GetGlobalVal(GetStdAtom(clearIndicator))))
@@ -1148,7 +1181,7 @@ namespace Zilf.Interpreter
                 else
                 {
                     setHandler(entry, handler);
-                    setDelegate(entry, makeDelegateFromApplicable(this, type, (IApplicable)handler));
+                    setDelegate(entry, makeDelegateFromApplicable(this, type, handler.AsApplicable(this)));
                 }
 
                 return SetTypeHandlerResult.OK;
@@ -1193,6 +1226,24 @@ namespace Zilf.Interpreter
 
             var entry = typeMap[type];
             return entry.EvalTypeDelegate;
+        }
+
+        public ZilObject GetApplyType(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.ApplyType;
+        }
+
+        public ApplyTypeDelegate GetApplyTypeDelegate(ZilAtom type)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(IsRegisteredType(type));
+
+            var entry = typeMap[type];
+            return entry.ApplyTypeDelegate;
         }
 
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)

@@ -200,7 +200,7 @@ namespace Zilf.Interpreter
                 {
                     case StdAtom.APPLICABLE:
                         parts.Add("applicable object");
-                        preds.Add((zo, ctx) => zo is IApplicable);
+                        preds.Add((zo, ctx) => zo.IsApplicable(ctx));
                         break;
 
                     case StdAtom.STRUCTURED:

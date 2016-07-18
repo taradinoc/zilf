@@ -42,7 +42,7 @@ namespace Zilf.Language
                         case StdAtom.ANY:
                             return true;
                         case StdAtom.APPLICABLE:
-                            return (value is IApplicable);
+                            return value.IsApplicable(ctx);
                         case StdAtom.STRUCTURED:
                             return (value is IStructure);
                         default:

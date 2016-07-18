@@ -139,13 +139,13 @@ namespace Zilf.Interpreter.Values
             else
                 target = First.Eval(ctx);
 
-            if (target is IApplicable)
+            if (target.IsApplicable(ctx))
             {
                 ZilForm oldCF = ctx.CallingForm;
                 ctx.CallingForm = this;
                 try
                 {
-                    return ((IApplicable)target).Apply(ctx, ((ZilList)Rest).ToArray());
+                    return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
                 }
                 catch (ZilError ex)
                 {
