@@ -1344,7 +1344,7 @@ namespace Zilf.Compiler
 
         private static ZilRoutine MaybeRewriteRoutine(Context ctx, ZilRoutine origRoutine)
         {
-            var rewriter = ctx.GetProp(ctx.GetStdAtom(StdAtom.ROUTINE), ctx.GetStdAtom(StdAtom.REWRITER)) as IApplicable;
+            var rewriter = ctx.GetProp(ctx.GetStdAtom(StdAtom.ROUTINE), ctx.GetStdAtom(StdAtom.REWRITER)).AsApplicable(ctx);
 
             if (rewriter != null)
             {

@@ -1083,6 +1083,25 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestAPPLYTYPE()
+        {
+            var winner = ZilAtom.Parse("WINNER", ctx);
+
+            TestHelpers.Evaluate(ctx, "<NEWTYPE WINNER LIST>");
+            TestHelpers.EvalAndAssert(ctx, "<APPLYTYPE WINNER>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<APPLYTYPE WINNER <FUNCTION (W \"TUPLE\" T) (!.W !.T)>>", winner);
+            TestHelpers.EvalAndAssert(ctx, "<#WINNER (A B C) <+ 1 2> q>",
+                new ZilList(new ZilObject[]
+                {
+                    ZilAtom.Parse("A", ctx),
+                    ZilAtom.Parse("B", ctx),
+                    ZilAtom.Parse("C", ctx),
+                    new ZilFix(3),
+                    ZilAtom.Parse("q", ctx),
+                }));
+        }
+
+        [TestMethod]
         public void All_ZilObject_Classes_Have_A_Builtin_Attribute()
         {
             var typesMissingAttribute =

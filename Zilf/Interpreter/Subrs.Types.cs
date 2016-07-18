@@ -152,6 +152,18 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetEvalType(a, h));
         }
 
+        [Subr]
+        public static ZilObject APPLYTYPE(Context ctx, ZilAtom atom,
+            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        {
+            SubrContracts(ctx);
+
+            return PerformTypeHandler(ctx, atom, handler,
+                "APPLYTYPE",
+                (c, a) => c.GetApplyType(a),
+                (c, a, h) => c.SetApplyType(a, h));
+        }
+
         private static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject handler,
             string name,
             Func<Context, ZilAtom, ZilObject> getter,
@@ -198,7 +210,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            return (arg is IApplicable) ? ctx.TRUE : ctx.FALSE;
+            return arg.IsApplicable(ctx) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("STRUCTURED?")]
