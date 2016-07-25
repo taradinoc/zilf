@@ -37,6 +37,18 @@ namespace Zilf.Interpreter
             return default(IStructure);
         }
         
+        public IStructure GetBack(int skip)
+        {
+            Contract.Requires(skip >= 0);
+            return default(IStructure);
+        }
+
+        public IStructure GetTop()
+        {
+            Contract.Ensures(Contract.Result<IStructure>() != null);
+            return default(IStructure);
+        }
+
         public bool IsEmpty()
         {
             throw new NotImplementedException();

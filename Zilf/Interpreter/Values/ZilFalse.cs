@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -100,6 +101,16 @@ namespace Zilf.Interpreter.Values
         public IStructure GetRest(int skip)
         {
             return ((IStructure)value).GetRest(skip);
+        }
+
+        public IStructure GetBack(int skip)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IStructure GetTop()
+        {
+            throw new NotSupportedException();
         }
 
         public bool IsEmpty()

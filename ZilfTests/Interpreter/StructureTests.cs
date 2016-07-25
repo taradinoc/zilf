@@ -397,5 +397,31 @@ namespace ZilfTests.Interpreter
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<PUT '(1 2 3) 4 FOO>");
         }
+
+        [TestMethod]
+        public void TestBACK()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<SET V <REST '[1 2 3 4] 3>>");
+            TestHelpers.EvalAndAssert(ctx, "<BACK .V 2>",
+                new ZilVector(new ZilFix(2), new ZilFix(3), new ZilFix(4)));
+
+            TestHelpers.Evaluate(ctx, "<SET S <REST \"Hello world!\" 12>>");
+            TestHelpers.EvalAndAssert(ctx, "<BACK .S 6>",
+                ZilString.FromString("world!"));
+        }
+
+        [TestMethod]
+        public void TestTOP()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<SET V <REST '[1 2 3 4] 3>>");
+            TestHelpers.EvalAndAssert(ctx, "<TOP .V>",
+                new ZilVector(new ZilFix(1), new ZilFix(2), new ZilFix(3), new ZilFix(4)));
+
+            TestHelpers.Evaluate(ctx, "<SET S <REST \"Hello world!\" 12>>");
+            TestHelpers.EvalAndAssert(ctx, "<TOP .S>",
+                ZilString.FromString("Hello world!"));
+        }
     }
 }

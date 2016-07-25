@@ -58,6 +58,39 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject BACK(Context ctx, IStructure st, int skip = 1)
+        {
+            SubrContracts(ctx);
+
+            try
+            {
+                var result = (ZilObject)st.GetBack(skip);
+                if (result == null)
+                    throw new InterpreterError("BACK: not enough elements");
+                return result;
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new InterpreterError("BACK: not supported by type", ex);
+            }
+        }
+
+        [Subr]
+        public static ZilObject TOP(Context ctx, IStructure st)
+        {
+            SubrContracts(ctx);
+
+            try
+            {
+                return (ZilObject)st.GetTop();
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new InterpreterError("TOP: not supported by type", ex);
+            }
+        }
+
+        [Subr]
         public static ZilObject NTH(Context ctx, IStructure st, int idx)
         {
             SubrContracts(ctx);

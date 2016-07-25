@@ -141,6 +141,8 @@ namespace Zilf.Interpreter.Values
 
         public abstract ZilObject GetFirst();
         public abstract IStructure GetRest(int skip);
+        public abstract IStructure GetBack(int skip);
+        public abstract IStructure GetTop();
         public abstract bool IsEmpty();
         public abstract int GetLength();
         public abstract int? GetLength(int limit);
@@ -181,6 +183,19 @@ namespace Zilf.Interpreter.Values
                     return null;
                 else
                     return new OffsetString(this, skip);
+            }
+
+            public override IStructure GetBack(int skip)
+            {
+                if (skip == 0)
+                    return this;
+                else
+                    return null;
+            }
+
+            public override IStructure GetTop()
+            {
+                return this;
             }
 
             public override bool IsEmpty()
@@ -284,6 +299,19 @@ namespace Zilf.Interpreter.Values
                     return null;
                 else
                     return new OffsetString(orig, offset + skip);
+            }
+
+            public override IStructure GetBack(int skip)
+            {
+                if (offset >= skip)
+                    return new OffsetString(orig, offset - skip);
+                else
+                    return null;
+            }
+
+            public override IStructure GetTop()
+            {
+                return orig;
             }
 
             public override bool IsEmpty()

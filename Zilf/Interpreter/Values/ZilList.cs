@@ -280,6 +280,16 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
+        IStructure IStructure.GetBack(int skip)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IStructure GetTop()
+        {
+            throw new NotSupportedException();
+        }
+
         bool IStructure.IsEmpty()
         {
             return First == null;

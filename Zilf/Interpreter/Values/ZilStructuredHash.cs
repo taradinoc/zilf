@@ -51,6 +51,16 @@ namespace Zilf.Interpreter.Values
             return ((IStructure)primvalue).GetRest(skip);
         }
 
+        public IStructure GetBack(int skip)
+        {
+            return ((IStructure)primvalue).GetBack(skip);
+        }
+
+        public IStructure GetTop()
+        {
+            return ((IStructure)primvalue).GetTop();
+        }
+
         public bool IsEmpty()
         {
             return ((IStructure)primvalue).IsEmpty();
