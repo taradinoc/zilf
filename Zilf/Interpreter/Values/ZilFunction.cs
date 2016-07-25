@@ -202,6 +202,16 @@ namespace Zilf.Interpreter.Values
             return new ZilList(body.Skip(skip - 1));
         }
 
+        public IStructure GetBack(int skip)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IStructure GetTop()
+        {
+            throw new NotSupportedException();
+        }
+
         public bool IsEmpty()
         {
             return false;

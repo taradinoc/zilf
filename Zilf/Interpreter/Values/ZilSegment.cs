@@ -110,6 +110,16 @@ namespace Zilf.Interpreter.Values
             return ((IStructure)form).GetRest(skip);
         }
 
+        public IStructure GetBack(int skip)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IStructure GetTop()
+        {
+            throw new NotSupportedException();
+        }
+
         public bool IsEmpty()
         {
             return ((IStructure)form).IsEmpty();

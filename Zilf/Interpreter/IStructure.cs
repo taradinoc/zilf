@@ -18,7 +18,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
@@ -39,6 +38,24 @@ namespace Zilf.Interpreter
         /// <param name="skip">The number of elements to skip.</param>
         /// <returns>A structure containing the unskipped elements, or null if no elements are left.</returns>
         IStructure GetRest(int skip);
+        /// <summary>
+        /// Reverses <see cref="GetRest(int)"/>, returning a larger structure with some of the
+        /// previously skipped elements included.
+        /// </summary>
+        /// <param name="skip">The number of skipped elements to include.</param>
+        /// <returns>A structure containing the requested elements, or null if not enough elements
+        /// have been skipped.</returns>
+        /// <exception cref="System.NotSupportedException">The operation is not supported by this
+        /// structure type.</exception>
+        IStructure GetBack(int skip);
+        /// <summary>
+        /// Completely reverses <see cref="GetRest(int)"/>, returning all elements of the underlying
+        /// structure.
+        /// </summary>
+        /// <returns>A structure.</returns>
+        /// <exception cref="System.NotSupportedException">The operation is not supported by this
+        /// structure type.</exception>
+        IStructure GetTop();
 
         /// <summary>
         /// Determines whether the structure is empty.

@@ -136,6 +136,16 @@ namespace Zilf.Interpreter.Values
             }
         }
 
+        public IStructure GetBack(int skip)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IStructure GetTop()
+        {
+            throw new NotSupportedException();
+        }
+
         public bool IsEmpty()
         {
             return false;

@@ -228,6 +228,30 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(this.storage, this.offset + skip);
         }
 
+        public IStructure GetBack(int skip)
+        {
+            if (this.offset >= skip)
+            {
+                return new ZilVector(this.storage, this.offset - skip);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public IStructure GetTop()
+        {
+            if (this.offset == 0)
+            {
+                return this;
+            }
+            else
+            {
+                return new ZilVector(this.storage, 0);
+            }
+        }
+
         public bool IsEmpty()
         {
             return storage.GetLength(offset) <= 0;
