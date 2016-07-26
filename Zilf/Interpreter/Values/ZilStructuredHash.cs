@@ -61,6 +61,11 @@ namespace Zilf.Interpreter.Values
             return ((IStructure)primvalue).GetTop();
         }
 
+        public void Grow(int end, int beginning, ZilObject defaultValue)
+        {
+            ((IStructure)primvalue).Grow(end, beginning, defaultValue);
+        }
+
         public bool IsEmpty()
         {
             return ((IStructure)primvalue).IsEmpty();

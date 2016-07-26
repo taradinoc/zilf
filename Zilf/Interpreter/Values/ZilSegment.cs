@@ -120,6 +120,11 @@ namespace Zilf.Interpreter.Values
             throw new NotSupportedException();
         }
 
+        public void Grow(int end, int beginning, ZilObject defaultValue)
+        {
+            throw new NotSupportedException();
+        }
+
         public bool IsEmpty()
         {
             return ((IStructure)form).IsEmpty();
