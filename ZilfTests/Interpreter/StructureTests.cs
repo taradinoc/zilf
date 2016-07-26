@@ -423,5 +423,35 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TOP .S>",
                 ZilString.FromString("Hello world!"));
         }
+
+        [TestMethod]
+        public void TestGROW()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<SET V '[1 2 3]>");
+            TestHelpers.EvalAndAssert(ctx, "<LENGTH .V>", new ZilFix(3));
+
+            // add elements
+            TestHelpers.EvalAndAssert(ctx, "<SET G <GROW .V 1 2>>",
+                new ZilVector(ctx.FALSE, ctx.FALSE, new ZilFix(1), new ZilFix(2), new ZilFix(3), ctx.FALSE));
+            // confirm lengths
+            TestHelpers.EvalAndAssert(ctx, "<LENGTH .V>", new ZilFix(4));
+            TestHelpers.EvalAndAssert(ctx, "<LENGTH .G>", new ZilFix(6));
+            // confirm elements are shared
+            TestHelpers.EvalAndAssert(ctx, "<1 .V>", new ZilFix(1));
+            TestHelpers.EvalAndAssert(ctx, "<3 .G>", new ZilFix(1));
+            TestHelpers.Evaluate(ctx, "<1 .V 999>");
+            TestHelpers.EvalAndAssert(ctx, "<3 .G>", new ZilFix(999));
+
+            // test TOP, BACK, REST on affected vector
+            TestHelpers.EvalAndAssert(ctx, "<1 <TOP .V>>", ctx.FALSE);
+            TestHelpers.Evaluate(ctx, "<1 <TOP .V> 111>");
+            TestHelpers.EvalAndAssert(ctx, "<1 <BACK .V 2>>", new ZilFix(111));
+            TestHelpers.EvalAndAssert(ctx, "<1 <REST .G 2>>", new ZilFix(999));
+            TestHelpers.EvalAndAssert(ctx, "<1 <REST <BACK .V 2> 2>>", new ZilFix(999));
+
+            // can't remove elements
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SET V2 <GROW .G -1 -2>>");
+        }
     }
 }

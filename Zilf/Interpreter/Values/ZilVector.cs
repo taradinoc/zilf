@@ -30,13 +30,14 @@ namespace Zilf.Interpreter.Values
 
         private class VectorStorage
         {
-            private int baseOffset = 0;
-            private readonly ZilObject[] items;
+            private ZilObject[] items;
 
             public VectorStorage()
                 : this(new ZilObject[0])
             {
             }
+
+            public int BaseOffset { get; private set; }
 
             public VectorStorage(ZilObject[] items)
             {
@@ -49,23 +50,25 @@ namespace Zilf.Interpreter.Values
             private void ObjectInvariant()
             {
                 Contract.Invariant(items != null);
+                Contract.Invariant(BaseOffset >= 0);
+                Contract.Invariant(BaseOffset <= items.Length);
             }
 
             public IEnumerable<ZilObject> GetSequence(int offset)
             {
-                return items.Skip(offset - baseOffset);
+                return items.Skip(offset - BaseOffset);
             }
 
             public int GetLength(int offset)
             {
-                return items.Length - offset - baseOffset;
+                return items.Length - offset - BaseOffset;
             }
 
             public ZilObject GetItem(int offset, int index)
             {
                 try
                 {
-                    return items[index + offset - baseOffset];
+                    return items[index + offset + BaseOffset];
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -77,11 +80,36 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    items[index + offset - baseOffset] = value;
+                    items[index + offset + BaseOffset] = value;
                 }
                 catch (IndexOutOfRangeException)
                 {
                     throw new InterpreterError("index out of range: " + index);
+                }
+            }
+
+            public void Grow(int end, int beginning, ZilObject defaultValue)
+            {
+                Contract.Requires(end >= 0);
+                Contract.Requires(beginning >= 0);
+                
+                if (end > 0 || beginning > 0)
+                {
+                    var newItems = new ZilObject[items.Length + end + beginning];
+                    Array.Copy(items, 0, newItems, beginning, items.Length);
+
+                    for (int i = 0; i < beginning; i++)
+                    {
+                        newItems[i] = defaultValue;
+                    }
+
+                    for (int i = newItems.Length - end; i < newItems.Length; i++)
+                    {
+                        newItems[i] = defaultValue;
+                    }
+
+                    items = newItems;
+                    BaseOffset += beginning;
                 }
             }
         }
@@ -230,7 +258,7 @@ namespace Zilf.Interpreter.Values
 
         public IStructure GetBack(int skip)
         {
-            if (this.offset >= skip)
+            if (this.offset + storage.BaseOffset >= skip)
             {
                 return new ZilVector(this.storage, this.offset - skip);
             }
@@ -242,14 +270,19 @@ namespace Zilf.Interpreter.Values
 
         public IStructure GetTop()
         {
-            if (this.offset == 0)
+            if (this.offset == -storage.BaseOffset)
             {
                 return this;
             }
             else
             {
-                return new ZilVector(this.storage, 0);
+                return new ZilVector(storage, -storage.BaseOffset);
             }
+        }
+
+        public void Grow(int end, int beginning, ZilObject defaultValue)
+        {
+            storage.Grow(end, beginning, defaultValue);
         }
 
         public bool IsEmpty()

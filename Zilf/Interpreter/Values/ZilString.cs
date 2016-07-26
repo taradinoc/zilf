@@ -148,6 +148,11 @@ namespace Zilf.Interpreter.Values
         public abstract int? GetLength(int limit);
         public abstract IEnumerator<ZilObject> GetEnumerator();
 
+        public void Grow(int end, int beginning, ZilObject defaultValue)
+        {
+            throw new NotSupportedException();
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

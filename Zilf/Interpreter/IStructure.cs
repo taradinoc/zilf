@@ -58,6 +58,13 @@ namespace Zilf.Interpreter
         IStructure GetTop();
 
         /// <summary>
+        /// Increases the size of the structure by adding elements at either end.
+        /// </summary>
+        /// <param name="end">The number of elements to add at the end.</param>
+        /// <param name="beginning">The number of elements to add at the beginning.</param>
+        void Grow(int end, int beginning, ZilObject defaultValue);
+
+        /// <summary>
         /// Determines whether the structure is empty.
         /// </summary>
         /// <returns>true if the structure has no elements; false if it has any elements.</returns>

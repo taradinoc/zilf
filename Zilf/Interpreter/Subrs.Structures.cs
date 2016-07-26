@@ -91,6 +91,31 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject GROW(Context ctx, IStructure st, int end, int beginning)
+        {
+            SubrContracts(ctx);
+
+            if (end < 0 || beginning < 0)
+            {
+                throw new InterpreterError("GROW: sizes must be non-negative");
+            }
+
+            try
+            {
+                if (end > 0 || beginning > 0)
+                {
+                    st.Grow(end, beginning, ctx.FALSE);
+                }
+
+                return (ZilObject)st.GetTop();
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new InterpreterError("GROW: not supported by type", ex);
+            }
+        }
+
+        [Subr]
         public static ZilObject NTH(Context ctx, IStructure st, int idx)
         {
             SubrContracts(ctx);

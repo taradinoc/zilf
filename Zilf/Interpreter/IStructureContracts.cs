@@ -49,6 +49,12 @@ namespace Zilf.Interpreter
             return default(IStructure);
         }
 
+        public void Grow(int end, int beginning, ZilObject defaultValue)
+        {
+            Contract.Requires(end >= 0);
+            Contract.Requires(beginning >= 0);
+        }
+
         public bool IsEmpty()
         {
             throw new NotImplementedException();
