@@ -81,6 +81,7 @@
     CT *                 <PRINT-CDEF .X>
     CA *                 <PRINT-CINDEF .X>
     NOUN-PHRASE *        <PRINT-NOUN-PHRASE .X>
+    OBJSPEC *            <PRINT-OBJSPEC .X>
     SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
     WORD *               <PRINT-WORD .X>
     MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>>
@@ -1913,18 +1914,23 @@ Returns:
     <SET OBITS .BITS>
     <COND (<0? .MODE>
            <SET .BITS <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>)>
+    <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
+             " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
+    <TRACE-IN>
     <PROG BITS-SET ()
         ;"Look for matching objects"
         <SET NOUT 0>
         <COND (<0? .NY>
                ;"ALL with no YSPECs matches all objects, or if the action is TAKE/DROP,
                  all objects with TAKEBIT/TRYTAKEBIT, skipping generic/global objects."
+               <TRACE 4 "[applying ALL rules]" CR>
                <MAP-SCOPE (I [BITS .BITS])
                    <COND (<SCOPE-STAGE? GENERIC GLOBALS>)
                          (<NOT <ALL-INCLUDES? .I>>)
                          (<AND .NN <NP-EXCLUDES? .NP .I>>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
                           <TELL "[too many objects!]" CR>
+                          <TRACE-OUT>
                           <RETURN>)
                          (ELSE
                           <SET NOUT <+ .NOUT 1>>
@@ -1936,34 +1942,43 @@ Returns:
                  the match quality and only select the best matches."
                <DO (J 1 .NY)
                    <SET SPEC <NP-YSPEC .NP .J>>
+                   <TRACE 4 "[SPEC=" OBJSPEC .SPEC "]" CR>
                    <SET F <>>
                    <SET ONOUT .NOUT>
                    <SET BEST 1>
                    <MAP-SCOPE (I [BITS .BITS])
+                       <TRACE 5 "[considering " T .I "]" CR>
                        <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
                                    <SET Q <REFERS? .SPEC .I>>
                                    <G=? .Q .BEST>>
+                              <TRACE 4 "[matches " T .I "(" N .I "), Q=" N .Q "]" CR>
                               <SET F T>
                               ;"Erase previous matches if this is better"
                               <COND (<G? .Q .BEST>
+                                     <TRACE 4 "[clearing match list]" CR>
                                      <SET NOUT .ONOUT>
                                      <SET .BEST .Q>)>
-                              <COND (<AND .NN <NP-EXCLUDES? .NP .I>>)
+                              <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
+                                     <TRACE 4 "[excluded]" CR>)
                                     (<G=? .NOUT ,P-MAX-OBJECTS>
                                      <TELL "[too many objects!]" CR>
+                                     <TRACE-OUT>
                                      <RETURN>)
                                     (ELSE
+                                     <TRACE 4 "[accepted]" CR>
                                      <SET NOUT <+ .NOUT 1>>
                                      <PUT/B .OUT .NOUT .I>)>)>>
                    ;"Look for a pseudo-object if we didn't find a real one."
                    <COND (<AND <NOT .F>
                                <BTST .BITS ,SF-ON-GROUND>
                                <SET Q <GETP ,HERE ,P?THINGS>>>
+                          <TRACE 4 "[looking for pseudo]" CR>
                           <SET F <MATCH-PSEUDO .SPEC .Q>>
                           <COND (.F
                                  <COND (<AND .NN <NP-EXCLUDES-PSEUDO? .NP .F>>)
                                        (<G=? .NOUT ,P-MAX-OBJECTS>
                                         <TELL "[too many objects!]" CR>
+                                        <TRACE-OUT>
                                         <RETURN>)
                                        (ELSE
                                         <SET NOUT <+ .NOUT 1>>
@@ -1971,6 +1986,7 @@ Returns:
                    <COND (<NOT .F>
                           ;"Try expanding the search if we can."
                           <COND (<N=? .BITS -1>
+                                 <TRACE 4 "[expanding to ludicrous scope]" CR>
                                  <SET BITS -1>
                                  <SET OBITS -1>    ;"Avoid bouncing between <1 and >1 matches"
                                  <AGAIN .BITS-SET>)>
@@ -1978,8 +1994,10 @@ Returns:
                                  <TELL "It's too dark to see anything here." CR>)
                                 (ELSE
                                  <TELL "You don't see that here." CR>)>
+                          <TRACE-OUT>
                           <RFALSE>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
+                          <TRACE-OUT>
                           <RETURN>)>>)>
         ;"Check the number of objects"
         <PUTB .OUT 0 .NOUT>
@@ -1989,34 +2007,43 @@ Returns:
                <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
                <COND (<=? .BITS .F>
                       <TELL "There are none at all available!" CR>
+                      <TRACE-OUT>
                       <RFALSE>)>
+               <TRACE 4 "[expanding to reasonable scope]" CR>
                <SET BITS .F>
                <SET OBITS .F>    ;"Avoid bouncing between <1 and >1 matches"
                <AGAIN .BITS-SET>)
               (<1? .NOUT>
+               <TRACE-OUT>
                <RETURN <GET/B .OUT 1>>)
               (<OR <=? .MODE ,MCM-ALL> <G? .NY 1>>
+               <TRACE-OUT>
                <RETURN ,MANY-OBJECTS>)
               (<=? .MODE ,MCM-ANY>
                ;"Pick a random object"
                <PUT/B .OUT 1 <SET F <GET/B .OUT <RANDOM .NOUT>>>>
                <PUTB .OUT 0 1>
                <TELL "[" T .F "]" CR>
+               <TRACE-OUT>
                <RETURN .F>)
               (ELSE
                ;"TODO: Do this check when we're matching YSPECs, so each YSPEC can be
                  disambiguated individually."
                ;"Try narrowing the search if we can."
                <COND (<N=? .BITS .OBITS>
+                      <TRACE 4 "[narrowing scope to BITS=" N .OBITS "]" CR>
                       <SET BITS .OBITS>
                       <AGAIN .BITS-SET>)>
                <COND (<SET F <APPLY-GENERIC-FCN .OUT>>
+                      <TRACE 4 "[GENERIC chose " T .F "]" CR>
                       <PUT/B .OUT 1 .F>
                       <PUTB .OUT 0 1>
+                      <TRACE-OUT>
                       <RETURN .F>)>
                <WHICH-DO-YOU-MEAN .OUT>
                <COND (<=? .NP ,P-NP-DOBJ> <ORPHAN T AMBIGUOUS PRSO>)
                      (ELSE <ORPHAN T AMBIGUOUS PRSI>)>
+               <TRACE-OUT>
                <RFALSE>)>>>
 
 <ROUTINE ALL-INCLUDES? (OBJ)
