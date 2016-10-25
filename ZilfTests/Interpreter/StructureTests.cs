@@ -453,5 +453,55 @@ namespace ZilfTests.Interpreter
             // can't remove elements
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SET V2 <GROW .G -1 -2>>");
         }
+
+        [TestMethod]
+        public void TestSORT()
+        {
+            // simple form
+            TestHelpers.EvalAndAssert("<SORT <> '[1 9 3 5 6 2]>",
+                new ZilVector(new ZilFix(1), new ZilFix(2), new ZilFix(3),
+                              new ZilFix(5), new ZilFix(6), new ZilFix(9)));
+
+            // multi-element records
+            var ctx = new Context();
+            var money = ZilAtom.Parse("MONEY", ctx);
+            var show = ZilAtom.Parse("SHOW", ctx);
+            var ready = ZilAtom.Parse("READY", ctx);
+            var go = ZilAtom.Parse("GO", ctx);
+
+            TestHelpers.Evaluate(ctx, "<SET V '[1 MONEY 2 SHOW 3 READY 4 GO]>");
+            TestHelpers.EvalAndAssert(ctx, "<SORT <> .V 2 1>",
+                new ZilVector(new ZilFix(4), go, new ZilFix(1), money,
+                              new ZilFix(3), ready, new ZilFix(2), show));
+
+            // vector length must be a multiple of record size
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> '[1 2 3 4] 3 1>");
+
+            // record size must be positive
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> .V 0 1>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> .V -2 1>");
+
+            // custom predicates, and confirmation that .V is sorted in place
+            TestHelpers.Evaluate(ctx, "<SORT ,L? .V 2>");
+            TestHelpers.EvalAndAssert(ctx, ".V",
+                new ZilVector(new ZilFix(4), go, new ZilFix(3), ready,
+                              new ZilFix(2), show, new ZilFix(1), money));
+
+            // multiple structures
+            TestHelpers.EvalAndAssert(ctx, "<SORT <> '[2 1 4 3 6 5 8 7] 1 0 .V>",
+                new ZilVector(new ZilFix(1), new ZilFix(2), new ZilFix(3), new ZilFix(4),
+                              new ZilFix(5), new ZilFix(6), new ZilFix(7), new ZilFix(8)));
+            TestHelpers.EvalAndAssert(ctx, ".V",
+                new ZilVector(go, new ZilFix(4), ready, new ZilFix(3),
+                              show, new ZilFix(2), money, new ZilFix(1)));
+
+            // structures must have the same number of records
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> '[1 2 3] 1 0 '[1 2 3 4]>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> '[1 2 3 4] 1 0 '[1 2 3]>");
+
+            // predicate must be applicable if not FALSE
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT FOO '[4 2 1 3]>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT '(1 2 3 4) '[4 2 1 3]>");
+        }
     }
 }
