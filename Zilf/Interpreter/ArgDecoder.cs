@@ -422,11 +422,7 @@ namespace Zilf.Interpreter
             {
                 var zoType = paramType;
 
-                if (paramType == typeof(IApplicable))
-                {
-                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
-                }
-                else if (paramType == typeof(IStructure))
+                if (paramType == typeof(IStructure))
                 {
                     cb.AddTypeConstraint(StdAtom.STRUCTURED);
                 }
@@ -448,6 +444,28 @@ namespace Zilf.Interpreter
                         }
 
                         c.Ready(a[i]);
+                        return i + 1;
+                    },
+                    LowerBound = 1,
+                    UpperBound = 1,
+                };
+            }
+            else if (paramType == typeof(IApplicable))
+            {
+                cb.AddTypeConstraint(StdAtom.APPLICABLE);
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        var ap = a[i].AsApplicable(c.Context);
+
+                        if (ap == null)
+                        {
+                            c.Error(errmsg);
+                        }
+
+                        c.Ready(ap);
                         return i + 1;
                     },
                     LowerBound = 1,
@@ -516,6 +534,46 @@ namespace Zilf.Interpreter
                         }
 
                         Array.Copy(a, i, array, 0, array.Length);
+                        c.Ready(array);
+                        return a.Length;
+                    },
+                    LowerBound = 0,
+                    UpperBound = null,
+                };
+
+                if (isRequired)
+                    result.LowerBound = 1;
+            }
+            else if (paramType == typeof(IApplicable[]))
+            {
+                // decode as an array containing all remaining args
+                defaultValue = new IApplicable[0];
+
+                cb.AddTypeConstraint(StdAtom.APPLICABLE);
+
+                result = new DecodingStepInfo
+                {
+                    Step = (a, i, c) =>
+                    {
+                        var array = new IApplicable[a.Length - i];
+
+                        if (isRequired && array.Length == 0)
+                        {
+                            c.Error(errmsg);
+                        }
+
+                        for (int j = i; j < a.Length; j++)
+                        {
+                            var ap = a[j].AsApplicable(c.Context);
+
+                            if (ap == null)
+                            {
+                                c.Error(errmsg);
+                            }
+
+                            array[j - i] = ap;
+                        }
+
                         c.Ready(array);
                         return a.Length;
                     },
@@ -1006,10 +1064,24 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <summary>
+        /// Returns true if the type is a simple subclass or interface of <see cref="ZilObject"/>,
+        /// such that an argument value needs no conversion other than a cast.
+        /// </summary>
+        /// <param name="t">The type.</param>
+        /// <returns>true if the type is a simple subclass, otherwise false.</returns>
+        /// <remarks>
+        /// <para>For this purpose, a type is "simple" if we can convert an argument value to the type
+        /// simply by casting it. This includes <see cref="ZilObject"/> and its derived classes,
+        /// as well as <see cref="IStructure"/> because all structured types implement it.</para>
+        /// <para>It does <b>not</b> include <see cref="IApplicable"/>, because any ZIL type can be
+        /// made applicable via <c>APPLYTYPE</c> even if its C# type does not implement the interface.
+        /// Arguments must be converted to <see cref="IApplicable"/> with
+        /// <see cref="ApplicableExtensions.AsApplicable(ZilObject, Context)"/> instead.</para>
+        /// </remarks>
         private static bool IsZilObjectType(Type t)
         {
-            return typeof(ZilObject).IsAssignableFrom(t) ||
-                t == typeof(IApplicable) || t == typeof(IStructure);
+            return typeof(ZilObject).IsAssignableFrom(t) || t == typeof(IStructure);
         }
 
         public static ArgDecoder FromMethodInfo(MethodInfo methodInfo)
