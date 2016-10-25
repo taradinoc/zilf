@@ -442,7 +442,56 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [TestMethod]
+        public void Test_ApplicableArg_Custom()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_ApplicableArg));
+
+            var fooAtom = (ZilAtom)TestHelpers.Evaluate(ctx, "<NEWTYPE FOO LIST>");
+            TestHelpers.Evaluate(ctx, "<APPLYTYPE FOO FUNCTION>");
+
+            ZilObject[] args =
+            {
+                new ZilFix(1),
+                new ZilHash(fooAtom, PrimType.LIST, new ZilList(null, null)),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+
+            Assert.AreEqual(ctx, actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(IApplicable));
+            Assert.IsInstanceOfType(actual[2], typeof(IApplicable));
+        }
+
         private ZilObject Dummy_ApplicableArg(Context ctx, IApplicable ap1, IApplicable ap2)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_ApplicableArrayArg_Custom()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_ApplicableArrayArg));
+
+            var fooAtom = (ZilAtom)TestHelpers.Evaluate(ctx, "<NEWTYPE FOO LIST>");
+            TestHelpers.Evaluate(ctx, "<APPLYTYPE FOO FUNCTION>");
+
+            ZilObject[] args =
+            {
+                new ZilFix(1),
+                new ZilHash(fooAtom, PrimType.LIST, new ZilList(null, null)),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+
+            Assert.AreEqual(ctx, actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(IApplicable[]));
+            Assert.AreEqual(2, ((IApplicable[])actual[1]).Length);
+        }
+
+        private ZilObject Dummy_ApplicableArrayArg(Context ctx, IApplicable[] aps)
         {
             return null;
         }
