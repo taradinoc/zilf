@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
@@ -304,5 +305,145 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        [ZilSequenceParam]
+        public struct AdditionalSortParam
+        {
+            public ZilVector Vector;
+            [ZilOptional(Default = 1)]
+            public int RecordSize;
+        }
+
+        [Subr]
+        public static ZilObject SORT(Context ctx,
+            [Decl("<OR FALSE APPLICABLE>")] ZilObject predicate,
+            ZilVector vector, int recordSize = 1, int keyOffset = 0,
+            AdditionalSortParam[] additionalSorts = null)
+        {
+            SubrContracts(ctx);
+
+            const string SBadOffsetOrSize = "SORT: expected 0 <= key offset < record size";
+            const string SBadVectorLength = "SORT: vector length must be a multiple of record size";
+            const string SRecordCountMismatch = "SORT: all vectors must have the same number of records";
+
+            if (keyOffset < 0 || keyOffset >= recordSize)
+                throw new InterpreterError(SBadOffsetOrSize);
+
+            var vectorLength = vector.GetLength();
+            int numRecords, remainder;
+            numRecords = Math.DivRem(vectorLength, recordSize, out remainder);
+
+            if (remainder != 0)
+                throw new InterpreterError(SBadVectorLength);
+
+            if (additionalSorts != null)
+            {
+                foreach (var asp in additionalSorts)
+                {
+                    if (asp.RecordSize < 1)
+                        throw new InterpreterError(SBadOffsetOrSize);
+
+                    var len = asp.Vector.GetLength();
+                    int recs, rem;
+                    recs = Math.DivRem(len, asp.RecordSize, out rem);
+
+                    if (rem != 0)
+                        throw new InterpreterError(SBadVectorLength);
+
+                    if (recs != numRecords)
+                        throw new InterpreterError(SRecordCountMismatch);
+                }
+            }
+
+            Func<int, ZilObject> keySelector = i => vector[i * recordSize + keyOffset];
+            Comparison<ZilObject> comparison;
+
+            if (predicate.IsTrue)
+            {
+                // user-provided comparison
+                var applicable = predicate.AsApplicable(ctx);
+                var args = new ZilObject[2];
+                comparison = (a, b) =>
+                {
+                    // greater?
+                    args[0] = a;
+                    args[1] = b;
+
+                    if (applicable.ApplyNoEval(ctx, args).IsTrue)
+                        return 1;
+
+                    // less?
+                    args[0] = b;
+                    args[1] = a;
+
+                    if (applicable.ApplyNoEval(ctx, args).IsTrue)
+                        return -1;
+
+                    // equal
+                    return 0;
+                };
+            }
+            else
+            {
+                // default comparison
+                comparison = (a, b) =>
+                {
+                    if (a.GetTypeAtom(ctx) != b.GetTypeAtom(ctx))
+                    {
+                        throw new InterpreterError("SORT: keys must have the same type to use default comparison");
+                    }
+
+                    a = a.GetPrimitive(ctx);
+                    b = b.GetPrimitive(ctx);
+
+                    switch (a.PrimType)
+                    {
+                        case PrimType.ATOM:
+                            return ((ZilAtom)a).Text.CompareTo(((ZilAtom)b).Text);
+
+                        case PrimType.FIX:
+                            return ((ZilFix)a).Value.CompareTo(((ZilFix)b).Value);
+
+                        case PrimType.STRING:
+                            return ((ZilString)a).Text.CompareTo(((ZilString)b).Text);
+
+                        default:
+                            throw new InterpreterError("SORT: key primtypes must be ATOM, FIX, or STRING to use default comparison");
+                    }
+                };
+            }
+
+            // sort
+            var sortedIndexes =
+                Enumerable.Range(0, numRecords)
+                .OrderBy(keySelector, Comparer<ZilObject>.Create(comparison))
+                .ToArray();
+
+            // write output
+            RearrangeVector(vector, recordSize, sortedIndexes);
+            
+            if (additionalSorts != null)
+                foreach (var asp in additionalSorts)
+                    RearrangeVector(asp.Vector, asp.RecordSize, sortedIndexes);
+
+            return vector;
+        }
+
+        private static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)
+        {
+            var output = new List<ZilObject>(vector.GetLength());
+
+            foreach (var srcIndex in desiredIndexOrder)
+            {
+                for (int i = 0; i < recordSize; i++)
+                {
+                    output.Add(vector[srcIndex * recordSize + i]);
+                }
+            }
+
+            for (int i = 0; i < output.Count; i++)
+            {
+                vector[i] = output[i];
+            }
+        }
     }
 }
