@@ -365,13 +365,13 @@ namespace Zilf.Interpreter
                 args = ZilObject.ExpandSegments(ctx, args).ToArray();
             }
 
-            var outerEnv = ctx.LocalEnvironment;
-            var innerEnv = ctx.PushEnvironment();
-
             if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
                 throw new InterpreterError(
                     name == null ? "user-defined function" : name.ToString(),
                     optArgsStart, auxArgsStart);
+
+            var outerEnv = ctx.LocalEnvironment;
+            var innerEnv = ctx.PushEnvironment();
 
             for (int i = 0; i < optArgsStart; i++)
             {

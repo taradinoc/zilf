@@ -17,6 +17,7 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -38,30 +39,28 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            // in MDL, this parses an arbitrary expression, but parsing atoms is probably enough for ZIL
-            // TODO: implement arbitrary expression parsing?
-
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
             Contract.Assert(radix == 10);
 
-            if (lookupObList == null)
-            {
-                return ZilAtom.Parse(text, ctx);
-            }
-
-            if (lookupObList is ObList)
-                lookupObList = new ZilList(lookupObList, new ZilList(null, null));
-
-            var innerEnv = ctx.PushEnvironment();
-            try
-            {
-                innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
-                return ZilAtom.Parse(text, ctx);
-            }
-            finally
+            using (var innerEnv = ctx.PushEnvironment())
             {
                 if (lookupObList != null)
-                    ctx.PopEnvironment();
+                {
+                    if (lookupObList is ObList)
+                        lookupObList = new ZilList(lookupObList, new ZilList(null, null));
+
+                    innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
+                }
+
+                var ztree = Program.Parse(ctx, text);        //XXX move into FrontEnd class
+                try
+                {
+                    return ztree.First();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new InterpreterError("PARSE: no expressions found", ex);
+                }
             }
         }
 

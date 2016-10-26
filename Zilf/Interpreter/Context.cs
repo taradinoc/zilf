@@ -114,7 +114,7 @@ namespace Zilf.Interpreter
             packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
             compilationFlagsOblist = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
             previousObPaths = new Stack<ZilObject>();
-            localEnvironment = new LocalEnvironment();
+            localEnvironment = new LocalEnvironment(this);
             globalValues = new Dictionary<ZilAtom, ZilObject>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
             subrDelegates = new Dictionary<string, SubrDelegate>();
@@ -589,7 +589,7 @@ namespace Zilf.Interpreter
         {
             Contract.Ensures(Contract.Result<LocalEnvironment>() != null);
 
-            var result = new LocalEnvironment(localEnvironment);
+            var result = new LocalEnvironment(this, localEnvironment);
             localEnvironment = result;
             return result;
         }
@@ -634,7 +634,7 @@ namespace Zilf.Interpreter
             while (rootEnvironment.Parent != null && rootEnvironment.Parent.IsLocalBound(oblistAtom))
                 rootEnvironment = rootEnvironment.Parent;
 
-            var macroEnv = new LocalEnvironment();
+            var macroEnv = new LocalEnvironment(this);
             macroEnv.SetLocalVal(oblistAtom, rootEnvironment.GetLocalVal(oblistAtom));
 
             var wasTopLevel = atTopLevel;
@@ -1018,6 +1018,7 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="type">The name of a built-in type or a NEWTYPE.</param>
         /// <returns>The <see cref="PrimType"/> of the given type.</returns>
+        [Pure]
         public PrimType GetTypePrim(ZilAtom type)
         {
             Contract.Requires(type != null);
@@ -1052,16 +1053,11 @@ namespace Zilf.Interpreter
                 {
                     var stringChannel = new ZilStringChannel(FileAccess.Write);
                     var outchanAtom = ctx.GetStdAtom(StdAtom.OUTCHAN);
-                    var innerEnv = ctx.PushEnvironment();
-                    try
+                    using (var innerEnv = ctx.PushEnvironment())
                     {
                         innerEnv.Rebind(outchanAtom, stringChannel);
                         applicable.Apply(ctx, new ZilObject[] { zo });
                         return stringChannel.String;
-                    }
-                    finally
-                    {
-                        ctx.PopEnvironment();
                     }
                 });
         }

@@ -46,6 +46,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
+            // atoms
             var expected = new ZilAtom("FOO", ctx.RootObList, StdAtom.None);
             ctx.RootObList[expected.Text] = expected;
 
@@ -61,9 +62,19 @@ namespace ZilfTests.Interpreter
             Assert.AreSame(expected, actual);
             Assert.AreNotSame(ctx.GetStdAtom(StdAtom.Plus), actual);
 
-            // must have 1 argument
+            // other expressions
+            TestHelpers.EvalAndAssert(ctx, "<PARSE \"23\">", new ZilFix(23));
+            TestHelpers.EvalAndAssert(ctx, "<PARSE \"(1 2 3)\">",
+                new ZilList(new[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) }));
+
+            // READ macros
+            TestHelpers.EvalAndAssert(ctx, "<PARSE \"%<+ 12 34>\">", new ZilFix(46));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \"%<ERROR XYZZY>\">",
+                ex => ex.Message.Contains("XYZZY"));
+
+            // must have 1-3 arguments
             TestHelpers.EvalAndCatch<InterpreterError>("<PARSE>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE \"FOO\" \"BAR\">");
+            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE \"FOO\" <GETPROP PACKAGE OBLIST> 10 \"BAR\">");
 
             // argument must be a string
             TestHelpers.EvalAndCatch<InterpreterError>("<PARSE 5>");

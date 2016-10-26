@@ -374,16 +374,16 @@ Compiler switches:
   -d                    include debug information");
         }
 
-        public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)
+        public static IEnumerable<ZilObject> Parse(Context ctx, string str)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
 
             ICharStream charStream = new ANTLRStringStream(str);
-            return Evaluate(ctx, charStream, wantExceptions);
+            return Parse(ctx, charStream);
         }
 
-        public static ZilObject Evaluate(Context ctx, ICharStream charStream, bool wantExceptions = false)
+        public static IEnumerable<ZilObject> Parse(Context ctx, ICharStream charStream)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(charStream != null);
@@ -406,10 +406,26 @@ Compiler switches:
             if (fret.Tree == null)
                 return null;
 
+            return ZilObject.ReadFromAST((ITree)fret.Tree, ctx);
+        }
+
+        public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+
+            ICharStream charStream = new ANTLRStringStream(str);
+            return Evaluate(ctx, charStream, wantExceptions);
+        }
+
+        public static ZilObject Evaluate(Context ctx, ICharStream charStream, bool wantExceptions = false)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(charStream != null);
+
             try
             {
-                IEnumerable<ZilObject> ztree;
-                ztree = ZilObject.ReadFromAST((ITree)fret.Tree, ctx);
+                var ztree = Parse(ctx, charStream);
 
                 ZilObject result = null;
                 bool first = true;

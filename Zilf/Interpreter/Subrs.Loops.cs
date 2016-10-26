@@ -141,8 +141,7 @@ namespace Zilf.Interpreter
             // bind atoms
             Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
 
-            var innerEnv = ctx.PushEnvironment();
-            try
+            using (var innerEnv = ctx.PushEnvironment())
             {
                 if (activationAtom != null)
                 {
@@ -186,10 +185,6 @@ namespace Zilf.Interpreter
                 Contract.Assert(result != null);
 
                 return result;
-            }
-            finally
-            {
-                ctx.PopEnvironment();
             }
         }
 

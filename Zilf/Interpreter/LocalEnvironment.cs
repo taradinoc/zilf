@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
@@ -26,27 +27,48 @@ namespace Zilf.Interpreter
     /// Represents a set of LVAL bindings, e.g. those belonging to a PROG or FUNCTION invocation,
     /// with optional dynamic inheritance from a parent environment.
     /// </summary>
-    class LocalEnvironment
+    class LocalEnvironment : IDisposable
     {
+        private readonly Context ctx;
         private readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
 
         /// <summary>
         /// Creates a new environment with no bindings.
         /// </summary>
-        public LocalEnvironment()
-            : this(null)
+        public LocalEnvironment(Context ctx)
+            : this(ctx, null)
         {
         }
 
         /// <summary>
         /// Creates a new environment, optionally inheriting bindings from a parent environment.
         /// </summary>
+        /// <param name="ctx">The context.</param>
         /// <param name="parent">The parent environment, or <b>null</b> to not inherit any bindings.</param>
         /// <remarks>Changes made to bindings in the parent environment will be visible in the new environment,
         /// unless overridden by bindings created in the new environment with <see cref="Rebind"/>.</remarks>
-        public LocalEnvironment(LocalEnvironment parent)
+        public LocalEnvironment(Context ctx, LocalEnvironment parent)
         {
+            if (ctx == null)
+                throw new ArgumentNullException("ctx");
+
+            this.ctx = ctx;
             this.Parent = parent;
+        }
+
+        /// <summary>
+        /// Pops the environment from the context.
+        /// </summary>
+        void IDisposable.Dispose()
+        {
+            if (this == ctx.LocalEnvironment)
+            {
+                ctx.PopEnvironment();
+            }
+            else
+            {
+                throw new InvalidOperationException("LocalEnvironment being disposed must be at the top of the stack");
+            }
         }
 
         /// <summary>

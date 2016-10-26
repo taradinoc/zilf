@@ -138,8 +138,7 @@ namespace Zilf.Interpreter
             var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
             var result = ctx.TRUE;
 
-            var innerEnv = ctx.PushEnvironment();
-            try
+            using (var innerEnv = ctx.PushEnvironment())
             {
                 innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
 
@@ -159,10 +158,6 @@ namespace Zilf.Interpreter
                         applicablePrinter.ApplyNoEval(ctx, printArgs);
                     }
                 }
-            }
-            finally
-            {
-                ctx.PopEnvironment();
             }
 
             return result;
