@@ -867,7 +867,7 @@ namespace Zilf.Interpreter
 
                     var input = (IStructure)a[i];
 
-                    if (input.GetLength(lowerBound - 1) < lowerBound ||
+                    if ((lowerBound >= 1 && input.GetLength(lowerBound - 1) < lowerBound) ||
                         (upperBound != null && !(input.GetLength(upperBound.Value) <= upperBound)))
                     {
                         // TODO: something better than GetLength(999)?
@@ -919,7 +919,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.ValueAtReturn(out fields) != null);
             Contract.Ensures(Contract.Result<DecodingStep[]>() != null);
             Contract.Ensures(Contract.ValueAtReturn(out fields).Length == Contract.Result<DecodingStep[]>().Length);
-            Contract.Ensures(!(Contract.ValueAtReturn(out lowerBound) >= 0));
+            Contract.Ensures(Contract.ValueAtReturn(out lowerBound) >= 0);
             Contract.Ensures(!(Contract.ValueAtReturn(out upperBound) < 0));
 
             fields = structType.GetFields()

@@ -80,6 +80,7 @@ namespace Zilf.Interpreter
 
         public int? GetLength(int limit)
         {
+            Contract.Requires(limit >= 0);
             Contract.Ensures(Contract.Result<int?>() == null || Contract.Result<int?>().Value <= limit);
             return default(int?);
         }
