@@ -72,13 +72,44 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \"%<ERROR XYZZY>\">",
                 ex => ex.Message.Contains("XYZZY"));
 
+            // string must contain at least one expression
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \" \">");
+
+            // with multiple expressions, only returns the first
+            TestHelpers.EvalAndAssert(ctx, "<PARSE \"1 2 3\">", new ZilFix(1));
+
             // must have 1-3 arguments
-            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE \"FOO\" <GETPROP PACKAGE OBLIST> 10 \"BAR\">");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \"FOO\" <GETPROP PACKAGE OBLIST> 10 \"BAR\">");
 
             // argument must be a string
-            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE 5>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<PARSE (\"FOO\")>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE 5>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE (\"FOO\")>");
+        }
+
+        [TestMethod]
+        public void TestLPARSE()
+        {
+            var ctx = new Context();
+
+            // only one expression -> empty list
+            TestHelpers.EvalAndAssert(ctx, "<LPARSE \" \">", new ZilList(null, null));
+
+            // multiple expressions -> multiple results
+            TestHelpers.EvalAndAssert(ctx, "<LPARSE \"1 FOO [3]\">",
+                new ZilList(new ZilObject[] {
+                    new ZilFix(1),
+                    ZilAtom.Parse("FOO", ctx),
+                    new ZilVector(new ZilFix(3)),
+                }));
+
+            // must have 1-3 arguments
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LPARSE>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LPARSE \"FOO\" <GETPROP PACKAGE OBLIST> 10 \"BAR\">");
+
+            // argument must be a string
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LPARSE 5>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LPARSE (\"FOO\")>");
         }
 
         [TestMethod]

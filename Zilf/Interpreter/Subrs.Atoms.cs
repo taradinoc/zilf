@@ -38,7 +38,20 @@ namespace Zilf.Interpreter
             [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
         {
             SubrContracts(ctx);
+            return PerformParse(ctx, text, radix, lookupObList, "PARSE", true);
+        }
 
+        [Subr]
+        public static ZilObject LPARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
+        {
+            SubrContracts(ctx);
+            return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
+        }
+
+        private static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
+            string name, bool singleResult)
+        {
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
             Contract.Assert(radix == 10);
 
@@ -53,18 +66,23 @@ namespace Zilf.Interpreter
                 }
 
                 var ztree = Program.Parse(ctx, text);        //XXX move into FrontEnd class
-                try
+                if (singleResult)
                 {
-                    return ztree.First();
+                    try
+                    {
+                        return ztree.First();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new InterpreterError(name + ": no expressions found", ex);
+                    }
                 }
-                catch (InvalidOperationException ex)
+                else
                 {
-                    throw new InterpreterError("PARSE: no expressions found", ex);
+                    return new ZilList(ztree);
                 }
             }
         }
-
-        // TODO: implement LPARSE?
 
         [Subr]
         public static ZilObject UNPARSE(Context ctx, ZilObject arg)
