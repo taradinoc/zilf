@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Zilf.Compiler;
 using Zilf.Interpreter;
@@ -404,7 +405,7 @@ Compiler switches:
             }
 
             if (fret.Tree == null)
-                return null;
+                return Enumerable.Empty<ZilObject>();
 
             return ZilObject.ReadFromAST((ITree)fret.Tree, ctx);
         }
