@@ -23,6 +23,7 @@ namespace Zilf.Interpreter
     internal class Binding
     {
         public ZilObject Value;
+        public ZilObject Decl;
 
         public Binding(ZilObject value)
         {

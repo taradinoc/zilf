@@ -237,6 +237,35 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestGBOUND_P()
+        {
+            var ctx = new Context();
+
+            var whatever = new ZilFix(123);
+            ctx.SetGlobalVal(ZilAtom.Parse("MY-TEST-GLOBAL", ctx), whatever);
+            ctx.SetLocalVal(ZilAtom.Parse("MY-TEST-LOCAL", ctx), whatever);
+
+            TestHelpers.EvalAndAssert(ctx, "<GBOUND? MY-TEST-GLOBAL>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<GBOUND? MY-TEST-LOCAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<GBOUND? THIS-ATOM-HAS-NO-GVAL-OR-LVAL>", ctx.FALSE);
+
+            TestHelpers.Evaluate(ctx, "<GUNASSIGN MY-TEST-GLOBAL>");
+            TestHelpers.EvalAndAssert(ctx, "<GBOUND? MY-TEST-GLOBAL>", ctx.TRUE);
+
+            TestHelpers.Evaluate(ctx, "<GDECL (ANOTHER-TEST-GLOBAL) ANY>");
+            TestHelpers.EvalAndAssert(ctx, "<GBOUND? ANOTHER-TEST-GLOBAL>", ctx.TRUE);
+
+            // TODO: test after GLOC
+
+            // must have 1 argument
+            TestHelpers.EvalAndCatch<InterpreterError>("<GBOUND?>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<GBOUND? FOO BAR>");
+
+            // argument must be an atom
+            TestHelpers.EvalAndCatch<InterpreterError>("<GBOUND? \"FOO\">");
+        }
+
+        [TestMethod]
         public void TestASSIGNED_P()
         {
             var ctx = new Context();
@@ -255,6 +284,33 @@ namespace ZilfTests.Interpreter
 
             // argument must be an atom
             TestHelpers.EvalAndCatch<InterpreterError>("<ASSIGNED? \"FOO\">");
+        }
+
+        [TestMethod]
+        public void TestBOUND_P()
+        {
+            var ctx = new Context();
+
+            var whatever = new ZilFix(123);
+            ctx.SetGlobalVal(ZilAtom.Parse("MY-TEST-GLOBAL", ctx), whatever);
+            ctx.SetLocalVal(ZilAtom.Parse("MY-TEST-LOCAL", ctx), whatever);
+
+            TestHelpers.EvalAndAssert(ctx, "<BOUND? MY-TEST-GLOBAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<BOUND? MY-TEST-LOCAL>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<BOUND? THIS-ATOM-HAS-NO-GVAL-OR-LVAL>", ctx.FALSE);
+
+            TestHelpers.Evaluate(ctx, "<UNASSIGN MY-TEST-GLOBAL>");
+            TestHelpers.EvalAndAssert(ctx, "<BOUND? MY-TEST-GLOBAL>", ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx, "<PROG (FOO) <BOUND? FOO>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<BOUND? FOO>", ctx.FALSE);
+
+            // must have 1 argument
+            TestHelpers.EvalAndCatch<InterpreterError>("<BOUND?>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<BOUND? FOO BAR>");
+
+            // argument must be an atom
+            TestHelpers.EvalAndCatch<InterpreterError>("<BOUND? \"FOO\">");
         }
 
         [TestMethod]
@@ -288,7 +344,17 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            TestHelpers.EvalAndAssert(ctx, "<GDECL (FOO) BAR>", ctx.FALSE);
+            TestHelpers.Evaluate(ctx, "<GDECL (FOO BAR) FIX (BAZ) ANY>");
+
+            TestHelpers.EvalAndAssert(ctx, "<SETG FOO 1>", new ZilFix(1));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SETG FOO NOT-A-FIX>");
+            TestHelpers.EvalAndAssert(ctx, "<SETG FOO 5>", new ZilFix(5));
+            TestHelpers.Evaluate(ctx, "<GUNASSIGN FOO>");
+
+            TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? BAR>", ctx.FALSE);
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SETG BAR NOT-A-FIX>");
+
+            TestHelpers.EvalAndAssert(ctx, "<SETG BAZ NOT-A-FIX>", ZilAtom.Parse("NOT-A-FIX", ctx));
 
             // must have an even number of arguments
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<GDECL (FOO)>");
