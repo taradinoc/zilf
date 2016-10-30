@@ -216,13 +216,45 @@ namespace Zilf.Interpreter
             return atom;
         }
 
-        [FSubr]
-        public static ZilObject GDECL(Context ctx, [Decl("!<LIST [REST <LIST [REST ATOM]> ANY]>")] ZilObject[] args)
+        [Subr("GBOUND?")]
+        public static ZilObject GBOUND_P(Context ctx, ZilAtom atom)
         {
-            SubrContracts(ctx, args);
+            SubrContracts(ctx);
 
-            // ignore global declarations
-            return ctx.FALSE;
+            return ctx.GetGlobalBinding(atom, false) != null ? ctx.TRUE : ctx.FALSE;
+        }
+
+        public static class DeclParams
+        {
+            [ZilSequenceParam]
+            public struct AtomsDeclSequence
+            {
+                public AtomList Atoms;
+                public ZilObject Decl;
+            }
+
+            [ZilStructuredParam(StdAtom.LIST)]
+            public struct AtomList
+            {
+                public ZilAtom[] Atoms;
+            }
+        }
+
+        [FSubr]
+        public static ZilObject GDECL(Context ctx, DeclParams.AtomsDeclSequence[] pairs)
+        {
+            SubrContracts(ctx);
+
+            foreach (var pair in pairs)
+            {
+                foreach (var atom in pair.Atoms.Atoms)
+                {
+                    var binding = ctx.GetGlobalBinding(atom, true);
+                    binding.Decl = pair.Decl;
+                }
+            }
+
+            return ctx.TRUE;
         }
 
         [Subr("DECL?")]
@@ -269,6 +301,14 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             return ctx.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
+        }
+
+        [Subr("BOUND?")]
+        public static ZilObject BOUND_P(Context ctx, ZilAtom atom)
+        {
+            SubrContracts(ctx);
+
+            return ctx.LocalEnvironment.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr]

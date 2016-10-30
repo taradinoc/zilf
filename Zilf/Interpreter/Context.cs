@@ -59,27 +59,18 @@ namespace Zilf.Interpreter
             public ApplyTypeDelegate ApplyTypeDelegate;
         }
 
-        private RunMode runMode;
         private int errorCount, warningCount;
         private readonly bool ignoreCase;
-        private bool quiet, traceRoutines, wantDebugInfo;
         private readonly List<string> includePaths;
-        private string curFile;
-        private FileFlags curFileFlags;
-        private ZilForm callingForm;
-        private bool atTopLevel;
-        private Func<string, FileAccess, Stream> streamOpener;
 
         private readonly ObList rootObList, packageObList, compilationFlagsOblist;
         private readonly Stack<ZilObject> previousObPaths;
         private LocalEnvironment localEnvironment;
-        private readonly Dictionary<ZilAtom, ZilObject> globalValues;
+        private readonly Dictionary<ZilAtom, Binding> globalValues;
         private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         private readonly Dictionary<string, SubrDelegate> subrDelegates;
         private readonly ZEnvironment zenv;
-
-        private RoutineFlags nextRoutineFlags;
 
         /// <summary>
         /// Gets a value representing truth (the atom T).
@@ -115,7 +106,7 @@ namespace Zilf.Interpreter
             compilationFlagsOblist = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
             previousObPaths = new Stack<ZilObject>();
             localEnvironment = new LocalEnvironment(this);
-            globalValues = new Dictionary<ZilAtom, ZilObject>();
+            globalValues = new Dictionary<ZilAtom, Binding>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
             subrDelegates = new Dictionary<string, SubrDelegate>();
 
@@ -150,7 +141,8 @@ namespace Zilf.Interpreter
             InitCompilationFlags();
             InitPackages();
 
-            atTopLevel = true;
+            AtTopLevel = true;
+            CheckDecls = true;
         }
 
         [ContractInvariantMethod]
@@ -162,7 +154,6 @@ namespace Zilf.Interpreter
             Contract.Invariant(rootObList != null);
             Contract.Invariant(packageObList != null);
             Contract.Invariant(localEnvironment != null);
-            Contract.Invariant(GlobalVals != null);
             Contract.Invariant(associations != null);
             Contract.Invariant(typeMap != null);
             Contract.Invariant(zenv != null);
@@ -173,7 +164,6 @@ namespace Zilf.Interpreter
             Contract.Invariant(RootObList != null);
             Contract.Invariant(PackageObList != null);
             Contract.Invariant(IncludePaths != null);
-            Contract.Invariant(GlobalVals != null);
 
         }
 
@@ -187,11 +177,9 @@ namespace Zilf.Interpreter
             get { return packageObList; }
         }
 
-        public RunMode RunMode
-        {
-            get { return runMode; }
-            set { runMode = value; }
-        }
+        public bool CheckDecls { get; set; }
+
+        public RunMode RunMode { get; set; }
 
         public bool IgnoreCase
         {
@@ -203,32 +191,15 @@ namespace Zilf.Interpreter
             get { return includePaths; }
         }
 
-        public bool Quiet
-        {
-            get { return quiet; }
-            set { quiet = value; }
-        }
+        public bool Quiet { get; set; }
 
-        public bool TraceRoutines
-        {
-            get { return traceRoutines; }
-            set { traceRoutines = value; }
-        }
+        public bool TraceRoutines { get; set; }
 
-        public bool WantDebugInfo
-        {
-            get { return wantDebugInfo; }
-            set { wantDebugInfo = value; }
-        }
+        public bool WantDebugInfo { get; set; }
 
         public bool Compiling
         {
-            get { return runMode == RunMode.Compiler; }
-        }
-
-        public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GlobalVals
-        {
-            get { return globalValues; }
+            get { return RunMode == RunMode.Compiler; }
         }
 
         public int ErrorCount
@@ -268,41 +239,17 @@ namespace Zilf.Interpreter
             }
         }
 
-        public string CurrentFile
-        {
-            get { return curFile; }
-            set { curFile = value; }
-        }
+        public string CurrentFile { get; set; }
 
-        public FileFlags CurrentFileFlags
-        {
-            get { return curFileFlags; }
-            set { curFileFlags = value; }
-        }
+        public FileFlags CurrentFileFlags { get; set; }
 
-        public RoutineFlags NextRoutineFlags
-        {
-            get { return nextRoutineFlags; }
-            set { nextRoutineFlags = value; }
-        }
+        public RoutineFlags NextRoutineFlags { get; set; }
 
-        public ZilForm CallingForm
-        {
-            get { return callingForm; }
-            set { callingForm = value; }
-        }
+        public ZilForm CallingForm { get; set; }
 
-        public bool AtTopLevel
-        {
-            get { return atTopLevel; }
-            set { atTopLevel = value; }
-        }
+        public bool AtTopLevel { get; set; }
 
-        public Func<string, FileAccess, Stream> StreamOpener
-        {
-            get { return streamOpener; }
-            set { streamOpener = value; }
-        }
+        public Func<string, FileAccess, Stream> StreamOpener { get; set; }
 
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
@@ -415,7 +362,7 @@ namespace Zilf.Interpreter
 
                     // can't use ZilAtom.Parse here because the OBLIST path isn't set up
                     ZilAtom atom = rootObList[name];
-                    globalValues.Add(atom, sub);
+                    SetGlobalVal(atom, sub);
                 }
             }
         }
@@ -432,12 +379,12 @@ namespace Zilf.Interpreter
             Contract.Ensures(globalValues.Count > Contract.OldValue(globalValues.Count));
 
             // compile-time constants
-            globalValues.Add(GetStdAtom(StdAtom.ZILCH), TRUE);
-            globalValues.Add(GetStdAtom(StdAtom.ZILF), TRUE);
-            globalValues.Add(GetStdAtom(StdAtom.ZIL_VERSION), ZilString.FromString(Program.VERSION));
-            globalValues.Add(GetStdAtom(StdAtom.PREDGEN), TRUE);
-            globalValues.Add(GetStdAtom(StdAtom.PLUS_MODE), zenv.ZVersion > 3 ? TRUE : FALSE);
-            globalValues.Add(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
+            SetGlobalVal(GetStdAtom(StdAtom.ZILCH), TRUE);
+            SetGlobalVal(GetStdAtom(StdAtom.ZILF), TRUE);
+            SetGlobalVal(GetStdAtom(StdAtom.ZIL_VERSION), ZilString.FromString(Program.VERSION));
+            SetGlobalVal(GetStdAtom(StdAtom.PREDGEN), TRUE);
+            SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), zenv.ZVersion > 3 ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
@@ -637,15 +584,15 @@ namespace Zilf.Interpreter
             var macroEnv = new LocalEnvironment(this);
             macroEnv.SetLocalVal(oblistAtom, rootEnvironment.GetLocalVal(oblistAtom));
 
-            var wasTopLevel = atTopLevel;
+            var wasTopLevel = AtTopLevel;
             try
             {
-                atTopLevel = false;
+                AtTopLevel = false;
                 return ExecuteInEnvironment(macroEnv, func);
             }
             finally
             {
-                atTopLevel = wasTopLevel;
+                AtTopLevel = wasTopLevel;
             }
         }
 
@@ -664,11 +611,34 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(atom != null);
 
-            ZilObject result;
-            if (globalValues.TryGetValue(atom, out result))
-                return result;
+            Binding binding;
+            if (globalValues.TryGetValue(atom, out binding))
+                return binding.Value;
             else
                 return null;
+        }
+
+        /// <summary>
+        /// Gets the global binding for an atom, optionally creating one if necessary.
+        /// </summary>
+        /// <param name="atom">The atom.</param>
+        /// <param name="create"><b>true</b> to create the binding if it doesn't already exist.</param>
+        /// <returns>The binding, or <b>null</b> if it doesn't exist and <paramref name="create"/> is <b>false</b>.</returns>
+        public Binding GetGlobalBinding(ZilAtom atom, bool create)
+        {
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<Binding>() != null || create == false);
+
+            Binding binding;
+            globalValues.TryGetValue(atom, out binding);
+
+            if (binding == null && create)
+            {
+                binding = new Binding(null);
+                globalValues.Add(atom, binding);
+            }
+
+            return binding;
         }
 
         /// <summary>
@@ -681,10 +651,25 @@ namespace Zilf.Interpreter
             Contract.Requires(atom != null);
             Contract.Ensures(GetGlobalVal(atom) == value);
 
-            if (value == null)
-                globalValues.Remove(atom);
+            if (value != null)
+            {
+                var binding = GetGlobalBinding(atom, true);
+
+                if (CheckDecls && binding.Decl != null && !Decl.Check(this, value, binding.Decl))
+                    throw new InterpreterError(string.Format(
+                        "new GVAL for {0} must match pattern {1}",
+                        atom.ToStringContext(this, false),
+                        binding.Decl.ToStringContext(this, false)));
+
+                binding.Value = value;
+            }
             else
-                globalValues[atom] = value;
+            {
+                var binding = GetGlobalBinding(atom, false);
+
+                if (binding != null)
+                    binding.Value = null;
+            }
         }
 
         /// <summary>
@@ -1504,11 +1489,11 @@ namespace Zilf.Interpreter
             Contract.Requires(path != null);
             Contract.Ensures(Contract.Result<Stream>() != null);
 
-            if (callingForm != null && callingForm.SourceLine is FileSourceLine)
-                path = Path.Combine(Path.GetDirectoryName(((FileSourceLine)callingForm.SourceLine).FileName), path);
+            if (CallingForm != null && CallingForm.SourceLine is FileSourceLine)
+                path = Path.Combine(Path.GetDirectoryName(((FileSourceLine)CallingForm.SourceLine).FileName), path);
 
-            if (streamOpener != null)
-                return streamOpener(path, fileAccess);
+            if (StreamOpener != null)
+                return StreamOpener(path, fileAccess);
 
             FileMode mode;
             switch (fileAccess)
