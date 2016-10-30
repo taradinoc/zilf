@@ -145,7 +145,7 @@ namespace ZilfTests.Interpreter
             // RPOINT-FOO's auto-assigned offset should be 1; the fields with per-field offsets don't affect the auto-offset counter
             TestHelpers.EvalAndAssert(ctx, "<DEFSTRUCT RPOINT (VECTOR 'CONSTRUCTOR) (RPOINT-X FIX 'OFFSET 2) (RPOINT-Y FIX 'OFFSET 1) (RPOINT-FOO FIX)>",
                 rpointAtom);
-            TestHelpers.EvalAndAssert(ctx, "<RPOINT-FOO #RPOINT [234 567]>",
+            TestHelpers.EvalAndAssert(ctx, "<RPOINT-FOO #RPOINT [234 567 8]>",
                 new ZilFix(234));
         }
 
@@ -157,6 +157,33 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR 'NOTYPE) (POINT-X FIX) (POINT-Y FIX)>");
             TestHelpers.EvalAndAssert(ctx, "<POINT-X [123 456]>", new ZilFix(123));
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [123 456] POINT>");
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_NODECL()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR 'NODECL) (POINT-X FIX) (POINT-Y FIX)>");
+            TestHelpers.Evaluate(ctx, "<CHTYPE [1 2 3 4 SHOE] POINT>");
+
+            TestHelpers.Evaluate(ctx, "<SET PT <MAKE-POINT 100 200>>");
+            TestHelpers.Evaluate(ctx, "<POINT-X .PT FOO>");
+            TestHelpers.EvalAndAssert(ctx, "<POINT-X .PT>", ZilAtom.Parse("FOO", ctx));
+        }
+
+        [TestMethod]
+        public void TestDEFSTRUCT_Without_NODECL()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR) (POINT-X FIX) (POINT-Y FIX)>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [1 2 3 4 SHOE] POINT>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SET PT <MAKE-POINT A B>>");
+            TestHelpers.Evaluate(ctx, "<SET PT <MAKE-POINT 100 200>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<POINT-X .PT FOO>");
+            TestHelpers.Evaluate(ctx, "<POINT-X .PT 99>");
         }
 
         [TestMethod]

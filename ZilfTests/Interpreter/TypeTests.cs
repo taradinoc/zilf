@@ -981,17 +981,34 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestNEWTYPE()
         {
-            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE FIRSTNAME ATOM>", ZilAtom.Parse("FIRSTNAME", ctx));
-            TestHelpers.EvalAndAssert(ctx, "#FIRSTNAME ALFONSO", new ZilHash(ZilAtom.Parse("FIRSTNAME", ctx), PrimType.ATOM, ZilAtom.Parse("ALFONSO", ctx)));
+            var firstname = ZilAtom.Parse("FIRSTNAME", ctx);
+            var middlename = ZilAtom.Parse("MIDDLENAME", ctx);
+            var lastname = ZilAtom.Parse("LASTNAME", ctx);
+
+            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE FIRSTNAME ATOM>", firstname);
+            TestHelpers.EvalAndAssert(ctx, "#FIRSTNAME ALFONSO",
+                new ZilHash(firstname, PrimType.ATOM, ZilAtom.Parse("ALFONSO", ctx)));
             TestHelpers.EvalAndAssert(ctx, "<=? ALFONSO #FIRSTNAME ALFONSO>", ctx.FALSE);
 
-            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE LASTNAME FIRSTNAME>", ZilAtom.Parse("LASTNAME", ctx));
-            TestHelpers.EvalAndAssert(ctx, "#LASTNAME MCBOOMBOOM", new ZilHash(ZilAtom.Parse("LASTNAME", ctx), PrimType.ATOM, ZilAtom.Parse("MCBOOMBOOM", ctx)));
+            TestHelpers.EvalAndAssert(ctx, "<NEWTYPE LASTNAME FIRSTNAME>", lastname);
+            TestHelpers.EvalAndAssert(ctx, "#LASTNAME MCBOOMBOOM",
+                new ZilHash(lastname, PrimType.ATOM, ZilAtom.Parse("MCBOOMBOOM", ctx)));
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "#LASTNAME 5");
             TestHelpers.EvalAndAssert(ctx, "<=? #FIRSTNAME MADISON #LASTNAME MADISON>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<=? #LASTNAME SMITH #LASTNAME SMITH>", ctx.TRUE);
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<NEWTYPE MIDDLENAME NOT-A-TYPE>");
+
+            // optional third argument specifies a DECL that CHTYPE enforces
+            TestHelpers.EvalAndAssert(ctx,
+                "<NEWTYPE MIDDLENAME VECTOR '<<PRIMTYPE VECTOR> <OR STRING ATOM>>>", middlename);
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE [DANGER] MIDDLENAME>",
+                new ZilStructuredHash(middlename, PrimType.VECTOR,
+                    new ZilVector(ZilAtom.Parse("DANGER", ctx))));
+            TestHelpers.EvalAndAssert(ctx, "<CHTYPE [\"BENDING\"] MIDDLENAME>",
+                new ZilStructuredHash(middlename, PrimType.VECTOR,
+                    new ZilVector(ZilString.FromString("BENDING"))));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [1] MIDDLENAME>");
         }
 
         // Adapted from an example in _The MDL Programming Language_

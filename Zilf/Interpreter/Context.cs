@@ -1233,7 +1233,19 @@ namespace Zilf.Interpreter
             Contract.Requires(newType != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            // chtype to the current type has no effect
+            // DECL checking happens before anything else, so even chtype to the current type might fail!
+            if (CheckDecls)
+            {
+                var decl = GetProp(newType, GetStdAtom(StdAtom.DECL));
+
+                if (decl != null && !Decl.Check(this, value, decl))
+                    throw new InterpreterError(string.Format(
+                        "CHTYPE to {0} must match pattern {1}",
+                        newType.ToStringContext(this, false),
+                        decl.ToStringContext(this, false)));
+            }
+
+            // otherwise, chtype to the current type has no effect
             if (value.GetTypeAtom(this) == newType)
                 return value;
 
