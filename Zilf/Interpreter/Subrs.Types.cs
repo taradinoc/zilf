@@ -97,8 +97,6 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            // TODO: do something with the decl
-
             if (ctx.IsRegisteredType(name))
                 throw new InterpreterError("NEWTYPE: already registered: " + name.ToStringContext(ctx, false));
 
@@ -109,6 +107,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("NEWTYPE: unrecognized primtype: " + primtypeAtom.ToStringContext(ctx, false));
 
             ctx.RegisterType(name, primtype);
+            ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
             return name;
         }
 

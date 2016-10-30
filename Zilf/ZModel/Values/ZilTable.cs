@@ -34,7 +34,7 @@ namespace Zilf.ZModel.Values
     delegate T TableToArrayElementConverter<T>(ZilObject tableElement, bool isWord);
 
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
-    abstract class ZilTable : ZilObject
+    abstract class ZilTable : ZilObject, IProvideStructureForDeclCheck
     {
         public string Name { get; set; }
 
@@ -95,6 +95,13 @@ namespace Zilf.ZModel.Values
             return this;
         }
 
+        IStructure IProvideStructureForDeclCheck.GetStructureForDeclCheck(Context ctx)
+        {
+            var array = new ZilObject[ElementCount];
+            CopyTo(array, (zo, isWord) => zo, ctx.FALSE, ctx);
+            return new ZilVector(array);
+        }
+
         [BuiltinAlternate(typeof(ZilTable))]
         private sealed class OriginalTable : ZilTable
         {
@@ -111,7 +118,7 @@ namespace Zilf.ZModel.Values
                 Contract.Requires(repetitions > 0 || initializer == null || initializer.Length == 0);
 
                 this.repetitions = repetitions;
-                this.initializer = (initializer != null && initializer.Length > 0) ? initializer : null;
+                this.initializer = initializer?.Length > 0 ? initializer : null;
                 this.flags = flags;
                 this.pattern = pattern;
             }
@@ -119,10 +126,10 @@ namespace Zilf.ZModel.Values
             [ChtypeMethod]
             public OriginalTable(OriginalTable other)
             : this(other.repetitions,
-                   other.initializer == null ? null : (ZilObject[])other.initializer.Clone(),
+                   (ZilObject[])other.initializer?.Clone(),
                    other.flags,
-                   other.pattern == null ? null : (ZilObject[])other.pattern.Clone())
-        {
+                   (ZilObject[])other.pattern?.Clone())
+            {
                 Contract.Requires(other != null);
 
                 this.SourceLine = other.SourceLine;

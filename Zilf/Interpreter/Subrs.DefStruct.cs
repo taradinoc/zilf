@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
         {
             public ZilAtom NthFunc, PutFunc, PrintFunc;
             public int StartOffset;
-            public bool SuppressType, SuppressDefaultCtor;
+            public bool SuppressType, SuppressDefaultCtor, SuppressDecl;
             public ZilList CustomCtorSpec;
             public ZilList InitArgs;
         }
@@ -236,10 +236,15 @@ namespace Zilf.Interpreter
                 fields.Add(ParseDefStructField(ctx, defaults, ref offset, fieldSpec));
             }
 
+            var decl = MakeDefstructDecl(ctx, baseType, defaults, fields);
+
             if (!defaults.SuppressType)
             {
                 // register the type
                 ctx.RegisterType(name, ctx.GetTypePrim(baseType));
+
+                if (!defaults.SuppressDecl)
+                    ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
             }
 
             string unparsedInitArgs;
@@ -309,7 +314,7 @@ namespace Zilf.Interpreter
             // define field access macros
             foreach (var field in fields)
             {
-                var accessMacroDef = MakeDefstructAccessMacro(name, field);
+                var accessMacroDef = MakeDefstructAccessMacro(ctx, name, defaults, field);
                 var oldFileName = ctx.CurrentFile;
                 try
                 {
@@ -370,6 +375,16 @@ namespace Zilf.Interpreter
             }
 
             return name;
+        }
+
+        private static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, DefStructDefaults defaults, List<DefStructField> fields)
+        {
+            var parts = new List<ZilObject>(1 + fields.Count);
+
+            parts.Add(new ZilForm(new[] { ctx.GetStdAtom(StdAtom.PRIMTYPE), TYPEPRIM(ctx, baseType) }));
+            parts.AddRange(fields.Select(f => f.Decl));
+
+            return new ZilSegment(new ZilForm(parts));
         }
 
         private static string MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
@@ -642,7 +657,8 @@ namespace Zilf.Interpreter
                 existingObjectDefaults);
         }
 
-        private static string MakeDefstructAccessMacro(ZilAtom structName, DefStructField field)
+        private static string MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
+            DefStructField field)
         {
             Contract.Requires(structName != null);
 
@@ -651,21 +667,45 @@ namespace Zilf.Interpreter
             // {2} = PUT atom
             // {3} = NTH atom
             // {4} = offset
-            const string STemplate = @"
+            // {5} = field decl
+            const string SFullCheckTemplate = @"
 <DEFMAC {0} ('S ""OPT"" 'NV)
     <COND (<ASSIGNED? NV>
-           <FORM {2} <CHTYPE [.S {1}] ADECL> {4} .NV>)
+           <FORM {2} <CHTYPE [.S {1}] ADECL> {4} <CHTYPE [.NV <QUOTE {5}>] ADECL>>)
           (T
-           <FORM {3} <CHTYPE [.S {1}] ADECL> {4}>)>>
+           <CHTYPE [<FORM {3} <CHTYPE [.S {1}] ADECL> {4}> <QUOTE {5}>] ADECL>)>>
+";
+            const string SFieldCheckTemplate = @"
+<DEFMAC {0} ('S ""OPT"" 'NV)
+    <COND (<ASSIGNED? NV>
+           <FORM {2} .S {4} <CHTYPE [.NV <QUOTE {5}>] ADECL>>)
+          (T
+           <CHTYPE [<FORM {3} .S {4}> <QUOTE {5}>] ADECL>)>>
+";
+            const string SNoCheckTemplate = @"
+<DEFMAC {0} ('S ""OPT"" 'NV)
+    <COND (<ASSIGNED? NV>
+           <FORM {2} .S {4} .NV>)
+          (T
+           <FORM {3} .S {4}>)>>
 ";
 
+            string template;
+            if (defaults.SuppressDecl)
+                template = SNoCheckTemplate;
+            else if (defaults.SuppressType)
+                template = SFieldCheckTemplate;
+            else
+                template = SFullCheckTemplate;
+
             return string.Format(
-                STemplate,
+                template,
                 field.Name,
                 structName,
                 field.PutFunc,
                 field.NthFunc,
-                field.Offset);
+                field.Offset,
+                field.Decl.ToStringContext(ctx, false));
         }
 
         private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset,
@@ -773,7 +813,7 @@ namespace Zilf.Interpreter
                     switch (tag.StdAtom)
                     {
                         case StdAtom.NODECL:
-                            // nada
+                            defaults.SuppressDecl = true;
                             break;
 
                         case StdAtom.NOTYPE:
@@ -862,7 +902,7 @@ namespace Zilf.Interpreter
                     switch (ec.ClauseType)
                     {
                         case StdAtom.NODECL:
-                            // nada
+                            defaults.SuppressDecl = true;
                             break;
 
                         case StdAtom.NOTYPE:

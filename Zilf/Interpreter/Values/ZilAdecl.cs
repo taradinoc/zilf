@@ -110,8 +110,15 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            // TODO: check decl (Second) after evaluating First
-            return First.Eval(ctx, environment);
+            var result = First.Eval(ctx, environment);
+
+            if (ctx.CheckDecls && !Decl.Check(ctx, result, Second))
+                throw new InterpreterError(string.Format(
+                    "ADECL evaluation failed: result of {0} did not match pattern {1}",
+                    First.ToStringContext(ctx, false),
+                    Second.ToStringContext(ctx, false)));
+
+            return result;
         }
 
         #region IStructure Members

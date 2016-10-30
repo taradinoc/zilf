@@ -22,7 +22,15 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Language
 {
-    class Decl
+    /// <summary>
+    /// Allows non-structured types to be checked against structure DECLs.
+    /// </summary>
+    internal interface IProvideStructureForDeclCheck
+    {
+        IStructure GetStructureForDeclCheck(Context ctx);
+    }
+
+    internal class Decl
     {
         public static bool Check(Context ctx, ZilObject value, ZilObject pattern)
         {
@@ -83,10 +91,19 @@ namespace Zilf.Language
 
                     // structure form: first pattern element is a DECL matched against the whole structure
                     // (usually a type atom), remaining elements are matched against the structure elements
-                    if (!(value is IStructure) || !Check(ctx, value, first))
+                    if (!Check(ctx, value, first))
                         return false;
 
-                    return CheckElements(ctx, (IStructure)value, (ZilForm)pattern, segment);
+                    var valueAsStructure = value as IStructure;
+
+                    if (valueAsStructure == null && value is IProvideStructureForDeclCheck)
+                        valueAsStructure = ((IProvideStructureForDeclCheck)value).GetStructureForDeclCheck(ctx);
+
+                    if (valueAsStructure == null)
+                        throw new NotImplementedException(
+                            "non-structured type used in structure DECL: " + value.GetTypeAtom(ctx).ToStringContext(ctx, false));
+
+                    return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment);
 
                 default:
                     throw new NotImplementedException("non-ATOM in DECL pattern: " + pattern.ToStringContext(ctx, false));
