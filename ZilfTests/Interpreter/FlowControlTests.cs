@@ -83,5 +83,12 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>("<PROG ()>");
             TestHelpers.EvalAndCatch<InterpreterError>("<PROG A ()>");
         }
+
+        [TestMethod]
+        public void PROG_Sets_DECLs_From_ADECLs()
+        {
+            TestHelpers.EvalAndCatch<DeclCheckError>("<PROG ((A:FIX NOT-A-FIX)) <>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>("<PROG (A:FIX) <SET A NOT-A-FIX>>");
+        }
     }
 }

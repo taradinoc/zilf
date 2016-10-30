@@ -646,6 +646,8 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new global value, or null to clear the global value.</param>
+        /// <exception cref="DeclCheckError"><paramref name="value"/> does not match the DECL
+        /// for <paramref name="atom"/>.</exception>
         public void SetGlobalVal(ZilAtom atom, ZilObject value)
         {
             Contract.Requires(atom != null);
@@ -654,13 +656,7 @@ namespace Zilf.Interpreter
             if (value != null)
             {
                 var binding = GetGlobalBinding(atom, true);
-
-                if (CheckDecls && binding.Decl != null && !Decl.Check(this, value, binding.Decl))
-                    throw new InterpreterError(string.Format(
-                        "new GVAL for {0} must match pattern {1}",
-                        atom.ToStringContext(this, false),
-                        binding.Decl.ToStringContext(this, false)));
-
+                MaybeCheckDecl(value, binding.Decl, "GVAL of {0}", atom);
                 binding.Value = value;
             }
             else
@@ -670,6 +666,37 @@ namespace Zilf.Interpreter
                 if (binding != null)
                     binding.Value = null;
             }
+        }
+
+        /// <summary>
+        /// Optionally checks a value against a DECL, throwing if it fails.
+        /// </summary>
+        /// <param name="src">The source node.</param>
+        /// <param name="value">The value to check.</param>
+        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <b>null</b>.</param>
+        /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
+        /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
+        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <b>true</b>, <paramref name="pattern"/> is non-null,
+        /// and <paramref name="value"/> failed the check.</exception>
+        public void MaybeCheckDecl(IProvideSourceLine src, ZilObject value, ZilObject pattern, string usageFormat, object arg0)
+        {
+            if (pattern != null && CheckDecls && !Decl.Check(this, value, pattern))
+                throw new DeclCheckError(src, this, value, pattern, usageFormat, arg0);
+        }
+
+        /// <summary>
+        /// Optionally checks a value against a DECL, throwing if it fails.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
+        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <b>null</b>.</param>
+        /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
+        /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
+        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <b>true</b>, <paramref name="pattern"/> is non-null,
+        /// and <paramref name="value"/> failed the check.</exception>
+        public void MaybeCheckDecl(ZilObject value, ZilObject pattern, string usageFormat, object arg0)
+        {
+            if (pattern != null && CheckDecls && !Decl.Check(this, value, pattern))
+                throw new DeclCheckError(this, value, pattern, usageFormat, arg0);
         }
 
         /// <summary>
@@ -1234,16 +1261,8 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             // DECL checking happens before anything else, so even chtype to the current type might fail!
-            if (CheckDecls)
-            {
-                var decl = GetProp(newType, GetStdAtom(StdAtom.DECL));
-
-                if (decl != null && !Decl.Check(this, value, decl))
-                    throw new InterpreterError(string.Format(
-                        "CHTYPE to {0} must match pattern {1}",
-                        newType.ToStringContext(this, false),
-                        decl.ToStringContext(this, false)));
-            }
+            var decl = GetProp(newType, GetStdAtom(StdAtom.DECL));
+            MaybeCheckDecl(value, decl, "CHTYPE to {0}", newType);
 
             // otherwise, chtype to the current type has no effect
             if (value.GetTypeAtom(this) == newType)

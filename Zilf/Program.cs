@@ -428,6 +428,12 @@ Compiler switches:
             {
                 var ztree = Parse(ctx, charStream);
 
+                if (ztree == null)
+                {
+                    // TODO: handle this better
+                    throw new NotImplementedException("unhandled parse failure");
+                }
+
                 ZilObject result = null;
                 bool first = true;
                 foreach (ZilObject node in ztree)

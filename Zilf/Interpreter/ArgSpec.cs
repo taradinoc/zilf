@@ -375,26 +375,38 @@ namespace Zilf.Interpreter
 
             for (int i = 0; i < optArgsStart; i++)
             {
-                ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
-                innerEnv.Rebind(argAtoms[i], value);
+                var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
+                ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
+                innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
             }
 
             for (int i = optArgsStart; i < auxArgsStart; i++)
             {
                 if (i < args.Length)
                 {
-                    ZilObject value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
-                    innerEnv.Rebind(argAtoms[i], value);
+                    var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
+                    ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
+                    innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
                 }
                 else
                 {
-                    innerEnv.Rebind(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
+                    var init = argDefaults[i]?.Eval(ctx);
+                    if (init != null)
+                    {
+                        ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                    }
+                    innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
                 }
             }
 
             for (int i = auxArgsStart; i < argAtoms.Length; i++)
             {
-                innerEnv.Rebind(argAtoms[i], argDefaults[i] == null ? null : argDefaults[i].Eval(ctx));
+                var init = argDefaults[i]?.Eval(ctx);
+                if (init != null)
+                {
+                    ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                }
+                innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
             }
 
             if (varargsAtom != null)
@@ -402,7 +414,9 @@ namespace Zilf.Interpreter
                 var extras = args.Skip(auxArgsStart);
                 if (eval && !varargsQuoted)
                     extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
-                innerEnv.Rebind(varargsAtom, new ZilList(extras));
+                var value = new ZilList(extras);
+                ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
+                innerEnv.Rebind(varargsAtom, new ZilList(extras), varargsDecl);
             }
 
             ZilActivation activation;
@@ -422,6 +436,11 @@ namespace Zilf.Interpreter
             innerEnv.Rebind(ctx.EnclosingProgActivationAtom, null);
 
             return activation;
+        }
+
+        public void ValidateResult(Context ctx, ZilObject result)
+        {
+            ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", name);
         }
 
         public void EndApply(Context ctx)

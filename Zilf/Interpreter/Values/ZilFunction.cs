@@ -137,10 +137,13 @@ namespace Zilf.Interpreter.Values
                 {
                     try
                     {
-                        return ZilObject.EvalProgram(ctx, body);
+                        var result = ZilObject.EvalProgram(ctx, body);
+                        argspec.ValidateResult(ctx, result);
+                        return result;
                     }
                     catch (ReturnException ex) when (activation != null && ex.Activation == activation)
                     {
+                        argspec.ValidateResult(ctx, ex.Value);
                         return ex.Value;
                     }
                     catch (AgainException ex) when (activation != null && ex.Activation == activation)

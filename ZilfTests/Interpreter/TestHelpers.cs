@@ -59,7 +59,7 @@ namespace ZilfTests.Interpreter
         internal static void EvalAndCatch<TException>(Context ctx, string expression, Predicate<TException> predicate = null)
             where TException : Exception
         {
-            const string SWrongException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual exception:<{1}>. Expression was: {2}.\nOriginal stack trace:\n{3}";
+            const string SWrongException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual exception:<{1}> ({4}). Expression was: {2}.\nOriginal stack trace:\n{3}";
             const string SNoException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual: no exception, returned <{1}>. Expression was: {2}";
             const string SPredicateFailed = "TestHelpers.EvalAndCatch failed. Predicate returned false. Exception: {0}";
 
@@ -83,7 +83,8 @@ namespace ZilfTests.Interpreter
                     typeof(TException).FullName,
                     ex.GetType().FullName,
                     expression,
-                    ex.StackTrace), ex);
+                    ex.StackTrace,
+                    ex.Message), ex);
             }
 
             if (!caught)
