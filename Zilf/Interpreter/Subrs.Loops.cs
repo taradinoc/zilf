@@ -51,6 +51,17 @@ namespace Zilf.Interpreter
                     }
                 }
 
+                public ZilObject Decl
+                {
+                    get
+                    {
+                        if (Content is BindingName)
+                            return ((BindingName)Content).Decl;
+
+                        return ((BindingWithInitializer)Content).Name.Decl;
+                    }
+                }
+
                 public ZilObject Initializer
                 {
                     get
@@ -78,6 +89,17 @@ namespace Zilf.Interpreter
                             return atom;
 
                         return ((BindingAdecl)Content).Atom;
+                    }
+                }
+
+                public ZilObject Decl
+                {
+                    get
+                    {
+                        if (Content is BindingAdecl)
+                            return ((BindingAdecl)Content).Decl;
+
+                        return null;
                     }
                 }
             }
@@ -151,9 +173,15 @@ namespace Zilf.Interpreter
                 foreach (var b in bindings.Bindings)
                 {
                     var atom = b.Atom;
-                    var value = b.Initializer?.Eval(ctx);
+                    var decl = b.Decl;
+                    var initializer = b.Initializer;
 
-                    innerEnv.Rebind(atom, value);
+                    var value = initializer?.Eval(ctx);
+
+                    if (value != null)
+                        ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
+
+                    innerEnv.Rebind(atom, value, decl);
                 }
 
                 if (catchy)

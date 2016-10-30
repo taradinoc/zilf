@@ -140,9 +140,13 @@ namespace Zilf.Interpreter
         /// <remarks>If the atom is bound, the value will be assigned using that binding, which may
         /// exist in a parent environment. If the atom is unbound, a new binding will be created
         /// in this environment.</remarks>
+        /// <exception cref="Zilf.Language.DeclCheckError"><paramref name="value"/> does not
+        /// match the existing DECL for <paramref name="atom"/>.</exception>
         public void SetLocalVal(ZilAtom atom, ZilObject value)
         {
-            GetOrCreateBinding(atom).Value = value;
+            var binding = GetOrCreateBinding(atom);
+            ctx.MaybeCheckDecl(value, binding.Decl, "LVAL of {0}", atom);
+            binding.Value = value;
         }
 
         /// <summary>
@@ -151,11 +155,15 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new value, or <b>null</b> to unassign the value.</param>
-        /// <remarks>If the atom is bound in a parent environment, this will create a new binding
+        /// <param name="decl">The new DECL, or <b>null</b> to leave it unchanged.</param>
+        /// <remarks>
+        /// <para>If the atom is bound in a parent environment, this will create a new binding
         /// that shadows the inherited one; the parent's binding will not be changed.
         /// If the atom is bound in this environment, that binding will be changed, and the
-        /// previously assigned value will be overwritten.</remarks>
-        public void Rebind(ZilAtom atom, ZilObject value = null)
+        /// previously assigned value will be overwritten.</para>
+        /// <para>This method does not check <paramref name="value"/> against any DECL.</para>
+        /// </remarks>
+        public void Rebind(ZilAtom atom, ZilObject value = null, ZilObject decl = null)
         {
             Binding binding;
 
@@ -165,8 +173,12 @@ namespace Zilf.Interpreter
             }
             else
             {
-                bindings.Add(atom, new Binding(value));
+                binding = new Binding(value);
+                bindings.Add(atom, binding);
             }
+
+            if (decl != null)
+                binding.Decl = decl;
         }
     }
 }

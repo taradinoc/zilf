@@ -1008,7 +1008,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE [\"BENDING\"] MIDDLENAME>",
                 new ZilStructuredHash(middlename, PrimType.VECTOR,
                     new ZilVector(ZilString.FromString("BENDING"))));
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [1] MIDDLENAME>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<CHTYPE [1] MIDDLENAME>");
         }
 
         // Adapted from an example in _The MDL Programming Language_

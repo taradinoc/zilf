@@ -30,6 +30,56 @@ namespace Zilf.Language
         IStructure GetStructureForDeclCheck(Context ctx);
     }
 
+    /// <summary>
+    /// Raised when a user-defined DECL check fails.
+    /// </summary>
+    internal class DeclCheckError : InterpreterError
+    {
+        private const string STemplate = "expected {0} to match DECL {1}, but got {2}";
+
+        /// <summary>
+        /// Gets the value that didn't pass the DECL.
+        /// </summary>
+        public ZilObject Value { get; private set; }
+        /// <summary>
+        /// Gets the DECL that prevented the value from being used.
+        /// </summary>
+        public ZilObject Pattern { get; private set; }
+        /// <summary>
+        /// Gets a string describing what the value was going to be used for.
+        /// </summary>
+        public string Usage { get; private set; }
+
+        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern, string usage)
+            : base(string.Format(STemplate, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false)))
+        {
+            this.Value = value;
+            this.Pattern = pattern;
+            this.Usage = usage;
+        }
+
+        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
+            string usage)
+            : base(src, string.Format(STemplate, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false)))
+        {
+            this.Value = value;
+            this.Pattern = pattern;
+            this.Usage = usage;
+        }
+
+        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern,
+            string usageFormat, object arg0)
+            : this(ctx, value, pattern, string.Format(usageFormat, arg0))
+        {
+        }
+
+        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
+            string usageFormat, object arg0)
+            : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
+        {
+        }
+    }
+
     internal class Decl
     {
         public static bool Check(Context ctx, ZilObject value, ZilObject pattern)

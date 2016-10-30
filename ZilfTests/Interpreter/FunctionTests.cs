@@ -440,5 +440,63 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO>", new ZilList(new[] { foo, foo, foo }));
             TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO BAR>", new ZilList(new[] { foo, bar, bar }));
         }
+
+        [TestMethod]
+        public void FUNCTION_ADECL_Parameters_Should_Set_Binding_DECLs()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A:FIX \"OPT\" B:FIX \"AUX\" C:FIX) <SET A T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (A:FIX \"OPT\" B:FIX \"AUX\" C:FIX) <SET A 0> <SET B T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ (A:FIX \"OPT\" B:FIX \"AUX\" C:FIX) <SET B 0> <SET C T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAZ 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE OK (A:FIX \"OPT\" B:FIX \"AUX\" C:FIX) <SET A 0> <SET B 0> <SET C 0>>");
+            TestHelpers.Evaluate(ctx, "<OK 1>");
+        }
+
+        [TestMethod]
+        public void FUNCTION_VALUE_Clause_Should_Check_Return_Value()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A:FIX B:FIX \"VALUE\" <LIST FIX FIX>) (.A .B)>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 1 2>",
+                new ZilList(new[] { new ZilFix(1), new ZilFix(2) }));
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO 1 X>");
+
+            // also applies to values returned via an activation
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (A:FIX B:FIX \"VALUE\" <LIST FIX FIX> \"ACT\" ACT) <BAZ .ACT> (.A .B)>");
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ (ACT) <RETURN NOT-A-LIST .ACT>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR 1 2>");
+        }
+
+        [TestMethod]
+        public void FUNCTION_Calls_Should_Check_Argument_DECLs()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A:FIX \"OPT\" B:FIX) <>>");
+            TestHelpers.EvalAndAssert(ctx, "<FOO 1>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<FOO 1 2>", ctx.FALSE);
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO X>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO 1 X>");
+        }
+
+        [TestMethod]
+        public void FUNCTION_Default_Values_Should_Be_Checked()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"OPT\" (A:FIX NOT-A-FIX)) <>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (\"AUX\" (A:FIX NOT-A-FIX)) <>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR>");
+        }
     }
 }

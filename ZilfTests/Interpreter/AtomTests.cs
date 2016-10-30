@@ -347,12 +347,12 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<GDECL (FOO BAR) FIX (BAZ) ANY>");
 
             TestHelpers.EvalAndAssert(ctx, "<SETG FOO 1>", new ZilFix(1));
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SETG FOO NOT-A-FIX>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<SETG FOO NOT-A-FIX>");
             TestHelpers.EvalAndAssert(ctx, "<SETG FOO 5>", new ZilFix(5));
             TestHelpers.Evaluate(ctx, "<GUNASSIGN FOO>");
 
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? BAR>", ctx.FALSE);
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SETG BAR NOT-A-FIX>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<SETG BAR NOT-A-FIX>");
 
             TestHelpers.EvalAndAssert(ctx, "<SETG BAZ NOT-A-FIX>", ZilAtom.Parse("NOT-A-FIX", ctx));
 

@@ -178,11 +178,11 @@ namespace ZilfTests.Interpreter
             var ctx = new Context();
 
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT (VECTOR) (POINT-X FIX) (POINT-Y FIX)>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE [1 2 3 4 SHOE] POINT>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<CHTYPE [1 2 3 4 SHOE] POINT>");
 
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SET PT <MAKE-POINT A B>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<SET PT <MAKE-POINT A B>>");
             TestHelpers.Evaluate(ctx, "<SET PT <MAKE-POINT 100 200>>");
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<POINT-X .PT FOO>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<POINT-X .PT FOO>");
             TestHelpers.Evaluate(ctx, "<POINT-X .PT 99>");
         }
 
