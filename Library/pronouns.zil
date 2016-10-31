@@ -23,7 +23,7 @@
                      OBJS-TBL-NAME CONDITION)
                   ;"Define table P-PRO-THEM-OBJS to hold the objects."
                   <SET OBJS-TBL-NAME <PARSE <STRING "P-PRO-" <SPNAME .N> "-OBJS">>>
-                  <CONSTANT .OBJS-TBL-NAME <ITABLE .TBLSIZE .TBLFLAGS>>
+                  <EVAL <FORM CONSTANT .OBJS-TBL-NAME '<ITABLE .TBLSIZE .TBLFLAGS>>>
                   
                   ;"Define routine PRO-TRY-SET-THEM to try to set the pronoun."
                   <SET RTN-NAME <PARSE <STRING "PRO-TRY-SET-" <SPNAME .N>>>>

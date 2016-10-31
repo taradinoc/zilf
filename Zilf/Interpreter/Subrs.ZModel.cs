@@ -177,14 +177,15 @@ namespace Zilf.Interpreter
             }
         }
 
-        [Subr]
-        [Subr("MSETG")]
+        [FSubr]
+        [FSubr("MSETG")]
         public static ZilObject CONSTANT(Context ctx,
             AtomParams.AdeclOrAtom name, ZilObject value)
         {
             SubrContracts(ctx);
 
             var atom = name.Atom;
+            value = value.Eval(ctx);
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var previous = ctx.GetZVal(oldAtom);
@@ -209,7 +210,7 @@ namespace Zilf.Interpreter
             return ctx.AddZConstant(atom, value);
         }
 
-        [Subr]
+        [FSubr]
         public static ZilObject GLOBAL(Context ctx,
             AtomParams.AdeclOrAtom name, ZilObject defaultValue,
             ZilObject decl = null, ZilAtom size = null)
@@ -221,6 +222,7 @@ namespace Zilf.Interpreter
             // TODO: use decl and size?
 
             var atom = name.Atom;
+            defaultValue = defaultValue.Eval(ctx);
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var oldVal = ctx.GetZVal(oldAtom);
@@ -270,7 +272,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        [Subr("DEFINE-GLOBALS")]
+        [FSubr("DEFINE-GLOBALS")]
         public static ZilObject DEFINE_GLOBALS(Context ctx, ZilAtom groupName,
             DefineGlobalsParams.GlobalSpec[] args)
         {
@@ -282,7 +284,7 @@ namespace Zilf.Interpreter
 
                 // create global and macros
                 var globalAtom = ZilAtom.Parse("G?" + name, ctx);
-                ZilGlobal g = new ZilGlobal(globalAtom, spec.Initializer ?? ctx.FALSE);
+                ZilGlobal g = new ZilGlobal(globalAtom, spec.Initializer?.Eval(ctx) ?? ctx.FALSE);
                 if (spec.Size?.StdAtom == StdAtom.BYTE)
                 {
                     g.IsWord = false;
