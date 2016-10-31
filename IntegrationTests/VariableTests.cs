@@ -193,8 +193,17 @@ namespace IntegrationTests
                 "<MY-BYTE 67> " +
                 "<PRINTN <MY-WORD>> <CRLF> " +
                 "<PRINTN <MY-BYTE>> <CRLF> ")
-                .WithGlobal("<DEFINE-GLOBALS TEST-GLOBALS (MY-WORD 32767) (MY-BYTE BYTE 255)>")
+                .WithGlobal("<DEFINE-GLOBALS TEST-GLOBALS (MY-WORD 32767) (MY-BYTE BYTE 255) (HAS-ADECL:FIX 0)>")
                 .Outputs("32767\n255\n12345\n67\n");
+        }
+
+        [TestMethod]
+        public void GLOBAL_And_CONSTANT_Should_Work_With_ADECLs()
+        {
+            AssertRoutine("", "<>")
+                .WithGlobal("<GLOBAL FOO:FIX 12>")
+                .WithGlobal("<CONSTANT BAR:FIX 34>")
+                .Compiles();
         }
     }
 }

@@ -72,7 +72,7 @@ namespace Zilf.ZModel.Values
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             return "#GLOBAL (" + name.ToStringContext(ctx, friendly) +
-            " " + value.ToStringContext(ctx, friendly) + ")";
+                " " + value.ToStringContext(ctx, friendly) + ")";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -88,8 +88,8 @@ namespace Zilf.ZModel.Values
         public override ZilObject GetPrimitive(Context ctx)
         {
             return new ZilList(name,
-            new ZilList(value,
-            new ZilList(null, null)));
+                new ZilList(value,
+                new ZilList(null, null)));
         }
     }
 }
