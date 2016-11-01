@@ -57,7 +57,7 @@ namespace Zilf.Interpreter
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
         }
 
-        public ArgSpec(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec)
+        public ArgSpec(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
         {
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
 
@@ -227,6 +227,49 @@ namespace Zilf.Interpreter
                 auxArgsStart = cur;
             if (optArgsStart == -1)
                 optArgsStart = auxArgsStart;
+
+            // process #DECL in body
+            if (bodyDecl != null)
+            {
+                var argIndex = argAtoms.Select((atom, i) => new { atom, i }).ToLookup(p => p.atom, p => p.i);
+
+                foreach (var pair in bodyDecl.GetAtomDeclPairs())
+                {
+                    var atom = pair.Key;
+                    var decl = pair.Value;
+                    ZilObject prev;
+
+                    if (atom.StdAtom == StdAtom.VALUE)
+                    {
+                        prev = valueDecl;
+                        valueDecl = decl;
+                    }
+                    else if (atom == varargsAtom)
+                    {
+                        prev = varargsDecl;
+                        varargsDecl = decl;
+                    }
+                    else if (argIndex.Contains(atom))
+                    {
+                        prev = null;
+
+                        foreach (var i in argIndex[atom])
+                        {
+                            prev = prev ?? argDecls[i];
+                            argDecls[i] = decl;
+                        }
+                    }
+                    else
+                    {
+                        throw new InterpreterError("unrecognized argument name in body DECL: " + atom);
+                    }
+
+                    if (prev != null)
+                    {
+                        throw new InterpreterError("conflicting DECLs for atom: " + atom);
+                    }
+                }
+            }
 
             this.argAtoms = argAtoms.ToArray();
             this.argDecls = argDecls.ToArray();

@@ -36,7 +36,11 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
             Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
 
-            this.argspec = new ArgSpec(name, activationAtom, argspec);
+            var decl = body.FirstOrDefault() as ZilDecl;
+            if (decl != null)
+                body = body.Skip(1);
+
+            this.argspec = new ArgSpec(name, activationAtom, argspec, decl);
             this.body = body.ToArray();
         }
 

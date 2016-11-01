@@ -123,40 +123,45 @@ namespace Zilf.Interpreter
         public static ZilObject PROG(Context ctx,
             [Optional] ZilAtom activationAtom,
             BindingParams.BindingList bindings,
+            [Optional] ZilDecl bodyDecl,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return PerformProg(ctx, activationAtom, bindings, body, "PROG", false, true);
+            return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "PROG", false, true);
         }
 
         [FSubr]
         public static ZilObject REPEAT(Context ctx,
             [Optional] ZilAtom activationAtom,
             BindingParams.BindingList bindings,
+            [Optional] ZilDecl bodyDecl,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return PerformProg(ctx, activationAtom, bindings, body, "REPEAT", true, true);
+            return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "REPEAT", true, true);
         }
 
         [FSubr]
         public static ZilObject BIND(Context ctx,
             [Optional] ZilAtom activationAtom,
             BindingParams.BindingList bindings,
+            [Optional] ZilDecl bodyDecl,
             [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return PerformProg(ctx, activationAtom, bindings, body, "BIND", false, false);
+            return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }
 
         private static ZilObject PerformProg(Context ctx, ZilAtom activationAtom,
-            BindingParams.BindingList bindings, ZilObject[] body, string name, bool repeat, bool catchy)
+            BindingParams.BindingList bindings, ZilDecl bodyDecl, ZilObject[] body,
+            string name, bool repeat, bool catchy)
         {
             SubrContracts(ctx);
             Contract.Requires(name != null);
+            Contract.Requires(body != null && body.Length > 0);
 
             var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
 
@@ -170,13 +175,21 @@ namespace Zilf.Interpreter
                     innerEnv.Rebind(activationAtom, activation);
                 }
 
+                var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToDictionary(p => p.Key, p => p.Value);
+
                 foreach (var b in bindings.Bindings)
                 {
                     var atom = b.Atom;
-                    var decl = b.Decl;
                     var initializer = b.Initializer;
 
                     var value = initializer?.Eval(ctx);
+
+                    ZilObject decl1 = b.Decl, decl2 = null;
+                    bodyAtomDecls?.TryGetValue(atom, out decl2);
+                    if (decl1 != null && decl2 != null)
+                        throw new InterpreterError(name + ": conflicting DECLs for atom: " + atom);
+
+                    var decl = decl1 ?? decl2;
 
                     if (value != null)
                         ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
