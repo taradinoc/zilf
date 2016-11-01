@@ -460,6 +460,24 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void FUNCTION_Body_DECLs_Should_Set_Binding_DECLs()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A \"OPT\" B \"AUX\" C) #DECL ((A B C) FIX) <SET A T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (A \"OPT\" B \"AUX\" C) #DECL ((A B C) FIX) <SET B T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ (A \"OPT\" B \"AUX\" C) #DECL ((A B C) FIX) <SET C T>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAZ 1>");
+
+            TestHelpers.Evaluate(ctx, "<DEFINE OK (A \"OPT\" B \"AUX\" C) #DECL ((A B C) FIX) <SET A 0> <SET B 0> <SET C 0>>");
+            TestHelpers.Evaluate(ctx, "<OK 1>");
+        }
+
+        [TestMethod]
         public void FUNCTION_VALUE_Clause_Should_Check_Return_Value()
         {
             var ctx = new Context();
@@ -473,6 +491,12 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFINE BAR (A:FIX B:FIX \"VALUE\" <LIST FIX FIX> \"ACT\" ACT) <BAZ .ACT> (.A .B)>");
             TestHelpers.Evaluate(ctx, "<DEFINE BAZ (ACT) <RETURN NOT-A-LIST .ACT>>");
             TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR 1 2>");
+
+            // and #DECL syntax
+            TestHelpers.Evaluate(ctx, "<DEFINE BAH (A B) #DECL ((A B) FIX (VALUE) <LIST FIX FIX>) (.A .B)>");
+            TestHelpers.EvalAndAssert(ctx, "<BAH 1 2>",
+                new ZilList(new[] { new ZilFix(1), new ZilFix(2) }));
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAH 1 X>");
         }
 
         [TestMethod]
@@ -497,6 +521,12 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.Evaluate(ctx, "<DEFINE BAR (\"AUX\" (A:FIX NOT-A-FIX)) <>>");
             TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAR>");
+        }
+
+        [TestMethod]
+        public void FUNCTION_Rejects_Conflicting_DECLs()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE FOO (A:FIX) #DECL ((A) LIST) <>>");
         }
     }
 }

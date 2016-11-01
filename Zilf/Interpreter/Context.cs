@@ -958,7 +958,6 @@ namespace Zilf.Interpreter
             // default custom types
             var defaultCustomTypes = new[] {
                 new { Name = "BYTE", PrimType = PrimType.FIX },
-                new { Name = "DECL", PrimType = PrimType.LIST },
                 new { Name = "SEMI", PrimType = PrimType.STRING },
                 new { Name = "SPLICE", PrimType = PrimType.LIST },
                 new { Name = "VOC", PrimType = PrimType.ATOM },

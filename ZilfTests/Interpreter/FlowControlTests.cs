@@ -80,8 +80,9 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void PROG_Requires_A_Body()
         {
-            TestHelpers.EvalAndCatch<InterpreterError>("<PROG ()>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<PROG A ()>");
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ()>");
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A ()>");
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (A) #DECL ((A) FIX)>");
         }
 
         [TestMethod]
@@ -89,6 +90,19 @@ namespace ZilfTests.Interpreter
         {
             TestHelpers.EvalAndCatch<DeclCheckError>("<PROG ((A:FIX NOT-A-FIX)) <>>");
             TestHelpers.EvalAndCatch<DeclCheckError>("<PROG (A:FIX) <SET A NOT-A-FIX>>");
+        }
+
+        [TestMethod]
+        public void PROG_Sets_DECLs_From_Body_DECLs()
+        {
+            TestHelpers.EvalAndCatch<DeclCheckError>("<PROG ((A NOT-A-FIX)) #DECL ((A) FIX) <>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>("<PROG (A) #DECL ((A) FIX) <SET A NOT-A-FIX>>");
+        }
+
+        [TestMethod]
+        public void PROG_Rejects_Conflicting_DECLs()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<PROG (A:FIX) #DECL ((A) LIST) <>>");
         }
     }
 }
