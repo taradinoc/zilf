@@ -45,7 +45,8 @@ namespace Zilf.Interpreter
 
         private class TypeMapEntry
         {
-            public bool IsBuiltin;
+            public Type BuiltinType;
+            public bool IsBuiltin => BuiltinType != null;
             public PrimType PrimType;
             public ChtypeDelegate ChtypeMethod;
 
@@ -114,7 +115,6 @@ namespace Zilf.Interpreter
 
             includePaths = new List<string>();
 
-            InitSubrs();
             InitTypeMap();
 
             TRUE = GetStdAtom(StdAtom.T);
@@ -130,6 +130,9 @@ namespace Zilf.Interpreter
             ZilList olpath = new ZilList(new ZilObject[] { userObList, rootObList });
             ZilAtom olatom = GetStdAtom(StdAtom.OBLIST);
             localEnvironment.Rebind(olatom, olpath);
+
+            // InitSubrs uses ArgDecoder, which parses DECLs and needs the OBLIST path
+            InitSubrs();
 
             var outchanAtom = GetStdAtom(StdAtom.OUTCHAN);
             var consoleOutChannel = new ZilConsoleChannel(FileAccess.Write);
@@ -346,7 +349,7 @@ namespace Zilf.Interpreter
                 if (attrs.Length == 0)
                     continue;
 
-                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi);
+                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this);
 
                 foreach (Subrs.SubrAttribute attr in attrs)
                 {
@@ -947,7 +950,7 @@ namespace Zilf.Interpreter
 
                 var entry = new TypeMapEntry()
                 {
-                    IsBuiltin = true,
+                    BuiltinType = r.Type,
                     PrimType = r.Attr.PrimType,
                     ChtypeMethod = chtypeDelegate,
                 };
@@ -1004,7 +1007,6 @@ namespace Zilf.Interpreter
 
             var entry = new TypeMapEntry()
             {
-                IsBuiltin = false,
                 PrimType = primType,
                 ChtypeMethod = chtypeDelegate,
             };
@@ -1022,6 +1024,39 @@ namespace Zilf.Interpreter
         public IEnumerable<ZilAtom> RegisteredTypes
         {
             get { return typeMap.Keys; }
+        }
+
+        [Pure]
+        public bool IsStructuredType(ZilAtom atom)
+        {
+            Contract.Requires(atom != null);
+
+            TypeMapEntry entry;
+            if (typeMap.TryGetValue(atom, out entry))
+            {
+                if (entry.IsBuiltin && typeof(IApplicable).IsAssignableFrom(entry.BuiltinType))
+                    return true;
+            }
+
+            return false;
+        }
+
+        [Pure]
+        public bool IsApplicableType(ZilAtom atom)
+        {
+            Contract.Requires(atom != null);
+
+            TypeMapEntry entry;
+            if (typeMap.TryGetValue(atom, out entry))
+            {
+                if (entry.ApplyTypeDelegate != null)
+                    return true;
+
+                if (entry.IsBuiltin && typeof(IApplicable).IsAssignableFrom(entry.BuiltinType))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -50,10 +50,10 @@ namespace ZilfTests.Interpreter
                 throw new AssertFailedException(string.Format("TestHelpers.EvalAndAssert failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}", expected, actual, expression));
         }
 
-        internal static void EvalAndCatch<TException>(string expression)
+        internal static void EvalAndCatch<TException>(string expression, Predicate<TException> predicate = null)
             where TException : Exception
         {
-            EvalAndCatch<TException>(null, expression);
+            EvalAndCatch<TException>(null, expression, predicate);
         }
 
         internal static void EvalAndCatch<TException>(Context ctx, string expression, Predicate<TException> predicate = null)
