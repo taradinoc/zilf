@@ -80,9 +80,9 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void PROG_Requires_A_Body()
         {
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ()>");
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A ()>");
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (A) #DECL ((A) FIX)>");
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ()>", ex => !ex.Message.Contains("???"));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A ()>", ex => !ex.Message.Contains("???"));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (A) #DECL ((A) FIX)>", ex => !ex.Message.Contains("???"));
         }
 
         [TestMethod]

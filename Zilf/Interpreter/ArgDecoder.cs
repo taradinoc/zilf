@@ -167,17 +167,20 @@ namespace Zilf.Interpreter
         /// if the step consumed none.</returns>
         private delegate int DecodingStep(ZilObject[] arguments, int index, DecodingStepCallbacks cb);
 
+        private delegate void ErrorCallback(int? index = null);
+
         private struct DecodingStepCallbacks
         {
             public Context Context;
             public CallSite Site;
             public Action<object> Ready;
-            public Action<string> Error;
+            public ErrorCallback Error;
         }
 
         private struct DecodingStepInfo
         {
             public DecodingStep Step;
+            public Constraint Constraint;
 
             /// <summary>
             /// The minimum number of arguments this step will consume.
@@ -189,87 +192,420 @@ namespace Zilf.Interpreter
             public int? UpperBound;
         }
 
-        private class ConstraintsBuilder
+        private abstract class Constraint
         {
-            private readonly List<string> parts = new List<string>();
-            private readonly List<Func<ZilObject, Context, bool>> preds = new List<Func<ZilObject, Context, bool>>();
+            public static readonly Constraint AnyObject = new AnyObjectConstraint();
+            public static readonly Constraint Forbidden = new ForbiddenConstraint();
+            public static readonly Constraint Structured = new StructuredConstraint();
+            public static readonly Constraint Applicable = new ApplicableConstraint();
+            public static Constraint OfType(StdAtom typeAtom) => new TypeConstraint(typeAtom);
+            public static Constraint OfPrimType(PrimType primtype) => new PrimTypeConstraint(primtype);
 
-            public void AddTypeConstraint(StdAtom typeAtom)
+            public static Constraint FromDecl(ZilObject pattern)
             {
-                switch (typeAtom)
-                {
-                    case StdAtom.APPLICABLE:
-                        parts.Add("applicable object");
-                        preds.Add((zo, ctx) => zo.IsApplicable(ctx));
-                        break;
-
-                    case StdAtom.STRUCTURED:
-                        parts.Add("structured object");
-                        preds.Add((zo, ctx) => zo is IStructure);
-                        break;
-
-                    default:
-                        parts.Add("TYPE " + typeAtom.ToString());
-                        preds.Add((zo, ctx) => zo.GetTypeAtom(ctx).StdAtom == typeAtom);
-                        break;
-                }
+                // TODO: replace simple decls like APPLICABLE with equivalent Constraints?
+                return new DeclConstraint(pattern);
             }
 
-            public void AddPrimTypeConstraint(PrimType primtype)
+            public virtual Constraint And(Context ctx, Constraint other)
             {
-                parts.Add("PRIMTYPE " + primtype.ToString());
-                preds.Add((zo, _) => zo.PrimType == primtype);
+                if (this.IsImpliedBy(ctx, other))
+                    return other;
+
+                if (other.IsImpliedBy(ctx, this))
+                    return this;
+
+                return Conjunction.From(ctx, this, other);
             }
 
-            public void AddDeclConstraint(DeclWrapper decl)
+            public virtual Constraint Or(Context ctx, Constraint other)
             {
-                parts.Add("matching pattern " + decl);
-                preds.Add((zo, ctx) => Decl.Check(ctx, zo, decl.GetPattern(ctx)));
+                if (this.IsImpliedBy(ctx, other))
+                    return this;
+
+                if (other.IsImpliedBy(ctx, this))
+                    return other;
+
+                return Disjunction.From(ctx, this, other);
             }
 
-            public void AddEitherConstraint(IEnumerable<ConstraintsBuilder> cbs)
-            {
-                parts.Add(string.Join(" or ", cbs.Select(cb => "(" + cb.ToString() + ")")));
+            protected abstract bool IsImpliedBy(Context ctx, Constraint other);
+            public abstract bool Allows(Context ctx, ZilObject arg);
+            public abstract override string ToString();
 
-                var subPreds = cbs.SelectMany(cb => cb.preds).ToArray();
-                if (subPreds.Length > 0)
-                    preds.Add((zo, ctx) => subPreds.Any(p => p(zo, ctx)));
-            }
-
-            public Func<ZilObject, Context, bool> GetDelegate()
+            private static string EnglishList<T>(IEnumerable<T> items, string connector)
             {
-                return (zo, ctx) => preds.All(p => p(zo, ctx));
-            }
-
-            public override string ToString()
-            {
-                switch (parts.Count)
+                var array = items.ToArray();
+                
+                switch (array.Length)
                 {
                     case 0:
-                        return "???";
+                        throw new NotImplementedException("list with no items");
 
                     case 1:
-                        return parts[0];
+                        return array[0].ToString();
 
                     case 2:
-                        return parts[0] + " and " + parts[1];
+                        return array[0].ToString() + " " + connector + " " + array[1].ToString();
 
                     default:
-                        var last = parts.Count - 1;
-                        return string.Join(
-                            ", ",
-                            parts.Select((s, i) => i < last ? s : "and " + s));
+                        return string.Join(", ", items.Take(array.Length - 1)) + ", " + connector + " " + array[array.Length - 1];
                 }
             }
+
+            private class AnyObjectConstraint : Constraint
+            {
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return true;
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    return true;
+                }
+
+                public override string ToString()
+                {
+                    return "anything";
+                }
+            }
+
+            private class ForbiddenConstraint : Constraint
+            {
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return false;
+                }
+
+                public override string ToString()
+                {
+                    return "nothing";
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    return other is ForbiddenConstraint;
+                }
+            }
+
+            private class TypeConstraint : Constraint
+            {
+                public StdAtom TypeAtom { get; private set; }
+
+                public TypeConstraint(StdAtom typeAtom)
+                {
+                    this.TypeAtom = typeAtom;
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    var otherType = other as TypeConstraint;
+
+                    if (otherType != null)
+                    {
+                        return otherType.TypeAtom == this.TypeAtom;
+                    }
+
+                    return false;
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return arg.GetTypeAtom(ctx).StdAtom == this.TypeAtom;
+                }
+
+                public override string ToString()
+                {
+                    return this.TypeAtom.ToString();
+                }
+            }
+
+            private class PrimTypeConstraint : Constraint
+            {
+                public PrimType PrimType { get; private set; }
+
+                public PrimTypeConstraint(PrimType primtype)
+                {
+                    this.PrimType = primtype;
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    var otherPrimType = other as PrimTypeConstraint;
+
+                    if (otherPrimType != null)
+                    {
+                        return otherPrimType.PrimType == this.PrimType;
+                    }
+
+                    var otherType = other as TypeConstraint;
+
+                    if (otherType != null)
+                    {
+                        return ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) == this.PrimType;
+                    }
+
+                    return false;
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return arg.PrimType == this.PrimType;
+                }
+
+                public override string ToString()
+                {
+                    return "PRIMTYPE " + this.PrimType.ToString();
+                }
+            }
+
+            private class StructuredConstraint : Constraint
+            {
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return arg is IStructure;
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    if (other is StructuredConstraint)
+                    {
+                        return true;
+                    }
+
+                    var otherType = other as TypeConstraint;
+
+                    if (otherType != null)
+                    {
+                        return ctx.IsStructuredType(ctx.GetStdAtom(otherType.TypeAtom));
+                    }
+
+                    return false;
+                }
+
+                public override string ToString()
+                {
+                    return "structured value";
+                }
+            }
+
+            private class ApplicableConstraint : Constraint
+            {
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return arg.IsApplicable(ctx);
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    if (other is ApplicableConstraint)
+                    {
+                        return true;
+                    }
+
+                    var otherType = other as TypeConstraint;
+
+                    if (otherType != null)
+                    {
+                        return ctx.IsApplicableType(ctx.GetStdAtom(otherType.TypeAtom));
+                    }
+
+                    return false;
+                }
+
+                public override string ToString()
+                {
+                    return "applicable value";
+                }
+            }
+
+            private class DeclConstraint : Constraint
+            {
+                public ZilObject Pattern { get; private set; }
+
+                public DeclConstraint(ZilObject pattern)
+                {
+                    this.Pattern = pattern;
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    return (other is DeclConstraint &&
+                        this.Pattern.Equals(((DeclConstraint)other).Pattern));
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return Decl.Check(ctx, arg, this.Pattern);
+                }
+
+                public override string ToString()
+                {
+                    return this.Pattern.ToString();
+                }
+            }
+
+            private class Conjunction : Constraint
+            {
+                public IEnumerable<Constraint> Constraints { get; private set; }
+
+                private Conjunction(IEnumerable<Constraint> constraints)
+                {
+                    this.Constraints = constraints;
+                }
+
+                public static Conjunction From(Context ctx, Constraint left, Constraint right)
+                {
+                    var parts = new List<Constraint>();
+
+                    if (left is Conjunction)
+                    {
+                        parts.AddRange(((Conjunction)left).Constraints);
+                    }
+                    else
+                    {
+                        parts.Add(left);
+                    }
+
+                    IEnumerable<Constraint> todo;
+                    if (right is Conjunction)
+                    {
+                        todo = ((Conjunction)right).Constraints;
+                    }
+                    else
+                    {
+                        todo = Enumerable.Repeat(right, 1);
+                    }
+
+                    foreach (var c in todo)
+                    {
+                        for (int i = 0; i < parts.Count; i++)
+                        {
+                            if (c.IsImpliedBy(ctx, parts[i]))
+                            {
+                                // skip
+                                continue;
+                            }
+                            else if (parts[i].IsImpliedBy(ctx, c))
+                            {
+                                // replace
+                                parts[i] = c;
+                            }
+                            else
+                            {
+                                // combine
+                                parts.Add(c);
+                            }
+                        }
+                    }
+
+                    return new Conjunction(parts);
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    return this.Constraints.All(c => c.IsImpliedBy(ctx, other));
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return this.Constraints.All(c => c.Allows(ctx, arg));
+                }
+
+                public override string ToString()
+                {
+                    return EnglishList(this.Constraints, "and");
+                }
+            }
+
+            private class Disjunction : Constraint
+            {
+                public IEnumerable<Constraint> Constraints { get; private set; }
+
+                private Disjunction(IEnumerable<Constraint> constraints)
+                {
+                    this.Constraints = constraints;
+                }
+
+                public static Disjunction From(Context ctx, Constraint left, Constraint right)
+                {
+                    var parts = new List<Constraint>();
+
+                    if (left is Disjunction)
+                    {
+                        parts.AddRange(((Disjunction)left).Constraints);
+                    }
+                    else
+                    {
+                        parts.Add(left);
+                    }
+
+                    IEnumerable<Constraint> todo;
+                    if (right is Disjunction)
+                    {
+                        todo = ((Disjunction)right).Constraints;
+                    }
+                    else
+                    {
+                        todo = Enumerable.Repeat(right, 1);
+                    }
+
+                    foreach (var c in todo)
+                    {
+                        for (int i = parts.Count - 1; i >= 0; i--)
+                        {
+                            if (c.IsImpliedBy(ctx, parts[i]))
+                            {
+                                // replace
+                                parts[i] = c;
+                            }
+                            else if (parts[i].IsImpliedBy(ctx, c))
+                            {
+                                // skip
+                                continue;
+                            }
+                            else
+                            {
+                                // combine
+                                parts.Add(c);
+                            }
+                        }
+                    }
+
+                    return new Disjunction(parts);
+                }
+
+                protected override bool IsImpliedBy(Context ctx, Constraint other)
+                {
+                    return this.Constraints.Any(c => c.IsImpliedBy(ctx, other));
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    return this.Constraints.Any(c => c.Allows(ctx, arg));
+                }
+
+                public override string ToString()
+                {
+                    return EnglishList(this.Constraints, "or");
+                }
+            }
+
         }
 
+        private readonly Context ctx;
         private readonly DecodingStep[] steps;
+        private readonly Constraint[] constraints;
         private readonly int lowerBound;
         private readonly int? upperBound;
 
-        private ArgDecoder(object[] methodAttributes, ParameterInfo[] parameters)
+        private ArgDecoder(Context ctx, object[] methodAttributes, ParameterInfo[] parameters)
         {
+            this.ctx = ctx;
+
             steps = new DecodingStep[parameters.Length - 1];
+            constraints = new Constraint[parameters.Length - 1];
             lowerBound = 0;
             upperBound = 0;
 
@@ -278,6 +614,7 @@ namespace Zilf.Interpreter
             {
                 var stepInfo = PrepareOne(parameters[i]);
                 steps[i - 1] = stepInfo.Step;
+                constraints[i - 1] = stepInfo.Constraint;
 
                 lowerBound += stepInfo.LowerBound;
 
@@ -292,7 +629,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static DecodingStepInfo PrepareOne(ParameterInfo pi)
+        private DecodingStepInfo PrepareOne(ParameterInfo pi)
         {
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -320,7 +657,7 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        private static DecodingStepInfo PrepareOne(FieldInfo fi)
+        private DecodingStepInfo PrepareOne(FieldInfo fi)
         {
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -345,21 +682,14 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        private static DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
-            bool isOptional, object defaultValueWhenOptional, ConstraintsBuilder cb = null)
+        private DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
+            bool isOptional, object defaultValueWhenOptional)
         {
             DecodingStepInfo result;
             object defaultValue = null;
             ZilStructuredParamAttribute zilStructAttr;
             ZilSequenceParamAttribute sequenceAttr;
             EitherAttribute eitherAttr;
-
-            if (cb == null)
-                cb = new ConstraintsBuilder();
-
-            /* errmsg is generated from the constraints set on cb. its value isn't set until the end
-             * of the method, so it should only be read inside a closure that will be executed later. */
-            string errmsg = null;
 
             bool isRequired = customAttributes.OfType<RequiredAttribute>().Any();
             if (isRequired && isOptional)
@@ -370,49 +700,44 @@ namespace Zilf.Interpreter
             if ((eitherAttr = customAttributes.OfType<EitherAttribute>().SingleOrDefault()) != null &&
                 !paramType.IsArray)
             {
-                // PrepareOneEither adds constraints to cb
-                result = PrepareOneEither(paramType, eitherAttr.Types, cb, () => errmsg);
+                result = PrepareOneEither(paramType, eitherAttr.Types);
             }
             else if (eitherAttr != null && paramType.IsArray)
             {
                 var elemType = paramType.GetElementType();
-                var innerStep = PrepareOneEither(elemType, eitherAttr.Types, cb, () => errmsg).Step;
-                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
+                var innerStepInfo = PrepareOneEither(elemType, eitherAttr.Types);
+                result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
                 (zilStructAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
-                cb.AddTypeConstraint(zilStructAttr.TypeAtom);
-
                 result = PrepareOneStructured(paramType);
             }
             else if (paramType.IsArray &&
                 (zilStructAttr = paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
             {
-                cb.AddTypeConstraint(zilStructAttr.TypeAtom);
-
                 var elemType = paramType.GetElementType();
-                var innerStep = PrepareOneStructured(elemType).Step;
-                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
+                var innerStepInfo = PrepareOneStructured(elemType);
+                result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
                 (sequenceAttr = paramType.GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
             {
-                // PrepareOneSequence adds constraints to cb
-                result = PrepareOneSequence(paramType, cb, () => errmsg);
+                result = PrepareOneSequence(paramType);
             }
             else if (paramType.IsArray &&
                 (sequenceAttr = paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
             {
                 var elemType = paramType.GetElementType();
-                var innerStep = PrepareOneSequence(elemType, cb, () => errmsg).Step;
-                result = PrepareOneArrayFromInnerStep(elemType, innerStep, isRequired, () => errmsg, out defaultValue);
+                var innerStepInfo = PrepareOneSequence(elemType);
+                result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType == typeof(ZilObject))
             {
                 // decode to ZilObject as-is
                 result = new DecodingStepInfo
                 {
+                    Constraint = Constraint.AnyObject,
                     Step = (a, i, c) => { c.Ready(a[i]); return i + 1; },
                     LowerBound = 1,
                     UpperBound = 1,
@@ -421,26 +746,32 @@ namespace Zilf.Interpreter
             else if (IsZilObjectType(paramType))
             {
                 var zoType = paramType;
+                Constraint constraint;
 
                 if (paramType == typeof(IStructure))
                 {
-                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
+                    constraint = Constraint.Structured;
                 }
                 else if (paramType != typeof(ZilObject))
                 {
-                    var builtinAttr = paramType.GetCustomAttribute<BuiltinTypeAttribute>();
+                    var builtinAttr = zoType.GetCustomAttribute<BuiltinTypeAttribute>();
                     if (builtinAttr == null)
                         throw new InvalidOperationException($"Type {paramType} is missing a BuiltinTypeAttribute");
-                    cb.AddTypeConstraint(zoType.GetCustomAttribute<BuiltinTypeAttribute>().Name);
+                    constraint = Constraint.OfType(builtinAttr.Name);
+                }
+                else
+                {
+                    constraint = Constraint.AnyObject;
                 }
 
                 result = new DecodingStepInfo
                 {
+                    Constraint = constraint,
                     Step = (a, i, c) =>
                     {
                         if (!zoType.IsInstanceOfType(a[i]))
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         c.Ready(a[i]);
@@ -452,17 +783,16 @@ namespace Zilf.Interpreter
             }
             else if (paramType == typeof(IApplicable))
             {
-                cb.AddTypeConstraint(StdAtom.APPLICABLE);
-
                 result = new DecodingStepInfo
                 {
+                    Constraint = Constraint.Applicable,
                     Step = (a, i, c) =>
                     {
                         var ap = a[i].AsApplicable(c.Context);
 
                         if (ap == null)
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         c.Ready(ap);
@@ -475,22 +805,22 @@ namespace Zilf.Interpreter
             else if (paramType == typeof(int) || paramType == typeof(int?))
             {
                 result = PrepareOneNullableConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
-                    cb, paramType, () => errmsg, out defaultValue);
+                    paramType, out defaultValue);
             }
             else if (paramType == typeof(string))
             {
                 result = PrepareOneConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
-                    cb, () => errmsg, out defaultValue);
+                    out defaultValue);
             }
             else if (paramType == typeof(char) || paramType == typeof(char?))
             {
                 result = PrepareOneNullableConversion<ZilChar, char>(StdAtom.CHARACTER, ch => ch.Char,
-                    cb, paramType, () => errmsg, out defaultValue);
+                    paramType, out defaultValue);
             }
             else if (paramType == typeof(bool) || paramType == typeof(bool?))
             {
                 result = PrepareOneNullableConversion<ZilObject, bool>(null, zo => zo.IsTrue,
-                    cb, paramType, () => errmsg, out defaultValue);
+                    paramType, out defaultValue);
             }
             else if (paramType.IsArray && IsZilObjectType(paramType.GetElementType()))
             {
@@ -498,31 +828,37 @@ namespace Zilf.Interpreter
                 var eltype = paramType.GetElementType();
                 defaultValue = Array.CreateInstance(eltype, 0);
 
+                Constraint constraint;
                 if (eltype == typeof(IApplicable))
                 {
-                    cb.AddTypeConstraint(StdAtom.APPLICABLE);
+                    constraint = Constraint.Applicable;
                 }
                 else if (eltype == typeof(IStructure))
                 {
-                    cb.AddTypeConstraint(StdAtom.STRUCTURED);
+                    constraint = Constraint.Structured;
                 }
                 else if (eltype != typeof(ZilObject))
                 {
                     var builtinAttr = eltype.GetCustomAttribute<BuiltinTypeAttribute>();
                     if (builtinAttr == null)
                         throw new InvalidOperationException($"Type {eltype} is missing a BuiltinTypeAttribute");
-                    cb.AddTypeConstraint(builtinAttr.Name);
+                    constraint = Constraint.OfType(builtinAttr.Name);
+                }
+                else
+                {
+                    constraint = Constraint.AnyObject;
                 }
 
                 result = new DecodingStepInfo
                 {
+                    Constraint = constraint,
                     Step = (a, i, c) =>
                     {
                         for (int j = i; j < a.Length; j++)
                         {
                             if (!eltype.IsInstanceOfType(a[j]))
                             {
-                                c.Error(errmsg);
+                                c.Error();
                             }
                         }
 
@@ -530,7 +866,7 @@ namespace Zilf.Interpreter
 
                         if (isRequired && array.Length == 0)
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         Array.Copy(a, i, array, 0, array.Length);
@@ -549,17 +885,16 @@ namespace Zilf.Interpreter
                 // decode as an array containing all remaining args
                 defaultValue = new IApplicable[0];
 
-                cb.AddTypeConstraint(StdAtom.APPLICABLE);
-
                 result = new DecodingStepInfo
                 {
+                    Constraint = Constraint.Applicable,
                     Step = (a, i, c) =>
                     {
                         var array = new IApplicable[a.Length - i];
 
                         if (isRequired && array.Length == 0)
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         for (int j = i; j < a.Length; j++)
@@ -568,7 +903,7 @@ namespace Zilf.Interpreter
 
                             if (ap == null)
                             {
-                                c.Error(errmsg);
+                                c.Error();
                             }
 
                             array[j - i] = ap;
@@ -587,12 +922,12 @@ namespace Zilf.Interpreter
             else if (paramType == typeof(int[]))
             {
                 result = PrepareOneArrayConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
-                    cb, isRequired, () => errmsg, out defaultValue);
+                    isRequired, out defaultValue);
             }
             else if (paramType == typeof(string[]))
             {
                 result = PrepareOneArrayConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
-                    cb, isRequired, () => errmsg, out defaultValue);
+                    isRequired, out defaultValue);
             }
             else
             {
@@ -604,9 +939,9 @@ namespace Zilf.Interpreter
             if (declAttr != null)
             {
                 var prevStep = result.Step;
-                var declWrapper = new DeclWrapper(declAttr.Pattern);
+                var decl = Program.Parse(ctx, declAttr.Pattern).Single();
 
-                cb.AddDeclConstraint(declWrapper);
+                result.Constraint = result.Constraint.And(ctx, Constraint.FromDecl(decl));
 
                 // for array (varargs) parameters, the decl is checked against a LIST containing all the args
                 if (paramType.IsArray)
@@ -616,9 +951,9 @@ namespace Zilf.Interpreter
                         var prevConsumed = prevStep(a, i, c);
                         var list = new ZilList(a.Skip(i).Take(prevConsumed));
 
-                        if (!Decl.Check(c.Context, list, declWrapper.GetPattern(c.Context)))
+                        if (!Decl.Check(c.Context, list, decl))
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         return prevConsumed;
@@ -628,9 +963,9 @@ namespace Zilf.Interpreter
                 {
                     result.Step = (a, i, c) =>
                     {
-                        if (!Decl.Check(c.Context, a[i], declWrapper.GetPattern(c.Context)))
+                        if (!Decl.Check(c.Context, a[i], decl))
                         {
-                            c.Error(errmsg);
+                            c.Error();
                         }
 
                         return prevStep(a, i, c);
@@ -642,14 +977,14 @@ namespace Zilf.Interpreter
             {
                 result.LowerBound = 0;
 
-                var del = cb.GetDelegate();
                 var prevStep = result.Step;
+                var constraint = result.Constraint;
 
                 defaultValueWhenOptional = defaultValueWhenOptional ?? defaultValue;
 
                 result.Step = (a, i, c) =>
                 {
-                    if (i < a.Length && del(a[i], c.Context))
+                    if (i < a.Length && constraint.Allows(c.Context, a[i]))
                     {
                         return prevStep(a, i, c);
                     }
@@ -661,21 +996,21 @@ namespace Zilf.Interpreter
                 };
             }
 
-            errmsg = cb.ToString();
             return result;
         }
 
-        private static DecodingStepInfo PrepareOneArrayFromInnerStep(
-            Type elemType, DecodingStep innerStep, bool isRequired,
-            Func<string> errmsg, out object defaultValue)
+        private DecodingStepInfo PrepareOneArrayFromInnerStep(
+            Type elemType, DecodingStepInfo innerStepInfo, bool isRequired,
+            out object defaultValue)
         {
             DecodingStepInfo result = new DecodingStepInfo
             {
+                Constraint = innerStepInfo.Constraint,
                 Step = (a, i, c) =>
                 {
                     if (isRequired && a.Length <= i)
                     {
-                        c.Error(errmsg());
+                        c.Error();
                     }
 
                     /* Unlike other array decoder types, this one has to handle
@@ -689,12 +1024,12 @@ namespace Zilf.Interpreter
 
                     while (i < a.Length)
                     {
-                        var next = innerStep(a, i, c);
+                        var next = innerStepInfo.Step(a, i, c);
                         Contract.Assert(next >= i);
 
                         if (next == i)
                         {
-                            throw new ArgumentTypeError(c.Site, i, errmsg());
+                            c.Error(i);
                         }
 
                         i = next;
@@ -714,26 +1049,23 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        private static DecodingStepInfo PrepareOneConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
-            Func<string> errmsg, out object defaultValue)
+        private DecodingStepInfo PrepareOneConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, out object defaultValue)
             where TZil : ZilObject
         {
-            if (typeAtom != null)
-            {
-                cb.AddTypeConstraint(typeAtom.Value);
-            }
+            var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             defaultValue = default(TValue);
 
             return new DecodingStepInfo
             {
+                Constraint = constraint,
                 Step = (a, i, c) =>
                 {
                     var zo = a[i] as TZil;
                     if (zo == null)
                     {
-                        c.Error(errmsg());
+                        c.Error();
                     }
                     else
                     {
@@ -746,16 +1078,13 @@ namespace Zilf.Interpreter
             };
         }
 
-        private static DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
-            Type paramType, Func<string> errmsg, out object defaultValue)
+        private DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, Type paramType,
+            out object defaultValue)
             where TZil : ZilObject
             where TValue : struct
         {
-            if (typeAtom != null)
-            {
-                cb.AddTypeConstraint(typeAtom.Value);
-            }
+            var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             if (paramType == typeof(TValue))
             {
@@ -773,12 +1102,13 @@ namespace Zilf.Interpreter
 
             return new DecodingStepInfo
             {
+                Constraint = constraint,
                 Step = (a, i, c) =>
                 {
                     var zo = a[i] as TZil;
                     if (zo == null)
                     {
-                        c.Error(errmsg());
+                        c.Error();
                     }
                     else
                     {
@@ -791,27 +1121,25 @@ namespace Zilf.Interpreter
             };
         }
 
-        private static DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, ConstraintsBuilder cb,
-            bool isRequired, Func<string> errmsg, out object defaultValue)
+        private DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
+            StdAtom? typeAtom, Func<TZil, TValue> convert, bool isRequired,
+            out object defaultValue)
             where TZil : ZilObject
         {
-            if (typeAtom != null)
-            {
-                cb.AddTypeConstraint(typeAtom.Value);
-            }
+            var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             defaultValue = new int[0];
 
             var result = new DecodingStepInfo
             {
+                Constraint = constraint,
                 Step = (a, i, c) =>
                 {
                     var array = new TValue[a.Length - i];
 
                     if (isRequired && array.Length == 0)
                     {
-                        c.Error(errmsg());
+                        c.Error();
                     }
 
                     for (int j = 0; j < array.Length; j++)
@@ -819,7 +1147,7 @@ namespace Zilf.Interpreter
                         var zo = a[i + j] as TZil;
                         if (zo == null)
                         {
-                            c.Error(errmsg());
+                            c.Error();
                         }
                         else
                         {
@@ -840,7 +1168,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        private static DecodingStepInfo PrepareOneStructured(Type structType)
+        private DecodingStepInfo PrepareOneStructured(Type structType)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -851,18 +1179,19 @@ namespace Zilf.Interpreter
             FieldInfo[] fields;
             int lowerBound;
             int? upperBound;
-            var steps = PrepareStepsFromStruct(structType, out fields, out lowerBound, out upperBound);
+            var stepInfos = PrepareStepsFromStruct(structType, out fields, out lowerBound, out upperBound);
 
             var result = new DecodingStepInfo
             {
                 LowerBound = 1,
                 UpperBound = 1,
 
+                Constraint = Constraint.OfType(typeAtom),
                 Step = (a, i, c) =>
                 {
                     if (a[i].GetTypeAtom(c.Context).StdAtom != typeAtom)
                     {
-                        c.Error($"TYPE {typeAtom}");
+                        c.Error();
                     }
 
                     var input = (IStructure)a[i];
@@ -886,12 +1215,13 @@ namespace Zilf.Interpreter
 
                     var outerReady = c.Ready;
                     c.Site = new StructuredArgumentCallSite(c.Site, i);
-                    c.Error = m => { throw new ArgumentTypeError(c.Site, elemIndex, m); };
+                    c.Error = j => { throw new ArgumentTypeError(
+                        c.Site, j ?? elemIndex, stepInfos[stepIndex].Constraint.ToString()); };
                     c.Ready = obj => fields[stepIndex].SetValue(output, obj);
 
-                    for (; stepIndex < steps.Length; stepIndex++)
+                    for (; stepIndex < stepInfos.Length; stepIndex++)
                     {
-                        var step = steps[stepIndex];
+                        var step = stepInfos[stepIndex].Step;
                         var next = step(elements, elemIndex, c);
                         Contract.Assert(next >= elemIndex);
                         elemIndex = next;
@@ -911,7 +1241,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        private static DecodingStep[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+        private DecodingStepInfo[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -925,13 +1255,13 @@ namespace Zilf.Interpreter
             fields = structType.GetFields()
                 .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
                 .ToArray();
-            var steps = new DecodingStep[fields.Length];
+            var stepInfos = new DecodingStepInfo[fields.Length];
             lowerBound = 0;
             upperBound = null;
             for (int i = 0; i < fields.Length; i++)
             {
                 DecodingStepInfo stepInfo = PrepareOne(fields[i]);
-                steps[i] = stepInfo.Step;
+                stepInfos[i] = stepInfo;
 
                 lowerBound += stepInfo.LowerBound;
 
@@ -945,12 +1275,11 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return steps;
+            return stepInfos;
         }
 
         // TODO: cache the result?
-        private static DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes,
-            ConstraintsBuilder cb, Func<string> errmsg)
+        private DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes)
         {
             Contract.Requires(paramType != null);
             Contract.Requires(inputTypes != null);
@@ -960,15 +1289,13 @@ namespace Zilf.Interpreter
             var choices = new DecodingStep[inputTypes.Length];
             int? lowerBound = null;
             int? upperBound = 0;
-            var innerCbs = new List<ConstraintsBuilder>(inputTypes.Length);
+            var constraint = Constraint.Forbidden;
 
             var noAttributes = new object[0];
             for (int i = 0; i < inputTypes.Length; i++)
             {
-                var innerCb = new ConstraintsBuilder();
-                innerCbs.Add(innerCb);
-
-                DecodingStepInfo stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null, innerCb);
+                DecodingStepInfo stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null);
+                constraint = constraint.Or(ctx, stepInfo.Constraint);
                 choices[i] = stepInfo.Step;
 
                 if (lowerBound == null || stepInfo.LowerBound < lowerBound)
@@ -982,12 +1309,12 @@ namespace Zilf.Interpreter
                 }
             }
 
-            cb.AddEitherConstraint(innerCbs);
-
             var result = new DecodingStepInfo
             {
                 LowerBound = (int)lowerBound,
                 UpperBound = upperBound,
+
+                Constraint = constraint,
 
                 Step = (a, i, c) =>
                 {
@@ -1007,7 +1334,7 @@ namespace Zilf.Interpreter
                         }
                     }
 
-                    c.Error(errmsg());
+                    c.Error();
 
                     // shouldn't get here
                     throw new NotImplementedException();
@@ -1018,7 +1345,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        private static DecodingStepInfo PrepareOneSequence(Type seqType, ConstraintsBuilder cb, Func<string> errmsg)
+        private DecodingStepInfo PrepareOneSequence(Type seqType)
         {
             Contract.Requires(seqType != null);
             Contract.Requires(seqType.IsValueType);
@@ -1027,13 +1354,14 @@ namespace Zilf.Interpreter
             FieldInfo[] fields;
             int lowerBound;
             int? upperBound;
-            var steps = PrepareStepsFromStruct(seqType, out fields, out lowerBound, out upperBound);
+            var stepInfos = PrepareStepsFromStruct(seqType, out fields, out lowerBound, out upperBound);
 
             var result = new DecodingStepInfo
             {
                 LowerBound = lowerBound,
                 UpperBound = upperBound,
 
+                Constraint = stepInfos[0].Constraint,
                 Step = (a, i, c) =>
                 {
                     if (a.Length - i < lowerBound)
@@ -1048,9 +1376,9 @@ namespace Zilf.Interpreter
                     var outerReady = c.Ready;
                     c.Ready = obj => fields[stepIndex].SetValue(output, obj);
 
-                    for (; stepIndex < steps.Length; stepIndex++)
+                    for (; stepIndex < stepInfos.Length; stepIndex++)
                     {
-                        var step = steps[stepIndex];
+                        var step = stepInfos[stepIndex].Step;
                         var next = step(a, i, c);
                         Contract.Assert(next >= i);
                         i = next;
@@ -1084,10 +1412,12 @@ namespace Zilf.Interpreter
             return typeof(ZilObject).IsAssignableFrom(t) || t == typeof(IStructure);
         }
 
-        public static ArgDecoder FromMethodInfo(MethodInfo methodInfo)
+        public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, Context ctx)
         {
             if (methodInfo == null)
                 throw new ArgumentNullException("methodInfo");
+            if (ctx == null)
+                throw new ArgumentNullException("ctx");
 
             if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType))
                 throw new ArgumentException("Method return type is not assignable to ZilObject");
@@ -1099,18 +1429,19 @@ namespace Zilf.Interpreter
             if (parameters.Length < 1 || parameters[0].ParameterType != typeof(Context))
                 throw new ArgumentException("First parameter type must be Context");
 
-            return new ArgDecoder(methodAttrs, parameters);
+            return new ArgDecoder(ctx, methodAttrs, parameters);
         }
 
-        public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo)
+        public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx)
         {
             Contract.Requires(methodInfo.IsStatic);
             Contract.Ensures(Contract.Result<SubrDelegate>() != null);
 
-            return WrapMethodAsSubrDelegate(methodInfo, null);
+            return WrapMethodAsSubrDelegate(methodInfo, ctx, null);
         }
 
-        private static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Dictionary<MethodInfo, SubrDelegate> alreadyDone)
+        private static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
+            Dictionary<MethodInfo, SubrDelegate> alreadyDone)
         {
             Contract.Requires(methodInfo.IsStatic);
             Contract.Ensures(Contract.Result<SubrDelegate>() != null);
@@ -1126,13 +1457,13 @@ namespace Zilf.Interpreter
                     typeof(SubrDelegate), methodInfo);
             }
 
-            var decoder = ArgDecoder.FromMethodInfo(methodInfo);
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
 
-            SubrDelegate del = (name, ctx, args) =>
+            SubrDelegate del = (name, c, args) =>
             {
                 try
                 {
-                    return (ZilObject)methodInfo.Invoke(null, decoder.Decode(name, ctx, args));
+                    return (ZilObject)methodInfo.Invoke(null, decoder.Decode(name, c, args));
                 }
                 catch (TargetInvocationException ex)
                 {
@@ -1159,7 +1490,7 @@ namespace Zilf.Interpreter
                 SubrDelegate targetDel;
                 if (alreadyDone.TryGetValue(targetMethodInfo, out targetDel) == false)
                 {
-                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, alreadyDone);
+                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, ctx, alreadyDone);
 
                     if (!alreadyDone.ContainsKey(targetMethodInfo))
                         alreadyDone.Add(targetMethodInfo, targetDel);
@@ -1168,15 +1499,15 @@ namespace Zilf.Interpreter
                 var prevDel = del;
                 var topLevelOnly = redirectAttr.TopLevelOnly;
 
-                del = (name, ctx, args) =>
+                del = (name, c, args) =>
                 {
-                    if ((ctx.CurrentFileFlags & FileFlags.MdlZil) != 0 &&
-                        (!topLevelOnly || ctx.AtTopLevel))
+                    if ((c.CurrentFileFlags & FileFlags.MdlZil) != 0 &&
+                        (!topLevelOnly || c.AtTopLevel))
                     {
-                        return targetDel(name, ctx, args);
+                        return targetDel(name, c, args);
                     }
 
-                    return prevDel(name, ctx, args);
+                    return prevDel(name, c, args);
                 };
             }
 
@@ -1202,12 +1533,14 @@ namespace Zilf.Interpreter
                 Site = site,
 
                 Ready = o => result.Add(o),
-                Error = m => { throw new ArgumentTypeError(site, argIndex, m); },
             };
 
             for (var stepIndex = 0; stepIndex < steps.Length; stepIndex++)
             {
                 var step = steps[stepIndex];
+                var constraint = constraints[stepIndex];
+                callbacks.Error = i => { throw new ArgumentTypeError(
+                    site, i ?? argIndex, constraint.ToString()); };
                 var next = step(args, argIndex, callbacks);
                 Contract.Assert(next >= argIndex);
                 argIndex = next;
@@ -1220,50 +1553,6 @@ namespace Zilf.Interpreter
             }
 
             return result.ToArray();
-        }
-
-        private class DeclWrapper
-        {
-            private string declText;
-            private ZilObject decl;
-
-            public DeclWrapper(string declText)
-            {
-                Contract.Requires(!string.IsNullOrWhiteSpace(declText));
-
-                this.declText = declText;
-            }
-
-            [ContractInvariantMethod]
-            private void ObjectInvariant()
-            {
-                Contract.Invariant((declText != null && decl == null) || (declText == null && decl != null));
-            }
-
-            public override string ToString()
-            {
-                if (declText != null)
-                {
-                    return declText;
-                }
-
-                return decl.ToString();
-            }
-
-            public ZilObject GetPattern(Context ctx)
-            {
-                Contract.Requires(ctx != null);
-                Contract.Ensures(decl != null);
-
-                if (decl == null)
-                {
-                    // TODO: parse decl without evaluating anything
-                    decl = Program.Evaluate(ctx, $"<QUOTE {declText}>", true);
-                    declText = null;
-                }
-
-                return decl;
-            }
         }
     }
 }
