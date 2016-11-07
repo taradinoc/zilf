@@ -23,6 +23,9 @@ using System.Reflection;
 using Zilf.Language;
 using System.Runtime.InteropServices;
 
+// CS0649: Field '___' is never assigned to, and will always have its default value null
+#pragma warning disable 0649
+
 namespace ZilfTests.Interpreter
 {
     [TestClass]
@@ -107,6 +110,23 @@ namespace ZilfTests.Interpreter
             var methodInfo = GetMethod(nameof(Dummy_ZilObjectArrayArg));
 
             ZilObject[] args = { new ZilFix(5), ZilString.FromString("halloo") };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+            object[] expected = { ctx, args };
+
+            Assert.AreEqual(expected.Length, actual.Length);
+            Assert.AreEqual(expected[0], actual[0]);
+            Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
+            CollectionAssert.AreEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
+        }
+
+        [TestMethod]
+        public void Test_ZilObjectArrayArg_Empty()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_ZilObjectArrayArg));
+
+            ZilObject[] args = { };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             object[] actual = decoder.Decode("dummy", ctx, args);
@@ -285,6 +305,30 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [TestMethod]
+        public void Test_OptionalArg_Fail_WrongType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: expected FIX";
+
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntArg));
+
+            ZilObject[] args = { ctx.FALSE };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
         private ZilObject Dummy_OptionalIntArg(Context ctx, int? foo = 69105)
         {
             return null;
@@ -318,6 +362,18 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_OptionalArg_Fail_TooFewArgs()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
+
+            ZilObject[] args = { new ZilFix(42) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
         private ZilObject Dummy_OptionalIntThenStringArg(Context ctx, [Optional, DefaultParameterValue(69105)] int? foo, string bar)
         {
             return null;
@@ -329,7 +385,7 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntArg));
 
-            ZilObject[] args = { ZilString.FromString("not an int") };
+            ZilObject[] args = { new ZilFix(1), new ZilFix(2) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             object[] actual = decoder.Decode("dummy", ctx, args);
@@ -879,6 +935,23 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
+        public void Test_StructArg_Optional_Fail_TooFewArgs()
+        {
+            var methodInfo = GetMethod(nameof(Dummy_OptionalStructArrayArg));
+
+            ZilObject[] args = {
+                new ZilVector(
+                    new ZilFix(100),
+                    new ZilFix(200),
+                    new ZilFix(300)),
+            };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            object[] actual = decoder.Decode("dummy", ctx, args);
+        }
+
         [ZilStructuredParam(StdAtom.VECTOR)]
         private struct OptionalStruct
         {
@@ -1006,6 +1079,104 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void Test_EitherArg_DirectlyNested_Fail()
+        {
+            const string SExpectedMessage = "dummy: arg 1: expected ATOM, FIX, or STRING";
+
+            var methodInfo = GetMethod(nameof(Dummy_EitherIntOrStringOrAtomArg));
+
+            ZilObject[] args = { ctx.FALSE };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
+        [ZilSequenceParam]
+        private struct StringOrAtom
+        {
+            [Either(typeof(string), typeof(ZilAtom))]
+            public object arg;
+        }
+
+        private ZilObject Dummy_EitherIntOrStringOrAtomArg(Context ctx,
+            [Either(typeof(int), typeof(StringOrAtom))] object foo)
+        {
+            return null;
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_IndirectlyNested_Fail_TooFewArgs()
+        {
+            const string SExpectedMessage = "dummy: arg 1: expected 1 element";
+
+            var methodInfo = GetMethod(nameof(Dummy_EitherIntOrWrappedStringOrAtomArg));
+
+            ZilObject[] args = { new ZilList(null, null) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentCountError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentCountError)}");
+        }
+
+        [TestMethod]
+        public void Test_EitherArg_IndirectlyNested_Fail_WrongArgType()
+        {
+            const string SExpectedMessage = "dummy: arg 1: element 1: expected ATOM or STRING";
+
+            var methodInfo = GetMethod(nameof(Dummy_EitherIntOrWrappedStringOrAtomArg));
+
+            ZilObject[] args = { new ZilList(new[] { ctx.FALSE }) };
+
+            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+
+            try
+            {
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentTypeError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
+        }
+
+        [ZilStructuredParam(StdAtom.LIST)]
+        private struct WrappedStringOrAtom
+        {
+            [Either(typeof(string), typeof(ZilAtom))]
+            public object arg;
+        }
+
+        private ZilObject Dummy_EitherIntOrWrappedStringOrAtomArg(Context ctx,
+            [Either(typeof(int), typeof(WrappedStringOrAtom))] object foo)
+        {
+            throw new NotImplementedException();
+        }
+
+        [TestMethod]
         public void Test_SequenceArg()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringSequenceArg));
@@ -1060,6 +1231,34 @@ namespace ZilfTests.Interpreter
         private ZilObject Dummy_IntStringSequenceArrayArg(Context ctx, IntStringSequence[] foo)
         {
             return null;
+        }
+
+        [TestMethod]
+        public void Test_PROG_ArgumentDecodingError_Messages()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (1) FOO>",
+                ex => ex.Message == "PROG: arg 1: element 1: expected ADECL, ATOM, or LIST");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A B>",
+                ex => ex.Message == "PROG: arg 2: expected LIST");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG 1 B>",
+                ex => ex.Message == "PROG: arg 1: expected ATOM or LIST");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (()) F>",
+                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A)) F>",
+                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A B C)) F>",
+                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((1 A)) F>",
+                ex => ex.Message == "PROG: arg 1: element 1: element 1: expected ADECL or ATOM");
+
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG () #DECL ()>",
+                ex => ex.Message == "PROG: expected at least 1 more arg");
         }
     }
 }

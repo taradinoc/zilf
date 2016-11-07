@@ -61,16 +61,16 @@ namespace Zilf.Language
             }
         }
 
-        public static string ArgCountMsg(string func, int min, int max)
+        public static string ArgCountMsg(string func, int min, int max, string argName = "arg")
         {
             if (min == max)
-                return string.Format("{0}: expected {1} arg{2}", func, min, min == 1 ? "" : "s");
+                return string.Format("{0}: expected {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
             else if (min == 0)
-                return string.Format("{0}: expected at most {1} arg{2}", func, max, max == 1 ? "" : "s");
+                return string.Format("{0}: expected at most {1} {2}{3}", func, max, argName, max == 1 ? "" : "s");
             else if (max == 0)
-                return string.Format("{0}: expected at least {1} arg{2}", func, min, min == 1 ? "" : "s");
+                return string.Format("{0}: expected at least {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
             else
-                return string.Format("{0}: expected {1} to {2} args", func, min, max);
+                return string.Format("{0}: expected {1} to {2} {3}s", func, min, max, argName);
         }
     }
 }
