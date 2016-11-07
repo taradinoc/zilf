@@ -60,6 +60,7 @@ namespace ZilfTests.Interpreter
                 ZilAtom.Parse("MYFUNC", ctx),
                 null,
                 new ZilObject[] { },
+                null,
                 new ZilObject[] { new ZilFix(3) }
             ));
             ctx.SetLocalVal(ZilAtom.Parse("A-MACRO", ctx), new ZilEvalMacro(
@@ -67,6 +68,7 @@ namespace ZilfTests.Interpreter
                     ZilAtom.Parse("MYMAC", ctx),
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.FORM),
@@ -322,6 +324,7 @@ namespace ZilfTests.Interpreter
                     null,
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.FORM),
@@ -390,6 +393,7 @@ namespace ZilfTests.Interpreter
                     null,
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.FORM),
@@ -436,6 +440,7 @@ namespace ZilfTests.Interpreter
                     null,
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.FORM),
@@ -550,6 +555,7 @@ namespace ZilfTests.Interpreter
                     null,
                     null,
                     new ZilObject[] { ZilAtom.Parse("X", ctx) },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ZilAtom.Parse("TYPE", ctx),
@@ -584,6 +590,7 @@ namespace ZilfTests.Interpreter
                     ZilAtom.Parse("MYFUNC", ctx),
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] { new ZilFix(3) })));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"+\"> MACRO>",
                 new ZilEvalMacro(ZilSubr.FromString(ctx, "+")));
@@ -625,6 +632,7 @@ namespace ZilfTests.Interpreter
                     null,
                     null,
                     new ZilObject[] { },
+                    null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.FORM),
@@ -853,6 +861,7 @@ namespace ZilfTests.Interpreter
                 null,
                 null,
                 new ZilObject[] { },
+                null,
                 new ZilObject[] { new ZilFix(5) }
             ));
 

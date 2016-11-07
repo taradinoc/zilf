@@ -528,5 +528,14 @@ namespace ZilfTests.Interpreter
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE FOO (A:FIX) #DECL ((A) LIST) <>>");
         }
+
+        [TestMethod]
+        public void FUNCTION_With_DECL_Still_Needs_A_Body()
+        {
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<FUNCTION (A) #DECL ((A) FIX)>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFINE FOO (A) #DECL ((A) FIX)>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFINE20 FOO (A) #DECL ((A) FIX)>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFMAC FOO (A) #DECL ((A) FIX)>");
+        }
     }
 }
