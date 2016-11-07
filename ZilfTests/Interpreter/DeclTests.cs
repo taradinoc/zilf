@@ -18,6 +18,8 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
@@ -98,6 +100,48 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2) '!<LIST [REST FIX FIX]>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3) '!<LIST [REST FIX FIX]>>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 2 3 4) '!<LIST [REST FIX FIX]>>", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void Test_PUT_DECL()
+        {
+            // <PUT-DECL atom decl> establishes an alias for the decl
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<DECL? T BOOLEAN>");
+            TestHelpers.EvalAndAssert(ctx, "<PUT-DECL BOOLEAN '<OR ATOM FALSE>>", ZilAtom.Parse("BOOLEAN", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<DECL? T BOOLEAN>", ctx.TRUE);
+
+            // TODO: locative form
+        }
+
+        [TestMethod]
+        public void Test_GET_DECL()
+        {
+            // <GET-DECL atom> returns the alias definition, or false
+            TestHelpers.EvalAndAssert(ctx, "<GET-DECL BOOLEAN>", ctx.FALSE);
+            TestHelpers.Evaluate(ctx, "<PUT-DECL BOOLEAN '<OR ATOM FALSE>>");
+            TestHelpers.EvalAndAssert(ctx, "<GET-DECL BOOLEAN>",
+                new ZilForm(new[] {
+                    ctx.GetStdAtom(StdAtom.OR),
+                    ctx.GetStdAtom(StdAtom.ATOM),
+                    ctx.GetStdAtom(StdAtom.FALSE)
+                }));
+
+            // TODO: locative form
+        }
+
+        [TestMethod]
+        public void Test_DECL_CHECK()
+        {
+            // turn off decl checking, which should be on initially
+            TestHelpers.EvalAndAssert(ctx, "<DECL-CHECK <>>", ctx.TRUE);
+
+            TestHelpers.Evaluate(ctx, "<GDECL (FOO) FIX>");
+            TestHelpers.EvalAndAssert(ctx, "<SETG FOO <>>", ctx.FALSE);
+
+            // back on
+            TestHelpers.EvalAndAssert(ctx, "<DECL-CHECK T>", ctx.FALSE);
+
+            TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<SETG FOO <>>");
         }
     }
 }

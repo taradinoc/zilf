@@ -265,6 +265,24 @@ namespace Zilf.Interpreter
             return Decl.Check(ctx, value, pattern) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [Subr("DECL-CHECK")]
+        public static ZilObject DECL_CHECK(Context ctx, bool enable)
+        {
+            SubrContracts(ctx);
+
+            var wasEnabled = ctx.CheckDecls;
+            ctx.CheckDecls = enable;
+            return wasEnabled ? ctx.TRUE : ctx.FALSE;
+        }
+
+        [Subr("GET-DECL")]
+        public static ZilObject GET_DECL(Context ctx, ZilObject item)
+        {
+            SubrContracts(ctx);
+
+            return GETPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL));
+        }
+
         [Subr("PUT-DECL")]
         public static ZilObject PUT_DECL(Context ctx, ZilObject item, ZilObject pattern)
         {
@@ -325,7 +343,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject wtf = null)
+        public static ZilObject GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject defaultValue = null)
         {
             SubrContracts(ctx);
 
@@ -335,9 +353,9 @@ namespace Zilf.Interpreter
             {
                 return result;
             }
-            else if (wtf != null)
+            else if (defaultValue != null)
             {
-                return wtf.Eval(ctx);
+                return defaultValue.Eval(ctx);
             }
             else
             {
