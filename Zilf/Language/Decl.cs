@@ -99,15 +99,26 @@ namespace Zilf.Language
                     {
                         case StdAtom.ANY:
                             return true;
+
                         case StdAtom.APPLICABLE:
                             return value.IsApplicable(ctx);
+
                         case StdAtom.STRUCTURED:
                             return (value is IStructure);
+
                         default:
+                            // arbitrary atoms can be type names...
                             if (ctx.IsRegisteredType(atom))
                                 return (value.GetTypeAtom(ctx) == atom);
 
-                            throw new NotImplementedException("unhandled ATOM in DECL pattern: " + atom);
+                            // ...or aliases
+                            var aliased = ctx.GetProp(atom, ctx.GetStdAtom(StdAtom.DECL));
+
+                            // TODO: better check for circular aliases
+                            if (aliased != null && aliased != atom)
+                                return Check(ctx, value, aliased);
+
+                            throw new InterpreterError("unrecognized ATOM in DECL pattern: " + atom);
                     }
 
                 case StdAtom.SEGMENT:
