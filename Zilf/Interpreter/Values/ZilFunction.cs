@@ -31,14 +31,10 @@ namespace Zilf.Interpreter.Values
         private ArgSpec argspec;
         private readonly ZilObject[] body;
 
-        public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body)
+        public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
         {
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
             Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
-
-            var decl = body.FirstOrDefault() as ZilDecl;
-            if (decl != null)
-                body = body.Skip(1);
 
             this.argspec = new ArgSpec(name, activationAtom, argspec, decl);
             this.body = body.ToArray();

@@ -312,11 +312,11 @@ namespace Zilf.Interpreter
 
         [FSubr]
         public static ZilObject FUNCTION(Context ctx, [Optional] ZilAtom activationAtom,
-            ZilList argList, [Required] ZilObject[] body)
+            ZilList argList, [Optional] ZilDecl decl, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return new ZilFunction(null, activationAtom, argList, body);
+            return new ZilFunction(null, activationAtom, argList, decl, body);
         }
 
         [Subr]

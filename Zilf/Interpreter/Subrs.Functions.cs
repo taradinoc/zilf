@@ -31,26 +31,26 @@ namespace Zilf.Interpreter
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
         public static ZilObject DEFINE(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Required] ZilObject[] body)
+            [Optional] ZilDecl decl, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return PerformDefine(ctx, name, activationAtom, argList, body, "DEFINE");
+            return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE");
         }
 
         [FSubr]
         public static ZilObject DEFINE20(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Required] ZilObject[] body)
+            [Optional] ZilDecl decl, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
-            return PerformDefine(ctx, name, activationAtom, argList, body, "DEFINE20");
+            return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
         // TODO: merge parsing code for DEFINE, DEFMAC, ROUTINE, and FUNCTION
         private static ZilObject PerformDefine(Context ctx, ZilAtom name, ZilAtom activationAtom,
-            ZilList argList, ZilObject[] body, string subrName)
+            ZilList argList, ZilDecl decl, ZilObject[] body, string subrName)
         {
             Contract.Requires(subrName != null);
 
@@ -61,6 +61,7 @@ namespace Zilf.Interpreter
                 name,
                 activationAtom,
                 argList,
+                decl,
                 body);
             ctx.SetGlobalVal(name, func);
             return name;
@@ -69,7 +70,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject DEFMAC(Context ctx, ZilAtom name,
             [Optional] ZilAtom activationAtom, ZilList argList,
-            [Required] ZilObject[] body)
+            [Optional] ZilDecl decl, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -80,6 +81,7 @@ namespace Zilf.Interpreter
                 name,
                 activationAtom,
                 argList,
+                decl,
                 body);
             ZilEvalMacro macro = new ZilEvalMacro(func);
             macro.SourceLine = ctx.CallingForm.SourceLine;

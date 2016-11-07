@@ -353,6 +353,7 @@ namespace Zilf.Interpreter
                                     new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), printFuncAtom }),
                                 }),
                             },
+                            null,
                             new ZilObject[]
                             {
                                 new ZilForm(new ZilObject[]
