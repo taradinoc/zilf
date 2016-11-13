@@ -530,5 +530,39 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT FOO '[4 2 1 3]>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT '(1 2 3 4) '[4 2 1 3]>");
         }
+
+        [TestMethod]
+        public void TestOFFSET()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<SET L1 '(1 MONEY)>");
+            TestHelpers.Evaluate(ctx, "<SET L2 '(BOW WOW)>");
+            TestHelpers.Evaluate(ctx, "<SET FIRST-FIX <OFFSET 1 '<LIST FIX> FIX>>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<FIRST-FIX .L1 NOT-A-FIX>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<FIRST-FIX .L2 0>");
+            TestHelpers.EvalAndAssert(ctx, "<FIRST-FIX .L1>", new ZilFix(1));
+            TestHelpers.Evaluate(ctx, "<FIRST-FIX .L1 0>");
+            TestHelpers.EvalAndAssert(ctx, "<FIRST-FIX .L1>", new ZilFix(0));
+
+            // INDEX returns the offset
+            TestHelpers.EvalAndAssert(ctx, "<INDEX .FIRST-FIX>", new ZilFix(1));
+
+            // GET-DECL returns the DECL portion
+            TestHelpers.EvalAndAssert(ctx, "<GET-DECL .FIRST-FIX>",
+                new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX) }));
+
+            // PUT-DECL returns a new offset with a different DECL...
+            TestHelpers.EvalAndAssert(ctx, "<PUT-DECL .FIRST-FIX ANY>",
+                new ZilOffset(1, ctx.GetStdAtom(StdAtom.ANY), ctx.GetStdAtom(StdAtom.FIX)));
+
+            // ...without changing the original
+            TestHelpers.EvalAndAssert(ctx, ".FIRST-FIX",
+                new ZilOffset(
+                    1,
+                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX) }),
+                    ctx.GetStdAtom(StdAtom.FIX)));
+        }
     }
 }

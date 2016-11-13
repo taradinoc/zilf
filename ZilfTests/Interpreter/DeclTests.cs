@@ -110,7 +110,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<PUT-DECL BOOLEAN '<OR ATOM FALSE>>", ZilAtom.Parse("BOOLEAN", ctx));
             TestHelpers.EvalAndAssert(ctx, "<DECL? T BOOLEAN>", ctx.TRUE);
 
-            // TODO: locative form
+            /// <see cref="StructureTests.TestOFFSET"/> tests GET-DECL for OFFSETs
         }
 
         [TestMethod]
@@ -126,7 +126,7 @@ namespace ZilfTests.Interpreter
                     ctx.GetStdAtom(StdAtom.FALSE)
                 }));
 
-            // TODO: locative form
+            /// <see cref="StructureTests.TestOFFSET"/> tests GET-DECL for OFFSETs
         }
 
         [TestMethod]

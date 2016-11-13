@@ -280,6 +280,10 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            var offset = item as ZilOffset;
+            if (offset != null)
+                return offset.StructurePattern;
+            
             return GETPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL));
         }
 
@@ -287,6 +291,10 @@ namespace Zilf.Interpreter
         public static ZilObject PUT_DECL(Context ctx, ZilObject item, ZilObject pattern)
         {
             SubrContracts(ctx);
+
+            var offset = item as ZilOffset;
+            if (offset != null)
+                return new ZilOffset(offset.Index, pattern, offset.ValuePattern);
 
             return PUTPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL), pattern);
         }
