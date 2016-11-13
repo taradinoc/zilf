@@ -213,6 +213,7 @@
     <Compile Include="Interpreter\Values\ZilList.cs" />
     <Compile Include="Interpreter\Values\ZilObject.cs" />
     <Compile Include="Interpreter\Values\ZilObjectContracts.cs" />
+    <Compile Include="Interpreter\Values\ZilOffset.cs" />
     <Compile Include="Interpreter\Values\ZilSegment.cs" />
     <Compile Include="Interpreter\Values\ZilString.cs" />
     <Compile Include="Interpreter\Values\ZilStructuredHash.cs" />

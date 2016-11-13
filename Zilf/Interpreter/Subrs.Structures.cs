@@ -146,6 +146,22 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject OFFSET(Context ctx, int offset, ZilObject structurePattern, ZilObject valuePattern = null)
+        {
+            SubrContracts(ctx);
+
+            return new ZilOffset(offset, structurePattern, valuePattern ?? ctx.GetStdAtom(StdAtom.ANY));
+        }
+
+        [Subr]
+        public static ZilObject INDEX(Context ctx, ZilOffset offset)
+        {
+            SubrContracts(ctx);
+
+            return new ZilFix(offset.Index);
+        }
+
+        [Subr]
         public static ZilObject LENGTH(Context ctx, IStructure st)
         {
             SubrContracts(ctx);
