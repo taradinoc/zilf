@@ -176,5 +176,17 @@ namespace ZilfTests.Interpreter
                 },
                 spec.AsZilListBody().ToArray());
         }
+
+        [TestMethod]
+        public void BIND_Is_Included_In_ZilListBody()
+        {
+            var ctx = new Context();
+
+            var args = Zilf.Program.Parse(ctx, @"""BIND"" B X ""NAME"" N").ToArray();
+
+            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, args);
+
+            CollectionAssert.AreEqual(args, spec.AsZilListBody().ToArray());
+        }
     }
 }

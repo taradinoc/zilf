@@ -98,11 +98,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject EVAL(Context ctx, ZilObject value)
+        public static ZilObject EVAL(Context ctx, ZilObject value, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            return value.Eval(ctx);
+            return value.Eval(ctx, env);
         }
 
         [Subr("EVAL-IN-SEGMENT")]

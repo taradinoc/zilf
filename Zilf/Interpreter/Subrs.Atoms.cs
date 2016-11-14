@@ -178,11 +178,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject SET(Context ctx, ZilAtom atom, ZilObject value)
+        public static ZilObject SET(Context ctx, ZilAtom atom, ZilObject value, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            ctx.SetLocalVal(atom, value);
+            env.SetLocalVal(atom, value);
             return value;
         }
 
@@ -300,11 +300,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject LVAL(Context ctx, ZilAtom atom)
+        public static ZilObject LVAL(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            ZilObject result = ctx.GetLocalVal(atom);
+            var result = env.GetLocalVal(atom);
             if (result == null)
                 throw new InterpreterError("atom has no local value: " +
                     atom.ToStringContext(ctx, false));
@@ -313,36 +313,36 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject UNASSIGN(Context ctx, ZilAtom atom)
+        public static ZilObject UNASSIGN(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            ctx.SetLocalVal(atom, null);
+            env.SetLocalVal(atom, null);
             return atom;
         }
 
         [Subr("ASSIGNED?")]
-        public static ZilObject ASSIGNED_P(Context ctx, ZilAtom atom)
+        public static ZilObject ASSIGNED_P(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            return ctx.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
+            return env.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr("BOUND?")]
-        public static ZilObject BOUND_P(Context ctx, ZilAtom atom)
+        public static ZilObject BOUND_P(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            return ctx.LocalEnvironment.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
+            return env.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject VALUE(Context ctx, ZilAtom atom)
+        public static ZilObject VALUE(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
-            var result = ctx.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
+            var result = env.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
             if (result == null)
                 throw new InterpreterError("atom has no local or global value: " +
                     atom.ToStringContext(ctx, false));

@@ -32,6 +32,9 @@ namespace Zilf.Interpreter
         // reference to the "QUOTE" atom used for any quoted args
         private readonly ZilAtom quoteAtom;
 
+        // "BIND"
+        private readonly ZilAtom environmentAtom;
+
         // regular args, "OPT", and "AUX"
         private readonly ZilAtom[] argAtoms;
         private readonly ZilObject[] argDecls;
@@ -76,6 +79,7 @@ namespace Zilf.Interpreter
             const int OO_Varargs = 1;
             const int OO_Activation = 2;
             const int OO_Value = 3;
+            const int OO_Environment = 4;
 
             int cur = 0;
             int oneOffMode = OO_None;
@@ -115,6 +119,11 @@ namespace Zilf.Interpreter
                                 throw new InterpreterError("multiple \"NAME\" clauses or activation atoms");
                             oneOffMode = OO_Activation;
                             continue;
+                        case "BIND":
+                            if (environmentAtom != null)
+                                throw new InterpreterError("multiple \"BIND\" clauses");
+                            oneOffMode = OO_Environment;
+                            continue;
                         case "VALUE":
                             if (valueDecl != null)
                                 throw new InterpreterError("multiple \"VALUE\" clauses");
@@ -151,6 +160,14 @@ namespace Zilf.Interpreter
                         this.activationAtom = arg as ZilAtom;
                         if (this.activationAtom == null)
                             throw new InterpreterError("\"NAME\" or \"ACT\" must be followed by an atom");
+
+                        oneOffMode = OO_None;
+                        continue;
+
+                    case OO_Environment:
+                        environmentAtom = arg as ZilAtom;
+                        if (environmentAtom == null)
+                            throw new InterpreterError("\"BIND\" must be followed by an atom");
 
                         oneOffMode = OO_None;
                         continue;
@@ -416,6 +433,13 @@ namespace Zilf.Interpreter
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
 
+            if (environmentAtom != null)
+            {
+                innerEnv.Rebind(environmentAtom,
+                    new ZilEnvironment(outerEnv, environmentAtom),
+                    ctx.GetStdAtom(StdAtom.ENVIRONMENT));
+            }
+
             for (int i = 0; i < optArgsStart; i++)
             {
                 var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
@@ -466,7 +490,7 @@ namespace Zilf.Interpreter
             if (activationAtom != null)
             {
                 activation = new ZilActivation(activationAtom);
-                innerEnv.Rebind(activationAtom, activation);
+                innerEnv.Rebind(activationAtom, activation, ctx.GetStdAtom(StdAtom.ACTIVATION));
             }
             else
             {
@@ -503,6 +527,12 @@ namespace Zilf.Interpreter
         public IEnumerable<ZilObject> AsZilListBody()
         {
             bool emittedVarargs = false;
+
+            if (environmentAtom != null)
+            {
+                yield return ZilString.FromString("BIND");
+                yield return environmentAtom;
+            }
 
             for (int i = 0; i < argAtoms.Length; i++)
             {
