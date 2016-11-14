@@ -25,13 +25,19 @@ using Zilf.Language;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.ACTIVATION, PrimType.ATOM)]
-    class ZilActivation : ZilObject
+    class ZilActivation : ZilObject, IDisposable, IEvanescent
     {
         private readonly ZilAtom name;
+        private bool legal = true;
 
         public ZilActivation(ZilAtom name)
         {
             this.name = name;
+        }
+
+        public void Dispose()
+        {
+            legal = false;
         }
 
         [ChtypeMethod]
@@ -42,11 +48,10 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType
         {
-            get
-            {
-                return PrimType.ATOM;
-            }
+            get { return PrimType.ATOM; }
         }
+
+        public bool IsLegal => legal;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

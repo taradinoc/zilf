@@ -220,6 +220,15 @@ namespace Zilf.Interpreter
             return (arg is IStructure) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [Subr("LEGAL?")]
+        public static ZilObject LEGAL_P(Context ctx, ZilObject arg)
+        {
+            SubrContracts(ctx);
+
+            // non-evanescent values are always legal
+            return (arg as IEvanescent)?.IsLegal == false ? ctx.FALSE : ctx.TRUE;
+        }
+
         [Subr]
         public static ZilObject FORM(Context ctx, ZilObject[] args)
         {

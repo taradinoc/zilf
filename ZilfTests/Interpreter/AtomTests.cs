@@ -143,13 +143,22 @@ namespace ZilfTests.Interpreter
             var stored = ctx.GetLocalVal(ZilAtom.Parse("FOO", ctx));
             Assert.AreEqual(expected, stored);
 
-            // must have 2 arguments
-            TestHelpers.EvalAndCatch<InterpreterError>("<SET>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<SET FOO>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<SET FOO 123 BAR>");
+            // must have 2-3 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<SET>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<SET FOO>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<SET FOO BAR BAZ QUUX>");
 
-            // 2nd argument must be an atom
-            TestHelpers.EvalAndCatch<InterpreterError>("<SET \"FOO\" 5>");
+            // 1st argument must be an atom
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<SET \"FOO\" 5>");
+
+            // 3rd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<SET FOO 123 BAR>");
+
+            TestHelpers.EvalAndAssert(
+                @"<DEFINE FOO (""AUX"" (X 123)) <BAR> <* .X 2>>" +
+                @"<DEFINE BAR (""BIND"" ENV ""AUX"" (X 456)) <SET X 10 .ENV>>" +
+                @"<FOO>",
+                new ZilFix(20));
         }
 
         [TestMethod]
@@ -186,12 +195,21 @@ namespace ZilfTests.Interpreter
             // fails when undefined
             TestHelpers.EvalAndCatch<InterpreterError>("<LVAL TESTING-TESTING-THIS-ATOM-HAS-NO-LVAL>");
 
-            // must have 1 argument
-            TestHelpers.EvalAndCatch<InterpreterError>("<LVAL>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<LVAL FOO BAR>");
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<LVAL>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<LVAL FOO BAR BAZ>");
 
-            // argument must be an atom
+            // 1st argument must be an atom
             TestHelpers.EvalAndCatch<InterpreterError>("<LVAL \"FOO\">");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<LVAL FOO BAR>");
+
+            TestHelpers.EvalAndAssert(
+                @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
+                @"<DEFINE BAR (""BIND"" ENV ""AUX"" (X 456)) <+ .X <LVAL X .ENV>>>" +
+                @"<FOO>",
+                new ZilFix(579));
         }
 
         [TestMethod]
@@ -213,6 +231,22 @@ namespace ZilfTests.Interpreter
 
             ctx.SetGlobalVal(foo, null);
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<VALUE FOO>");
+
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<VALUE>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<VALUE FOO BAR BAZ>");
+
+            // 1st argument must be an atom
+            TestHelpers.EvalAndCatch<ArgumentTypeError>(ctx, "<VALUE 0>");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>(ctx, "<VALUE FOO BAR>");
+
+            TestHelpers.EvalAndAssert(
+                @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
+                @"<DEFINE BAR (""BIND"" ENV ""AUX"" (X 456)) <+ <VALUE X> <VALUE X .ENV>>>" +
+                @"<FOO>",
+                new ZilFix(579));
         }
 
         [TestMethod]
@@ -278,12 +312,21 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<ASSIGNED? MY-TEST-GLOBAL>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<ASSIGNED? THIS-ATOM-HAS-NO-GVAL-OR-LVAL>", ctx.FALSE);
 
-            // must have 1 argument
-            TestHelpers.EvalAndCatch<InterpreterError>("<ASSIGNED?>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<ASSIGNED? FOO BAR>");
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<ASSIGNED?>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<ASSIGNED? FOO BAR BAZ>");
 
-            // argument must be an atom
-            TestHelpers.EvalAndCatch<InterpreterError>("<ASSIGNED? \"FOO\">");
+            // 1st argument must be an atom
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<ASSIGNED? \"FOO\">");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<ASSIGNED? FOO BAR>");
+
+            TestHelpers.EvalAndAssert(ctx,
+                @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
+                @"<DEFINE BAR (""BIND"" ENV ""AUX"" X) (<ASSIGNED? X> <ASSIGNED? X .ENV>)>" +
+                @"<FOO>",
+                new ZilList(new[] { ctx.FALSE, ctx.TRUE }));
         }
 
         [TestMethod]
@@ -305,12 +348,21 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<PROG (FOO) <BOUND? FOO>>", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<BOUND? FOO>", ctx.FALSE);
 
-            // must have 1 argument
-            TestHelpers.EvalAndCatch<InterpreterError>("<BOUND?>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<BOUND? FOO BAR>");
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<BOUND?>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<BOUND? FOO BAR BAZ>");
 
-            // argument must be an atom
+            // 1st argument must be an atom
             TestHelpers.EvalAndCatch<InterpreterError>("<BOUND? \"FOO\">");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<BOUND? FOO BAR>");
+
+            TestHelpers.EvalAndAssert(ctx,
+                @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
+                @"<DEFINE BAR (""BIND"" ENV ""AUX"" (Y 456)) (<BOUND? X> <BOUND? X .ENV> <BOUND? Y> <BOUND? Y .ENV>)>" +
+                @"<FOO>",
+                new ZilList(new[] { ctx.TRUE, ctx.TRUE, ctx.TRUE, ctx.FALSE }));
         }
 
         [TestMethod]
@@ -337,6 +389,22 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<UNASSIGN FOO>");
             TestHelpers.EvalAndAssert(ctx, "<ASSIGNED? FOO>", ctx.FALSE);
             TestHelpers.EvalAndCatch<InterpreterError>("<LVAL FOO>");
+
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<UNASSIGN>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<UNASSIGN FOO BAR BAZ>");
+
+            // 1st argument must be an atom
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<UNASSIGN \"FOO\">");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<UNASSIGN FOO BAR>");
+
+            TestHelpers.EvalAndAssert(ctx,
+               @"<DEFINE FOO (""AUX"" (X 123)) <BAR> <ASSIGNED? X>>" +
+               @"<DEFINE BAR (""BIND"" ENV ""AUX"" (X 456)) <UNASSIGN X .ENV>>" +
+               @"<FOO>",
+               ctx.FALSE);
         }
 
         [TestMethod]

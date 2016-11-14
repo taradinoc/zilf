@@ -108,7 +108,8 @@ namespace ZilfTests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("A-WACKY", ctx),
                 new ZilHash(ZilAtom.Parse("WACKY", ctx), PrimType.LIST, new ZilList(null, null)));
 
-            // TODO: test other ZilObject descendants: ObList, ZilActivation, ZilChannel, ZilRoutine, ZilConstant, ZilGlobal, ZilTable, ZilModelObject, OffsetString?
+            // TODO: test other ZilObject descendants:
+            // ObList, ZilActivation, ZilEnvironment, ZilChannel, ZilRoutine, ZilConstant, ZilGlobal, ZilTable, ZilModelObject, OffsetString?
         }
 
         [TestCleanup]
@@ -1240,6 +1241,9 @@ namespace ZilfTests.Interpreter
             {
                 "FIX", "SUBR", "FSUBR", "FUNCTION", "MACRO", "ADECL", "ATOM", "CHARACTER",
                 "FALSE", "LIST", "FORM", "STRING", "SEGMENT", "VECTOR", "OFFSET", "WACKY",
+
+                "OBLIST", "ACTIVATION", "ENVIRONMENT", "CHANNEL", "ROUTINE", "CONSTANT",
+                "GLOBAL", "TABLE", "OBJECT",
             };
 
             const string unexpectedType = "NOT-A-TYPE";
@@ -1262,7 +1266,7 @@ namespace ZilfTests.Interpreter
             foreach (var typeName in expectedTypes)
             {
                 var atom = ZilAtom.Parse(typeName, ctx);
-                Assert.IsTrue(returnedTypes.Contains(atom));
+                Assert.IsTrue(returnedTypes.Contains(atom), "expected {0} to be in <ALLTYPES>", typeName);
 
                 TestHelpers.EvalAndAssert(ctx, $"<VALID-TYPE? {typeName}>", atom);
             }
@@ -1270,6 +1274,32 @@ namespace ZilfTests.Interpreter
             Assert.IsFalse(returnedTypes.Contains(ZilAtom.Parse(unexpectedType, ctx)));
 
             TestHelpers.EvalAndAssert(ctx, $"<VALID-TYPE? {unexpectedType}>", ctx.FALSE);
+        }
+
+        [TestMethod]
+        public void TestLEGAL_P_For_ACTIVATION()
+        {
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO ACT () <SETG ACT .ACT> <LEGAL? .ACT>>");
+
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ACT>", ctx.FALSE);
+        }
+
+        [TestMethod]
+        public void TestLEGAL_P_For_ENVIRONMENT()
+        {
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO () <BAR>>");
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (\"BIND\" ENV) <SETG ENV .ENV> <LEGAL? .ENV>>");
+
+            // with the call to FOO, BAR gets FOO's environment, which expires after the call returns
+            TestHelpers.EvalAndAssert(ctx, "<FOO>", ctx.TRUE);
+            System.GC.Collect();
+            TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ENV>", ctx.FALSE);
+
+            // without the call to FOO, BAR gets the root environment, which won't expire
+            TestHelpers.EvalAndAssert(ctx, "<BAR>", ctx.TRUE);
+            System.GC.Collect();
+            TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ENV>", ctx.TRUE);
         }
     }
 }

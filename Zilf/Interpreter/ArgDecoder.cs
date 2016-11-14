@@ -1072,6 +1072,30 @@ namespace Zilf.Interpreter
                 result = PrepareOneArrayConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
                     isRequired, out defaultValue);
             }
+            else if (paramType == typeof(LocalEnvironment))
+            {
+                // decode as an optional ZilEnvironment, defaulting to the current local environment
+                if (isOptional)
+                    throw new InvalidOperationException($"{nameof(LocalEnvironment)} parameter is implicitly optional already");
+
+                result = new DecodingStepInfo
+                {
+                    Constraint = Constraint.OfType(StdAtom.ENVIRONMENT),
+                    Step = (a, i, c) =>
+                    {
+                        if (i < a.Length && a[i] is ZilEnvironment)
+                        {
+                            c.Ready(((ZilEnvironment)a[i]).LocalEnvironment);
+                            return i + 1;
+                        }
+
+                        c.Ready(c.Context.LocalEnvironment);
+                        return i;
+                    },
+                    LowerBound = 0,
+                    UpperBound = 1,
+                };
+            }
             else
             {
                 throw new NotImplementedException($"Unhandled parameter type: {paramType}");

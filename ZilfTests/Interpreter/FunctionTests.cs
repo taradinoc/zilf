@@ -277,9 +277,16 @@ namespace ZilfTests.Interpreter
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), form);
             TestHelpers.EvalAndAssert(ctx, "<EVAL .T>", new ZilFix(3));
 
-            // must have 1 argument
-            TestHelpers.EvalAndCatch<InterpreterError>("<EVAL>");
-            TestHelpers.EvalAndCatch<InterpreterError>("<EVAL FOO BAR>");
+            // must have 1-2 arguments
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<EVAL>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<EVAL FOO BAR BAZ>");
+
+            // 2nd argument must be an ENVIRONMENT
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<EVAL FOO BAR>");
+
+            TestHelpers.Evaluate(ctx, "<SET A 0>");
+            TestHelpers.Evaluate(ctx, "<DEFINE RIGHT (\"BIND\" E 'B \"AUX\" (A 1)) <EVAL .B .E>>");
+            TestHelpers.EvalAndAssert(ctx, "<RIGHT .A>", new ZilFix(0));
         }
 
         [TestMethod]
@@ -536,6 +543,28 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFINE FOO (A) #DECL ((A) FIX)>");
             TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFINE20 FOO (A) #DECL ((A) FIX)>");
             TestHelpers.EvalAndCatch<ArgumentCountError>("<DEFMAC FOO (A) #DECL ((A) FIX)>");
+        }
+
+        [TestMethod]
+        public void FUNCTION_ACT_And_BIND_Parameters_Should_Set_Binding_DECLs()
+        {
+            TestHelpers.EvalAndCatch<DeclCheckError>("<APPLY <FUNCTION (\"ACT\" A) <SET A 1>>>");
+            TestHelpers.EvalAndCatch<DeclCheckError>("<APPLY <FUNCTION A () <SET A 1>>>");
+
+            TestHelpers.EvalAndCatch<DeclCheckError>("<APPLY <FUNCTION (\"BIND\" B) <SET B 1>>>");
+        }
+
+        [TestMethod]
+        public void BIND_Argument_Allows_Safe_INC()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx,
+                @"<DEFINE INC (""BIND"" OUTER ATM) 
+                    <SET .ATM <+ 1 <LVAL .ATM .OUTER>> .OUTER>>");
+
+            ctx.SetLocalVal(ZilAtom.Parse("ATM", ctx), new ZilFix(100));
+            TestHelpers.EvalAndAssert(ctx, "<INC ATM>", new ZilFix(101));
         }
     }
 }

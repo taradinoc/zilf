@@ -163,69 +163,70 @@ namespace Zilf.Interpreter
             Contract.Requires(name != null);
             Contract.Requires(body != null && body.Length > 0);
 
-            var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
-
-            // bind atoms
-            Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
-
-            using (var innerEnv = ctx.PushEnvironment())
+            using (var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG)))
             {
-                if (activationAtom != null)
+                // bind atoms
+                Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
+
+                using (var innerEnv = ctx.PushEnvironment())
                 {
-                    innerEnv.Rebind(activationAtom, activation);
-                }
-
-                var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToDictionary(p => p.Key, p => p.Value);
-
-                foreach (var b in bindings.Bindings)
-                {
-                    var atom = b.Atom;
-                    var initializer = b.Initializer;
-
-                    var value = initializer?.Eval(ctx);
-
-                    ZilObject decl1 = b.Decl, decl2 = null;
-                    bodyAtomDecls?.TryGetValue(atom, out decl2);
-                    if (decl1 != null && decl2 != null)
-                        throw new InterpreterError(name + ": conflicting DECLs for atom: " + atom);
-
-                    var decl = decl1 ?? decl2;
-
-                    if (value != null)
-                        ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
-
-                    innerEnv.Rebind(atom, value, decl);
-                }
-
-                if (catchy)
-                    innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
-
-                // evaluate body
-                ZilObject result = null;
-                bool again;
-                do
-                {
-                    again = false;
-                    foreach (var expr in body)
+                    if (activationAtom != null)
                     {
-                        try
-                        {
-                            result = expr.Eval(ctx);
-                        }
-                        catch (ReturnException ex) when (ex.Activation == activation)
-                        {
-                            return ex.Value;
-                        }
-                        catch (AgainException ex) when (ex.Activation == activation)
-                        {
-                            again = true;
-                        }
+                        innerEnv.Rebind(activationAtom, activation);
                     }
-                } while (repeat || again);
 
-                Contract.Assert(result != null);
+                    var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToDictionary(p => p.Key, p => p.Value);
 
-                return result;
+                    foreach (var b in bindings.Bindings)
+                    {
+                        var atom = b.Atom;
+                        var initializer = b.Initializer;
+
+                        var value = initializer?.Eval(ctx);
+
+                        ZilObject decl1 = b.Decl, decl2 = null;
+                        bodyAtomDecls?.TryGetValue(atom, out decl2);
+                        if (decl1 != null && decl2 != null)
+                            throw new InterpreterError(name + ": conflicting DECLs for atom: " + atom);
+
+                        var decl = decl1 ?? decl2;
+
+                        if (value != null)
+                            ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
+
+                        innerEnv.Rebind(atom, value, decl);
+                    }
+
+                    if (catchy)
+                        innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
+
+                    // evaluate body
+                    ZilObject result = null;
+                    bool again;
+                    do
+                    {
+                        again = false;
+                        foreach (var expr in body)
+                        {
+                            try
+                            {
+                                result = expr.Eval(ctx);
+                            }
+                            catch (ReturnException ex) when (ex.Activation == activation)
+                            {
+                                return ex.Value;
+                            }
+                            catch (AgainException ex) when (ex.Activation == activation)
+                            {
+                                again = true;
+                            }
+                        }
+                    } while (repeat || again);
+
+                    Contract.Assert(result != null);
+
+                    return result;
+                }
             }
         }
 
