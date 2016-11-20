@@ -167,6 +167,7 @@
     <Compile Include="Interpreter\ArgDecoder.cs" />
     <Compile Include="Interpreter\ArgItem.cs" />
     <Compile Include="Interpreter\ArgSpec.cs" />
+    <Compile Include="Interpreter\AssociationTable.cs" />
     <Compile Include="Interpreter\Binding.cs" />
     <Compile Include="Interpreter\BuiltinAlternateAttribute.cs" />
     <Compile Include="Interpreter\BuiltinMetaAttribute.cs" />
@@ -199,6 +200,7 @@
     <Compile Include="Interpreter\Subrs.ZModel.cs" />
     <Compile Include="Interpreter\Values\ZilActivation.cs" />
     <Compile Include="Interpreter\Values\ZilAdecl.cs" />
+    <Compile Include="Interpreter\Values\ZilAsoc.cs" />
     <Compile Include="Interpreter\Values\ZilAtom.cs" />
     <Compile Include="Interpreter\Values\ZilChannel.cs" />
     <Compile Include="Interpreter\Values\ZilChar.cs" />
@@ -221,6 +223,7 @@
     <Compile Include="Interpreter\Values\ZilStructuredHash.cs" />
     <Compile Include="Interpreter\Values\ZilSubr.cs" />
     <Compile Include="Interpreter\Values\ZilVector.cs" />
+    <Compile Include="Interpreter\WeakCountingSet.cs" />
     <Compile Include="Language\AtomAttribute.cs" />
     <Compile Include="Language\CompilerError.cs" />
     <Compile Include="Language\FileSourceLine.cs" />

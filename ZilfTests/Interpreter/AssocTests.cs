@@ -17,8 +17,10 @@
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
@@ -76,6 +78,8 @@ namespace ZilfTests.Interpreter
             Assert.IsFalse(weakRef.TryGetTarget(out foo), "Object was not garbage collected");
         }
 
+        // TODO: test that <ASSOCIATIONS> doesn't keep every association alive... GC makes this hard to unit test but it seems to work correctly in release
+
         /*
         // TODO: interning for numeric values - otherwise every time we calculate or parse a number, it's a different instance
         [TestMethod]
@@ -87,5 +91,38 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<GETPROP <* 5 2> <- 11 7>>", ctx.TRUE);
         }
         */
+
+        [TestMethod]
+        public void TestASSOCIATIONS_Et_Al()
+        {
+            var ctx = new Context();
+
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<ASSOCIATIONS FOO>");
+
+            // there should be some initial associations
+            var zo = TestHelpers.Evaluate(ctx, "<ASSOCIATIONS>");
+            Assert.IsInstanceOfType(zo, typeof(ZilAsoc));
+
+            // clear all associations
+            TestHelpers.Evaluate(ctx,
+                @"<REPEAT ((A <ASSOCIATIONS>) N)
+                    <OR .A <RETURN>>
+                    <SET N <NEXT .A>>
+                    <PUTPROP <ITEM .A> <INDICATOR .A>>
+                    <SET A .N>>");
+
+            // no more associations
+            TestHelpers.EvalAndAssert(ctx, "<ASSOCIATIONS>", ctx.FALSE);
+
+            // set one
+            TestHelpers.Evaluate(ctx, "<PUTPROP FOO BAR BAZ>");
+
+            // verify
+            TestHelpers.EvalAndAssert(ctx, "<TYPE <SET A <ASSOCIATIONS>>>", ctx.GetStdAtom(StdAtom.ASOC));
+            TestHelpers.EvalAndAssert(ctx, "<ITEM .A>", ZilAtom.Parse("FOO", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<INDICATOR .A>", ZilAtom.Parse("BAR", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<AVALUE .A>", ZilAtom.Parse("BAZ", ctx));
+            TestHelpers.EvalAndAssert(ctx, "<NEXT .A>", ctx.FALSE);
+        }
     }
 }

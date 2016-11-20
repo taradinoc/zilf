@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Text;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -485,7 +486,137 @@ namespace Zilf.ZModel.Values
 
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return ToStringImpl(zo => zo.ToString());
+        }
+
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
+        {
+            return ToStringImpl(zo => zo.ToStringContext(ctx, friendly));
+        }
+
+        private string ToStringImpl(Func<ZilObject, string> convert)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append("#PROPDEF (");
+
+            bool first = true;
+
+            foreach (var p in patterns)
+            {
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append('(');
+
+                foreach (var i in p.Inputs)
+                {
+                    switch (i.Type)
+                    {
+                        case InputElementType.Atom:
+                            sb.Append(convert(i.Variable));
+                            break;
+
+                        case InputElementType.Many:
+                            sb.Append("\"MANY\"");
+                            break;
+
+                        case InputElementType.Opt:
+                            sb.Append("\"OPT\"");
+                            break;
+
+                        case InputElementType.Variable:
+                            sb.Append(convert(i.Variable));
+                            if (i.Decl != null)
+                            {
+                                sb.Append(':');
+                                sb.Append(convert(i.Decl));
+                            }
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+
+                    sb.Append(' ');
+                }
+
+                sb.Append('=');
+
+                foreach (var o in p.Outputs)
+                {
+                    sb.Append(' ');
+
+                    if (o.Constant != null)
+                    {
+                        sb.Append('(');
+                        sb.Append(convert(o.Constant));
+                        sb.Append(' ');
+                    }
+
+                    switch (o.Type)
+                    {
+                        case OutputElementType.Length:
+                            if (o.Fix != null)
+                                sb.Append(o.Fix.Value);
+                            else
+                                sb.Append("<>");
+                            break;
+
+                        case OutputElementType.Many:
+                            sb.Append("\"MANY\"");
+                            break;
+
+                        case OutputElementType.Adjective:
+                            sb.AppendFormat("<ADJ {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Byte:
+                            sb.AppendFormat("<BYTE {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Global:
+                            sb.AppendFormat("<GLOBAL {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Noun:
+                            sb.AppendFormat("<NOUN {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Object:
+                            sb.AppendFormat("<OBJECT {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Room:
+                            sb.AppendFormat("<ROOM {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.String:
+                            sb.AppendFormat("<STRING {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+                        case OutputElementType.Voc:
+                            sb.AppendFormat("<VOC {0} {1}>", convert((ZilObject)o.Fix ?? o.Variable), convert(o.PartOfSpeech));
+                            break;
+                        case OutputElementType.Word:
+                            sb.AppendFormat("<WORD {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+
+                    if (o.Constant != null)
+                    {
+                        sb.Append(')');
+                    }
+                }
+
+                sb.Append(')');
+            }
+
+            sb.Append(')');
+
+            return sb.ToString();
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)

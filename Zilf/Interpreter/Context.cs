@@ -23,7 +23,6 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
@@ -68,7 +67,7 @@ namespace Zilf.Interpreter
         private readonly Stack<ZilObject> previousObPaths;
         private LocalEnvironment localEnvironment;
         private readonly Dictionary<ZilAtom, Binding> globalValues;
-        private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations;
+        private readonly AssociationTable associations;
         private readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         private readonly Dictionary<string, SubrDelegate> subrDelegates;
         private readonly ZEnvironment zenv;
@@ -98,7 +97,7 @@ namespace Zilf.Interpreter
             // set up the ROOT oblist manually
             rootObList = new ObList(ignoreCase);
             InitStdAtoms();
-            associations = new ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>>();
+            associations = new AssociationTable();
             PutProp(rootObList, GetStdAtom(StdAtom.OBLIST), GetStdAtom(StdAtom.ROOT));
             PutProp(GetStdAtom(StdAtom.ROOT), GetStdAtom(StdAtom.OBLIST), rootObList);
 
@@ -475,12 +474,7 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-            ZilObject result;
-            if (associations.TryGetValue(first, out innerTable) && innerTable.TryGetValue(second, out result))
-                return result;
-
-            return null;
+            return associations.GetProp(first, second);
         }
 
         /// <summary>
@@ -495,20 +489,18 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-            if (value == null)
-            {
-                if (associations.TryGetValue(first, out innerTable))
-                {
-                    innerTable.Remove(second);
-                }
-            }
-            else
-            {
-                innerTable = associations.GetOrCreateValue(first);
-                innerTable.Remove(second);
-                innerTable.Add(second, value);
-            }
+            associations.PutProp(first, second, value);
+        }
+
+        /// <summary>
+        /// Gets an array of <see cref="AsocResult"/> listing all active associations.
+        /// </summary>
+        /// <returns>The array.</returns>
+        public AsocResult[] GetAllAssociations()
+        {
+            Contract.Ensures(Contract.Result<AsocResult[]>() != null);
+
+            return associations.ToArray();
         }
 
         /// <summary>
