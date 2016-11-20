@@ -125,7 +125,15 @@ namespace Zilf.Interpreter.Values
                 switch (tree.Type)
                 {
                     case ZilLexer.ATOM:
-                        return ZilAtom.Parse(tree.Text, ctx);
+                        var atom = ZilAtom.Parse(tree.Text, ctx);
+                        if (atom is ZilLink)
+                        {
+                            return ctx.GetGlobalVal(atom);
+                        }
+                        else
+                        {
+                            return atom;
+                        }
                     case ZilLexer.CHAR:
                         Contract.Assume(tree.Text.Length >= 3);
                         return new ZilChar(tree.Text[2]);

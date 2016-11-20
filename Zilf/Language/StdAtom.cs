@@ -201,6 +201,7 @@ namespace Zilf.Language
         [Atom("L=?")]
         LEq_P,
         LEXV,
+        LINK,
         LIST,
         LOC,
         [Atom("LOCAL-GLOBALS")]

@@ -114,6 +114,23 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject LINK(Context ctx, ZilObject value, string str, ObList oblist)
+        {
+            SubrContracts(ctx);
+
+            if (oblist.Contains(str))
+                if (oblist.Contains(str))
+                    throw new InterpreterError(string.Format(
+                        "LINK: OBLIST already contains an atom named '{0}'", str));
+
+            var link = new ZilLink(str, oblist);
+            oblist[str] = link;
+
+            ctx.SetGlobalVal(link, value);
+            return value;
+        }
+
+        [Subr]
         public static ZilObject ROOT(Context ctx)
         {
             SubrContracts(ctx);
