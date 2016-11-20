@@ -521,5 +521,28 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<LINK 0 \"FOO\" <ROOT>>");
             TestHelpers.EvalAndAssert(ctx, "FOO!-", new ZilFix(0));
         }
+
+        [TestMethod]
+        public void TestATOM()
+        {
+            var ctx = new Context();
+            var foo1 = TestHelpers.Evaluate(ctx, "FOO");
+            var foo2 = TestHelpers.Evaluate(ctx, "<ATOM \"FOO\">");
+            var foo3 = TestHelpers.Evaluate(ctx, "<ATOM \"FOO\">");
+
+            Assert.AreNotEqual(foo1, foo2);
+            Assert.AreNotEqual(foo1, foo3);
+            Assert.AreNotEqual(foo2, foo3);
+
+            Assert.IsNull(((ZilAtom)foo2).ObList);
+            Assert.IsNull(((ZilAtom)foo3).ObList);
+
+            Assert.AreEqual("FOO!-#FALSE ()", foo2.ToStringContext(ctx, false));
+            Assert.AreEqual("FOO!-#FALSE ()", foo3.ToStringContext(ctx, false));
+
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<ATOM>");
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<ATOM FOO>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<ATOM FOO BAR>");
+        }
     }
 }

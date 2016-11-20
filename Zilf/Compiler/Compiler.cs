@@ -1076,7 +1076,7 @@ namespace Zilf.Compiler
             Contract.Requires(word != null);
             Contract.Ensures(cc.Vocabulary.ContainsKey(word));
 
-            string rawWord = word.Atom.ToString();
+            string rawWord = word.Atom.Text;
 
             if (!cc.Vocabulary.ContainsKey(word))
             {
