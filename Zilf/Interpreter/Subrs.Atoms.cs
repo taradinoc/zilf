@@ -390,5 +390,54 @@ namespace Zilf.Interpreter
                 return item;
             }
         }
+
+        [Subr]
+        public static ZilObject ASSOCIATIONS(Context ctx)
+        {
+            SubrContracts(ctx);
+
+            var results = ctx.GetAllAssociations();
+
+            if (results.Length > 0)
+            {
+                return new ZilAsoc(results, 0);
+            }
+            else
+            {
+                return ctx.FALSE;
+            }
+        }
+
+        [Subr]
+        public static ZilObject NEXT(Context ctx, ZilAsoc asoc)
+        {
+            SubrContracts(ctx);
+
+            return asoc.GetNext() ?? ctx.FALSE;
+        }
+
+        [Subr]
+        public static ZilObject ITEM(Context ctx, ZilAsoc asoc)
+        {
+            SubrContracts(ctx);
+
+            return asoc.Item;
+        }
+
+        [Subr]
+        public static ZilObject INDICATOR(Context ctx, ZilAsoc asoc)
+        {
+            SubrContracts(ctx);
+
+            return asoc.Indicator;
+        }
+
+        [Subr]
+        public static ZilObject AVALUE(Context ctx, ZilAsoc asoc)
+        {
+            SubrContracts(ctx);
+
+            return asoc.Value;
+        }
     }
 }

@@ -48,6 +48,7 @@ namespace Zilf.Language
         ANY,
         APPLICABLE,
         APPLY,
+        ASOC,
         ATBL,
         ATOM,
         B,

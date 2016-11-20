@@ -345,7 +345,6 @@ namespace Zilf.Interpreter
         }
 
         [Subr("GC-MON")]
-        [Subr("GC")]
         [Subr("BLOAT")]
         [Subr("ZSTR-ON")]
         [Subr("ZSTR-OFF")]
@@ -365,6 +364,15 @@ namespace Zilf.Interpreter
             
             // nada
             return ctx.FALSE;
+        }
+
+        [Subr]
+        public static ZilObject GC(Context ctx, ZilObject[] args)
+        {
+            SubrContracts(ctx);
+
+            System.GC.Collect();
+            return ctx.TRUE;
         }
 
         [Subr]
