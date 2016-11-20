@@ -131,6 +131,14 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
+        public static ZilObject ATOM(Context ctx, string pname)
+        {
+            SubrContracts(ctx);
+
+            return new ZilAtom(pname, null, StdAtom.NONE);
+        }
+
+        [Subr]
         public static ZilObject ROOT(Context ctx)
         {
             SubrContracts(ctx);

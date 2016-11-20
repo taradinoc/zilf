@@ -186,8 +186,31 @@ namespace Zilf.Interpreter.Values
 
             foreach (char c in text)
             {
-                if (c == '\\' || char.IsWhiteSpace(c))
-                    sb.Append('\\');
+                switch (c) {
+                    case '<':
+                    case '>':
+                    case '(':
+                    case ')':
+                    case '{':
+                    case '}':
+                    case '[':
+                    case ']':
+                    case ':':
+                    case ';':
+                    case '"':
+                    case '\'':
+                    case '\\':
+                    case ',':
+                    case '%':
+                    case '#':
+                        sb.Append('\\');
+                        break;
+
+                    default:
+                        if (char.IsWhiteSpace(c))
+                            sb.Append('\\');
+                        break;
+                }
 
                 sb.Append(c);
             }
@@ -206,22 +229,30 @@ namespace Zilf.Interpreter.Values
 
             var name = this;
             var oblist = this.ObList;
-            while (oblist != null && (oblistPath == null || name.NeedsObListTrailer(oblistPath)))
+
+            if (oblist == null)
             {
-                if (oblist == ctx.RootObList)
+                sb.Append("!-#FALSE ()");
+            }
+            else
+            {
+                while (oblist != null && (oblistPath == null || name.NeedsObListTrailer(oblistPath)))
                 {
+                    if (oblist == ctx.RootObList)
+                    {
+                        sb.Append("!-");
+                        break;
+                    }
+
+                    name = ctx.GetProp(oblist, oblistAtom) as ZilAtom;
+                    if (name == null)
+                        break;
+
                     sb.Append("!-");
-                    break;
+                    sb.Append(name.ToString());
+
+                    oblist = name.ObList;
                 }
-
-                name = ctx.GetProp(oblist, oblistAtom) as ZilAtom;
-                if (name == null)
-                    break;
-
-                sb.Append("!-");
-                sb.Append(name.ToString());
-
-                oblist = name.ObList;
             }
 
             return sb.ToString();
