@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -495,6 +495,31 @@ namespace ZilfTests.Interpreter
             // now FOO!-BAR!- has a trailer
             zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-");
             Assert.AreEqual("FOO!-BAR!-", zo.ToStringContext(ctx, false));
+        }
+
+        [TestMethod]
+        public void TestLINK()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<SETG FOO 100>");
+            TestHelpers.Evaluate(ctx, "<LINK '<+ 1 ,FOO> \"BAR\" <ROOT>>");
+
+            TestHelpers.EvalAndAssert(ctx, "BAR", new ZilFix(101));
+            TestHelpers.EvalAndAssert(ctx, "'BAR",
+                new ZilForm(new ZilObject[] {
+                    ctx.GetStdAtom(StdAtom.Plus),
+                    new ZilFix(1),
+                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx) }),
+                }));
+
+            // can't replace existing link or atom
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LINK 0 \"BAR\" <ROOT>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LINK 0 \"FOO\">");
+
+            // but we can replace it in a different oblist
+            TestHelpers.Evaluate(ctx, "<LINK 0 \"FOO\" <ROOT>>");
+            TestHelpers.EvalAndAssert(ctx, "FOO!-", new ZilFix(0));
         }
     }
 }

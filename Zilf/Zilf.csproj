@@ -214,6 +214,7 @@
     <Compile Include="Interpreter\Values\ZilFSubr.cs" />
     <Compile Include="Interpreter\Values\ZilFunction.cs" />
     <Compile Include="Interpreter\Values\ZilHash.cs" />
+    <Compile Include="Interpreter\Values\ZilLink.cs" />
     <Compile Include="Interpreter\Values\ZilList.cs" />
     <Compile Include="Interpreter\Values\ZilObject.cs" />
     <Compile Include="Interpreter\Values\ZilObjectContracts.cs" />
