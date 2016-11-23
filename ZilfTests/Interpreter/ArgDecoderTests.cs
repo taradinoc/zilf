@@ -374,6 +374,29 @@ namespace ZilfTests.Interpreter
             object[] actual = decoder.Decode("dummy", ctx, args);
         }
 
+        [TestMethod]
+        public void Test_OptionalArg_Fail_OmittedAndExtraArgs()
+        {
+            const string SExpectedMessage = "dummy: too many arguments, starting at arg 2 (check types of earlier arguments, e.g. arg 1)";
+
+            var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
+
+            ZilObject[] args = { ZilString.FromString("foo"), new ZilFix(123) };
+
+            try
+            {
+                var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+                object[] actual = decoder.Decode("dummy", ctx, args);
+            }
+            catch (ArgumentCountError ex)
+            {
+                Assert.AreEqual(SExpectedMessage, ex.Message);
+                return;
+            }
+
+            Assert.Fail($"Expected {typeof(ArgumentCountError)}");
+        }
+
         private ZilObject Dummy_OptionalIntThenStringArg(Context ctx, [Optional, DefaultParameterValue(69105)] int? foo, string bar)
         {
             return null;

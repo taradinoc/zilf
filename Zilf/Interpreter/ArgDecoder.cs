@@ -86,6 +86,11 @@ namespace Zilf.Interpreter
                 morePrefix ? "more " + site.ChildName : site.ChildName))
         {
         }
+
+        public ArgumentCountError(CallSite site, string message)
+            : base(string.Format("{0}: {1}", site.ToString(), message))
+        {
+        }
     }
 
     sealed class ArgumentTypeError : ArgumentDecodingError
@@ -1743,6 +1748,7 @@ namespace Zilf.Interpreter
             Constraint savedConstraint = null;
             var remainingLowerBound = lowerBound;
             var remainingUpperBound = upperBound;
+            int? lastUnderachievingStepArgIndex = null;
 
             var callbacks = new DecodingStepCallbacks
             {
@@ -1771,6 +1777,19 @@ namespace Zilf.Interpreter
                 var next = step(args, argIndex, callbacks);
                 Contract.Assert(next >= argIndex);
 
+                var stepLowerBound = stepInfos[stepIndex].LowerBound;
+                var stepUpperBound = stepInfos[stepIndex].UpperBound;
+
+                remainingLowerBound -= stepLowerBound;
+                remainingUpperBound -= stepUpperBound;
+
+                if ((stepUpperBound == null && next < args.Length) ||
+                    (stepUpperBound != null && next < argIndex + (int)stepUpperBound))
+                {
+                    // this step could theoretically have consumed more arguments
+                    lastUnderachievingStepArgIndex = argIndex;
+                }
+
                 if (next == argIndex)
                 {
                     // optional step didn't match anything. propagate its constraint forward so the
@@ -1781,22 +1800,59 @@ namespace Zilf.Interpreter
                 {
                     argIndex = next;
                 }
-
-                remainingLowerBound -= stepInfos[stepIndex].LowerBound;
-                remainingUpperBound -= stepInfos[stepIndex].UpperBound;
             }
 
             if (argIndex < args.Length)
             {
-                // we checked the arg count earlier, so this must mean some optional arguments failed to match
+                /* We've already checked args.Length against the range of possible argument counts,
+                 * so if there are still arguments left unmatched, that must mean there were
+                 * optional arguments that we skipped, as well as extra arguments at the end that
+                 * we have no step to match. */
+
                 if (savedConstraint != null)
                 {
+                    /* At least one of the optional arguments we skipped was at the end, e.g.:
+                     *
+                     *     expected   <FOO fix [atom]>
+                     *     actual     <FOO fix string>
+                     *
+                     * We decoded the default value for the atom, and now we're left with a string
+                     * we don't know what to do with. We can assume the user meant to pass an
+                     * atom, so we treat this as a type error, using the saved constraint to
+                     * indicate the correct type.
+                     */
+
                     throw new ArgumentTypeError(site, argIndex, savedConstraint.ToString());
                 }
                 else
                 {
-                    //XXX
-                    throw new NotImplementedException();
+                    /* The last optional argument we skipped was earlier in the list, e.g.:
+                     *
+                     *     expected   <FOO fix [atom] string>
+                     *     actual     <FOO fix string string>
+                     *
+                     * Or it might have been a sequence inside Either:
+                     *
+                     *     expected   <FOO {atom | string oblist}>
+                     *     actual     <FOO atom oblist>
+                     *
+                     * The user might have passed the wrong type for an earlier argument. We can
+                     * guess which one, if we noticed a step that didn't reach its full potential.
+                     * (Heartbreaking.) But we can't be sure, so we can't call this a type error.
+                     */
+
+                    var sb = new StringBuilder();
+                    sb.Append("too many arguments, starting at arg ");
+                    sb.Append(argIndex + 1);
+
+                    if (lastUnderachievingStepArgIndex != null)
+                    {
+                        sb.Append(" (check types of earlier arguments, e.g. arg ");
+                        sb.Append(lastUnderachievingStepArgIndex + 1);
+                        sb.Append(')');
+                    }
+
+                    throw new ArgumentCountError(site, sb.ToString());
                 }
             }
 
