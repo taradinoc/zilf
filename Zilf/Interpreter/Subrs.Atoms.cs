@@ -102,15 +102,80 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject INSERT(Context ctx, string str, ObList oblist)
+        public static ZilObject INSERT(Context ctx,
+            [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
+            ObList oblist)
         {
             SubrContracts(ctx);
 
-            if (oblist.Contains(str))
-                throw new InterpreterError(string.Format(
-                    "INSERT: OBLIST already contains an atom named '{0}'", str));
+            const string SNameAlreadyInUse = "INSERT: OBLIST already contains an atom named '{0}'";
 
-            return oblist[str];
+            var str = stringOrAtom as string;
+
+            if (str != null)
+            {
+                if (oblist.Contains(str))
+                    throw new InterpreterError(string.Format(SNameAlreadyInUse, str));
+
+                return oblist[str];
+            }
+
+            var atom = (ZilAtom)stringOrAtom;
+
+            if (atom.ObList != null)
+                throw new InterpreterError(string.Format(
+                    "INSERT: atom '{0}' is already on an OBLIST",
+                    atom.ToStringContext(ctx, false)));
+
+            if (oblist.Contains(atom.Text))
+                throw new InterpreterError(string.Format(SNameAlreadyInUse, atom.Text));
+
+            atom.ObList = oblist;
+            return atom;
+        }
+
+        public static class RemoveParams
+        {
+            [ZilSequenceParam]
+            public struct PnameAndObList
+            {
+                public string Pname;
+                public ObList ObList;
+            }
+        }
+
+        [Subr]
+        public static ZilObject REMOVE(Context ctx,
+            [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList))] object atomOrNameAndObList)
+        {
+            SubrContracts(ctx);
+
+            var atom = atomOrNameAndObList as ZilAtom;
+            if (atom != null)
+            {
+                if (atom.ObList != null)
+                {
+                    atom.ObList = null;
+                    return atom;
+                }
+                else
+                {
+                    return ctx.FALSE;
+                }
+            }
+
+            var nameAndOblist = (RemoveParams.PnameAndObList)atomOrNameAndObList;
+            var pname = nameAndOblist.Pname;
+            var oblist = nameAndOblist.ObList;
+
+            if (oblist.Contains(pname))
+            {
+                atom = oblist[pname];
+                atom.ObList = null;
+                return atom;
+            }
+
+            return ctx.FALSE;
         }
 
         [Subr]

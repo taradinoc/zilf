@@ -444,7 +444,72 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestINSERT()
         {
+            // must have 2 args
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<INSERT>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<INSERT FOO>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<INSERT FOO BAR BAZ>");
+
+            // 1st arg must be atom or string
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<INSERT 1 <ROOT>>");
+
+            // 2nd arg must be oblist
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<INSERT FOO BAR>");
+
+            // insert a new atom by name
             TestHelpers.EvalAndAssert("<SPNAME <INSERT \"FOO\" <ROOT>>>", ZilString.FromString("FOO"));
+
+            // insert an atom currently on no oblist
+            var ctx = new Context();
+            var newAtom = new ZilAtom("NEW-ATOM", null, StdAtom.None);
+            ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.ATOM), newAtom);
+            TestHelpers.EvalAndAssert(ctx, "<INSERT .ATOM <MOBLIST BAR>>", newAtom);
+            TestHelpers.EvalAndAssert(ctx, "NEW-ATOM!-BAR", newAtom);
+
+            // can't insert an atom that's already on an oblist
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<INSERT .ATOM <ROOT>>");
+
+            // can't clobber an atom already in the oblist
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<INSERT \"BAR\" <1 .OBLIST>>");
+        }
+
+        [TestMethod]
+        public void TestREMOVE()
+        {
+            // must have 1-2 args
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>");
+
+            // 1st arg must be atom or string
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE 1>");
+
+            // 2nd arg must be oblist
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>");
+
+            // 2nd arg is required if 1st is a string
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">");
+
+            // 2nd arg not allowed if 1st is an atom
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>");
+
+            // remove an atom from its oblist
+            var ctx = new Context();
+            var oldFoo = ZilAtom.Parse("FOO", ctx);
+            var atom = TestHelpers.Evaluate(ctx, "<REMOVE FOO>") as ZilAtom;
+            Assert.AreSame(oldFoo, atom);
+            Assert.IsNull(atom.ObList);
+            Assert.AreNotEqual(ZilAtom.Parse("FOO", ctx), atom);
+
+            // remove an atom that's on no oblist
+            TestHelpers.EvalAndAssert(ctx, "<REMOVE <ATOM \"FOO\">>", ctx.FALSE);
+
+            // remove an atom by name
+            atom = TestHelpers.Evaluate(ctx, "<REMOVE \"FOO\" <1 .OBLIST>>") as ZilAtom;
+            Assert.IsNotNull(atom);
+            Assert.AreEqual("FOO", atom.Text);
+            Assert.IsNull(atom.ObList);
+
+            // remove an atom that doesn't exist by that name
+            TestHelpers.EvalAndAssert(ctx, "<REMOVE \"NO-SUCH-ATOM\" <1 .OBLIST>>", ctx.FALSE);
         }
 
         [TestMethod]
