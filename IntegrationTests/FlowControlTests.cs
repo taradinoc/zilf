@@ -291,6 +291,14 @@ namespace IntegrationTests
                 .Outputs("2");
         }
 
+        [TestMethod]
+        public void Constants_In_COND_Clause_Should_Only_Be_Stored_If_At_End()
+        {
+            AssertRoutine("\"AUX\" (A 0)",
+                "<SET A <COND (T 123 <PRINTN .A> 456)>>")
+                .Outputs("0");
+        }
+
         #endregion
 
         #region VERSION?
