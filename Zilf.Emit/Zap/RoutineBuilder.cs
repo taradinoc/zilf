@@ -192,6 +192,9 @@ namespace Zilf.Emit.Zap
                 case Condition.PictureData:
                     opcode = "PICINF";
                     break;
+                case Condition.MakeMenu:
+                    opcode = "MENU";
+                    break;
 
                 case Condition.ArgProvided:
                     opcode = "ASSIGNED?";
@@ -411,6 +414,9 @@ namespace Zilf.Emit.Zap
                     break;
                 case UnaryOp.MouseWindow:
                     opcode = "MOUSE-LIMIT";
+                    break;
+                case UnaryOp.ReadMouse:
+                    opcode = "MOUSE-INFO";
                     break;
                 default:
                     throw new NotImplementedException();

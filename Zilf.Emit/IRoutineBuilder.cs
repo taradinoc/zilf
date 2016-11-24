@@ -163,6 +163,12 @@ namespace Zilf.Emit
         /// Branch if the story file is genuine.
         /// </summary>
         Original,
+
+        /// <summary>
+        /// Add a menu, with ID left and item names right (or remove the menu
+        /// if right is 0), and branch if successful.
+        /// </summary>
+        MakeMenu,
     }
 
     public enum TernaryOp
@@ -429,6 +435,10 @@ namespace Zilf.Emit
         /// Constrains the mouse pointer to the bounds of the given window.
         /// </summary>
         MouseWindow,
+        /// <summary>
+        /// Writes the mouse coordinates, button state, and menu state into the given table.
+        /// </summary>
+        ReadMouse,
     }
 
     public enum NullaryOp
