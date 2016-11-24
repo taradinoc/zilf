@@ -2599,37 +2599,7 @@ namespace Zilf.Compiler
             {
                 // generate code for prog body
                 args = args.Rest as ZilList;
-                bool empty = (args.Rest == null);
-                while (!args.IsEmpty)
-                {
-                    // only want the result of the last statement (if any)
-                    bool wantThisResult = wantResult && !repeat && args.Rest.IsEmpty;
-                    var stmt = args.First;
-                    if (stmt is ZilAdecl)
-                        stmt = ((ZilAdecl)stmt).First;
-                    ZilForm form = stmt as ZilForm;
-                    IOperand result;
-                    if (form != null)
-                    {
-                        MarkSequencePoint(cc, rb, form);
-
-                        result = CompileForm(cc, rb, form,
-                            wantThisResult,
-                            wantThisResult ? rb.Stack : null);
-                        if (wantThisResult && result != rb.Stack)
-                            rb.EmitStore(rb.Stack, result);
-                    }
-                    else if (wantThisResult)
-                    {
-                        result = CompileConstant(cc, stmt);
-                        if (result == null)
-                            throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
-
-                        rb.EmitStore(rb.Stack, result);
-                    }
-
-                    args = args.Rest as ZilList;
-                }
+                var clauseResult = CompileClauseBody(cc, rb, args, wantResult, rb.Stack);
 
                 if (repeat)
                     rb.Branch(block.AgainLabel);
@@ -2637,16 +2607,7 @@ namespace Zilf.Compiler
                 if ((block.Flags & BlockFlags.Returned) != 0)
                     rb.MarkLabel(block.ReturnLabel);
 
-                if (wantResult)
-                {
-                    // result is on the stack, unless the body was empty
-                    if (!empty)
-                        return rb.Stack;
-                    else
-                        return cc.Game.One;
-                }
-                else
-                    return null;
+                return wantResult ? clauseResult : null;
             }
             finally
             {
@@ -3213,39 +3174,9 @@ namespace Zilf.Compiler
 
                 // emit code for clause
                 clause = clause.Rest as ZilList;
-                if (clause.IsEmpty && wantResult)
-                    rb.EmitStore(resultStorage, cc.Game.One);
-
-                while (!clause.IsEmpty)
-                {
-                    // only want the result of the last statement (if any)
-                    bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                    var stmt = clause.First;
-                    if (stmt is ZilAdecl)
-                        stmt = ((ZilAdecl)stmt).First;
-                    ZilForm form = stmt as ZilForm;
-                    IOperand result;
-                    if (form != null)
-                    {
-                        MarkSequencePoint(cc, rb, form);
-                        
-                        result = CompileForm(cc, rb, form,
-                            wantThisResult,
-                            wantThisResult ? resultStorage : null);
-                        if (wantThisResult && result != resultStorage)
-                            rb.EmitStore(resultStorage, result);
-                    }
-                    else if (wantResult)
-                    {
-                        result = CompileConstant(cc, stmt);
-                        if (result == null)
-                            throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
-
-                        rb.EmitStore(resultStorage, result);
-                    }
-
-                    clause = clause.Rest as ZilList;
-                }
+                var clauseResult = CompileClauseBody(cc, rb, clause, wantResult, resultStorage);
+                if (wantResult && clauseResult != resultStorage)
+                    rb.EmitStore(resultStorage, clauseResult);
 
                 // jump to end
                 if (!clauses.IsEmpty || (wantResult && !elsePart))
@@ -3271,6 +3202,51 @@ namespace Zilf.Compiler
 
             rb.MarkLabel(endLabel);
             return wantResult ? resultStorage : null;
+        }
+
+        private static IOperand CompileClauseBody(CompileCtx cc, IRoutineBuilder rb, ZilList clause, bool wantResult, IVariable resultStorage)
+        {
+            Contract.Requires(cc != null);
+            Contract.Requires(rb != null);
+            Contract.Requires(clause != null);
+            Contract.Requires(resultStorage != null || !wantResult);
+            Contract.Ensures(Contract.Result<IOperand>() != null || !Contract.OldValue(wantResult));
+
+            if (clause.IsEmpty)
+                return cc.Game.One;
+
+            do
+            {
+                // only want the result of the last statement (if any)
+                bool wantThisResult = wantResult && clause.Rest.IsEmpty;
+                var stmt = clause.First;
+                if (stmt is ZilAdecl)
+                    stmt = ((ZilAdecl)stmt).First;
+                ZilForm form = stmt as ZilForm;
+                IOperand result;
+                if (form != null)
+                {
+                    MarkSequencePoint(cc, rb, form);
+
+                    result = CompileForm(cc, rb, form,
+                        wantThisResult,
+                        wantThisResult ? resultStorage : null);
+                    if (wantThisResult && result != resultStorage)
+                        rb.EmitStore(resultStorage, result);
+                }
+                else if (wantThisResult)
+                {
+                    result = CompileConstant(cc, stmt);
+                    if (result == null)
+                        throw new CompilerError("unexpected value returned from clause: " + stmt.ToStringContext(cc.Context, false));
+
+                    rb.EmitStore(resultStorage, result);
+                }
+
+                clause = clause.Rest as ZilList;
+            } while (!clause.IsEmpty);
+
+            return resultStorage;
         }
 
         private static IOperand CompileVERSION_P(CompileCtx cc, IRoutineBuilder rb, ZilList clauses,
@@ -3340,46 +3316,14 @@ namespace Zilf.Compiler
                 {
                     // emit code for clause
                     clause = clause.Rest;
-                    if (clause.IsEmpty && wantResult)
-                        rb.EmitStore(resultStorage, cc.Game.One);
-
-                    while (!clause.IsEmpty)
-                    {
-                        // only want the result of the last statement (if any)
-                        bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                        var stmt = clause.First;
-                        if (stmt is ZilAdecl)
-                            stmt = ((ZilAdecl)stmt).First;
-                        ZilForm form = stmt as ZilForm;
-                        IOperand result;
-                        if (form != null)
-                        {
-                            MarkSequencePoint(cc, rb, form);
-
-                            result = CompileForm(cc, rb, form,
-                                wantThisResult,
-                                wantThisResult ? resultStorage : null);
-                            if (wantThisResult && result != resultStorage)
-                                rb.EmitStore(resultStorage, result);
-                        }
-                        else if (wantResult)
-                        {
-                            result = CompileConstant(cc, stmt);
-                            if (result == null)
-                                throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
-
-                            rb.EmitStore(resultStorage, result);
-                        }
-
-                        clause = clause.Rest;
-                    }
+                    var clauseResult = CompileClauseBody(cc, rb, clause, wantResult, resultStorage);
 
                     if (condVersion == 0 && !clauses.IsEmpty)
                     {
                         Errors.CompWarning(cc.Context, src, "VERSION?: clauses after else part will never be evaluated");
                     }
 
-                    return wantResult ? resultStorage : null;
+                    return wantResult ? clauseResult : null;
                 }
             }
 
@@ -3440,46 +3384,14 @@ namespace Zilf.Compiler
                 {
                     // emit code for clause
                     clause = clause.Rest;
-                    if (clause.IsEmpty && wantResult)
-                        rb.EmitStore(resultStorage, cc.Game.One);
-
-                    while (!clause.IsEmpty)
-                    {
-                        // only want the result of the last statement (if any)
-                        bool wantThisResult = wantResult && clause.Rest.IsEmpty;
-                        var stmt = clause.First;
-                        if (stmt is ZilAdecl)
-                            stmt = ((ZilAdecl)stmt).First;
-                        ZilForm innerForm = stmt as ZilForm;
-                        IOperand result;
-                        if (innerForm != null)
-                        {
-                            MarkSequencePoint(cc, rb, innerForm);
-
-                            result = CompileForm(cc, rb, innerForm,
-                                wantThisResult,
-                                wantThisResult ? resultStorage : null);
-                            if (wantThisResult && result != resultStorage)
-                                rb.EmitStore(resultStorage, result);
-                        }
-                        else if (wantResult)
-                        {
-                            result = CompileConstant(cc, stmt);
-                            if (result == null)
-                                throw new CompilerError("unexpected value as statement: " + stmt.ToStringContext(cc.Context, false));
-
-                            rb.EmitStore(resultStorage, result);
-                        }
-
-                        clause = clause.Rest;
-                    }
+                    var clauseResult = CompileClauseBody(cc, rb, clause, wantResult, resultStorage);
 
                     if (isElse && !clauses.IsEmpty)
                     {
                         Errors.CompWarning(cc.Context, src, "IFFLAG: clauses after else part will never be evaluated");
                     }
 
-                    return wantResult ? resultStorage : null;
+                    return wantResult ? clauseResult : null;
                 }
             }
 
