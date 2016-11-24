@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -1099,6 +1099,16 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        [Builtin("MENU", MinVersion = 6, HasSideEffect = true)]
+        public static void BinaryMenuOp(
+            PredCall c, IOperand menuId, [Table] IOperand table)
+        {
+            Contract.Requires(menuId != null);
+            Contract.Requires(table != null);
+
+            c.rb.Branch(Condition.MakeMenu, menuId, table, c.label, c.polarity);
+        }
+
         [Builtin("L=?", Data = Condition.Greater)]
         [Builtin("G=?", Data = Condition.Less)]
         public static void NegatedBinaryPredOp(
@@ -1383,6 +1393,7 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
         [Builtin("PICSET", Data = UnaryOp.PictureTable, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("MOUSE-INFO", Data = UnaryOp.ReadMouse, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryTableVoidOp(
             VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
