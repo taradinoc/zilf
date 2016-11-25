@@ -358,6 +358,7 @@ namespace Zilf.Interpreter
         [Subr("FREQUENT-WORDS?")]
         [Subr("NEVER-ZAP-TO-SOURCE-DIRECTORY?")]
         [Subr("ASK-FOR-PICTURE-FILE?")]
+        [Subr("PICFILE")]
         public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
