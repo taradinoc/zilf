@@ -382,6 +382,7 @@ namespace Zilf.Language
         TPREP,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,
+        TUPLE,
         TVERB,
         TZERO,
         UEXIT,

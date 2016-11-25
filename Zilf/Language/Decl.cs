@@ -106,6 +106,10 @@ namespace Zilf.Language
                         case StdAtom.STRUCTURED:
                             return (value is IStructure);
 
+                        case StdAtom.TUPLE:
+                            // special case
+                            return (value.GetTypeAtom(ctx).StdAtom == StdAtom.LIST);
+
                         default:
                             // arbitrary atoms can be type names...
                             if (ctx.IsRegisteredType(atom))
