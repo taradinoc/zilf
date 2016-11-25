@@ -490,8 +490,16 @@ namespace Zilf.Interpreter
 
             foreach (var zo in LikelyDefaults(ctx))
             {
-                if (Decl.Check(ctx, zo, decl))
-                    return zo.ToStringContext(ctx, false);
+                try
+                {
+                    if (Decl.Check(ctx, zo, decl))
+                        return zo.ToStringContext(ctx, false);
+                }
+                catch (InterpreterError)
+                {
+                    // decl might be invalid if the struct references a NEWTYPE that hasn't been defined yet
+                    break;
+                }
             }
 
             return "<>";
