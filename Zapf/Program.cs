@@ -391,6 +391,24 @@ General switches:
                 }
             }
 
+            // verify packed address labels
+            foreach (var sym in ctx.GlobalSymbols.Values)
+            {
+                if (sym.Value >= 65536)
+                {
+                    switch (sym.Type)
+                    {
+                        case SymbolType.Function:
+                            Errors.Warn(null, "packed address overflow for function: {0}", sym.Name);
+                            break;
+
+                        case SymbolType.String:
+                            Errors.Warn(null, "packed address overflow for string: {0}", sym.Name);
+                            break;
+                    }
+                }
+            }
+
             // stop early if errors detected
             if (ctx.ErrorCount > 0)
                 return;

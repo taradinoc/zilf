@@ -77,7 +77,10 @@ namespace Zapf
     {
         public static void Warn(ISourceLine node, string message)
         {
-            Console.Error.WriteLine("line {0}: warning: {1}", node.LineNum, message);
+            if (node != null)
+                Console.Error.Write("line {0}", node.LineNum);
+
+            Console.Error.WriteLine("warning: {0}", message);
         }
 
         public static void Warn(ISourceLine node, string format, params object[] args)
