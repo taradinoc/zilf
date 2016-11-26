@@ -606,6 +606,9 @@ namespace Zilf.Emit.Zap
                 case TernaryOp.DirectOutput:
                     opcode = "DIROUT";
                     break;
+                case TernaryOp.ErasePicture:
+                    opcode = "DCLEAR";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
