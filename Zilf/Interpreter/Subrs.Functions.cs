@@ -84,7 +84,7 @@ namespace Zilf.Interpreter
                 decl,
                 body);
             ZilEvalMacro macro = new ZilEvalMacro(func);
-            macro.SourceLine = ctx.CallingForm.SourceLine;
+            macro.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetGlobalVal(name, macro);
             return name;
         }

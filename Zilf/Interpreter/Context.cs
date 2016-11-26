@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -75,11 +75,16 @@ namespace Zilf.Interpreter
         /// <summary>
         /// Gets a value representing truth (the atom T).
         /// </summary>
-        public ZilObject TRUE { get; private set; }
+        public ZilObject TRUE { get; }
         /// <summary>
         /// Gets a value representing falsehood (a FALSE object with an empty list).
         /// </summary>
-        public ZilObject FALSE { get; private set; }
+        public ZilObject FALSE { get; }
+
+        /// <summary>
+        /// Gets the top <see cref="Frame"/>, representing the innermost function call.
+        /// </summary>
+        public Frame TopFrame { get; private set; }
 
         private ZilAtom[] stdAtoms;
         private readonly ZilAtom enclosingProgActivationAtom;
@@ -138,13 +143,14 @@ namespace Zilf.Interpreter
             SetLocalVal(outchanAtom, consoleOutChannel);
             SetGlobalVal(outchanAtom, consoleOutChannel);
 
+            AtTopLevel = true;
+            TopFrame = new Frame(this, SourceLines.TopLevel);
+            CheckDecls = true;
+
             InitTellPatterns();
             InitPropDefs();
             InitCompilationFlags();
             InitPackages();
-
-            AtTopLevel = true;
-            CheckDecls = true;
         }
 
         [ContractInvariantMethod]
@@ -247,8 +253,7 @@ namespace Zilf.Interpreter
 
         public RoutineFlags NextRoutineFlags { get; set; }
 
-        public ZilForm CallingForm { get; set; }
-
+        // TODO: merge AtTopLevel into Frame
         public bool AtTopLevel { get; set; }
 
         public Func<string, FileAccess, Stream> StreamOpener { get; set; }
@@ -596,6 +601,34 @@ namespace Zilf.Interpreter
             get { return localEnvironment; }
         }
 
+        public Frame PushFrame(ZilForm callingForm)
+        {
+            Contract.Requires(callingForm != null);
+            Contract.Ensures(Contract.Result<Frame>() != null);
+
+            var result = new Frame(this, callingForm);
+            TopFrame = result;
+            return result;
+        }
+
+        public Frame PushFrame(ISourceLine sourceLine)
+        {
+            Contract.Requires(sourceLine != null);
+            Contract.Ensures(Contract.Result<Frame>() != null);
+
+            var result = new Frame(this, sourceLine);
+            TopFrame = result;
+            return result;
+        }
+
+        public void PopFrame()
+        {
+            if (TopFrame.Parent == null)
+                throw new InvalidOperationException("no parent frame to restore");
+
+            TopFrame = TopFrame.Parent;
+        }
+
         /// <summary>
         /// Gets the global value assigned to an atom.
         /// </summary>
@@ -780,6 +813,22 @@ namespace Zilf.Interpreter
 
             errorCount++;
             Console.Error.WriteLine("[error] {0}{1}", ex.SourcePrefix, ex.Message);
+
+            // stack trace for interpreter errors, skipping the top and bottom frame
+            for (var frame = (ex as InterpreterError)?.Frame?.Parent; frame?.Parent != null; frame = frame.Parent)
+            {
+                string caller;
+                if (frame.CallingForm != null)
+                {
+                    caller = $"in {frame.CallingForm.First.ToString()} called ";
+                }
+                else
+                {
+                    caller = "";
+                }
+
+                Console.Error.WriteLine("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
+            }
         }
 
         public string FindIncludeFile(string name)
@@ -1546,8 +1595,9 @@ namespace Zilf.Interpreter
             Contract.Requires(path != null);
             Contract.Ensures(Contract.Result<Stream>() != null);
 
-            if (CallingForm != null && CallingForm.SourceLine is FileSourceLine)
-                path = Path.Combine(Path.GetDirectoryName(((FileSourceLine)CallingForm.SourceLine).FileName), path);
+            var fileSourceLine = TopFrame.SourceLine as FileSourceLine;
+            if (fileSourceLine != null)
+                path = Path.Combine(Path.GetDirectoryName(fileSourceLine.FileName), path);
 
             if (StreamOpener != null)
                 return StreamOpener(path, fileAccess);

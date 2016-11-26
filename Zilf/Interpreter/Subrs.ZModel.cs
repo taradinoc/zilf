@@ -100,7 +100,7 @@ namespace Zilf.Interpreter
             else if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
-                Errors.TerpWarning(ctx, ctx.CallingForm.SourceLine,
+                Errors.TerpWarning(ctx, ctx.TopFrame.SourceLine,
                     "ROUTINE: only {0} routine arguments allowed in V{1}, so last {2} \"OPT\" argument{3} will never be passed",
                     maxArgsAllowed,
                     ctx.ZEnvironment.ZVersion,
@@ -108,8 +108,7 @@ namespace Zilf.Interpreter
                     affectedArgCount == 1 ? "" : "s");
             }
 
-            if (ctx.CallingForm != null)
-                rtn.SourceLine = ctx.CallingForm.SourceLine;
+            rtn.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetZVal(name, rtn);
             ctx.ZEnvironment.Routines.Add(rtn);
             return name;
@@ -347,8 +346,7 @@ namespace Zilf.Interpreter
             }
 
             ZilModelObject zmo = new ZilModelObject(atom, props, isRoom);
-            if (ctx.CallingForm != null)
-                zmo.SourceLine = ctx.CallingForm.SourceLine;
+            zmo.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
             return zmo;
@@ -503,8 +501,7 @@ namespace Zilf.Interpreter
                 initializer = null;
 
             ZilTable tab = ZilTable.Create(count, initializer, flags, null);
-            if (ctx.CallingForm != null)
-                tab.SourceLine = ctx.CallingForm.SourceLine;
+            tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
@@ -619,8 +616,7 @@ namespace Zilf.Interpreter
 
             ZilTable tab = ZilTable.Create(
                 1, newValues.ToArray(), flags, pattern == null ? null : pattern.ToArray());
-            if (ctx.CallingForm != null)
-                tab.SourceLine = ctx.CallingForm.SourceLine;
+            tab.SourceLine = ctx.TopFrame.SourceLine;
             if (!tempTable)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
@@ -1084,7 +1080,7 @@ namespace Zilf.Interpreter
             foreach (ZilAtom arg in args)
             {
                 ctx.ZEnvironment.Directions.Add(arg);
-                ctx.ZEnvironment.GetVocabDirection(arg, ctx.CallingForm.SourceLine);
+                ctx.ZEnvironment.GetVocabDirection(arg, ctx.TopFrame.SourceLine);
                 ctx.ZEnvironment.LowDirection = arg;
 
                 ctx.PutProp(arg, propspecAtom, propspec);
@@ -1099,7 +1095,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             foreach (ZilAtom arg in args)
-                ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.CallingForm.SourceLine));
+                ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.TopFrame.SourceLine));
 
             return ctx.TRUE;
         }
@@ -1119,28 +1115,28 @@ namespace Zilf.Interpreter
                 {
                     case StdAtom.ADJ:
                     case StdAtom.ADJECTIVE:
-                        word = ctx.ZEnvironment.GetVocabAdjective(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabAdjective(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     case StdAtom.NOUN:
                     case StdAtom.OBJECT:
-                        word = ctx.ZEnvironment.GetVocabNoun(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabNoun(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     case StdAtom.BUZZ:
-                        word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabBuzzword(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     case StdAtom.PREP:
-                        word = ctx.ZEnvironment.GetVocabPreposition(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabPreposition(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     case StdAtom.DIR:
-                        word = ctx.ZEnvironment.GetVocabDirection(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabDirection(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     case StdAtom.VERB:
-                        word = ctx.ZEnvironment.GetVocabVerb(atom, ctx.CallingForm.SourceLine);
+                        word = ctx.ZEnvironment.GetVocabVerb(atom, ctx.TopFrame.SourceLine);
                         break;
 
                     default:
@@ -1159,7 +1155,7 @@ namespace Zilf.Interpreter
             if (args.Length < 3)
                 throw new InterpreterError("SYNTAX", 3, 0);
 
-            Syntax syntax = Syntax.Parse(ctx.CallingForm.SourceLine, args, ctx);
+            Syntax syntax = Syntax.Parse(ctx.TopFrame.SourceLine, args, ctx);
             ctx.ZEnvironment.Syntaxes.Add(syntax);
 
             if (syntax.Synonyms.Count > 0)

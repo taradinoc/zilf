@@ -141,21 +141,29 @@ namespace Zilf.Interpreter.Values
 
             if (target.IsApplicable(ctx))
             {
-                ZilForm oldCF = ctx.CallingForm;
-                ctx.CallingForm = this;
-                try
+                using (var frame = ctx.PushFrame(this))
                 {
-                    return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
-                }
-                catch (ZilError ex)
-                {
-                    if (ex.SourceLine == null)
-                        ex.SourceLine = this.SourceLine;
-                    throw;
-                }
-                finally
-                {
-                    ctx.CallingForm = oldCF;
+                    try
+                    {
+                        return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
+                    }
+                    catch (InterpreterError ex)
+                    {
+                        if (ex.Frame == null)
+                            ex.Frame = frame;
+
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = this.SourceLine;
+
+                        throw;
+                    }
+                    catch (ZilError ex)
+                    {
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = this.SourceLine;
+
+                        throw;
+                    }
                 }
             }
             else
@@ -181,30 +189,38 @@ namespace Zilf.Interpreter.Values
 
             if (target != null && target.GetTypeAtom(ctx).StdAtom == StdAtom.MACRO)
             {
-                ZilForm oldCF = ctx.CallingForm;
-                ctx.CallingForm = this;
-                try
+                using (var frame = ctx.PushFrame(this))
                 {
-                    ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
-                        Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
+                    try
+                    {
+                        ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
+                            Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
 
-                    ZilForm resultForm = result as ZilForm;
-                    if (resultForm == null || resultForm == this)
-                        return result;
+                        ZilForm resultForm = result as ZilForm;
+                        if (resultForm == null || resultForm == this)
+                            return result;
 
-                    // set the source info on the expansion to match the macro invocation
-                    resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
-                    return resultForm.Expand(ctx);
-                }
-                catch (ZilError ex)
-                {
-                    if (ex.SourceLine == null)
-                        ex.SourceLine = this.SourceLine;
-                    throw;
-                }
-                finally
-                {
-                    ctx.CallingForm = oldCF;
+                        // set the source info on the expansion to match the macro invocation
+                        resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
+                        return resultForm.Expand(ctx);
+                    }
+                    catch (InterpreterError ex)
+                    {
+                        if (ex.Frame == null)
+                            ex.Frame = frame;
+
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = this.SourceLine;
+
+                        throw;
+                    }
+                    catch (ZilError ex)
+                    {
+                        if (ex.SourceLine == null)
+                            ex.SourceLine = this.SourceLine;
+
+                        throw;
+                    }
                 }
             }
             else if (target is ZilFix)
