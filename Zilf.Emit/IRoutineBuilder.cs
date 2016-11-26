@@ -447,6 +447,10 @@ namespace Zilf.Emit
         /// Writes the mouse coordinates, button state, and menu state into the given table.
         /// </summary>
         ReadMouse,
+        /// <summary>
+        /// Prints formatted text from the given table.
+        /// </summary>
+        PrintForm,
     }
 
     public enum NullaryOp

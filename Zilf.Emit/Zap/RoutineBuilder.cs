@@ -418,6 +418,9 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.ReadMouse:
                     opcode = "MOUSE-INFO";
                     break;
+                case UnaryOp.PrintForm:
+                    opcode = "PRINTF";
+                    break;
                 default:
                     throw new NotImplementedException();
             }
