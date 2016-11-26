@@ -413,108 +413,158 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        public ZilActivation BeginApply(Context ctx, ZilObject[] args, bool eval)
+        public sealed class Application : IDisposable
+        {
+            public Context Context { get; }
+            public ZilActivation Activation { get; }
+            public LocalEnvironment Environment { get; }
+            public bool WasTopLevel { get; }
+
+            public Application(Context ctx, ZilActivation act, LocalEnvironment env, bool wasTopLevel)
+            {
+                Context = ctx;
+                Activation = act;
+                Environment = env;
+                WasTopLevel = wasTopLevel;
+            }
+
+            void IDisposable.Dispose()
+            {
+                GC.SuppressFinalize(this);
+
+                Activation?.Dispose();
+                ((IDisposable)Environment).Dispose();
+                Context.AtTopLevel = WasTopLevel;
+            }
+
+            ~Application()
+            {
+                ((IDisposable)this).Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Pushes a new local environment and binds argument values in preparation for a functino call.
+        /// </summary>
+        /// <param name="ctx">The context.</param>
+        /// <param name="args">The unevaluated arguments provided at the call site.</param>
+        /// <param name="eval"><b>true</b> if any provided arguments corresponding to unquoted argument atoms should be evaluated.</param>
+        /// <returns>An object containing the new activation and other data needed to restore state, which must be disposed to
+        /// restore the state.</returns>
+        /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
+        /// <remarks>
+        /// <para>This method may throw other exceptions if an error occurs while processing argument values.
+        /// In the case of an exception, the new local environment will not be pushed.</para>
+        /// <para>Make sure to call <see cref="IDisposable.Dispose"/> on the returned object!</para>
+        /// </remarks>
+        public Application BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
             Contract.Requires(Contract.ForAll(args, a => a != null));
 
-            if (eval)
-            {
-                // expand segments
-                args = ZilObject.ExpandSegments(ctx, args).ToArray();
-            }
-
-            if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
-                throw new InterpreterError(
-                    name == null ? "user-defined function" : name.ToString(),
-                    optArgsStart, auxArgsStart);
-
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
 
-            if (environmentAtom != null)
-            {
-                innerEnv.Rebind(environmentAtom,
-                    new ZilEnvironment(outerEnv, environmentAtom),
-                    ctx.GetStdAtom(StdAtom.ENVIRONMENT));
-            }
+            var wasTopLevel = ctx.AtTopLevel;
+            ctx.AtTopLevel = false;
 
-            for (int i = 0; i < optArgsStart; i++)
+            try
             {
-                var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
-                ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
-                innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
-            }
+                if (eval)
+                {
+                    // expand segments
+                    args = ZilObject.ExpandSegments(ctx, args).ToArray();
+                }
 
-            for (int i = optArgsStart; i < auxArgsStart; i++)
-            {
-                if (i < args.Length)
+                if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
+                    throw new InterpreterError(
+                        name == null ? "user-defined function" : name.ToString(),
+                        optArgsStart, auxArgsStart);
+
+                if (environmentAtom != null)
+                {
+                    innerEnv.Rebind(environmentAtom,
+                        new ZilEnvironment(outerEnv, environmentAtom),
+                        ctx.GetStdAtom(StdAtom.ENVIRONMENT));
+                }
+
+                for (int i = 0; i < optArgsStart; i++)
                 {
                     var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
                     ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
                     innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
                 }
-                else
+
+                for (int i = optArgsStart; i < auxArgsStart; i++)
+                {
+                    if (i < args.Length)
+                    {
+                        var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
+                        ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
+                        innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
+                    }
+                    else
+                    {
+                        var init = argDefaults[i]?.Eval(ctx);
+                        if (init != null)
+                        {
+                            ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                        }
+                        innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
+                    }
+                }
+
+                for (int i = auxArgsStart; i < argAtoms.Length; i++)
                 {
                     var init = argDefaults[i]?.Eval(ctx);
                     if (init != null)
                     {
                         ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
                     }
-                    innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
+                    innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
                 }
-            }
 
-            for (int i = auxArgsStart; i < argAtoms.Length; i++)
-            {
-                var init = argDefaults[i]?.Eval(ctx);
-                if (init != null)
+                if (varargsAtom != null)
                 {
-                    ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                    var extras = args.Skip(auxArgsStart);
+                    if (eval && !varargsQuoted)
+                        extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
+                    var value = new ZilList(extras);
+                    ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
+                    innerEnv.Rebind(varargsAtom, new ZilList(extras), varargsDecl);
                 }
-                innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
-            }
 
-            if (varargsAtom != null)
+                ZilActivation activation;
+                if (activationAtom != null)
+                {
+                    activation = new ZilActivation(activationAtom);
+                    innerEnv.Rebind(activationAtom, activation, ctx.GetStdAtom(StdAtom.ACTIVATION));
+                }
+                else
+                {
+                    activation = null;
+                }
+
+                /* make an unassigned binding so RETURN and AGAIN won't use the
+                 * activation of a PROG outside the newly entered function unless
+                 * explicitly told to */
+                innerEnv.Rebind(ctx.EnclosingProgActivationAtom, null);
+
+                return new Application(ctx, activation, innerEnv, wasTopLevel);
+            }
+            catch
             {
-                var extras = args.Skip(auxArgsStart);
-                if (eval && !varargsQuoted)
-                    extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
-                var value = new ZilList(extras);
-                ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
-                innerEnv.Rebind(varargsAtom, new ZilList(extras), varargsDecl);
+                // pop the environment so the caller doesn't have to
+                ctx.PopEnvironment();
+                ctx.AtTopLevel = wasTopLevel;
+                throw;
             }
-
-            ZilActivation activation;
-            if (activationAtom != null)
-            {
-                activation = new ZilActivation(activationAtom);
-                innerEnv.Rebind(activationAtom, activation, ctx.GetStdAtom(StdAtom.ACTIVATION));
-            }
-            else
-            {
-                activation = null;
-            }
-
-            /* make an unassigned binding so RETURN and AGAIN won't use the
-             * activation of a PROG outside the newly entered function unless
-             * explicitly told to */
-            innerEnv.Rebind(ctx.EnclosingProgActivationAtom, null);
-
-            return activation;
         }
 
         public void ValidateResult(Context ctx, ZilObject result)
         {
             ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", name);
-        }
-
-        public void EndApply(Context ctx)
-        {
-            Contract.Requires(ctx != null);
-
-            ctx.PopEnvironment();
         }
 
         public ZilList ToZilList()
