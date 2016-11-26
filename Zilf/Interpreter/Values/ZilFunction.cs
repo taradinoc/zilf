@@ -128,36 +128,27 @@ namespace Zilf.Interpreter.Values
 
         private ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
-            using (var activation = argspec.BeginApply(ctx, args, eval))
+            using (var application = argspec.BeginApply(ctx, args, eval))
             {
-                bool wasTopLevel = ctx.AtTopLevel;
-                try
+                var activation = application.Activation;
+                do
                 {
-                    ctx.AtTopLevel = false;
-                    do
+                    try
                     {
-                        try
-                        {
-                            var result = ZilObject.EvalProgram(ctx, body);
-                            argspec.ValidateResult(ctx, result);
-                            return result;
-                        }
-                        catch (ReturnException ex) when (activation != null && ex.Activation == activation)
-                        {
-                            argspec.ValidateResult(ctx, ex.Value);
-                            return ex.Value;
-                        }
-                        catch (AgainException ex) when (activation != null && ex.Activation == activation)
-                        {
-                            // repeat
-                        }
-                    } while (true);
-                }
-                finally
-                {
-                    ctx.AtTopLevel = wasTopLevel;
-                    argspec.EndApply(ctx);
-                }
+                        var result = ZilObject.EvalProgram(ctx, body);
+                        argspec.ValidateResult(ctx, result);
+                        return result;
+                    }
+                    catch (ReturnException ex) when (activation != null && ex.Activation == activation)
+                    {
+                        argspec.ValidateResult(ctx, ex.Value);
+                        return ex.Value;
+                    }
+                    catch (AgainException ex) when (activation != null && ex.Activation == activation)
+                    {
+                        // repeat
+                    }
+                } while (true);
             }
         }
 

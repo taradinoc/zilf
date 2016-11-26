@@ -147,7 +147,7 @@ namespace Zilf.Interpreter.Values
                     {
                         return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
                     }
-                    catch (InterpreterError ex)
+                    catch (InterpreterError ex) when (ex.Frame == null || ex.Source == null)
                     {
                         if (ex.Frame == null)
                             ex.Frame = frame;
@@ -157,11 +157,9 @@ namespace Zilf.Interpreter.Values
 
                         throw;
                     }
-                    catch (ZilError ex)
+                    catch (ZilError ex) when (ex.SourceLine == null)
                     {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = this.SourceLine;
-
+                        ex.SourceLine = this.SourceLine;
                         throw;
                     }
                 }
