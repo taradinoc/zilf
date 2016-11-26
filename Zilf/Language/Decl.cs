@@ -113,7 +113,19 @@ namespace Zilf.Language
                         default:
                             // arbitrary atoms can be type names...
                             if (ctx.IsRegisteredType(atom))
-                                return (value.GetTypeAtom(ctx) == atom);
+                            {
+                                var typeAtom = value.GetTypeAtom(ctx);
+
+                                if (typeAtom == atom)
+                                    return true;
+
+                                // special cases: a raw TABLE value can substitute for a TABLE-based type, or VECTOR
+                                if (typeAtom.StdAtom == StdAtom.TABLE &&
+                                    (atom.StdAtom == StdAtom.VECTOR || ctx.GetTypePrim(atom) == PrimType.TABLE))
+                                    return true;
+
+                                return false;
+                            }
 
                             // ...or aliases
                             var aliased = ctx.GetProp(atom, ctx.GetStdAtom(StdAtom.DECL));
