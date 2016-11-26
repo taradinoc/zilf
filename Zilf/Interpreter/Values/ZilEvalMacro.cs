@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -96,16 +96,26 @@ namespace Zilf.Interpreter.Values
             return new ZilList(value, new ZilList(null, null));
         }
 
+        private static ZilObject MakeSpliceExpandable(ZilObject zo)
+        {
+            var splice = zo as ZilSplice;
+
+            if (splice != null)
+                splice.SetSpliceableFlag();
+
+            return zo;
+        }
+
         public ZilObject Apply(Context ctx, ZilObject[] args)
         {
             ZilObject expanded = Expand(ctx, args);
-            return expanded.Eval(ctx);
+            return MakeSpliceExpandable(expanded.Eval(ctx));
         }
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
             ZilObject expanded = ExpandNoEval(ctx, args);
-            return expanded.Eval(ctx);
+            return MakeSpliceExpandable(expanded.Eval(ctx));
         }
 
         public ZilObject Expand(Context ctx, ZilObject[] args)
@@ -114,8 +124,9 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            return ctx.ExecuteInMacroEnvironment(
-                () => value.AsApplicable(ctx).Apply(ctx, args));
+            return MakeSpliceExpandable(
+                ctx.ExecuteInMacroEnvironment(
+                    () => value.AsApplicable(ctx).Apply(ctx, args)));
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
@@ -124,8 +135,9 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            return ctx.ExecuteInMacroEnvironment(
-                () => value.AsApplicable(ctx).ApplyNoEval(ctx, args));
+            return MakeSpliceExpandable(
+                ctx.ExecuteInMacroEnvironment(
+                    () => value.AsApplicable(ctx).ApplyNoEval(ctx, args)));
         }
 
         public override bool Equals(object obj)

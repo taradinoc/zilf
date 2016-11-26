@@ -457,10 +457,11 @@ namespace Zilf.Interpreter.Values
             else
             {
                 var result = obj.Eval(ctx, environment);
+                var splice = result as ZilSplice;
 
-                if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
+                if (splice != null && splice.PopSpliceableFlag())
                 {
-                    return (IEnumerable<ZilObject>)result.GetPrimitive(ctx);
+                    return splice;
                 }
                 else
                 {
@@ -503,10 +504,11 @@ namespace Zilf.Interpreter.Values
             else
             {
                 var result = obj.Eval(ctx);
+                var splice = result as ZilSplice;
 
-                if (result.GetTypeAtom(ctx).StdAtom == StdAtom.SPLICE)
+                if (splice != null && splice.PopSpliceableFlag())
                 {
-                    return (IEnumerable<ZilObject>)result.GetPrimitive(ctx);
+                    return splice;
                 }
                 else
                 {

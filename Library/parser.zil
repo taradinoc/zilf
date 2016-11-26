@@ -2930,7 +2930,7 @@ or reveal a light source."
        (ZIP <LIST DESC ,DARKNESS-STATUS-TEXT>)
        (ELSE #SPLICE ())>
     ;"This has all the flags, just in case other objects don't define them."
-    (FLAGS %<CHTYPE ,KNOWN-FLAGS SPLICE>)>
+    (FLAGS !,KNOWN-FLAGS)>
 
 <OBJECT GLOBAL-OBJECTS>
 
