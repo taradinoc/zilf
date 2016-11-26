@@ -73,27 +73,47 @@ namespace Zilf.ZModel.Vocab.NewParser
             get { return vword; }
         }
 
+        /* GetViaInner and SetViaInner disable DECL checking because user code may expect
+         * property identifiers to be passed as FIXes instead of ATOMs. */
         private ZilObject GetViaInner(StdAtom accessor)
         {
-            var form = new ZilForm(new ZilObject[]
+            var oldCheckDecls = ctx.CheckDecls;
+            try
             {
+                ctx.CheckDecls = false;
+                var form = new ZilForm(new ZilObject[]
+                {
                     ctx.GetStdAtom(accessor),
                     vword,
-            });
+                });
 
-            return form.Eval(ctx);
+                return form.Eval(ctx);
+            }
+            finally
+            {
+                ctx.CheckDecls = oldCheckDecls;
+            }
         }
 
         private void SetViaInner(StdAtom accessor, ZilObject value)
         {
-            var form = new ZilForm(new ZilObject[]
+            var oldCheckDecls = ctx.CheckDecls;
+            try
             {
+                ctx.CheckDecls = false;
+                var form = new ZilForm(new ZilObject[]
+                {
                     ctx.GetStdAtom(accessor),
                     vword,
                     value,
-            });
+                });
 
-            form.Eval(ctx);
+                form.Eval(ctx);
+            }
+            finally
+            {
+                ctx.CheckDecls = oldCheckDecls;
+            }
         }
 
         public ZilObject AdjId
