@@ -542,10 +542,10 @@ namespace IntegrationTests
         [TestMethod]
         public void TestDIROUT_V6()
         {
-            Assert.Inconclusive();
-
             // third operand allowed in V6
             AssertExpr("<DIROUT 3 0 0>").InV6().Compiles();
+
+            Assert.Inconclusive();
         }
 
         [TestMethod]
