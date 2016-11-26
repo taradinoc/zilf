@@ -63,6 +63,21 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void Test_NTH_DECL()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING [4 FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING [3 FIX]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR [3 FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING [2 FIX]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING [2 FIX] FIX>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING [2 FIX] ATOM>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 MONEY 2 SHOW 3 READY 4 GO) '<LIST [4 FIX ATOM]>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 MONEY 2 SHOW 3 READY 4 GO) '<LIST [4 FIX]>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 MONEY 2 SHOW 3 READY 4 GO) '<LIST [3 FIX ATOM] FIX ATOM>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '(1 MONEY 2 SHOW 3 READY 4 GO) '<LIST [3 FIX ATOM]>>", ctx.TRUE);
+        }
+
+        [TestMethod]
         public void Test_REST_DECL()
         {
             TestHelpers.EvalAndAssert(ctx, "<DECL? '[\"hi\" 456 789 1011] '<VECTOR STRING FIX [REST FIX]>>", ctx.TRUE);

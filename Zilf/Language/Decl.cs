@@ -227,6 +227,27 @@ namespace Zilf.Language
                                 continue;
                         }
                     }
+                    else if (len > 0 && vector[0] is ZilFix)
+                    {
+                        var count = ((ZilFix)vector[0]).Value;
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            for (int j = 1; j < vector.GetLength(); j++)
+                            {
+                                if (structure.IsEmpty())
+                                    return false;
+
+                                if (!Check(ctx, structure.GetFirst(), vector[j]))
+                                    return false;
+
+                                structure = structure.GetRest(1);
+                            }
+                        }
+
+                        // move on to the next subpattern, if any
+                        continue;
+                    }
 
                     throw new NotImplementedException("unhandled VECTOR in FORM: " + vector.ToStringContext(ctx, false));
                 }
