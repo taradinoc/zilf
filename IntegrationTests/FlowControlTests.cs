@@ -387,6 +387,15 @@ namespace IntegrationTests
                 .DoesNotCompile();
         }
 
+        [TestMethod]
+        public void CONSTANT_FALSE_Can_Be_Called_Like_A_Routine()
+        {
+            AssertRoutine("", "<FOO 1 2 3 <INC G>> ,G")
+                .WithGlobal("<GLOBAL G 100>")
+                .WithGlobal("<CONSTANT FOO <>>")
+                .GivesNumber("101");
+        }
+
         #endregion
     }
 }
