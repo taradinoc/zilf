@@ -1123,7 +1123,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
         [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true)]
         public static void BinaryVariablePredOp(
-            PredCall c, [Data] Condition cond, [Variable] IVariable left, IOperand right)
+            PredCall c, [Data] Condition cond, [Variable(QuirksMode = QuirksMode.Both)] IVariable left, IOperand right)
         {
             Contract.Requires(left != null);
             Contract.Requires(right != null);
