@@ -1396,6 +1396,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
         [Builtin("PICSET", Data = UnaryOp.PictureTable, MinVersion = 6, HasSideEffect = true)]
         [Builtin("MOUSE-INFO", Data = UnaryOp.ReadMouse, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("PRINTF", Data = UnaryOp.PrintForm, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryTableVoidOp(
             VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
