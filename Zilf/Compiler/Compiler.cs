@@ -1836,6 +1836,10 @@ namespace Zilf.Compiler
 
                 // routine calls
                 ZilObject obj = cc.Context.GetZVal(cc.Context.ZEnvironment.InternGlobalName(head));
+
+                while (obj is ZilConstant)
+                    obj = ((ZilConstant)obj).Value;
+
                 if (obj is ZilRoutine)
                 {
                     ZilRoutine rtn = (ZilRoutine)obj;
@@ -1859,6 +1863,27 @@ namespace Zilf.Compiler
                         rb.EmitCall(cc.Routines[head], argOperands.ToArray(), result);
                     }
                     return result;
+                }
+                else if (obj is ZilFalse)
+                {
+                    // this always returns 0. we can eliminate the call if none of the arguments have side effects.
+                    var argsWithSideEffects = form.Skip(1).Where(zo => HasSideEffects(cc, zo)).ToArray();
+
+                    if (argsWithSideEffects.Length > 0)
+                    {
+                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                        using (Operands argOperands = Operands.Compile(cc, rb, form.SourceLine, argsWithSideEffects))
+                        {
+                            var operands = argOperands.ToArray();
+                            if (operands.Any(o => o == rb.Stack))
+                                rb.EmitCall(cc.Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
+                        }
+                        return result;
+                    }
+                    else
+                    {
+                        return cc.Game.Zero;
+                    }
                 }
 
                 // unrecognized
