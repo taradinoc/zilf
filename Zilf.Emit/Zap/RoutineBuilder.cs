@@ -603,6 +603,9 @@ namespace Zilf.Emit.Zap
                 case TernaryOp.SetCursor:
                     opcode = "CURSET";
                     break;
+                case TernaryOp.DirectOutput:
+                    opcode = "DIROUT";
+                    break;
                 default:
                     throw new NotImplementedException();
             }

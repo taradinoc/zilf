@@ -228,6 +228,10 @@ namespace Zilf.Emit
         /// Sets the cursor position in window right to Y-position left, X-position center.
         /// </summary>
         SetCursor,
+        /// <summary>
+        /// Changes the output stream setting (with two parameters, for V6 only).
+        /// </summary>
+        DirectOutput,
     }
 
     public enum BinaryOp

@@ -703,6 +703,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("WINPOS", Data = TernaryOp.MoveWindow, MinVersion = 6, HasSideEffect = true)]
         [Builtin("WINPUT", Data = TernaryOp.PutWindowProperty, MinVersion = 6, HasSideEffect = true)]
         [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("DIROUT", Data = TernaryOp.DirectOutput, MinVersion = 6, HasSideEffect = true)]
         public static void TernaryVoidOp(
             VoidCall c, [Data] TernaryOp op,
             IOperand left, IOperand center, IOperand right)
