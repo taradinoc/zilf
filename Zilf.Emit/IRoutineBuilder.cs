@@ -232,6 +232,10 @@ namespace Zilf.Emit
         /// Changes the output stream setting (with two parameters, for V6 only).
         /// </summary>
         DirectOutput,
+        /// <summary>
+        /// Erases picture number left at Y-position center, X-position right.
+        /// </summary>
+        ErasePicture,
     }
 
     public enum BinaryOp
