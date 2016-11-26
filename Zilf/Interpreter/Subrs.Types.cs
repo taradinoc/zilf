@@ -238,8 +238,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError("FORM", 1, 0);
 
             var result = new ZilForm(args);
-            if (ctx.CallingForm != null)
-                result.SourceLine = ctx.CallingForm.SourceLine;
+            result.SourceLine = ctx.TopFrame.SourceLine;
             return result;
         }
 

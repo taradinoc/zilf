@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -21,7 +21,7 @@ namespace Zilf.Language
 {
     abstract class ZilError : Exception
     {
-        private ISourceLine src;
+        public ISourceLine SourceLine { get; set; }
 
         public ZilError(string message)
             : base(message)
@@ -36,7 +36,7 @@ namespace Zilf.Language
         public ZilError(ISourceLine src, string message)
             : base(message)
         {
-            this.src = src;
+            this.SourceLine = src;
         }
 
         public ZilError(ISourceLine src, string func, int minArgs, int maxArgs)
@@ -44,20 +44,14 @@ namespace Zilf.Language
         {
         }
 
-        public ISourceLine SourceLine
-        {
-            get { return src; }
-            set { src = value; }
-        }
-
         public string SourcePrefix
         {
             get
             {
-                if (src == null || src.SourceInfo == null)
+                if (SourceLine == null || SourceLine.SourceInfo == null)
                     return "";
                 else
-                    return src.SourceInfo + ": ";
+                    return SourceLine.SourceInfo + ": ";
             }
         }
 

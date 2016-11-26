@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,11 +17,14 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using Zilf.Interpreter;
 
 namespace Zilf.Language
 {
     class InterpreterError : ZilError
     {
+        public Frame Frame { get; set; }
+
         public InterpreterError(string message)
             : base(message)
         {

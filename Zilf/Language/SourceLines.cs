@@ -22,5 +22,6 @@ namespace Zilf.Language
         public static readonly ISourceLine Unknown = new StringSourceLine("<internally created FORM>");
         public static readonly ISourceLine Chtyped = new StringSourceLine("<result of CHTYPE>");
         public static readonly ISourceLine MakeGval = new StringSourceLine("<result of MAKE-GVAL>");
+        public static readonly ISourceLine TopLevel = new StringSourceLine("<top level>");
     }
 }
