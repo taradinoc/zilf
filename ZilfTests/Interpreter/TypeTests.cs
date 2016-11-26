@@ -1039,6 +1039,17 @@ namespace ZilfTests.Interpreter
         {
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () #SPLICE (4 5)>");
             TestHelpers.EvalAndAssert(ctx, "<+ <FOO>>", new ZilFix(9));
+
+            // should only be expanded when returned from a macro
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR () #SPLICE (4 5)>");
+            var vector = (ZilVector)TestHelpers.Evaluate(ctx, "<VECTOR <BAR>>");
+            Assert.AreEqual(1, vector.GetLength());
+            var first = vector[0];
+            Assert.IsInstanceOfType(first, typeof(ZilSplice));
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ (\"ARGS\" A) .A>");
+            var list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ #SPLICE (1 2) 3>");
+            Assert.AreEqual(2, ((IStructure)list).GetLength());
         }
 
         [TestMethod]

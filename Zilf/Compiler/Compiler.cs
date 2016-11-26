@@ -1587,7 +1587,7 @@ namespace Zilf.Compiler
                 {
                     form = (ZilForm)expanded;
                 }
-                else if (expanded.GetTypeAtom(cc.Context).StdAtom == StdAtom.SPLICE)
+                else if (expanded is ZilSplice && ((ZilSplice)expanded).PopSpliceableFlag())
                 {
                     var src = form.SourceLine;
                     form = new ZilForm(Enumerable.Concat(
