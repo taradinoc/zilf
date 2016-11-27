@@ -782,6 +782,14 @@ namespace Zilf.ZModel.Values
 
         private bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
         {
+            // value can be the name of a constant, in which case we need to check the constant value instead
+            if (value is ZilAtom)
+            {
+                var constant = ctx.GetZVal((ZilAtom)value) as ZilConstant;
+                if (constant != null)
+                    value = constant.Value;
+            }
+
             var declAtom = decl as ZilAtom;
             if (declAtom != null)
             {
