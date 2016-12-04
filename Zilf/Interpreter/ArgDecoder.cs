@@ -1449,8 +1449,8 @@ namespace Zilf.Interpreter
             Contract.Requires(structType.IsValueType);
             Contract.Requires(structType.IsLayoutSequential);
             Contract.Ensures(Contract.ValueAtReturn(out fields) != null);
-            Contract.Ensures(Contract.Result<DecodingStep[]>() != null);
-            Contract.Ensures(Contract.ValueAtReturn(out fields).Length == Contract.Result<DecodingStep[]>().Length);
+            Contract.Ensures(Contract.Result<DecodingStepInfo[]>() != null);
+            Contract.Ensures(Contract.ValueAtReturn(out fields).Length == Contract.Result<DecodingStepInfo[]>().Length);
             Contract.Ensures(Contract.ValueAtReturn(out lowerBound) >= 0);
             Contract.Ensures(!(Contract.ValueAtReturn(out upperBound) < 0));
 
