@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
@@ -47,6 +48,12 @@ namespace Zilf.Language
             Contract.Requires(minArgs >= 0);
             Contract.Requires(maxArgs >= 0);
             Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
+        }
+
+        protected override Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location)
+        {
+            return DiagnosticFactory<CompilerMessages>.Instance.GetDiagnostic(
+                location, CompilerMessages.LegacyError, new[] { message });
         }
     }
 }

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using Zilf.Diagnostics;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
@@ -142,26 +143,9 @@ namespace Zilf.Interpreter.Values
             if (target.IsApplicable(ctx))
             {
                 using (var frame = ctx.PushFrame(this))
+                using (DiagnosticContext.Push(this.SourceLine, frame))
                 {
-                    try
-                    {
-                        return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
-                    }
-                    catch (InterpreterError ex) when (ex.Frame == null || ex.Source == null)
-                    {
-                        if (ex.Frame == null)
-                            ex.Frame = frame;
-
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = this.SourceLine;
-
-                        throw;
-                    }
-                    catch (ZilError ex) when (ex.SourceLine == null)
-                    {
-                        ex.SourceLine = this.SourceLine;
-                        throw;
-                    }
+                    return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
                 }
             }
             else
@@ -188,37 +172,18 @@ namespace Zilf.Interpreter.Values
             if (target != null && target.GetTypeAtom(ctx).StdAtom == StdAtom.MACRO)
             {
                 using (var frame = ctx.PushFrame(this))
+                using (DiagnosticContext.Push(this.SourceLine, frame))
                 {
-                    try
-                    {
-                        ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
-                            Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
+                    ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
+                        Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
 
-                        ZilForm resultForm = result as ZilForm;
-                        if (resultForm == null || resultForm == this)
-                            return result;
+                    ZilForm resultForm = result as ZilForm;
+                    if (resultForm == null || resultForm == this)
+                        return result;
 
-                        // set the source info on the expansion to match the macro invocation
-                        resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
-                        return resultForm.Expand(ctx);
-                    }
-                    catch (InterpreterError ex)
-                    {
-                        if (ex.Frame == null)
-                            ex.Frame = frame;
-
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = this.SourceLine;
-
-                        throw;
-                    }
-                    catch (ZilError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = this.SourceLine;
-
-                        throw;
-                    }
+                    // set the source info on the expansion to match the macro invocation
+                    resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
+                    return resultForm.Expand(ctx);
                 }
             }
             else if (target is ZilFix)

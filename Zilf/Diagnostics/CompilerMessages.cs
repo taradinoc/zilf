@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010, 2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -15,13 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-namespace Zilf.Language
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Zilf.Diagnostics
 {
-    /// <summary>
-    /// Provides properties for describing the source of an error.
-    /// </summary>
-    public interface ISourceLine
+    [MessageSet("ZIL")]
+    public abstract class CompilerMessages
     {
-        string SourceInfo { get; }
+        private CompilerMessages()
+        {
+        }
+
+        #region General
+
+        [Message("{0}")]
+        public const int LegacyError = 0;
+
+        #endregion
     }
 }
