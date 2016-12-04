@@ -40,6 +40,8 @@ namespace Zilf.Diagnostics
         public object[] MessageArgs { get; private set; }
         public string StackTrace { get; private set; }
 
+        private static readonly object[] NoArguments = new object[0];
+
         public Diagnostic(ISourceLine location, Severity severity,
             string codePrefix, int code,
             string messageFormat, object[] messageArgs,
@@ -49,14 +51,13 @@ namespace Zilf.Diagnostics
             Contract.Requires(codePrefix != null);
             Contract.Requires(code >= 0);
             Contract.Requires(messageFormat != null);
-            Contract.Requires(messageArgs != null);
 
             this.Location = location;
             this.Severity = severity;
             this.CodePrefix = codePrefix;
             this.Code = code;
             this.MessageFormat = messageFormat;
-            this.MessageArgs = messageArgs;
+            this.MessageArgs = messageArgs ?? NoArguments;
             this.StackTrace = stackTrace;
         }
 
