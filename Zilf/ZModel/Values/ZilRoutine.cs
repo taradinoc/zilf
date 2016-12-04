@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Values
 {
@@ -50,11 +51,11 @@ namespace Zilf.ZModel.Values
         public static ZilRoutine FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty || list.Rest.IsEmpty)
-                throw new InterpreterError("list must have at least 2 elements");
+                throw new InterpreterError(InterpreterMessages.List_Must_Have_At_Least_2_Elements);
 
             var argList = list.First as ZilList;
             if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError("first element must be a list");
+                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_A_List);
 
             return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
         }

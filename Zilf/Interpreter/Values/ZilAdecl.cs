@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -35,7 +36,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(vector != null);
 
             if (vector.GetLength() != 2)
-                throw new InterpreterError("vector coerced to ADECL must have length 2");
+                throw new InterpreterError(InterpreterMessages.Vector_Coerced_To_ADECL_Must_Have_Length_2);
 
             First = vector[0];
             Second = vector[1];

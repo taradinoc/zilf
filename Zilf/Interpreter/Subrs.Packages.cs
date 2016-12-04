@@ -19,6 +19,7 @@ using System;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -99,7 +100,7 @@ namespace Zilf.Interpreter
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
             {
-                throw new InterpreterError("ENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs");
+                throw new InterpreterError(InterpreterMessages.ENTRY_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs);
             }
 
             var internalObList = (ObList)currentObPath.First;
@@ -108,7 +109,7 @@ namespace Zilf.Interpreter
             // make sure we're inside a PACKAGE
             var packageAtom = ctx.GetStdAtom(StdAtom.PACKAGE);
             if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
-                throw new InterpreterError("ENTRY: must be called from within a PACKAGE");
+                throw new InterpreterError(InterpreterMessages.ENTRY_Must_Be_Called_From_Within_A_PACKAGE);
 
             var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != externalObList);
             if (onWrongOblist.Any())
@@ -135,7 +136,7 @@ namespace Zilf.Interpreter
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
             {
-                throw new InterpreterError("RENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs");
+                throw new InterpreterError(InterpreterMessages.RENTRY_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs);
             }
 
             var internalObList = (ObList)currentObPath.First;
@@ -146,7 +147,7 @@ namespace Zilf.Interpreter
             var internalPackageProp = ctx.GetProp(internalObList, packageAtom);
             var externalPackageProp = ctx.GetProp(externalObList, packageAtom);
             if (internalPackageProp != ctx.GetStdAtom(StdAtom.DEFINITIONS) && externalPackageProp != packageAtom)
-                throw new InterpreterError("RENTRY: must be called from within a PACKAGE or DEFINITIONS");
+                throw new InterpreterError(InterpreterMessages.RENTRY_Must_Be_Called_From_Within_A_PACKAGE_Or_DEFINITIONS);
 
             var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
             if (onWrongOblist.Any())

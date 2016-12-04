@@ -239,7 +239,7 @@ namespace Zilf.ZModel.Values
                                         break;
 
                                     default:
-                                        throw new InterpreterError("string in PROPDEF output pattern must be \"MANY\"");
+                                        throw new InterpreterError(InterpreterMessages.String_In_PROPDEF_Output_Pattern_Must_Be_MANY);
                                 }
                                 break;
 
@@ -248,20 +248,20 @@ namespace Zilf.ZModel.Values
                                 break;
 
                             default:
-                                throw new InterpreterError("PROPDEF output elements must be FIX, FALSE, FORM, STRING, or SEMI");
+                                throw new InterpreterError(InterpreterMessages.PROPDEF_Output_Elements_Must_Be_FIX_FALSE_FORM_STRING_Or_SEMI);
                         }
                     }
                 }
 
                 if (inputs.Count == 0 || inputs[0].Type != InputElementType.Atom)
                 {
-                    throw new InterpreterError("PROPDEF pattern must start with an atom");
+                    throw new InterpreterError(InterpreterMessages.PROPDEF_Pattern_Must_Start_With_An_Atom);
                 }
                 inputs.RemoveAt(0);
 
                 if (outputs.Skip(1).Any(e => e.Type == OutputElementType.Length))
                 {
-                    throw new InterpreterError("FIX/FALSE in PROPDEF output pattern must be at the beginning");
+                    throw new InterpreterError(InterpreterMessages.FIXFALSE_In_PROPDEF_Output_Pattern_Must_Be_At_The_Beginning);
                 }
 
                 if (outputs.Count >= 1 && outputs[0].Type == OutputElementType.Length && outputs[0].Fix == null)
@@ -297,7 +297,7 @@ namespace Zilf.ZModel.Values
             var atom = form.First as ZilAtom;
             if (atom == null)
             {
-                throw new InterpreterError(form, "FORM in PROPDEF pattern must start with an atom");
+                throw new InterpreterError(form, InterpreterMessages.FORM_In_PROPDEF_Pattern_Must_Start_With_An_Atom);
             }
 
             int length = 2;

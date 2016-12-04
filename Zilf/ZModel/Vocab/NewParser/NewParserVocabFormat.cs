@@ -27,6 +27,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
@@ -50,7 +51,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             verbClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TVERB)).Value;
 
             if (AnyDuplicates(adjClass, buzzClass, dirClass, objectClass, prepClass, verbClass))
-                throw new InterpreterError("GET-CLASSIFICATION must return different values for ADJ, BUZZ, DIR, NOUN, PREP, and VERB");
+                throw new InterpreterError(InterpreterMessages.GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB);
         }
 
         private static bool AnyDuplicates<T>(params T[] args)
@@ -81,7 +82,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             var vword = form.Eval(ctx) as ZilHash;
 
             if (vword == null || vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
-                throw new InterpreterError("MAKE-VWORD must return a VWORD");
+                throw new InterpreterError(InterpreterMessages.MAKEVWORD_Must_Return_A_VWORD);
 
             return new NewParserWord(ctx, atom, vword);
         }
@@ -594,7 +595,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var vword = form.Eval(ctx);
 
                 if (vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
-                    throw new InterpreterError("NEW-ADD-WORD: MAKE-VWORD must return a VWORD");
+                    throw new InterpreterError(InterpreterMessages.NEWADDWORD_MAKEVWORD_Must_Return_A_VWORD);
 
                 word = NewParserWord.FromVword(ctx, (ZilHash)vword);
                 ctx.ZEnvironment.Vocabulary.Add(name, word);
@@ -619,7 +620,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                         (word.SemanticStuff != null || word.DirId != null) &&
                         value != null)
                     {
-                        throw new InterpreterError("NEW-ADD-WORD: word would be overloaded");
+                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_Word_Would_Be_Overloaded);
                     }
                 }
 
@@ -643,7 +644,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     }
                     else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     {
-                        throw new InterpreterError("NEW-ADD-WORD: GVAL of WORD-FLAGS-LIST must be a list");
+                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List);
                     }
 
                     wordFlagsList = new ZilList(word.Inner, new ZilList(flags, (ZilList)wordFlagsList));
@@ -722,7 +723,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     classification = form.Eval(ctx) as ZilFix;
 
                     if (classification == null)
-                        throw new InterpreterError("NEW-ADD-WORD: GET-CLASSIFICATION must return a FIX");
+                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_GETCLASSIFICATION_Must_Return_A_FIX);
 
                     break;
             }
@@ -760,7 +761,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 }
                 else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 {
-                    throw new CompilerError("GVAL of WORD-FLAGS-LIST must be a list");
+                    throw new CompilerError(CompilerMessages.GVAL_Of_WORDFLAGSLIST_Must_Be_A_List);
                 }
 
                 var wordFlagTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.WORD_FLAG_TABLE)) as ITableBuilder;
@@ -774,7 +775,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 while (!wordFlagsList.IsEmpty)
                 {
                     if (wordFlagsList.Rest.IsEmpty)
-                        throw new CompilerError("WORD-FLAGS-LIST must have an even number of elements");
+                        throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
 
                     var vword = wordFlagsList.First;
                     var flags = wordFlagsList.Rest.First;

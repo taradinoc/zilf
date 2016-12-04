@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -37,12 +38,12 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(vector != null);
 
             if (vector.GetLength() != 3)
-                throw new InterpreterError("vector coerced to OFFSET must have length 2");
+                throw new InterpreterError(InterpreterMessages.Vector_Coerced_To_OFFSET_Must_Have_Length_2);
 
             var indexFix = vector[0] as ZilFix;
 
             if (indexFix == null)
-                throw new InterpreterError("first element must be a FIX");
+                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_A_FIX);
 
             Index = indexFix.Value;
             StructurePattern = vector[1];
@@ -212,7 +213,7 @@ namespace Zilf.Interpreter.Values
             }
             set
             {
-                throw new InterpreterError("OFFSET is immutable");
+                throw new InterpreterError(InterpreterMessages.OFFSET_Is_Immutable);
             }
         }
 
@@ -258,7 +259,7 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (InvalidCastException)
                 {
-                    throw new InterpreterError("expected a structured value after the OFFSET");
+                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
                 }
             }
             else if (args.Length == 2)
@@ -271,12 +272,12 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (InvalidCastException)
                 {
-                    throw new InterpreterError("expected a structured value after the OFFSET");
+                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
                 }
             }
             else
             {
-                throw new InterpreterError("expected 1 or 2 args after an OFFSET");
+                throw new InterpreterError(InterpreterMessages.Expected_1_Or_2_Args_After_An_OFFSET);
             }
         }
     }

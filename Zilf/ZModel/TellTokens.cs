@@ -21,6 +21,7 @@ using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel
 {
@@ -143,12 +144,12 @@ namespace Zilf.ZModel
 
                         list = (ZilList)zo;
                         if (list.First == null || !list.All(e => e is ZilAtom))
-                            throw new InterpreterError(zo.SourceLine, "lists in TELL token specs must contain atoms");
+                            throw new InterpreterError(zo.SourceLine, InterpreterMessages.Lists_In_TELL_Token_Specs_Must_Contain_Atoms);
                         foreach (ZilAtom atom in list)
                             atomToken.Atoms.Add(atom);
 
                         if (tokensSoFar.Count != 0)
-                            throw new InterpreterError("lists in TELL token specs must come at the beginning of a pattern");
+                            throw new InterpreterError(InterpreterMessages.Lists_In_TELL_Token_Specs_Must_Come_At_The_Beginning_Of_A_Pattern);
 
                         tokensSoFar.Add(atomToken);
                         break;
@@ -165,7 +166,7 @@ namespace Zilf.ZModel
                             atomToken.Atoms.Add((ZilAtom)zo);
 
                             if (tokensSoFar.Count != 0)
-                                throw new InterpreterError("lists and atoms in TELL token specs must come at the beginning");
+                                throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
 
                             tokensSoFar.Add(atomToken);
                         }
@@ -175,7 +176,7 @@ namespace Zilf.ZModel
                         // *:DECL to capture any value that matches the decl
                         adecl = (ZilAdecl)zo;
                         if (!(adecl.First is ZilAtom) || ((ZilAtom)adecl.First).StdAtom != StdAtom.Times)
-                            throw new InterpreterError("left side of ADECL in TELL token spec must be '*'");
+                            throw new InterpreterError(InterpreterMessages.Left_Side_Of_ADECL_In_TELL_Token_Spec_Must_Be_);
                         tokensSoFar.Add(new DeclToken { Pattern = adecl.Second });
                         capturesSoFar++;
                         break;
@@ -187,7 +188,7 @@ namespace Zilf.ZModel
                         {
                             var atom = form.Rest.First as ZilAtom;
                             if (atom == null)
-                                throw new InterpreterError(form.SourceLine, "malformed GVAL in TELL token spec");
+                                throw new InterpreterError(form.SourceLine, InterpreterMessages.Malformed_GVAL_In_TELL_Token_Spec);
                             tokensSoFar.Add(new GvalToken { Atom = atom });
                         }
                         else
@@ -224,7 +225,7 @@ namespace Zilf.ZModel
 
             if (tokensSoFar.Count != 0)
             {
-                throw new InterpreterError("TELL token spec ends with an unterminated pattern");
+                throw new InterpreterError(InterpreterMessages.TELL_Token_Spec_Ends_With_An_Unterminated_Pattern);
             }
         }
 

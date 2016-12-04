@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -94,7 +95,7 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (InvalidCastException)
                 {
-                    throw new InterpreterError("expected a structured value after the FIX");
+                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_FIX);
                 }
             }
             else if (args.Length == 2)
@@ -105,12 +106,12 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (InvalidCastException)
                 {
-                    throw new InterpreterError("expected a structured value after the FIX");
+                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_FIX);
                 }
             }
             else
             {
-                throw new InterpreterError("expected 1 or 2 args after a FIX");
+                throw new InterpreterError(InterpreterMessages.Expected_1_Or_2_Args_After_A_FIX);
             }
         }
 

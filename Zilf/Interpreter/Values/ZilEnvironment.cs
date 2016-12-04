@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -33,7 +34,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom)
         {
-            throw new InterpreterError("CHTYPE to ENVIRONMENT not supported");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ENVIRONMENT");
         }
 
         public ZilEnvironment(LocalEnvironment env, ZilAtom name)
@@ -99,7 +100,7 @@ namespace Zilf.Interpreter.Values
                     return result;
                 }
 
-                throw new InterpreterError("environment has expired");
+                throw new InterpreterError(InterpreterMessages.Environment_Has_Expired);
             }
         }
 

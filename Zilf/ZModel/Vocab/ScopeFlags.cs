@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Vocab
 {
@@ -75,7 +76,7 @@ namespace Zilf.ZModel.Vocab
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null)
-                        throw new InterpreterError("object options in syntax must be atoms");
+                        throw new InterpreterError(InterpreterMessages.Object_Options_In_Syntax_Must_Be_Atoms);
 
                     switch (atom.StdAtom)
                     {
@@ -113,7 +114,7 @@ namespace Zilf.ZModel.Vocab
                 {
                     var length = sflagsVector.GetLength();
                     if (length % 2 != 0)
-                        throw new InterpreterError("NEW-SFLAGS vector must have an even number of elements");
+                        throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Vector_Must_Have_An_Even_Number_Of_Elements);
 
                     entry = new CacheEntry();
 
@@ -137,10 +138,10 @@ namespace Zilf.ZModel.Vocab
                         else if (name is ZilAtom)
                             nameStr = ((ZilAtom)name).Text;
                         else
-                            throw new InterpreterError("NEW-SFLAGS names must be strings or atoms");
+                            throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Names_Must_Be_Strings_Or_Atoms);
 
                         if (!(value is ZilFix) || (((ZilFix)value).Value & ~255) != 0)
-                            throw new InterpreterError("NEW-SFLAGS values must be FIXes between 0 and 255");
+                            throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Values_Must_Be_FIXes_Between_0_And_255);
 
                         entry.Dict[nameStr] = (byte)((ZilFix)value).Value;
                     }
@@ -156,7 +157,7 @@ namespace Zilf.ZModel.Vocab
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null)
-                        throw new InterpreterError("object options in syntax must be atoms");
+                        throw new InterpreterError(InterpreterMessages.Object_Options_In_Syntax_Must_Be_Atoms);
 
                     string name = atom.Text;
                     byte value;

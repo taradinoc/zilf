@@ -21,6 +21,7 @@ using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -53,14 +54,14 @@ namespace Zilf.Interpreter
                 if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
                     pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
                 {
-                    throw new InterpreterError("list elements must be 2-element lists");
+                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists);
                 }
 
                 var key = pair.First as ZilString;
                 var value = pair.Rest.First as ZilAtom;
 
                 if (key == null || value == null)
-                    throw new InterpreterError("list elements must be string/atom pairs");
+                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_Stringatom_Pairs);
 
                 result[key.Text] = value;
             }

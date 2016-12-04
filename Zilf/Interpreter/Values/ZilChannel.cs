@@ -19,6 +19,7 @@ using System;
 using System.IO;
 using System.Text;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -33,7 +34,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChannel FromVector(Context ctx, ZilVector vector)
         {
-            throw new InterpreterError("CHTYPE to CHANNEL not supported");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "CHANNEL");
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)

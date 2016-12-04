@@ -19,6 +19,7 @@ using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Values
 {
@@ -42,7 +43,7 @@ namespace Zilf.ZModel.Values
             Contract.Ensures(Contract.Result<ZilWord>() != null);
 
             if (list.First == null || list.Rest == null || !list.Rest.IsEmpty)
-                throw new InterpreterError("list must have length 1");
+                throw new InterpreterError(InterpreterMessages.List_Must_Have_Length_1);
 
             return new ZilWord(list.First);
         }

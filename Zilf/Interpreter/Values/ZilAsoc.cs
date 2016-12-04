@@ -22,6 +22,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -50,7 +51,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAsoc FromList(Context ctx, ZilList list)
         {
-            throw new InterpreterError("CHTYPE to ASOC not supported");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ASOC");
         }
 
         public ZilObject Item => results[index].Item;

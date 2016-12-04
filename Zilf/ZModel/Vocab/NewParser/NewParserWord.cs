@@ -26,6 +26,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
@@ -55,7 +56,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             });
             var lexicalWord = form.Eval(ctx) as ZilString;
             if (lexicalWord == null)
-                throw new InterpreterError("WORD-LEXICAL-WORD must return a string");
+                throw new InterpreterError(InterpreterMessages.WORDLEXICALWORD_Must_Return_A_String);
 
             var atom = ZilAtom.Parse(lexicalWord.Text, ctx);
             return new NewParserWord(ctx, atom, vword);

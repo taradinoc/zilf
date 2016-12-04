@@ -353,7 +353,7 @@ namespace Zilf.Compiler
             }
 
             if (mainRoutine == null)
-                throw new CompilerError("missing 'GO' routine");
+                throw new CompilerError(CompilerMessages.Missing_GO_Routine);
 
             // ...and we're done generating code
             ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.IN_ZILCH), ctx.FALSE, true);
@@ -636,7 +636,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    throw new CompilerError("header extensions not supported for this target");
+                    throw new CompilerError(CompilerMessages.Header_Extensions_Not_Supported_For_This_Target);
                 }
             }
         }
@@ -1368,7 +1368,7 @@ namespace Zilf.Compiler
                         if (((IStructure)list).GetLength(1) <= 1 || (args = list.First as ZilList) == null ||
                             args.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                         {
-                            throw new InterpreterError("routine rewriter result must contain an arg spec and a body");
+                            throw new InterpreterError(InterpreterMessages.Routine_Rewriter_Result_Must_Contain_An_Arg_Spec_And_A_Body);
                         }
                         body = list.Rest;
                         return new ZilRoutine(origRoutine.Name, null, args, body, origRoutine.Flags);
@@ -1377,7 +1377,7 @@ namespace Zilf.Compiler
                         break;
 
                     default:
-                        throw new InterpreterError("routine rewriter must return a LIST or FALSE");
+                        throw new InterpreterError(InterpreterMessages.Routine_Rewriter_Must_Return_A_LIST_Or_FALSE);
                 }
             }
 
@@ -1439,7 +1439,7 @@ namespace Zilf.Compiler
                         if (arg.Type == ArgItem.ArgType.Optional)
                         {
                             if (!rb.HasArgCount)
-                                throw new CompilerError(routine.SourceLine, "optional args with non-constant defaults not supported for this target");
+                                throw new CompilerError(routine.SourceLine, CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
 
                             ILabel nextLabel = rb.DefineLabel();
                             rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
@@ -1505,9 +1505,9 @@ namespace Zilf.Compiler
                     if (value == null)
                     {
                         if (stmt.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
-                            throw new CompilerError("lists cannot be returned (misplaced bracket in COND?)");
+                            throw new CompilerError(CompilerMessages.Lists_Cannot_Be_Returned_Misplaced_Bracket_In_COND);
                         else
-                            throw new CompilerError("values of this type cannot be returned");
+                            throw new CompilerError(CompilerMessages.Values_Of_This_Type_Cannot_Be_Returned);
                     }
 
                     rb.Return(value);
@@ -2570,7 +2570,7 @@ namespace Zilf.Compiler
                     case StdAtom.ADECL:
                         atom = ((ZilAdecl)obj).First as ZilAtom;
                         if (atom == null)
-                            throw new CompilerError("invalid atom binding");
+                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
                         innerLocals.Enqueue(atom);
                         PushInnerLocal(cc, rb, atom);
                         break;
@@ -2579,7 +2579,7 @@ namespace Zilf.Compiler
                         ZilList list = (ZilList)obj;
                         if (list.First == null || list.Rest == null ||
                             list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
-                            throw new CompilerError("binding with value must be a 2-element list");
+                            throw new CompilerError(CompilerMessages.Binding_With_Value_Must_Be_A_2element_List);
                         atom = list.First as ZilAtom;
                         if (atom == null)
                         {
@@ -2589,7 +2589,7 @@ namespace Zilf.Compiler
                         }
                         ZilObject value = list.Rest.First;
                         if (atom == null)
-                            throw new CompilerError("invalid atom binding");
+                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
                         innerLocals.Enqueue(atom);
                         ILocalBuilder lb = PushInnerLocal(cc, rb, atom);
                         IOperand loc = CompileAsOperand(cc, rb, value, src, lb);
@@ -2598,7 +2598,7 @@ namespace Zilf.Compiler
                         break;
 
                     default:
-                        throw new CompilerError("elements of binding list must be atoms or lists");
+                        throw new CompilerError(CompilerMessages.Elements_Of_Binding_List_Must_Be_Atoms_Or_Lists);
                 }
             }
 
@@ -2744,20 +2744,20 @@ namespace Zilf.Compiler
             // parse binding list
             if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
-                throw new CompilerError("expected binding list at start of DO");
+                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_DO);
             }
 
             var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(4);
             if (specLength < 3 || specLength == null)
             {
-                throw new CompilerError("DO: expected 3 or 4 elements in binding list");
+                throw new CompilerError(CompilerMessages.DO_Expected_3_Or_4_Elements_In_Binding_List);
             }
 
             var atom = spec.First as ZilAtom;
             if (atom == null)
             {
-                throw new CompilerError("DO: first element in binding list must be an atom");
+                throw new CompilerError(CompilerMessages.DO_First_Element_In_Binding_List_Must_Be_An_Atom);
             }
 
             var start = spec.Rest.First;
@@ -2894,20 +2894,20 @@ namespace Zilf.Compiler
             // parse binding list
             if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
-                throw new CompilerError("expected binding list at start of MAP-CONTENTS");
+                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_MAPCONTENTS);
             }
 
             var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength < 2 || specLength == null)
             {
-                throw new CompilerError("MAP-CONTENTS: expected 2 or 3 elements in binding list");
+                throw new CompilerError(CompilerMessages.MAPCONTENTS_Expected_2_Or_3_Elements_In_Binding_List);
             }
 
             var atom = spec.First as ZilAtom;
             if (atom == null)
             {
-                throw new CompilerError("MAP-CONTENTS: first element in binding list must be an atom");
+                throw new CompilerError(CompilerMessages.MAPCONTENTS_First_Element_In_Binding_List_Must_Be_An_Atom);
             }
 
             ZilAtom nextAtom;
@@ -2917,7 +2917,7 @@ namespace Zilf.Compiler
                 nextAtom = spec.Rest.First as ZilAtom;
                 if (nextAtom == null)
                 {
-                    throw new CompilerError("MAP-CONTENTS: middle element in binding list must be an atom");
+                    throw new CompilerError(CompilerMessages.MAPCONTENTS_Middle_Element_In_Binding_List_Must_Be_An_Atom);
                 }
 
                 container = spec.Rest.Rest.First;
@@ -3033,32 +3033,32 @@ namespace Zilf.Compiler
             // parse binding list
             if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
-                throw new CompilerError("expected binding list at start of MAP-DIRECTIONS");
+                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_MAPDIRECTIONS);
             }
 
             var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength != 3)
             {
-                throw new CompilerError("MAP-DIRECTIONS: expected 3 elements in binding list");
+                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Expected_3_Elements_In_Binding_List);
             }
 
             var dirAtom = spec.First as ZilAtom;
             if (dirAtom == null)
             {
-                throw new CompilerError("MAP-DIRECTIONS: first element in binding list must be an atom");
+                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_First_Element_In_Binding_List_Must_Be_An_Atom);
             }
 
             var ptAtom = spec.Rest.First as ZilAtom;
             if (ptAtom == null)
             {
-                throw new CompilerError("MAP-DIRECTIONS: middle element in binding list must be an atom");
+                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Middle_Element_In_Binding_List_Must_Be_An_Atom);
             }
 
             var room = spec.Rest.Rest.First;
             if (!room.IsLVAL() && !room.IsGVAL())
             {
-                throw new CompilerError("MAP-DIRECTIONS: last element in binding list must be an LVAL or GVAL");
+                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Last_Element_In_Binding_List_Must_Be_An_LVAL_Or_GVAL);
             }
 
             // look for an end block
@@ -3169,7 +3169,7 @@ namespace Zilf.Compiler
                 }
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
-                    throw new CompilerError("all clauses in COND must be lists");
+                    throw new CompilerError(CompilerMessages.All_Clauses_In_COND_Must_Be_Lists);
 
                 ZilObject condition = clause.First;
 
@@ -3291,7 +3291,7 @@ namespace Zilf.Compiler
                 clauses = clauses.Rest;
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
-                    throw new CompilerError("all clauses in VERSION? must be lists");
+                    throw new CompilerError(CompilerMessages.All_Clauses_In_VERSION_Must_Be_Lists);
 
                 ZilObject condition = clause.First;
 
@@ -3319,18 +3319,18 @@ namespace Zilf.Compiler
                                 condVersion = 0;
                                 break;
                             default:
-                                throw new CompilerError("unrecognized atom in VERSION? (must be ZIP, EZIP, XZIP, YZIP, ELSE/T)");
+                                throw new CompilerError(CompilerMessages.Unrecognized_Atom_In_VERSION_Must_Be_ZIP_EZIP_XZIP_YZIP_ELSET);
                         }
                         break;
 
                     case StdAtom.FIX:
                         condVersion = ((ZilFix)condition).Value;
                         if (condVersion < 3 || condVersion > 8)
-                            throw new CompilerError("version number out of range (must be 3-6)");
+                            throw new CompilerError(CompilerMessages.Version_Number_Out_Of_Range_Must_Be_36);
                         break;
 
                     default:
-                        throw new CompilerError("conditions in in VERSION? clauses must be ATOMs");
+                        throw new CompilerError(CompilerMessages.Conditions_In_In_VERSION_Clauses_Must_Be_ATOMs);
                 }
 
                 // does this clause match?
@@ -3376,7 +3376,7 @@ namespace Zilf.Compiler
                 clauses = clauses.Rest as ZilList;
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
-                    throw new CompilerError("all clauses in IFFLAG must be lists");
+                    throw new CompilerError(CompilerMessages.All_Clauses_In_IFFLAG_Must_Be_Lists);
 
                 ZilAtom atom;
                 ZilString str;

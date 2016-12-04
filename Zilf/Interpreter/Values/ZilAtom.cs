@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -138,7 +139,7 @@ namespace Zilf.Interpreter.Values
                     return result;
                 }
                 else
-                    throw new InterpreterError("no OBLIST path");
+                    throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
             }
 
             // look for it in the specified oblist

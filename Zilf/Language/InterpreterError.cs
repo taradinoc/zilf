@@ -23,7 +23,7 @@ using Zilf.Interpreter;
 
 namespace Zilf.Language
 {
-    class InterpreterError : ZilError
+    class InterpreterError : ZilError<InterpreterMessages>
     {
         public Frame Frame { get; }
 
@@ -36,6 +36,7 @@ namespace Zilf.Language
             Frame = DiagnosticContext.Current.Frame;
         }
 
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
         public InterpreterError(string message, Exception innerException)
             : base(message, innerException)
         {
@@ -63,31 +64,6 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(ISourceLine src, string func, int minArgs, int maxArgs)
-            : base(src, func, minArgs, maxArgs)
-        {
-            Contract.Requires(func != null);
-            Contract.Requires(minArgs >= 0);
-            Contract.Requires(maxArgs >= 0);
-            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
-
-            Frame = DiagnosticContext.Current.Frame;
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(IProvideSourceLine node, string func, int minArgs, int maxArgs)
-            : base(node.SourceLine, func, minArgs, maxArgs)
-        {
-            Contract.Requires(node != null);
-            Contract.Requires(func != null);
-            Contract.Requires(minArgs >= 0);
-            Contract.Requires(maxArgs >= 0);
-            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
-
-            Frame = DiagnosticContext.Current.Frame;
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
         public InterpreterError(string func, int minArgs, int maxArgs)
             : base(null, func, minArgs, maxArgs)
         {
@@ -95,8 +71,6 @@ namespace Zilf.Language
             Contract.Requires(minArgs >= 0);
             Contract.Requires(maxArgs >= 0);
             Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
-
-            Frame = DiagnosticContext.Current.Frame;
         }
 
         public InterpreterError(int code)
@@ -119,45 +93,14 @@ namespace Zilf.Language
         {
         }
 
-        protected static Diagnostic MakeDiagnostic(ISourceLine sourceLine, int code, object[] messageArgs = null)
+        public InterpreterError(IProvideSourceLine sourceLine, int code)
+           : this(sourceLine, code, null)
         {
-            return DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
-                sourceLine, code, null, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        protected override Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location)
+        public InterpreterError(IProvideSourceLine node, int code, params object[] messageArgs)
+            : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
-            return DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
-                location, InterpreterMessages.LegacyError, new[] { message }, MakeStackTrace(Frame)); 
-        }
-
-        private static string MakeStackTrace(Frame errorFrame)
-        {
-            if (errorFrame == null)
-                return null;
-
-            var sb = new StringBuilder();
-
-            // skip the top and bottom frame
-            for (var frame = errorFrame.Parent; frame?.Parent != null; frame = frame.Parent)
-            {
-                if (sb.Length > 0)
-                    sb.AppendLine();
-
-                string caller;
-                if (frame.CallingForm != null)
-                {
-                    caller = $"in {frame.CallingForm.First.ToString()} called ";
-                }
-                else
-                {
-                    caller = "";
-                }
-
-                sb.AppendFormat("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
-            }
-
-            return sb.ToString();
         }
     }
 }

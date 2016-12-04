@@ -21,6 +21,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -243,7 +244,7 @@ namespace Zilf.Interpreter
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
-                    throw new InterpreterError("RETURN: no enclosing PROG/REPEAT");
+                    throw new InterpreterError(InterpreterMessages.FUNCNAME0_No_Enclosing_PROGREPEAT, "RETURN");
             }
 
             throw new ReturnException(activation, value);
@@ -258,7 +259,7 @@ namespace Zilf.Interpreter
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
-                    throw new InterpreterError("AGAIN: no enclosing PROG/REPEAT");
+                    throw new InterpreterError(InterpreterMessages.FUNCNAME0_No_Enclosing_PROGREPEAT, "AGAIN");
             }
 
             throw new AgainException(activation);

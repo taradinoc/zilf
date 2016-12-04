@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -43,7 +44,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilActivation FromAtom(Context ctx, ZilAtom name)
         {
-            throw new InterpreterError("CHTYPE to ACTIVATION not supported");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ACTIVATION");
         }
 
         public override PrimType PrimType
