@@ -162,6 +162,12 @@
     <Compile Include="Compiler\Operands.cs" />
     <Compile Include="Compiler\SoftGlobal.cs" />
     <Compile Include="Compiler\VariableRef.cs" />
+    <Compile Include="Diagnostics\CompilerMessages.cs" />
+    <Compile Include="Diagnostics\DefaultDiagnosticFormatter.cs" />
+    <Compile Include="Diagnostics\Diagnostic.cs" />
+    <Compile Include="Diagnostics\DiagnosticContext.cs" />
+    <Compile Include="Diagnostics\IDiagnosticFormatter.cs" />
+    <Compile Include="Diagnostics\InterpreterMessages.cs" />
     <Compile Include="Interpreter\AgainException.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
     <Compile Include="Interpreter\ArgDecoder.cs" />

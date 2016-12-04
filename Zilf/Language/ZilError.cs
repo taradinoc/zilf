@@ -16,32 +16,47 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
     abstract class ZilError : Exception
     {
+        public Diagnostic Diagnostic { get; }
+
         public ISourceLine SourceLine { get; set; }
 
         public ZilError(string message)
             : base(message)
         {
+            SourceLine = DiagnosticContext.Current.SourceLine;
+            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
         }
 
         public ZilError(string message, Exception innerException)
             : base(message, innerException)
         {
+            SourceLine = DiagnosticContext.Current.SourceLine;
+            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
         }
 
         public ZilError(ISourceLine src, string message)
             : base(message)
         {
-            this.SourceLine = src;
+            SourceLine = src ?? DiagnosticContext.Current.SourceLine;
+            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
         }
 
         public ZilError(ISourceLine src, string func, int minArgs, int maxArgs)
             : this(src, ArgCountMsg(func, minArgs, maxArgs))
         {
+        }
+
+        public ZilError(Diagnostic diag)
+            : base(diag.ToString())
+        {
+            Diagnostic = diag;
+            SourceLine = diag.Location;
         }
 
         public string SourcePrefix
@@ -66,5 +81,7 @@ namespace Zilf.Language
             else
                 return string.Format("{0}: expected {1} to {2} {3}s", func, min, max, argName);
         }
+
+        protected abstract Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location);
     }
 }

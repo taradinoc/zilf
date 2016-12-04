@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -130,7 +131,7 @@ namespace Zilf.ZModel.Values
             foreach (var patternObj in spec)
             {
                 if (patternObj.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError("PROPDEF patterns must be lists");
+                    throw new InterpreterError(InterpreterMessages.PROPDEF_Patterns_Must_Be_Lists);
 
                 var list = (ZilList)patternObj;
                 bool gotEq = false;
@@ -183,7 +184,7 @@ namespace Zilf.ZModel.Values
                                         break;
 
                                     default:
-                                        throw new InterpreterError("strings in PROPDEF patterns must be \"OPT\" or \"MANY\"");
+                                        throw new InterpreterError(InterpreterMessages.Strings_In_PROPDEF_Patterns_Must_Be_OPT_Or_MANY);
                                 }
                                 break;
                         }
@@ -203,13 +204,13 @@ namespace Zilf.ZModel.Values
                                 elemList.Rest.Rest == null ||
                                 elemList.Rest.Rest.First != null)
                             {
-                                throw new InterpreterError("list in PROPDEF output pattern must have length 2");
+                                throw new InterpreterError(InterpreterMessages.List_In_PROPDEF_Output_Pattern_Must_Have_Length_2);
                             }
 
                             constant = elemList.First as ZilAtom;
                             if (constant == null)
                             {
-                                throw new InterpreterError("first item of list in PROPDEF output pattern must be an atom");
+                                throw new InterpreterError(InterpreterMessages.First_Item_Of_List_In_PROPDEF_Output_Pattern_Must_Be_An_Atom);
                             }
 
                             output = elemList.Rest.First;

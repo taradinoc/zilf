@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
@@ -60,6 +61,8 @@ namespace Zilf.Interpreter
         }
 
         private int errorCount, warningCount;
+        private readonly IDiagnosticFormatter diagnosticFormatter = new DefaultDiagnosticFormatter();
+
         private readonly bool ignoreCase;
         private readonly List<string> includePaths;
 
@@ -811,24 +814,27 @@ namespace Zilf.Interpreter
             Contract.Requires(ex != null);
             Contract.Ensures(errorCount > 0);
 
-            errorCount++;
-            Console.Error.WriteLine("[error] {0}{1}", ex.SourcePrefix, ex.Message);
+            HandleDiagnostic(ex.Diagnostic);
+        }
 
-            // stack trace for interpreter errors, skipping the top and bottom frame
-            for (var frame = (ex as InterpreterError)?.Frame?.Parent; frame?.Parent != null; frame = frame.Parent)
+        public void HandleDiagnostic(Diagnostic diag)
+        {
+            Contract.Requires(diag != null);
+            Contract.Ensures(errorCount >= Contract.OldValue(errorCount));
+            Contract.Ensures(warningCount >= Contract.OldValue(warningCount));
+
+            switch (diag.Severity)
             {
-                string caller;
-                if (frame.CallingForm != null)
-                {
-                    caller = $"in {frame.CallingForm.First.ToString()} called ";
-                }
-                else
-                {
-                    caller = "";
-                }
+                case Severity.Error:
+                    errorCount++;
+                    break;
 
-                Console.Error.WriteLine("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
+                case Severity.Warning:
+                    warningCount++;
+                    break;
             }
+
+            Console.Error.WriteLine(diagnosticFormatter.Format(diag));
         }
 
         public string FindIncludeFile(string name)

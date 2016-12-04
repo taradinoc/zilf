@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using Zilf.Diagnostics;
 using Zilf.Language;
 using Zilf.Language.Lexing;
 
@@ -120,7 +121,7 @@ namespace Zilf.Interpreter.Values
 
             ZilObject[] children;
 
-            try
+            using (DiagnosticContext.Push(new FileSourceLine(ctx.CurrentFile, tree.Line)))
             {
                 switch (tree.Type)
                 {
@@ -165,17 +166,14 @@ namespace Zilf.Interpreter.Values
                             return null;
                         try
                         {
-                            ZilObject result = inner.Eval(ctx);
-                            if (tree.Type == ZilLexer.MACRO)
-                                return result;
-                            else
-                                return null;
-                        }
-                        catch (ZilError ex)
-                        {
-                            if (ex.SourceLine == null)
-                                ex.SourceLine = inner.SourceLine;
-                            throw;
+                            using (DiagnosticContext.Push(inner.SourceLine))
+                            {
+                                ZilObject result = inner.Eval(ctx);
+                                if (tree.Type == ZilLexer.MACRO)
+                                    return result;
+                                else
+                                    return null;
+                            }
                         }
                         catch (ControlException ex)
                         {
@@ -191,13 +189,6 @@ namespace Zilf.Interpreter.Values
                     default:
                         throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), "tree");
                 }
-            }
-            catch (InterpreterError ex)
-            {
-                if (ex.SourceLine == null)
-                    ex.SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line);
-
-                throw;
             }
         }
 

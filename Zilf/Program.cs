@@ -25,6 +25,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Zilf.Compiler;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -424,21 +425,35 @@ Compiler switches:
             Contract.Requires(ctx != null);
             Contract.Requires(charStream != null);
 
+            IEnumerable<ZilObject> ztree;
             try
             {
-                var ztree = Parse(ctx, charStream);
+                ztree = Parse(ctx, charStream);
+            }
+            catch (InterpreterError ex) when (wantExceptions == false)
+            {
+                ctx.HandleError(ex);
+                return null;
+            }
+            catch (ControlException ex) when (wantExceptions == false)
+            {
+                ctx.HandleError(new InterpreterError("misplaced " + ex.Message));
+                return null;
+            }
 
-                if (ztree == null)
-                {
-                    // TODO: handle this better
-                    throw new NotImplementedException("unhandled parse failure");
-                }
+            if (ztree == null)
+            {
+                // TODO: handle this better
+                throw new NotImplementedException("unhandled parse failure");
+            }
 
-                ZilObject result = null;
-                bool first = true;
-                foreach (ZilObject node in ztree)
+            ZilObject result = null;
+            bool first = true;
+            foreach (ZilObject node in ztree)
+            {
+                try
                 {
-                    try
+                    using (DiagnosticContext.Push(node.SourceLine))
                     {
                         if (first)
                         {
@@ -453,45 +468,23 @@ Compiler switches:
                         }
                         result = node.Eval(ctx);
                     }
-                    catch (InterpreterError ex)
-                    {
-                        if (ex.SourceLine == null)
-                            ex.SourceLine = node.SourceLine;
-
-                        if (wantExceptions)
-                            throw;
-
-                        ctx.HandleError(ex);
-                    }
-                    catch (ControlException ex)
-                    {
-                        var newEx = new InterpreterError(node.SourceLine, "misplaced " + ex.Message);
-
-                        if (wantExceptions)
-                            throw newEx;
-                        else
-                            ctx.HandleError(newEx);
-                    }
                 }
+                catch (InterpreterError ex) when (wantExceptions == false)
+                {
+                    ctx.HandleError(ex);
+                }
+                catch (ControlException ex)
+                {
+                    var newEx = new InterpreterError(node.SourceLine, "misplaced " + ex.Message);
 
-                return result;
+                    if (wantExceptions)
+                        throw newEx;
+                    else
+                        ctx.HandleError(newEx);
+                }
             }
-            catch (InterpreterError ex)
-            {
-                if (wantExceptions)
-                    throw;
 
-                ctx.HandleError(ex);
-                return null;
-            }
-            catch (ControlException ex)
-            {
-                if (wantExceptions)
-                    throw;
-
-                ctx.HandleError(new InterpreterError("misplaced " + ex.Message));
-                return null;
-            }
+            return result;
         }
     }
 }
