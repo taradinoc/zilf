@@ -109,6 +109,48 @@ class Program {
             await VerifyCSharpFixAsync(test, fixtest);
         }
 
+        [TestMethod]
+        public async Task ErrorExceptionUsageAnalyzer_DontFlagWhenFirstArgIsAlreadyACode()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using Zilf.Diagnostics;
+using Zilf.Language;
+
+namespace Zilf.Language {
+    class InterpreterError : Exception {
+        public InterpreterError(string s) {}
+        public InterpreterError(int i) {}
+    }
+}
+
+namespace Zilf.Diagnostics {
+    [AttributeUsage(AttributeTargets.Field)]
+    class MessageAttribute : Attribute {
+        public MessageAttribute(string s) {}
+    }
+
+    class InterpreterMessages {
+        [Message(""I don't like '{0}'"")]
+        public const int NoThanks = 1;
+    }
+}
+
+class Program {
+    void Main() {
+        throw new InterpreterError(InterpreterMessages.NoThanks, ""spam"");
+    }
+}
+";
+
+            await VerifyCSharpDiagnosticAsync(test);
+        }
+
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
             return new ErrorExceptionUsageCodeFixProvider();
