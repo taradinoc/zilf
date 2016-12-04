@@ -40,22 +40,19 @@ namespace ZilfErrorMessages
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             // find the 'new XError()' expression
-            var creation = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ObjectCreationExpressionSyntax>().First();
+            var creationExpr = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ObjectCreationExpressionSyntax>().First();
 
-            string exceptionTypeName;
-            ExpressionSyntax locationSyntax;
-            LiteralExpressionSyntax literalSyntax;
+            LiteralCreation literalCreation;
 
             var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
 
-            if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creation, semanticModel, out exceptionTypeName,
-                out locationSyntax, out literalSyntax))
+            if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creationExpr, semanticModel, out literalCreation))
             {
                 // Register a code action that will invoke the fix.
                 context.RegisterCodeFix(
                     CodeAction.Create(
                         title: title,
-                        createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, new[] { creation }, c),
+                        createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, new[] { literalCreation }, c),
                         equivalenceKey: title),
                     diagnostic);
             }
@@ -64,12 +61,12 @@ namespace ZilfErrorMessages
         private class Invocation
         {
             public string MessagesTypeName;
-            public LiteralExpressionSyntax LiteralSyntax;
+            public ExpressionSyntax ExpressionToReplace;
             public MemberAccessExpressionSyntax ConstantAccessSyntax;
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        private async Task<Solution> ConvertMessagesToConstantsAsync(Document document, ObjectCreationExpressionSyntax[] creations, CancellationToken cancellationToken)
+        private async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, CancellationToken cancellationToken)
         {
             var invocations = await GetInvocationsAsync(document, creations, cancellationToken);
             return await ApplyInvocationsAsync(
@@ -78,7 +75,7 @@ namespace ZilfErrorMessages
                 cancellationToken);
         }
 
-        private static async Task<Invocation[]> GetInvocationsAsync(Document document, ObjectCreationExpressionSyntax[] creations, CancellationToken cancellationToken)
+        private static async Task<Invocation[]> GetInvocationsAsync(Document document, LiteralCreation[] creations, CancellationToken cancellationToken)
         {
             var solution = document.Project.Solution;
 
@@ -86,28 +83,18 @@ namespace ZilfErrorMessages
 
             foreach (var creation in creations)
             {
-                string exceptionTypeName;
-                ExpressionSyntax locationSyntax;
-                LiteralExpressionSyntax literalSyntax;
-
                 // get the name of the class where the constant will go
                 var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 var qualifiedFormat = new SymbolDisplayFormat(
                     typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
                 var messagesTypeAnnotation = new SyntaxAnnotation("MessagesTypeTracker");
 
-                if (!ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creation, semanticModel, out exceptionTypeName,
-                    out locationSyntax, out literalSyntax))
-                {
-                    throw new InvalidOperationException();
-                }
-
-                var messagesTypeName = ZilfFacts.MessageTypeMap[exceptionTypeName];
+                var messagesTypeName = ZilfFacts.MessageTypeMap[creation.ExceptionTypeName];
                 var messagesTypeSyntax = SyntaxFactory.ParseTypeName(messagesTypeName)
                     .WithAdditionalAnnotations(messagesTypeAnnotation);
 
                 // compute the name of the new constant
-                var constantName = GetConstantName(literalSyntax.Token.ValueText);
+                var constantName = GetConstantName(creation.NewMessageFormat);
                 var constantNameSyntax = SyntaxFactory.IdentifierName(constantName);
 
                 // replace the invocation
@@ -119,9 +106,9 @@ namespace ZilfErrorMessages
                 invocations.Add(new Invocation
                 {
                     ConstantAccessSyntax = constantAccessSyntax,
-                    LiteralSyntax = literalSyntax,
+                    ExpressionToReplace = creation.ExpressionToReplace,
                     MessagesTypeName = messagesTypeName,
-                    GetConstantDeclarationSyntax = code => MakeConstantSyntax(literalSyntax, constantName, code)
+                    GetConstantDeclarationSyntax = code => MakeConstantSyntax(creation.NewMessageFormat, constantName, code)
                 });
             }
 
@@ -136,7 +123,7 @@ namespace ZilfErrorMessages
                 var document = solution.GetDocument(pair.Key);
                 var invocations = pair.Value;
 
-                var syntaxMapping = invocations.ToDictionary(i => (SyntaxNode)i.LiteralSyntax, i => i.ConstantAccessSyntax);
+                var syntaxMapping = invocations.ToDictionary(i => (SyntaxNode)i.ExpressionToReplace, i => i.ConstantAccessSyntax);
 
                 var syntaxRoot = await document.GetSyntaxRootAsync(cancellationToken);
                 var newSyntaxRoot = syntaxRoot.ReplaceSyntax(syntaxMapping.Keys, (node, _) => syntaxMapping[node], null, null, null, null);
@@ -236,7 +223,7 @@ namespace ZilfErrorMessages
             return syntaxRoot;
         }
 
-        private static FieldDeclarationSyntax MakeConstantSyntax(LiteralExpressionSyntax literalSyntax, string constantName, int code)
+        private static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code)
         {
             return SyntaxFactory.FieldDeclaration(
                 attributeLists: SyntaxFactory.List(new[]
@@ -246,7 +233,10 @@ namespace ZilfErrorMessages
                             name: SyntaxFactory.ParseName("Message"),
                             argumentList: SyntaxFactory.AttributeArgumentList(
                                     SyntaxFactory.SingletonSeparatedList(
-                                        SyntaxFactory.AttributeArgument(literalSyntax))))))
+                                        SyntaxFactory.AttributeArgument(
+                                            SyntaxFactory.LiteralExpression(
+                                                SyntaxKind.StringLiteralExpression,
+                                                SyntaxFactory.Literal(messageFormat))))))))
                 }),
                 modifiers: SyntaxFactory.TokenList(
                     SyntaxFactory.Token(SyntaxKind.PublicKeyword),
@@ -352,11 +342,13 @@ namespace ZilfErrorMessages
                             async (doc, diags) =>
                             {
                                 var root = await doc.GetSyntaxRootAsync(c).ConfigureAwait(false);
-                                var creations = from d in diags
-                                                let span = d.Location.SourceSpan
-                                                let ancestors = root.FindToken(span.Start).Parent.AncestorsAndSelf()
-                                                select ancestors.OfType<ObjectCreationExpressionSyntax>().First();
-                                var invocations = await GetInvocationsAsync(doc, creations.ToArray(), c);
+                                var semanticModel = await doc.GetSemanticModelAsync(c).ConfigureAwait(false);
+                                var creationExprs = from d in diags
+                                                    let span = d.Location.SourceSpan
+                                                    let ancestors = root.FindToken(span.Start).Parent.AncestorsAndSelf()
+                                                    select ancestors.OfType<ObjectCreationExpressionSyntax>().First();
+                                var literalCreations = MatchLiteralCreations(creationExprs, semanticModel);
+                                var invocations = await GetInvocationsAsync(doc, literalCreations.ToArray(), c);
                                 return new KeyValuePair<DocumentId, Invocation[]>(doc.Id, invocations);
                             };
 
@@ -366,6 +358,18 @@ namespace ZilfErrorMessages
                         return await ApplyInvocationsAsync(fixAllContext.Solution, results, c);
                     },
                     equivalenceKey: fixAllTitle);
+            }
+        }
+
+        private static IEnumerable<LiteralCreation> MatchLiteralCreations(
+            IEnumerable<ObjectCreationExpressionSyntax> creationExprs, SemanticModel semanticModel)
+        {
+            foreach (var expr in creationExprs)
+            {
+                LiteralCreation literalCreation;
+
+                if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(expr, semanticModel, out literalCreation))
+                    yield return literalCreation;
             }
         }
     }

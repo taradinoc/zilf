@@ -34,12 +34,9 @@ namespace ZilfErrorMessages
         {
             var creationExpr = (ObjectCreationExpressionSyntax)context.Node;
 
-            string exceptionTypeName;
-            ExpressionSyntax locationSyntax;
-            LiteralExpressionSyntax literalSyntax;
+            LiteralCreation dummy;
 
-            if (TryMatchLiteralCreation(creationExpr, context.SemanticModel,
-                out exceptionTypeName, out locationSyntax, out literalSyntax))
+            if (TryMatchLiteralCreation(creationExpr, context.SemanticModel, out dummy))
             {
                 var diagnostic = Diagnostic.Create(Rule, creationExpr.GetLocation());
                 context.ReportDiagnostic(diagnostic);
@@ -47,44 +44,135 @@ namespace ZilfErrorMessages
         }
 
         public static bool TryMatchLiteralCreation(ObjectCreationExpressionSyntax creationExpr,
-            SemanticModel semanticModel, out string exceptionTypeName,
-            out ExpressionSyntax locationSyntax, out LiteralExpressionSyntax literalSyntax)
+            SemanticModel semanticModel, out LiteralCreation literalCreation)
         {
             var typeSymbol = semanticModel.GetTypeInfo(creationExpr);
             var qualifiedFormat = new SymbolDisplayFormat(
               typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
-            exceptionTypeName = typeSymbol.Type.ToDisplayString(qualifiedFormat);
+            var exceptionTypeName = typeSymbol.Type.ToDisplayString(qualifiedFormat);
+            ExpressionSyntax errorSourceExpr = null;
+
+            literalCreation = null;
 
             if (exceptionTypeName != null && ZilfFacts.MessageTypeMap.ContainsKey(exceptionTypeName))
             {
-                var args = creationExpr.ArgumentList;
+                var args = creationExpr.ArgumentList.Arguments;
 
-                if (args.Arguments.Count == 1)
+                if (args.Count >= 1)
                 {
-                    literalSyntax = args.Arguments[0].Expression as LiteralExpressionSyntax;
+                    var argTypes = args.Select(a => semanticModel.GetTypeInfo(a.Expression).ConvertedType).ToArray();
+                    int i = 0;
 
-                    if (literalSyntax != null && literalSyntax.Kind() == SyntaxKind.StringLiteralExpression)
+                    // ignore the (string, int, int) constructor
+                    if (argTypes.Length == 3 && argTypes[0]?.SpecialType == SpecialType.System_String &&
+                        argTypes[1]?.SpecialType == SpecialType.System_Int32 && argTypes[2]?.SpecialType == SpecialType.System_Int32)
                     {
-                        locationSyntax = null;
-                        return true;
+                        return false;
                     }
-                }
 
-                if (args.Arguments.Count == 2)
-                {
-                    literalSyntax = args.Arguments[1].Expression as LiteralExpressionSyntax;
-
-                    if (literalSyntax != null && literalSyntax.Kind() == SyntaxKind.StringLiteralExpression)
+                    // if the first argument is ISourceLine or IProvideSourceLine, it's the error source expr
+                    switch (argTypes[0]?.Name)
                     {
-                        locationSyntax = args.Arguments[1].Expression;
-                        return true;
+                        case "ISourceLine":
+                        case "IProvideSourceLine":
+                            errorSourceExpr = args[0].Expression;
+
+                            i++;
+                            if (i >= argTypes.Length)
+                                return false;
+
+                            break;
+                    }
+
+                    // if the next argument is a string...
+                    if (argTypes[i]?.SpecialType == SpecialType.System_String)
+                    {
+                        // we got a winner!
+                        var expressionToReplace = args[i].Expression;
+
+                        string newMessageFormat;
+                        IEnumerable<ExpressionSyntax> newMessageArgs;
+
+                        if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out newMessageFormat, out newMessageArgs))
+                        {
+                            literalCreation = new LiteralCreation(
+                                exceptionTypeName: exceptionTypeName,
+                                errorSourceExpression: errorSourceExpr,
+                                expressionToReplace: expressionToReplace,
+                                newMessageFormat: newMessageFormat,
+                                newMessageArgs: newMessageArgs);
+                            return true;
+                        }
                     }
                 }
             }
 
-            locationSyntax = null;
-            literalSyntax = null;
             return false;
+        }
+
+        private static bool TryExtractFormatAndArgs(
+            ExpressionSyntax expressionToReplace, SemanticModel semanticModel,
+            out string newMessageFormat, out IEnumerable<ExpressionSyntax> newMessageArgs)
+        {
+            string format;
+            var newArgs = new List<ExpressionSyntax>();
+
+            // has a constant value?
+            var constantValue = semanticModel.GetConstantValue(expressionToReplace);
+
+            if (constantValue.HasValue)
+            {
+                format = (string)constantValue.Value;
+            }
+            else
+            {
+                // TODO: handle "literal" + expr1 + "another literal" + expr2...
+                newMessageFormat = null;
+                newMessageArgs = null;
+                return false;
+            }
+
+            // TODO: extract function name as an arg
+
+            newMessageFormat = format;
+            newMessageArgs = newArgs;
+            return true;
+        }
+    }
+
+    public class LiteralCreation
+    {
+        /// <summary>
+        /// The name of the exception being created, e.g. InterpreterError.
+        /// </summary>
+        public string ExceptionTypeName { get; }
+        /// <summary>
+        /// An expression of type ISourceLine or IProvideSourceLine, or null.
+        /// </summary>
+        public ExpressionSyntax ErrorSourceExpression { get; }
+        /// <summary>
+        /// The expression to replace in the constructor arguments. Usually a <see cref="LiteralExpressionSyntax"/>.
+        /// </summary>
+        public ExpressionSyntax ExpressionToReplace { get; }
+        /// <summary>
+        /// The format string to be used for the new message.
+        /// </summary>
+        public string NewMessageFormat { get; }
+        /// <summary>
+        /// The initial arguments to be used at the call site when formatting the new message.
+        /// </summary>
+        public IEnumerable<ExpressionSyntax> NewMessageArgs { get; }
+
+        public LiteralCreation(
+            string exceptionTypeName, ExpressionSyntax errorSourceExpression,
+            ExpressionSyntax expressionToReplace,
+            string newMessageFormat, IEnumerable<ExpressionSyntax> newMessageArgs)
+        {
+            ExceptionTypeName = exceptionTypeName;
+            ErrorSourceExpression = errorSourceExpression;
+            ExpressionToReplace = expressionToReplace;
+            NewMessageFormat = newMessageFormat;
+            NewMessageArgs = newMessageArgs;
         }
     }
 }
