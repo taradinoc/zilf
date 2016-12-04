@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
@@ -38,6 +38,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.StringEncoding", "Zilf.StringEncoding\Zilf.StringEncoding.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages", "Analyzers\ZilfErrorMessages\ZilfErrorMessages\ZilfErrorMessages.csproj", "{D1A7D72F-8AF5-4225-A68B-985354E7BA86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages.Test", "Analyzers\ZilfErrorMessages\ZilfErrorMessages.Test\ZilfErrorMessages.Test.csproj", "{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages.Vsix", "Analyzers\ZilfErrorMessages\ZilfErrorMessages.Vsix\ZilfErrorMessages.Vsix.csproj", "{9245F88E-2771-4770-8D59-27D8CFB2B9F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -115,9 +123,38 @@ Global
 		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{433B6DA6-FF85-4370-9012-4C6B7177FC0D}.Release|x86.ActiveCfg = Release|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Debug|x86.Build.0 = Debug|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Release|x86.ActiveCfg = Release|Any CPU
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86}.Release|x86.Build.0 = Release|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Debug|x86.Build.0 = Debug|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Release|x86.ActiveCfg = Release|Any CPU
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0}.Release|x86.Build.0 = Release|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Debug|x86.Build.0 = Debug|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|x86.ActiveCfg = Release|Any CPU
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D1A7D72F-8AF5-4225-A68B-985354E7BA86} = {598B603F-F081-440B-BD43-4813EC6E043C}
+		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0} = {598B603F-F081-440B-BD43-4813EC6E043C}
+		{9245F88E-2771-4770-8D59-27D8CFB2B9F1} = {598B603F-F081-440B-BD43-4813EC6E043C}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Zilf.vsmdi
