@@ -22,6 +22,7 @@ using System.Linq;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -95,42 +96,42 @@ namespace Zilf.Interpreter
                         case "OPT":
                         case "OPTIONAL":
                             if (optArgsStart != -1)
-                                throw new InterpreterError("multiple \"OPT\" clauses");
+                                throw new InterpreterError(InterpreterMessages.Multiple_OPT_Clauses);
                             if (auxArgsStart != -1)
-                                throw new InterpreterError("\"OPT\" after \"AUX\"");
+                                throw new InterpreterError(InterpreterMessages.OPT_After_AUX);
                             optArgsStart = cur;
                             continue;
                         case "AUX":
                         case "EXTRA":
                             if (auxArgsStart != -1)
-                                throw new InterpreterError("multiple \"AUX\" clauses");
+                                throw new InterpreterError(InterpreterMessages.Multiple_AUX_Clauses);
                             auxArgsStart = cur;
                             continue;
                         case "ARGS":
                         case "TUPLE":
                             if (varargsAtom != null)
-                                throw new InterpreterError("multiple \"ARGS\" or \"TUPLE\" clauses");
+                                throw new InterpreterError(InterpreterMessages.Multiple_ARGS_Or_TUPLE_Clauses);
                             oneOffMode = OO_Varargs;
                             varargsQuoted = (sep == "ARGS");
                             continue;
                         case "NAME":
                         case "ACT":
                             if (activationAtom != null)
-                                throw new InterpreterError("multiple \"NAME\" clauses or activation atoms");
+                                throw new InterpreterError(InterpreterMessages.Multiple_NAME_Clauses_Or_Activation_Atoms);
                             oneOffMode = OO_Activation;
                             continue;
                         case "BIND":
                             if (environmentAtom != null)
-                                throw new InterpreterError("multiple \"BIND\" clauses");
+                                throw new InterpreterError(InterpreterMessages.Multiple_BIND_Clauses);
                             oneOffMode = OO_Environment;
                             continue;
                         case "VALUE":
                             if (valueDecl != null)
-                                throw new InterpreterError("multiple \"VALUE\" clauses");
+                                throw new InterpreterError(InterpreterMessages.Multiple_VALUE_Clauses);
                             oneOffMode = OO_Value;
                             continue;
                         default:
-                            throw new InterpreterError("unexpected clause in arg spec: " + arg.ToString());
+                            throw new InterpreterError(InterpreterMessages.Unexpected_Clause_In_Arg_Spec_0, arg.ToString());
                     }
                 }
 
@@ -149,7 +150,7 @@ namespace Zilf.Interpreter
                             }
                             else
                             {
-                                throw new InterpreterError("\"ARGS\" or \"TUPLE\" must be followed by an atom");
+                                throw new InterpreterError(InterpreterMessages.ARGS_Or_TUPLE_Must_Be_Followed_By_An_Atom);
                             }
                         }
 
@@ -159,7 +160,7 @@ namespace Zilf.Interpreter
                     case OO_Activation:
                         this.activationAtom = arg as ZilAtom;
                         if (this.activationAtom == null)
-                            throw new InterpreterError("\"NAME\" or \"ACT\" must be followed by an atom");
+                            throw new InterpreterError(InterpreterMessages.NAME_Or_ACT_Must_Be_Followed_By_An_Atom);
 
                         oneOffMode = OO_None;
                         continue;
@@ -167,7 +168,7 @@ namespace Zilf.Interpreter
                     case OO_Environment:
                         environmentAtom = arg as ZilAtom;
                         if (environmentAtom == null)
-                            throw new InterpreterError("\"BIND\" must be followed by an atom");
+                            throw new InterpreterError(InterpreterMessages.BIND_Must_Be_Followed_By_An_Atom);
 
                         oneOffMode = OO_None;
                         continue;
@@ -190,7 +191,7 @@ namespace Zilf.Interpreter
                     ZilList al = (ZilList)arg;
 
                     if (al.IsEmpty)
-                        throw new InterpreterError("empty list in arg spec");
+                        throw new InterpreterError(InterpreterMessages.Empty_List_In_Arg_Spec);
 
                     argName = al.First;
                     argValue = al.Rest.First;

@@ -323,6 +323,9 @@
     <None Include="app.config" />
     <None Include="Zilf.ruleset" />
   </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\Analyzers\ZilfErrorMessages\ZilfErrorMessages\bin\Debug\ZilfErrorMessages.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <!-- Folder containing AntlrBuildTask.dll -->

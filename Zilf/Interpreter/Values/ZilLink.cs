@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -37,12 +38,12 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static new ZilLink FromAtom(Context ctx, ZilAtom atom)
         {
-            throw new InterpreterError("cannot CHTYPE to LINK");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "LINK");
         }
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            throw new InterpreterError("cannot CHTYPE away from LINK");
+            throw new InterpreterError(InterpreterMessages.Cannot_CHTYPE_Away_From_LINK);
         }
     }
 }

@@ -443,7 +443,7 @@ namespace Zilf.Interpreter.Values
                 if (result != null)
                     return result;
 
-                throw new InterpreterError("segment evaluation must return a structure");
+                throw new InterpreterError(InterpreterMessages.Segment_Evaluation_Must_Return_A_Structure);
             }
             else
             {
@@ -538,7 +538,7 @@ namespace Zilf.Interpreter.Values
                 if (result != null)
                     return result;
 
-                throw new InterpreterError("segment evaluation must return a structure");
+                throw new InterpreterError(InterpreterMessages.Segment_Evaluation_Must_Return_A_Structure);
             }
             else
             {

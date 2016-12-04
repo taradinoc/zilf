@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Values
 {
@@ -44,15 +45,15 @@ namespace Zilf.ZModel.Values
         public static ZilModelObject FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty)
-                throw new InterpreterError("list must have at least 1 element");
+                throw new InterpreterError(InterpreterMessages.List_Must_Have_At_Least_1_Element);
 
             var atom = list.First as ZilAtom;
 
             if (atom == null)
-                throw new InterpreterError("first element must be an atom");
+                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_An_Atom);
 
             if (list.Rest.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.LIST))
-                throw new InterpreterError("elements after first must be lists");
+                throw new InterpreterError(InterpreterMessages.Elements_After_First_Must_Be_Lists);
 
             // TODO: set isRoom
             return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);

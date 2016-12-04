@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -46,7 +47,7 @@ namespace Zilf.Interpreter.Values
                 return new ZilEvalMacro(list.First);
             }
 
-            throw new InterpreterError("List does not match MACRO pattern");
+            throw new InterpreterError(InterpreterMessages.List_Does_Not_Match_MACRO_Pattern);
         }
 
         private string ToString(Func<ZilObject, string> convert)

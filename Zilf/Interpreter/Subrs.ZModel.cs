@@ -27,6 +27,7 @@ using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -443,13 +444,13 @@ namespace Zilf.Interpreter
                         flags = TableFlags.WordLength;
                         break;
                     default:
-                        throw new InterpreterError("ITABLE: specifier must be NONE, BYTE, or WORD");
+                        throw new InterpreterError(InterpreterMessages.ITABLE_Specifier_Must_Be_NONE_BYTE_Or_WORD);
                 }
             }
 
             // element count
             if (count < 1)
-                throw new InterpreterError("ITABLE: invalid table size");
+                throw new InterpreterError(InterpreterMessages.ITABLE_Invalid_Table_Size);
 
             // optional flags
             if (flagList != null)
@@ -750,7 +751,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (bytes < 0)
-                throw new InterpreterError("ZREST: second arg must not be negative");
+                throw new InterpreterError(InterpreterMessages.ZREST_Second_Arg_Must_Not_Be_Negative);
 
             return table.OffsetByBytes(ctx, bytes);
         }
@@ -773,7 +774,7 @@ namespace Zilf.Interpreter
             if (time != null)
             {
                 if (ctx.ZEnvironment.ZVersion != 3)
-                    throw new InterpreterError("VERSION: TIME is only meaningful in version 3");
+                    throw new InterpreterError(InterpreterMessages.VERSION_TIME_Is_Only_Meaningful_In_Version_3);
 
                 ctx.ZEnvironment.TimeStatusLine = true;
             }
@@ -881,7 +882,7 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
+            throw new InterpreterError(InterpreterMessages.ORDEROBJECTS_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST);
         }
 
         [Subr("ORDER-TREE?")]
@@ -896,7 +897,7 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError("ORDER-TREE?: first arg must be REVERSE-DEFINED");
+            throw new InterpreterError(InterpreterMessages.ORDERTREE_First_Arg_Must_Be_REVERSEDEFINED);
         }
 
         [Subr("ORDER-FLAGS?")]
@@ -991,7 +992,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (alphabetNum < 0 || alphabetNum > 2)
-                throw new InterpreterError("CHRSET: alphabet number must be between 0 and 2");
+                throw new InterpreterError(InterpreterMessages.CHRSET_Alphabet_Number_Must_Be_Between_0_And_2);
 
             var sb = new StringBuilder(26);
 
@@ -1280,7 +1281,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
-                throw new InterpreterError("NEW-ADD-WORD: requires NEW-PARSER? option");
+                throw new InterpreterError(InterpreterMessages.NEWADDWORD_Requires_NEWPARSER_Option);
 
             var nameAtom = name.GetAtom(ctx);
             flags = flags ?? ZilFix.Zero;

@@ -16,15 +16,38 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Text;
 using Zilf.Diagnostics;
+using Zilf.Interpreter;
 
 namespace Zilf.Language
 {
     abstract class ZilError : Exception
     {
-        public Diagnostic Diagnostic { get; }
+        public ZilError(string message) : base(message) { }
+        public ZilError(string message, Exception innerException) : base(message, innerException) { }
 
-        public ISourceLine SourceLine { get; set; }
+        public abstract Diagnostic Diagnostic { get; }
+        public abstract ISourceLine SourceLine { get; }
+
+        public static string ArgCountMsg(string func, int min, int max, string argName = "arg")
+        {
+            if (min == max)
+                return string.Format("{0}: expected {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
+            else if (min == 0)
+                return string.Format("{0}: expected at most {1} {2}{3}", func, max, argName, max == 1 ? "" : "s");
+            else if (max == 0)
+                return string.Format("{0}: expected at least {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
+            else
+                return string.Format("{0}: expected {1} to {2} {3}s", func, min, max, argName);
+        }
+    }
+
+    abstract class ZilError<TMessageSet> : ZilError
+        where TMessageSet : class
+    {
+        public override Diagnostic Diagnostic { get; }
+        public override ISourceLine SourceLine { get; }
 
         public ZilError(string message)
             : base(message)
@@ -70,18 +93,54 @@ namespace Zilf.Language
             }
         }
 
-        public static string ArgCountMsg(string func, int min, int max, string argName = "arg")
+        protected static readonly IDiagnosticFactory DiagnosticFactory = DiagnosticFactory<TMessageSet>.Instance;
+        protected const int LegacyErrorCode = 0;
+
+        protected static Diagnostic MakeDiagnostic(ISourceLine sourceLine, int code, object[] messageArgs = null)
         {
-            if (min == max)
-                return string.Format("{0}: expected {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
-            else if (min == 0)
-                return string.Format("{0}: expected at most {1} {2}{3}", func, max, argName, max == 1 ? "" : "s");
-            else if (max == 0)
-                return string.Format("{0}: expected at least {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
-            else
-                return string.Format("{0}: expected {1} to {2} {3}s", func, min, max, argName);
+            return DiagnosticFactory.GetDiagnostic(
+                sourceLine,
+                code,
+                messageArgs,
+                MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        protected abstract Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location);
+        protected static Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location)
+        {
+            return DiagnosticFactory.GetDiagnostic(
+                location,
+                LegacyErrorCode,
+                new[] { message },
+                MakeStackTrace(DiagnosticContext.Current.Frame));
+        }
+
+        private static string MakeStackTrace(Frame errorFrame)
+        {
+            if (errorFrame == null)
+                return null;
+
+            var sb = new StringBuilder();
+
+            // skip the top and bottom frame
+            for (var frame = errorFrame.Parent; frame?.Parent != null; frame = frame.Parent)
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine();
+
+                string caller;
+                if (frame.CallingForm != null)
+                {
+                    caller = $"in {frame.CallingForm.First.ToString()} called ";
+                }
+                else
+                {
+                    caller = "";
+                }
+
+                sb.AppendFormat("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
+            }
+
+            return sb.ToString();
+        }
     }
 }

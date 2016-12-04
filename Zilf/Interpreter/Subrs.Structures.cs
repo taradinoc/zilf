@@ -21,6 +21,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -54,7 +55,7 @@ namespace Zilf.Interpreter
 
             var result = (ZilObject)st.GetRest(skip);
             if (result == null)
-                throw new InterpreterError("REST: not enough elements");
+                throw new InterpreterError(InterpreterMessages.REST_Not_Enough_Elements);
             return result;
         }
 
@@ -67,7 +68,7 @@ namespace Zilf.Interpreter
             {
                 var result = (ZilObject)st.GetBack(skip);
                 if (result == null)
-                    throw new InterpreterError("BACK: not enough elements");
+                    throw new InterpreterError(InterpreterMessages.BACK_Not_Enough_Elements);
                 return result;
             }
             catch (NotSupportedException ex)
@@ -98,7 +99,7 @@ namespace Zilf.Interpreter
 
             if (end < 0 || beginning < 0)
             {
-                throw new InterpreterError("GROW: sizes must be non-negative");
+                throw new InterpreterError(InterpreterMessages.GROW_Sizes_Must_Be_Nonnegative);
             }
 
             try
@@ -123,7 +124,7 @@ namespace Zilf.Interpreter
 
             ZilObject result = st[idx - 1];
             if (result == null)
-                throw new InterpreterError("NTH: reading past end of structure");
+                throw new InterpreterError(InterpreterMessages.NTH_Reading_Past_End_Of_Structure);
 
             return result;
         }
@@ -211,14 +212,14 @@ namespace Zilf.Interpreter
             }
 
             if (amount < 0)
-                throw new InterpreterError("SUBSTRUC: negative element count");
+                throw new InterpreterError(InterpreterMessages.SUBSTRUC_Negative_Element_Count);
 
             var primitive = ((ZilObject)from).GetPrimitive(ctx);
 
             if (dest != null)
             {
                 if (((ZilObject)dest).PrimType != ((ZilObject)from).PrimType)
-                    throw new InterpreterError("SUBSTRUC: fourth arg must have same primtype as first");
+                    throw new InterpreterError(InterpreterMessages.SUBSTRUC_Fourth_Arg_Must_Have_Same_Primtype_As_First);
 
                 int i;
 
@@ -229,7 +230,7 @@ namespace Zilf.Interpreter
                         foreach (var item in ((ZilList)primitive).Skip(rest).Take((int)amount))
                         {
                             if (list.IsEmpty)
-                                throw new InterpreterError("SUBSTRUC: destination too short");
+                                throw new InterpreterError(InterpreterMessages.SUBSTRUC_Destination_Too_Short);
 
                             list.First = item;
                             list = list.Rest;
@@ -248,7 +249,7 @@ namespace Zilf.Interpreter
                         foreach (var item in ((ZilVector)primitive).Skip(rest).Take((int)amount))
                         {
                             if (i >= vector.GetLength())
-                                throw new InterpreterError("SUBSTRUC: destination too short");
+                                throw new InterpreterError(InterpreterMessages.SUBSTRUC_Destination_Too_Short);
 
                             vector[i++] = item;
                         }
@@ -271,7 +272,7 @@ namespace Zilf.Interpreter
                         return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount));
 
                     case PrimType.TABLE:
-                        throw new InterpreterError("SUBSTRUC: primtype TABLE not supported");
+                        throw new InterpreterError(InterpreterMessages.SUBSTRUC_Primtype_TABLE_Not_Supported);
 
                     case PrimType.VECTOR:
                         return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
@@ -405,7 +406,7 @@ namespace Zilf.Interpreter
                 {
                     if (a.GetTypeAtom(ctx) != b.GetTypeAtom(ctx))
                     {
-                        throw new InterpreterError("SORT: keys must have the same type to use default comparison");
+                        throw new InterpreterError(InterpreterMessages.SORT_Keys_Must_Have_The_Same_Type_To_Use_Default_Comparison);
                     }
 
                     a = a.GetPrimitive(ctx);
@@ -423,7 +424,7 @@ namespace Zilf.Interpreter
                             return ((ZilString)a).Text.CompareTo(((ZilString)b).Text);
 
                         default:
-                            throw new InterpreterError("SORT: key primtypes must be ATOM, FIX, or STRING to use default comparison");
+                            throw new InterpreterError(InterpreterMessages.SORT_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison);
                     }
                 };
             }

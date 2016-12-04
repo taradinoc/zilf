@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -221,12 +222,12 @@ namespace Zilf.Interpreter.Values
                 {
                     ZilChar ch = value as ZilChar;
                     if (ch == null)
-                        throw new InterpreterError("elements of a string must be characters");
+                        throw new InterpreterError(InterpreterMessages.Elements_Of_A_String_Must_Be_Characters);
                     if (index >= 0 && index < Text.Length)
                         Text = Text.Substring(0, index) + ch.Char +
                                Text.Substring(index + 1, Text.Length - index - 1);
                     else
-                        throw new InterpreterError("writing past end of string");
+                        throw new InterpreterError(InterpreterMessages.Writing_Past_End_Of_String);
                 }
             }
 
@@ -338,7 +339,7 @@ namespace Zilf.Interpreter.Values
                 {
                     ZilChar ch = value as ZilChar;
                     if (ch == null)
-                        throw new InterpreterError("elements of a string must be characters");
+                        throw new InterpreterError(InterpreterMessages.Elements_Of_A_String_Must_Be_Characters);
 
                     index += offset;
 
@@ -351,7 +352,7 @@ namespace Zilf.Interpreter.Values
                     }
                     else
                     {
-                        throw new InterpreterError("writing past end of string");
+                        throw new InterpreterError(InterpreterMessages.Writing_Past_End_Of_String);
                     }
                 }
             }

@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -85,7 +86,7 @@ namespace Zilf.Interpreter
             }
             catch (DivideByZeroException)
             {
-                throw new InterpreterError("division by zero");
+                throw new InterpreterError(InterpreterMessages.Division_By_Zero);
             }
         }
 
@@ -100,7 +101,7 @@ namespace Zilf.Interpreter
             }
             catch (DivideByZeroException)
             {
-                throw new InterpreterError("division by zero");
+                throw new InterpreterError(InterpreterMessages.Division_By_Zero);
             }
         }
 

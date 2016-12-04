@@ -18,6 +18,7 @@
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Values
 {
@@ -39,13 +40,13 @@ namespace Zilf.ZModel.Values
         public static ZilGlobal FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
-                throw new InterpreterError("list must have 2 elements");
+                throw new InterpreterError(InterpreterMessages.List_Must_Have_2_Elements);
 
             var name = list.First as ZilAtom;
             var value = list.Rest.First;
 
             if (name == null)
-                throw new InterpreterError("first element must be an atom");
+                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_An_Atom);
 
             return new ZilGlobal(name, value);
         }

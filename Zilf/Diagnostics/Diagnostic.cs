@@ -72,7 +72,14 @@ namespace Zilf.Diagnostics
         }
     }
 
-    public class DiagnosticFactory<TMessageSet>
+    public interface IDiagnosticFactory
+    {
+        Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
+            string stackTrace);
+    }
+
+    public class DiagnosticFactory<TMessageSet> : IDiagnosticFactory
+        where TMessageSet : class
     {
         private readonly string prefix;
         private readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
@@ -101,7 +108,7 @@ namespace Zilf.Diagnostics
         }
 
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace = null)
+            string stackTrace)
         {
             var attr = messages[code];
             return new Diagnostic(location, attr.Severity, prefix, code, attr.Format, messageArgs, stackTrace);

@@ -15,24 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Diagnostics.Contracts;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
-    class CompilerError : ZilError
+    class CompilerError : ZilError<CompilerMessages>
     {
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
         public CompilerError(string message)
             : base(message)
         {
             Contract.Requires(message != null);
         }
 
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
         public CompilerError(string format, params object[] args)
             : base(string.Format(format, args))
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
         }
 
         public CompilerError(ISourceLine src, string message)
@@ -41,8 +42,9 @@ namespace Zilf.Language
             Contract.Requires(message != null);
         }
 
-        public CompilerError(ISourceLine src, string func, int minArgs, int maxArgs)
-            : base(src, func, minArgs, maxArgs)
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
+        public CompilerError(string func, int minArgs, int maxArgs)
+            : base(null, func, minArgs, maxArgs)
         {
             Contract.Requires(func != null);
             Contract.Requires(minArgs >= 0);
@@ -50,10 +52,34 @@ namespace Zilf.Language
             Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
         }
 
-        protected override Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location)
+        public CompilerError(int code)
+            : this(code, null)
         {
-            return DiagnosticFactory<CompilerMessages>.Instance.GetDiagnostic(
-                location, CompilerMessages.LegacyError, new[] { message });
+        }
+
+        public CompilerError(int code, params object[] messageArgs)
+            : this(DiagnosticContext.Current.SourceLine, code, messageArgs)
+        {
+        }
+
+        public CompilerError(ISourceLine sourceLine, int code)
+            : this(sourceLine, code, null)
+        {
+        }
+
+        public CompilerError(ISourceLine sourceLine, int code, params object[] messageArgs)
+            : base(MakeDiagnostic(sourceLine, code, messageArgs))
+        {
+        }
+
+        public CompilerError(IProvideSourceLine sourceLine, int code)
+           : this(sourceLine, code, null)
+        {
+        }
+
+        public CompilerError(IProvideSourceLine node, int code, params object[] messageArgs)
+            : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
+        {
         }
     }
 }

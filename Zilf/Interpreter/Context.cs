@@ -1356,7 +1356,7 @@ namespace Zilf.Interpreter
             if (newType.StdAtom == StdAtom.GVAL || newType.StdAtom == StdAtom.LVAL)
             {
                 if (value.PrimType != PrimType.ATOM)
-                    throw new InterpreterError("CHTYPE to GVAL or LVAL requires ATOM");
+                    throw new InterpreterError(InterpreterMessages.CHTYPE_To_GVAL_Or_LVAL_Requires_ATOM);
 
                 return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
             }
@@ -1653,7 +1653,7 @@ namespace Zilf.Interpreter
             }
             catch (InvalidOperationException)
             {
-                throw new InterpreterError("no previously pushed value for OBLIST");
+                throw new InterpreterError(InterpreterMessages.No_Previously_Pushed_Value_For_OBLIST);
             }
 
             SetLocalVal(atom, popped);

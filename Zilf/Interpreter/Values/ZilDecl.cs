@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -80,7 +81,7 @@ namespace Zilf.Interpreter.Values
             }
 
             if (!list.IsEmpty)
-                throw new InterpreterError("malformed DECL object");
+                throw new InterpreterError(InterpreterMessages.Malformed_DECL_Object);
         }
     }
 }
