@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using ZilfErrorMessages;
+using System.Text.RegularExpressions;
 
 namespace ZilfErrorMessages
 {
@@ -17,6 +18,7 @@ namespace ZilfErrorMessages
     {
         public const string DiagnosticId_DuplicateMessageCode = "ZILF0002";
         public const string DiagnosticId_DuplicateMessageFormat = "ZILF0003";
+        public const string DiagnosticId_PrefixedMessageFormat = "ZILF0004";
 
         private static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
             DiagnosticId_DuplicateMessageCode,
@@ -34,9 +36,28 @@ namespace ZilfErrorMessages
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new DiagnosticDescriptor(
+            DiagnosticId_PrefixedMessageFormat,
+            "Message has hardcoded prefix",
+            "This format string has the prefix '{0}', which should be moved to the call site",
+            "Error Reporting",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly Regex PrefixedMessageFormatRegex = new Regex(
+            @"^(?<prefix>[^a-z .,;:()\[\]]+)(?<rest>: .*)$");
+        public static readonly Regex FormatTokenRegex = new Regex(
+            @"\{(?<number>\d+)(?<suffix>:[^}]*)?\}");
+
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(Rule_DuplicateMessageCode, Rule_DuplicateMessageFormat); }
+            get
+            {
+                return ImmutableArray.Create(
+                    Rule_DuplicateMessageCode,
+                    Rule_DuplicateMessageFormat,
+                    Rule_PrefixedMessageFormat);
+            }
         }
 
         public override void Initialize(AnalysisContext context)
@@ -71,6 +92,7 @@ namespace ZilfErrorMessages
 
                                 if (formatStr != null)
                                 {
+                                    // check for duplicate message
                                     if (seenFormats.ContainsKey(formatStr))
                                     {
                                         var diagnostic = Diagnostic.Create(
@@ -84,6 +106,26 @@ namespace ZilfErrorMessages
                                     else
                                     {
                                         seenFormats = seenFormats.Add(formatStr, formatExpr.GetLocation());
+                                    }
+
+                                    // check for prefixed message
+                                    var match = PrefixedMessageFormatRegex.Match(formatStr);
+
+                                    if (match.Success)
+                                    {
+                                        var prefix = match.Groups["prefix"].Value;
+
+                                        // if the prefix is already a format token, don't flag it again
+                                        var tokenMatch = FormatTokenRegex.Match(prefix);
+                                        if (!(tokenMatch.Success && tokenMatch.Length == prefix.Length))
+                                        {
+                                            var diagnostic = Diagnostic.Create(
+                                                Rule_PrefixedMessageFormat,
+                                                formatExpr.GetLocation(),
+                                                match.Groups["prefix"].Value);
+
+                                            context.ReportDiagnostic(diagnostic);
+                                        }
                                     }
                                 }
                             }
@@ -99,6 +141,7 @@ namespace ZilfErrorMessages
 
                         if (constValue.HasValue)
                         {
+                            // check for duplicate code
                             var value = (int)constValue.Value;
 
                             if (seenCodes.Contains(value))

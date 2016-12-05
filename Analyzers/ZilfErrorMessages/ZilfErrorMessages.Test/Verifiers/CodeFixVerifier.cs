@@ -76,6 +76,11 @@ namespace TestHelper
         {
             var document = CreateDocument(oldSource, language);
             var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
+
+            // only test the diagnostics the code fixer claims are fixable
+            var fixableIds = codeFixProvider.FixableDiagnosticIds;
+            analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
+
             var compilerDiagnostics = GetCompilerDiagnostics(document);
             var attempts = analyzerDiagnostics.Length;
 
@@ -83,7 +88,7 @@ namespace TestHelper
             {
                 var actions = new List<CodeAction>();
                 var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
-                codeFixProvider.RegisterCodeFixesAsync(context).Wait();
+                await codeFixProvider.RegisterCodeFixesAsync(context).ConfigureAwait(false);
 
                 if (!actions.Any())
                 {
@@ -98,6 +103,7 @@ namespace TestHelper
 
                 document = ApplyFix(document, actions.ElementAt(0));
                 analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
+                analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
 
