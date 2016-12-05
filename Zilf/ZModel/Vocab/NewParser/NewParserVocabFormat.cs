@@ -595,7 +595,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var vword = form.Eval(ctx);
 
                 if (vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
-                    throw new InterpreterError(InterpreterMessages.NEWADDWORD_MAKEVWORD_Must_Return_A_VWORD);
+                    throw new InterpreterError(InterpreterMessages._0_MAKEVWORD_Must_Return_A_VWORD, "NEW-ADD-WORD");
 
                 word = NewParserWord.FromVword(ctx, (ZilHash)vword);
                 ctx.ZEnvironment.Vocabulary.Add(name, word);
@@ -620,7 +620,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                         (word.SemanticStuff != null || word.DirId != null) &&
                         value != null)
                     {
-                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_Word_Would_Be_Overloaded);
+                        throw new InterpreterError(InterpreterMessages._0_Word_Would_Be_Overloaded, "NEW-ADD-WORD");
                     }
                 }
 
@@ -644,7 +644,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     }
                     else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     {
-                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List);
+                        throw new InterpreterError(InterpreterMessages._0_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List, "NEW-ADD-WORD");
                     }
 
                     wordFlagsList = new ZilList(word.Inner, new ZilList(flags, (ZilList)wordFlagsList));
@@ -723,7 +723,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     classification = form.Eval(ctx) as ZilFix;
 
                     if (classification == null)
-                        throw new InterpreterError(InterpreterMessages.NEWADDWORD_GETCLASSIFICATION_Must_Return_A_FIX);
+                        throw new InterpreterError(InterpreterMessages._0_GETCLASSIFICATION_Must_Return_A_FIX, "NEW-ADD-WORD");
 
                     break;
             }

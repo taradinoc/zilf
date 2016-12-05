@@ -113,7 +113,7 @@ namespace Zilf.Diagnostics
         // Flow Control Errors
 
         [Message("{0}: no enclosing PROG/REPEAT")]
-        public const int FUNCNAME0_No_Enclosing_PROGREPEAT = 27;
+        public const int _0_No_Enclosing_PROGREPEAT = 27;
         [Message("object options in syntax must be atoms")]
         public const int Object_Options_In_Syntax_Must_Be_Atoms = 36;
         [Message("NEW-SFLAGS vector must have an even number of elements")]
@@ -184,48 +184,46 @@ namespace Zilf.Diagnostics
         public const int GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB = 76;
         [Message("MAKE-VWORD must return a VWORD")]
         public const int MAKEVWORD_Must_Return_A_VWORD = 77;
-        [Message("NEW-ADD-WORD: MAKE-VWORD must return a VWORD")]
-        public const int NEWADDWORD_MAKEVWORD_Must_Return_A_VWORD = 78;
-        [Message("NEW-ADD-WORD: word would be overloaded")]
-        public const int NEWADDWORD_Word_Would_Be_Overloaded = 79;
-        [Message("NEW-ADD-WORD: GVAL of WORD-FLAGS-LIST must be a list")]
-        public const int NEWADDWORD_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List = 80;
-        [Message("NEW-ADD-WORD: GET-CLASSIFICATION must return a FIX")]
-        public const int NEWADDWORD_GETCLASSIFICATION_Must_Return_A_FIX = 81;
+        [Message("{0}: MAKE-VWORD must return a VWORD")]
+        public const int _0_MAKEVWORD_Must_Return_A_VWORD = 78;
+        [Message("{0}: word would be overloaded")]
+        public const int _0_Word_Would_Be_Overloaded = 79;
+        [Message("{0}: GVAL of WORD-FLAGS-LIST must be a list")]
+        public const int _0_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List = 80;
+        [Message("{0}: GET-CLASSIFICATION must return a FIX")]
+        public const int _0_GETCLASSIFICATION_Must_Return_A_FIX = 81;
         [Message("list must have length 1")]
         public const int List_Must_Have_Length_1 = 82;
         [Message("{0}: first arg must be a non-negative FIX")]
-        public const int FUNCNAME0_First_Arg_Must_Be_A_Nonnegative_FIX = 83;
-        [Message("ISTRING: iterated values must be CHARACTERs")]
-        public const int ISTRING_Iterated_Values_Must_Be_CHARACTERs = 86;
-        [Message("ENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs")]
-        public const int ENTRY_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs = 88;
-        [Message("ENTRY: must be called from within a PACKAGE")]
-        public const int ENTRY_Must_Be_Called_From_Within_A_PACKAGE = 89;
-        [Message("RENTRY: LVAL of OBLIST must be a list starting with 2 OBLISTs")]
-        public const int RENTRY_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs = 90;
-        [Message("RENTRY: must be called from within a PACKAGE or DEFINITIONS")]
-        public const int RENTRY_Must_Be_Called_From_Within_A_PACKAGE_Or_DEFINITIONS = 91;
-        [Message("DEFSTRUCT: not enough elements in 'CONSTRUCTOR spec")]
-        public const int DEFSTRUCT_Not_Enough_Elements_In_CONSTRUCTOR_Spec = 92;
-        [Message("DEFSTRUCT: element after 'CONSTRUCTOR must be an atom")]
-        public const int DEFSTRUCT_Element_After_CONSTRUCTOR_Must_Be_An_Atom = 93;
-        [Message("DEFSTRUCT: second element after 'CONSTRUCTOR must be an argument list")]
-        public const int DEFSTRUCT_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List = 94;
-        [Message("DEFSTRUCT: 'NONE is not allowed after a default field value")]
-        public const int DEFSTRUCT_NONE_Is_Not_Allowed_After_A_Default_Field_Value = 95;
-        [Message("DEFSTRUCT: parts of defaults section must be quoted atoms or lists")]
-        public const int DEFSTRUCT_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists = 96;
-        [Message("DEFSTRUCT: lists in defaults section must start with a quoted atom")]
-        public const int DEFSTRUCT_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom = 97;
-        [Message("DEFSTRUCT: 'NTH must be followed by an atom")]
-        public const int DEFSTRUCT_NTH_Must_Be_Followed_By_An_Atom = 98;
-        [Message("DEFSTRUCT: 'PUT must be followed by an atom")]
-        public const int DEFSTRUCT_PUT_Must_Be_Followed_By_An_Atom = 99;
-        [Message("DEFSTRUCT: 'START-OFFSET must be followed by a FIX")]
-        public const int DEFSTRUCT_STARTOFFSET_Must_Be_Followed_By_A_FIX = 100;
-        [Message("DEFSTRUCT: 'PRINTTYPE must be followed by an atom")]
-        public const int DEFSTRUCT_PRINTTYPE_Must_Be_Followed_By_An_Atom = 101;
+        public const int _0_First_Arg_Must_Be_A_Nonnegative_FIX = 83;
+        [Message("{0}: iterated values must be CHARACTERs")]
+        public const int _0_Iterated_Values_Must_Be_CHARACTERs = 86;
+        [Message("{0}: LVAL of OBLIST must be a list starting with 2 OBLISTs")]
+        public const int _0_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs = 88;
+        [Message("{0}: must be called from within a PACKAGE")]
+        public const int _0_Must_Be_Called_From_Within_A_PACKAGE = 89;
+        [Message("{0}: must be called from within a PACKAGE or DEFINITIONS")]
+        public const int _0_Must_Be_Called_From_Within_A_PACKAGE_Or_DEFINITIONS = 91;
+        [Message("{0}: not enough elements in 'CONSTRUCTOR spec")]
+        public const int _0_Not_Enough_Elements_In_CONSTRUCTOR_Spec = 92;
+        [Message("{0}: element after 'CONSTRUCTOR must be an atom")]
+        public const int _0_Element_After_CONSTRUCTOR_Must_Be_An_Atom = 93;
+        [Message("{0}: second element after 'CONSTRUCTOR must be an argument list")]
+        public const int _0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List = 94;
+        [Message("{0}: 'NONE is not allowed after a default field value")]
+        public const int _0_NONE_Is_Not_Allowed_After_A_Default_Field_Value = 95;
+        [Message("{0}: parts of defaults section must be quoted atoms or lists")]
+        public const int _0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists = 96;
+        [Message("{0}: lists in defaults section must start with a quoted atom")]
+        public const int _0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom = 97;
+        [Message("{0}: 'NTH must be followed by an atom")]
+        public const int _0_NTH_Must_Be_Followed_By_An_Atom = 98;
+        [Message("{0}: 'PUT must be followed by an atom")]
+        public const int _0_PUT_Must_Be_Followed_By_An_Atom = 99;
+        [Message("{0}: 'START-OFFSET must be followed by a FIX")]
+        public const int _0_STARTOFFSET_Must_Be_Followed_By_A_FIX = 100;
+        [Message("{0}: 'PRINTTYPE must be followed by an atom")]
+        public const int _0_PRINTTYPE_Must_Be_Followed_By_An_Atom = 101;
         [Message("WORD-LEXICAL-WORD must return a string")]
         public const int WORDLEXICALWORD_Must_Return_A_String = 102;
         [Message("division by zero")]
@@ -244,63 +242,49 @@ namespace Zilf.Diagnostics
         public const int Expected_A_Structured_Value_After_The_OFFSET = 113;
         [Message("expected 1 or 2 args after an OFFSET")]
         public const int Expected_1_Or_2_Args_After_An_OFFSET = 115;
-        [Message("REST: not enough elements")]
-        public const int REST_Not_Enough_Elements = 116;
-        [Message("BACK: not enough elements")]
-        public const int BACK_Not_Enough_Elements = 117;
-        [Message("GROW: sizes must be non-negative")]
-        public const int GROW_Sizes_Must_Be_Nonnegative = 118;
-        [Message("NTH: reading past end of structure")]
-        public const int NTH_Reading_Past_End_Of_Structure = 119;
-        [Message("SUBSTRUC: negative element count")]
-        public const int SUBSTRUC_Negative_Element_Count = 120;
-        [Message("SUBSTRUC: fourth arg must have same primtype as first")]
-        public const int SUBSTRUC_Fourth_Arg_Must_Have_Same_Primtype_As_First = 121;
-        [Message("SUBSTRUC: destination too short")]
-        public const int SUBSTRUC_Destination_Too_Short = 122;
-        [Message("SUBSTRUC: primtype TABLE not supported")]
-        public const int SUBSTRUC_Primtype_TABLE_Not_Supported = 124;
-        [Message("SORT: keys must have the same type to use default comparison")]
-        public const int SORT_Keys_Must_Have_The_Same_Type_To_Use_Default_Comparison = 125;
-        [Message("SORT: key primtypes must be ATOM, FIX, or STRING to use default comparison")]
-        public const int SORT_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison = 126;
+        [Message("{0}: not enough elements")]
+        public const int _0_Not_Enough_Elements = 116;
+        [Message("{0}: sizes must be non-negative")]
+        public const int _0_Sizes_Must_Be_Nonnegative = 118;
+        [Message("{0}: reading past end of structure")]
+        public const int _0_Reading_Past_End_Of_Structure = 119;
+        [Message("{0}: negative element count")]
+        public const int _0_Negative_Element_Count = 120;
+        [Message("{0}: fourth arg must have same primtype as first")]
+        public const int _0_Fourth_Arg_Must_Have_Same_Primtype_As_First = 121;
+        [Message("{0}: destination too short")]
+        public const int _0_Destination_Too_Short = 122;
+        [Message("{0}: primtype TABLE not supported")]
+        public const int _0_Primtype_TABLE_Not_Supported = 124;
+        [Message("{0}: keys must have the same type to use default comparison")]
+        public const int _0_Keys_Must_Have_The_Same_Type_To_Use_Default_Comparison = 125;
+        [Message("{0}: key primtypes must be ATOM, FIX, or STRING to use default comparison")]
+        public const int _0_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison = 126;
         [Message("no OBLIST path")]
         public const int No_OBLIST_Path = 127;
-        [Message("ITABLE: specifier must be NONE, BYTE, or WORD")]
-        public const int ITABLE_Specifier_Must_Be_NONE_BYTE_Or_WORD = 128;
-        [Message("ITABLE: invalid table size")]
-        public const int ITABLE_Invalid_Table_Size = 129;
-        [Message("ZREST: second arg must not be negative")]
-        public const int ZREST_Second_Arg_Must_Not_Be_Negative = 130;
-        [Message("VERSION: TIME is only meaningful in version 3")]
-        public const int VERSION_TIME_Is_Only_Meaningful_In_Version_3 = 131;
-        [Message("ORDER-OBJECTS?: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST")]
-        public const int ORDEROBJECTS_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST = 132;
-        [Message("ORDER-TREE?: first arg must be REVERSE-DEFINED")]
-        public const int ORDERTREE_First_Arg_Must_Be_REVERSEDEFINED = 133;
-        [Message("CHRSET: alphabet number must be between 0 and 2")]
-        public const int CHRSET_Alphabet_Number_Must_Be_Between_0_And_2 = 134;
-        [Message("NEW-ADD-WORD: requires NEW-PARSER? option")]
-        public const int NEWADDWORD_Requires_NEWPARSER_Option = 135;
+        [Message("{0}: specifier must be NONE, BYTE, or WORD")]
+        public const int _0_Specifier_Must_Be_NONE_BYTE_Or_WORD = 128;
+        [Message("{0}: invalid table size")]
+        public const int _0_Invalid_Table_Size = 129;
+        [Message("{0}: second arg must not be negative")]
+        public const int _0_Second_Arg_Must_Not_Be_Negative = 130;
+        [Message("{0}: TIME is only meaningful in version 3")]
+        public const int _0_TIME_Is_Only_Meaningful_In_Version_3 = 131;
+        [Message("{0}: first arg must be DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST")]
+        public const int _0_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST = 132;
+        [Message("{0}: first arg must be REVERSE-DEFINED")]
+        public const int _0_First_Arg_Must_Be_REVERSEDEFINED = 133;
+        [Message("{0}: alphabet number must be between 0 and 2")]
+        public const int _0_Alphabet_Number_Must_Be_Between_0_And_2 = 134;
+        [Message("{0}: requires NEW-PARSER? option")]
+        public const int _0_Requires_NEWPARSER_Option = 135;
         [Message("a SEGMENT can only be evaluated inside a structure")]
         public const int A_SEGMENT_Can_Only_Be_Evaluated_Inside_A_Structure = 136;
-        [Message("PRINT: bad OUTCHAN")]
-        public const int PRINT_Bad_OUTCHAN = 138;
-        [Message("PRIN1: bad OUTCHAN")]
-        public const int PRIN1_Bad_OUTCHAN = 139;
-        [Message("PRINC: bad OUTCHAN")]
-        public const int PRINC_Bad_OUTCHAN = 140;
-        [Message("CRLF: bad OUTCHAN")]
-        public const int CRLF_Bad_OUTCHAN = 141;
-        [Message("IMAGE: bad OUTCHAN")]
-        public const int IMAGE_Bad_OUTCHAN = 142;
-        [Message("M-HPOS: not supported by this type of channel")]
-        public const int MHPOS_Not_Supported_By_This_Type_Of_Channel = 143;
-        [Message("INDENT-TO: first arg must be non-negative")]
-        public const int INDENTTO_First_Arg_Must_Be_Nonnegative = 144;
-        [Message("INDENT-TO: bad OUTCHAN")]
-        public const int INDENTTO_Bad_OUTCHAN = 145;
-        [Message("INDENT-TO: not supported by this type of channel")]
-        public const int INDENTTO_Not_Supported_By_This_Type_Of_Channel = 146;
+        [Message("{0}: bad OUTCHAN")]
+        public const int _0_Bad_OUTCHAN = 138;
+        [Message("{0}: not supported by this type of channel")]
+        public const int _0_Not_Supported_By_This_Type_Of_Channel = 143;
+        [Message("{0}: first arg must be non-negative")]
+        public const int _0_First_Arg_Must_Be_Nonnegative = 144;
     }
 }

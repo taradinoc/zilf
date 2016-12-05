@@ -266,7 +266,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages.FUNCNAME0_First_Arg_Must_Be_A_Nonnegative_FIX, "ILIST");
+                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "ILIST");
 
             var contents = new List<ZilObject>(count);
             for (int i = 0; i < count; i++)
@@ -286,7 +286,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages.FUNCNAME0_First_Arg_Must_Be_A_Nonnegative_FIX, "IVECTOR");
+                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "IVECTOR");
 
             var contents = new List<ZilObject>(count);
             for (int i = 0; i < count; i++)
@@ -360,7 +360,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages.FUNCNAME0_First_Arg_Must_Be_A_Nonnegative_FIX, "ISTRING");
+                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "ISTRING");
 
             var contents = new List<char>(count);
             for (int i = 0; i < count; i++)
@@ -369,7 +369,7 @@ namespace Zilf.Interpreter
                 {
                     var ch = init.Eval(ctx) as ZilChar;
                     if (ch == null)
-                        throw new InterpreterError(InterpreterMessages.ISTRING_Iterated_Values_Must_Be_CHARACTERs);
+                        throw new InterpreterError(InterpreterMessages._0_Iterated_Values_Must_Be_CHARACTERs, "ISTRING");
                     contents.Add(ch.Char);
                 }
                 else

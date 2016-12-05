@@ -2751,13 +2751,13 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(4);
             if (specLength < 3 || specLength == null)
             {
-                throw new CompilerError(CompilerMessages.DO_Expected_3_Or_4_Elements_In_Binding_List);
+                throw new CompilerError(CompilerMessages._0_Expected_3_Or_4_Elements_In_Binding_List, "DO");
             }
 
             var atom = spec.First as ZilAtom;
             if (atom == null)
             {
-                throw new CompilerError(CompilerMessages.DO_First_Element_In_Binding_List_Must_Be_An_Atom);
+                throw new CompilerError(CompilerMessages._0_First_Element_In_Binding_List_Must_Be_An_Atom, "DO");
             }
 
             var start = spec.Rest.First;
@@ -2901,13 +2901,13 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength < 2 || specLength == null)
             {
-                throw new CompilerError(CompilerMessages.MAPCONTENTS_Expected_2_Or_3_Elements_In_Binding_List);
+                throw new CompilerError(CompilerMessages._0_Expected_2_Or_3_Elements_In_Binding_List, "MAP-CONTENTS");
             }
 
             var atom = spec.First as ZilAtom;
             if (atom == null)
             {
-                throw new CompilerError(CompilerMessages.MAPCONTENTS_First_Element_In_Binding_List_Must_Be_An_Atom);
+                throw new CompilerError(CompilerMessages._0_First_Element_In_Binding_List_Must_Be_An_Atom, "MAP-CONTENTS");
             }
 
             ZilAtom nextAtom;
@@ -2917,7 +2917,7 @@ namespace Zilf.Compiler
                 nextAtom = spec.Rest.First as ZilAtom;
                 if (nextAtom == null)
                 {
-                    throw new CompilerError(CompilerMessages.MAPCONTENTS_Middle_Element_In_Binding_List_Must_Be_An_Atom);
+                    throw new CompilerError(CompilerMessages._0_Middle_Element_In_Binding_List_Must_Be_An_Atom, "MAP-CONTENTS");
                 }
 
                 container = spec.Rest.Rest.First;
@@ -3040,25 +3040,25 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength != 3)
             {
-                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Expected_3_Elements_In_Binding_List);
+                throw new CompilerError(CompilerMessages._0_Expected_3_Elements_In_Binding_List, "MAP-DIRECTIONS");
             }
 
             var dirAtom = spec.First as ZilAtom;
             if (dirAtom == null)
             {
-                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_First_Element_In_Binding_List_Must_Be_An_Atom);
+                throw new CompilerError(CompilerMessages._0_First_Element_In_Binding_List_Must_Be_An_Atom, "MAP-DIRECTIONS");
             }
 
             var ptAtom = spec.Rest.First as ZilAtom;
             if (ptAtom == null)
             {
-                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Middle_Element_In_Binding_List_Must_Be_An_Atom);
+                throw new CompilerError(CompilerMessages._0_Middle_Element_In_Binding_List_Must_Be_An_Atom, "MAP-DIRECTIONS");
             }
 
             var room = spec.Rest.Rest.First;
             if (!room.IsLVAL() && !room.IsGVAL())
             {
-                throw new CompilerError(CompilerMessages.MAPDIRECTIONS_Last_Element_In_Binding_List_Must_Be_An_LVAL_Or_GVAL);
+                throw new CompilerError(CompilerMessages._0_Last_Element_In_Binding_List_Must_Be_An_LVAL_Or_GVAL, "MAP-DIRECTIONS");
             }
 
             // look for an end block
@@ -3169,7 +3169,7 @@ namespace Zilf.Compiler
                 }
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
-                    throw new CompilerError(CompilerMessages.All_Clauses_In_COND_Must_Be_Lists);
+                    throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
 
                 ZilObject condition = clause.First;
 
@@ -3291,7 +3291,7 @@ namespace Zilf.Compiler
                 clauses = clauses.Rest;
 
                 if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
-                    throw new CompilerError(CompilerMessages.All_Clauses_In_VERSION_Must_Be_Lists);
+                    throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
                 ZilObject condition = clause.First;
 

@@ -244,7 +244,7 @@ namespace Zilf.Interpreter
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
-                    throw new InterpreterError(InterpreterMessages.FUNCNAME0_No_Enclosing_PROGREPEAT, "RETURN");
+                    throw new InterpreterError(InterpreterMessages._0_No_Enclosing_PROGREPEAT, "RETURN");
             }
 
             throw new ReturnException(activation, value);
@@ -259,7 +259,7 @@ namespace Zilf.Interpreter
             {
                 activation = ctx.GetEnclosingProgActivation();
                 if (activation == null)
-                    throw new InterpreterError(InterpreterMessages.FUNCNAME0_No_Enclosing_PROGREPEAT, "AGAIN");
+                    throw new InterpreterError(InterpreterMessages._0_No_Enclosing_PROGREPEAT, "AGAIN");
             }
 
             throw new AgainException(activation);
