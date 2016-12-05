@@ -94,7 +94,7 @@ namespace ZilfErrorMessages
                     .WithAdditionalAnnotations(messagesTypeAnnotation);
 
                 // compute the name of the new constant
-                var constantName = GetConstantName(creation.NewMessageFormat);
+                var constantName = GetConstantNameFromMessageFormat(creation.NewMessageFormat);
                 var constantNameSyntax = SyntaxFactory.IdentifierName(constantName);
 
                 // replace the invocation
@@ -126,7 +126,7 @@ namespace ZilfErrorMessages
                 var syntaxMapping = invocations.ToDictionary(i => (SyntaxNode)i.ExpressionToReplace, i => i.ConstantAccessSyntax);
 
                 var syntaxRoot = await document.GetSyntaxRootAsync(cancellationToken);
-                var newSyntaxRoot = syntaxRoot.ReplaceSyntax(syntaxMapping.Keys, (node, _) => syntaxMapping[node], null, null, null, null);
+                var newSyntaxRoot = syntaxRoot.ReplaceNodes(syntaxMapping.Keys, (node, _) => syntaxMapping[node]);
 
                 solution = solution.WithDocumentSyntaxRoot(pair.Key, AddUsingIfNeeded(newSyntaxRoot));
             }
@@ -253,12 +253,12 @@ namespace ZilfErrorMessages
                 semicolonToken: SyntaxFactory.Token(SyntaxKind.SemicolonToken));
         }
 
-        private static string GetConstantName(string message)
+        public static string GetConstantNameFromMessageFormat(string formatString)
         {
             var sb = new StringBuilder();
             bool capNext = true;
 
-            foreach (char c in message)
+            foreach (char c in formatString)
             {
                 if (char.IsWhiteSpace(c))
                 {
@@ -276,8 +276,8 @@ namespace ZilfErrorMessages
                 }
             }
 
-            if (sb.Length == 0)
-                return "__InvalidMessage";
+            if (sb.Length == 0 || char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
 
             return sb.ToString();
         }
