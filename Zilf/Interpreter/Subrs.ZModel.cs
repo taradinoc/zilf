@@ -444,13 +444,13 @@ namespace Zilf.Interpreter
                         flags = TableFlags.WordLength;
                         break;
                     default:
-                        throw new InterpreterError(InterpreterMessages.ITABLE_Specifier_Must_Be_NONE_BYTE_Or_WORD);
+                        throw new InterpreterError(InterpreterMessages._0_Specifier_Must_Be_NONE_BYTE_Or_WORD, "ITABLE");
                 }
             }
 
             // element count
             if (count < 1)
-                throw new InterpreterError(InterpreterMessages.ITABLE_Invalid_Table_Size);
+                throw new InterpreterError(InterpreterMessages._0_Invalid_Table_Size, "ITABLE");
 
             // optional flags
             if (flagList != null)
@@ -751,7 +751,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (bytes < 0)
-                throw new InterpreterError(InterpreterMessages.ZREST_Second_Arg_Must_Not_Be_Negative);
+                throw new InterpreterError(InterpreterMessages._0_Second_Arg_Must_Not_Be_Negative, "ZREST");
 
             return table.OffsetByBytes(ctx, bytes);
         }
@@ -774,7 +774,7 @@ namespace Zilf.Interpreter
             if (time != null)
             {
                 if (ctx.ZEnvironment.ZVersion != 3)
-                    throw new InterpreterError(InterpreterMessages.VERSION_TIME_Is_Only_Meaningful_In_Version_3);
+                    throw new InterpreterError(InterpreterMessages._0_TIME_Is_Only_Meaningful_In_Version_3, "VERSION");
 
                 ctx.ZEnvironment.TimeStatusLine = true;
             }
@@ -882,7 +882,7 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError(InterpreterMessages.ORDEROBJECTS_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST);
+            throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST, "ORDER-OBJECTS?");
         }
 
         [Subr("ORDER-TREE?")]
@@ -897,7 +897,7 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError(InterpreterMessages.ORDERTREE_First_Arg_Must_Be_REVERSEDEFINED);
+            throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_REVERSEDEFINED, "ORDER-TREE?");
         }
 
         [Subr("ORDER-FLAGS?")]
@@ -992,7 +992,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (alphabetNum < 0 || alphabetNum > 2)
-                throw new InterpreterError(InterpreterMessages.CHRSET_Alphabet_Number_Must_Be_Between_0_And_2);
+                throw new InterpreterError(InterpreterMessages._0_Alphabet_Number_Must_Be_Between_0_And_2, "CHRSET");
 
             var sb = new StringBuilder(26);
 
@@ -1281,7 +1281,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
-                throw new InterpreterError(InterpreterMessages.NEWADDWORD_Requires_NEWPARSER_Option);
+                throw new InterpreterError(InterpreterMessages._0_Requires_NEWPARSER_Option, "NEW-ADD-WORD");
 
             var nameAtom = name.GetAtom(ctx);
             flags = flags ?? ZilFix.Zero;

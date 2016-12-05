@@ -39,7 +39,7 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.PRINT_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "PRINT");
             }
 
             var str = value.ToStringContext(ctx, false);
@@ -63,7 +63,7 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.PRIN1_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "PRIN1");
             }
 
             var str = value.ToStringContext(ctx, false);
@@ -85,7 +85,7 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.PRINC_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "PRINC");
             }
 
             var str = value.ToStringContext(ctx, true);
@@ -107,7 +107,7 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.CRLF_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "CRLF");
             }
 
             // TODO: check for I/O error
@@ -175,7 +175,7 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.IMAGE_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "IMAGE");
             }
 
             // TODO: check for I/O error
@@ -278,7 +278,7 @@ namespace Zilf.Interpreter
 
             var hposChannel = channel as IChannelWithHPos;
             if (hposChannel == null)
-                throw new InterpreterError(InterpreterMessages.MHPOS_Not_Supported_By_This_Type_Of_Channel);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "M-HPOS");
 
             return new ZilFix(hposChannel.HPos);
         }
@@ -289,7 +289,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (position.Value < 0)
-                throw new InterpreterError(InterpreterMessages.INDENTTO_First_Arg_Must_Be_Nonnegative);
+                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_Nonnegative, "INDENT-TO");
 
             if (channel == null)
             {
@@ -297,12 +297,12 @@ namespace Zilf.Interpreter
                     ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel ??
                     ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.OUTCHAN)) as ZilChannel;
                 if (channel == null)
-                    throw new InterpreterError(InterpreterMessages.INDENTTO_Bad_OUTCHAN);
+                    throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "INDENT-TO");
             }
 
             var hposChannel = channel as IChannelWithHPos;
             if (hposChannel == null)
-                throw new InterpreterError(InterpreterMessages.INDENTTO_Not_Supported_By_This_Type_Of_Channel);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "INDENT-TO");
 
             var cur = hposChannel.HPos;
             while (cur < position.Value)
