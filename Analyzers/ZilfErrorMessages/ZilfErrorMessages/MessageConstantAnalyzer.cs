@@ -45,7 +45,7 @@ namespace ZilfErrorMessages
             isEnabledByDefault: true);
 
         public static readonly Regex PrefixedMessageFormatRegex = new Regex(
-            @"^(?<prefix>[^a-z .,;:()\[\]]+)(?<rest>: .*)$");
+            @"^(?<prefix>[^a-z .,;:()\[\]{}]+)(?<rest>: .*)$");
         public static readonly Regex FormatTokenRegex = new Regex(
             @"\{(?<number>\d+)(?<suffix>:[^}]*)?\}");
 
@@ -115,17 +115,12 @@ namespace ZilfErrorMessages
                                     {
                                         var prefix = match.Groups["prefix"].Value;
 
-                                        // if the prefix is already a format token, don't flag it again
-                                        var tokenMatch = FormatTokenRegex.Match(prefix);
-                                        if (!(tokenMatch.Success && tokenMatch.Length == prefix.Length))
-                                        {
-                                            var diagnostic = Diagnostic.Create(
-                                                Rule_PrefixedMessageFormat,
-                                                formatExpr.GetLocation(),
-                                                match.Groups["prefix"].Value);
+                                        var diagnostic = Diagnostic.Create(
+                                            Rule_PrefixedMessageFormat,
+                                            formatExpr.GetLocation(),
+                                            match.Groups["prefix"].Value);
 
-                                            context.ReportDiagnostic(diagnostic);
-                                        }
+                                        context.ReportDiagnostic(diagnostic);
                                     }
                                 }
                             }

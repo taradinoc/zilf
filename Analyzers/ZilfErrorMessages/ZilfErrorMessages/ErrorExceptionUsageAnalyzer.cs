@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using ZilfErrorMessages;
+using System.Text;
 
 namespace ZilfErrorMessages
 {
@@ -91,7 +92,7 @@ namespace ZilfErrorMessages
                         var expressionToReplace = args[i].Expression;
 
                         string newMessageFormat;
-                        IEnumerable<ExpressionSyntax> newMessageArgs;
+                        IImmutableList<ExpressionSyntax> newMessageArgs;
 
                         if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out newMessageFormat, out newMessageArgs))
                         {
@@ -112,10 +113,10 @@ namespace ZilfErrorMessages
 
         private static bool TryExtractFormatAndArgs(
             ExpressionSyntax expressionToReplace, SemanticModel semanticModel,
-            out string newMessageFormat, out IEnumerable<ExpressionSyntax> newMessageArgs)
+            out string newMessageFormat, out IImmutableList<ExpressionSyntax> newMessageArgs)
         {
             string format;
-            var newArgs = new List<ExpressionSyntax>();
+            ImmutableList<ExpressionSyntax> newArgs;
 
             // has a constant value?
             var constantValue = semanticModel.GetConstantValue(expressionToReplace);
@@ -123,20 +124,128 @@ namespace ZilfErrorMessages
             if (constantValue.HasValue)
             {
                 format = (string)constantValue.Value;
+                newArgs = ImmutableList<ExpressionSyntax>.Empty;
             }
-            else
+            else if (!TryUnpackCallToStringFormat(expressionToReplace, semanticModel, out format, out newArgs) &&
+                !TryRewriteConcatAsFormatAndArgs(expressionToReplace, semanticModel, out format, out newArgs))
             {
-                // TODO: handle "literal" + expr1 + "another literal" + expr2...
                 newMessageFormat = null;
                 newMessageArgs = null;
                 return false;
             }
 
-            // TODO: extract function name as an arg
+            // prefixed?
+            var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(format);
+
+            if (match.Success)
+            {
+                var prefix = match.Groups["prefix"].Value;
+                var rest = match.Groups["rest"].Value;
+
+                format = "{0}" + MessageConstantCodeFixProvider.IncrementFormatTokens(rest);
+                newArgs = newArgs.Insert(
+                    0,
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(prefix)));
+            }
 
             newMessageFormat = format;
             newMessageArgs = newArgs;
             return true;
+        }
+
+        private static bool IsSpecialTypeMethod(ISymbol symbol, SpecialType specialType, string methodName)
+        {
+            return
+                symbol?.Kind == SymbolKind.Method &&
+                symbol.ContainingType?.SpecialType == specialType &&
+                symbol.Name == methodName;
+        }
+
+        private static bool TryUnpackCallToStringFormat(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        {
+            formatStr = null;
+            formatArgs = null;
+
+            var invocationExpr = expressionToReplace as InvocationExpressionSyntax;
+
+            if (invocationExpr == null)
+                return false;
+
+            var invokedSymbol = semanticModel.GetSymbolInfo(invocationExpr.Expression);
+
+            if (!IsSpecialTypeMethod(invokedSymbol.Symbol, SpecialType.System_String, "Format"))
+                return false;
+
+            var formatExpr = invocationExpr.ArgumentList.Arguments.FirstOrDefault()?.Expression;
+
+            if (formatExpr == null || !(semanticModel.GetTypeInfo(formatExpr).Type?.SpecialType == SpecialType.System_String))
+                return false;
+
+            var formatConstValue = semanticModel.GetConstantValue(formatExpr);
+
+            if (!formatConstValue.HasValue)
+                return false;
+
+            formatStr = (string)formatConstValue.Value;
+            formatArgs = invocationExpr.ArgumentList.Arguments.Skip(1).Select(a => a.Expression).ToImmutableList();
+            return true;
+        }
+
+        private static bool TryRewriteConcatAsFormatAndArgs(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        {
+            formatStr = null;
+            formatArgs = null;
+
+            var binaryExpr = expressionToReplace as BinaryExpressionSyntax;
+
+            if (binaryExpr == null || binaryExpr.Kind() != SyntaxKind.AddExpression)
+                return false;
+
+            var sb = new StringBuilder();
+            var argList = new List<ExpressionSyntax>();
+            var tokenIdx = 0;
+
+            foreach (var expr in UnravelAddExpressions(binaryExpr))
+            {
+                var constValue = semanticModel.GetConstantValue(expr);
+
+                if (constValue.HasValue && constValue.Value is string)
+                {
+                    sb.Append((string)constValue.Value);
+                }
+                else
+                {
+                    sb.Append('{');
+                    sb.Append(tokenIdx++);
+                    sb.Append('}');
+
+                    argList.Add(expr);
+                }
+            }
+
+            formatStr = sb.ToString();
+            formatArgs = argList.ToImmutableList();
+            return true;
+        }
+
+        private static IEnumerable<ExpressionSyntax> UnravelAddExpressions(ExpressionSyntax expr)
+        {
+            var binaryExpr = expr as BinaryExpressionSyntax;
+
+            if (binaryExpr?.Kind() == SyntaxKind.AddExpression)
+            {
+                foreach (var child in UnravelAddExpressions(binaryExpr.Left))
+                    yield return child;
+
+                foreach (var child in UnravelAddExpressions(binaryExpr.Right))
+                    yield return child;
+            }
+            else
+            {
+                yield return expr;
+            }
         }
     }
 
@@ -161,12 +270,12 @@ namespace ZilfErrorMessages
         /// <summary>
         /// The initial arguments to be used at the call site when formatting the new message.
         /// </summary>
-        public IEnumerable<ExpressionSyntax> NewMessageArgs { get; }
+        public IImmutableList<ExpressionSyntax> NewMessageArgs { get; }
 
         public LiteralCreation(
             string exceptionTypeName, ExpressionSyntax errorSourceExpression,
             ExpressionSyntax expressionToReplace,
-            string newMessageFormat, IEnumerable<ExpressionSyntax> newMessageArgs)
+            string newMessageFormat, IImmutableList<ExpressionSyntax> newMessageArgs)
         {
             ExceptionTypeName = exceptionTypeName;
             ErrorSourceExpression = errorSourceExpression;
