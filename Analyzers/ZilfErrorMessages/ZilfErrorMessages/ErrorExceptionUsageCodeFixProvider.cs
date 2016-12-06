@@ -3,16 +3,15 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Rename;
-using Microsoft.CodeAnalysis.Text;
-using System.Text;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Formatting;
 
 namespace ZilfErrorMessages
@@ -63,6 +62,7 @@ namespace ZilfErrorMessages
             public string MessagesTypeName;
             public ExpressionSyntax ExpressionToReplace;
             public MemberAccessExpressionSyntax ConstantAccessSyntax;
+            public IEnumerable<ExpressionSyntax> NewMessageArgs;
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
@@ -107,6 +107,7 @@ namespace ZilfErrorMessages
                 {
                     ConstantAccessSyntax = constantAccessSyntax,
                     ExpressionToReplace = creation.ExpressionToReplace,
+                    NewMessageArgs = creation.NewMessageArgs,
                     MessagesTypeName = messagesTypeName,
                     GetConstantDeclarationSyntax = code => MakeConstantSyntax(creation.NewMessageFormat, constantName, code)
                 });
@@ -118,18 +119,29 @@ namespace ZilfErrorMessages
         private static async Task<Solution> ApplyInvocationsAsync(Solution solution, IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument, CancellationToken cancellationToken)
         {
             // apply changes at invocation sites
+            var slnEditor = new SolutionEditor(solution);
+
             foreach (var pair in invocationsByDocument)
             {
-                var document = solution.GetDocument(pair.Key);
+                var docEditor = await slnEditor.GetDocumentEditorAsync(pair.Key, cancellationToken);
                 var invocations = pair.Value;
 
-                var syntaxMapping = invocations.ToDictionary(i => (SyntaxNode)i.ExpressionToReplace, i => i.ConstantAccessSyntax);
+                foreach (var i in pair.Value)
+                {
+                    docEditor.ReplaceNode(
+                        i.ExpressionToReplace,
+                        i.ConstantAccessSyntax.WithTriviaFrom(i.ExpressionToReplace));
 
-                var syntaxRoot = await document.GetSyntaxRootAsync(cancellationToken);
-                var newSyntaxRoot = syntaxRoot.ReplaceNodes(syntaxMapping.Keys, (node, _) => syntaxMapping[node]);
+                    if (i.NewMessageArgs.Any())
+                        docEditor.InsertAfter(
+                            i.ExpressionToReplace.FirstAncestorOrSelf<ArgumentSyntax>(),
+                            i.NewMessageArgs.Select(a => SyntaxFactory.Argument(a).WithAdditionalAnnotations(Formatter.Annotation)));
+                }
 
-                solution = solution.WithDocumentSyntaxRoot(pair.Key, AddUsingIfNeeded(newSyntaxRoot));
+                AddUsingIfNeeded(docEditor);
             }
+
+            solution = slnEditor.GetChangedSolution();
 
             // refresh model and find message set types where we need to add constants
             var constantsByTypeName = from pair in invocationsByDocument
@@ -205,22 +217,21 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static SyntaxNode AddUsingIfNeeded(SyntaxNode syntaxRoot)
+        private static void AddUsingIfNeeded(DocumentEditor docEditor)
         {
-            if (syntaxRoot is CompilationUnitSyntax)
+            var compilationUnitSyntax = docEditor.OriginalRoot as CompilationUnitSyntax;
+
+            if (compilationUnitSyntax != null)
             {
-                var compilationUnitSyntax = (CompilationUnitSyntax)syntaxRoot;
                 if (!compilationUnitSyntax.Usings.Any(
                     u => u.Name.ToString() == "Zilf.Diagnostics"))
                 {
-                    var newCompilationUnit = compilationUnitSyntax.AddUsings(
+                    docEditor.InsertAfter(
+                        compilationUnitSyntax.Usings.Last(),
                         SyntaxFactory.UsingDirective(
                             SyntaxFactory.ParseName("Zilf.Diagnostics")));
-                    return newCompilationUnit;
                 }
             }
-
-            return syntaxRoot;
         }
 
         private static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code)

@@ -212,7 +212,7 @@ namespace ZilfErrorMessages
             return new PendingReplacement(location.Document, argumentListExpr, newArgumentListExpr);
         }
 
-        private static string IncrementFormatTokens(string format)
+        public static string IncrementFormatTokens(string format)
         {
             return MessageConstantAnalyzer.FormatTokenRegex.Replace(
                 format,

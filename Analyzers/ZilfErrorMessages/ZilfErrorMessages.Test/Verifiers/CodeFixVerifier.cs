@@ -129,7 +129,8 @@ namespace TestHelper
 
             //after applying all of the code fixes, compare the resulting string to the inputted one
             var actual = GetStringFromDocument(document);
-            Assert.AreEqual(newSource, actual);
+            //Assert.AreEqual(newSource, actual);
+            DiffHelper.ShouldEqualWithDiff(actual, newSource);
         }
     }
 }
