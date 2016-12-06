@@ -303,8 +303,6 @@ namespace Zilf.ZModel.Values
             int length = 2;
             OutputElementType type;
 
-            const string SUnexpectedForm = "FORM in PROPDEF output pattern must be BYTE, WORD, STRING, OBJECT, ROOM, GLOBAL, NOUN, ADJ, or VOC";
-
             switch (atom.StdAtom)
             {
                 case StdAtom.BYTE:
@@ -346,7 +344,7 @@ namespace Zilf.ZModel.Values
                     break;
 
                 default:
-                    throw new InterpreterError(form, SUnexpectedForm);
+                    throw new InterpreterError(form, InterpreterMessages.FORM_In_PROPDEF_Output_Pattern_Must_Be_BYTE_WORD_STRING_OBJECT_ROOM_GLOBAL_NOUN_ADJ_Or_VOC);
             }
 
             if (((IStructure)form).GetLength(length) != length)

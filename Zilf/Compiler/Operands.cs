@@ -22,6 +22,7 @@ using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -83,7 +84,6 @@ namespace Zilf.Compiler
              * - The marker itself, if (1) its natural location is not the stack, or
              *   (2) every following argument is a constant or variable.
              */
-            const string STempsNotAllowed = "expression needs temporary variables, not allowed here";
             for (int i = 0; i <= marker; i++)
             {
                 bool needTemp = false;
@@ -134,7 +134,7 @@ namespace Zilf.Compiler
                     }
                     catch (InvalidOperationException)
                     {
-                        throw new CompilerError(STempsNotAllowed);
+                        throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
                     }
                     values[i] = cc.Locals[tempAtom];
                     rb.EmitStore((IVariable)values[i], value);

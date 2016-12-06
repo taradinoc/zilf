@@ -286,5 +286,17 @@ namespace Zilf.Diagnostics
         public const int _0_Not_Supported_By_This_Type_Of_Channel = 143;
         [Message("{0}: first arg must be non-negative")]
         public const int _0_First_Arg_Must_Be_Nonnegative = 144;
+        [Message("{0}: not supported by type")]
+        public const int _0_Not_Supported_By_Type = 145;
+        [Message("FORM in PROPDEF output pattern must be BYTE, WORD, STRING, OBJECT, ROOM, GLOBAL, NOUN, ADJ, or VOC")]
+        public const int FORM_In_PROPDEF_Output_Pattern_Must_Be_BYTE_WORD_STRING_OBJECT_ROOM_GLOBAL_NOUN_ADJ_Or_VOC = 147;
+        [Message("{0}: writing past end of structure")]
+        public const int _0_Writing_Past_End_Of_Structure = 149;
+        [Message("{0}: expected 0 <= key offset < record size")]
+        public const int _0_Expected_0__Key_Offset__Record_Size = 150;
+        [Message("{0}: vector length must be a multiple of record size")]
+        public const int _0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size = 151;
+        [Message("{0}: all vectors must have the same number of records")]
+        public const int _0_All_Vectors_Must_Have_The_Same_Number_Of_Records = 154;
     }
 }

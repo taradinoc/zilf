@@ -82,6 +82,12 @@ namespace Zilf.Diagnostics
         public const int GVAL_Of_WORDFLAGSLIST_Must_Be_A_List = 28;
         [Message("WORD-FLAGS-LIST must have an even number of elements")]
         public const int WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements = 29;
+        [Message("non-constant default value: {0}")]
+        public const int Nonconstant_Default_Value_0 = 30;
+        [Message("non-vocab constant '{0}' conflicts with vocab word '{1}'")]
+        public const int Nonvocab_Constant_0_Conflicts_With_Vocab_Word_1 = 31;
+        [Message("expression needs temporary variables, not allowed here")]
+        public const int Expression_Needs_Temporary_Variables_Not_Allowed_Here = 32;
 
         #endregion
     }

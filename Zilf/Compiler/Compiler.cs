@@ -305,7 +305,7 @@ namespace Zilf.Compiler
                         IPropertyBuilder pb = cc.Properties[pair.Key];
                         pb.DefaultValue = CompileConstant(cc, pair.Value);
                         if (pb.DefaultValue == null)
-                            throw new CompilerError("non-constant default value: {0}", pair.Value.ToStringContext(ctx, false));
+                            throw new CompilerError(CompilerMessages.Nonconstant_Default_Value_0, pair.Value.ToStringContext(ctx, false));
                     }
                 }
                 catch (ZilError ex)
@@ -1102,7 +1102,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
-                        throw new CompilerError("non-vocab constant '{0}' conflicts with vocab word '{1}'", wAtom, word.Atom);
+                        throw new CompilerError(CompilerMessages.Nonvocab_Constant_0_Conflicts_With_Vocab_Word_1, wAtom, word.Atom);
                     }
                 }
             }
