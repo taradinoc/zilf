@@ -73,7 +73,7 @@ namespace Zilf.Interpreter
             }
             catch (NotSupportedException ex)
             {
-                throw new InterpreterError("BACK: not supported by type", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "BACK", ex);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Zilf.Interpreter
             }
             catch (NotSupportedException ex)
             {
-                throw new InterpreterError("TOP: not supported by type", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "TOP", ex);
             }
         }
 
@@ -113,7 +113,7 @@ namespace Zilf.Interpreter
             }
             catch (NotSupportedException ex)
             {
-                throw new InterpreterError("GROW: not supported by type", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "GROW", ex);
             }
         }
 
@@ -140,7 +140,7 @@ namespace Zilf.Interpreter
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                throw new InterpreterError("PUT: writing past end of structure", ex);
+                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUT", ex);
             }
 
             return (ZilObject)st;
@@ -338,36 +338,32 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            const string SBadOffsetOrSize = "SORT: expected 0 <= key offset < record size";
-            const string SBadVectorLength = "SORT: vector length must be a multiple of record size";
-            const string SRecordCountMismatch = "SORT: all vectors must have the same number of records";
-
             if (keyOffset < 0 || keyOffset >= recordSize)
-                throw new InterpreterError(SBadOffsetOrSize);
+                throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
 
             var vectorLength = vector.GetLength();
             int numRecords, remainder;
             numRecords = Math.DivRem(vectorLength, recordSize, out remainder);
 
             if (remainder != 0)
-                throw new InterpreterError(SBadVectorLength);
+                throw new InterpreterError(InterpreterMessages._0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size, "SORT");
 
             if (additionalSorts != null)
             {
                 foreach (var asp in additionalSorts)
                 {
                     if (asp.RecordSize < 1)
-                        throw new InterpreterError(SBadOffsetOrSize);
+                        throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
 
                     var len = asp.Vector.GetLength();
                     int recs, rem;
                     recs = Math.DivRem(len, asp.RecordSize, out rem);
 
                     if (rem != 0)
-                        throw new InterpreterError(SBadVectorLength);
+                        throw new InterpreterError(InterpreterMessages._0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size, "SORT");
 
                     if (recs != numRecords)
-                        throw new InterpreterError(SRecordCountMismatch);
+                        throw new InterpreterError(InterpreterMessages._0_All_Vectors_Must_Have_The_Same_Number_Of_Records, "SORT");
                 }
             }
 
