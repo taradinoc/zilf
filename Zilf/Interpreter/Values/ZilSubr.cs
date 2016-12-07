@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -56,7 +57,7 @@ namespace Zilf.Interpreter.Values
             {
                 return new ZilSubr(name, del);
             }
-            throw new InterpreterError("unrecognized SUBR name: " + name);
+            throw new InterpreterError(InterpreterMessages.Unrecognized_SUBR_Name_0, name);
         }
 
         public override string ToString()

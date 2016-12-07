@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -84,7 +85,7 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new InterpreterError("index out of range: " + index);
+                    throw new InterpreterError(InterpreterMessages.Index_Out_Of_Range_0, index);
                 }
             }
 

@@ -22,6 +22,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -55,7 +56,7 @@ namespace Zilf.Interpreter
             Contract.Requires(subrName != null);
 
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
-                throw new InterpreterError(subrName + ": already defined: " + name.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
 
             ZilFunction func = new ZilFunction(
                 name,
@@ -75,7 +76,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
-                throw new InterpreterError("DEFMAC: already defined: " + name.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFMAC", name.ToStringContext(ctx, false));
 
             ZilFunction func = new ZilFunction(
                 name,

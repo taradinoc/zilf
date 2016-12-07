@@ -38,12 +38,12 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static new ZilLink FromAtom(Context ctx, ZilAtom atom)
         {
-            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "LINK");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "LINK");
         }
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            throw new InterpreterError(InterpreterMessages.Cannot_CHTYPE_Away_From_LINK);
+            throw new InterpreterError(InterpreterMessages.CHTYPE_Away_From_0_Not_Supported, "LINK");
         }
     }
 }

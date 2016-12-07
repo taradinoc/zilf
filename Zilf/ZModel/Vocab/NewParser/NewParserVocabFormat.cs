@@ -286,11 +286,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if ((ndest.Classification & 0x8000) != (nsrc.Classification & 0x8000))
             {
-                throw new InterpreterError(string.Format("incompatible classifications merging words {0} ({1}) <- {2} ({3})",
-                    ndest.Atom,
-                    ndest.Classification,
-                    nsrc.Atom,
-                    nsrc.Classification));
+                throw new InterpreterError(InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3, ndest.Atom, ndest.Classification, nsrc.Atom, nsrc.Classification);
             }
 
             if (ctx.ZEnvironment.ZVersion >= 4 &&
@@ -298,7 +294,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 (ndest.SemanticStuff != null || ndest.DirId != null) &&
                 (nsrc.SemanticStuff != null || nsrc.DirId != null))
             {
-                throw new InterpreterError(string.Format("overloaded semantics merging words {0} <- {1}", dest.Atom, src.Atom));
+                throw new InterpreterError(InterpreterMessages.Overloaded_Semantics_Merging_Words_0__1, dest.Atom, src.Atom);
             }
 
             ndest.Classification |= nsrc.Classification;
@@ -354,17 +350,13 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
 
             if (!norig.HasClass(classification))
-                throw new InterpreterError(string.Format("word {0} is not a {1}", norig.Atom, partOfSpeech));
+                throw new InterpreterError(InterpreterMessages.Word_0_Is_Not_A_1, norig.Atom, partOfSpeech);
 
             var nclass = nsyn.Classification;
             var oclass = norig.Classification;
             if (nclass != 0 && oclass != 0 && (nclass & 0x8000) != (oclass & 0x8000))
             {
-                throw new InterpreterError(string.Format("incompatible classifications merging words {0} ({1}) <- {2} ({3})",
-                    nsyn.Atom,
-                    nclass,
-                    norig.Atom,
-                    oclass));
+                throw new InterpreterError(InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3, nsyn.Atom, nclass, norig.Atom, oclass);
             }
 
             nsyn.Classification = nclass | oclass;
@@ -394,12 +386,12 @@ namespace Zilf.ZModel.Vocab.NewParser
             {
                 if (nw.HasClass(dirClass))
                 {
-                    ConditionalAddByte(wb, helpers.CompileConstant, nw.DirId);
+                    ConditionalAddByte(wb, word.Atom.Text, helpers.CompileConstant, nw.DirId);
                     wb.AddByte(0);
                 }
                 else if (!nw.HasClass(verbClass))
                 {
-                    ConditionalAddShort(wb, helpers.CompileConstant, nw.SemanticStuff);
+                    ConditionalAddShort(wb, word.Atom.Text, helpers.CompileConstant, nw.SemanticStuff);
                 }
                 else
                 {
@@ -412,18 +404,18 @@ namespace Zilf.ZModel.Vocab.NewParser
                 if (adj || dir)
                 {
                     if (adj)
-                        ConditionalAddByte(wb, helpers.CompileConstant, nw.AdjId);
+                        ConditionalAddByte(wb, word.Atom.Text, helpers.CompileConstant, nw.AdjId);
                     else
                         wb.AddByte(0);
 
                     if (dir)
-                        ConditionalAddByte(wb, helpers.CompileConstant, nw.DirId);
+                        ConditionalAddByte(wb, word.Atom.Text, helpers.CompileConstant, nw.DirId);
                     else
                         wb.AddByte(0);
                 }
                 else
                 {
-                    ConditionalAddShort(wb, helpers.CompileConstant, nw.SemanticStuff);
+                    ConditionalAddShort(wb, word.Atom.Text, helpers.CompileConstant, nw.SemanticStuff);
                 }
             }
 
@@ -464,7 +456,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 }
                 else if (needSemanticStuff)
                 {
-                    ConditionalAddShort(wb, helpers.CompileConstant, nw.SemanticStuff);
+                    ConditionalAddShort(wb, word.Atom.Text, helpers.CompileConstant, nw.SemanticStuff);
                 }
             }
 
@@ -479,7 +471,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 byte highByte = (byte)((nw.Classification >> 7) & 0x7f);
                 if (lowByte != 0 && highByte != 0)
                 {
-                    // XXX warn
+                    Errors.CompWarning(ctx, "ONE-BYTE-PARTS-OF-SPEECH loses data for {0}", word.Atom.Text);
                 }
 
                 if (highByte != 0)
@@ -516,7 +508,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return verbStuff != null && verbStuff.GetTypeAtom(ctx).StdAtom == StdAtom.VERB_POINTER;
         }
 
-        private void ConditionalAddShort(IWordBuilder wb, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        private void ConditionalAddShort(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
         {
             if (value == null)
             {
@@ -527,7 +519,11 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var operand = compileConstant(value);
                 if (operand == null)
                 {
-                    Errors.CompError(ctx, "non-constant in vocab: " + value.ToString());
+                    ctx.HandleError(new CompilerError(
+                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                        "vocab word",
+                        word,
+                        value.ToString()));
                     wb.AddShort(0);
                 }
                 else
@@ -537,7 +533,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        private void ConditionalAddByte(IWordBuilder wb, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        private void ConditionalAddByte(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
         {
             if (value == null)
             {
@@ -548,7 +544,11 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var operand = compileConstant(value);
                 if (operand == null)
                 {
-                    Errors.CompError(ctx, "non-constant in vocab: " + value.ToString());
+                    ctx.HandleError(new CompilerError(
+                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                        "vocab word",
+                        word,
+                        value.ToString()));
                     wb.AddByte(0);
                 }
                 else
@@ -606,9 +606,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 // if old and new CLASS differ in the high bit, error (word class conflict)
                 if ((word.Classification & 0x8000) != (classification.Value & 0x8000))
-                    throw new InterpreterError(string.Format(
-                        "NEW-ADD-WORD: new classification {0} is incompatible with previous {1}",
-                        classification, word.Classification));
+                    throw new InterpreterError(InterpreterMessages._0_New_Classification_1_Is_Incompatible_With_Previous_2, "NEW-ADD-WORD", classification, word.Classification);
 
                 // merge new CLASS into the word
                 var combinedClassification = word.Classification | classification.Value;

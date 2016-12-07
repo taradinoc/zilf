@@ -135,7 +135,7 @@ namespace Zilf.Interpreter.Values
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
                 if (target == null)
-                    throw new InterpreterError(this, "calling undefined atom: " + fa.ToStringContext(ctx, false));
+                    throw new InterpreterError(this, InterpreterMessages.Calling_Undefined_Atom_0, fa.ToStringContext(ctx, false));
             }
             else
                 target = First.Eval(ctx);
@@ -149,8 +149,7 @@ namespace Zilf.Interpreter.Values
                 }
             }
             else
-                throw new InterpreterError(this, "not an applicable type: " +
-                                                 target.GetTypeAtom(ctx).ToStringContext(ctx, false));
+                throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
         }
 
         public override ZilObject Expand(Context ctx)

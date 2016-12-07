@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
@@ -35,7 +36,7 @@ namespace Zilf.Language
     /// </summary>
     internal class DeclCheckError : InterpreterError
     {
-        private const string STemplate = "expected {0} to match DECL {1}, but got {2}";
+        private const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
 
         /// <summary>
         /// Gets the value that didn't pass the DECL.
@@ -51,7 +52,7 @@ namespace Zilf.Language
         public string Usage { get; private set; }
 
         public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern, string usage)
-            : base(string.Format(STemplate, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false)))
+            : base(DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
             this.Value = value;
             this.Pattern = pattern;
@@ -60,7 +61,7 @@ namespace Zilf.Language
 
         public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
             string usage)
-            : base(src, string.Format(STemplate, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false)))
+            : base(src, DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
             this.Value = value;
             this.Pattern = pattern;
@@ -134,7 +135,7 @@ namespace Zilf.Language
                             if (aliased != null && aliased != atom)
                                 return Check(ctx, value, aliased);
 
-                            throw new InterpreterError("unrecognized ATOM in DECL pattern: " + atom);
+                            throw new InterpreterError(InterpreterMessages.Unrecognized_ATOM_In_DECL_Pattern_0, atom);
                     }
 
                 case StdAtom.SEGMENT:

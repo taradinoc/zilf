@@ -84,6 +84,7 @@ namespace Zilf.Interpreter
 
             int cur = 0;
             int oneOffMode = OO_None;
+            ZilObject oneOffTag = null;
 
             foreach (ZilObject arg in argspec)
             {
@@ -96,7 +97,7 @@ namespace Zilf.Interpreter
                         case "OPT":
                         case "OPTIONAL":
                             if (optArgsStart != -1)
-                                throw new InterpreterError(InterpreterMessages.Multiple_OPT_Clauses);
+                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"OPT\"");
                             if (auxArgsStart != -1)
                                 throw new InterpreterError(InterpreterMessages.OPT_After_AUX);
                             optArgsStart = cur;
@@ -104,14 +105,15 @@ namespace Zilf.Interpreter
                         case "AUX":
                         case "EXTRA":
                             if (auxArgsStart != -1)
-                                throw new InterpreterError(InterpreterMessages.Multiple_AUX_Clauses);
+                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"AUX\"");
                             auxArgsStart = cur;
                             continue;
                         case "ARGS":
                         case "TUPLE":
                             if (varargsAtom != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_ARGS_Or_TUPLE_Clauses);
+                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"ARGS\" or \"TUPLE\"");
                             oneOffMode = OO_Varargs;
+                            oneOffTag = arg;
                             varargsQuoted = (sep == "ARGS");
                             continue;
                         case "NAME":
@@ -119,16 +121,19 @@ namespace Zilf.Interpreter
                             if (activationAtom != null)
                                 throw new InterpreterError(InterpreterMessages.Multiple_NAME_Clauses_Or_Activation_Atoms);
                             oneOffMode = OO_Activation;
+                            oneOffTag = arg;
                             continue;
                         case "BIND":
                             if (environmentAtom != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_BIND_Clauses);
+                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"BIND\"");
                             oneOffMode = OO_Environment;
+                            oneOffTag = arg;
                             continue;
                         case "VALUE":
                             if (valueDecl != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_VALUE_Clauses);
+                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"VALUE\"");
                             oneOffMode = OO_Value;
+                            oneOffTag = arg;
                             continue;
                         default:
                             throw new InterpreterError(InterpreterMessages.Unexpected_Clause_In_Arg_Spec_0, arg.ToString());
@@ -150,7 +155,7 @@ namespace Zilf.Interpreter
                             }
                             else
                             {
-                                throw new InterpreterError(InterpreterMessages.ARGS_Or_TUPLE_Must_Be_Followed_By_An_Atom);
+                                throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
                             }
                         }
 
@@ -160,7 +165,7 @@ namespace Zilf.Interpreter
                     case OO_Activation:
                         this.activationAtom = arg as ZilAtom;
                         if (this.activationAtom == null)
-                            throw new InterpreterError(InterpreterMessages.NAME_Or_ACT_Must_Be_Followed_By_An_Atom);
+                            throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;
@@ -168,7 +173,7 @@ namespace Zilf.Interpreter
                     case OO_Environment:
                         environmentAtom = arg as ZilAtom;
                         if (environmentAtom == null)
-                            throw new InterpreterError(InterpreterMessages.BIND_Must_Be_Followed_By_An_Atom);
+                            throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;
@@ -226,13 +231,13 @@ namespace Zilf.Interpreter
                         argName = af.Rest.First;
                     }
                     else
-                        throw new InterpreterError("unexpected FORM in arg spec: " + argName.ToString());
+                        throw new InterpreterError(InterpreterMessages.Unexpected_FORM_In_Arg_Spec_0, argName.ToString());
                 }
 
                 // it'd better be an atom by now
                 if (!(argName is ZilAtom))
                 {
-                    throw new InterpreterError("expected atom in arg spec but found " + argName.ToString());
+                    throw new InterpreterError(InterpreterMessages.Expected_Atom_In_Arg_Spec_But_Found_0, argName.ToString());
                 }
 
                 argAtoms.Add((ZilAtom)argName);
@@ -279,12 +284,12 @@ namespace Zilf.Interpreter
                     }
                     else
                     {
-                        throw new InterpreterError("unrecognized argument name in body DECL: " + atom);
+                        throw new InterpreterError(InterpreterMessages.Unrecognized_Argument_Name_In_Body_DECL_0, atom);
                     }
 
                     if (prev != null)
                     {
-                        throw new InterpreterError("conflicting DECLs for atom: " + atom);
+                        throw new InterpreterError(InterpreterMessages.Conflicting_DECLs_For_Atom_0, atom);
                     }
                 }
             }
@@ -479,9 +484,10 @@ namespace Zilf.Interpreter
                 }
 
                 if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
-                    throw new InterpreterError(
-                        name == null ? "user-defined function" : name.ToString(),
-                        optArgsStart, auxArgsStart);
+                    throw new ArgumentCountError(
+                        new FunctionCallSite(name?.ToString() ?? "user-defined function"),
+                        optArgsStart,
+                        auxArgsStart);
 
                 if (environmentAtom != null)
                 {

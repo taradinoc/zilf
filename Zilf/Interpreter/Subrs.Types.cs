@@ -80,7 +80,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (!ctx.IsRegisteredType(type))
-                throw new InterpreterError("TYPEPRIM: not a registered type: " + type.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, "TYPEPRIM", type.ToStringContext(ctx, false));
 
             return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
         }
@@ -99,13 +99,13 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (ctx.IsRegisteredType(name))
-                throw new InterpreterError("NEWTYPE: already registered: " + name.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Already_Registered_1, "NEWTYPE", name.ToStringContext(ctx, false));
 
             PrimType primtype;
             if (ctx.IsRegisteredType(primtypeAtom))
                 primtype = ctx.GetTypePrim(primtypeAtom);
             else
-                throw new InterpreterError("NEWTYPE: unrecognized primtype: " + primtypeAtom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Primtype_1, "NEWTYPE", primtypeAtom.ToStringContext(ctx, false));
 
             ctx.RegisterType(name, primtype);
             ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
@@ -170,7 +170,7 @@ namespace Zilf.Interpreter
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
         {
             if (!ctx.IsRegisteredType(atom))
-                throw new InterpreterError($"{name}: not a registered type: {atom.ToStringContext(ctx, false)}");
+                throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, name, atom.ToStringContext(ctx, false));
 
             if (handler == null)
             {
@@ -183,14 +183,14 @@ namespace Zilf.Interpreter
                     return atom;
 
                 case Context.SetTypeHandlerResult.BadHandlerType:
-                    throw new InterpreterError($"{name}: second arg must be an atom or applicable");
+                    throw new InterpreterError(InterpreterMessages._0_Second_Arg_Must_Be_An_Atom_Or_Applicable, name);
 
                 case Context.SetTypeHandlerResult.OtherTypeNotRegistered:
-                    throw new InterpreterError($"{name}: not a registered type: {handler.ToStringContext(ctx, false)}");
+                    throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, name, handler.ToStringContext(ctx, false));
 
                 case Context.SetTypeHandlerResult.OtherTypePrimDiffers:
                     throw new InterpreterError(
-                        $"{name}: primtypes of {atom.ToStringContext(ctx, false)} and {handler.ToStringContext(ctx, false)} differ");
+                        InterpreterMessages._0_Primtypes_Of_1_And_2_Differ, name, atom.ToStringContext(ctx, false), handler.ToStringContext(ctx, false));
 
                 default:
                     throw new NotImplementedException();
@@ -231,12 +231,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject FORM(Context ctx, ZilObject[] args)
+        public static ZilObject FORM(Context ctx, [Required] ZilObject[] args)
         {
             SubrContracts(ctx, args);
-
-            if (args.Length == 0)
-                throw new InterpreterError("FORM", 1, 0);
 
             var result = new ZilForm(args);
             result.SourceLine = ctx.TopFrame.SourceLine;

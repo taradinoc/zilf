@@ -49,26 +49,14 @@ namespace Zilf.Diagnostics
         public const int List_Elements_Must_Be_2element_Lists = 5;
         [Message("list elements must be string/atom pairs")]
         public const int List_Elements_Must_Be_Stringatom_Pairs = 6;
-        [Message("multiple \"OPT\" clauses")]
-        public const int Multiple_OPT_Clauses = 7;
+        [Message("multiple {0} clauses")]
+        public const int Multiple_0_Clauses = 7;
         [Message("\"OPT\" after \"AUX\"")]
         public const int OPT_After_AUX = 8;
-        [Message("multiple \"AUX\" clauses")]
-        public const int Multiple_AUX_Clauses = 9;
-        [Message("multiple \"ARGS\" or \"TUPLE\" clauses")]
-        public const int Multiple_ARGS_Or_TUPLE_Clauses = 10;
         [Message("multiple \"NAME\" clauses or activation atoms")]
         public const int Multiple_NAME_Clauses_Or_Activation_Atoms = 11;
-        [Message("multiple \"BIND\" clauses")]
-        public const int Multiple_BIND_Clauses = 12;
-        [Message("multiple \"VALUE\" clauses")]
-        public const int Multiple_VALUE_Clauses = 13;
-        [Message("\"ARGS\" or \"TUPLE\" must be followed by an atom")]
-        public const int ARGS_Or_TUPLE_Must_Be_Followed_By_An_Atom = 14;
-        [Message("\"NAME\" or \"ACT\" must be followed by an atom")]
-        public const int NAME_Or_ACT_Must_Be_Followed_By_An_Atom = 15;
-        [Message("\"BIND\" must be followed by an atom")]
-        public const int BIND_Must_Be_Followed_By_An_Atom = 16;
+        [Message("{0} must be followed by an atom")]
+        public const int _0_Must_Be_Followed_By_An_Atom = 14;
         [Message("empty list in arg spec")]
         public const int Empty_List_In_Arg_Spec = 17;
         [Message("string in PROPDEF output pattern must be \"MANY\"")]
@@ -102,8 +90,17 @@ namespace Zilf.Diagnostics
         public const int Routine_Rewriter_Result_Must_Contain_An_Arg_Spec_And_A_Body = 18;
         [Message("routine rewriter must return a LIST or FALSE")]
         public const int Routine_Rewriter_Must_Return_A_LIST_Or_FALSE = 19;
-        [Message("CHTYPE to GVAL or LVAL requires ATOM")]
-        public const int CHTYPE_To_GVAL_Or_LVAL_Requires_ATOM = 25;
+        [Message("CHTYPE to {0} not supported")]
+        public const int CHTYPE_To_0_Not_Supported = 43;
+        [Message("CHTYPE away from {0} not supported")]
+        public const int CHTYPE_Away_From_0_Not_Supported = 42;
+        [Message("CHTYPE to {0} requires {1}")]
+        public const int CHTYPE_To_0_Requires_1 = 155;
+        [Message("{0} is not a registered type")]
+        public const int _0_Is_Not_A_Registered_Type = 156;
+        [Message("CHTYPE to {0} did not produce an applicable object")]
+        public const int CHTYPE_To_0_Did_Not_Produce_An_Applicable_Object = 253;
+
 
         // Atom Errors
 
@@ -114,6 +111,7 @@ namespace Zilf.Diagnostics
 
         [Message("{0}: no enclosing PROG/REPEAT")]
         public const int _0_No_Enclosing_PROGREPEAT = 27;
+
         [Message("object options in syntax must be atoms")]
         public const int Object_Options_In_Syntax_Must_Be_Atoms = 36;
         [Message("NEW-SFLAGS vector must have an even number of elements")]
@@ -122,10 +120,6 @@ namespace Zilf.Diagnostics
         public const int NEWSFLAGS_Names_Must_Be_Strings_Or_Atoms = 38;
         [Message("NEW-SFLAGS values must be FIXes between 0 and 255")]
         public const int NEWSFLAGS_Values_Must_Be_FIXes_Between_0_And_255 = 39;
-        [Message("cannot CHTYPE away from LINK")]
-        public const int Cannot_CHTYPE_Away_From_LINK = 42;
-        [Message("CHTYPE to {0} not supported")]
-        public const int CHTYPE_To_TYPENAME0_Not_Supported = 43;
         [Message("environment has expired")]
         public const int Environment_Has_Expired = 44;
         [Message("segment evaluation must return a structure")]
@@ -216,14 +210,10 @@ namespace Zilf.Diagnostics
         public const int _0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists = 96;
         [Message("{0}: lists in defaults section must start with a quoted atom")]
         public const int _0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom = 97;
-        [Message("{0}: 'NTH must be followed by an atom")]
-        public const int _0_NTH_Must_Be_Followed_By_An_Atom = 98;
-        [Message("{0}: 'PUT must be followed by an atom")]
-        public const int _0_PUT_Must_Be_Followed_By_An_Atom = 99;
+        [Message("{0}: {1} must be followed by an atom")]
+        public const int _0_1_Must_Be_Followed_By_An_Atom = 98;
         [Message("{0}: 'START-OFFSET must be followed by a FIX")]
         public const int _0_STARTOFFSET_Must_Be_Followed_By_A_FIX = 100;
-        [Message("{0}: 'PRINTTYPE must be followed by an atom")]
-        public const int _0_PRINTTYPE_Must_Be_Followed_By_An_Atom = 101;
         [Message("WORD-LEXICAL-WORD must return a string")]
         public const int WORDLEXICALWORD_Must_Return_A_String = 102;
         [Message("division by zero")]
@@ -298,5 +288,169 @@ namespace Zilf.Diagnostics
         public const int _0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size = 151;
         [Message("{0}: all vectors must have the same number of records")]
         public const int _0_All_Vectors_Must_Have_The_Same_Number_Of_Records = 154;
+        [Message("unrecognized object option: {0}")]
+        public const int Unrecognized_Object_Option_0 = 157;
+        [Message("unrecognized object option (NEW-SFLAGS used): {0}")]
+        public const int Unrecognized_Object_Option_NEWSFLAGS_Used_0 = 158;
+        [Message("{0} must have a GVAL to use NEW-SFLAGS")]
+        public const int _0_Must_Have_A_GVAL_To_Use_NEWSFLAGS = 159;
+        [Message("GVAL of {0} must be a FIX")]
+        public const int GVAL_Of_0_Must_Be_A_FIX = 160;
+        [Message("GVAL of {0} must be between 0 and 255")]
+        public const int GVAL_Of_0_Must_Be_Between_0_And_255 = 161;
+        [Message("unrecognized ATOM in DECL pattern: {0}")]
+        public const int Unrecognized_ATOM_In_DECL_Pattern_0 = 162;
+        [Message("misplaced {0}")]
+        public const int Misplaced_0 = 163;
+        [Message("{0}: already defined: {1}")]
+        public const int _0_Already_Defined_1 = 164;
+        [Message("unrecognized FSUBR name: {0}")]
+        public const int Unrecognized_FSUBR_Name_0 = 166;
+        [Message("incompatible classifications merging words {0} ({1}) <- {2} ({3})")]
+        public const int Incompatible_Classifications_Merging_Words_0_1__2_3 = 167;
+        [Message("overloaded semantics merging words {0} <- {1}")]
+        public const int Overloaded_Semantics_Merging_Words_0__1 = 168;
+        [Message("word {0} is not a {1}")]
+        public const int Word_0_Is_Not_A_1 = 169;
+        [Message("{0}: new classification {1} is incompatible with previous {2}")]
+        public const int _0_New_Classification_1_Is_Incompatible_With_Previous_2 = 171;
+        [Message("index out of range: {0}")]
+        public const int Index_Out_Of_Range_0 = 172;
+        [Message("value too fancy for TELL output template: {0}")]
+        public const int Value_Too_Fancy_For_TELL_Output_Template_0 = 173;
+        [Message("expected {0} LVAL(s) in TELL output template but found {1}")]
+        public const int Expected_0_LVALs_In_TELL_Output_Template_But_Found_1 = 174;
+        [Message("unexpected type in TELL token spec: {0}")]
+        public const int Unexpected_Type_In_TELL_Token_Spec_0 = 175;
+        [Message("{0}: not a registered type: {1}")]
+        public const int _0_Not_A_Registered_Type_1 = 176;
+        [Message("{0}: already registered: {1}")]
+        public const int _0_Already_Registered_1 = 177;
+        [Message("{0}: unrecognized primtype: {1}")]
+        public const int _0_Unrecognized_Primtype_1 = 178;
+        [Message("unrecognized SUBR name: {0}")]
+        public const int Unrecognized_SUBR_Name_0 = 179;
+        [Message("{0}: all atoms must be on internal oblist {1}, failed for {2}")]
+        public const int _0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2 = 180;
+        [Message("{0}: bad LVAL of OBLIST")]
+        public const int _0_Bad_LVAL_Of_OBLIST = 182;
+        [Message("{0}: no such package: {1}")]
+        public const int _0_No_Such_Package_1 = 183;
+        [Message("{0}: wrong package type, expected {1}")]
+        public const int _0_Wrong_Package_Type_Expected_1 = 184;
+        [Message("{0}: type is already registered: {1}")]
+        public const int _0_Type_Is_Already_Registered_1 = 185;
+        [Message("{0}: unrecognized base type: {1}")]
+        public const int _0_Unrecognized_Base_Type_1 = 186;
+        [Message("{0}: unrecognized non-quoted value in field definition: {1}")]
+        public const int _0_Unrecognized_Nonquoted_Value_In_Field_Definition_1 = 187;
+        [Message("{0}: unrecognized tag in defaults section: {1}")]
+        public const int _0_Unrecognized_Tag_In_Defaults_Section_1 = 188;
+        [Message("calling undefined atom: {0}")]
+        public const int Calling_Undefined_Atom_0 = 190;
+        [Message("not an applicable type: {0}")]
+        public const int Not_An_Applicable_Type_0 = 191;
+        [Message("unexpected FORM in arg spec: {0}")]
+        public const int Unexpected_FORM_In_Arg_Spec_0 = 192;
+        [Message("expected atom in arg spec but found {0}")]
+        public const int Expected_Atom_In_Arg_Spec_But_Found_0 = 193;
+        [Message("unrecognized argument name in body DECL: {0}")]
+        public const int Unrecognized_Argument_Name_In_Body_DECL_0 = 194;
+        [Message("conflicting DECLs for atom: {0}")]
+        public const int Conflicting_DECLs_For_Atom_0 = 195;
+        [Message("{0}: {1} element(s) requested but only {2} available")]
+        public const int _0_1_Elements_Requested_But_Only_2_Available = 196;
+        [Message("{0}: destination type not supported: {1}")]
+        public const int _0_Destination_Type_Not_Supported_1 = 197;
+        [Message("variable in PROPDEF output pattern is not captured by input pattern: {0}")]
+        public const int Variable_In_PROPDEF_Output_Pattern_Is_Not_Captured_By_Input_Pattern_0 = 200;
+        [Message("{0} FORM in PROPDEF output pattern must have length {1}")]
+        public const int _0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1 = 201;
+        [Message("{0}: first argument must be an LVAL or FIX")]
+        public const int _0_First_Argument_Must_Be_An_LVAL_Or_FIX = 202;
+        [Message("{0}: second argument must be an atom")]
+        public const int _0_Second_Argument_Must_Be_An_Atom = 203;
+        [Message("PROPDEF constant '{0}' defined at conflicting positions")]
+        public const int PROPDEF_Constant_0_Defined_At_Conflicting_Positions = 204;
+        [Message("property '{0}' initializer doesn't match any supported patterns")]
+        public const int Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns = 205;
+        [Message("{0}: file not found: {1}")]
+        public const int _0_File_Not_Found_1 = 207;
+        [Message("{0}: error loading file: {1}")]
+        public const int _0_Error_Loading_File_1 = 208;
+        [Message("{0}: unrecognized flag: {1}")]
+        public const int _0_Unrecognized_Flag_1 = 209;
+        [Message("{0}: section has already been referenced: {1}")]
+        public const int _0_Section_Has_Already_Been_Referenced_1 = 210;
+        [Message("{0}: section has already been inserted: {1}")]
+        public const int _0_Section_Has_Already_Been_Inserted_1 = 211;
+        [Message("{0}: duplicate replacement for section: {1}")]
+        public const int _0_Duplicate_Replacement_For_Section_1 = 212;
+        [Message("{0}: bad state: {1}")]
+        public const int _0_Bad_State_1 = 213;
+        [Message("{0}: duplicate default for section: {1}")]
+        public const int _0_Duplicate_Default_For_Section_1 = 214;
+        [Message("{0}: {1}")]
+        public const int UserSpecifiedError_0_1 = 216;
+        [Message("{0}: conflicting DECLs for atom: {1}")]
+        public const int _0_Conflicting_DECLs_For_Atom_1 = 217;
+        [Message("{0}: too many routine arguments: only {1} allowed in V{2}")]
+        public const int _0_Too_Many_Routine_Arguments_Only_1_Allowed_In_V2 = 220;
+        [Message("{0}: symbol is already defined: {1}")]
+        public const int _0_Symbol_Is_Already_Defined_1 = 224;
+        [Message("{0}: flags must be atoms")]
+        public const int _0_Flags_Must_Be_Atoms = 226;
+        [Message("{0}: expected a list after PATTERN")]
+        public const int _0_Expected_A_List_After_PATTERN = 227;
+        [Message("{0}: expected a value after SEGMENT")]
+        public const int _0_Expected_A_Value_After_SEGMENT = 228;
+        [Message("{0}: PATTERN must not be empty")]
+        public const int _0_PATTERN_Must_Not_Be_Empty = 230;
+        [Message("{0}: vector may only appear at the end of a PATTERN")]
+        public const int _0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN = 231;
+        [Message("{0}: vector in PATTERN must have at least 2 elements")]
+        public const int _0_Vector_In_PATTERN_Must_Have_At_Least_2_Elements = 232;
+        [Message("{0}: vector in PATTERN must start with REST")]
+        public const int _0_Vector_In_PATTERN_Must_Start_With_REST = 233;
+        [Message("{0}: following elements of vector in PATTERN must be BYTE or WORD")]
+        public const int _0_Following_Elements_Of_Vector_In_PATTERN_Must_Be_BYTE_Or_WORD = 234;
+        [Message("{0}: PATTERN may only contain BYTE, WORD, or a REST vector")]
+        public const int _0_PATTERN_May_Only_Contain_BYTE_WORD_Or_A_REST_Vector = 235;
+        [Message("{0}: unrecognized version name (must be ZIP, EZIP, XZIP, YZIP)")]
+        public const int _0_Unrecognized_Version_Name_Must_Be_ZIP_EZIP_XZIP_YZIP = 236;
+        [Message("{0}: version number out of range (must be 3-6)")]
+        public const int _0_Version_Number_Out_Of_Range_Must_Be_36 = 237;
+        [Message("{0}: arg must be an atom or a FIX")]
+        public const int _0_Arg_Must_Be_An_Atom_Or_A_FIX = 238;
+        [Message("{0}: unrecognized option {1}")]
+        public const int _0_Unrecognized_Option_1 = 239;
+        [Message("{0}: alphabet {1} needs {2} characters")]
+        public const int _0_Alphabet_1_Needs_2_Characters = 240;
+        [Message("{0}: unrecognized language: {1}")]
+        public const int _0_Unrecognized_Language_1 = 241;
+        [Message("{0}: unrecognized part of speech: {1}")]
+        public const int _0_Unrecognized_Part_Of_Speech_1 = 242;
+        [Message("{0}: not applicable: {1}")]
+        public const int _0_Not_Applicable_1 = 244;
+        [Message("{0}: no expressions found")]
+        public const int _0_No_Expressions_Found = 245;
+        [Message("{0}: OBLIST already contains an atom named '{1}'")]
+        public const int _0_OBLIST_Already_Contains_An_Atom_Named_1 = 246;
+        [Message("{0}: atom '{1}' is already on an OBLIST")]
+        public const int _0_Atom_1_Is_Already_On_An_OBLIST = 247;
+        [Message("{0}: atom '{1}' has no global value")]
+        public const int _0_Atom_1_Has_No_Global_Value = 250;
+        [Message("{0}: atom '{1}' has no local value")]
+        public const int _0_Atom_1_Has_No_Local_Value = 251;
+        [Message("{0}: atom '{1}' has no local or global value")]
+        public const int _0_Atom_1_Has_No_Local_Or_Global_Value = 252;
+        [Message("{0}: primtypes of {1} and {2} differ")]
+        public const int _0_Primtypes_Of_1_And_2_Differ = 255;
+        [Message("{0}: second arg must be an atom or applicable")]
+        public const int _0_Second_Arg_Must_Be_An_Atom_Or_Applicable = 257;
+        [Message("syntax error: {0}")]
+        public const int Syntax_Error_0 = 258;
+        [Message("expected {0} to match DECL {1}, but got {2}")]
+        public const int Expected_0_To_Match_DECL_1_But_Got_2 = 259;
     }
 }

@@ -117,7 +117,7 @@ namespace Zilf.Emit
         /// define values which are important to the backend (such as the release
         /// number).</para>
         /// <para>The effect of redefining an existing constant when the constant
-        /// has already been emitted in routine code is undefined. 
+        /// has already been emitted in routine code is undefined.</para>
         /// </remarks>
         IOperand DefineConstant(string name, IOperand value);
 
@@ -136,7 +136,7 @@ namespace Zilf.Emit
         /// Deletes a previously defined vocabulary word.
         /// </summary>
         /// <param name="word">The vocabulary word.</param>
-        void RemoveVocabularyWord(string p);
+        void RemoveVocabularyWord(string word);
         /// <summary>
         /// Gets the collection of self-inserting word break characters.
         /// </summary>
@@ -176,12 +176,20 @@ namespace Zilf.Emit
 
         public IGameOptions Options
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<IGameOptions>() != null);
+                return default(IGameOptions);
+            }
         }
 
         public IDebugFileBuilder DebugFile
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<IDebugFileBuilder>() != null);
+                return default(IDebugFileBuilder);
+            }
         }
 
         public IGlobalBuilder DefineGlobal(string name)
@@ -224,32 +232,56 @@ namespace Zilf.Emit
 
         public int MaxPropertyLength
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<int>() > 0);
+                return default(int);
+            }
         }
 
         public int MaxProperties
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<int>() > 0);
+                return default(int);
+            }
         }
 
         public int MaxFlags
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<int>() > 0);
+                return default(int);
+            }
         }
 
         public int MaxCallArguments
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<int>() > 0);
+                return default(int);
+            }
         }
 
         public IOperand Zero
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<IOperand>() != null);
+                return default(IOperand);
+            }
         }
 
         public IOperand One
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<IOperand>() != null);
+                return default(IOperand);
+            }
         }
 
         public IOperand MakeOperand(int value)
@@ -287,17 +319,25 @@ namespace Zilf.Emit
 
         public ICollection<char> SelfInsertingBreaks
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<ICollection<char>>() != null);
+                return default(ICollection<char>);
+            }
         }
 
         public IOperand VocabularyTable
         {
-            get { throw new System.NotImplementedException(); }
+            get
+            {
+                Contract.Ensures(Contract.Result<IOperand>() != null);
+                return default(IOperand);
+            }
         }
 
         public void Finish()
         {
-            throw new System.NotImplementedException();
+            // nada
         }
     }
 }

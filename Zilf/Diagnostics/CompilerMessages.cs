@@ -30,8 +30,6 @@ namespace Zilf.Diagnostics
         {
         }
 
-        #region General
-
         [Message("{0}")]
         public const int LegacyError = 0;
         [Message("missing 'GO' routine")]
@@ -82,13 +80,113 @@ namespace Zilf.Diagnostics
         public const int GVAL_Of_WORDFLAGSLIST_Must_Be_A_List = 28;
         [Message("WORD-FLAGS-LIST must have an even number of elements")]
         public const int WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements = 29;
-        [Message("non-constant default value: {0}")]
-        public const int Nonconstant_Default_Value_0 = 30;
         [Message("non-vocab constant '{0}' conflicts with vocab word '{1}'")]
         public const int Nonvocab_Constant_0_Conflicts_With_Vocab_Word_1 = 31;
         [Message("expression needs temporary variables, not allowed here")]
         public const int Expression_Needs_Temporary_Variables_Not_Allowed_Here = 32;
-
-        #endregion
+        [Message("undefined action routine: {0}")]
+        public const int Undefined_Action_Routine_0 = 33;
+        [Message("undefined preaction routine: {0}")]
+        public const int Undefined_Preaction_Routine_0 = 34;
+        [Message("{0}: first arg must be an activation atom or binding list")]
+        public const int _0_First_Arg_Must_Be_An_Activation_Atom_Or_Binding_List = 35;
+        [Message("{0}: missing binding list")]
+        public const int _0_Missing_Binding_List = 36;
+        [Message("unexpected value returned from clause: {0}")]
+        public const int Unexpected_Value_Returned_From_Clause_0 = 37;
+        [Message("too many hard globals: {0} defined, only {1} allowed")]
+        public const int Too_Many_Hard_Globals_0_Defined_Only_1_Allowed = 38;
+        [Message("{0}: one operand must be -1")]
+        public const int _0_One_Operand_Must_Be_1 = 39;
+        [Message("{0}: argument 1 must be 1")]
+        public const int _0_Argument_1_Must_Be_1 = 42;
+        [Message("AGAIN requires a PROG/REPEAT block or routine")]
+        public const int AGAIN_Requires_A_PROGREPEAT_Block_Or_Routine = 43;
+        [Message("{0}: unrecognized header field {1}")]
+        public const int _0_Unrecognized_Header_Field_1 = 44;
+        [Message("{0}: field not supported in this Z-machine version: {1}")]
+        public const int _0_Field_Not_Supported_In_This_Zmachine_Version_1 = 45;
+        [Message("{0}: field is not writable: {1}")]
+        public const int _0_Field_Is_Not_Writable_1 = 46;
+        [Message("{0}: list must have 2 elements")]
+        public const int _0_List_Must_Have_2_Elements = 47;
+        [Message("{0}: first list element must be an atom")]
+        public const int _0_First_List_Element_Must_Be_An_Atom = 48;
+        [Message("{0}: second list element must be 0 or 1")]
+        public const int _0_Second_List_Element_Must_Be_0_Or_1 = 49;
+        [Message("{0}: not a word field: {1}")]
+        public const int _0_Not_A_Word_Field_1 = 52;
+        [Message("{0}: first arg must be an atom or list")]
+        public const int _0_First_Arg_Must_Be_An_Atom_Or_List = 54;
+        [Message("too many flags requiring high numbers")]
+        public const int Too_Many_Flags_Requiring_High_Numbers = 55;
+        [Message("FORM inside a routine must start with an atom")]
+        public const int FORM_Inside_A_Routine_Must_Start_With_An_Atom = 56;
+        [Message("expected an atom after GVAL")]
+        public const int Expected_An_Atom_After_GVAL = 57;
+        [Message("undefined global or constant: {0}")]
+        public const int Undefined_Global_Or_Constant_0 = 58;
+        [Message("expected an atom after LVAL")]
+        public const int Expected_An_Atom_After_LVAL = 59;
+        [Message("undefined local: {0}")]
+        public const int Undefined_Local_0 = 60;
+        [Message("{0} requires exactly 1 argument")]
+        public const int _0_Requires_Exactly_1_Argument = 61;
+        [Message("unrecognized routine or instruction: {0}")]
+        public const int Unrecognized_Routine_Or_Instruction_0 = 62;
+        [Message("unexpected expression in value+predicate context: {0}")]
+        public const int Unexpected_Expression_In_Valuepredicate_Context_0 = 63;
+        [Message("FORM must start with an atom")]
+        public const int FORM_Must_Start_With_An_Atom = 64;
+        [Message("bad value type for condition: {0}")]
+        public const int Bad_Value_Type_For_Condition_0 = 65;
+        [Message("NOT/F? requires exactly one argument")]
+        public const int NOTF_Requires_Exactly_One_Argument = 67;
+        [Message("unrecognized part of speech: {0}")]
+        public const int Unrecognized_Part_Of_Speech_0 = 69;
+        [Message("property specification must start with an atom")]
+        public const int Property_Specification_Must_Start_With_An_Atom = 70;
+        [Message("PROPSPEC for property '{0}' returned a bad value: {1}")]
+        public const int PROPSPEC_For_Property_0_Returned_A_Bad_Value_1 = 71;
+        [Message("value for IN/LOC property must be an atom")]
+        public const int Value_For_INLOC_Property_Must_Be_An_Atom = 74;
+        [Message("property has no value: {0}")]
+        public const int Property_Has_No_Value_0 = 75;
+        [Message("value for DESC property must be a string")]
+        public const int Value_For_DESC_Property_Must_Be_A_String = 76;
+        [Message("values for FLAGS property must be atoms")]
+        public const int Values_For_FLAGS_Property_Must_Be_Atoms = 77;
+        [Message("values for SYNONYM property must be atoms")]
+        public const int Values_For_SYNONYM_Property_Must_Be_Atoms = 78;
+        [Message("values for ADJECTIVE property must be atoms")]
+        public const int Values_For_ADJECTIVE_Property_Must_Be_Atoms = 79;
+        [Message("values for GLOBAL property must be atoms")]
+        public const int Values_For_GLOBAL_Property_Must_Be_Atoms = 80;
+        [Message("values for GLOBAL property must be object names")]
+        public const int Values_For_GLOBAL_Property_Must_Be_Object_Names = 81;
+        [Message("non-constant initializer for {0} {1}: {2}")]
+        public const int Nonconstant_Initializer_For_0_1_2 = 82;
+        [Message("{0} argument {1}: {2}")]
+        public const int _0_Argument_1_2 = 83;
+        [Message("too many call arguments: only {0} allowed in V{1}")]
+        public const int Too_Many_Call_Arguments_Only_0_Allowed_In_V1 = 84;
+        [Message("too many flags: {0} defined, only {1} allowed")]
+        public const int Too_Many_Flags_0_Defined_Only_1_Allowed = 85;
+        [Message("too many globals: {0} defined, only {1} allowed")]
+        public const int Too_Many_Globals_0_Defined_Only_1_Allowed = 86;
+        [Message("duplicate {0} definition: {1}")]
+        public const int Duplicate_0_Definition_1 = 89;
+        [Message("soft variable '{0}' may not be used here")]
+        public const int Soft_Variable_0_May_Not_Be_Used_Here = 91;
+        [Message("bare atom used as operand is not a global variable: {0}")]
+        public const int Bare_Atom_Used_As_Operand_Is_Not_A_Global_Variable_0 = 92;
+        [Message("expected a FORM, ATOM, or ADECL but found: {0}")]
+        public const int Expected_A_FORM_ATOM_Or_ADECL_But_Found_0 = 93;
+        [Message("no such object for IN/LOC property: {0}")]
+        public const int No_Such_Object_For_INLOC_Property_0 = 94;
+        [Message("property '{0}' is too long (max {1} bytes)")]
+        public const int Property_0_Is_Too_Long_Max_1_Bytes = 96;
+        [Message("{0} is not supported in this Z-machine version")]
+        public const int _0_Is_Not_Supported_In_This_Zmachine_Version = 97;
     }
 }

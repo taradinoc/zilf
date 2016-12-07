@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -53,12 +54,11 @@ namespace Zilf.Interpreter
             }
             catch (System.IO.FileNotFoundException ex)
             {
-                throw new InterpreterError(name + ": file not found: " + file, ex);
+                throw new InterpreterError(InterpreterMessages._0_File_Not_Found_1, name, file, ex);
             }
             catch (System.IO.IOException ex)
             {
-                throw new InterpreterError(name + ": error loading file: " +
-                    ex.Message, ex);
+                throw new InterpreterError(InterpreterMessages._0_Error_Loading_File_1, name, ex.Message, ex);
             }
         }
 
@@ -98,7 +98,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError("FILE-FLAGS: unrecognized flag: " + atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Flag_1, "FILE-FLAGS", atom);
                 }
             }
 
@@ -114,7 +114,7 @@ namespace Zilf.Interpreter
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
-                throw new InterpreterError("DELAY-DEFINITION: section has already been referenced: " + name);
+                throw new InterpreterError(InterpreterMessages._0_Section_Has_Already_Been_Referenced_1, "DELAY-DEFINITION", name);
 
             ctx.PutProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION), ctx.GetStdAtom(StdAtom.DELAY_DEFINITION));
             return name;
@@ -144,15 +144,15 @@ namespace Zilf.Interpreter
             }
             else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
             {
-                throw new InterpreterError("REPLACE-DEFINITION: section has already been inserted: " + name);
+                throw new InterpreterError(InterpreterMessages._0_Section_Has_Already_Been_Inserted_1, "REPLACE-DEFINITION", name);
             }
             else if (state is ZilVector)
             {
-                throw new InterpreterError("REPLACE-DEFINITION: duplicate replacement for section: " + name);
+                throw new InterpreterError(InterpreterMessages._0_Duplicate_Replacement_For_Section_1, "REPLACE-DEFINITION", name);
             }
             else
             {
-                throw new InterpreterError("REPLACE-DEFINITION: bad state: " + state);
+                throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "REPLACE-DEFINITION", state);
             }
         }
 
@@ -185,11 +185,11 @@ namespace Zilf.Interpreter
             }
             else if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
             {
-                throw new InterpreterError("DEFAULT-DEFINITION: duplicate default for section: " + name);
+                throw new InterpreterError(InterpreterMessages._0_Duplicate_Default_For_Section_1, "DEFAULT-DEFINITION", name);
             }
             else
             {
-                throw new InterpreterError("DEFAULT-DEFINITION: bad state: " + state);
+                throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ERROR(Context ctx, ZilObject[] args)
         {
-            throw new InterpreterError("ERROR: " + string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
+            throw new InterpreterError(InterpreterMessages.UserSpecifiedError_0_1, "ERROR", string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
         }
     }
 }

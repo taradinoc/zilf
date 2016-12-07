@@ -25,6 +25,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
+using Zilf.Diagnostics;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -69,7 +70,7 @@ namespace Zilf.Compiler.Builtins
             return builtins[name].Any(s => s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect);
         }
 
-        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, out string errorMsg)
+        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, out CompilerError error)
         {
             // is there a match with this zversion but any arg count?
             var wrongArgCount =
@@ -79,7 +80,7 @@ namespace Zilf.Compiler.Builtins
             if (wrongArgCount.Length > 0)
             {
                 var counts = wrongArgCount.Select(s => new ArgCountRange(s.MinArgs, s.MaxArgs));
-                errorMsg = name + " requires " + Helpers.FormatArgCount(counts);
+                var errorMsg = name + " requires " + Helpers.FormatArgCount(counts);
 
                 // be a little more helpful if this arg count would work in another zversion
                 if (builtins[name].Any(
@@ -88,18 +89,19 @@ namespace Zilf.Compiler.Builtins
                     errorMsg += " in this Z-machine version";
                 }
 
+                error = new CompilerError(errorMsg);
                 return true;
             }
 
             // is there a match with any zversion?
             if (builtins.Contains(name))
             {
-                errorMsg = string.Format("{0} is not supported in this Z-machine version", name);
+                error = new CompilerError(CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version, name);
                 return true;
             }
 
             // not a near match
-            errorMsg = null;
+            error = null;
             return false;
         }
 
@@ -454,8 +456,8 @@ namespace Zilf.Compiler.Builtins
             var validatedArgs = ValidateArguments(cc, spec, builtinParamInfos, args,
                 (i, msg) =>
                 {
-                    Errors.CompError(cc.Context, form, "{0} argument {1}: {2}",
-                        name, i + 1, msg);
+                    cc.Context.HandleError(new CompilerError(form, CompilerMessages._0_Argument_1_2,
+                        name, i + 1, msg));
                     valid = false;
                 });
 
@@ -823,7 +825,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                Errors.CompError(c.cc.Context, c.form, "XORB: one operand must be -1");
+                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages._0_One_Operand_Must_Be_1, "XORB"));
                 return c.cc.Game.Zero;
             }
 
@@ -1863,7 +1865,7 @@ namespace Zilf.Compiler.Builtins
 
             if (c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value != 1)
             {
-                Errors.CompError(c.cc.Context, c.form, "INPUT: argument 1 must be 1");
+                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages._0_Argument_1_Must_Be_1, "INPUT"));
                 return c.cc.Game.Zero;
             }
 
@@ -2082,7 +2084,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                Errors.CompError(c.cc.Context, c.form, "AGAIN requires a PROG/REPEAT block or routine");
+                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages.AGAIN_Requires_A_PROGREPEAT_Block_Or_Routine));
             }
         }
 
@@ -2096,11 +2098,10 @@ namespace Zilf.Compiler.Builtins
 
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
-                Errors.CompError(
-                    c.cc.Context,
+                c.cc.Context.HandleError(new CompilerError(
                     c.form,
-                    "too many call arguments: only {0} allowed in V{1}",
-                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
+                    CompilerMessages.Too_Many_Call_Arguments_Only_0_Allowed_In_V1,
+                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion));
                 return c.cc.Game.Zero;
             }
 
@@ -2117,11 +2118,10 @@ namespace Zilf.Compiler.Builtins
 
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
-                Errors.CompError(
-                    c.cc.Context,
+                c.cc.Context.HandleError(new CompilerError(
                     c.form,
-                    "too many call arguments: only {0} allowed in V{1}",
-                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
+                    CompilerMessages.Too_Many_Call_Arguments_Only_0_Allowed_In_V1,
+                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion));
                 return;
             }
 
@@ -2177,17 +2177,17 @@ namespace Zilf.Compiler.Builtins
                 var field = LowCoreField.Get(atom);
                 if (field == null)
                 {
-                    Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
                     return false;
                 }
                 else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
-                    Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
                     return false;
                 }
                 else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
-                    Errors.CompError(ctx, src, name + ": field is not writable: " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
                     return false;
                 }
 
@@ -2202,43 +2202,43 @@ namespace Zilf.Compiler.Builtins
             {
                 if (((IStructure)list).GetLength(2) != 2)
                 {
-                    Errors.CompError(ctx, src, name + ": list must have 2 elements");
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_List_Must_Have_2_Elements, name));
                     return false;
                 }
 
                 atom = list.First as ZilAtom;
                 if (atom == null)
                 {
-                    Errors.CompError(ctx, src, name + ": first list element must be an atom");
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_First_List_Element_Must_Be_An_Atom, name));
                     return false;
                 }
 
                 var fix = list.Rest.First as ZilFix;
                 if (fix == null || fix.Value < 0 || fix.Value > 1)
                 {
-                    Errors.CompError(ctx, src, name + ": second list element must be 0 or 1");
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Second_List_Element_Must_Be_0_Or_1, name));
                     return false;
                 }
 
                 var field = LowCoreField.Get(atom);
                 if (field == null)
                 {
-                    Errors.CompError(ctx, src, name + ": unrecognized header field " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
                     return false;
                 }
                 else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
-                    Errors.CompError(ctx, src, name + ": field not supported in this Z-machine version: " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
                     return false;
                 }
                 else if ((field.Flags & LowCoreFlags.Byte) != 0)
                 {
-                    Errors.CompError(ctx, src, name + ": not a word field: " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Not_A_Word_Field_1, name, atom));
                     return false;
                 }
                 else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
-                    Errors.CompError(ctx, src, name + ": field is not writable: " + atom);
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
                     return false;
                 }
 
@@ -2248,7 +2248,7 @@ namespace Zilf.Compiler.Builtins
                 return true;
             }
 
-            Errors.CompError(ctx, src, name + ": first arg must be an atom or list");
+            ctx.HandleError(new CompilerError(src, CompilerMessages._0_First_Arg_Must_Be_An_Atom_Or_List, name));
             return false;
         }
 

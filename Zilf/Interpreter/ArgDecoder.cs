@@ -24,6 +24,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -31,8 +32,12 @@ namespace Zilf.Interpreter
 {
     abstract class ArgumentDecodingError : InterpreterError
     {
+        [Obsolete("Use a constructor that takes a Diagnostic.")]
         public ArgumentDecodingError(string message)
             : base(message) { }
+
+        public ArgumentDecodingError(Diagnostic diagnostic)
+            : base(diagnostic) { }
     }
 
     abstract class CallSite

@@ -29,6 +29,7 @@ using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
 using Zilf.ZModel.Vocab.OldParser;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel
 {
@@ -754,7 +755,7 @@ namespace Zilf.ZModel
 
             if (ctx.GetZVal(alias) != null)
             {
-                throw new InterpreterError(string.Format("{0} is already defined", alias, target));
+                throw new ArgumentException("Alias is already defined", "alias");
             }
 
             ZilAtom original;

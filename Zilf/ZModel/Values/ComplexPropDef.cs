@@ -278,7 +278,7 @@ namespace Zilf.ZModel.Values
                                   select o.Variable).FirstOrDefault(v => !capturedVariables.Contains(v));
                 if (badCapture != null)
                 {
-                    throw new InterpreterError("variable in PROPDEF output pattern is not captured by input pattern: " + badCapture);
+                    throw new InterpreterError(InterpreterMessages.Variable_In_PROPDEF_Output_Pattern_Is_Not_Captured_By_Input_Pattern_0, badCapture);
                 }
 
                 patterns.Add(new Pattern(inputs.ToArray(), outputs.ToArray()));
@@ -349,7 +349,7 @@ namespace Zilf.ZModel.Values
 
             if (((IStructure)form).GetLength(length) != length)
             {
-                throw new InterpreterError(form, string.Format("{0} FORM in PROPDEF output pattern must have length {1}", atom, length));
+                throw new InterpreterError(form, InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1, atom, length);
             }
 
             ZilAtom variable;
@@ -366,7 +366,7 @@ namespace Zilf.ZModel.Values
             }
             else
             {
-                throw new InterpreterError(form, string.Format("{0}: first argument must be an LVAL or FIX", atom));
+                throw new InterpreterError(form, InterpreterMessages._0_First_Argument_Must_Be_An_LVAL_Or_FIX, atom);
             }
 
             ZilAtom partOfSpeech = null;
@@ -375,7 +375,7 @@ namespace Zilf.ZModel.Values
                 partOfSpeech = form.Rest.Rest.First as ZilAtom;
                 if (partOfSpeech == null)
                 {
-                    throw new InterpreterError(form, string.Format("{0}: second argument must be an atom", atom));
+                    throw new InterpreterError(form, InterpreterMessages._0_Second_Argument_Must_Be_An_Atom, atom);
                 }
             }
 
@@ -419,8 +419,7 @@ namespace Zilf.ZModel.Values
                     if (used.TryGetValue(output.Constant, out previousValue))
                     {
                         if (constantValue != previousValue)
-                            throw new InterpreterError(string.Format(
-                                "PROPDEF constant '{0}' defined at conflicting positions", output.Constant));
+                            throw new InterpreterError(InterpreterMessages.PROPDEF_Constant_0_Defined_At_Conflicting_Positions, output.Constant);
                     }
                     else
                     {
@@ -685,7 +684,7 @@ namespace Zilf.ZModel.Values
                 }
             }
 
-            throw new InterpreterError(string.Format("property '{0}' initializer doesn't match any supported patterns", prop.First));
+            throw new InterpreterError(InterpreterMessages.Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns, prop.First);
         }
 
         public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
@@ -712,7 +711,7 @@ namespace Zilf.ZModel.Values
                 }
             }
 
-            throw new InterpreterError(string.Format("property '{0}' initializer doesn't match any supported patterns", prop.First));
+            throw new InterpreterError(InterpreterMessages.Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns, prop.First);
         }
 
         // may change prop even for an unsuccessful match
@@ -922,7 +921,12 @@ namespace Zilf.ZModel.Values
                     capturedConstantValue = converters.CompileConstant(capturedValue);
                     if (capturedConstantValue == null)
                     {
-                        Errors.CompError(ctx, src, "non-constant value for property {0}: {1}", propName, capturedValue);
+                        ctx.HandleError(new CompilerError(
+                            src,
+                            CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                            "property",
+                            propName,
+                            capturedValue));
                         capturedConstantValue = converters.CompileConstant(ctx.FALSE);
                         Contract.Assume(capturedConstantValue != null);
                     }

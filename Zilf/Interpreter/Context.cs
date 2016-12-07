@@ -1194,7 +1194,7 @@ namespace Zilf.Interpreter
                     if (chtyped != null)
                         return chtyped.ApplyNoEval(ctx, args);
                     else
-                        throw new InterpreterError($"CHTYPE to {otherType} did not produce an applicable object");
+                        throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Did_Not_Produce_An_Applicable_Object, otherType);
                 },
                 (ctx, t, applicable) => (zo, args) =>
                 {
@@ -1356,7 +1356,7 @@ namespace Zilf.Interpreter
             if (newType.StdAtom == StdAtom.GVAL || newType.StdAtom == StdAtom.LVAL)
             {
                 if (value.PrimType != PrimType.ATOM)
-                    throw new InterpreterError(InterpreterMessages.CHTYPE_To_GVAL_Or_LVAL_Requires_ATOM);
+                    throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
 
                 return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
             }
@@ -1374,7 +1374,7 @@ namespace Zilf.Interpreter
             {
                 if (value.PrimType != entry.PrimType)
                     throw new InterpreterError(
-                        string.Format("CHTYPE to {0} requires {1}", newType, entry.PrimType));
+                        InterpreterMessages.CHTYPE_To_0_Requires_1, newType, entry.PrimType);
 
                 var result = entry.ChtypeMethod(this, value.GetPrimitive(this));
                 Contract.Assume(result != null);
@@ -1382,7 +1382,7 @@ namespace Zilf.Interpreter
             }
 
             // unknown type
-            throw new InterpreterError(newType + " is not a registered type");
+            throw new InterpreterError(InterpreterMessages._0_Is_Not_A_Registered_Type, newType);
         }
 
         private void InitTellPatterns()
