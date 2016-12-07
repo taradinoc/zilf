@@ -177,7 +177,7 @@ namespace Zilf.Interpreter.Values
                         }
                         catch (ControlException ex)
                         {
-                            throw new InterpreterError(inner.SourceLine, "misplaced " + ex.Message);
+                            throw new InterpreterError(inner.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
                         }
                     case ZilLexer.NUM:
                         return new ZilFix(ParseNumber(tree.Text));

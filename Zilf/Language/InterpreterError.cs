@@ -102,5 +102,10 @@ namespace Zilf.Language
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
         }
+
+        protected InterpreterError(Diagnostic diagnostic)
+            : base(diagnostic)
+        {
+        }
     }
 }

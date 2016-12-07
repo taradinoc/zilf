@@ -44,7 +44,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilActivation FromAtom(Context ctx, ZilAtom name)
         {
-            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ACTIVATION");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
         }
 
         public override PrimType PrimType

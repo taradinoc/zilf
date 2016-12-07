@@ -16,13 +16,14 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
     class SyntaxError : InterpreterError
     {
         public SyntaxError(string filename, int line, string message)
-            : base(new FileSourceLine(filename, line), "syntax error: " + message)
+            : base(new FileSourceLine(filename, line), InterpreterMessages.Syntax_Error_0, message)
         {
             Contract.Requires(filename != null);
             Contract.Requires(message != null);

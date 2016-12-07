@@ -80,7 +80,7 @@ namespace Zilf.Compiler
                     .ToList();
 
             if (highestFlags.Count >= cc.Game.MaxFlags)
-                Errors.CompError(ctx, "too many flags requiring high numbers");
+                ctx.HandleError(new CompilerError(CompilerMessages.Too_Many_Flags_Requiring_High_Numbers));
 
             foreach (var flag in highestFlags)
                 DefineFlag(cc, flag);
@@ -217,10 +217,10 @@ namespace Zilf.Compiler
 
             // enforce limit on number of flags
             if (cc.UniqueFlags > cc.Game.MaxFlags)
-                Errors.CompError(cc.Context,
-                    "too many flags: {0} defined, only {1} allowed",
+                cc.Context.HandleError(new CompilerError(
+                    CompilerMessages.Too_Many_Flags_0_Defined_Only_1_Allowed,
                     cc.UniqueFlags,
-                    cc.Game.MaxFlags);
+                    cc.Game.MaxFlags));
 
             // FUNNY-GLOBALS?
             var reservedGlobals = ctx.ZEnvironment.VocabFormat.GetReservedGlobalNames();
@@ -235,10 +235,10 @@ namespace Zilf.Compiler
                     g.StorageType = GlobalStorageType.Hard;
 
                 if (ctx.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
-                    Errors.CompError(cc.Context,
-                        "too many globals: {0} defined, only {1} allowed",
+                    cc.Context.HandleError(new CompilerError(
+                        CompilerMessages.Too_Many_Globals_0_Defined_Only_1_Allowed,
                         ctx.ZEnvironment.Globals.Count,
-                        240 - reservedGlobals.Length);
+                        240 - reservedGlobals.Length));
             }
 
             // builders and values for constants (which may refer to vocabulary,
@@ -257,9 +257,12 @@ namespace Zilf.Compiler
 
                 if (value == null)
                 {
-                    Errors.CompError(ctx, constant, "non-constant value for constant {0}: {1}",
+                    ctx.HandleError(new CompilerError(
+                        constant,
+                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                        "constant",
                         constant.Name,
-                        constant.Value.ToStringContext(ctx, false));
+                        constant.Value.ToStringContext(ctx, false)));
                     value = gb.Zero;
                 }
 
@@ -300,12 +303,18 @@ namespace Zilf.Compiler
             {
                 try
                 {
-                    using (DiagnosticContext.Push(new StringSourceLine("property default for '" + pair.Key + "'")))
+                    using (DiagnosticContext.Push(
+                        pair.Value.SourceLine ??
+                        new StringSourceLine("property default for '" + pair.Key + "'")))
                     {
                         IPropertyBuilder pb = cc.Properties[pair.Key];
                         pb.DefaultValue = CompileConstant(cc, pair.Value);
                         if (pb.DefaultValue == null)
-                            throw new CompilerError(CompilerMessages.Nonconstant_Default_Value_0, pair.Value.ToStringContext(ctx, false));
+                            throw new CompilerError(
+                                CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                                "property default",
+                                pair.Key,
+                                pair.Value.ToStringContext(ctx, false));
                     }
                 }
                 catch (ZilError ex)
@@ -440,10 +449,12 @@ namespace Zilf.Compiler
                     {
                         result = CompileConstant(cc, global.Value);
                         if (result == null)
-                            Errors.CompError(cc.Context, global,
-                                "non-constant default value for global {0}: {1}",
+                            cc.Context.HandleError(new CompilerError(
+                                global,
+                                CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                                "global",
                                 global.Name,
-                                global.Value.ToStringContext(cc.Context, false));
+                                global.Value.ToStringContext(cc.Context, false)));
                     }
                 }
                 catch (ZilError ex)
@@ -544,7 +555,7 @@ namespace Zilf.Compiler
                 hardGlobals.AddRange(lookup[GlobalStorageType.Hard]);
 
                 if (hardGlobals.Count > remaining)
-                    throw new CompilerError("too many hard globals: {0} defined, only {1} allowed",
+                    throw new CompilerError(CompilerMessages.Too_Many_Hard_Globals_0_Defined_Only_1_Allowed,
                         hardGlobals.Count, remaining);
             }
 
@@ -942,12 +953,12 @@ namespace Zilf.Compiler
                     {
                         IRoutineBuilder routine;
                         if (cc.Routines.TryGetValue(line.Action, out routine) == false)
-                            throw new CompilerError("undefined action routine: " + line.Action);
+                            throw new CompilerError(CompilerMessages.Undefined_Action_Routine_0, line.Action);
 
                         IRoutineBuilder preRoutine = null;
                         if (line.Preaction != null &&
                             cc.Routines.TryGetValue(line.Preaction, out preRoutine) == false)
-                            throw new CompilerError("undefined preaction routine: " + line.Preaction);
+                            throw new CompilerError(CompilerMessages.Undefined_Preaction_Routine_0, line.Preaction);
 
                         ZilAtom actionName = line.ActionName;
                         int index = cc.Context.ZEnvironment.NextAction++;
@@ -1175,8 +1186,12 @@ namespace Zilf.Compiler
                     {
                         var rawElements = new ZilObject[zt.ElementCount];
                         zt.CopyTo(rawElements, (zo, isWord) => zo, null, cc.Context);
-                        Errors.CompError(cc.Context, zt.SourceLine,
-                            "non-constant in table initializer at element {0}: {1}", i, rawElements[i]);
+                        cc.Context.HandleError(new CompilerError(
+                            zt.SourceLine,
+                            CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                            "table element",
+                            i,
+                            rawElements[i]));
                         values[i] = defaultFiller;
                     }
                 }
@@ -1582,7 +1597,7 @@ namespace Zilf.Compiler
                 }
                 catch (InterpreterError ex)
                 {
-                    Errors.CompError(cc.Context, ex.SourceLine, ex.Message);
+                    cc.Context.HandleError(ex);
                     return cc.Game.Zero;
                 }
 
@@ -1612,7 +1627,7 @@ namespace Zilf.Compiler
                 ZilAtom head = form.First as ZilAtom;
                 if (head == null)
                 {
-                    Errors.CompError(cc.Context, form, "FORM inside a routine must start with an atom");
+                    cc.Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Inside_A_Routine_Must_Start_With_An_Atom));
                     return wantResult ? cc.Game.Zero : null;
                 }
 
@@ -1700,7 +1715,7 @@ namespace Zilf.Compiler
                         atom = form.Rest.First as ZilAtom;
                         if (atom == null)
                         {
-                            Errors.CompError(cc.Context, form, "expected an atom after GVAL");
+                            cc.Context.HandleError(new CompilerError(form, CompilerMessages.Expected_An_Atom_After_GVAL));
                             return wantResult ? cc.Game.Zero : null;
                         }
 
@@ -1741,13 +1756,13 @@ namespace Zilf.Compiler
                         }
 
                         // error
-                        Errors.CompError(cc.Context, form, "undefined global or constant: {0}", atom);
+                        cc.Context.HandleError(new CompilerError(form, CompilerMessages.Undefined_Global_Or_Constant_0, atom));
                         return wantResult ? cc.Game.Zero : null;
                     case StdAtom.LVAL:
                         atom = form.Rest.First as ZilAtom;
                         if (atom == null)
                         {
-                            Errors.CompError(cc.Context, form, "expected an atom after LVAL");
+                            cc.Context.HandleError(new CompilerError(form, CompilerMessages.Expected_An_Atom_After_LVAL));
                             return wantResult ? cc.Game.Zero : null;
                         }
 
@@ -1778,7 +1793,7 @@ namespace Zilf.Compiler
                         }
 
                         // error
-                        Errors.CompError(cc.Context, form, "undefined local: {0}", atom);
+                        cc.Context.HandleError(new CompilerError(form, CompilerMessages.Undefined_Local_0, atom));
                         return wantResult ? cc.Game.Zero : null;
 
                     case StdAtom.ITABLE:
@@ -1815,7 +1830,7 @@ namespace Zilf.Compiler
                     case StdAtom.T_P:
                         if (form.Rest.First == null || (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
                         {
-                            Errors.CompError(cc.Context, form, string.Format("{0} requires exactly 1 argument", head));
+                            cc.Context.HandleError(new CompilerError(form, CompilerMessages._0_Requires_Exactly_1_Argument, head));
                             return cc.Game.Zero;
                         }
                         resultStorage = resultStorage ?? rb.Stack;
@@ -1852,10 +1867,10 @@ namespace Zilf.Compiler
                     if (args.Length < rtn.ArgSpec.MinArgCount ||
                         (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
                     {
-                        Errors.CompError(cc.Context, form, ZilError.ArgCountMsg(
+                        cc.Context.HandleError(new CompilerError(form, ZilError.ArgCountMsg(
                             rtn.Name.ToString(),
                             rtn.ArgSpec.MinArgCount,
-                            (int)rtn.ArgSpec.MaxArgCount));
+                            (int)rtn.ArgSpec.MaxArgCount)));
                         return wantResult ? cc.Game.Zero : null;
                     }
 
@@ -1890,15 +1905,12 @@ namespace Zilf.Compiler
                 }
 
                 // unrecognized
-                string msg;
-                if (ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out msg))
+                CompilerError error;
+                if (!ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out error))
                 {
-                    Errors.CompError(cc.Context, form, msg);
+                    error = new CompilerError(CompilerMessages.Unrecognized_Routine_Or_Instruction_0, head);
                 }
-                else
-                {
-                    Errors.CompError(cc.Context, form, "unrecognized routine or instruction: {0}", head);
-                }
+                cc.Context.HandleError(error);
                 return wantResult ? cc.Game.Zero : null;
             }
         }
@@ -1962,13 +1974,17 @@ namespace Zilf.Compiler
                     }
                     if (cc.SoftGlobals.ContainsKey(atom))
                     {
-                        Errors.CompError(cc.Context, expr.SourceLine ?? src,
-                            "soft variable '{0}' may not be used here", atom);
+                        cc.Context.HandleError(new CompilerError(
+                            expr.SourceLine ?? src,
+                            CompilerMessages.Soft_Variable_0_May_Not_Be_Used_Here,
+                            atom));
                     }
                     else
                     {
-                        Errors.CompError(cc.Context, expr.SourceLine ?? src,
-                            "bare atom used as operand is not a global variable: {0}", atom);
+                        cc.Context.HandleError(new CompilerError(
+                            expr.SourceLine ?? src,
+                            CompilerMessages.Bare_Atom_Used_As_Operand_Is_Not_A_Global_Variable_0,
+                            atom));
                     }
                     return cc.Game.Zero;
 
@@ -1977,8 +1993,10 @@ namespace Zilf.Compiler
                     return CompileAsOperand(cc, rb, ((ZilAdecl)expr).First, src, suggestion ?? rb.Stack);
 
                 default:
-                    Errors.CompError(cc.Context, expr.SourceLine ?? src,
-                        "expected a FORM, ATOM, or ADECL but found: {0}", expr);
+                    cc.Context.HandleError(new CompilerError(
+                        expr.SourceLine ?? src,
+                        CompilerMessages.Expected_A_FORM_ATOM_Or_ADECL_But_Found_0,
+                        expr));
                     return cc.Game.Zero;
             }
         }
@@ -2060,7 +2078,7 @@ namespace Zilf.Compiler
                 var value = CompileConstant(cc, expr);
                 if (value == null)
                 {
-                    Errors.CompError(cc.Context, expr, "unexpected expression in value+predicate context: " + expr.ToStringContext(cc.Context, false));
+                    cc.Context.HandleError(new CompilerError(expr, CompilerMessages.Unexpected_Expression_In_Valuepredicate_Context_0, expr.ToStringContext(cc.Context, false)));
                 }
                 else
                 {
@@ -2085,7 +2103,7 @@ namespace Zilf.Compiler
 
             if (head == null)
             {
-                Errors.CompError(cc.Context, form, "FORM must start with an atom");
+                cc.Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                 return cc.Game.Zero;
             }
 
@@ -2221,7 +2239,7 @@ namespace Zilf.Compiler
             }
             else if (type != StdAtom.FORM)
             {
-                Errors.CompError(cc.Context, (expr.SourceLine) ?? src, "bad value type for condition: {0}", typeAtom);
+                cc.Context.HandleError(new CompilerError((expr.SourceLine) ?? src, CompilerMessages.Bad_Value_Type_For_Condition_0, typeAtom));
                 return;
             }
 
@@ -2231,7 +2249,7 @@ namespace Zilf.Compiler
 
             if (head == null)
             {
-                Errors.CompError(cc.Context, form, "FORM must start with an atom");
+                cc.Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                 return;
             }
 
@@ -2301,7 +2319,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
-                        Errors.CompError(cc.Context, expr.SourceLine ?? src, "NOT/F? requires exactly one argument");
+                        cc.Context.HandleError(new CompilerError(expr.SourceLine ?? src, CompilerMessages.NOTF_Requires_Exactly_One_Argument));
                     }
                     break;
 
@@ -2312,7 +2330,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
-                        Errors.CompError(cc.Context, expr.SourceLine ?? src, "NOT/F? requires exactly one argument");
+                        cc.Context.HandleError(new CompilerError(expr.SourceLine ?? src, CompilerMessages.NOTF_Requires_Exactly_One_Argument));
                     }
                     break;
 
@@ -2538,7 +2556,7 @@ namespace Zilf.Compiler
 
             if (args == null || args.First == null)
             {
-                throw new CompilerError(name + ": first arg must be an activation atom or binding list");
+                throw new CompilerError(CompilerMessages._0_First_Arg_Must_Be_An_Activation_Atom_Or_Binding_List, name);
             }
 
             var activationAtom = args.First as ZilAtom;
@@ -2550,7 +2568,7 @@ namespace Zilf.Compiler
             if (args == null || args.First == null ||
                 args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
             {
-                throw new CompilerError(name + ": missing binding list");
+                throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
 
             // add new locals, if any
@@ -3260,7 +3278,7 @@ namespace Zilf.Compiler
                 {
                     result = CompileConstant(cc, stmt);
                     if (result == null)
-                        throw new CompilerError("unexpected value returned from clause: " + stmt.ToStringContext(cc.Context, false));
+                        throw new CompilerError(CompilerMessages.Unexpected_Value_Returned_From_Clause_0, stmt.ToStringContext(cc.Context, false));
 
                     rb.EmitStore(resultStorage, result);
                 }
@@ -3590,7 +3608,7 @@ namespace Zilf.Compiler
                             break;
 
                         default:
-                            Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
+                            cc.Context.HandleError(new CompilerError(model, CompilerMessages.Unrecognized_Part_Of_Speech_0, partOfSpeech));
                             break;
                     }
                 },
@@ -3618,7 +3636,7 @@ namespace Zilf.Compiler
                     ZilAtom atom = prop.First as ZilAtom;
                     if (atom == null)
                     {
-                        Errors.CompError(cc.Context, model, "property specification must start with an atom");
+                        cc.Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                         continue;
                     }
 
@@ -3699,9 +3717,11 @@ namespace Zilf.Compiler
                     {
                         if (propertiesSoFar.Contains(uniquePropertyName))
                         {
-                            Errors.CompError(cc.Context, prop, "duplicate {0} definition: {1}",
+                            cc.Context.HandleError(new CompilerError(
+                                prop,
+                                CompilerMessages.Duplicate_0_Definition_1,
                                 phony ? "pseudo-property" : "property",
-                                atom.ToStringContext(cc.Context, false));
+                                atom.ToStringContext(cc.Context, false)));
                         }
                         else
                         {
@@ -3762,7 +3782,7 @@ namespace Zilf.Compiler
                             if (specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
                                 (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
                             {
-                                Errors.CompError(cc.Context, model, "PROPSPEC for property '{0}' returned a bad value: {1}", atom, specOutput);
+                                cc.Context.HandleError(new CompilerError(model, CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
                                 continue;
                             }
 
@@ -3917,7 +3937,7 @@ namespace Zilf.Compiler
                             break;
 
                         default:
-                            Errors.CompError(cc.Context, model, "unrecognized part of speech: " + partOfSpeech);
+                            cc.Context.HandleError(new CompilerError(model, CompilerMessages.Unrecognized_Part_Of_Speech_0, partOfSpeech));
                             return cc.Game.Zero;
                     }
 
@@ -3938,7 +3958,7 @@ namespace Zilf.Compiler
                 ZilList propBody = prop.Rest;
                 if (propName == null)
                 {
-                    Errors.CompError(cc.Context, model, "property specification must start with an atom");
+                    cc.Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                     continue;
                 }
 
@@ -3950,14 +3970,16 @@ namespace Zilf.Compiler
                     var valueAtom = value as ZilAtom;
                     if (valueAtom == null)
                     {
-                        Errors.CompError(cc.Context, model, "value for IN/LOC property must be an atom");
+                        cc.Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_INLOC_Property_Must_Be_An_Atom));
                         continue;
                     }
                     IObjectBuilder parent;
                     if (cc.Objects.TryGetValue(valueAtom, out parent) == false)
                     {
-                        Errors.CompError(cc.Context, model,
-                            "no such object for IN/LOC property: " + valueAtom.ToString());
+                        cc.Context.HandleError(new CompilerError(
+                            model,
+                            CompilerMessages.No_Such_Object_For_INLOC_Property_0,
+                            valueAtom.ToString()));
                         continue;
                     }
                     ob.Parent = parent;
@@ -3993,7 +4015,7 @@ namespace Zilf.Compiler
                 if (value == null)
                 {
                     if (propName.StdAtom != StdAtom.FLAGS)
-                        Errors.CompError(cc.Context, model, "property has no value: " + propName.ToString());
+                        cc.Context.HandleError(new CompilerError(model, CompilerMessages.Property_Has_No_Value_0, propName.ToString()));
                     continue;
                 }
 
@@ -4007,7 +4029,7 @@ namespace Zilf.Compiler
                             handled = true;
                             if (value.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
                             {
-                                Errors.CompError(cc.Context, model, "value for DESC property must be a string");
+                                cc.Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_DESC_Property_Must_Be_A_String));
                                 continue;
                             }
                             ob.DescriptiveName = value.ToStringContext(cc.Context, true);
@@ -4020,7 +4042,7 @@ namespace Zilf.Compiler
                                 var atom = obj as ZilAtom;
                                 if (atom == null)
                                 {
-                                    Errors.CompError(cc.Context, model, "values for FLAGS property must be atoms");
+                                    cc.Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_FLAGS_Property_Must_Be_Atoms));
                                     break;
                                 }
 
@@ -4041,7 +4063,7 @@ namespace Zilf.Compiler
                                 var atom = obj as ZilAtom;
                                 if (atom == null)
                                 {
-                                    Errors.CompError(cc.Context, model, "values for SYNONYM property must be atoms");
+                                    cc.Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_SYNONYM_Property_Must_Be_Atoms));
                                     break;
                                 }
 
@@ -4060,7 +4082,7 @@ namespace Zilf.Compiler
                                 var atom = obj as ZilAtom;
                                 if (atom == null)
                                 {
-                                    Errors.CompError(cc.Context, model, "values for ADJECTIVE property must be atoms");
+                                    cc.Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_ADJECTIVE_Property_Must_Be_Atoms));
                                     break;
                                 }
 
@@ -4110,14 +4132,14 @@ namespace Zilf.Compiler
                                     var atom = obj as ZilAtom;
                                     if (atom == null)
                                     {
-                                        Errors.CompError(cc.Context, model, "values for GLOBAL property must be atoms");
+                                        cc.Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_GLOBAL_Property_Must_Be_Atoms));
                                         break;
                                     }
 
                                     IObjectBuilder ob2;
                                     if (cc.Objects.TryGetValue(atom, out ob2) == false)
                                     {
-                                        Errors.CompError(cc.Context, model, "values for GLOBAL property must be object names");
+                                        cc.Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_GLOBAL_Property_Must_Be_Object_Names));
                                         break;
                                     }
 
@@ -4139,8 +4161,12 @@ namespace Zilf.Compiler
                         var word = CompileConstant(cc, value);
                         if (word == null)
                         {
-                            Errors.CompError(cc.Context, prop,
-                                string.Format("non-constant value for property {0}: {1}", propName, value));
+                            cc.Context.HandleError(new CompilerError(
+                                prop,
+                                CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                                "property",
+                                propName,
+                                value));
                             word = cc.Game.Zero;
                         }
                         ob.AddWordProperty(pb, word);
@@ -4154,8 +4180,12 @@ namespace Zilf.Compiler
                             var word = CompileConstant(cc, obj);
                             if (word == null)
                             {
-                                Errors.CompError(cc.Context, prop,
-                                    string.Format("non-constant value in initializer for property {0}: {1}", propName, obj));
+                                cc.Context.HandleError(new CompilerError(
+                                    prop,
+                                    CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                                    "property",
+                                    propName,
+                                    obj));
                                 word = cc.Game.Zero;
                             }
                             tb.AddShort(word);
@@ -4166,8 +4196,11 @@ namespace Zilf.Compiler
 
                 // check property length
                 if (length > cc.Game.MaxPropertyLength)
-                    Errors.CompError(cc.Context, prop, "property '{0}' is too long (max {1} bytes)",
-                        propName.ToStringContext(cc.Context, true), cc.Game.MaxPropertyLength);
+                    cc.Context.HandleError(new CompilerError(
+                        prop,
+                        CompilerMessages.Property_0_Is_Too_Long_Max_1_Bytes,
+                        propName.ToStringContext(cc.Context, true),
+                        cc.Game.MaxPropertyLength));
             }
 
             //XXX debug line refs for objects

@@ -193,7 +193,7 @@ namespace Zilf.Interpreter
 
             // new type name
             if (ctx.IsRegisteredType(name))
-                throw new InterpreterError("DEFSTRUCT: type is already registered: " + name);
+                throw new InterpreterError(InterpreterMessages._0_Type_Is_Already_Registered_1, "DEFSTRUCT", name);
 
             // base type, and optional default field settings
             ZilAtom baseType;
@@ -226,7 +226,7 @@ namespace Zilf.Interpreter
 
             if (!ctx.IsRegisteredType(baseType))
             {
-                throw new InterpreterError("DEFSTRUCT: unrecognized base type: " + baseType);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Base_Type_1, "DEFSTRUCT", baseType);
             }
 
             // field definitions
@@ -796,7 +796,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    throw new InterpreterError("DEFSTRUCT: unrecognized non-quoted value in field definition: " + part);
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_Nonquoted_Value_In_Field_Definition_1, "DEFSTRUCT", part);
                 }
             }
 
@@ -858,14 +858,14 @@ namespace Zilf.Interpreter
                             partList = partList.Rest;
                             defaults.NthFunc = partList.First as ZilAtom;
                             if (defaults.NthFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_NTH_Must_Be_Followed_By_An_Atom, "DEFSTRUCT");
+                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
                             break;
 
                         case StdAtom.PUT:
                             partList = partList.Rest;
                             defaults.PutFunc = partList.First as ZilAtom;
                             if (defaults.PutFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_PUT_Must_Be_Followed_By_An_Atom, "DEFSTRUCT");
+                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
                             break;
 
                         case StdAtom.START_OFFSET:
@@ -880,7 +880,7 @@ namespace Zilf.Interpreter
                             partList = partList.Rest;
                             defaults.PrintFunc = partList.First as ZilAtom;
                             if (defaults.PrintFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_PRINTTYPE_Must_Be_Followed_By_An_Atom, "DEFSTRUCT");
+                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
                             break;
 
                         case StdAtom.CONSTRUCTOR:
@@ -894,7 +894,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError("DEFSTRUCT: unrecognized tag in defaults section: " + tag);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Tag_In_Defaults_Section_1, "DEFSTRUCT", first);
                     }
                 }
             }

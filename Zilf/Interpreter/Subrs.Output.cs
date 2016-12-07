@@ -127,14 +127,12 @@ namespace Zilf.Interpreter
                 var atom = (ZilAtom)printer;
                 printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
                 if (printer == null)
-                    throw new InterpreterError(string.Format(
-                        "PRINT-MANY: {0} has no GVAL or LVAL",
-                        atom.ToStringContext(ctx, false)));
+                    throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Or_Global_Value, "PRINT-MANY", atom.ToStringContext(ctx, false));
             }
 
             var applicablePrinter = printer.AsApplicable(ctx);
             if (applicablePrinter == null)
-                throw new InterpreterError("PRINT-MANY: not applicable: " + printer.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Not_Applicable_1, "PRINT-MANY", printer.ToStringContext(ctx, false));
 
             var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
             var result = ctx.TRUE;

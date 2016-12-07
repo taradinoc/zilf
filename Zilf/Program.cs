@@ -437,7 +437,7 @@ Compiler switches:
             }
             catch (ControlException ex) when (wantExceptions == false)
             {
-                ctx.HandleError(new InterpreterError("misplaced " + ex.Message));
+                ctx.HandleError(new InterpreterError(InterpreterMessages.Misplaced_0, ex.Message));
                 return null;
             }
 
@@ -475,7 +475,7 @@ Compiler switches:
                 }
                 catch (ControlException ex)
                 {
-                    var newEx = new InterpreterError(node.SourceLine, "misplaced " + ex.Message);
+                    var newEx = new InterpreterError(node.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
 
                     if (wantExceptions)
                         throw newEx;

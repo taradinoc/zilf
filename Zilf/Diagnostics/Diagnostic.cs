@@ -73,10 +73,24 @@ namespace Zilf.Diagnostics
         }
     }
 
+    [ContractClass(typeof(IDiagnosticFactoryContracts))]
     public interface IDiagnosticFactory
     {
         Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
             string stackTrace);
+    }
+
+    [ContractClassFor(typeof(IDiagnosticFactory))]
+    abstract class IDiagnosticFactoryContracts : IDiagnosticFactory
+    {
+        public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
+            string stackTrace)
+        {
+            Contract.Requires(location != null);
+            Contract.Requires(code >= 0);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+            return default(Diagnostic);
+        }
     }
 
     public class DiagnosticFactory<TMessageSet> : IDiagnosticFactory

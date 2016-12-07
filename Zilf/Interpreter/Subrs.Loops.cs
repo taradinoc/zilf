@@ -188,7 +188,7 @@ namespace Zilf.Interpreter
                         ZilObject decl1 = b.Decl, decl2 = null;
                         bodyAtomDecls?.TryGetValue(atom, out decl2);
                         if (decl1 != null && decl2 != null)
-                            throw new InterpreterError(name + ": conflicting DECLs for atom: " + atom);
+                            throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, name, atom);
 
                         var decl = decl1 ?? decl2;
 

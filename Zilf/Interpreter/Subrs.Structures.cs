@@ -204,7 +204,7 @@ namespace Zilf.Interpreter
             {
                 var max = from.GetLength(rest + (int)amount);
                 if (max != null && max.Value - rest < amount)
-                    throw new InterpreterError(string.Format("SUBSTRUC: {0} element(s) requested but only {1} available", amount, max.Value - rest));
+                    throw new InterpreterError(InterpreterMessages._0_1_Elements_Requested_But_Only_2_Available, "SUBSTRUC", amount, max.Value - rest);
             }
             else
             {
@@ -256,7 +256,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError("SUBSTRUC: destination type not supported: " + ((ZilObject)dest).GetTypeAtom(ctx));
+                        throw new InterpreterError(InterpreterMessages._0_Destination_Type_Not_Supported_1, "SUBSTRUC", ((ZilObject)dest).GetTypeAtom(ctx));
                 }
 
                 return (ZilObject)dest;

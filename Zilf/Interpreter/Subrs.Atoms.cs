@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -74,7 +75,7 @@ namespace Zilf.Interpreter
                     }
                     catch (InvalidOperationException ex)
                     {
-                        throw new InterpreterError(name + ": no expressions found", ex);
+                        throw new InterpreterError(InterpreterMessages._0_No_Expressions_Found, name, ex);
                     }
                 }
                 else
@@ -108,14 +109,12 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            const string SNameAlreadyInUse = "INSERT: OBLIST already contains an atom named '{0}'";
-
             var str = stringOrAtom as string;
 
             if (str != null)
             {
                 if (oblist.Contains(str))
-                    throw new InterpreterError(string.Format(SNameAlreadyInUse, str));
+                    throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT", str);
 
                 return oblist[str];
             }
@@ -123,12 +122,10 @@ namespace Zilf.Interpreter
             var atom = (ZilAtom)stringOrAtom;
 
             if (atom.ObList != null)
-                throw new InterpreterError(string.Format(
-                    "INSERT: atom '{0}' is already on an OBLIST",
-                    atom.ToStringContext(ctx, false)));
+                throw new InterpreterError(InterpreterMessages._0_Atom_1_Is_Already_On_An_OBLIST, "INSERT", atom.ToStringContext(ctx, false));
 
             if (oblist.Contains(atom.Text))
-                throw new InterpreterError(string.Format(SNameAlreadyInUse, atom.Text));
+                throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT", atom.Text);
 
             atom.ObList = oblist;
             return atom;
@@ -185,8 +182,7 @@ namespace Zilf.Interpreter
 
             if (oblist.Contains(str))
                 if (oblist.Contains(str))
-                    throw new InterpreterError(string.Format(
-                        "LINK: OBLIST already contains an atom named '{0}'", str));
+                    throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "LINK", str);
 
             var link = new ZilLink(str, oblist);
             oblist[str] = link;
@@ -283,8 +279,7 @@ namespace Zilf.Interpreter
 
             ZilObject result = ctx.GetGlobalVal(atom);
             if (result == null)
-                throw new InterpreterError("atom has no global value: " +
-                    atom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Global_Value, "GVAL", atom.ToStringContext(ctx, false));
 
             return result;
         }
@@ -396,8 +391,7 @@ namespace Zilf.Interpreter
 
             var result = env.GetLocalVal(atom);
             if (result == null)
-                throw new InterpreterError("atom has no local value: " +
-                    atom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Value, "LVAL", atom.ToStringContext(ctx, false));
 
             return result;
         }
@@ -434,8 +428,7 @@ namespace Zilf.Interpreter
 
             var result = env.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
             if (result == null)
-                throw new InterpreterError("atom has no local or global value: " +
-                    atom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Or_Global_Value, "VALUE", atom.ToStringContext(ctx, false));
 
             return result;
         }

@@ -203,13 +203,13 @@ namespace Zilf.ZModel
                                 }
                                 else if (!IsSimpleOutputElement(elem))
                                 {
-                                    throw new InterpreterError(form, "value too fancy for TELL output template: " + elem.ToStringContext(ctx, false));
+                                    throw new InterpreterError(form, InterpreterMessages.Value_Too_Fancy_For_TELL_Output_Template_0, elem.ToStringContext(ctx, false));
                                 }
                             }
 
                             if (lvalCount != capturesSoFar)
                                 throw new InterpreterError(form,
-                                    string.Format("expected {0} LVAL(s) in TELL output template but found {1}", capturesSoFar, lvalCount));
+                                    InterpreterMessages.Expected_0_LVALs_In_TELL_Output_Template_But_Found_1, capturesSoFar, lvalCount);
 
                             var pattern = new TellPattern(tokensSoFar.ToArray(), form);
                             tokensSoFar.Clear();
@@ -219,7 +219,7 @@ namespace Zilf.ZModel
                         break;
 
                     default:
-                        throw new InterpreterError(zo.SourceLine, "unexpected type in TELL token spec: " + zo.GetTypeAtom(ctx));
+                        throw new InterpreterError(zo.SourceLine, InterpreterMessages.Unexpected_Type_In_TELL_Token_Spec_0, zo.GetTypeAtom(ctx));
                 }
             }
 

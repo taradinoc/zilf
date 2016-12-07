@@ -34,7 +34,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChannel FromVector(Context ctx, ZilVector vector)
         {
-            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "CHANNEL");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "CHANNEL");
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)

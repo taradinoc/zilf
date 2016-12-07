@@ -102,7 +102,7 @@ namespace Zilf.ZModel.Vocab
                             result |= Original.InRoom;
                             break;
                         default:
-                            throw new InterpreterError("unrecognized object option: " + atom.ToString());
+                            throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_0, atom.ToString());
                     }
                 }
             }
@@ -163,7 +163,7 @@ namespace Zilf.ZModel.Vocab
                     byte value;
 
                     if (!entry.Dict.TryGetValue(name, out value))
-                        throw new InterpreterError("unrecognized object option (NEW-SFLAGS used): " + name);
+                        throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_NEWSFLAGS_Used_0, name);
 
                     if (!cleared && !entry.Additive.Contains(name))
                     {
@@ -183,14 +183,14 @@ namespace Zilf.ZModel.Vocab
             var atom = ctx.GetStdAtom(stdAtom);
             var gval = ctx.GetGlobalVal(atom);
             if (gval == null)
-                throw new InterpreterError(string.Format("{0} must have a GVAL to use NEW-SFLAGS", atom.ToStringContext(ctx, false)));
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_A_GVAL_To_Use_NEWSFLAGS, atom.ToStringContext(ctx, false));
 
             var fix = gval as ZilFix;
             if (fix == null)
-                throw new InterpreterError(string.Format("GVAL of {0} must be a FIX", atom.ToStringContext(ctx, false)));
+                throw new InterpreterError(InterpreterMessages.GVAL_Of_0_Must_Be_A_FIX, atom.ToStringContext(ctx, false));
 
             if ((fix.Value & ~255) != 0)
-                throw new InterpreterError(string.Format("GVAL of {0} must be between 0 and 255", atom.ToStringContext(ctx, false)));
+                throw new InterpreterError(InterpreterMessages.GVAL_Of_0_Must_Be_Between_0_And_255, atom.ToStringContext(ctx, false));
 
             return (byte)fix.Value;
         }

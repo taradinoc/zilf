@@ -34,7 +34,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom)
         {
-            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ENVIRONMENT");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ENVIRONMENT");
         }
 
         public ZilEnvironment(LocalEnvironment env, ZilAtom name)

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
@@ -30,6 +31,7 @@ namespace Zilf.Language
         public abstract Diagnostic Diagnostic { get; }
         public abstract ISourceLine SourceLine { get; }
 
+        [Obsolete("Use diagnostic codes instead.")]
         public static string ArgCountMsg(string func, int min, int max, string argName = "arg")
         {
             if (min == max)
@@ -53,21 +55,21 @@ namespace Zilf.Language
             : base(message)
         {
             SourceLine = DiagnosticContext.Current.SourceLine;
-            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
+            Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
         public ZilError(string message, Exception innerException)
             : base(message, innerException)
         {
             SourceLine = DiagnosticContext.Current.SourceLine;
-            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
+            Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
         public ZilError(ISourceLine src, string message)
             : base(message)
         {
             SourceLine = src ?? DiagnosticContext.Current.SourceLine;
-            Diagnostic = MakeLegacyDiagnostic(message, SourceLine);
+            Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
         public ZilError(ISourceLine src, string func, int minArgs, int maxArgs)
@@ -98,17 +100,24 @@ namespace Zilf.Language
 
         protected static Diagnostic MakeDiagnostic(ISourceLine sourceLine, int code, object[] messageArgs = null)
         {
+            Contract.Requires(code >= 0);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+
             return DiagnosticFactory.GetDiagnostic(
-                sourceLine,
+                sourceLine ?? DiagnosticContext.Current.SourceLine,
                 code,
                 messageArgs,
                 MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        protected static Diagnostic MakeLegacyDiagnostic(string message, ISourceLine location)
+        protected static Diagnostic MakeLegacyDiagnostic(ISourceLine sourceLine, string message)
         {
+            Contract.Requires(message != null);
+            Contract.Requires(sourceLine != null);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+
             return DiagnosticFactory.GetDiagnostic(
-                location,
+                sourceLine ?? DiagnosticContext.Current.SourceLine,
                 LegacyErrorCode,
                 new[] { message },
                 MakeStackTrace(DiagnosticContext.Current.Frame));

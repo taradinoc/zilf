@@ -51,7 +51,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAsoc FromList(Context ctx, ZilList list)
         {
-            throw new InterpreterError(InterpreterMessages.CHTYPE_To_TYPENAME0_Not_Supported, "ASOC");
+            throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
         }
 
         public ZilObject Item => results[index].Item;

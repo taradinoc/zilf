@@ -114,10 +114,7 @@ namespace Zilf.Interpreter
             var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != externalObList);
             if (onWrongOblist.Any())
             {
-                throw new InterpreterError(string.Format(
-                    "ENTRY: all atoms must be on internal oblist {0}, failed for {1}",
-                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
-                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
+                throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2, "ENTRY", ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false), string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
             foreach (var atom in args)
@@ -152,10 +149,7 @@ namespace Zilf.Interpreter
             var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
             if (onWrongOblist.Any())
             {
-                throw new InterpreterError(string.Format(
-                    "RENTRY: all atoms must be on internal oblist {0}, failed for {1}",
-                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
-                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false)))));
+                throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2, "RENTRY", ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false), string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
             foreach (var atom in args)
@@ -216,7 +210,7 @@ namespace Zilf.Interpreter
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(name + ": bad LVAL of OBLIST");
+                throw new InterpreterError(InterpreterMessages._0_Bad_LVAL_Of_OBLIST, name);
 
             if (args.Length == 0)
                 return ctx.TRUE;
@@ -239,11 +233,11 @@ namespace Zilf.Interpreter
                 }
 
                 if (externalObList == null)
-                    throw new InterpreterError(name + ": no such package: " + packageName);
+                    throw new InterpreterError(InterpreterMessages._0_No_Such_Package_1, name, packageName);
 
                 var pkgTypeAtom = ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) as ZilAtom;
                 if (pkgTypeAtom == null || pkgTypeAtom.StdAtom != requiredPackageType)
-                    throw new InterpreterError(name + ": wrong package type, expected " + ctx.GetStdAtom(requiredPackageType).ToString());
+                    throw new InterpreterError(InterpreterMessages._0_Wrong_Package_Type_Expected_1, name, ctx.GetStdAtom(requiredPackageType).ToString());
 
                 if (!obpathList.Contains(externalObList))
                     obpathList.Add(externalObList);

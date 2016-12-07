@@ -36,6 +36,7 @@ namespace Zilf.Language
         {
         }
 
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
         public CompilerError(ISourceLine src, string message)
             : base(src, message)
         {
@@ -43,13 +44,26 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(string func, int minArgs, int maxArgs)
-            : base(null, func, minArgs, maxArgs)
+        public CompilerError(IProvideSourceLine node, string message)
+            : base(node.SourceLine, message)
         {
-            Contract.Requires(func != null);
-            Contract.Requires(minArgs >= 0);
-            Contract.Requires(maxArgs >= 0);
-            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
+            Contract.Requires(message != null);
+        }
+
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
+        public CompilerError(ISourceLine src, string format, params object[] args)
+            : base(src, string.Format(format, args))
+        {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+        }
+
+        [Obsolete("Use a constructor that takes a diagnostic code.")]
+        public CompilerError(IProvideSourceLine node, string format, params object[] args)
+            : base(node.SourceLine, string.Format(format, args))
+        {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
         }
 
         public CompilerError(int code)
