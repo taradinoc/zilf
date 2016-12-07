@@ -19,7 +19,7 @@ namespace ZilfErrorMessages
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ErrorExceptionUsageCodeFixProvider)), Shared]
     public class ErrorExceptionUsageCodeFixProvider : CodeFixProvider
     {
-        private const string title = "Convert message to diagnostic constant";
+        private const string title = "Convert message to diagnostic constant ({0})";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -30,6 +30,9 @@ namespace ZilfErrorMessages
         {
             return new ErrorExceptionUsageFixAllProvider();
         }
+
+        private const string DefaultSeverity = "Error";
+        private static readonly string[] Severities = { "Error", "Warning", "Info" };
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -48,12 +51,15 @@ namespace ZilfErrorMessages
             if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creationExpr, semanticModel, out literalCreation))
             {
                 // Register a code action that will invoke the fix.
-                context.RegisterCodeFix(
-                    CodeAction.Create(
-                        title: title,
-                        createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, new[] { literalCreation }, c),
-                        equivalenceKey: title),
-                    diagnostic);
+                foreach (var sev in Severities)
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            title: string.Format(title, sev),
+                            createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, new[] { literalCreation }, sev, c),
+                            equivalenceKey: string.Format(title, sev)),
+                        diagnostic);
+                }
             }
         }
 
@@ -66,16 +72,16 @@ namespace ZilfErrorMessages
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        private async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, CancellationToken cancellationToken)
+        private async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
-            var invocations = await GetInvocationsAsync(document, creations, cancellationToken);
+            var invocations = await GetInvocationsAsync(document, creations, severity, cancellationToken);
             return await ApplyInvocationsAsync(
                 document.Project.Solution,
                 Enumerable.Repeat(new KeyValuePair<DocumentId, Invocation[]>(document.Id, invocations), 1),
                 cancellationToken);
         }
 
-        private static async Task<Invocation[]> GetInvocationsAsync(Document document, LiteralCreation[] creations, CancellationToken cancellationToken)
+        private static async Task<Invocation[]> GetInvocationsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var solution = document.Project.Solution;
 
@@ -109,14 +115,17 @@ namespace ZilfErrorMessages
                     ExpressionToReplace = creation.ExpressionToReplace,
                     NewMessageArgs = creation.NewMessageArgs,
                     MessagesTypeName = messagesTypeName,
-                    GetConstantDeclarationSyntax = code => MakeConstantSyntax(creation.NewMessageFormat, constantName, code)
+                    GetConstantDeclarationSyntax = code => MakeConstantSyntax(creation.NewMessageFormat, constantName, code, severity)
                 });
             }
 
             return invocations.ToArray();
         }
 
-        private static async Task<Solution> ApplyInvocationsAsync(Solution solution, IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument, CancellationToken cancellationToken)
+        private static async Task<Solution> ApplyInvocationsAsync(
+            Solution solution,
+            IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument,
+            CancellationToken cancellationToken)
         {
             // apply changes at invocation sites
             var slnEditor = new SolutionEditor(solution);
@@ -234,20 +243,36 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code)
+        private static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code, string severity)
         {
+            var messageFormatArgument =
+                SyntaxFactory.AttributeArgument(
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(messageFormat)));
+
+            var sepSyntaxList = SyntaxFactory.SingletonSeparatedList(messageFormatArgument);
+
+            if (severity != DefaultSeverity)
+            {
+                var severityArgument =
+                    SyntaxFactory.AttributeArgument(
+                        SyntaxFactory.NameEquals("Severity"),
+                        null,
+                        SyntaxFactory.ParseExpression("Severity." + severity));
+
+                sepSyntaxList = sepSyntaxList.Add(severityArgument);
+            }
+
+            var messageArgumentList = SyntaxFactory.AttributeArgumentList(sepSyntaxList);
+
             return SyntaxFactory.FieldDeclaration(
                 attributeLists: SyntaxFactory.List(new[]
                 {
                     SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.Attribute(
                             name: SyntaxFactory.ParseName("Message"),
-                            argumentList: SyntaxFactory.AttributeArgumentList(
-                                    SyntaxFactory.SingletonSeparatedList(
-                                        SyntaxFactory.AttributeArgument(
-                                            SyntaxFactory.LiteralExpression(
-                                                SyntaxKind.StringLiteralExpression,
-                                                SyntaxFactory.Literal(messageFormat))))))))
+                            argumentList: messageArgumentList)))
                 }),
                 modifiers: SyntaxFactory.TokenList(
                     SyntaxFactory.Token(SyntaxKind.PublicKeyword),
@@ -339,6 +364,19 @@ namespace ZilfErrorMessages
                         throw new ArgumentException("Unknown scope", nameof(fixAllContext));
                 }
 
+                var severity = Severities
+                    .FirstOrDefault(sev => string.Format(title, sev) == fixAllContext.CodeActionEquivalenceKey)
+                    ?? DefaultSeverity;
+
+                foreach (var sev in Severities)
+                {
+                    if (string.Format(title, sev) == fixAllContext.CodeActionEquivalenceKey)
+                    {
+                        severity = sev;
+                        break;
+                    }
+                }
+
                 return CodeAction.Create(
                     title: fixAllTitle,
                     createChangedSolution: async c =>
@@ -359,7 +397,7 @@ namespace ZilfErrorMessages
                                                     let ancestors = root.FindToken(span.Start).Parent.AncestorsAndSelf()
                                                     select ancestors.OfType<ObjectCreationExpressionSyntax>().First();
                                 var literalCreations = MatchLiteralCreations(creationExprs, semanticModel);
-                                var invocations = await GetInvocationsAsync(doc, literalCreations.ToArray(), c);
+                                var invocations = await GetInvocationsAsync(doc, literalCreations.ToArray(), severity, c);
                                 return new KeyValuePair<DocumentId, Invocation[]>(doc.Id, invocations);
                             };
 
