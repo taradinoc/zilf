@@ -2062,7 +2062,7 @@ namespace Zilf.Compiler.Builtins
                     if (value == c.rb.Stack)
                         c.rb.EmitPopStack();
 
-                    Errors.CompWarning(c.cc.Context, c.form, "RETURN value ignored: block is in void context");
+                    c.cc.Context.HandleWarning(new CompilerError(c.form, CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context));
                 }
 
                 block.Flags |= BlockFlags.Returned;

@@ -98,12 +98,12 @@ namespace Zilf.Interpreter
             else if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
-                Errors.TerpWarning(ctx, ctx.TopFrame.SourceLine,
-                    "ROUTINE: only {0} routine arguments allowed in V{1}, so last {2} \"OPT\" argument{3} will never be passed",
-                    maxArgsAllowed,
+                ctx.HandleWarning(new InterpreterError(ctx.TopFrame.SourceLine,
+                    InterpreterMessages._0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Argument4_Will_Never_Be_Passed,
+                    "ROUTINE", maxArgsAllowed,
                     ctx.ZEnvironment.ZVersion,
                     affectedArgCount,
-                    affectedArgCount == 1 ? "" : "s");
+                    affectedArgCount == 1 ? "" : "s"));
             }
 
             rtn.SourceLine = ctx.TopFrame.SourceLine;
@@ -356,9 +356,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
-                Errors.TerpWarning(ctx, null,
-                    "overriding default value for property '{0}'",
-                    atom);
+                ctx.HandleWarning(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
 
             ctx.ZEnvironment.PropertyDefaults[atom] = defaultValue.Eval(ctx);
 

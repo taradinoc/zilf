@@ -995,11 +995,11 @@ namespace Zilf.Compiler
             Contract.Requires(description != null);
 
             if (thisRoutineName != lastRoutineName)
-                Errors.CompWarning(cc.Context, line.SourceLine,
-                    "{0} mismatch for {1}: using {2} as before",
+                cc.Context.HandleWarning(new CompilerError(line.SourceLine,
+                    CompilerMessages._0_Mismatch_For_1_Using_2_As_Before,
                     description,
                     line.ActionName,
-                    lastRoutineName != null ? lastRoutineName.ToString() : "no " + description);
+                    lastRoutineName != null ? lastRoutineName.ToString() : "no " + description));
         }
 
         private static IFlagBuilder GetFlag(CompileCtx cc, ZilAtom flag)
@@ -1751,7 +1751,7 @@ namespace Zilf.Compiler
                         // quirks: local
                         if (cc.Locals.TryGetValue(atom, out local))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such global {0}, using the local instead", atom);
+                            cc.Context.HandleWarning(new CompilerError(form, CompilerMessages.No_Such_Global_0_Using_The_Local_Instead, atom));
                             return local;
                         }
 
@@ -1773,22 +1773,22 @@ namespace Zilf.Compiler
                         // quirks: constant, global, object, or routine
                         if (cc.Constants.TryGetValue(atom, out operand))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the constant instead", atom);
+                            cc.Context.HandleWarning(new CompilerError(form, CompilerMessages.No_Such_Local_0_Using_The_Constant_Instead, atom));
                             return operand;
                         }
                         if (cc.Globals.TryGetValue(atom, out global))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the global instead", atom);
+                            cc.Context.HandleWarning(new CompilerError(form, CompilerMessages.No_Such_Local_0_Using_The_Global_Instead, atom));
                             return global;
                         }
                         if (cc.Objects.TryGetValue(atom, out objbld))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the object instead", atom);
+                            cc.Context.HandleWarning(new CompilerError(form, CompilerMessages.No_Such_Local_0_Using_The_Object_Instead, atom));
                             return objbld;
                         }
                         if (cc.Routines.TryGetValue(atom, out routine))
                         {
-                            Errors.CompWarning(cc.Context, form, "no such local {0}, using the routine instead", atom);
+                            cc.Context.HandleWarning(new CompilerError(form, CompilerMessages.No_Such_Local_0_Using_The_Routine_Instead, atom));
                             return routine;
                         }
 
@@ -1968,8 +1968,8 @@ namespace Zilf.Compiler
                     ZilAtom atom = (ZilAtom)expr;
                     if (cc.Globals.ContainsKey(atom))
                     {
-                        Errors.CompWarning(cc.Context, expr.SourceLine ?? src,
-                            "bare atom '{0}' interpreted as global variable index; be sure this is right", atom);
+                        cc.Context.HandleWarning(new CompilerError(expr.SourceLine ?? src,
+                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right, atom));
                         return cc.Globals[atom].Indirect;
                     }
                     if (cc.SoftGlobals.ContainsKey(atom))
@@ -2218,11 +2218,11 @@ namespace Zilf.Compiler
                     // could be a missing , or . before variable name
                     if (cc.Locals.ContainsKey(atom) || cc.Globals.ContainsKey(atom))
                     {
-                        Errors.CompWarning(cc.Context, src, "bare atom '{0}' treated as true here (did you mean the variable?)", expr);
+                        cc.Context.HandleWarning(new CompilerError(src, CompilerMessages.Bare_Atom_0_Treated_As_True_Here_Did_You_Mean_The_Variable, expr));
                     }
                     else
                     {
-                        Errors.CompWarning(cc.Context, src, "bare atom '{0}' treated as true here", expr);
+                        cc.Context.HandleWarning(new CompilerError(src, CompilerMessages.Bare_Atom_0_Treated_As_True_Here, expr));
                     }
                 }
 
@@ -2388,7 +2388,7 @@ namespace Zilf.Compiler
                 ZilObject last = args[args.Length - 1];
                 if (and && IsSetToZeroForm(last))
                 {
-                    Errors.CompWarning(cc.Context, last.SourceLine, "treating SET to 0 as true here");
+                    cc.Context.HandleWarning(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
                     CompileStmt(cc, rb, last, false);
                 }
                 else
@@ -2406,7 +2406,7 @@ namespace Zilf.Compiler
                 ZilObject last = args[args.Length - 1];
                 if (and && IsSetToZeroForm(last))
                 {
-                    Errors.CompWarning(cc.Context, last.SourceLine, "treating SET to 0 as true here");
+                    cc.Context.HandleWarning(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
                     CompileStmt(cc, rb, last, false);
                 }
                 else
@@ -3228,7 +3228,7 @@ namespace Zilf.Compiler
                 {
                     if (!clauses.IsEmpty)
                     {
-                        Errors.CompWarning(cc.Context, src, "COND: clauses after else part will never be evaluated");
+                        cc.Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "COND"));
                     }
 
                     break;
@@ -3360,7 +3360,7 @@ namespace Zilf.Compiler
 
                     if (condVersion == 0 && !clauses.IsEmpty)
                     {
-                        Errors.CompWarning(cc.Context, src, "VERSION?: clauses after else part will never be evaluated");
+                        cc.Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "VERSION?"));
                     }
 
                     return wantResult ? clauseResult : null;
@@ -3428,7 +3428,7 @@ namespace Zilf.Compiler
 
                     if (isElse && !clauses.IsEmpty)
                     {
-                        Errors.CompWarning(cc.Context, src, "IFFLAG: clauses after else part will never be evaluated");
+                        cc.Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG"));
                     }
 
                     return wantResult ? clauseResult : null;

@@ -156,7 +156,9 @@ namespace Zilf.ZModel
                                     case StdAtom.CARRIED:
                                     case StdAtom.ON_GROUND:
                                     case StdAtom.IN_ROOM:
-                                        Errors.TerpWarning(ctx, src, "ignoring list of flags in syntax definition with no preceding OBJECT");
+                                        ctx.HandleWarning(new InterpreterError(
+                                            src,
+                                            InterpreterMessages.Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT));
                                         break;
 
                                     default:

@@ -188,5 +188,37 @@ namespace Zilf.Diagnostics
         public const int Property_0_Is_Too_Long_Max_1_Bytes = 96;
         [Message("{0} is not supported in this Z-machine version")]
         public const int _0_Is_Not_Supported_In_This_Zmachine_Version = 97;
+        [Message("RETURN value ignored: block is in void context", Severity = Severity.Warning)]
+        public const int RETURN_Value_Ignored_Block_Is_In_Void_Context = 98;
+        [Message("ONE-BYTE-PARTS-OF-SPEECH loses data for {0}", Severity = Severity.Warning)]
+        public const int ONEBYTEPARTSOFSPEECH_Loses_Data_For_0 = 99;
+        [Message("too many parts of speech for {0}: {1}", Severity = Severity.Warning)]
+        public const int Too_Many_Parts_Of_Speech_For_0_1 = 100;
+        [Message("mentioned object {0} is never defined", Severity = Severity.Warning)]
+        public const int Mentioned_Object_0_Is_Never_Defined = 101;
+        [Message("no such global {0}, using the local instead", Severity = Severity.Warning)]
+        public const int No_Such_Global_0_Using_The_Local_Instead = 102;
+        [Message("no such local {0}, using the constant instead", Severity = Severity.Warning)]
+        public const int No_Such_Local_0_Using_The_Constant_Instead = 103;
+        [Message("no such local {0}, using the global instead", Severity = Severity.Warning)]
+        public const int No_Such_Local_0_Using_The_Global_Instead = 104;
+        [Message("no such local {0}, using the object instead", Severity = Severity.Warning)]
+        public const int No_Such_Local_0_Using_The_Object_Instead = 105;
+        [Message("no such local {0}, using the routine instead", Severity = Severity.Warning)]
+        public const int No_Such_Local_0_Using_The_Routine_Instead = 106;
+        [Message("bare atom '{0}' treated as true here (did you mean the variable?)", Severity = Severity.Warning)]
+        public const int Bare_Atom_0_Treated_As_True_Here_Did_You_Mean_The_Variable = 107;
+        [Message("bare atom '{0}' treated as true here", Severity = Severity.Warning)]
+        public const int Bare_Atom_0_Treated_As_True_Here = 108;
+        [Message("treating SET to 0 as true here", Severity = Severity.Warning)]
+        public const int Treating_SET_To_0_As_True_Here = 109;
+        [Message("{0}: clauses after else part will never be evaluated", Severity = Severity.Warning)]
+        public const int _0_Clauses_After_Else_Part_Will_Never_Be_Evaluated = 111;
+        [Message("{0} mismatch for {1}: using {2} as before", Severity = Severity.Warning)]
+        public const int _0_Mismatch_For_1_Using_2_As_Before = 112;
+        [Message("bare atom '{0}' interpreted as global variable index; be sure this is right", Severity = Severity.Warning)]
+        public const int Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right = 113;
+        [Message("discarding the {0} part of speech for {1}", Severity = Severity.Warning)]
+        public const int Discarding_The_0_Part_Of_Speech_For_1 = 114;
     }
 }
