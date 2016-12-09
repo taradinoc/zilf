@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Vocab.OldParser
 {
@@ -220,7 +221,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             int limit = compactVocab ? 1 : 2;
             if (count > limit)
             {
-                Errors.CompWarning(ctx, string.Format("too many parts of speech for {0}: {1}", Atom, ListDefinitionLocations()));
+                ctx.HandleWarning(new CompilerError(CompilerMessages.Too_Many_Parts_Of_Speech_For_0_1, Atom, ListDefinitionLocations()));
 
                 /* The order we trim is mostly arbitrary, except that adjective and object are first
                 * since they can sometimes be recognized without the part-of-speech flags. */
@@ -237,8 +238,11 @@ namespace Zilf.ZModel.Vocab.OldParser
                 {
                     if ((PartOfSpeech & trim.part) != 0 && !trim.free)
                     {
-                        Errors.CompWarning(ctx, GetDefinition(trim.part),
-                        string.Format("discarding the {0} part of speech for {1}", trim.part, Atom));
+                        ctx.HandleWarning(new CompilerError(
+                            GetDefinition(trim.part),
+                            CompilerMessages.Discarding_The_0_Part_Of_Speech_For_1,
+                            trim.part,
+                            Atom));
 
                         UnsetPartOfSpeech(ctx, trim.part);
 

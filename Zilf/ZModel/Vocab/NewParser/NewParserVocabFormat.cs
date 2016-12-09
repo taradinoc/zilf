@@ -471,7 +471,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 byte highByte = (byte)((nw.Classification >> 7) & 0x7f);
                 if (lowByte != 0 && highByte != 0)
                 {
-                    Errors.CompWarning(ctx, "ONE-BYTE-PARTS-OF-SPEECH loses data for {0}", word.Atom.Text);
+                    ctx.HandleWarning(new CompilerError(CompilerMessages.ONEBYTEPARTSOFSPEECH_Loses_Data_For_0, word.Atom.Text));
                 }
 
                 if (highByte != 0)

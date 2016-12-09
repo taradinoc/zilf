@@ -809,6 +809,14 @@ namespace Zilf.Interpreter
                 message);
         }
 
+        public void HandleWarning(ZilError ex)
+        {
+            Contract.Requires(ex != null);
+            Contract.Ensures(warningCount > 0);
+
+            HandleDiagnostic(ex.Diagnostic);
+        }
+
         public void HandleError(ZilError ex)
         {
             Contract.Requires(ex != null);

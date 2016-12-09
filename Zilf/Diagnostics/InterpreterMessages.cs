@@ -452,5 +452,11 @@ namespace Zilf.Diagnostics
         public const int Syntax_Error_0 = 258;
         [Message("expected {0} to match DECL {1}, but got {2}")]
         public const int Expected_0_To_Match_DECL_1_But_Got_2 = 259;
+        [Message("{0}: only {1} routine arguments allowed in V{2}, so last {3} \"OPT\" argument{4} will never be passed", Severity = Severity.Warning)]
+        public const int _0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Argument4_Will_Never_Be_Passed = 260;
+        [Message("overriding default value for property '{0}'", Severity = Severity.Warning)]
+        public const int Overriding_Default_Value_For_Property_0 = 261;
+        [Message("ignoring list of flags in syntax definition with no preceding OBJECT", Severity = Severity.Warning)]
+        public const int Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT = 262;
     }
 }
