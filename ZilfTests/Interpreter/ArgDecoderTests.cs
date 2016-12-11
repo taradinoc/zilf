@@ -322,7 +322,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -448,7 +448,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -663,7 +663,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -739,7 +739,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -767,7 +767,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -884,7 +884,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -916,8 +916,11 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                return;
             }
+
+            Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
         }
 
         [ZilStructuredParam(StdAtom.VECTOR)]
@@ -1122,7 +1125,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -1183,7 +1186,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 

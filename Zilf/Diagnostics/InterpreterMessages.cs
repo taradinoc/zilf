@@ -468,5 +468,7 @@ namespace Zilf.Diagnostics
         public const int _0_Too_Many_1s_Starting_At_1_2 = 265;
         [Message("check types of earlier {0}s, e.g. {0} {1}", Severity = Severity.Info)]
         public const int Check_Types_Of_Earlier_0s_Eg_0_1 = 266;
+        [Message("{0}: expected {1}")]
+        public const int _0_Expected_1 = 267;
     }
 }
