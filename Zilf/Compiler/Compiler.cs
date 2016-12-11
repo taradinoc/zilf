@@ -1867,10 +1867,9 @@ namespace Zilf.Compiler
                     if (args.Length < rtn.ArgSpec.MinArgCount ||
                         (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
                     {
-                        cc.Context.HandleError(new CompilerError(form, ZilError.ArgCountMsg(
+                        cc.Context.HandleError(CompilerError.WrongArgCount(
                             rtn.Name.ToString(),
-                            rtn.ArgSpec.MinArgCount,
-                            (int)rtn.ArgSpec.MaxArgCount)));
+                            new ArgCountRange(rtn.ArgSpec.MinArgCount, rtn.ArgSpec.MaxArgCount)));
                         return wantResult ? cc.Game.Zero : null;
                     }
 

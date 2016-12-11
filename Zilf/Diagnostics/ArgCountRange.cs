@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Zilf.Compiler
+namespace Zilf.Diagnostics
 {
     internal struct ArgCountRange
     {

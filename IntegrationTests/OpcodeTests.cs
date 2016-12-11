@@ -18,6 +18,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.Contracts;
 using Zilf.Compiler;
+using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
@@ -28,7 +29,7 @@ namespace IntegrationTests
         public void TestExactly()
         {
             Assert.AreEqual("exactly 1 argument",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
                     new ArgCountRange(1, 1),
                 }));
@@ -38,24 +39,24 @@ namespace IntegrationTests
         public void TestAlternatives()
         {
             Assert.AreEqual("1 or 2 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
                 }));
 
             Assert.AreEqual("1 or 2 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
                     new ArgCountRange(2, 2),
                 }));
 
             Assert.AreEqual("2 or 4 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(2, 2),
                     new ArgCountRange(4, 4),
                 }));
 
             Assert.AreEqual("0, 2, or 4 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 0),
                     new ArgCountRange(2, 2),
                     new ArgCountRange(4, 4),
@@ -66,18 +67,18 @@ namespace IntegrationTests
         public void TestRange()
         {
             Assert.AreEqual("1 to 3 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 3),
                 }));
 
             Assert.AreEqual("1 to 3 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
                     new ArgCountRange(3, 3),
                 }));
 
             Assert.AreEqual("1 to 3 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
                     new ArgCountRange(2, 2),
                     new ArgCountRange(3, 3),
@@ -88,12 +89,12 @@ namespace IntegrationTests
         public void TestUnlimited()
         {
             Assert.AreEqual("1 or more arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, null),
                 }));
 
             Assert.AreEqual("1 or more arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
                     new ArgCountRange(3, null),
                 }));
@@ -103,19 +104,19 @@ namespace IntegrationTests
         public void TestDisjointRanges()
         {
             Assert.AreEqual("1, 2, or 4 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
                     new ArgCountRange(4, 4),
                 }));
 
             Assert.AreEqual("0, 1, 3, or 4 arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 1),
                     new ArgCountRange(3, 4),
                 }));
 
             Assert.AreEqual("0, 2, or more arguments",
-                Helpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 0),
                     new ArgCountRange(2, null),
                 }));

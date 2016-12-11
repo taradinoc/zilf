@@ -20,9 +20,9 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 
-namespace Zilf.Compiler
+namespace Zilf.Diagnostics
 {
-    internal static class Helpers
+    internal static class ArgCountHelpers
     {
         public static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
             Func<T, T, bool> match, Func<T, T, T> combine)
@@ -81,7 +81,16 @@ namespace Zilf.Compiler
         public static string FormatArgCount(IEnumerable<ArgCountRange> ranges)
         {
             Contract.Requires(ranges != null);
+            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
 
+            string countDescription, pluralSuffix;
+            FormatArgCount(ranges, out countDescription, out pluralSuffix);
+            return string.Format("{0} argument{1}", countDescription, pluralSuffix);
+        }
+
+        public static void FormatArgCount(IEnumerable<ArgCountRange> ranges,
+            out string countDescription, out string pluralSuffix)
+        {
             var allCounts = new List<int>();
             bool uncapped = false;
             foreach (var r in ranges)
@@ -113,34 +122,60 @@ namespace Zilf.Compiler
             if (collapsed.Length == 1)
             {
                 var r = collapsed[0];
-
-                // (1,_) uncapped => "1 or more arguments"
-                if (uncapped)
-                    return string.Format("{0} or more arguments", r.min);
-
-                // (1,1) => "exactly 1 argument"
-                if (r.max == r.min)
-                    return string.Format("exactly {0} argument{1}",
-                        r.min, r.min == 1 ? "" : "s");
-
-                // (1,2) => "1 or 2 arguments"
-                if (r.max == r.min + 1)
-                    return string.Format("{0} or {1} arguments", r.min, r.max);
-
-                // (1,3) => "1 to 3 arguments"
-                return string.Format("{0} to {1} arguments", r.min, r.max);
+                var range = new ArgCountRange(r.min, uncapped ? (int?)null : r.max);
+                FormatArgCount(range, out countDescription, out pluralSuffix);
+                return;
             }
-            else
+
+            // disjoint ranges
+            var unrolled = from r in collapsed
+                            from n in Enumerable.Range(r.min, r.max - r.min + 1)
+                            select n.ToString();
+            if (uncapped)
+                unrolled = unrolled.Concat(Enumerable.Repeat("more", 1));
+
+            countDescription = EnglishJoin(unrolled, "or");
+            pluralSuffix = "s";
+        }
+
+        public static void FormatArgCount(ArgCountRange range, out string countDescription, out string pluralSuffix)
+        {
+            // (1,_) uncapped => "1 or more arguments"
+            if (range.MaxArgs == null)
             {
-                // disjoint ranges
-                var unrolled = from r in collapsed
-                               from n in Enumerable.Range(r.min, r.max - r.min + 1)
-                               select n.ToString();
-                if (uncapped)
-                    unrolled = unrolled.Concat(Enumerable.Repeat("more", 1));
-
-                return EnglishJoin(unrolled, "or") + " arguments";
+                countDescription = string.Format("{0} or more", range.MinArgs);
+                pluralSuffix = "s";
+                return;
             }
+
+            // (1,1) => "exactly 1 argument"
+            if (range.MaxArgs == range.MinArgs)
+            {
+                countDescription = string.Format("exactly {0}", range.MinArgs);
+                pluralSuffix = range.MinArgs == 1 ? "" : "s";
+                return;
+            }
+
+            // (0,1) => "at most 1 argument"
+            if (range.MinArgs == 0)
+            {
+                countDescription = string.Format("at most {0}", range.MaxArgs);
+                pluralSuffix = range.MaxArgs == 1 ? "" : "s";
+                return;
+            }
+
+            // (1,2) => "1 or 2 arguments"
+            if (range.MaxArgs == range.MinArgs + 1)
+            {
+                countDescription = string.Format("{0} or {1}", range.MinArgs, range.MaxArgs);
+                pluralSuffix = "s";
+                return;
+            }
+
+            // (1,3) => "1 to 3 arguments"
+            countDescription = string.Format("{0} to {1}", range.MinArgs, range.MaxArgs);
+            pluralSuffix = "s";
+            return;
         }
     }
 }

@@ -80,16 +80,13 @@ namespace Zilf.Compiler.Builtins
             if (wrongArgCount.Length > 0)
             {
                 var counts = wrongArgCount.Select(s => new ArgCountRange(s.MinArgs, s.MaxArgs));
-                var errorMsg = name + " requires " + Helpers.FormatArgCount(counts);
 
                 // be a little more helpful if this arg count would work in another zversion
-                if (builtins[name].Any(
-                    s => argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs)))
-                {
-                    errorMsg += " in this Z-machine version";
-                }
+                var acceptableVersion = builtins[name]
+                    .FirstOrDefault(s => argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs))
+                    ?.Attr.MinVersion;
 
-                error = new CompilerError(errorMsg);
+                error = CompilerError.WrongArgCount(name, counts, acceptableVersion);
                 return true;
             }
 

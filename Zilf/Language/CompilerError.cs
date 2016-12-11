@@ -16,7 +16,9 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using Zilf.Compiler;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
@@ -94,6 +96,47 @@ namespace Zilf.Language
         public CompilerError(IProvideSourceLine node, int code, params object[] messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
+        }
+
+        public CompilerError(Diagnostic diagnostic)
+            : base(diagnostic)
+        {
+        }
+
+        public static CompilerError WrongArgCount(string name, IEnumerable<ArgCountRange> ranges,
+            int? acceptableVersion = null)
+        {
+            string countDescription, pluralSuffix;
+            ArgCountHelpers.FormatArgCount(ranges, out countDescription, out pluralSuffix);
+            return WrongArgCount(name, countDescription, pluralSuffix, acceptableVersion);
+        }
+
+        public static CompilerError WrongArgCount(string name, ArgCountRange range,
+            int? acceptableVersion = null)
+        {
+            string countDescription, pluralSuffix;
+            ArgCountHelpers.FormatArgCount(range, out countDescription, out pluralSuffix);
+            return WrongArgCount(name, countDescription, pluralSuffix, acceptableVersion);
+        }
+
+        private static CompilerError WrongArgCount(string name, string countDescription, string pluralSuffix,
+            int? acceptableVersion)
+        {
+            var error = new CompilerError(
+                CompilerMessages._0_Requires_1_Argument2,
+                name,
+                countDescription,
+                pluralSuffix);
+
+            if (acceptableVersion != null)
+            {
+                var info = new CompilerError(
+                    CompilerMessages.This_Arg_Count_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0,
+                    acceptableVersion);
+                error = error.Combine(info);
+            }
+
+            return error;
         }
     }
 }

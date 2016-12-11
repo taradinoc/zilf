@@ -484,7 +484,7 @@ namespace Zilf.Interpreter
                 }
 
                 if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
-                    throw new ArgumentCountError(
+                    throw ArgumentCountError.WrongCount(
                         new FunctionCallSite(name?.ToString() ?? "user-defined function"),
                         optArgsStart,
                         auxArgsStart);

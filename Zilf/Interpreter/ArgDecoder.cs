@@ -83,18 +83,53 @@ namespace Zilf.Interpreter
 
     sealed class ArgumentCountError : ArgumentDecodingError
     {
-        public ArgumentCountError(CallSite site, int minExpected, int maxExpected, bool morePrefix = false)
-            : base(ZilError.ArgCountMsg(
-                site.ToString(),
-                minExpected,
-                maxExpected,
-                morePrefix ? "more " + site.ChildName : site.ChildName))
+        private ArgumentCountError(Diagnostic diagnostic)
+            : base(diagnostic)
         {
         }
 
-        public ArgumentCountError(CallSite site, string message)
-            : base(string.Format("{0}: {1}", site.ToString(), message))
+        public static ArgumentCountError WrongCount(CallSite site, int lowerBound, int? upperBound, bool morePrefix = false)
         {
+            const int PlainMessageCode = InterpreterMessages._0_Requires_1_23;
+            const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_23;
+
+            var range = new ArgCountRange(lowerBound, upperBound);
+            string countDescription, pluralSuffix;
+            ArgCountHelpers.FormatArgCount(range, out countDescription, out pluralSuffix);
+
+            var diag = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
+                DiagnosticContext.Current.SourceLine,
+                morePrefix ? MessageCodeWithMore : PlainMessageCode,
+                new object[] { site.ToString(), countDescription, site.ChildName, pluralSuffix },
+                null);
+
+            return new ArgumentCountError(diag);
+        }
+
+        public static ArgumentCountError TooMany(CallSite site, int firstUnexpectedIndex, int? suspiciousTypeIndex)
+        {
+            Diagnostic info;
+            var sourceLine = DiagnosticContext.Current.SourceLine;
+
+            if (suspiciousTypeIndex != null)
+            {
+                info = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
+                    sourceLine,
+                    InterpreterMessages.Check_Types_Of_Earlier_0s_Eg_0_1,
+                    new object[] { site.ChildName, suspiciousTypeIndex });
+            }
+            else
+            {
+                info = null;
+            }
+
+            var diag = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
+                sourceLine,
+                InterpreterMessages._0_Too_Many_1s_Starting_At_1_2,
+                new object[] { site.ToString(), site.ChildName, firstUnexpectedIndex },
+                subDiagnostics: info != null ? new[] { info } : null);
+
+            return new ArgumentCountError(diag);
         }
     }
 
@@ -1397,7 +1432,7 @@ namespace Zilf.Interpreter
                     if ((lowerBound >= 1 && input.GetLength(lowerBound - 1) < lowerBound) ||
                         (upperBound != null && !(input.GetLength(upperBound.Value) <= upperBound)))
                     {
-                        throw new ArgumentCountError(innerSite, lowerBound, upperBound ?? 0);
+                        throw ArgumentCountError.WrongCount(innerSite, lowerBound, upperBound);
                     }
 
                     var inputLength = input.GetLength();
@@ -1420,7 +1455,7 @@ namespace Zilf.Interpreter
                     };
                     c.Missing = () =>
                     {
-                        throw new ArgumentCountError(c.Site, remainingLowerBound, remainingUpperBound ?? 0, true);
+                        throw ArgumentCountError.WrongCount(c.Site, remainingLowerBound, remainingUpperBound, true);
                     };
                     c.Ready = obj => fields[stepIndex].SetValue(output, obj);
 
@@ -1437,7 +1472,7 @@ namespace Zilf.Interpreter
                     if (elemIndex < inputLength)
                     {
                         // TODO: clarify error message (argument count might be fine but types are wrong)  -- need an example!
-                        throw new ArgumentCountError(c.Site, lowerBound, upperBound ?? 0);
+                        throw ArgumentCountError.WrongCount(c.Site, lowerBound, upperBound);
                     }
 
                     outerReady(output);
@@ -1590,7 +1625,7 @@ namespace Zilf.Interpreter
                 {
                     if (a.Length - i < lowerBound)
                     {
-                        throw new ArgumentCountError(c.Site, lowerBound, upperBound ?? 0);
+                        throw ArgumentCountError.WrongCount(c.Site, lowerBound, upperBound);
                     }
 
                     var output = Activator.CreateInstance(seqType);
@@ -1744,7 +1779,7 @@ namespace Zilf.Interpreter
 
             if (args.Length < lowerBound || args.Length > upperBound)
             {
-                throw new ArgumentCountError(site, lowerBound, upperBound ?? 0);
+                throw ArgumentCountError.WrongCount(site, lowerBound, upperBound);
             }
 
             var result = new List<object>(1 + args.Length) { ctx };
@@ -1762,7 +1797,7 @@ namespace Zilf.Interpreter
 
                 Missing = () =>
                 {
-                    throw new ArgumentCountError(site, remainingLowerBound, remainingUpperBound ?? 0, true);
+                    throw ArgumentCountError.WrongCount(site, remainingLowerBound, remainingUpperBound, true);
                 },
                 Ready = o => result.Add(o),
             };
@@ -1846,18 +1881,7 @@ namespace Zilf.Interpreter
                      * (Heartbreaking.) But we can't be sure, so we can't call this a type error.
                      */
 
-                    var sb = new StringBuilder();
-                    sb.Append("too many arguments, starting at arg ");
-                    sb.Append(argIndex + 1);
-
-                    if (lastUnderachievingStepArgIndex != null)
-                    {
-                        sb.Append(" (check types of earlier arguments, e.g. arg ");
-                        sb.Append(lastUnderachievingStepArgIndex + 1);
-                        sb.Append(')');
-                    }
-
-                    throw new ArgumentCountError(site, sb.ToString());
+                    throw ArgumentCountError.TooMany(site, argIndex + 1, lastUnderachievingStepArgIndex + 1);
                 }
             }
 
