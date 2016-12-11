@@ -377,7 +377,8 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_OptionalArg_Fail_OmittedAndExtraArgs()
         {
-            const string SExpectedMessage = "dummy: too many arguments, starting at arg 2 (check types of earlier arguments, e.g. arg 1)";
+            const string SExpectedMessage = "dummy: too many args, starting at arg 2";
+            const string SExpectedSubMessage = "check types of earlier args, e.g. arg 1";
 
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
 
@@ -390,7 +391,10 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentCountError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                Assert.AreEqual(1, ex.Diagnostic.SubDiagnostics.Length);
+                var sd = ex.Diagnostic.SubDiagnostics[0];
+                Assert.AreEqual(SExpectedSubMessage, string.Format(sd.MessageFormat, sd.MessageArgs));
                 return;
             }
 
@@ -1141,7 +1145,7 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_EitherArg_IndirectlyNested_Fail_TooFewArgs()
         {
-            const string SExpectedMessage = "dummy: arg 1: expected 1 element";
+            const string SExpectedMessage = "dummy: arg 1 requires exactly 1 element";
 
             var methodInfo = GetMethod(nameof(Dummy_EitherIntOrWrappedStringOrAtomArg));
 
@@ -1155,7 +1159,7 @@ namespace ZilfTests.Interpreter
             }
             catch (ArgumentCountError ex)
             {
-                Assert.AreEqual(SExpectedMessage, ex.Message);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 return;
             }
 
@@ -1260,28 +1264,28 @@ namespace ZilfTests.Interpreter
         public void Test_PROG_ArgumentDecodingError_Messages()
         {
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (1) FOO>",
-                ex => ex.Message == "PROG: arg 1: element 1: expected ADECL, ATOM, or LIST");
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1: expected ADECL, ATOM, or LIST", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A B>",
-                ex => ex.Message == "PROG: arg 2: expected LIST");
+                ex => ex.Message.EndsWith("PROG: arg 2: expected LIST", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG 1 B>",
-                ex => ex.Message == "PROG: arg 1: expected ATOM or LIST");
+                ex => ex.Message.EndsWith("PROG: arg 1: expected ATOM or LIST", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (()) F>",
-                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A)) F>",
-                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A B C)) F>",
-                ex => ex.Message == "PROG: arg 1: element 1: expected 2 elements");
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((1 A)) F>",
-                ex => ex.Message == "PROG: arg 1: element 1: element 1: expected ADECL or ATOM");
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1: element 1: expected ADECL or ATOM", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG () #DECL ()>",
-                ex => ex.Message == "PROG: expected at least 1 more arg");
+                ex => ex.Message.EndsWith("PROG requires 1 or more additional args", StringComparison.Ordinal));
         }
     }
 }

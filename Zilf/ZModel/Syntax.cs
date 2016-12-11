@@ -114,14 +114,12 @@ namespace Zilf.ZModel
                                 var numPreps = prep2 != null ? 2 : prep1 != null ? 1 : 0;
                                 if (numPreps == 2 || numPreps > numObjects)
                                 {
+                                    var error = new InterpreterError(InterpreterMessages.Too_Many_Prepositions_In_Syntax_Definition);
+
                                     if (numObjects < 2)
-                                    {
-                                        throw new InterpreterError(InterpreterMessages.Too_Many_Prepositions_In_Syntax_Definition_Try_Defining_Another_Object);
-                                    }
-                                    else
-                                    {
-                                        throw new InterpreterError(InterpreterMessages.Too_Many_Prepositions_In_Syntax_Definition);
-                                    }
+                                        error = error.Combine(new InterpreterError(InterpreterMessages.Did_You_Mean_To_Separate_Them_With_OBJECT));
+
+                                    throw error;
                                 }
                                 else if (numObjects == 0)
                                 {

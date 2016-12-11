@@ -45,6 +45,19 @@ namespace Zilf.Language
         }
     }
 
+    static class ZilErrorExtensions
+    {
+        public static T Combine<T>(this T mainError, T subError)
+            where T : ZilError
+        {
+            Contract.Assert(mainError != null);
+            Contract.Assert(subError != null);
+
+            var newDiag = mainError.Diagnostic.WithSubDiagnostics(subError.Diagnostic);
+            return (T)Activator.CreateInstance(typeof(T), newDiag);
+        }
+    }
+
     abstract class ZilError<TMessageSet> : ZilError
         where TMessageSet : class
     {
@@ -70,11 +83,6 @@ namespace Zilf.Language
         {
             SourceLine = src ?? DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
-        }
-
-        public ZilError(ISourceLine src, string func, int minArgs, int maxArgs)
-            : this(src, ArgCountMsg(func, minArgs, maxArgs))
-        {
         }
 
         public ZilError(Diagnostic diag)

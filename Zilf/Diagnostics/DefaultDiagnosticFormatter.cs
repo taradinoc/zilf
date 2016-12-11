@@ -27,42 +27,16 @@ namespace Zilf.Diagnostics
     {
         public string Format(Diagnostic diagnostic)
         {
-            string severity;
-
-            switch (diagnostic.Severity)
-            {
-                case Severity.Error:
-                    severity = "error";
-                    break;
-
-                case Severity.Info:
-                    severity = "info";
-                    break;
-
-                case Severity.Warning:
-                    severity = "warning";
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
             var sb = new StringBuilder(80);
 
-            sb.Append('[');
-            sb.Append(severity);
-
-            //if (diagnostic.Code != 0)
-            {
-                sb.Append(' ');
-                sb.Append(diagnostic.CodePrefix);
-                sb.Append(diagnostic.Code.ToString("0000"));
-            }
-
-            sb.Append("] ");
-            sb.Append(diagnostic.Location.SourceInfo);
-            sb.Append(": ");
+            sb.Append($"[{diagnostic.Severity} {diagnostic.CodePrefix}{diagnostic.Code.ToString("0000")}] {diagnostic.Location.SourceInfo}: ");
             sb.AppendFormat(diagnostic.MessageFormat, diagnostic.MessageArgs);
+
+            foreach (var sd in diagnostic.SubDiagnostics)
+            {
+                sb.Append($"\n  [{sd.Severity} {sd.CodePrefix}{sd.Code.ToString("0000")}] ");
+                sb.AppendFormat(sd.MessageFormat, sd.MessageArgs);
+            }
 
             if (diagnostic.StackTrace != null)
             {

@@ -39,13 +39,15 @@ namespace Zilf.Diagnostics
         public string MessageFormat { get; private set; }
         public object[] MessageArgs { get; private set; }
         public string StackTrace { get; private set; }
+        public Diagnostic[] SubDiagnostics { get; private set; }
 
         private static readonly object[] NoArguments = new object[0];
+        private static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
 
         public Diagnostic(ISourceLine location, Severity severity,
             string codePrefix, int code,
             string messageFormat, object[] messageArgs,
-            string stackTrace)
+            string stackTrace, Diagnostic[] subDiagnostics)
         {
             Contract.Requires(location != null);
             Contract.Requires(codePrefix != null);
@@ -59,6 +61,20 @@ namespace Zilf.Diagnostics
             this.MessageFormat = messageFormat;
             this.MessageArgs = messageArgs ?? NoArguments;
             this.StackTrace = stackTrace;
+            this.SubDiagnostics = subDiagnostics ?? NoDiagnostics;
+        }
+
+        public Diagnostic WithSubDiagnostics(params Diagnostic[] newSubDiagnostics)
+        {
+            return new Diagnostic(
+                Location,
+                Severity,
+                CodePrefix,
+                Code,
+                MessageFormat,
+                MessageArgs,
+                StackTrace,
+                newSubDiagnostics);
         }
 
         public override string ToString()
@@ -77,17 +93,18 @@ namespace Zilf.Diagnostics
     public interface IDiagnosticFactory
     {
         Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace);
+            string stackTrace = null, Diagnostic[] subDiagnostics = null);
     }
 
     [ContractClassFor(typeof(IDiagnosticFactory))]
     abstract class IDiagnosticFactoryContracts : IDiagnosticFactory
     {
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace)
+            string stackTrace, Diagnostic[] subDiagnostics)
         {
             Contract.Requires(location != null);
             Contract.Requires(code >= 0);
+            Contract.Requires(subDiagnostics == null || Contract.ForAll(subDiagnostics, d => d != null));
             Contract.Ensures(Contract.Result<Diagnostic>() != null);
             return default(Diagnostic);
         }
@@ -123,10 +140,18 @@ namespace Zilf.Diagnostics
         }
 
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace)
+            string stackTrace = null, Diagnostic[] subDiagnostics = null)
         {
             var attr = messages[code];
-            return new Diagnostic(location, attr.Severity, prefix, code, attr.Format, messageArgs, stackTrace);
+            return new Diagnostic(
+                location,
+                attr.Severity,
+                prefix,
+                code,
+                attr.Format,
+                messageArgs,
+                stackTrace,
+                subDiagnostics);
         }
     }
 

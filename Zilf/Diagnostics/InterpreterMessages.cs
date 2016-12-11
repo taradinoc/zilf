@@ -112,6 +112,12 @@ namespace Zilf.Diagnostics
         [Message("{0}: no enclosing PROG/REPEAT")]
         public const int _0_No_Enclosing_PROGREPEAT = 27;
 
+        // Argument Errors
+        [Message("{0} requires {1} {2}{3}")]
+        public const int _0_Requires_1_23 = 263;
+        [Message("{0} requires {1} additional {2}{3}")]
+        public const int _0_Requires_1_Additional_23 = 264;
+        
         [Message("object options in syntax must be atoms")]
         public const int Object_Options_In_Syntax_Must_Be_Atoms = 36;
         [Message("NEW-SFLAGS vector must have an even number of elements")]
@@ -132,10 +138,10 @@ namespace Zilf.Diagnostics
         public const int Missing_Verb_In_Syntax_Definition = 49;
         [Message("too many OBJECT in syntax definition")]
         public const int Too_Many_OBJECT_In_Syntax_Definition = 50;
-        [Message("too many prepositions in syntax definition (try defining another object)")]
-        public const int Too_Many_Prepositions_In_Syntax_Definition_Try_Defining_Another_Object = 51;
         [Message("too many prepositions in syntax definition")]
-        public const int Too_Many_Prepositions_In_Syntax_Definition = 52;
+        public const int Too_Many_Prepositions_In_Syntax_Definition = 51;
+        [Message("did you mean to separate them with OBJECT?", Severity = Severity.Info)]
+        public const int Did_You_Mean_To_Separate_Them_With_OBJECT = 52;
         [Message("list in syntax definition must start with an atom")]
         public const int List_In_Syntax_Definition_Must_Start_With_An_Atom = 53;
         [Message("too many synonym lists in syntax definition")]
@@ -458,5 +464,9 @@ namespace Zilf.Diagnostics
         public const int Overriding_Default_Value_For_Property_0 = 261;
         [Message("ignoring list of flags in syntax definition with no preceding OBJECT", Severity = Severity.Warning)]
         public const int Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT = 262;
+        [Message("{0}: too many {1}s, starting at {1} {2}")]
+        public const int _0_Too_Many_1s_Starting_At_1_2 = 265;
+        [Message("check types of earlier {0}s, e.g. {0} {1}", Severity = Severity.Info)]
+        public const int Check_Types_Of_Earlier_0s_Eg_0_1 = 266;
     }
 }

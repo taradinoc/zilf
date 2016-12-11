@@ -138,7 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\Action.cs" />
-    <Compile Include="Compiler\ArgCountRange.cs" />
+    <Compile Include="Diagnostics\ArgCountRange.cs" />
     <Compile Include="Compiler\Block.cs" />
     <Compile Include="Compiler\BlockFlags.cs" />
     <Compile Include="Compiler\Builtins\BuiltinArg.cs" />
@@ -158,7 +158,7 @@
     <Compile Include="Compiler\Builtins\ZBuiltins.cs" />
     <Compile Include="Compiler\CompileCtx.cs" />
     <Compile Include="Compiler\Expression.cs" />
-    <Compile Include="Compiler\Helpers.cs" />
+    <Compile Include="Diagnostics\ArgCountHelpers.cs" />
     <Compile Include="Compiler\Operands.cs" />
     <Compile Include="Compiler\SoftGlobal.cs" />
     <Compile Include="Compiler\VariableRef.cs" />

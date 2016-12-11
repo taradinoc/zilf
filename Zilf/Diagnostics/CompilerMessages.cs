@@ -220,5 +220,9 @@ namespace Zilf.Diagnostics
         public const int Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right = 113;
         [Message("discarding the {0} part of speech for {1}", Severity = Severity.Warning)]
         public const int Discarding_The_0_Part_Of_Speech_For_1 = 114;
+        [Message("{0} requires {1} argument{2}")]
+        public const int _0_Requires_1_Argument2 = 115;
+        [Message("this arg count would be legal in other Z-machine versions, e.g. V{0}", Severity = Severity.Info)]
+        public const int This_Arg_Count_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0 = 116;
     }
 }

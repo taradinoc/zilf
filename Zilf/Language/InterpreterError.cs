@@ -25,15 +25,11 @@ namespace Zilf.Language
 {
     class InterpreterError : ZilError<InterpreterMessages>
     {
-        public Frame Frame { get; }
-
         [Obsolete("Use a constructor that takes a diagnostic code.")]
         public InterpreterError(string message)
             : base(message)
         {
             Contract.Requires(message != null);
-
-            Frame = DiagnosticContext.Current.Frame;
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
@@ -41,8 +37,6 @@ namespace Zilf.Language
             : base(message, innerException)
         {
             Contract.Requires(message != null);
-
-            Frame = DiagnosticContext.Current.Frame;
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
@@ -50,8 +44,6 @@ namespace Zilf.Language
             : base(src, message)
         {
             Contract.Requires(message != null);
-
-            Frame = DiagnosticContext.Current.Frame;
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
@@ -59,18 +51,6 @@ namespace Zilf.Language
             : base(node.SourceLine, message)
         {
             Contract.Requires(node != null);
-
-            Frame = DiagnosticContext.Current.Frame;
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(string func, int minArgs, int maxArgs)
-            : base(null, func, minArgs, maxArgs)
-        {
-            Contract.Requires(func != null);
-            Contract.Requires(minArgs >= 0);
-            Contract.Requires(maxArgs >= 0);
-            Contract.Requires(maxArgs == 0 || maxArgs >= minArgs);
         }
 
         public InterpreterError(int code)
@@ -103,7 +83,7 @@ namespace Zilf.Language
         {
         }
 
-        protected InterpreterError(Diagnostic diagnostic)
+        public InterpreterError(Diagnostic diagnostic)
             : base(diagnostic)
         {
         }

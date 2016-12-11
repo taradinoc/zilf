@@ -1149,7 +1149,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx, args);
 
             if (args.Length < 3)
-                throw new ArgumentCountError(new FunctionCallSite("SYNTAX"), 3, 0);
+                throw ArgumentCountError.WrongCount(new FunctionCallSite("SYNTAX"), 3, null);
 
             Syntax syntax = Syntax.Parse(ctx.TopFrame.SourceLine, args, ctx);
             ctx.ZEnvironment.Syntaxes.Add(syntax);

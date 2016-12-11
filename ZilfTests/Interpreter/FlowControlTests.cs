@@ -29,14 +29,14 @@ namespace ZilfTests.Interpreter
         public void COND_Requires_At_Least_One_Clause()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<COND>",
-                ex => ex.Message.Contains("at least 1 arg"));
+                ex => ex.Message.Contains("1 or more args"));
         }
 
         [TestMethod]
         public void COND_Should_Reject_Empty_Clauses()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<COND ()>",
-                ex => !ex.Message.Contains("at least 1 arg"));
+                ex => !ex.Message.Contains("1 or more args"));
         }
 
         [TestMethod]
