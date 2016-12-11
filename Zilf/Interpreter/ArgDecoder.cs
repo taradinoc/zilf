@@ -136,7 +136,10 @@ namespace Zilf.Interpreter
     sealed class ArgumentTypeError : ArgumentDecodingError
     {
         public ArgumentTypeError(CallSite site, int index, string constraintDesc)
-            : base($"{site.DescribeArgument(index)}: expected {constraintDesc}")
+            : base(MakeDiagnostic(
+                null,
+                InterpreterMessages._0_Expected_1,
+                new object[] { site.DescribeArgument(index), constraintDesc }))
         {
         }
     }
