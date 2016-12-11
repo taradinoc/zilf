@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -475,21 +476,26 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestREMOVE()
         {
+            Predicate<ArgumentCountError> says1or2 = ex => ex.Message.Contains("1 or 2");
+            Predicate<ArgumentCountError> says1Additional = ex => ex.Message.Contains("1 additional");
+            Predicate<ArgumentCountError> saysTooMany = ex => ex.Message.Contains("too many");
+            Predicate<ArgumentTypeError> mentions2 = ex => ex.Message.Contains("arg 2");
+
             // must have 1-2 args
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>");
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>", says1or2);
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>", says1or2);
 
             // 1st arg must be atom or string
             TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE 1>");
 
             // 2nd arg must be oblist
-            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>");
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>", mentions2);
 
             // 2nd arg is required if 1st is a string
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">", says1Additional);
 
             // 2nd arg not allowed if 1st is an atom
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>", saysTooMany);
 
             // remove an atom from its oblist
             var ctx = new Context();

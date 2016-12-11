@@ -1564,8 +1564,14 @@ namespace Zilf.Interpreter
                 {
                     var outerError = c.Error;
                     ArgumentDecodingError exception = null;
+                    int choiceIndex = 0;
 
-                    for (int choiceIndex = 0; choiceIndex < choices.Length; choiceIndex++)
+                    c.Error = j =>
+                    {
+                        throw new ArgumentTypeError(c.Site, j ?? i, choiceConstraints[choiceIndex].ToString());
+                    };
+
+                    for (; choiceIndex < choices.Length; choiceIndex++)
                     {
                         if (i < a.Length && !choiceConstraints[choiceIndex].Allows(c.Context, a[i]))
                         {
@@ -1623,9 +1629,10 @@ namespace Zilf.Interpreter
                 Constraint = stepInfos[0].Constraint,
                 Step = (a, i, c) =>
                 {
-                    if (a.Length - i < lowerBound)
+                    var remainingArgs = a.Length - i;
+                    if (remainingArgs < lowerBound)
                     {
-                        throw ArgumentCountError.WrongCount(c.Site, lowerBound, upperBound);
+                        throw ArgumentCountError.WrongCount(c.Site, lowerBound - remainingArgs, upperBound - remainingArgs, true);
                     }
 
                     var output = Activator.CreateInstance(seqType);
@@ -1634,6 +1641,10 @@ namespace Zilf.Interpreter
 
                     var outerReady = c.Ready;
                     c.Ready = obj => fields[stepIndex].SetValue(output, obj);
+                    c.Error = j =>
+                    {
+                        throw new ArgumentTypeError(c.Site, j ?? i, stepInfos[stepIndex].Constraint.ToString());
+                    };
 
                     for (; stepIndex < stepInfos.Length; stepIndex++)
                     {
