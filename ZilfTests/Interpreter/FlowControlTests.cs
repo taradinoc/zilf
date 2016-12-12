@@ -105,6 +105,7 @@ namespace ZilfTests.Interpreter
         public void PROG_Rejects_Conflicting_DECLs()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<PROG (A:FIX) #DECL ((A) LIST) <>>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<PROG (A) #DECL ((A) FIX (A) LIST) <>>");
         }
     }
 }
