@@ -4,11 +4,11 @@ namespace Zilf.Emit.Zap
 {
     public class ZapStreamFactory : IZapStreamFactory
     {
-        private readonly string outFile;
+        readonly string outFile;
 
-        private const string FrequentWordsSuffix = "_freq";
-        private const string DataSuffix = "_data";
-        private const string StringSuffix = "_str";
+        const string FrequentWordsSuffix = "_freq";
+        const string DataSuffix = "_data";
+        const string StringSuffix = "_str";
 
         public ZapStreamFactory(string outFile)
         {

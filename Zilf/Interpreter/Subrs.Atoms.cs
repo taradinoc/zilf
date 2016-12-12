@@ -50,7 +50,7 @@ namespace Zilf.Interpreter
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
-        private static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
+        static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
             string name, bool singleResult)
         {
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
@@ -212,7 +212,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            ObList result = ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
+            var result = ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
             if (result == null)
                 result = ctx.MakeObList(name);
 
@@ -277,7 +277,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            ZilObject result = ctx.GetGlobalVal(atom);
+            var result = ctx.GetGlobalVal(atom);
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Global_Value, "GVAL", atom.ToStringContext(ctx, false));
 

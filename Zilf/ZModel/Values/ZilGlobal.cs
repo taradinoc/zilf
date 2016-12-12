@@ -25,8 +25,8 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
     class ZilGlobal : ZilObject
     {
-        private readonly ZilAtom name;
-        private readonly ZilObject value;
+        readonly ZilAtom name;
+        readonly ZilObject value;
 
         public ZilGlobal(ZilAtom name, ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
         {
@@ -67,7 +67,7 @@ namespace Zilf.ZModel.Values
 
         public override string ToString()
         {
-            return "#GLOBAL (" + name.ToString() + " " + value.ToString() + ")";
+            return "#GLOBAL (" + name + " " + value + ")";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

@@ -2,7 +2,7 @@ namespace Zilf.Emit.Zap
 {
     public class GameOptions : IGameOptions
     {
-        private GameOptions()
+        GameOptions()
         {
         }
 

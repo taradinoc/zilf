@@ -30,7 +30,7 @@ namespace Zilf.ZModel
         public string Charset2 { get; private set; }
         public IReadOnlyDictionary<char, char> SpecialChars { get; private set; }
 
-        private Language(int id, string charset0, string charset1, string charset2, params char[] specialChars)
+        Language(int id, string charset0, string charset1, string charset2, params char[] specialChars)
         {
             Contract.Requires(id >= 0);
             Contract.Requires(charset0 != null && charset0.Length == 26);
@@ -53,7 +53,7 @@ namespace Zilf.ZModel
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(Id >= 0);
             Contract.Invariant(Charset0 != null && Charset0.Length == 26);
@@ -62,28 +62,28 @@ namespace Zilf.ZModel
             Contract.Invariant(SpecialChars != null);
         }
 
-        private static readonly Dictionary<string, Language> allLanguages = new Dictionary<string, Language>()
-{
-{ "DEFAULT", new Language(
-0,
-"abcdefghijklmnopqrstuvwxyz",
-"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-"0123456789.,!?_#'\"/\\-:()") },
-{ "GERMAN", new Language(
-1,
-"abcdefghiklmnoprstuwzäöü.,",
-"ABCDEFGHIKLMNOPRSTUWZjqvxy",
-"0123456789!?'-:()JÄÖÜß«»",
-'a', 'ä',
-'o', 'ö',
-'u', 'ü',
-'s', 'ß',
-'A', 'Ä',
-'O', 'Ö',
-'U', 'Ü',
-'<', '«',
-'>', '»') },
-};
+        static readonly Dictionary<string, Language> allLanguages = new Dictionary<string, Language>
+        {
+            { "DEFAULT", new Language(
+                0,
+                "abcdefghijklmnopqrstuvwxyz",
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                "0123456789.,!?_#'\"/\\-:()") },
+            { "GERMAN", new Language(
+                1,
+                "abcdefghiklmnoprstuwzäöü.,",
+                "ABCDEFGHIKLMNOPRSTUWZjqvxy",
+                "0123456789!?'-:()JÄÖÜß«»",
+                'a', 'ä',
+                'o', 'ö',
+                'u', 'ü',
+                's', 'ß',
+                'A', 'Ä',
+                'O', 'Ö',
+                'U', 'Ü',
+                '<', '«',
+                '>', '»') }
+        };
 
         public static Language Get(string name)
         {

@@ -26,7 +26,7 @@ namespace Zilf.Interpreter
     /// </summary>
     class AgainException : ControlException
     {
-        private readonly ZilActivation activation;
+        readonly ZilActivation activation;
 
         public AgainException(ZilActivation activation)
             : base("AGAIN")

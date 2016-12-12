@@ -31,7 +31,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.PROPDEF, PrimType.LIST)]
     sealed class ComplexPropDef : ZilObject
     {
-        private enum InputElementType
+        enum InputElementType
         {
             Invalid = 0,
 
@@ -41,7 +41,7 @@ namespace Zilf.ZModel.Values
             Atom,
         }
 
-        private struct InputElement
+        struct InputElement
         {
             public readonly InputElementType Type;
             public readonly ZilAtom Variable;
@@ -60,7 +60,7 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        private enum OutputElementType
+        enum OutputElementType
         {
             Invalid = 0,
 
@@ -77,7 +77,7 @@ namespace Zilf.ZModel.Values
             String,
         }
 
-        private struct OutputElement
+        struct OutputElement
         {
             public readonly OutputElementType Type;
             public readonly ZilAtom Constant, Variable, PartOfSpeech;
@@ -99,7 +99,7 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        private struct Pattern
+        struct Pattern
         {
             public readonly InputElement[] Inputs;
             public readonly OutputElement[] Outputs;
@@ -111,9 +111,9 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        private readonly List<Pattern> patterns;
+        readonly List<Pattern> patterns;
 
-        private ComplexPropDef(IEnumerable<Pattern> patterns)
+        ComplexPropDef(IEnumerable<Pattern> patterns)
         {
             this.patterns = new List<Pattern>(patterns);
         }
@@ -289,7 +289,7 @@ namespace Zilf.ZModel.Values
             return new ComplexPropDef(patterns);
         }
 
-        private static OutputElement ConvertOutputForm(ZilForm form, ZilAtom constant)
+        static OutputElement ConvertOutputForm(ZilForm form, ZilAtom constant)
         {
             Contract.Requires(form != null);
 
@@ -401,7 +401,7 @@ namespace Zilf.ZModel.Values
                     else
                     {
                         // calculate the size of this element
-                        int size = OutputElementSize(output, ctx);
+                        var size = OutputElementSize(output, ctx);
                         if (size == 0)
                             continue;
 
@@ -492,7 +492,7 @@ namespace Zilf.ZModel.Values
             return ToStringImpl(zo => zo.ToStringContext(ctx, friendly));
         }
 
-        private string ToStringImpl(Func<ZilObject, string> convert)
+        string ToStringImpl(Func<ZilObject, string> convert)
         {
             var sb = new StringBuilder();
 
@@ -716,7 +716,7 @@ namespace Zilf.ZModel.Values
 
         // may change prop even for an unsuccessful match
         // may not match the entire property (check prop.IsEmpty on return)
-        private bool MatchPartialPattern(Context ctx, ref ZilList prop, InputElement[] inputs, int startIndex,
+        bool MatchPartialPattern(Context ctx, ref ZilList prop, InputElement[] inputs, int startIndex,
             Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
             Contract.Requires(ctx != null);
@@ -778,7 +778,7 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        private bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
+        bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
         {
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom)
@@ -811,7 +811,7 @@ namespace Zilf.ZModel.Values
             return false;
         }
 
-        private bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
+        bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
             ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex, ISourceLine src)
         {
             Contract.Requires(ctx != null);
@@ -875,7 +875,7 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        private bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
+        bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
             Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex,
             ZilAtom propName, ISourceLine src)
         {

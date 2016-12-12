@@ -28,8 +28,8 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ENVIRONMENT, PrimType.ATOM)]
     sealed class ZilEnvironment : ZilObject, IEvanescent
     {
-        private readonly ZilAtom name;
-        private readonly WeakReference<LocalEnvironment> env;
+        readonly ZilAtom name;
+        readonly WeakReference<LocalEnvironment> env;
 
         [ChtypeMethod]
         public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom)
@@ -67,7 +67,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return string.Format("#ENVIRONMENT {0}", name.ToString());
+            return string.Format("#ENVIRONMENT {0}", name);
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

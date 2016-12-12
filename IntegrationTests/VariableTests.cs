@@ -25,14 +25,14 @@ namespace IntegrationTests
     [TestClass]
     public class VariableTests
     {
-        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
 
             return new RoutineAssertionHelper(argSpec, body);
         }
-        
+
         private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);

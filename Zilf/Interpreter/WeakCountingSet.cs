@@ -22,16 +22,16 @@ using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
-    internal class WeakCountingSet<T> : IEnumerable<T>
+    class WeakCountingSet<T> : IEnumerable<T>
         where T : class
     {
-        private class Cell
+        class Cell
         {
             public WeakReference<T> Ref;
             public int Count;
         }
 
-        private readonly Dictionary<int, List<Cell>> buckets = new Dictionary<int, List<Cell>>();
+        readonly Dictionary<int, List<Cell>> buckets = new Dictionary<int, List<Cell>>();
 
         public void Add(T value)
         {

@@ -82,7 +82,7 @@ namespace Zilf.Interpreter
             var flags = CombineFlags(ctx.CurrentFileFlags, ctx.NextRoutineFlags);
             ctx.NextRoutineFlags = RoutineFlags.None;
 
-            ZilRoutine rtn = new ZilRoutine(
+            var rtn = new ZilRoutine(
                 name,
                 activationAtom,
                 argList,
@@ -95,7 +95,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(
                     InterpreterMessages._0_Too_Many_Routine_Arguments_Only_1_Allowed_In_V2, "ROUTINE", maxArgsAllowed, ctx.ZEnvironment.ZVersion);
             }
-            else if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
+            if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
                 ctx.HandleWarning(new InterpreterError(ctx.TopFrame.SourceLine,
@@ -112,7 +112,7 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        private static RoutineFlags CombineFlags(FileFlags fileFlags, RoutineFlags routineFlags)
+        static RoutineFlags CombineFlags(FileFlags fileFlags, RoutineFlags routineFlags)
         {
             var result = routineFlags;
 
@@ -208,9 +208,14 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject GLOBAL(Context ctx,
-            AtomParams.AdeclOrAtom name, ZilObject defaultValue,
-            ZilObject decl = null, ZilAtom size = null)
+        public static ZilObject GLOBAL(
+            Context ctx,
+            AtomParams.AdeclOrAtom name,
+            ZilObject defaultValue,
+#pragma warning disable RECS0154 // Parameter is never used
+            ZilObject decl = null,
+            ZilAtom size = null)
+#pragma warning restore RECS0154 // Parameter is never used
         {
             SubrContracts(ctx);
 
@@ -248,7 +253,7 @@ namespace Zilf.Interpreter
             if (defaultValue is ZilTable)
                 ((ZilTable)defaultValue).Name = "T?" + atom.Text;
 
-            ZilGlobal g = new ZilGlobal(atom, defaultValue);
+            var g = new ZilGlobal(atom, defaultValue);
             ctx.SetZVal(atom, g);
             ctx.ZEnvironment.Globals.Add(g);
             return g;
@@ -270,7 +275,11 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("DEFINE-GLOBALS")]
-        public static ZilObject DEFINE_GLOBALS(Context ctx, ZilAtom groupName,
+        public static ZilObject DEFINE_GLOBALS(
+            Context ctx,
+#pragma warning disable RECS0154 // Parameter is never used
+            ZilAtom groupName,
+#pragma warning restore RECS0154 // Parameter is never used
             DefineGlobalsParams.GlobalSpec[] args)
         {
             SubrContracts(ctx);
@@ -281,7 +290,7 @@ namespace Zilf.Interpreter
 
                 // create global and macros
                 var globalAtom = ZilAtom.Parse("G?" + name, ctx);
-                ZilGlobal g = new ZilGlobal(globalAtom, spec.Initializer?.Eval(ctx) ?? ctx.FALSE);
+                var g = new ZilGlobal(globalAtom, spec.Initializer?.Eval(ctx) ?? ctx.FALSE);
                 if (spec.Size?.StdAtom == StdAtom.BYTE)
                 {
                     g.IsWord = false;
@@ -325,7 +334,7 @@ namespace Zilf.Interpreter
             return PerformObject(ctx, name, props, true);
         }
 
-        private static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
+        static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
         {
             SubrContracts(ctx);
 
@@ -343,7 +352,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, name, oldAtom.ToStringContext(ctx, false));
             }
 
-            ZilModelObject zmo = new ZilModelObject(atom, props, isRoom);
+            var zmo = new ZilModelObject(atom, props, isRoom);
             zmo.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
@@ -454,7 +463,7 @@ namespace Zilf.Interpreter
 
                 foreach (ZilObject obj in flagList)
                 {
-                    ZilAtom flag = (ZilAtom)obj;
+                    var flag = (ZilAtom)obj;
 
                     switch (flag.StdAtom)
                     {
@@ -496,14 +505,14 @@ namespace Zilf.Interpreter
             if (initializer.Length == 0)
                 initializer = null;
 
-            ZilTable tab = ZilTable.Create(count, initializer, flags, null);
+            var tab = ZilTable.Create(count, initializer, flags, null);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
 
-        private static ZilTable PerformTable(Context ctx, ZilList flagList, ZilObject[] values,
+        static ZilTable PerformTable(Context ctx, ZilList flagList, ZilObject[] values,
             bool pure, bool wantLength)
         {
             SubrContracts(ctx);
@@ -527,7 +536,7 @@ namespace Zilf.Interpreter
             {
                 while (!flagList.IsEmpty)
                 {
-                    ZilAtom flag = flagList.First as ZilAtom;
+                    var flag = flagList.First as ZilAtom;
                     if (flag == null)
                         throw new InterpreterError(InterpreterMessages._0_Flags_Must_Be_Atoms, name);
 
@@ -597,12 +606,12 @@ namespace Zilf.Interpreter
             if (parserTable)
                 flags |= TableFlags.ParserTable;
 
-            List<ZilObject> newValues = new List<ZilObject>(values.Length);
+            var newValues = new List<ZilObject>(values.Length);
             foreach (var val in values)
             {
                 if (type == T_STRING && val.GetTypeAtom(ctx).StdAtom == StdAtom.STRING)
                 {
-                    string str = val.ToStringContext(ctx, true);
+                    var str = val.ToStringContext(ctx, true);
                     foreach (char c in str)
                         newValues.Add(new ZilFix(c));
                 }
@@ -610,7 +619,7 @@ namespace Zilf.Interpreter
                     newValues.Add(val);
             }
 
-            ZilTable tab = ZilTable.Create(
+            var tab = ZilTable.Create(
                 1, newValues.ToArray(), flags, pattern == null ? null : pattern.ToArray());
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if (!tempTable)
@@ -618,7 +627,7 @@ namespace Zilf.Interpreter
             return tab;
         }
 
-        private static void ValidateTablePattern(string name, ZilObject[] pattern)
+        static void ValidateTablePattern(string name, ZilObject[] pattern)
         {
             Contract.Requires(name != null);
             Contract.Requires(pattern != null && Contract.ForAll(pattern, p => p != null));
@@ -649,7 +658,7 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_Vector_In_PATTERN_Must_Start_With_REST, name);
 
                     // remaining elements must be BYTE or WORD
-                    if (!vector.Skip(1).All(zo => IsByteOrWordAtom(zo)))
+                    if (!vector.Skip(1).All(IsByteOrWordAtom))
                         throw new InterpreterError(InterpreterMessages._0_Following_Elements_Of_Vector_In_PATTERN_Must_Be_BYTE_Or_WORD, name);
 
                     // OK
@@ -660,7 +669,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static bool IsByteOrWordAtom(ZilObject value)
+        static bool IsByteOrWordAtom(ZilObject value)
         {
             var atom = value as ZilAtom;
             return atom != null && (atom.StdAtom == StdAtom.BYTE || atom.StdAtom == StdAtom.WORD);
@@ -762,7 +771,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            int newVersion = ParseZVersion("VERSION", versionExpr);
+            var newVersion = ParseZVersion("VERSION", versionExpr);
 
             ctx.SetZVersion(newVersion);
 
@@ -777,7 +786,7 @@ namespace Zilf.Interpreter
             return new ZilFix(newVersion);
         }
 
-        private static int ParseZVersion(string name, ZilObject expr)
+        static int ParseZVersion(string name, ZilObject expr)
         {
             Contract.Requires(name != null);
             Contract.Requires(expr != null);
@@ -828,7 +837,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            int version = ParseZVersion("CHECK-VERSION?", versionExpr);
+            var version = ParseZVersion("CHECK-VERSION?", versionExpr);
             return ctx.ZEnvironment.ZVersion == version ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -1151,7 +1160,7 @@ namespace Zilf.Interpreter
             if (args.Length < 3)
                 throw ArgumentCountError.WrongCount(new FunctionCallSite("SYNTAX"), 3, null);
 
-            Syntax syntax = Syntax.Parse(ctx.TopFrame.SourceLine, args, ctx);
+            var syntax = Syntax.Parse(ctx.TopFrame.SourceLine, args, ctx);
             ctx.ZEnvironment.Syntaxes.Add(syntax);
 
             if (syntax.Synonyms.Count > 0)
@@ -1162,7 +1171,7 @@ namespace Zilf.Interpreter
             return syntax.Verb.Atom;
         }
 
-        private static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms,
+        static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms,
             string name, Type synonymType)
         {
             SubrContracts(ctx);

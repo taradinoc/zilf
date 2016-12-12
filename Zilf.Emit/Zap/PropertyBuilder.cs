@@ -2,9 +2,9 @@ namespace Zilf.Emit.Zap
 {
     class PropertyBuilder : IPropertyBuilder
     {
-        private readonly string name;
-        private readonly int number;
-        private IOperand defaultValue;
+        readonly string name;
+        readonly int number;
+        IOperand defaultValue;
 
         public PropertyBuilder(string name, int number)
         {

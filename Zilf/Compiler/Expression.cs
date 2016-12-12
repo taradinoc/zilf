@@ -22,18 +22,18 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler
 {
-    internal static class Expression
+    static class Expression
     {
         public static bool HasSideEffects(CompileCtx cc, ZilObject expr)
         {
-            ZilForm form = expr as ZilForm;
+            var form = expr as ZilForm;
 
             // only forms can have side effects
             if (form == null)
                 return false;
 
             // malformed forms are errors anyway
-            ZilAtom head = form.First as ZilAtom;
+            var head = form.First as ZilAtom;
             if (head == null)
                 return false;
 

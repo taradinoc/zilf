@@ -53,9 +53,9 @@ namespace Zilf.Interpreter.Values
         public ZilOffset(int index, ZilObject structurePattern, ZilObject valuePattern)
         {
             if (structurePattern == null)
-                throw new ArgumentNullException("structurePattern");
+                throw new ArgumentNullException(nameof(structurePattern));
             if (valuePattern == null)
-                throw new ArgumentNullException("valuePattern");
+                throw new ArgumentNullException(nameof(valuePattern));
 
             this.Index = index;
             this.StructurePattern = structurePattern;

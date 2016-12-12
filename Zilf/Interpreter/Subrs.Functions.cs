@@ -50,7 +50,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: merge parsing code for DEFINE, DEFMAC, ROUTINE, and FUNCTION
-        private static ZilObject PerformDefine(Context ctx, ZilAtom name, ZilAtom activationAtom,
+        static ZilObject PerformDefine(Context ctx, ZilAtom name, ZilAtom activationAtom,
             ZilList argList, ZilDecl decl, ZilObject[] body, string subrName)
         {
             Contract.Requires(subrName != null);
@@ -58,7 +58,7 @@ namespace Zilf.Interpreter
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
 
-            ZilFunction func = new ZilFunction(
+            var func = new ZilFunction(
                 name,
                 activationAtom,
                 argList,
@@ -78,13 +78,13 @@ namespace Zilf.Interpreter
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFMAC", name.ToStringContext(ctx, false));
 
-            ZilFunction func = new ZilFunction(
+            var func = new ZilFunction(
                 name,
                 activationAtom,
                 argList,
                 decl,
                 body);
-            ZilEvalMacro macro = new ZilEvalMacro(func);
+            var macro = new ZilEvalMacro(func);
             macro.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetGlobalVal(name, macro);
             return name;

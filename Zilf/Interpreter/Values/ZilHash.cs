@@ -59,7 +59,7 @@ namespace Zilf.Interpreter.Values
             if (initializer.Length != 2 || !(initializer[0] is ZilAtom) || initializer[1] == null)
                 throw new ArgumentException("Expected 2 objects, the first a ZilAtom");
 
-            ZilAtom type = (ZilAtom)initializer[0];
+            var type = (ZilAtom)initializer[0];
             ZilObject value = initializer[1];
 
             return ctx.ChangeType(value, type);
@@ -67,7 +67,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return "#" + type.ToString() + " " + primvalue.ToString();
+            return "#" + type + " " + primvalue;
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

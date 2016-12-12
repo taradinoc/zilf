@@ -37,7 +37,7 @@ namespace ZilfTests.Interpreter
                                        new[] { "(1 2 3)", "<1 2 3>" },
                                        new[] { ".FOO", "BAR" },
                                        new[] { ",FOO", "BAR" },
-                                       new[] { "'FOO", "BAR" },
+                                       new[] { "'FOO", "BAR" }
                                    };
 
             foreach (var tc in testCases)

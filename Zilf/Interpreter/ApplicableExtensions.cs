@@ -47,10 +47,10 @@ namespace Zilf.Interpreter
             return zo is IApplicable || ctx.GetApplyTypeDelegate(zo.GetTypeAtom(ctx)) != null;
         }
 
-        private sealed class ApplicableWrapper : IApplicable
+        sealed class ApplicableWrapper : IApplicable
         {
-            private readonly ZilObject zo;
-            private readonly ApplyTypeDelegate del;
+            readonly ZilObject zo;
+            readonly ApplyTypeDelegate del;
 
             public ApplicableWrapper(ZilObject zo, ApplyTypeDelegate del)
             {

@@ -20,7 +20,7 @@ namespace ZilfErrorMessages
         public const string DiagnosticId_DuplicateMessageFormat = "ZILF0003";
         public const string DiagnosticId_PrefixedMessageFormat = "ZILF0004";
 
-        private static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
             DiagnosticId_DuplicateMessageCode,
             "Duplicate message code",
             "The code '{0}' is used more than once in message set '{1}'",
@@ -28,7 +28,7 @@ namespace ZilfErrorMessages
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor Rule_DuplicateMessageFormat = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_DuplicateMessageFormat = new DiagnosticDescriptor(
             DiagnosticId_DuplicateMessageFormat,
             "Duplicate message format",
             "This format string is used more than once in message set '{0}'",
@@ -36,7 +36,7 @@ namespace ZilfErrorMessages
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new DiagnosticDescriptor(
             DiagnosticId_PrefixedMessageFormat,
             "Message has hardcoded prefix",
             "This format string has the prefix '{0}', which should be moved to the call site",
@@ -65,7 +65,7 @@ namespace ZilfErrorMessages
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.ClassDeclaration);
         }
 
-        private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        static void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             var classDecl = (ClassDeclarationSyntax)context.Node;
 
@@ -159,7 +159,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static IEnumerable<FieldDeclarationSyntax> GetConstIntFields(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        static IEnumerable<FieldDeclarationSyntax> GetConstIntFields(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             return from field in classDecl.Members.OfType<FieldDeclarationSyntax>()
                    where field.Modifiers.Any(SyntaxKind.PublicKeyword) && field.Modifiers.Any(SyntaxKind.ConstKeyword)
@@ -167,7 +167,7 @@ namespace ZilfErrorMessages
                    select field;
         }
 
-        private static bool IsMessageSet(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        static bool IsMessageSet(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             var attributes = from alist in classDecl.AttributeLists
                              from attr in alist.Attributes

@@ -23,7 +23,7 @@ namespace IntegrationTests
     [TestClass]
     public class MacroTests
     {
-        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));

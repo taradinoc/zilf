@@ -50,7 +50,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(cc != null);
             Contract.Invariant(rb != null);

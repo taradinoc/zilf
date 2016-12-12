@@ -38,7 +38,7 @@ namespace ZapfTests
             const string InputFileName = "Input.zap";
             const string OutputFileName = "Output.z#";
             var inputFiles = new Dictionary<string, string>() {
-                { InputFileName, code },
+                { InputFileName, code }
             };
             var outputFiles = new Dictionary<string, MemoryStream>();
 

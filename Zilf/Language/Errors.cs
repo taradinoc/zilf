@@ -31,7 +31,7 @@ namespace Zilf.Language
             Contract.Requires(ctx != null);
             Contract.Requires(message != null);
 
-            ctx.HandleWarning(node, message, false);
+            ctx.HandleWarning(node, message);
         }
 
         [Obsolete("Use diagnostic codes instead.")]
@@ -51,7 +51,7 @@ namespace Zilf.Language
             Contract.Requires(ctx != null);
             Contract.Requires(message!= null);
 
-            ctx.HandleWarning(node, message, true);
+            ctx.HandleWarning(node, message);
         }
 
         [Obsolete("Use diagnostic codes instead.")]

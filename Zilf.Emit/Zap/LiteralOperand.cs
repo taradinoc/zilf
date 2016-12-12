@@ -2,7 +2,7 @@ namespace Zilf.Emit.Zap
 {
     class LiteralOperand : IOperand
     {
-        private readonly string literal;
+        readonly string literal;
 
         public LiteralOperand(string literal)
         {

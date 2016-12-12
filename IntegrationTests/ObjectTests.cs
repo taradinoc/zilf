@@ -25,7 +25,7 @@ namespace IntegrationTests
     [TestClass]
     public class ObjectTests
     {
-        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
@@ -33,7 +33,7 @@ namespace IntegrationTests
             return new GlobalsAssertionHelper(globals);
         }
 
-        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -43,7 +43,7 @@ namespace IntegrationTests
 
         #region Object Numbering & Tree Ordering
 
-        private string[] TreeImplications(string[] numbering, params string[][] chains)
+        string[] TreeImplications(string[] numbering, params string[][] chains)
         {
             Contract.Requires(numbering != null && numbering.Length > 0);
             Contract.Requires(Contract.ForAll(numbering, n => !string.IsNullOrWhiteSpace(n)));

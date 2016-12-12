@@ -2,7 +2,7 @@ namespace Zilf.Emit.Zap
 {
     class NumericOperand : INumericOperand
     {
-        private readonly int value;
+        readonly int value;
 
         public NumericOperand(int value)
         {

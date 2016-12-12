@@ -60,7 +60,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
         }
@@ -74,7 +74,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(list.First, list.Rest);
         }
 
-        private ZilList MakeRest(IEnumerator<ZilObject> tor)
+        ZilList MakeRest(IEnumerator<ZilObject> tor)
         {
             Contract.Requires(tor != null);
             Contract.Ensures(Contract.Result<ZilList>() != null);
@@ -82,7 +82,7 @@ namespace Zilf.Interpreter.Values
             if (tor.MoveNext())
             {
                 ZilObject cur = tor.Current;
-                ZilList rest = MakeRest(tor);
+                var rest = MakeRest(tor);
                 return new ZilList(cur, rest);
             }
             else
@@ -109,7 +109,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            StringBuilder sb = new StringBuilder(2);
+            var sb = new StringBuilder(2);
             sb.Append(start);
 
             if (items is ZilList)
@@ -239,7 +239,7 @@ namespace Zilf.Interpreter.Values
             if (obj == this)
                 return true;
 
-            ZilList other = obj as ZilList;
+            var other = obj as ZilList;
             if (other == null)
                 return false;
 
@@ -256,7 +256,7 @@ namespace Zilf.Interpreter.Values
 
         public override int GetHashCode()
         {
-            int result = (int)StdAtom.LIST;
+            var result = (int)StdAtom.LIST;
             foreach (ZilObject obj in this.EnumerateNonRecursive())
             {
                 if (obj == null)
@@ -304,7 +304,7 @@ namespace Zilf.Interpreter.Values
         {
             get
             {
-                IStructure rested = ((IStructure)this).GetRest(index);
+                var rested = ((IStructure)this).GetRest(index);
                 if (rested == null)
                     return null;
                 else
@@ -314,7 +314,7 @@ namespace Zilf.Interpreter.Values
             {
                 var rested = ((IStructure)this).GetRest(index) as ZilList;
                 if (rested == null || rested.IsEmpty)
-                    throw new ArgumentOutOfRangeException("index", "writing past end of list");
+                    throw new ArgumentOutOfRangeException(nameof(index), "writing past end of list");
                 rested.First = value;
             }
         }

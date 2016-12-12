@@ -29,30 +29,30 @@ namespace Zilf.Interpreter
     class ArgSpec : IEnumerable<ArgItem>
     {
         // name of the function to which this spec belongs
-        private readonly ZilAtom name;
+        readonly ZilAtom name;
         // reference to the "QUOTE" atom used for any quoted args
-        private readonly ZilAtom quoteAtom;
+        readonly ZilAtom quoteAtom;
 
         // "BIND"
-        private readonly ZilAtom environmentAtom;
+        readonly ZilAtom environmentAtom;
 
         // regular args, "OPT", and "AUX"
-        private readonly ZilAtom[] argAtoms;
-        private readonly ZilObject[] argDecls;
-        private readonly bool[] argQuoted;
-        private readonly ZilObject[] argDefaults;
-        private readonly int optArgsStart, auxArgsStart;
+        readonly ZilAtom[] argAtoms;
+        readonly ZilObject[] argDecls;
+        readonly bool[] argQuoted;
+        readonly ZilObject[] argDefaults;
+        readonly int optArgsStart, auxArgsStart;
 
         // "ARGS" or "TUPLE"
-        private readonly ZilAtom varargsAtom;
-        private readonly ZilObject varargsDecl;
-        private readonly bool varargsQuoted;
+        readonly ZilAtom varargsAtom;
+        readonly ZilObject varargsDecl;
+        readonly bool varargsQuoted;
 
         // "NAME"/"ACT"
-        private readonly ZilAtom activationAtom;
+        readonly ZilAtom activationAtom;
 
         // "VALUE"
-        private readonly ZilObject valueDecl;
+        readonly ZilObject valueDecl;
 
         public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
             : this(prev.name, null, argspec)
@@ -71,10 +71,10 @@ namespace Zilf.Interpreter
             optArgsStart = -1;
             auxArgsStart = -1;
 
-            List<ZilAtom> argAtoms = new List<ZilAtom>();
-            List<ZilObject> argDecls = new List<ZilObject>();
-            List<bool> argQuoted = new List<bool>();
-            List<ZilObject> argDefaults = new List<ZilObject>();
+            var newArgAtoms = new List<ZilAtom>();
+            var newArgDecls = new List<ZilObject>();
+            var newArgQuoted = new List<bool>();
+            var newArgDefaults = new List<ZilObject>();
 
             const int OO_None = 0;
             const int OO_Varargs = 1;
@@ -193,7 +193,7 @@ namespace Zilf.Interpreter
                 // could be an atom or a list: (atom defaultValue)
                 if (arg is ZilList && !(arg is ZilForm))
                 {
-                    ZilList al = (ZilList)arg;
+                    var al = (ZilList)arg;
 
                     if (al.IsEmpty)
                         throw new InterpreterError(InterpreterMessages.Empty_List_In_Arg_Spec);
@@ -222,7 +222,7 @@ namespace Zilf.Interpreter
                 // could be quoted
                 if (argName is ZilForm)
                 {
-                    ZilForm af = (ZilForm)argName;
+                    var af = (ZilForm)argName;
                     if (af.First is ZilAtom && ((ZilAtom)af.First).StdAtom == StdAtom.QUOTE &&
                         !af.Rest.IsEmpty)
                     {
@@ -240,10 +240,10 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages.Expected_Atom_In_Arg_Spec_But_Found_0, argName.ToString());
                 }
 
-                argAtoms.Add((ZilAtom)argName);
-                argDecls.Add(argDecl);
-                argDefaults.Add(argValue);
-                argQuoted.Add(quoted);
+                newArgAtoms.Add((ZilAtom)argName);
+                newArgDecls.Add(argDecl);
+                newArgDefaults.Add(argValue);
+                newArgQuoted.Add(quoted);
             }
 
             if (auxArgsStart == -1)
@@ -254,7 +254,7 @@ namespace Zilf.Interpreter
             // process #DECL in body
             if (bodyDecl != null)
             {
-                var argIndex = argAtoms.Select((atom, i) => new { atom, i }).ToLookup(p => p.atom, p => p.i);
+                var argIndex = newArgAtoms.Select((atom, i) => new { atom, i }).ToLookup(p => p.atom, p => p.i);
 
                 foreach (var pair in bodyDecl.GetAtomDeclPairs())
                 {
@@ -278,8 +278,8 @@ namespace Zilf.Interpreter
 
                         foreach (var i in argIndex[atom])
                         {
-                            prev = prev ?? argDecls[i];
-                            argDecls[i] = decl;
+                            prev = prev ?? newArgDecls[i];
+                            newArgDecls[i] = decl;
                         }
                     }
                     else
@@ -294,14 +294,14 @@ namespace Zilf.Interpreter
                 }
             }
 
-            this.argAtoms = argAtoms.ToArray();
-            this.argDecls = argDecls.ToArray();
-            this.argQuoted = argQuoted.ToArray();
-            this.argDefaults = argDefaults.ToArray();
+            this.argAtoms = newArgAtoms.ToArray();
+            this.argDecls = newArgDecls.ToArray();
+            this.argQuoted = newArgQuoted.ToArray();
+            this.argDefaults = newArgDefaults.ToArray();
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(argAtoms != null && Contract.ForAll(argAtoms, a => a != null));
             Contract.Invariant(argDecls != null && argDecls.Length == argAtoms.Length);
@@ -372,7 +372,7 @@ namespace Zilf.Interpreter
 
         public override bool Equals(object obj)
         {
-            ArgSpec other = obj as ArgSpec;
+            var other = obj as ArgSpec;
             if (other == null)
                 return false;
 

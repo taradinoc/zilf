@@ -10,7 +10,7 @@ namespace Zilf.Emit.Zap
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(Variable != null);
         }

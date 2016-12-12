@@ -25,7 +25,7 @@ namespace ZapfTests
     [TestClass]
     public class LabelConvergenceTests
     {
-        private static string PaddingWords(int count)
+        static string PaddingWords(int count)
         {
             if (count < 1)
                 return "";
@@ -37,7 +37,7 @@ namespace ZapfTests
             return sb.ToString();
         }
 
-        private static string FormatAsRanges(IEnumerable<int> numbers)
+        static string FormatAsRanges(IEnumerable<int> numbers)
         {
             int? last = null, rangeStart = null;
             var ranges = new List<string>();

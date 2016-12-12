@@ -22,7 +22,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler.Builtins
 {
-    internal struct VoidCall
+    struct VoidCall
     {
         public CompileCtx cc { get; private set; }
         public IRoutineBuilder rb { get; private set; }
@@ -41,7 +41,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(cc != null);
             Contract.Invariant(rb != null);

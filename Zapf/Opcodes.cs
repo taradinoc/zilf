@@ -69,9 +69,9 @@ namespace Zapf
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public class ZOpAttribute : Attribute
     {
-        private readonly string classicName, informName;
-        private readonly int minVer, maxVer;
-        private readonly ZOpFlags flags;
+        readonly string classicName, informName;
+        readonly int minVer, maxVer;
+        readonly ZOpFlags flags;
 
         public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)
         {

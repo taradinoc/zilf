@@ -132,7 +132,7 @@ namespace Dezapf
 
     class HeaderChunk : Chunk
     {
-        private readonly Header hdr;
+        readonly Header hdr;
 
         public HeaderChunk(int pc, int length, Header hdr)
             : base(pc, length)

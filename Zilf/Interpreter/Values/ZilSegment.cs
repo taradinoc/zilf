@@ -27,7 +27,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]
     class ZilSegment : ZilObject, IStructure
     {
-        private readonly ZilForm form;
+        readonly ZilForm form;
 
         public ZilSegment(ZilObject obj)
         {
@@ -40,7 +40,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(form != null);
         }
@@ -48,7 +48,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilSegment FromList(Context ctx, ZilList list)
         {
-            ZilForm form = list as ZilForm;
+            var form = list as ZilForm;
             if (form == null)
             {
                 form = new ZilForm(list);
@@ -65,7 +65,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return "!" + form.ToString();
+            return "!" + form;
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -90,7 +90,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilSegment other = obj as ZilSegment;
+            var other = obj as ZilSegment;
             return other != null && other.form.Equals(this.form);
         }
 

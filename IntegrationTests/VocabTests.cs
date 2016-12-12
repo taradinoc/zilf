@@ -25,7 +25,7 @@ namespace IntegrationTests
     [TestClass]
     public class VocabTests
     {
-        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -33,7 +33,7 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
-        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
@@ -249,7 +249,7 @@ namespace IntegrationTests
 
         #region New Parser
 
-        private const string SNewParserBootstrap = @"
+        const string SNewParserBootstrap = @"
 <SETG NEW-PARSER? T>
 
 <SETG CLASSIFICATIONS '(ADJ 1 BUZZ 2 DIR 4 NOUN 8 PREP 16 VERB 32 PARTICLE 64)>

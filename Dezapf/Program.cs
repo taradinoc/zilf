@@ -209,7 +209,7 @@ namespace Dezapf
             //Console.ReadKey();
         }
 
-        private static void ComposeFunc(Context ctx, Stream stream, BinaryReader rdr, RangeList<Chunk> ranges, int address)
+        static void ComposeFunc(Context ctx, Stream stream, BinaryReader rdr, RangeList<Chunk> ranges, int address)
         {
             stream.Seek(address, SeekOrigin.Begin);
 
@@ -231,7 +231,8 @@ namespace Dezapf
             funct.Locals = localDefaults;
             ranges.AddRange(address, codeStart - address, funct);
             ranges.Coalesce(address, maxExtent,
-                (int s1, int l1, Chunk v1, int s2, int l2, Chunk v2, out Chunk nv) => {
+                (int s1, int l1, Chunk v1, int s2, int l2, Chunk v2, out Chunk nv) =>
+                {
                     FunctChunk fc = v1 as FunctChunk;
                     if (fc != null)
                     {
@@ -260,7 +261,7 @@ namespace Dezapf
         /// the first reachable instruction.</param>
         /// <param name="maxExtent">Returns the address of the last byte of
         /// the last reachable instruction.</param>
-        private static void MeasureExtents(Context ctx, RangeList<Chunk> ranges,
+        static void MeasureExtents(Context ctx, RangeList<Chunk> ranges,
             int startAddress, out int minExtent, out int maxExtent)
         {
             HashSet<int> visited = new HashSet<int>();

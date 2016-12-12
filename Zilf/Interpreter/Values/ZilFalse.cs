@@ -26,7 +26,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FALSE, PrimType.LIST)]
     class ZilFalse : ZilObject, IStructure
     {
-        private readonly ZilList value;
+        readonly ZilList value;
 
         [ChtypeMethod]
         public ZilFalse(ZilList value)
@@ -36,7 +36,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(value != null);
         }
@@ -47,7 +47,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return "#FALSE " + value.ToString();
+                    return "#FALSE " + value;
                 }
                 finally
                 {
@@ -82,7 +82,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilFalse other = obj as ZilFalse;
+            var other = obj as ZilFalse;
             return other != null && other.value.Equals(this.value);
         }
 

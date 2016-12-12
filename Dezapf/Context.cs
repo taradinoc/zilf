@@ -26,11 +26,11 @@ namespace Dezapf
 {
     class Context
     {
-        private int zversion;
-        private Header header;
+        int zversion;
+        Header header;
 
-        private readonly RangeList<Chunk> chunks = new RangeList<Chunk>();
-        private readonly Dictionary<ushort, ZOpAttribute> opcodes = new Dictionary<ushort, ZOpAttribute>();
+        readonly RangeList<Chunk> chunks = new RangeList<Chunk>();
+        readonly Dictionary<ushort, ZOpAttribute> opcodes = new Dictionary<ushort, ZOpAttribute>();
 
         public Context()
         {
@@ -132,7 +132,7 @@ namespace Dezapf
             return address / PackingFactor;
         }
 
-        private void LoadOpcodes()
+        void LoadOpcodes()
         {
             opcodes.Clear();
 
@@ -161,20 +161,20 @@ namespace Dezapf
             return result;
         }
 
-        private static readonly char[] defaultAlphabet0 =
+        static readonly char[] defaultAlphabet0 =
         {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
         };
-        private static readonly char[] defaultAlphabet1 =
+        static readonly char[] defaultAlphabet1 =
         {
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
         };
-        private static readonly char[] defaultAlphabet2 =
+        static readonly char[] defaultAlphabet2 =
         {
             ' ', '\n', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.',
-            ',', '!', '?', '_', '#', '\'', '"', '/', '\\', '-', ':', '(', ')',
+            ',', '!', '?', '_', '#', '\'', '"', '/', '\\', '-', ':', '(', ')'
         };
 
         public string DecodeText(ushort[] encodedText)

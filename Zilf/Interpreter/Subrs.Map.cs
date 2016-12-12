@@ -44,9 +44,9 @@ namespace Zilf.Interpreter
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
-        private class MapRetException : ControlException
+        class MapRetException : ControlException
         {
-            private readonly ZilObject[] values;
+            readonly ZilObject[] values;
 
             public MapRetException(ZilObject[] values)
                 : base("MAPRET")
@@ -56,7 +56,7 @@ namespace Zilf.Interpreter
             }
 
             [ContractInvariantMethod]
-            private void ObjectInvariant()
+            void ObjectInvariant()
             {
                 Contract.Invariant(values != null);
             }
@@ -78,7 +78,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private class MapStopException : MapRetException
+        class MapStopException : MapRetException
         {
             public MapStopException(ZilObject[] values)
                 : base("MAPSTOP", values)
@@ -87,9 +87,9 @@ namespace Zilf.Interpreter
             }
         }
 
-        private class MapLeaveException : ControlException
+        class MapLeaveException : ControlException
         {
-            private readonly ZilObject value;
+            readonly ZilObject value;
 
             public MapLeaveException(ZilObject value)
                 : base("MAPLEAVE")
@@ -103,7 +103,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static ZilObject PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
+        static ZilObject PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
         {
             SubrContracts(ctx);
 
@@ -114,7 +114,7 @@ namespace Zilf.Interpreter
             int numStructs = structs.Length;
             ZilObject[] loopArgs = new ZilObject[numStructs];
 
-            List<ZilObject> results = new List<ZilObject>();
+            var results = new List<ZilObject>();
 
             while (true)
             {

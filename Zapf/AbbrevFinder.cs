@@ -42,15 +42,15 @@ namespace Zapf
             }
         }
 
-        private struct WordRecord
+        struct WordRecord
         {
             public int Savings;
             public Horspool Pattern;
         }
 
-        private readonly Dictionary<string, WordRecord> words = new Dictionary<string, WordRecord>();
-        private StringBuilder allText = new StringBuilder();
-        private readonly StringEncoder encoder = new StringEncoder();
+        readonly Dictionary<string, WordRecord> words = new Dictionary<string, WordRecord>();
+        StringBuilder allText = new StringBuilder();
+        readonly StringEncoder encoder = new StringEncoder();
 
         /// <summary>
         /// Adds some text to the accumulator.
@@ -92,9 +92,9 @@ namespace Zapf
                 allText.Length = position;
         }
 
-        private readonly static char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
+        readonly static char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
 
-        private IEnumerable<string> FindWords(string text)
+        IEnumerable<string> FindWords(string text)
         {
             int wordStart = -1, wordEnd = -1;
             bool inWord = false;
@@ -129,7 +129,7 @@ namespace Zapf
                 }
 
                 // found a word
-                string word = text.Substring(wordStart, wordEnd - wordStart);
+                var word = text.Substring(wordStart, wordEnd - wordStart);
                 bool prev = (wordStart > 0), next = (wordEnd < text.Length);
 
                 yield return word;
@@ -142,14 +142,14 @@ namespace Zapf
             }
         }
 
-        private int CountSavings(string word)
+        int CountSavings(string word)
         {
             int zchars;
-            encoder.Encode(word, 0, true, out zchars);
+            encoder.Encode(word, 0, StringEncoderMode.NoAbbreviations, out zchars);
             return zchars - 2;
         }
 
-        private int CountAppearances(Horspool pattern)
+        int CountAppearances(Horspool pattern)
         {
 #if DEBUG_ABBREV
             var stopw = new Stopwatch();
@@ -194,7 +194,7 @@ namespace Zapf
                     {
                         Savings = overallSavings,
                         Count = count,
-                        Pattern = p.Value.Pattern
+                        p.Value.Pattern
                     };
 
                 int numResults = 0;

@@ -28,7 +28,7 @@ namespace Zilf.ZModel
         public int MinVersion { get; }
         public int? MaxVersion { get; }
 
-        private LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
+        LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
         {
             Contract.Requires(offset >= 0);
             Contract.Requires(minVersion >= 1);
@@ -40,14 +40,14 @@ namespace Zilf.ZModel
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(Offset >= 0);
             Contract.Invariant(MinVersion >= 1);
             Contract.Invariant(MaxVersion == null || MaxVersion >= MinVersion);
         }
 
-        private static readonly Dictionary<string, LowCoreField> allFields = new Dictionary<string, LowCoreField>()
+        static readonly Dictionary<string, LowCoreField> allFields = new Dictionary<string, LowCoreField>
         {
             { "ZVERSION", new LowCoreField(0) },
             { "ZORKID", new LowCoreField(1) },
@@ -101,7 +101,7 @@ namespace Zilf.ZModel
             { "UNITBL", new LowCoreField(3, LowCoreFlags.Extended, minVersion: 5) },
             { "FLAGS3", new LowCoreField(4, LowCoreFlags.Extended, minVersion: 5) },
             { "TRUFGC", new LowCoreField(5, LowCoreFlags.Extended, minVersion: 5) },
-            { "TRUBGC", new LowCoreField(6, LowCoreFlags.Extended, minVersion: 5) },
+            { "TRUBGC", new LowCoreField(6, LowCoreFlags.Extended, minVersion: 5) }
         };
 
         public static LowCoreField Get(ZilAtom atom)

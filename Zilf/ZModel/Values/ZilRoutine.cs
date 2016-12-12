@@ -30,10 +30,10 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
     class ZilRoutine : ZilObject
     {
-        private readonly ZilAtom name;
-        private readonly ArgSpec argspec;
-        private readonly ZilObject[] body;
-        private readonly RoutineFlags flags;
+        readonly ZilAtom name;
+        readonly ArgSpec argspec;
+        readonly ZilObject[] body;
+        readonly RoutineFlags flags;
 
         public ZilRoutine(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
         {
@@ -90,9 +90,9 @@ namespace Zilf.ZModel.Values
             get { return flags; }
         }
 
-        private string ToString(Func<ZilObject, string> convert)
+        string ToString(Func<ZilObject, string> convert)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             sb.Append("#ROUTINE (");
             sb.Append(argspec.ToString(convert));
@@ -137,7 +137,7 @@ namespace Zilf.ZModel.Values
 
         public override bool Equals(object obj)
         {
-            ZilRoutine other = obj as ZilRoutine;
+            var other = obj as ZilRoutine;
             if (other == null)
                 return false;
 
@@ -156,7 +156,7 @@ namespace Zilf.ZModel.Values
 
         public override int GetHashCode()
         {
-            int result = argspec.GetHashCode();
+            var result = argspec.GetHashCode();
 
             foreach (ZilObject obj in body)
                 result ^= obj.GetHashCode();

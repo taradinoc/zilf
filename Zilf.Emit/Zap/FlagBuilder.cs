@@ -2,8 +2,8 @@ namespace Zilf.Emit.Zap
 {
     class FlagBuilder : IFlagBuilder
     {
-        private readonly string name;
-        private readonly int number;
+        readonly string name;
+        readonly int number;
 
         public FlagBuilder(string name, int number)
         {

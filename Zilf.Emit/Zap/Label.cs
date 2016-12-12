@@ -2,7 +2,7 @@ namespace Zilf.Emit.Zap
 {
     class Label : ILabel
     {
-        private readonly string symbol;
+        readonly string symbol;
 
         public Label(string symbol)
         {

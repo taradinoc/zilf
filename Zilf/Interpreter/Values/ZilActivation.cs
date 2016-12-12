@@ -28,8 +28,8 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ACTIVATION, PrimType.ATOM)]
     class ZilActivation : ZilObject, IDisposable, IEvanescent
     {
-        private readonly ZilAtom name;
-        private bool legal = true;
+        readonly ZilAtom name;
+        bool legal = true;
 
         public ZilActivation(ZilAtom name)
         {
@@ -66,7 +66,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return string.Format("#ACTIVATION {0}", name.ToString());
+            return string.Format("#ACTIVATION {0}", name);
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

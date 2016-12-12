@@ -22,7 +22,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.SPLICE, PrimType.LIST)]
     class ZilSplice : ZilList
     {
-        private bool spliceable;
+        bool spliceable;
 
         [ChtypeMethod]
         public ZilSplice(ZilList other)
@@ -44,7 +44,9 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
+#pragma warning disable RECS0106 // False alarm, ToString() is required here
             return "#SPLICE " + base.ToString();
+#pragma warning restore RECS0106
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

@@ -41,13 +41,13 @@ namespace Dezapf
 
     class Instruction : Chunk
     {
-        private ushort op;
+        ushort op;
         private ushort[] operands;
-        private OperandType[] operandTypes;
-        private BranchType branchType;
-        private short branchOffset;
-        private byte? storeTarget;
-        private ushort[] encodedText;
+        OperandType[] operandTypes;
+        BranchType branchType;
+        short branchOffset;
+        byte? storeTarget;
+        ushort[] encodedText;
 
         public ushort Op { get { return op; } }
         public ushort[] Operands { get { return (ushort[])operands.Clone(); } }
@@ -66,7 +66,7 @@ namespace Dezapf
             }
         }
 
-        private Instruction(int pc, int length)
+        Instruction(int pc, int length)
             : base(pc, length)
         {
         }

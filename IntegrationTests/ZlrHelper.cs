@@ -113,17 +113,17 @@ namespace IntegrationTests
             return result;
         }
 
-        private const string SZilFileName = "Input.zil";
-        private const string SMainZapFileName = "Output.zap";
-        private const string SStoryFileNameTemplate = "Output.z#";
+        const string SZilFileName = "Input.zil";
+        const string SMainZapFileName = "Output.zap";
+        const string SStoryFileNameTemplate = "Output.z#";
 
-        private string code;
-        private string input;
+        string code;
+        string input;
 
-        private Dictionary<string, MemoryStream> zilfOutputFiles;
-        private List<string> zilfLogMessages;
+        Dictionary<string, MemoryStream> zilfOutputFiles;
+        List<string> zilfLogMessages;
 
-        private MemoryStream zapfOutputFile;
+        MemoryStream zapfOutputFile;
 
         public int WarningCount { get; private set; }
 
@@ -135,20 +135,20 @@ namespace IntegrationTests
             this.input = input;
         }
 
-        private void PrintZilCode()
+        void PrintZilCode()
         {
             Console.Error.WriteLine("=== {0} ===", SZilFileName);
             Console.Error.WriteLine(this.code);
             Console.Error.WriteLine();
         }
 
-        private void PrintZapCode()
+        void PrintZapCode()
         {
             PrintZapCode("Output.zap");
             PrintZapCode("Output_data.zap");
         }
 
-        private void PrintZapCode(string filename)
+        void PrintZapCode(string filename)
         {
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
@@ -162,7 +162,7 @@ namespace IntegrationTests
             return Compile(null);
         }
 
-        private bool Compile(Action<FrontEnd> initializeFrontEnd)
+        bool Compile(Action<FrontEnd> initializeFrontEnd)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -310,16 +310,16 @@ namespace IntegrationTests
     // TODO: merge this with ZlrHelper
     class FileBasedZlrHelper
     {
-        private const string SStoryFileNameTemplate = "Output.z#";
+        const string SStoryFileNameTemplate = "Output.z#";
 
-        private string codeFile, zapFileName;
-        private string[] includeDirs;
-        private string inputFile;
+        string codeFile, zapFileName;
+        string[] includeDirs;
+        string inputFile;
 
-        private Dictionary<string, MemoryStream> zilfOutputFiles;
-        private List<string> zilfLogMessages;
+        Dictionary<string, MemoryStream> zilfOutputFiles;
+        List<string> zilfLogMessages;
 
-        private MemoryStream zapfOutputFile;
+        MemoryStream zapfOutputFile;
 
         public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
         {

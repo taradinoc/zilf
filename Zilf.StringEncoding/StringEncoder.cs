@@ -23,9 +23,15 @@ using System.Text;
 
 namespace Zilf.StringEncoding
 {
+    public enum StringEncoderMode
+    {
+        Normal = 0,
+        NoAbbreviations = 1,
+    }
+
     public class StringEncoder
     {
-        private struct AbbrevEntry
+        struct AbbrevEntry
         {
             public readonly Horspool Pattern;
             public readonly byte Number;
@@ -37,7 +43,7 @@ namespace Zilf.StringEncoding
             }
         }
 
-        private class AbbrevComparer : IComparer<AbbrevEntry>
+        class AbbrevComparer : IComparer<AbbrevEntry>
         {
             public int Compare(AbbrevEntry x, AbbrevEntry y)
             {
@@ -45,22 +51,22 @@ namespace Zilf.StringEncoding
                 if (d != 0)
                     return d;
 
-                return x.Pattern.Text.CompareTo(y.Pattern.Text);
+                return string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
             }
         }
 
-        private static readonly string[] DefaultCharset = {
+        static readonly string[] DefaultCharset = {
             "abcdefghijklmnopqrstuvwxyz",
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-            "0123456789.,!?_#'\"/\\-:()",   // 2 chars omitted at the beginning
+            "0123456789.,!?_#'\"/\\-:()"   // 2 chars omitted at the beginning
         };
-        private byte[][] charset;
+        readonly byte[][] charset;
 
-        private List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
-        private static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
-        private bool frozen;
+        List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
+        static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
+        bool frozen;
 
-        private static readonly Dictionary<char, byte> unicodeTranslations;
+        static readonly Dictionary<char, byte> unicodeTranslations;
 
         public StringEncoder()
         {
@@ -141,7 +147,7 @@ namespace Zilf.StringEncoding
                 { 'œ', 220 },
                 { 'Œ', 221 },
                 { '¡', 222 },
-                { '¿', 223 },
+                { '¿', 223 }
             };
         }
 
@@ -170,46 +176,48 @@ namespace Zilf.StringEncoding
             if (abbrevs.Count >= 96)
                 throw new InvalidOperationException("Too many abbreviations");
 
-            AbbrevEntry entry = new AbbrevEntry(str, (byte)abbrevs.Count);
-            int idx = abbrevs.BinarySearch(entry, abbrevLengthComparer);
+            var entry = new AbbrevEntry(str, (byte)abbrevs.Count);
+            var idx = abbrevs.BinarySearch(entry, abbrevLengthComparer);
             abbrevs.Insert(idx < 0 ? ~idx : idx, entry);
         }
 
         public byte[] Encode(string str)
         {
-            return Encode(str, null, false);
+            return Encode(str, null, StringEncoderMode.Normal);
         }
 
-        public byte[] Encode(string str, bool noAbbrevs)
+        public byte[] Encode(string str, StringEncoderMode mode)
         {
-            return Encode(str, null, noAbbrevs);
+            return Encode(str, null, mode);
         }
 
         public byte[] Encode(string str, int? size)
         {
-            return Encode(str, size, false);
+            return Encode(str, size, StringEncoderMode.Normal);
         }
 
-        public byte[] Encode(string str, int? size, bool noAbbrevs)
+        public byte[] Encode(string str, int? size, StringEncoderMode mode)
         {
             int dummy;
-            return Encode(str, size, noAbbrevs, out dummy);
+            return Encode(str, size, mode, out dummy);
         }
 
-        public byte[] Encode(string str, int? size, bool noAbbrevs, out int zchars)
+        public byte[] Encode(string str, int? size, StringEncoderMode mode, out int zchars)
         {
+            var noAbbrevs = mode == StringEncoderMode.NoAbbreviations;
+
             if (!noAbbrevs)
                 frozen = true;
 
-            List<byte> temp = new List<byte>();
-            StringBuilder sb = new StringBuilder(str);
+            var temp = new List<byte>();
+            var sb = new StringBuilder(str);
 
             // temporarily replace abbreviated strings with Unicode private use characters (E000-E05F)
             if (!noAbbrevs)
             {
                 for (int i = 0; i < abbrevs.Count; i++)
                 {
-                    int idx = abbrevs[i].Pattern.FindIn(sb);
+                    var idx = abbrevs[i].Pattern.FindIn(sb);
                     while (idx >= 0)
                     {
                         sb.Remove(idx, abbrevs[i].Pattern.Text.Length - 1);

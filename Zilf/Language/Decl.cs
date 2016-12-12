@@ -26,7 +26,7 @@ namespace Zilf.Language
     /// <summary>
     /// Allows non-structured types to be checked against structure DECLs.
     /// </summary>
-    internal interface IProvideStructureForDeclCheck
+    interface IProvideStructureForDeclCheck
     {
         IStructure GetStructureForDeclCheck(Context ctx);
     }
@@ -34,9 +34,9 @@ namespace Zilf.Language
     /// <summary>
     /// Raised when a user-defined DECL check fails.
     /// </summary>
-    internal class DeclCheckError : InterpreterError
+    class DeclCheckError : InterpreterError
     {
-        private const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
+        const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
 
         /// <summary>
         /// Gets the value that didn't pass the DECL.
@@ -81,7 +81,7 @@ namespace Zilf.Language
         }
     }
 
-    internal class Decl
+    class Decl
     {
         public static bool Check(Context ctx, ZilObject value, ZilObject pattern)
         {
@@ -188,7 +188,7 @@ namespace Zilf.Language
             }
         }
 
-        private static bool CheckElements(Context ctx, IStructure structure, ZilForm pattern, bool segment)
+        static bool CheckElements(Context ctx, IStructure structure, ZilForm pattern, bool segment)
         {
             foreach (var subpattern in pattern.Rest)
             {

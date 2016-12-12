@@ -24,6 +24,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Vocab;
 using Zilf.Diagnostics;
+using System;
 
 namespace Zilf.ZModel
 {
@@ -36,7 +37,7 @@ namespace Zilf.ZModel
         public readonly ZilAtom Action, Preaction, ActionName;
         public readonly IList<ZilAtom> Synonyms;
 
-        private static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
+        static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
         public Syntax(ISourceLine src, IWord verb, int numObjects, IWord prep1, IWord prep2,
             byte options1, byte options2, ZilAtom findFlag1, ZilAtom findFlag2,
@@ -85,7 +86,7 @@ namespace Zilf.ZModel
             {
                 if (verb == null)
                 {
-                    ZilAtom atom = obj as ZilAtom;
+                    var atom = obj as ZilAtom;
                     if (atom == null || atom.StdAtom == StdAtom.Eq)
                         throw new InterpreterError(InterpreterMessages.Missing_Verb_In_Syntax_Definition);
 
@@ -95,7 +96,7 @@ namespace Zilf.ZModel
                 {
                     // left side:
                     //   [[prep] OBJECT [(FIND ...)] [(options...) ...] [[prep] OBJECT [(FIND ...)] [(options...)]]]
-                    ZilAtom atom = obj as ZilAtom;
+                    var atom = obj as ZilAtom;
                     if (atom != null)
                     {
                         switch (atom.StdAtom)
@@ -121,7 +122,7 @@ namespace Zilf.ZModel
 
                                     throw error;
                                 }
-                                else if (numObjects == 0)
+                                if (numObjects == 0)
                                 {
                                     prep1 = atom;
                                 }
@@ -134,7 +135,7 @@ namespace Zilf.ZModel
                     }
                     else
                     {
-                        ZilList list = obj as ZilList;
+                        var list = obj as ZilList;
                         if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
                         {
                             atom = list.First as ZilAtom;
@@ -173,7 +174,7 @@ namespace Zilf.ZModel
                                 {
                                     if ((numObjects == 1 && find1 != null) || find2 != null)
                                         throw new InterpreterError(InterpreterMessages.Too_Many_FIND_Lists_In_Syntax_Definition);
-                                    else if (numObjects == 1)
+                                    if (numObjects == 1)
                                         find1 = list;
                                     else
                                         find2 = list;
@@ -205,7 +206,7 @@ namespace Zilf.ZModel
                 {
                     // right side:
                     //   action [preaction [action-name]]
-                    ZilAtom atom = obj as ZilAtom;
+                    var atom = obj as ZilAtom;
                     if (atom != null)
                     {
                         if (atom.StdAtom == StdAtom.Eq)
@@ -253,13 +254,13 @@ namespace Zilf.ZModel
                 bits2 = null;
             }
 
-            IWord verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
+            var verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
             IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
             IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
-            byte flags1 = ScopeFlags.Parse(bits1, ctx);
-            byte flags2 = ScopeFlags.Parse(bits2, ctx);
-            ZilAtom findFlag1 = ParseFindFlag(find1);
-            ZilAtom findFlag2 = ParseFindFlag(find2);
+            var flags1 = ScopeFlags.Parse(bits1, ctx);
+            var flags2 = ScopeFlags.Parse(bits2, ctx);
+            var findFlag1 = ParseFindFlag(find1);
+            var findFlag2 = ParseFindFlag(find2);
             IEnumerable<ZilAtom> synAtoms = null;
 
             if (syns != null)
@@ -292,7 +293,7 @@ namespace Zilf.ZModel
             else
             {
                 var actionNameStr = actionName.ToString();
-                if (!actionNameStr.StartsWith("V?"))
+                if (!actionNameStr.StartsWith("V?", StringComparison.Ordinal))
                 {
                     actionName = ZilAtom.Parse("V?" + actionNameStr, ctx);
                 }
@@ -305,7 +306,7 @@ namespace Zilf.ZModel
             action, preaction, actionName, synAtoms);
         }
 
-        private static ZilAtom ParseFindFlag(ZilList list)
+        static ZilAtom ParseFindFlag(ZilList list)
         {
             if (list == null)
                 return null;
@@ -320,7 +321,7 @@ namespace Zilf.ZModel
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             // verb
             sb.Append(Verb.Atom);
@@ -328,7 +329,7 @@ namespace Zilf.ZModel
             // object clauses
             var items = new[] {
                 new { Prep = Preposition1, Find = FindFlag1, Opts = Options1 },
-                new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 },
+                new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 }
             };
 
             foreach (var item in items.Take(NumObjects))

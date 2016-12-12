@@ -12,22 +12,22 @@ namespace Zilf.Emit.Zap
         internal static readonly Label RTRUE = new Label("TRUE");
         internal static readonly Label RFALSE = new Label("FALSE");
         internal static readonly VariableOperand STACK = new VariableOperand("STACK");
-        private const string INDENT = "\t";
+        const string INDENT = "\t";
 
-        private readonly GameBuilder game;
-        private readonly string name;
-        private readonly bool entryPoint, cleanStack;
+        readonly GameBuilder game;
+        readonly string name;
+        readonly bool entryPoint, cleanStack;
 
         internal DebugLineRef defnStart, defnEnd;
 
-        private readonly PeepholeBuffer<ZapCode> peep;
-        private readonly ILabel routineStartLabel;
-        private int nextLabel = 0;
-        private string pendingDebugText;
+        readonly PeepholeBuffer<ZapCode> peep;
+        readonly ILabel routineStartLabel;
+        int nextLabel = 0;
+        string pendingDebugText;
 
-        private readonly List<LocalBuilder> requiredParams = new List<LocalBuilder>();
-        private readonly List<LocalBuilder> optionalParams = new List<LocalBuilder>();
-        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
+        readonly List<LocalBuilder> requiredParams = new List<LocalBuilder>();
+        readonly List<LocalBuilder> optionalParams = new List<LocalBuilder>();
+        readonly List<LocalBuilder> locals = new List<LocalBuilder>();
 
         public RoutineBuilder(GameBuilder game, string name, bool entryPoint, bool cleanStack)
         {
@@ -67,7 +67,7 @@ namespace Zilf.Emit.Zap
             get { return STACK; }
         }
 
-        private bool LocalExists(string name)
+        bool LocalExists(string name)
         {
             return requiredParams.Concat(optionalParams).Concat(locals).Any(lb => lb.Name == name);
         }
@@ -79,7 +79,7 @@ namespace Zilf.Emit.Zap
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
             if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, "name");
+                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
 
             LocalBuilder local = new LocalBuilder(name);
             requiredParams.Add(local);
@@ -93,7 +93,7 @@ namespace Zilf.Emit.Zap
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
             if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, "name");
+                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
 
             LocalBuilder local = new LocalBuilder(name);
             optionalParams.Add(local);
@@ -107,7 +107,7 @@ namespace Zilf.Emit.Zap
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have local variables");
             if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, "name");
+                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
 
             LocalBuilder local = new LocalBuilder(name);
             locals.Add(local);
@@ -129,7 +129,7 @@ namespace Zilf.Emit.Zap
             peep.MarkLabel(label);
         }
 
-        private void AddLine(string code, ILabel target, PeepholeLineType type)
+        void AddLine(string code, ILabel target, PeepholeLineType type)
         {
             ZapCode zc;
             zc.Text = code;
@@ -216,7 +216,7 @@ namespace Zilf.Emit.Zap
             }
 
             if (leftVar && !(left is IVariable))
-                throw new ArgumentException("This condition requires a variable", "left");
+                throw new ArgumentException("This condition requires a variable", nameof(left));
 
             if (nullary)
             {
@@ -226,12 +226,12 @@ namespace Zilf.Emit.Zap
             else if (unary)
             {
                 if (right != null)
-                    throw new ArgumentException("Expected only one operand for unary condition", "right");
+                    throw new ArgumentException("Expected only one operand for unary condition", nameof(right));
             }
             else
             {
                 if (right == null)
-                    throw new ArgumentException("Expected two operands for binary condition", "right");
+                    throw new ArgumentException("Expected two operands for binary condition", nameof(right));
             }
 
             Contract.Assert(leftVar || !unary);
@@ -1263,22 +1263,22 @@ namespace Zilf.Emit.Zap
                     defnEnd.Column));
         }
 
-        private class PeepholeCombiner : IPeepholeCombiner<ZapCode>
+        class PeepholeCombiner : IPeepholeCombiner<ZapCode>
         {
-            private readonly RoutineBuilder routineBuilder;
+            readonly RoutineBuilder routineBuilder;
 
             public PeepholeCombiner(RoutineBuilder routineBuilder)
             {
                 this.routineBuilder = routineBuilder;
             }
 
-            private void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
+            void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
             {
                 enumerator = lines.GetEnumerator();
                 matches = new List<CombinableLine<ZapCode>>();
             }
 
-            private bool Match(params Predicate<CombinableLine<ZapCode>>[] criteria)
+            bool Match(params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
                 while (matches.Count < criteria.Length)
                 {
@@ -1297,7 +1297,7 @@ namespace Zilf.Emit.Zap
                 return true;
             }
 
-            private void EndMatch()
+            void EndMatch()
             {
                 enumerator.Dispose();
                 enumerator = null;
@@ -1305,10 +1305,10 @@ namespace Zilf.Emit.Zap
                 matches = null;
             }
 
-            private IEnumerator<CombinableLine<ZapCode>> enumerator;
-            private List<CombinableLine<ZapCode>> matches;
+            IEnumerator<CombinableLine<ZapCode>> enumerator;
+            List<CombinableLine<ZapCode>> matches;
 
-            private CombinerResult<ZapCode> Combine1to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            CombinerResult<ZapCode> Combine1to1(string newText, PeepholeLineType? type = null, ILabel target = null)
             {
                 return new CombinerResult<ZapCode>(
                     1,
@@ -1317,14 +1317,14 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode() {
                                 Text = newText,
-                                DebugText = matches[0].Code.DebugText,
+                                DebugText = matches[0].Code.DebugText
                             },
                             target ?? matches[0].Target,
-                            type ?? matches[0].Type),
+                            type ?? matches[0].Type)
                     });
             }
 
-            private CombinerResult<ZapCode> Combine2to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            CombinerResult<ZapCode> Combine2to1(string newText, PeepholeLineType? type = null, ILabel target = null)
             {
                 return new CombinerResult<ZapCode>(
                     2,
@@ -1333,14 +1333,14 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode() {
                                 Text = newText,
-                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText,
+                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText
                             },
                             target ?? matches[1].Target,
-                            type ?? matches[1].Type),
+                            type ?? matches[1].Type)
                     });
             }
 
-            private CombinerResult<ZapCode> Combine2to2(
+            CombinerResult<ZapCode> Combine2to2(
                 string newText1, string newText2,
                 PeepholeLineType? type1 = null, PeepholeLineType? type2 = null,
                 ILabel target1 = null, ILabel target2 = null)
@@ -1352,7 +1352,7 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode() {
                                 Text = newText1,
-                                DebugText = matches[0].Code.DebugText,
+                                DebugText = matches[0].Code.DebugText
                             },
                             target1 ?? matches[0].Target,
                             type1 ?? matches[0].Type),
@@ -1360,14 +1360,14 @@ namespace Zilf.Emit.Zap
                             matches[1].Label,
                             new ZapCode() {
                                 Text = newText2,
-                                DebugText = matches[1].Code.DebugText,
+                                DebugText = matches[1].Code.DebugText
                             },
                             target2 ?? matches[1].Target,
-                            type2 ?? matches[1].Type),
+                            type2 ?? matches[1].Type)
                     });
             }
 
-            private CombinerResult<ZapCode> Combine3to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            CombinerResult<ZapCode> Combine3to1(string newText, PeepholeLineType? type = null, ILabel target = null)
             {
                 return new CombinerResult<ZapCode>(
                     3,
@@ -1376,24 +1376,24 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode() {
                                 Text = newText,
-                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText ?? matches[2].Code.DebugText,
+                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText ?? matches[2].Code.DebugText
                             },
                             target ?? matches[2].Target,
-                            type ?? matches[2].Type),
+                            type ?? matches[2].Type)
                     });
             }
 
-            private static CombinerResult<ZapCode> Consume(int numberOfLines)
+            static CombinerResult<ZapCode> Consume(int numberOfLines)
             {
                 return new CombinerResult<ZapCode>(numberOfLines, Enumerable.Empty<CombinableLine<ZapCode>>());
             }
 
-            private static readonly Regex equalZeroRegex = new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
-            private static readonly Regex bandConstantToStackRegex = new Regex(@"^BAND (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
-            private static readonly Regex bandConstantWithStackRegex = new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
-            private static readonly Regex borConstantToStackRegex = new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
-            private static readonly Regex borConstantWithStackRegex = new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
-            private static readonly Regex popToVariableRegex = new Regex(@"^POP ['>]");
+            static readonly Regex equalZeroRegex = new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
+            static readonly Regex bandConstantToStackRegex = new Regex(@"^BAND (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+            static readonly Regex bandConstantWithStackRegex = new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+            static readonly Regex borConstantToStackRegex = new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+            static readonly Regex borConstantWithStackRegex = new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+            static readonly Regex popToVariableRegex = new Regex(@"^POP ['>]");
 
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
@@ -1640,7 +1640,7 @@ namespace Zilf.Emit.Zap
                 return new ZapCode()
                 {
                     Text = a.Text,
-                    DebugText = a.DebugText ?? b.DebugText,
+                    DebugText = a.DebugText ?? b.DebugText
                 };
             }
 

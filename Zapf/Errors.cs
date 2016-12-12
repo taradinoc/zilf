@@ -37,7 +37,7 @@ namespace Zapf
 
     public class AssemblerError : Exception
     {
-        private readonly ISourceLine node;
+        readonly ISourceLine node;
 
         public AssemblerError(ISourceLine node, string message)
             : base(message)

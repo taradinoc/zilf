@@ -26,7 +26,7 @@ namespace Zilf.Diagnostics
     [MessageSet("ZIL")]
     public abstract class CompilerMessages
     {
-        private CompilerMessages()
+        CompilerMessages()
         {
         }
 

@@ -67,7 +67,7 @@ namespace Zilf.Interpreter.Values
                 result = new List<ZilObject>(tree.ChildCount);
                 for (i = 0; i < tree.ChildCount; i++)
                 {
-                    ZilObject obj = ReadOneFromAST(tree.GetChild(i), ctx);
+                    var obj = ReadOneFromAST(tree.GetChild(i), ctx);
                     if (obj != null)
                         yield return obj;
                 }
@@ -76,7 +76,7 @@ namespace Zilf.Interpreter.Values
             {
                 // just one
                 result = new List<ZilObject>(1);
-                ZilObject obj = ReadOneFromAST(tree, ctx);
+                var obj = ReadOneFromAST(tree, ctx);
                 if (obj != null)
                     yield return obj;
             }
@@ -88,7 +88,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="tree">The tree node.</param>
         /// <param name="ctx">The current context.</param>
         /// <returns>The array of translated child objects.</returns>
-        private static ZilObject[] ReadChildrenFromAST(ITree tree, Context ctx)
+        static ZilObject[] ReadChildrenFromAST(ITree tree, Context ctx)
         {
             Contract.Requires(tree != null);
             Contract.Requires(ctx != null);
@@ -98,10 +98,10 @@ namespace Zilf.Interpreter.Values
             if (tree.ChildCount == 0)
                 return new ZilObject[0];
 
-            List<ZilObject> result = new List<ZilObject>(tree.ChildCount);
+            var result = new List<ZilObject>(tree.ChildCount);
             for (int i = 0; i < tree.ChildCount; i++)
             {
-                ZilObject obj = ReadOneFromAST(tree.GetChild(i), ctx);
+                var obj = ReadOneFromAST(tree.GetChild(i), ctx);
                 if (obj != null)
                     result.Add(obj);
             }
@@ -114,7 +114,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="tree">The tree node.</param>
         /// <param name="ctx">The current context.</param>
         /// <returns>The translated object, or null if it was untranslatable.</returns>
-        private static ZilObject ReadOneFromAST(ITree tree, Context ctx)
+        static ZilObject ReadOneFromAST(ITree tree, Context ctx)
         {
             Contract.Requires(tree != null);
             Contract.Requires(ctx != null);
@@ -161,14 +161,14 @@ namespace Zilf.Interpreter.Values
                     case ZilLexer.MACRO:
                     case ZilLexer.VMACRO:
                         // expand macros
-                        ZilObject inner = ReadOneFromAST(tree.GetChild(0), ctx);
+                        var inner = ReadOneFromAST(tree.GetChild(0), ctx);
                         if (inner == null)
                             return null;
                         try
                         {
                             using (DiagnosticContext.Push(inner.SourceLine))
                             {
-                                ZilObject result = inner.Eval(ctx);
+                                var result = inner.Eval(ctx);
                                 if (tree.Type == ZilLexer.MACRO)
                                     return result;
                                 else
@@ -187,12 +187,12 @@ namespace Zilf.Interpreter.Values
                         Contract.Assume(tree.Text.Length >= 2);
                         return ZilString.Parse(tree.Text);
                     default:
-                        throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), "tree");
+                        throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), nameof(tree));
                 }
             }
         }
 
-        private static int ParseNumber(string text)
+        static int ParseNumber(string text)
         {
             Contract.Requires(!string.IsNullOrEmpty(text));
 

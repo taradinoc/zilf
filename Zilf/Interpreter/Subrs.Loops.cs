@@ -156,7 +156,7 @@ namespace Zilf.Interpreter
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }
 
-        private static ZilObject PerformProg(Context ctx, ZilAtom activationAtom,
+        static ZilObject PerformProg(Context ctx, ZilAtom activationAtom,
             BindingParams.BindingList bindings, ZilDecl bodyDecl, ZilObject[] body,
             string name, bool repeat, bool catchy)
         {
@@ -167,7 +167,7 @@ namespace Zilf.Interpreter
             using (var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG)))
             {
                 // bind atoms
-                Queue<ZilAtom> boundAtoms = new Queue<ZilAtom>();
+                var boundAtoms = new Queue<ZilAtom>();
 
                 using (var innerEnv = ctx.PushEnvironment())
                 {

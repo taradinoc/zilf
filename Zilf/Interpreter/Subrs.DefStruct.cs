@@ -39,7 +39,7 @@ namespace Zilf.Interpreter
             return defaults;
         }
 
-        private struct DefStructDefaults
+        struct DefStructDefaults
         {
             public ZilAtom NthFunc, PutFunc, PrintFunc;
             public int StartOffset;
@@ -48,7 +48,7 @@ namespace Zilf.Interpreter
             public ZilList InitArgs;
         }
 
-        private struct DefStructField
+        struct DefStructField
         {
             public ZilAtom Name;
             public ZilAtom NthFunc, PutFunc;
@@ -58,11 +58,11 @@ namespace Zilf.Interpreter
             public bool NoDefault;
         }
 
-        private const string SDefstructDefaultsDecl =
+        const string SDefstructDefaultsDecl =
             @"<LIST ATOM [REST <OR ''NODECL ''NOTYPE ''PRINTTYPE ''CONSTRUCTOR
                                    <LIST ''NTH ATOM> <LIST ''PUT ATOM> <LIST ''START-OFFSET FIX>
                                    <LIST ''PRINTTYPE ATOM> <LIST ''CONSTRUCTOR> <LIST ''INIT-ARGS>>]>";
-        private const string SDefstructFieldSpecDecl =
+        const string SDefstructFieldSpecDecl =
             @"<LIST ATOM ANY [REST <OR FORM LIST ATOM FIX FALSE>]>";
 
         public static class DefStructParams
@@ -201,7 +201,7 @@ namespace Zilf.Interpreter
             {
                 NthFunc = ctx.GetStdAtom(StdAtom.NTH),
                 PutFunc = ctx.GetStdAtom(StdAtom.PUT),
-                StartOffset = 1,
+                StartOffset = 1
             };
 
             var fileDefaultList = ctx.GetProp(ctx.GetStdAtom(StdAtom.DEFSTRUCT), ctx.GetStdAtom(StdAtom.DEFAULT)) as ZilList;
@@ -351,8 +351,8 @@ namespace Zilf.Interpreter
                                 new ZilList(new ZilObject[]
                                 {
                                     dAtom,
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), printFuncAtom }),
-                                }),
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), printFuncAtom })
+                                })
                             },
                             null,
                             new ZilObject[]
@@ -361,13 +361,13 @@ namespace Zilf.Interpreter
                                 {
                                     ctx.GetStdAtom(StdAtom.PRINTTYPE),
                                     name,
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom }),
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom })
                                 }),
                                 new ZilForm(new ZilObject[]
                                 {
                                     ctx.GetStdAtom(StdAtom.APPLY),
                                     new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom }),
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), xAtom }),
+                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), xAtom })
                                 })
                             });
                     }
@@ -379,7 +379,7 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        private static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, DefStructDefaults defaults, List<DefStructField> fields)
+        static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, DefStructDefaults defaults, List<DefStructField> fields)
         {
             var parts = new List<ZilObject>(1 + fields.Count);
 
@@ -389,7 +389,7 @@ namespace Zilf.Interpreter
             return new ZilSegment(new ZilForm(parts));
         }
 
-        private static string MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
+        static string MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
             List<DefStructField> fields, string unparsedInitArgs, int startOffset, ArgSpec argspec)
         {
             Contract.Requires(typeName != null);
@@ -483,7 +483,7 @@ namespace Zilf.Interpreter
                 resultInitializers);
         }
 
-        private static string UnparsedDefaultForDecl(Context ctx, ZilObject decl)
+        static string UnparsedDefaultForDecl(Context ctx, ZilObject decl)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(decl != null);
@@ -506,7 +506,7 @@ namespace Zilf.Interpreter
             return "<>";
         }
 
-        private static IEnumerable<ZilObject> LikelyDefaults(Context ctx)
+        static IEnumerable<ZilObject> LikelyDefaults(Context ctx)
         {
             Contract.Requires(ctx != null);
 
@@ -518,7 +518,7 @@ namespace Zilf.Interpreter
             yield return ctx.GetStdAtom(StdAtom.SORRY);
         }
 
-        private static string MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
+        static string MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
             string unparsedInitArgs, int startOffset)
         {
             Contract.Requires(ctx != null);
@@ -667,7 +667,7 @@ namespace Zilf.Interpreter
                 existingObjectDefaults);
         }
 
-        private static string MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
+        static string MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
             DefStructField field)
         {
             Contract.Requires(structName != null);
@@ -718,18 +718,18 @@ namespace Zilf.Interpreter
                 field.Decl.ToStringContext(ctx, false));
         }
 
-        private static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset,
+        static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset,
             DefStructParams.FieldSpecList fieldSpec)
         {
             Contract.Requires(ctx != null);
 
-            var result = new DefStructField()
+            var result = new DefStructField
             {
                 Decl = fieldSpec.Decl,
                 Name = fieldSpec.Name,
                 NthFunc = defaults.NthFunc,
                 Offset = offset,
-                PutFunc = defaults.PutFunc,
+                PutFunc = defaults.PutFunc
             };
 
             bool gotDefault = false, gotOffset = false;
@@ -807,7 +807,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
-        private static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
+        static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(fileDefaults != null);
@@ -870,7 +870,7 @@ namespace Zilf.Interpreter
 
                         case StdAtom.START_OFFSET:
                             partList = partList.Rest;
-                            ZilFix fix = partList.First as ZilFix;
+                            var fix = partList.First as ZilFix;
                             if (fix == null)
                                 throw new InterpreterError(InterpreterMessages._0_STARTOFFSET_Must_Be_Followed_By_A_FIX, "DEFSTRUCT");
                             defaults.StartOffset = fix.Value;
@@ -900,7 +900,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static void ParseDefStructDefaults(Context ctx, DefStructParams.DefaultsList param, ref DefStructDefaults defaults)
+        static void ParseDefStructDefaults(Context ctx, DefStructParams.DefaultsList param, ref DefStructDefaults defaults)
         {
             Contract.Requires(ctx != null);
 

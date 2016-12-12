@@ -586,8 +586,8 @@ namespace Zapf.Parsing
 
     class AntlrBasedParser
     {
-        private readonly bool informMode;
-        private readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
+        readonly bool informMode;
+        readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
 
         public AntlrBasedParser(bool informMode, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
         {
@@ -605,7 +605,7 @@ namespace Zapf.Parsing
             else
                 lexer = new ZapLexer(charStream) { OpcodeDict = (System.Collections.IDictionary)opcodeDict };
 
-            ZapParser parser = new ZapParser(new CommonTokenStream(lexer));
+            var parser = new ZapParser(new CommonTokenStream(lexer));
             parser.InformMode = informMode;
 
             var fret = parser.file();
@@ -613,13 +613,13 @@ namespace Zapf.Parsing
             return new ParseResult()
             {
                 Lines = GetLines(fret.Tree, filename),
-                NumberOfSyntaxErrors = parser.NumberOfSyntaxErrors,
+                NumberOfSyntaxErrors = parser.NumberOfSyntaxErrors
             };
         }
 
-        private static IEnumerable<ITree> GetRootNodes(object root)
+        static IEnumerable<ITree> GetRootNodes(object root)
         {
-            ITree tree = (ITree)root;
+            var tree = (ITree)root;
 
             if (tree.Type == 0)
             {
@@ -632,13 +632,13 @@ namespace Zapf.Parsing
             }
         }
 
-        private static Instruction MakeInstruction(ITree node)
+        static Instruction MakeInstruction(ITree node)
         {
             var result = new Instruction(node.Text);
 
             for (int i = 0; i < node.ChildCount; i++)
             {
-                ITree child = node.GetChild(i);
+                var child = node.GetChild(i);
                 switch (child.Type)
                 {
                     case ZapParser.SLASH:
@@ -671,13 +671,13 @@ namespace Zapf.Parsing
             return result;
         }
 
-        private static BareSymbolLine MakeBareSymbolLine(ITree node)
+        static BareSymbolLine MakeBareSymbolLine(ITree node)
         {
             var result = new BareSymbolLine(node.Text);
 
             for (int i = 0; i < node.ChildCount; i++)
             {
-                ITree child = node.GetChild(i);
+                var child = node.GetChild(i);
                 switch (child.Type)
                 {
                     case ZapParser.SLASH:
@@ -698,7 +698,7 @@ namespace Zapf.Parsing
             return result;
         }
 
-        private static IEnumerable<AsmLine> GetLines(object root, string filename)
+        static IEnumerable<AsmLine> GetLines(object root, string filename)
         {
             foreach (var node in GetRootNodes(root))
             {
@@ -889,7 +889,7 @@ namespace Zapf.Parsing
             }
         }
 
-        private static AsmLine MakeObjectDirective(ITree node)
+        static AsmLine MakeObjectDirective(ITree node)
         {
             var result = new ObjectDirective();
 
@@ -921,7 +921,7 @@ namespace Zapf.Parsing
             return result;
         }
 
-        private static void ParseDataElements(DataDirective line, ITree node)
+        static void ParseDataElements(DataDirective line, ITree node)
         {
             var elements = line.Elements;
 
@@ -929,7 +929,7 @@ namespace Zapf.Parsing
                 elements.Add(ParseAsmExpr(node.GetChild(i)));
         }
 
-        private static AsmLine MakeFunctDirective(ITree node)
+        static AsmLine MakeFunctDirective(ITree node)
         {
             var result = new FunctDirective();
 
@@ -959,7 +959,7 @@ namespace Zapf.Parsing
             return result;
         }
 
-        private static AsmExpr ParseAsmExpr(ITree tree)
+        static AsmExpr ParseAsmExpr(ITree tree)
         {
             switch (tree.Type)
             {

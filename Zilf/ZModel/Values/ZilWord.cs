@@ -26,7 +26,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.WORD, PrimType.LIST)]
     sealed class ZilWord : ZilObject
     {
-        private readonly ZilObject value;
+        readonly ZilObject value;
 
         public ZilWord(ZilObject value)
         {

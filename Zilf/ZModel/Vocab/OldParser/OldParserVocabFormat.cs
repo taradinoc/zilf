@@ -31,9 +31,9 @@ namespace Zilf.ZModel.Vocab.OldParser
 {
     class OldParserVocabFormat : IVocabFormat
     {
-        private readonly Context ctx;
+        readonly Context ctx;
 
-        private byte nextPreposition = 255, nextAdjective = 255, nextBuzzword = 255, nextVerb = 255;
+        byte nextPreposition = 255, nextAdjective = 255, nextBuzzword = 255, nextVerb = 255;
 
         public OldParserVocabFormat(Context ctx)
         {
@@ -126,7 +126,7 @@ namespace Zilf.ZModel.Vocab.OldParser
 
             if ((result.PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
-                int index = ctx.ZEnvironment.Directions.IndexOf(result.Atom);
+                var index = ctx.ZEnvironment.Directions.IndexOf(result.Atom);
                 if (index == -1)
                     throw new ArgumentException("Not a direction");
 
@@ -255,7 +255,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.VERBS)).DefaultValue = verbsTable;
 
             // preposition table
-            bool compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
+            var compactVocab = ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
 
             // map all relevant preposition word builders to the preposition ID constants
             var query = from pair in helpers.Vocabulary

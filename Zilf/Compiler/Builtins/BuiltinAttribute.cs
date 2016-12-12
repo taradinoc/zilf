@@ -39,8 +39,8 @@ namespace Zilf.Compiler.Builtins
             Priority = 1;
         }
 
-        private readonly string name;
-        private readonly string[] aliases;
+        readonly string name;
+        readonly string[] aliases;
 
         public IEnumerable<string> Names
         {

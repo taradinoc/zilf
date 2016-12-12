@@ -8,18 +8,18 @@ namespace Zilf.Emit.Zap
 {
     public class GameBuilder : IGameBuilder
     {
-        private const string INDENT = "\t";
+        const string INDENT = "\t";
 
         internal static readonly NumericOperand ZERO = new NumericOperand(0);
         internal static readonly NumericOperand ONE = new NumericOperand(1);
         internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
 
         // TODO: share unicode translation table with Zapf
-        private static readonly Dictionary<char, byte> DefaultUnicodeMapping = MakeDefaultUnicodeMapping();
+        static readonly Dictionary<char, byte> DefaultUnicodeMapping = MakeDefaultUnicodeMapping();
 
         #region Default Unicode Mapping
 
-        private static Dictionary<char, byte> MakeDefaultUnicodeMapping()
+        static Dictionary<char, byte> MakeDefaultUnicodeMapping()
         {
             return new Dictionary<char, byte>(69)
             {
@@ -91,37 +91,37 @@ namespace Zilf.Emit.Zap
                 { 'œ', 220 },
                 { 'Œ', 221 },
                 { '¡', 222 },
-                { '¿', 223 },
+                { '¿', 223 }
             };
         }
 
         #endregion
 
         // all global names go in here
-        private readonly Dictionary<string, string> symbols = new Dictionary<string, string>(250);
+        readonly Dictionary<string, string> symbols = new Dictionary<string, string>(250);
 
-        private readonly List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
-        private readonly List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
-        private readonly Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
-        private readonly Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
-        private readonly Dictionary<string, IOperand> constants = new Dictionary<string, IOperand>(100);
-        private readonly List<GlobalBuilder> globals = new List<GlobalBuilder>(100);
-        private readonly List<TableBuilder> impureTables = new List<TableBuilder>(10);
-        private readonly List<TableBuilder> pureTables = new List<TableBuilder>(10);
-        private readonly List<WordBuilder> vocabulary = new List<WordBuilder>(100);
-        private readonly HashSet<char> siBreaks = new HashSet<char>();
-        private readonly Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
-        private readonly Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
+        readonly List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
+        readonly List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
+        readonly Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
+        readonly Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
+        readonly Dictionary<string, IOperand> constants = new Dictionary<string, IOperand>(100);
+        readonly List<GlobalBuilder> globals = new List<GlobalBuilder>(100);
+        readonly List<TableBuilder> impureTables = new List<TableBuilder>(10);
+        readonly List<TableBuilder> pureTables = new List<TableBuilder>(10);
+        readonly List<WordBuilder> vocabulary = new List<WordBuilder>(100);
+        readonly HashSet<char> siBreaks = new HashSet<char>();
+        readonly Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
+        readonly Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
 
-        private readonly IZapStreamFactory streamFactory;
+        readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder debug;
-        private readonly GameOptions options;
+        readonly GameOptions options;
 
-        private IRoutineBuilder entryRoutine;
+        IRoutineBuilder entryRoutine;
 
-        private Stream stream;
-        private TextWriter writer;
+        Stream stream;
+        TextWriter writer;
 
         public GameBuilder(int zversion, string outFile, bool wantDebugInfo, GameOptions options = null)
             : this(zversion, new ZapStreamFactory(outFile), wantDebugInfo, options)
@@ -131,9 +131,9 @@ namespace Zilf.Emit.Zap
         public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo, GameOptions options = null)
         {
             if (!IsSupportedZversion(zversion))
-                throw new ArgumentOutOfRangeException("zversion", "Unsupported Z-machine version");
+                throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
             if (streamFactory == null)
-                throw new ArgumentNullException("streamFactory");
+                throw new ArgumentNullException(nameof(streamFactory));
 
             this.zversion = zversion;
             this.streamFactory = streamFactory;
@@ -151,7 +151,7 @@ namespace Zilf.Emit.Zap
                 }
                 else
                 {
-                    throw new ArgumentException(SOptionsNotCompatible, "options");
+                    throw new ArgumentException(SOptionsNotCompatible, nameof(options));
                 }
             }
             else
@@ -167,7 +167,7 @@ namespace Zilf.Emit.Zap
             Begin();
         }
 
-        private static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
+        static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
         {
             switch (zversion)
             {
@@ -194,16 +194,16 @@ namespace Zilf.Emit.Zap
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException("zversion");
+                    throw new ArgumentOutOfRangeException(nameof(zversion));
             }
         }
 
-        private static bool IsSupportedZversion(int zversion)
+        static bool IsSupportedZversion(int zversion)
         {
             return zversion >= 1 && zversion <= 8;
         }
 
-        private void Begin()
+        void Begin()
         {
             if (zversion == 3)
             {
@@ -284,7 +284,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
         }
 
-        private static string ExpandChrSet(string alphabet)
+        static string ExpandChrSet(string alphabet)
         {
             var sb = new StringBuilder(100);
             if (alphabet == null)
@@ -323,7 +323,7 @@ namespace Zilf.Emit.Zap
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             constants.Add(name, value);
             symbols.Add(name, "constant");
@@ -337,7 +337,7 @@ namespace Zilf.Emit.Zap
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             GlobalBuilder gb = new GlobalBuilder(name);
             globals.Add(gb);
@@ -353,7 +353,7 @@ namespace Zilf.Emit.Zap
                 name = SanitizeSymbol(name);
 
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             TableBuilder tb = new TableBuilder(name);
             if (pure)
@@ -368,7 +368,7 @@ namespace Zilf.Emit.Zap
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
@@ -387,7 +387,7 @@ namespace Zilf.Emit.Zap
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             ObjectBuilder result = new ObjectBuilder(this, 1 + objects.Count, name);
             objects.Add(result);
@@ -399,7 +399,7 @@ namespace Zilf.Emit.Zap
         {
             name = "P?" + SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             int max = (zversion >= 4) ? 63 : 31;
             int num = max - props.Count;
@@ -414,7 +414,7 @@ namespace Zilf.Emit.Zap
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "name");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
             int max = (zversion >= 4) ? 47 : 31;
             int num = max - flags.Count;
@@ -429,7 +429,7 @@ namespace Zilf.Emit.Zap
         {
             string name = "W?" + SanitizeSymbol(word.ToUpper());
             if (symbols.ContainsKey(name))
-                throw new ArgumentException("Global symbol already defined: " + name, "word");
+                throw new ArgumentException("Global symbol already defined: " + name, nameof(word));
 
             WordBuilder result = new WordBuilder(name, word.ToLower());
             vocabulary.Add(result);
@@ -652,7 +652,7 @@ namespace Zilf.Emit.Zap
             stream = null;
         }
 
-        private void FinishSymbols()
+        void FinishSymbols()
         {
             writer.WriteLine();
 
@@ -715,8 +715,8 @@ namespace Zilf.Emit.Zap
             if (flags.Count > 0)
                 writer.WriteLine();
             foreach (var pair in from fp in flags
-                orderby fp.Value.Number
-                select fp)
+                                 orderby fp.Value.Number
+                                 select fp)
             {
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.Number);
                 writer.WriteLine(INDENT + "FX?{0}={1}",
@@ -728,20 +728,20 @@ namespace Zilf.Emit.Zap
             if (props.Count > 0)
                 writer.WriteLine();
             foreach (var pair in from pp in props
-                orderby pp.Value.Number
-                select pp)
+                                 orderby pp.Value.Number
+                                 select pp)
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.Number);
 
             // constants
             if (constants.Count > 0)
                 writer.WriteLine();
             foreach (var pair in from cp in constants
-                orderby cp.Key
-                select cp)
+                                 orderby cp.Key
+                                 select cp)
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value);
         }
 
-        private void FinishObjects()
+        void FinishObjects()
         {
             writer.WriteLine();
             writer.WriteLine("OBJECT:: .TABLE");
@@ -749,11 +749,11 @@ namespace Zilf.Emit.Zap
             // property defaults
             var propNums = Enumerable.Range(1, (zversion >= 4) ? 63 : 31);
             var propDefaults = from num in propNums
-                join p in this.props on num equals p.Value.Number into propGroup
-                from prop in propGroup.DefaultIfEmpty()
-                let name = prop.Key
-                let def = prop.Value == null ? null : prop.Value.DefaultValue
-                select new { num, name, def };
+                               join p in this.props on num equals p.Value.Number into propGroup
+                               from prop in propGroup.DefaultIfEmpty()
+                               let name = prop.Key
+                               let def = prop.Value == null ? null : prop.Value.DefaultValue
+                               select new { num, name, def };
 
             foreach (var row in propDefaults)
             {
@@ -792,7 +792,7 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        private void MoveGlobal(string name, int index)
+        void MoveGlobal(string name, int index)
         {
             int curIndex = globals.FindIndex(g => g.Name == name);
             if (curIndex >= 0 && curIndex != index)
@@ -803,7 +803,7 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        private void FinishGlobals()
+        void FinishGlobals()
         {
             writer.WriteLine();
             writer.WriteLine("GLOBAL:: .TABLE");
@@ -823,7 +823,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".ENDT");
         }
 
-        private void FinishImpureTables()
+        void FinishImpureTables()
         {
             // impure user tables
             foreach (TableBuilder tb in impureTables)
@@ -835,7 +835,7 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        private void FinishSyntax()
+        void FinishSyntax()
         {
             // vocabulary table
             writer.WriteLine();
@@ -880,7 +880,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".ENDT");
         }
 
-        private void FinishPureTables()
+        void FinishPureTables()
         {
             if (zversion >= 5)
             {
@@ -906,15 +906,15 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        private void FinishStrings()
+        void FinishStrings()
         {
             // strings
             if (stringPool.Count > 0)
                 writer.WriteLine();
 
             var query = from p in stringPool
-                orderby p.Key
-                select p;
+                        orderby p.Key
+                        select p;
 
             foreach (var pair in query)
                 writer.WriteLine(INDENT + ".GSTR {0},\"{1}\"", pair.Value, SanitizeString(pair.Key));

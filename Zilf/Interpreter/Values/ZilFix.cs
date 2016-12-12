@@ -26,7 +26,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FIX, PrimType.FIX)]
     class ZilFix : ZilObject, IApplicable
     {
-        private readonly int value;
+        readonly int value;
 
         public static readonly ZilFix Zero = new ZilFix(0);
 
@@ -69,7 +69,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilFix other = obj as ZilFix;
+            var other = obj as ZilFix;
             return other != null && other.value == this.value;
         }
 

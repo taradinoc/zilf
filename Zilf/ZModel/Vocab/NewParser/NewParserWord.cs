@@ -32,9 +32,9 @@ namespace Zilf.ZModel.Vocab.NewParser
 {
     class NewParserWord : IWord
     {
-        private readonly Context ctx;
-        private readonly ZilAtom atom;
-        private readonly ZilHash vword;
+        readonly Context ctx;
+        readonly ZilAtom atom;
+        readonly ZilHash vword;
 
         public NewParserWord(Context ctx, ZilAtom atom, ZilHash vword)
         {
@@ -52,7 +52,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             var form = new ZilForm(new ZilObject[]
             {
                 ctx.GetStdAtom(StdAtom.WORD_LEXICAL_WORD),
-                vword,
+                vword
             });
             var lexicalWord = form.Eval(ctx) as ZilString;
             if (lexicalWord == null)
@@ -76,7 +76,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         /* GetViaInner and SetViaInner disable DECL checking because user code may expect
          * property identifiers to be passed as FIXes instead of ATOMs. */
-        private ZilObject GetViaInner(StdAtom accessor)
+        ZilObject GetViaInner(StdAtom accessor)
         {
             var oldCheckDecls = ctx.CheckDecls;
             try
@@ -85,7 +85,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var form = new ZilForm(new ZilObject[]
                 {
                     ctx.GetStdAtom(accessor),
-                    vword,
+                    vword
                 });
 
                 return form.Eval(ctx);
@@ -96,7 +96,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        private void SetViaInner(StdAtom accessor, ZilObject value)
+        void SetViaInner(StdAtom accessor, ZilObject value)
         {
             var oldCheckDecls = ctx.CheckDecls;
             try
@@ -106,7 +106,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 {
                     ctx.GetStdAtom(accessor),
                     vword,
-                    value,
+                    value
                 });
 
                 form.Eval(ctx);

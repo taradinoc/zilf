@@ -51,7 +51,7 @@ namespace TestHelper
             Assert.AreEqual(expectedValue, actualValue);
         }
 
-        private static string ToSafeString(this char c)
+        static string ToSafeString(this char c)
         {
             if (Char.IsControl(c) || Char.IsWhiteSpace(c))
             {

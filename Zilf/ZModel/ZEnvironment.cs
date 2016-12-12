@@ -38,11 +38,11 @@ namespace Zilf.ZModel
     /// </summary>
     class ZEnvironment
     {
-        private readonly Context ctx;
-        private IVocabFormat vocabFormat;
+        readonly Context ctx;
+        IVocabFormat vocabFormat;
 
         public int ZVersion = 3;
-        public bool TimeStatusLine = false;
+        public bool TimeStatusLine;
         public ZilAtom EntryRoutineName;
 
         public readonly List<ZilRoutine> Routines = new List<ZilRoutine>();
@@ -73,12 +73,12 @@ namespace Zilf.ZModel
         /// </summary>
         public ZilAtom LowDirection;
 
-        public byte NextAction = 0;         // V? (intentions)
+        public byte NextAction;         // V? (intentions)
 
-        public int HeaderExtensionWords = 0;
+        public int HeaderExtensionWords;
 
-        private byte[] zcharCountCache;   // char -> # of Z-chars
-        private string charset0, charset1, charset2;
+        byte[] zcharCountCache;   // char -> # of Z-chars
+        string charset0, charset1, charset2;
 
         /// <summary>
         /// Compares a Z-machine version number against a range,
@@ -206,7 +206,7 @@ namespace Zilf.ZModel
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(this.Language != null);
         }
@@ -226,49 +226,49 @@ namespace Zilf.ZModel
 
         public IWord GetVocabPreposition(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakePreposition(result, location);
             return result;
         }
 
         public IWord GetVocabAdjective(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakeAdjective(result, location);
             return result;
         }
 
         public IWord GetVocabNoun(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             ctx.ZEnvironment.VocabFormat.MakeObject(result, location);
             return result;
         }
 
         public IWord GetVocabBuzzword(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakeBuzzword(result, location);
             return result;
         }
 
         public IWord GetVocabVerb(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakeVerb(result, location);
             return result;
         }
 
         public IWord GetVocabDirection(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakeDirection(result, location);
             return result;
         }
 
         public IWord GetVocabSyntaxPreposition(ZilAtom text, ISourceLine location)
         {
-            IWord result = GetVocab(text);
+            var result = GetVocab(text);
             VocabFormat.MakeSyntaxPreposition(result, location);
             return result;
         }
@@ -343,7 +343,7 @@ namespace Zilf.ZModel
             }
         }*/
 
-        private static IEnumerable<ZilAtom> ObjectNamesMentionedInProperty(ZilList prop)
+        static IEnumerable<ZilAtom> ObjectNamesMentionedInProperty(ZilList prop)
         {
             if (prop.First is ZilAtom && prop.Rest.First != null)
             {
@@ -366,7 +366,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private class ObjectOrderingEntry
+        class ObjectOrderingEntry
         {
             public readonly ZilAtom Name;
             public ZilModelObject Object;
@@ -462,7 +462,6 @@ namespace Zilf.ZModel
                                    select e);
                     break;
 
-                case ObjectOrdering.Default:
                 default:
                     // reverse mention order
                     order.AddRange(from e in objectsByName.Values
@@ -486,7 +485,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private static bool IsRoom(ZilModelObject obj)
+        static bool IsRoom(ZilModelObject obj)
         {
             if (obj == null)
                 return false;
@@ -501,7 +500,7 @@ namespace Zilf.ZModel
             return parent.StdAtom == StdAtom.ROOMS;
         }
 
-        private static bool IsLocalGlobal(ZilModelObject obj)
+        static bool IsLocalGlobal(ZilModelObject obj)
         {
             if (obj == null)
                 return false;
@@ -513,7 +512,7 @@ namespace Zilf.ZModel
             return parent.StdAtom == StdAtom.LOCAL_GLOBALS;
         }
 
-        private static ZilAtom GetObjectParentName(ZilModelObject obj)
+        static ZilAtom GetObjectParentName(ZilModelObject obj)
         {
             Contract.Requires(obj != null);
 
@@ -568,7 +567,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private void MakeZcharCountCache()
+        void MakeZcharCountCache()
         {
             Contract.Ensures(zcharCountCache != null);
 
@@ -600,7 +599,7 @@ namespace Zilf.ZModel
         /// </summary>
         /// <param name="word">The string that will be encoded.</param>
         /// <returns>The number of significant characters, between 0 and the length of the word (inclusive).</returns>
-        private int CountVocabZCharacters(string word)
+        int CountVocabZCharacters(string word)
         {
             Contract.Requires(word != null);
 
@@ -642,7 +641,7 @@ namespace Zilf.ZModel
             var groupedWords =
                 from pair in this.Vocabulary
                 orderby pair.Key.Text
-                let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLower(), resolution, noAbbrevs: true))
+                let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLower(), resolution, StringEncoderMode.NoAbbreviations))
                 group new { Atom = pair.Key, Word = pair.Value } by enc;
 
             foreach (var g in groupedWords)
@@ -667,9 +666,9 @@ namespace Zilf.ZModel
             }
         }
 
-        private struct EncodedWord : IEquatable<EncodedWord>
+        struct EncodedWord : IEquatable<EncodedWord>
         {
-            private readonly byte[] data;
+            readonly byte[] data;
 
             public EncodedWord(byte[] data)
             {
@@ -695,10 +694,7 @@ namespace Zilf.ZModel
 
             public override bool Equals(object obj)
             {
-                if (obj is EncodedWord)
-                    return Equals((EncodedWord)obj);
-                else
-                    return false;
+                return obj is EncodedWord && Equals((EncodedWord)obj);
             }
 
             public override int GetHashCode()
@@ -755,7 +751,7 @@ namespace Zilf.ZModel
 
             if (ctx.GetZVal(alias) != null)
             {
-                throw new ArgumentException("Alias is already defined", "alias");
+                throw new ArgumentException("Alias is already defined", nameof(alias));
             }
 
             ZilAtom original;

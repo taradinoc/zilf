@@ -27,7 +27,7 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler
 {
-    internal class CompileCtx
+    class CompileCtx
     {
         /// <summary>
         /// The ZIL context that resulted from loading the source code.
@@ -64,7 +64,7 @@ namespace Zilf.Compiler
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(Context != null);
             Contract.Invariant(Game != null);

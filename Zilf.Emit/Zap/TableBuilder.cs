@@ -5,16 +5,16 @@ namespace Zilf.Emit.Zap
 {
     class TableBuilder : ITableBuilder
     {
-        private readonly string name;
-        private readonly List<short> numericValues = new List<short>();
-        private readonly List<IOperand> operandValues = new List<IOperand>();
-        private readonly List<byte> types = new List<byte>();
-        private int size = 0;
+        readonly string name;
+        readonly List<short> numericValues = new List<short>();
+        readonly List<IOperand> operandValues = new List<IOperand>();
+        readonly List<byte> types = new List<byte>();
+        int size = 0;
 
-        private const byte T_NUM_BYTE = 0;
-        private const byte T_NUM_WORD = 1;
-        private const byte T_OP_BYTE = 2;
-        private const byte T_OP_WORD = 3;
+        const byte T_NUM_BYTE = 0;
+        const byte T_NUM_WORD = 1;
+        const byte T_OP_BYTE = 2;
+        const byte T_OP_WORD = 3;
 
         protected const string INDENT = "\t";
 

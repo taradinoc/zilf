@@ -69,15 +69,15 @@ W?MULE::
             AssertWord(buffer, zebraAddr + zwordLength, horseAddr);
         }
 
-        private static void AssertWord(byte[] buffer, int address, ushort expected)
+        static void AssertWord(byte[] buffer, int address, ushort expected)
         {
-            ushort actual = (ushort)((buffer[address] << 8) + buffer[address + 1]);
+            var actual = (ushort)((buffer[address] << 8) + buffer[address + 1]);
             Assert.AreEqual(expected, actual, "Data word differs at address {0}", address);
         }
 
-        private static void AssertZword(byte[] buffer, StringEncoder encoder, int zwordLength, int address, string expected)
+        static void AssertZword(byte[] buffer, StringEncoder encoder, int zwordLength, int address, string expected)
         {
-            var expectedBytes = encoder.Encode(expected, zwordLength * 3 / 2, true);
+            var expectedBytes = encoder.Encode(expected, zwordLength * 3 / 2, StringEncoderMode.NoAbbreviations);
             System.Diagnostics.Debug.Assert(expectedBytes.Length == zwordLength);
 
             for (int i = 0; i < zwordLength; i++)

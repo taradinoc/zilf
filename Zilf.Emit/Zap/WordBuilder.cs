@@ -2,7 +2,7 @@ namespace Zilf.Emit.Zap
 {
     class WordBuilder : TableBuilder, IWordBuilder
     {
-        private readonly string word;
+        readonly string word;
 
         public WordBuilder(string tableName, string word)
             : base(tableName)

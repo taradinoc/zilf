@@ -33,14 +33,14 @@ namespace ZilfTests.Interpreter
                 new ZilList(new ZilObject[] {
                     new ZilFix(5),
                     new ZilFix(6),
-                    new ZilFix(7),
+                    new ZilFix(7)
                 }));
 
             TestHelpers.EvalAndAssert("<MEMQ 5 '[3 4 5 6 7]>",
                 new ZilVector(new ZilObject[] {
                             new ZilFix(5),
                             new ZilFix(6),
-                            new ZilFix(7),
+                            new ZilFix(7)
                         }));
         }
 
@@ -51,14 +51,14 @@ namespace ZilfTests.Interpreter
                 new ZilList(new ZilObject[] {
                     new ZilList(new ZilObject[] { new ZilFix(5) }),
                     new ZilFix(6),
-                    new ZilFix(7),
+                    new ZilFix(7)
                 }));
 
             TestHelpers.EvalAndAssert("<MEMBER '(5) '[3 4 (5) 6 7]>",
                 new ZilVector(new ZilObject[] {
                             new ZilList(new ZilObject[] { new ZilFix(5) }),
                             new ZilFix(6),
-                            new ZilFix(7),
+                            new ZilFix(7)
                         }));
         }
 
@@ -69,7 +69,7 @@ namespace ZilfTests.Interpreter
                 new ZilList(new ZilObject[] {
                     new ZilFix(123),
                     new ZilFix(123),
-                    new ZilFix(123),
+                    new ZilFix(123)
                 }));
         }
 
@@ -80,7 +80,7 @@ namespace ZilfTests.Interpreter
                 new ZilVector(new ZilObject[] {
                     new ZilFix(123),
                     new ZilFix(123),
-                    new ZilFix(123),
+                    new ZilFix(123)
                 }));
         }
 
@@ -232,7 +232,7 @@ namespace ZilfTests.Interpreter
                 ZilHash.Parse(ctx, new ZilObject[]
                 {
                     ZilAtom.Parse("FOO", ctx),
-                    new ZilVector(ZilAtom.Parse("BAR", ctx), ctx.FALSE),
+                    new ZilVector(ZilAtom.Parse("BAR", ctx), ctx.FALSE)
                 }));
         }
 
@@ -272,8 +272,8 @@ namespace ZilfTests.Interpreter
                         {
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(3),
-                            new ZilFix(4),
-                        })),
+                            new ZilFix(4)
+                        }))
                 }));
         }
 

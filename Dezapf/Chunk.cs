@@ -50,7 +50,7 @@ namespace Dezapf
     {
         public byte[] Bytes { get; private set; }
 
-        private DataChunk(int pc, int length, byte[] data)
+        DataChunk(int pc, int length, byte[] data)
             : base(pc, length)
         {
             this.Bytes = data;
@@ -138,7 +138,7 @@ namespace Dezapf
     {
         public ushort[] Values { get; private set; }
 
-        private GlobalsChunk(int pc, ushort[] values)
+        GlobalsChunk(int pc, ushort[] values)
             : base(pc, values.Length * 2)
         {
             this.Values = values;

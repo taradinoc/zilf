@@ -126,8 +126,8 @@ namespace Dezapf
 
     abstract class ZapOutputStyle : OutputStyle
     {
-        private const string INDENT = "            ";
-        private const string INST_LABEL = "ZC${0:X5}:   ";
+        const string INDENT = "            ";
+        const string INST_LABEL = "ZC${0:X5}:   ";
 
         public override void FormatHeader(TextWriter writer, Context ctx, HeaderChunk hdrChunk)
         {
@@ -450,8 +450,8 @@ namespace Dezapf
     /// </summary>
     class InformStyle : OutputStyle
     {
-        private const string INDENT = "            ";
-        private const string INST_LABEL = ".zc_{0:x5};  ";
+        const string INDENT = "            ";
+        const string INST_LABEL = ".zc_{0:x5};  ";
 
         public override void FormatHeader(TextWriter writer, Context ctx, HeaderChunk hdrChunk)
         {
@@ -639,7 +639,7 @@ namespace Dezapf
             writer.WriteLine(';');
         }
 
-        private static string FormatVariable(ushort num)
+        static string FormatVariable(ushort num)
         {
             if (num == 0)
                 return "sp";

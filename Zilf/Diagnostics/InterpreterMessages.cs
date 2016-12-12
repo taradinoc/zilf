@@ -26,7 +26,7 @@ namespace Zilf.Diagnostics
     [MessageSet("MDL")]
     public abstract class InterpreterMessages
     {
-        private InterpreterMessages()
+        InterpreterMessages()
         {
         }
 

@@ -175,7 +175,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            int? length = st.GetLength(limit);
+            var length = st.GetLength(limit);
             if (length == null)
                 return ctx.FALSE;
             else
@@ -305,7 +305,7 @@ namespace Zilf.Interpreter
             });
         }
 
-        private static ZilObject PerformMember(Context ctx, ZilObject needle, IStructure haystack,
+        static ZilObject PerformMember(Context ctx, ZilObject needle, IStructure haystack,
             Func<ZilObject, ZilObject, bool> equality)
         {
             SubrContracts(ctx);
@@ -441,7 +441,7 @@ namespace Zilf.Interpreter
             return vector;
         }
 
-        private static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)
+        static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)
         {
             var output = new List<ZilObject>(vector.GetLength());
 

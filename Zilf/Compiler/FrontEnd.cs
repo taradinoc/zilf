@@ -51,7 +51,7 @@ namespace Zilf.Compiler
         public bool? Exists { get; set; }
     }
 
-    internal class ContextEventArgs : EventArgs
+    class ContextEventArgs : EventArgs
     {
         public ContextEventArgs(Context ctx)
         {
@@ -81,7 +81,7 @@ namespace Zilf.Compiler
 
         public IList<string> IncludePaths { get; private set; }
 
-        private Stream OpenFile(string path, bool writing)
+        Stream OpenFile(string path, bool writing)
         {
             var handler = this.OpeningFile;
             if (handler != null)
@@ -100,7 +100,7 @@ namespace Zilf.Compiler
                 writing ? FileAccess.Write : FileAccess.Read);
         }
 
-        private bool CheckFileExists(string path)
+        bool CheckFileExists(string path)
         {
             var handler = this.CheckingFilePresence;
             if (handler != null)
@@ -116,14 +116,14 @@ namespace Zilf.Compiler
             return File.Exists(path);
         }
 
-        private class ZapStreamFactory : IZapStreamFactory
+        class ZapStreamFactory : IZapStreamFactory
         {
-            private readonly FrontEnd owner;
-            private readonly string mainFile, fwordsFile, dataFile, stringFile;
+            readonly FrontEnd owner;
+            readonly string mainFile, fwordsFile, dataFile, stringFile;
 
-            private const string FrequentWordsSuffix = "_freq";
-            private const string DataSuffix = "_data";
-            private const string StringSuffix = "_str";
+            const string FrequentWordsSuffix = "_freq";
+            const string DataSuffix = "_data";
+            const string StringSuffix = "_str";
 
             public ZapStreamFactory(FrontEnd owner, string mainFile)
             {
@@ -202,7 +202,7 @@ namespace Zilf.Compiler
             #endregion
         }
 
-        private Context NewContext()
+        Context NewContext()
         {
             var result = new Context();
 
@@ -233,7 +233,7 @@ namespace Zilf.Compiler
             return InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
         }
 
-        private FrontEndResult InterpretOrCompile(Context ctx, string inputFileName, string outputFileName, bool wantCompile, bool wantDebugInfo)
+        FrontEndResult InterpretOrCompile(Context ctx, string inputFileName, string outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             var result = new FrontEndResult();
 
@@ -285,16 +285,16 @@ namespace Zilf.Compiler
             switch (zenv.ZVersion)
             {
                 case 3:
-                    return new Zilf.Emit.Zap.GameOptions.V3()
+                    return new Zilf.Emit.Zap.GameOptions.V3
                     {
                         TimeStatusLine = zenv.TimeStatusLine,
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
                     };
 
                 case 4:
-                    return new Zilf.Emit.Zap.GameOptions.V4()
+                    return new Zilf.Emit.Zap.GameOptions.V4
                     {
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P),
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
                     };
 
                 case 5:

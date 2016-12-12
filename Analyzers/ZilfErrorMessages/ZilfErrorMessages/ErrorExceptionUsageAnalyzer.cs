@@ -18,11 +18,11 @@ namespace ZilfErrorMessages
     {
         public const string DiagnosticId = "ZILF0001";
 
-        private const string Title = "Obsolete error format";
-        private const string MessageFormat = "This exception should use a diagnostic code instead";
-        private const string Category = "Error Reporting";
+        const string Title = "Obsolete error format";
+        const string MessageFormat = "This exception should use a diagnostic code instead";
+        const string Category = "Error Reporting";
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
 
@@ -31,7 +31,7 @@ namespace ZilfErrorMessages
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.ObjectCreationExpression);
         }
 
-        private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        static void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             var creationExpr = (ObjectCreationExpressionSyntax)context.Node;
 
@@ -111,7 +111,7 @@ namespace ZilfErrorMessages
             return false;
         }
 
-        private static bool TryExtractFormatAndArgs(
+        static bool TryExtractFormatAndArgs(
             ExpressionSyntax expressionToReplace, SemanticModel semanticModel,
             out string newMessageFormat, out IImmutableList<ExpressionSyntax> newMessageArgs)
         {
@@ -155,7 +155,7 @@ namespace ZilfErrorMessages
             return true;
         }
 
-        private static bool IsSpecialTypeMethod(ISymbol symbol, SpecialType specialType, string methodName)
+        static bool IsSpecialTypeMethod(ISymbol symbol, SpecialType specialType, string methodName)
         {
             return
                 symbol?.Kind == SymbolKind.Method &&
@@ -163,7 +163,7 @@ namespace ZilfErrorMessages
                 symbol.Name == methodName;
         }
 
-        private static bool TryUnpackCallToStringFormat(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        static bool TryUnpackCallToStringFormat(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
         {
             formatStr = null;
             formatArgs = null;
@@ -193,7 +193,7 @@ namespace ZilfErrorMessages
             return true;
         }
 
-        private static bool TryRewriteConcatAsFormatAndArgs(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        static bool TryRewriteConcatAsFormatAndArgs(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
         {
             formatStr = null;
             formatArgs = null;
@@ -230,7 +230,7 @@ namespace ZilfErrorMessages
             return true;
         }
 
-        private static IEnumerable<ExpressionSyntax> UnravelAddExpressions(ExpressionSyntax expr)
+        static IEnumerable<ExpressionSyntax> UnravelAddExpressions(ExpressionSyntax expr)
         {
             var binaryExpr = expr as BinaryExpressionSyntax;
 

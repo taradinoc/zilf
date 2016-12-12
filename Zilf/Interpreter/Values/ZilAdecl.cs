@@ -45,9 +45,9 @@ namespace Zilf.Interpreter.Values
         public ZilAdecl(ZilObject first, ZilObject second)
         {
             if (first == null)
-                throw new ArgumentNullException("first");
+                throw new ArgumentNullException(nameof(first));
             if (second == null)
-                throw new ArgumentNullException("second");
+                throw new ArgumentNullException(nameof(second));
 
             this.First = first;
             this.Second = second;
@@ -76,7 +76,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return First.ToString() + ":" + Second.ToString();
+                    return First + ":" + Second;
                 }
                 finally
                 {
@@ -187,7 +187,7 @@ namespace Zilf.Interpreter.Values
                         break;
 
                     default:
-                        throw new ArgumentOutOfRangeException("index", "writing past end of ADECL");
+                        throw new ArgumentOutOfRangeException(nameof(index), "writing past end of ADECL");
                 }
             }
         }

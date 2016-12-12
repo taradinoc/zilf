@@ -25,8 +25,8 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
     class ZilConstant : ZilObject
     {
-        private readonly ZilAtom name;
-        private readonly ZilObject value;
+        readonly ZilAtom name;
+        readonly ZilObject value;
 
         public ZilConstant(ZilAtom name, ZilObject value)
         {
@@ -61,7 +61,7 @@ namespace Zilf.ZModel.Values
 
         public override string ToString()
         {
-            return "#CONSTANT (" + name.ToString() + " " + value.ToString() + ")";
+            return "#CONSTANT (" + name + " " + value + ")";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

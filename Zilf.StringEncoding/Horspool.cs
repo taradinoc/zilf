@@ -27,8 +27,8 @@ namespace Zilf.StringEncoding
     /// <remarks>http://en.wikipedia.org/wiki/Boyer-Moore-Horspool_algorithm</remarks>
     public class Horspool
     {
-        private readonly string needle;
-        private readonly CharMap badCharSkip;
+        readonly string needle;
+        readonly CharMap badCharSkip;
 
         public Horspool(string needle)
         {
@@ -99,11 +99,11 @@ namespace Zilf.StringEncoding
             return -1;
         }
 
-        private class CharMap
+        class CharMap
         {
-            private readonly int[] small = new int[256];
-            private readonly int defaultValue;
-            private Dictionary<char, int> big;
+            readonly int[] small = new int[256];
+            readonly int defaultValue;
+            Dictionary<char, int> big;
 
             public CharMap(int defaultValue)
             {

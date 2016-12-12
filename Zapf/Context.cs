@@ -70,14 +70,14 @@ namespace Zapf
         public char? LanguageEscapeChar { get; private set; }
         public IDictionary<char, char> LanguageSpecialChars { get; private set; }
 
-        private Stream stream;
-        private Stream prevStream;
-        private int position;
-        private int globalVarCount, objectCount;
-        private Stack<string> fileStack;
+        Stream stream;
+        Stream prevStream;
+        int position;
+        int globalVarCount, objectCount;
+        Stack<string> fileStack;
         private int vocabStart, vocabRecSize, vocabKeySize;
 
-        private int reassemblyNodeIndex = -1, reassemblyPosition = -1, reassemblyAbbrevPos = 0;
+        private int reassemblyNodeIndex = -1, reassemblyPosition = -1, reassemblyAbbrevPos;
         private Symbol reassemblySymbol;
         private Dictionary<string, bool> reassemblyLabels;
 
@@ -173,15 +173,15 @@ namespace Zapf
 
         public void WriteZString(string str, bool withLength)
         {
-            WriteZString(str, withLength, false);
+            WriteZString(str, withLength, StringEncoderMode.Normal);
         }
 
-        public void WriteZString(string str, bool withLength, bool noAbbrevs)
+        public void WriteZString(string str, bool withLength, StringEncoderMode mode)
         {
             if (LanguageEscapeChar != null && str.IndexOf((char)LanguageEscapeChar) >= 0)
                 str = ProcessEscapeChars(str);
 
-            byte[] zstr = StringEncoder.Encode(str, noAbbrevs);
+            var zstr = StringEncoder.Encode(str, mode);
             if (FinalPass && AbbreviateMode)
                 AbbrevFinder.AddText(str);
 
@@ -230,7 +230,7 @@ namespace Zapf
 
         public void WriteZStringLength(string str)
         {
-            byte[] zstr = StringEncoder.Encode(str);
+            var zstr = StringEncoder.Encode(str);
             WriteByte((byte)(zstr.Length / 2));
         }
 
@@ -244,7 +244,7 @@ namespace Zapf
             if (LanguageEscapeChar != null && str.IndexOf((char)LanguageEscapeChar) >= 0)
                 str = ProcessEscapeChars(str);
             
-            byte[] zstr = StringEncoder.Encode(str, ZWordChars, true);
+            var zstr = StringEncoder.Encode(str, ZWordChars, StringEncoderMode.NoAbbreviations);
             position += zstr.Length;
 
             if (stream != null)
@@ -276,8 +276,8 @@ namespace Zapf
             if (InVocab)
             {
                 // restore stream
-                byte[] buffer = ((MemoryStream)stream).GetBuffer();
-                int bufLen = (int)stream.Length;
+                var buffer = ((MemoryStream)stream).GetBuffer();
+                var bufLen = (int)stream.Length;
 
                 stream = prevStream;
                 prevStream = null;
@@ -295,7 +295,7 @@ namespace Zapf
                 {
                     if (VocabCompare(buffer, i - 1, i) > 0)
                     {
-                        int home = VocabSearch(buffer, i - 1, i);
+                        var home = VocabSearch(buffer, i - 1, i);
                         Array.Copy(buffer, i * vocabRecSize, temp, 0, vocabRecSize);
                         Array.Copy(buffer, home * vocabRecSize, buffer, (home + 1) * vocabRecSize,
                             (i - home) * vocabRecSize);
@@ -380,7 +380,7 @@ namespace Zapf
             while (start <= end)
             {
                 int mid = (start + end) / 2;
-                int diff = VocabCompare(buffer, keyRec, mid);
+                var diff = VocabCompare(buffer, keyRec, mid);
                 if (diff == 0)
                     return mid;
                 else if (diff < 0)
@@ -610,7 +610,7 @@ namespace Zapf
                 LocalSymbols.Add(curLabel, new Symbol(curLabel, SymbolType.Label, position));
 
             // save labels as phantoms, wipe all other local symbols
-            Queue<string> goners = new Queue<string>();
+            var goners = new Queue<string>();
 
             foreach (Symbol i in LocalSymbols.Values)
             {

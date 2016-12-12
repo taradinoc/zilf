@@ -28,8 +28,8 @@ namespace Zilf.Interpreter
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
     class ObList : ZilObject
     {
-        private readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
-        private readonly bool ignoreCase;
+        readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
+        readonly bool ignoreCase;
 
         public ObList()
             : this(false)

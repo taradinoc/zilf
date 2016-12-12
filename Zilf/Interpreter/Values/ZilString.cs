@@ -49,7 +49,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(str != null);
             Contract.Requires(str.Length >= 2);
 
-            StringBuilder sb = new StringBuilder(str.Length - 2);
+            var sb = new StringBuilder(str.Length - 2);
 
             for (int i = 1; i < str.Length - 1; i++)
             {
@@ -79,7 +79,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            StringBuilder sb = new StringBuilder(text.Length + 2);
+            var sb = new StringBuilder(text.Length + 2);
             sb.Append('"');
 
             foreach (char c in text)
@@ -160,9 +160,9 @@ namespace Zilf.Interpreter.Values
         }
 
         [BuiltinAlternate(typeof(ZilString))]
-        private sealed class OriginalString : ZilString
+        sealed class OriginalString : ZilString
         {
-            private string text;
+            string text;
 
             public OriginalString(string text)
             {
@@ -220,7 +220,7 @@ namespace Zilf.Interpreter.Values
                 }
                 set
                 {
-                    ZilChar ch = value as ZilChar;
+                    var ch = value as ZilChar;
                     if (ch == null)
                         throw new InterpreterError(InterpreterMessages.Elements_Of_A_String_Must_Be_Characters);
                     if (index >= 0 && index < Text.Length)
@@ -253,10 +253,10 @@ namespace Zilf.Interpreter.Values
         }
 
         [BuiltinAlternate(typeof(ZilString))]
-        private class OffsetString : ZilString
+        class OffsetString : ZilString
         {
-            private readonly OriginalString orig;
-            private readonly int offset;
+            readonly OriginalString orig;
+            readonly int offset;
 
             public OffsetString(OriginalString orig, int offset)
             {
@@ -337,7 +337,7 @@ namespace Zilf.Interpreter.Values
                 }
                 set
                 {
-                    ZilChar ch = value as ZilChar;
+                    var ch = value as ZilChar;
                     if (ch == null)
                         throw new InterpreterError(InterpreterMessages.Elements_Of_A_String_Must_Be_Characters);
 
@@ -364,7 +364,7 @@ namespace Zilf.Interpreter.Values
 
             public override int? GetLength(int limit)
             {
-                int length = Math.Max(orig.Text.Length - offset, 0);
+                var length = Math.Max(orig.Text.Length - offset, 0);
                 if (length > limit)
                     return null;
                 else

@@ -36,7 +36,7 @@ namespace ZilFormat
 
     class ZilFormatter
     {
-        private enum Nesting
+        enum Nesting
         {
             TopLevel,
             Form,
@@ -44,7 +44,7 @@ namespace ZilFormat
             Vector,
         }
 
-        private readonly int maxWidth;
+        readonly int maxWidth;
 
         public ZilFormatter()
             : this(80)
@@ -151,7 +151,7 @@ namespace ZilFormat
             }
         }
 
-        private static bool NeedBreakBetween(int lastToken, int token, Stack<Nesting> nesting)
+        static bool NeedBreakBetween(int lastToken, int token, Stack<Nesting> nesting)
         {
             if (IsOpenBracket(token))
                 return false;
@@ -178,7 +178,7 @@ namespace ZilFormat
             return false;
         }
 
-        private static bool NeedSpaceBetween(int lastToken, int token)
+        static bool NeedSpaceBetween(int lastToken, int token)
         {
             if (lastToken == -1 || lastToken == ZilLexer.WS || token == ZilLexer.WS)
                 return false;
@@ -202,7 +202,7 @@ namespace ZilFormat
             return true;
         }
 
-        private static bool IsOpenBracket(int token)
+        static bool IsOpenBracket(int token)
         {
             switch (token)
             {
@@ -215,7 +215,7 @@ namespace ZilFormat
             }
         }
 
-        private static bool IsCloseBracket(int token)
+        static bool IsCloseBracket(int token)
         {
             switch (token)
             {
