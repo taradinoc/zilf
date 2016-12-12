@@ -46,7 +46,9 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
+#pragma warning disable RECS0106 // False alarm, ToString() is required here
             return "#DECL " + base.ToString();
+#pragma warning restore RECS0106
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
@@ -56,10 +58,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            if (originalType != null)
-                return ctx.ChangeType(this, originalType);
-            else
-                return this;
+            return originalType != null ? ctx.ChangeType(this, originalType) : this;
         }
 
         public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GetAtomDeclPairs()

@@ -26,14 +26,14 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
 {
-    internal class Operands : IDisposable
+    class Operands : IDisposable
     {
-        private readonly CompileCtx cc;
-        private readonly IOperand[] values;
-        private readonly bool[] temps;
-        private readonly ZilAtom tempAtom;
+        readonly CompileCtx cc;
+        readonly IOperand[] values;
+        readonly bool[] temps;
+        readonly ZilAtom tempAtom;
 
-        private Operands(CompileCtx cc, IOperand[] values, bool[] temps, ZilAtom tempAtom)
+        Operands(CompileCtx cc, IOperand[] values, bool[] temps, ZilAtom tempAtom)
         {
             Contract.Requires(cc != null);
             Contract.Requires(values != null);
@@ -60,7 +60,7 @@ namespace Zilf.Compiler
             int length = exprs.Length;
             IOperand[] values = new IOperand[length];
             bool[] temps = new bool[length];
-            ZilAtom tempAtom = ZilAtom.Parse("?TMP", cc.Context);
+            var tempAtom = ZilAtom.Parse("?TMP", cc.Context);
 
             // find the index of the last expr with side effects (or -1)
             int marker = -1;
@@ -88,7 +88,7 @@ namespace Zilf.Compiler
             {
                 bool needTemp = false;
 
-                IOperand value = Compiler.CompileConstant(cc, exprs[i]);
+                var value = Compiler.CompileConstant(cc, exprs[i]);
                 if (value == null)
                 {
                     // could still be a constant if it compiles to a constant operand
@@ -150,22 +150,22 @@ namespace Zilf.Compiler
             return new Operands(cc, values, temps, tempAtom);
         }
 
-        private static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
+        static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
         {
             Contract.Requires(exprs != null);
             Contract.Requires(exprs.Length > 0);
             Contract.Requires(localIdx >= 0);
             Contract.Requires(localIdx < exprs.Length);
 
-            ZilForm form = exprs[localIdx] as ZilForm;
+            var form = exprs[localIdx] as ZilForm;
             if (form == null)
                 throw new ArgumentException("not a FORM");
 
-            ZilAtom atom = form.First as ZilAtom;
+            var atom = form.First as ZilAtom;
             if (atom == null || (atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET))
                 throw new ArgumentException("not an LVAL/SET FORM");
 
-            ZilAtom localAtom = form.Rest.First as ZilAtom;
+            var localAtom = form.Rest.First as ZilAtom;
             if (localAtom == null)
                 throw new ArgumentException("LVAL/SET not followed by an atom");
 
@@ -176,15 +176,15 @@ namespace Zilf.Compiler
             return false;
         }
 
-        private static bool ModifiesLocal(ZilObject expr, ZilAtom localAtom)
+        static bool ModifiesLocal(ZilObject expr, ZilAtom localAtom)
         {
-            ZilList list = expr as ZilList;
+            var list = expr as ZilList;
             if (list == null)
                 return false;
 
             if (list is ZilForm)
             {
-                ZilAtom atom = list.First as ZilAtom;
+                var atom = list.First as ZilAtom;
                 if (atom != null &&
                     (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
                     list.Rest != null && list.Rest.First == localAtom)
@@ -200,7 +200,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        private static bool GlobalCouldBeLaterModified(CompileCtx cc, ZilObject[] exprs, int localIdx)
+        static bool GlobalCouldBeLaterModified(CompileCtx cc, ZilObject[] exprs, int localIdx)
         {
             Contract.Requires(cc != null);
             Contract.Requires(exprs != null);
@@ -208,15 +208,15 @@ namespace Zilf.Compiler
             Contract.Requires(localIdx >= 0);
             Contract.Requires(localIdx < exprs.Length);
 
-            ZilForm form = exprs[localIdx] as ZilForm;
+            var form = exprs[localIdx] as ZilForm;
             if (form == null)
                 throw new ArgumentException("not a FORM");
 
-            ZilAtom atom = form.First as ZilAtom;
+            var atom = form.First as ZilAtom;
             if (atom == null || (atom.StdAtom != StdAtom.GVAL && atom.StdAtom != StdAtom.SETG))
                 throw new ArgumentException("not a GVAL/SETG FORM");
 
-            ZilAtom globalAtom = form.Rest.First as ZilAtom;
+            var globalAtom = form.Rest.First as ZilAtom;
             if (globalAtom == null)
                 throw new ArgumentException("GVAL/SETG not followed by an atom");
 
@@ -227,19 +227,19 @@ namespace Zilf.Compiler
             return false;
         }
 
-        private static bool CouldModifyGlobal(CompileCtx cc, ZilObject expr, ZilAtom globalAtom)
+        static bool CouldModifyGlobal(CompileCtx cc, ZilObject expr, ZilAtom globalAtom)
         {
             Contract.Requires(cc != null);
             Contract.Requires(expr != null);
             Contract.Requires(globalAtom != null);
 
-            ZilList list = expr as ZilList;
+            var list = expr as ZilList;
             if (list == null)
                 return false;
 
             if (list is ZilForm)
             {
-                ZilAtom atom = list.First as ZilAtom;
+                var atom = list.First as ZilAtom;
                 if (atom != null &&
                     (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
                     list.Rest != null && list.Rest.First == globalAtom)
@@ -259,15 +259,15 @@ namespace Zilf.Compiler
             return false;
         }
 
-        private static bool IsVariableRef(ZilObject expr)
+        static bool IsVariableRef(ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            ZilForm form = expr as ZilForm;
+            var form = expr as ZilForm;
             if (form == null)
                 return false;
 
-            ZilAtom atom = form.First as ZilAtom;
+            var atom = form.First as ZilAtom;
             if (atom == null)
                 return false;
 
@@ -287,15 +287,15 @@ namespace Zilf.Compiler
             }
         }
 
-        private static bool IsLocalVariableRef(ZilObject expr)
+        static bool IsLocalVariableRef(ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            ZilForm form = expr as ZilForm;
+            var form = expr as ZilForm;
             if (form == null)
                 return false;
 
-            ZilAtom atom = form.First as ZilAtom;
+            var atom = form.First as ZilAtom;
             if (atom == null)
                 return false;
 
@@ -305,15 +305,15 @@ namespace Zilf.Compiler
             return atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET;
         }
 
-        private static bool IsGlobalVariableRef(ZilObject expr)
+        static bool IsGlobalVariableRef(ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            ZilForm form = expr as ZilForm;
+            var form = expr as ZilForm;
             if (form == null)
                 return false;
 
-            ZilAtom atom = form.First as ZilAtom;
+            var atom = form.First as ZilAtom;
             if (atom == null)
                 return false;
 

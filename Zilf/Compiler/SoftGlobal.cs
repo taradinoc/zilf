@@ -18,7 +18,7 @@
 
 namespace Zilf.Compiler
 {
-    internal sealed class SoftGlobal
+    sealed class SoftGlobal
     {
         /// <summary>
         /// True if the global is a word; false if it's a byte.

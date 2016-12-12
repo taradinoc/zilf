@@ -21,8 +21,8 @@ namespace Zilf.Language
 {
     sealed class FileSourceLine : ISourceLine
     {
-        private readonly string filename;
-        private readonly int line;
+        readonly string filename;
+        readonly int line;
 
         public FileSourceLine(string filename, int line)
         {

@@ -22,7 +22,7 @@ using System.Linq;
 
 namespace Zilf.Diagnostics
 {
-    internal static class ArgCountHelpers
+    static class ArgCountHelpers
     {
         public static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
             Func<T, T, bool> match, Func<T, T, T> combine)
@@ -55,7 +55,7 @@ namespace Zilf.Diagnostics
             }
         }
 
-        private static string EnglishJoin(IEnumerable<string> sequence, string conjunction)
+        static string EnglishJoin(IEnumerable<string> sequence, string conjunction)
         {
             Contract.Requires(sequence != null);
             Contract.Requires(conjunction != null);

@@ -28,10 +28,10 @@ namespace ZilfTests
     [TestClass]
     public class PathTests
     {
-        private class PathTestHelper
+        class PathTestHelper
         {
-            private readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
-            private readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
+            readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
+            readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
 
             public ICollection OutputFilePaths
             {
@@ -102,7 +102,7 @@ namespace ZilfTests
                 Path.Combine("src", "foo.zap"),
                 Path.Combine("src", "foo_data.zap"),
                 Path.Combine("src", "foo_freq.zap"),
-                Path.Combine("src", "foo_str.zap"),
+                Path.Combine("src", "foo_str.zap")
             };
 
             CollectionAssert.AreEquivalent(expected, helper.OutputFilePaths);

@@ -35,7 +35,7 @@ namespace Zilf.ZModel.Vocab
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(OriginalWord != null);
             Contract.Invariant(SynonymWord != null);

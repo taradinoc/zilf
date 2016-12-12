@@ -64,7 +64,7 @@ namespace Zilf.Interpreter.Values
             return new ZilForm(list.First, list.Rest);
         }
 
-        private string ToString(Func<ZilObject, string> convert)
+        string ToString(Func<ZilObject, string> convert)
         {
             if (Recursion.TryLock(this))
             {
@@ -78,11 +78,11 @@ namespace Zilf.Interpreter.Values
                         switch (((ZilAtom)First).StdAtom)
                         {
                             case StdAtom.GVAL:
-                                return "," + arg.ToString();
+                                return "," + arg;
                             case StdAtom.LVAL:
-                                return "." + arg.ToString();
+                                return "." + arg;
                             case StdAtom.QUOTE:
-                                return "'" + arg.ToString();
+                                return "'" + arg;
                         }
                     }
 
@@ -115,7 +115,7 @@ namespace Zilf.Interpreter.Values
             return ctx.GetStdAtom(StdAtom.FORM);
         }
 
-        private static ZilObject[] EmptyObjArray = new ZilObject[0];
+        static ZilObject[] EmptyObjArray = new ZilObject[0];
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
@@ -130,7 +130,7 @@ namespace Zilf.Interpreter.Values
             ZilObject target;
             if (First is ZilAtom)
             {
-                ZilAtom fa = (ZilAtom)First;
+                var fa = (ZilAtom)First;
                 target = ctx.GetGlobalVal(fa);
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
@@ -158,7 +158,7 @@ namespace Zilf.Interpreter.Values
 
             if (First is ZilAtom)
             {
-                ZilAtom fa = (ZilAtom)First;
+                var fa = (ZilAtom)First;
                 target = ctx.GetGlobalVal(fa);
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
@@ -173,10 +173,10 @@ namespace Zilf.Interpreter.Values
                 using (var frame = ctx.PushFrame(this))
                 using (DiagnosticContext.Push(this.SourceLine, frame))
                 {
-                    ZilObject result = ((ZilEvalMacro)target).Expand(ctx,
+                    var result = ((ZilEvalMacro)target).Expand(ctx,
                         Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
 
-                    ZilForm resultForm = result as ZilForm;
+                    var resultForm = result as ZilForm;
                     if (resultForm == null || resultForm == this)
                         return result;
 
@@ -211,12 +211,12 @@ namespace Zilf.Interpreter.Values
             return this;
         }
 
-        private static ZilForm DeepRewriteSourceInfo(ZilForm other, ISourceLine src)
+        static ZilForm DeepRewriteSourceInfo(ZilForm other, ISourceLine src)
         {
             return new ZilForm(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
         }
 
-        private static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
+        static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
             IEnumerable<ZilObject> contents, ISourceLine src)
         {
             foreach (var item in contents)

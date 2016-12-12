@@ -19,7 +19,7 @@ namespace Zilf.Language
 {
     sealed class StringSourceLine : ISourceLine
     {
-        private readonly string info;
+        readonly string info;
 
         public StringSourceLine(string info)
         {

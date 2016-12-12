@@ -24,9 +24,9 @@ using System.Threading.Tasks;
 
 namespace Zilf.Interpreter
 {
-    internal static class Recursion
+    static class Recursion
     {
-        private static readonly ConditionalWeakTable<object, object> table = new ConditionalWeakTable<object, object>();
+        static readonly ConditionalWeakTable<object, object> table = new ConditionalWeakTable<object, object>();
 
         public static bool TryLock(object obj)
         {

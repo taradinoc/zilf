@@ -259,14 +259,14 @@ namespace ZilfTests.Interpreter
                 new ZilForm(new ZilObject[] {
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
-                    new ZilFix(1),
+                    new ZilFix(1)
                 }),
-                new ZilFix(3),
+                new ZilFix(3)
             });
             var expected = new ZilList(new ZilObject[] {
                 new ZilFix(1),
                 new ZilFix(2),
-                new ZilFix(3),
+                new ZilFix(3)
             });
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), list);
             var actual = TestHelpers.Evaluate(ctx, "<EVAL .T>");
@@ -367,7 +367,7 @@ namespace ZilfTests.Interpreter
             }));
 
             var expectedItems = new ZilObject[] {
-                new ZilFix(3), new ZilFix(6), new ZilFix(9),
+                new ZilFix(3), new ZilFix(6), new ZilFix(9)
             };
 
             TestHelpers.EvalAndAssert(ctx, "<MAPR ,VECTOR <FUNCTION (L) <1 .L <* 3 <1 .L>>> FOO> .FOO>",

@@ -26,7 +26,7 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        private static ZilObject PerformArithmetic(int init, Func<int, int, int> op, int[] args)
+        static ZilObject PerformArithmetic(int init, Func<int, int, int> op, int[] args)
         {
             Contract.Requires(op != null);
             Contract.Requires(args != null);

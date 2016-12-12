@@ -25,24 +25,11 @@ namespace Zilf.Language
 {
     abstract class ZilError : Exception
     {
-        public ZilError(string message) : base(message) { }
-        public ZilError(string message, Exception innerException) : base(message, innerException) { }
+        protected ZilError(string message) : base(message) { }
+        protected ZilError(string message, Exception innerException) : base(message, innerException) { }
 
-        public abstract Diagnostic Diagnostic { get; }
-        public abstract ISourceLine SourceLine { get; }
-
-        [Obsolete("Use diagnostic codes instead.")]
-        public static string ArgCountMsg(string func, int min, int max, string argName = "arg")
-        {
-            if (min == max)
-                return string.Format("{0}: expected {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
-            else if (min == 0)
-                return string.Format("{0}: expected at most {1} {2}{3}", func, max, argName, max == 1 ? "" : "s");
-            else if (max == 0)
-                return string.Format("{0}: expected at least {1} {2}{3}", func, min, argName, min == 1 ? "" : "s");
-            else
-                return string.Format("{0}: expected {1} to {2} {3}s", func, min, max, argName);
-        }
+        public Diagnostic Diagnostic { get; protected set; }
+        public ISourceLine SourceLine { get; protected set; }
     }
 
     static class ZilErrorExtensions
@@ -61,31 +48,28 @@ namespace Zilf.Language
     abstract class ZilError<TMessageSet> : ZilError
         where TMessageSet : class
     {
-        public override Diagnostic Diagnostic { get; }
-        public override ISourceLine SourceLine { get; }
-
-        public ZilError(string message)
+        protected ZilError(string message)
             : base(message)
         {
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        public ZilError(string message, Exception innerException)
+        protected ZilError(string message, Exception innerException)
             : base(message, innerException)
         {
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        public ZilError(ISourceLine src, string message)
+        protected ZilError(ISourceLine src, string message)
             : base(message)
         {
             SourceLine = src ?? DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        public ZilError(Diagnostic diag)
+        protected ZilError(Diagnostic diag)
             : base(diag.ToString())
         {
             Diagnostic = diag;
@@ -98,12 +82,14 @@ namespace Zilf.Language
             {
                 if (SourceLine == null || SourceLine.SourceInfo == null)
                     return "";
-                else
-                    return SourceLine.SourceInfo + ": ";
+                return SourceLine.SourceInfo + ": ";
             }
         }
 
+#pragma warning disable RECS0108 // Warns about static fields in generic types
         protected static readonly IDiagnosticFactory DiagnosticFactory = DiagnosticFactory<TMessageSet>.Instance;
+#pragma warning restore RECS0108 // Warns about static fields in generic types
+
         protected const int LegacyErrorCode = 0;
 
         protected static Diagnostic MakeDiagnostic(ISourceLine sourceLine, int code, object[] messageArgs = null)
@@ -131,7 +117,7 @@ namespace Zilf.Language
                 MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        private static string MakeStackTrace(Frame errorFrame)
+        static string MakeStackTrace(Frame errorFrame)
         {
             if (errorFrame == null)
                 return null;

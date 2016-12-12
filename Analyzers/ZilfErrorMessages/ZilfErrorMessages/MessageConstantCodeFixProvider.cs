@@ -22,7 +22,7 @@ namespace ZilfErrorMessages
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MessageConstantCodeFixProvider)), Shared]
     public class MessageConstantCodeFixProvider : CodeFixProvider
     {
-        private const string title = "Move prefix to call sites";
+        const string title = "Move prefix to call sites";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -61,7 +61,7 @@ namespace ZilfErrorMessages
                 diagnostic);
         }
 
-        private class PendingReplacement
+        class PendingReplacement
         {
             public Document Document { get; }
             public SyntaxNode Old { get; }
@@ -75,7 +75,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static async Task<Solution> MoveMessagePrefixToCallSitesAsync(Document document,
+        static async Task<Solution> MoveMessagePrefixToCallSitesAsync(Document document,
             FieldDeclarationSyntax fieldDecl, CancellationToken cancellationToken)
         {
             // TODO: simplify this using SyntaxEditor?
@@ -104,7 +104,7 @@ namespace ZilfErrorMessages
             // get format string and split it into prefix + rest
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             root = await document.GetSyntaxRootAsync(cancellationToken);
-                var formatStr = (string)semanticModel.GetConstantValue(findFormatExpr(root), cancellationToken).Value;
+            var formatStr = (string)semanticModel.GetConstantValue(findFormatExpr(root), cancellationToken).Value;
             var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(formatStr);
             var prefix = match.Groups["prefix"].Value;
             var rest = match.Groups["rest"].Value;
@@ -187,7 +187,7 @@ namespace ZilfErrorMessages
             return solution;
         }
 
-        private static async Task<PendingReplacement> ReplacementCallSiteWithPrefixInsertedAsync(
+        static async Task<PendingReplacement> ReplacementCallSiteWithPrefixInsertedAsync(
             ReferenceLocation location, LiteralExpressionSyntax prefixSyntax, CancellationToken cancellationToken)
         {
             var root = await location.Document.GetSyntaxRootAsync(cancellationToken);

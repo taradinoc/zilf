@@ -103,14 +103,14 @@ namespace Zilf.ZModel.Values
         }
 
         [BuiltinAlternate(typeof(ZilTable))]
-        private sealed class OriginalTable : ZilTable
+        sealed class OriginalTable : ZilTable
         {
-            private TableFlags flags;
+            TableFlags flags;
 
-            private int repetitions;
-            private ZilObject[] initializer;
-            private ZilObject[] pattern;
-            private int[] elementToByteOffsets;
+            int repetitions;
+            ZilObject[] initializer;
+            ZilObject[] pattern;
+            int[] elementToByteOffsets;
 
             public OriginalTable(int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
             {
@@ -136,7 +136,7 @@ namespace Zilf.ZModel.Values
             }
 
             [ContractInvariantMethod]
-            private void ObjectInvariant()
+            void ObjectInvariant()
             {
                 Contract.Invariant(repetitions >= 0);
                 Contract.Invariant(repetitions > 0 || initializer == null);
@@ -144,9 +144,9 @@ namespace Zilf.ZModel.Values
             }
 
             [Pure]
-            private bool HasLengthPrefix => (flags & (TableFlags.ByteLength | TableFlags.WordLength)) != 0;
+            bool HasLengthPrefix => (flags & (TableFlags.ByteLength | TableFlags.WordLength)) != 0;
             [Pure]
-            private int ElementCountWithoutLength => initializer == null ? repetitions : repetitions * initializer.Length;
+            int ElementCountWithoutLength => initializer == null ? repetitions : repetitions * initializer.Length;
             [Pure]
             public override int ElementCount => ElementCountWithoutLength + (HasLengthPrefix ? 1 : 0);
 
@@ -196,7 +196,7 @@ namespace Zilf.ZModel.Values
 
             protected override string ToString(Func<ZilObject, string> convert)
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
 
                 sb.Append("#TABLE (");
                 sb.Append(repetitions);
@@ -252,13 +252,13 @@ namespace Zilf.ZModel.Values
             /// <param name="ctx">The context.</param>
             /// <param name="index">The element index, or -1 to check the length prefix.</param>
             /// <returns><b>true</b> if the element is a word, or <b>false</b> if it's a byte.</returns>
-            private bool IsWord(Context ctx, int index)
+            bool IsWord(Context ctx, int index)
             {
                 if (index == -1 && HasLengthPrefix)
                     return (flags & TableFlags.WordLength) != 0;
 
                 if (index < 0 || index >= ElementCountWithoutLength)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 if ((flags & TableFlags.Lexv) != 0)
                 {
@@ -303,7 +303,7 @@ namespace Zilf.ZModel.Values
                 return (flags & TableFlags.Byte) == 0;
             }
 
-            private void ExpandInitializer(ZilObject defaultValue)
+            void ExpandInitializer(ZilObject defaultValue)
             {
                 Contract.Requires(defaultValue != null);
                 Contract.Ensures(repetitions >= 0 && repetitions <= 1);
@@ -331,7 +331,7 @@ namespace Zilf.ZModel.Values
                 }
             }
 
-            private void ExpandPattern(Context ctx, int index, bool insert)
+            void ExpandPattern(Context ctx, int index, bool insert)
             {
                 if (pattern == null || pattern.Length <= index)
                 {
@@ -585,7 +585,7 @@ namespace Zilf.ZModel.Values
                 }
             }
 
-            private void ExpandLengthPrefix(Context ctx)
+            void ExpandLengthPrefix(Context ctx)
             {
                 if (!HasLengthPrefix)
                     return;
@@ -628,14 +628,14 @@ namespace Zilf.ZModel.Values
         }
 
         [BuiltinAlternate(typeof(ZilTable))]
-        private sealed class OffsetTable : ZilTable
+        sealed class OffsetTable : ZilTable
         {
-            private readonly Context ctx;
-            private readonly OriginalTable orig;
-            private readonly int byteOffset;
+            readonly Context ctx;
+            readonly OriginalTable orig;
+            readonly int byteOffset;
 
             // This may unexpectedly change when items in orig before byteOffset change from bytes to words!
-            private int ElementOffset => (int)orig.ByteOffsetToIndex(ctx, byteOffset);
+            int ElementOffset => (int)orig.ByteOffsetToIndex(ctx, byteOffset);
 
             public OffsetTable(Context ctx, OriginalTable orig, int byteOffset)
             {

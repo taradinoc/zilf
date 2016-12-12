@@ -27,9 +27,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ATOM, PrimType.ATOM)]
     class ZilAtom : ZilObject
     {
-        private readonly string text;
-        private ObList list;
-        private readonly StdAtom stdAtom;
+        readonly string text;
+        ObList list;
+        readonly StdAtom stdAtom;
 
         public ZilAtom(string text, ObList list, StdAtom stdAtom)
         {
@@ -77,9 +77,9 @@ namespace Zilf.Interpreter.Values
             get { return stdAtom; }
         }
 
-        private static string Unquote(string text)
+        static string Unquote(string text)
         {
-            StringBuilder sb = new StringBuilder(text);
+            var sb = new StringBuilder(text);
 
             for (int i = 0; i < sb.Length; i++)
                 if (sb[i] == '\\')
@@ -102,14 +102,14 @@ namespace Zilf.Interpreter.Values
 
             ObList list;
             ZilAtom result;
-            int idx = text.IndexOf("!-");
+            var idx = text.IndexOf("!-");
 
             text = Unquote(text);
 
             if (idx == -1)
             {
                 // look for it in <1 .OBLIST>, <2 .OBLIST>...
-                ZilObject pathspec = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
+                var pathspec = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
                 if (pathspec is IEnumerable<ZilObject>)
                 {
                     ObList insertList = null;
@@ -149,7 +149,7 @@ namespace Zilf.Interpreter.Values
             }
             else
             {
-                ZilAtom olname = Parse(text.Substring(idx + 2), ctx);
+                var olname = Parse(text.Substring(idx + 2), ctx);
                 list = ctx.GetProp(olname, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
                 if (list == null)
                 {
@@ -158,7 +158,7 @@ namespace Zilf.Interpreter.Values
                 }
             }
 
-            string pname = text.Substring(0, idx);
+            var pname = text.Substring(0, idx);
 
             if (list.Contains(pname))
                 return list[pname];
@@ -168,7 +168,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        private bool NeedsObListTrailer(IEnumerable<ZilObject> obListPath)
+        bool NeedsObListTrailer(IEnumerable<ZilObject> obListPath)
         {
             // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
             // thus, the trailer is only needed if (1) looking up that name returns a different atom first
@@ -183,7 +183,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(text.Length);
+            var sb = new StringBuilder(text.Length);
 
             foreach (char c in text)
             {

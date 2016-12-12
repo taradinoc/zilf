@@ -40,7 +40,7 @@ namespace Zilf.ZModel.Vocab
             public const byte Default = OnGround | InRoom | Carried | Held;
         }
 
-        private class CacheEntry
+        class CacheEntry
         {
             /// <summary>
             /// A map from scope flag names to their bit values.
@@ -59,7 +59,7 @@ namespace Zilf.ZModel.Vocab
             public byte DefaultFlags;
         }
 
-        private static ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
+        static ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
 
         public static byte Parse(ZilList list, Context ctx)
         {
@@ -178,7 +178,7 @@ namespace Zilf.ZModel.Vocab
             return result;
         }
 
-        private static byte GetSflagValue(Context ctx, StdAtom stdAtom)
+        static byte GetSflagValue(Context ctx, StdAtom stdAtom)
         {
             var atom = ctx.GetStdAtom(stdAtom);
             var gval = ctx.GetGlobalVal(atom);
@@ -195,7 +195,7 @@ namespace Zilf.ZModel.Vocab
             return (byte)fix.Value;
         }
 
-        private static void MakeAdditiveFlag(Context ctx, CacheEntry entry, string name, StdAtom valueAtom)
+        static void MakeAdditiveFlag(Context ctx, CacheEntry entry, string name, StdAtom valueAtom)
         {
             entry.Dict.Add(name, GetSflagValue(ctx, valueAtom));
             entry.Additive.Add(name);

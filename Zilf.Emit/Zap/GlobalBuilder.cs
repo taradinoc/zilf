@@ -2,8 +2,8 @@ namespace Zilf.Emit.Zap
 {
     class GlobalBuilder : IGlobalBuilder
     {
-        private readonly string name;
-        private IOperand defaultValue;
+        readonly string name;
+        IOperand defaultValue;
 
         public GlobalBuilder(string name)
         {

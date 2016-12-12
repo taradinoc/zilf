@@ -18,7 +18,7 @@
 
 namespace Zilf.Compiler.Builtins
 {
-    internal enum BuiltinArgType
+    enum BuiltinArgType
     {
         /// <summary>
         /// An IOperand or other value ready to pass into the spec method.

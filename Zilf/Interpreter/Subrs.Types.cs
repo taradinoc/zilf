@@ -45,7 +45,7 @@ namespace Zilf.Interpreter
             return types.FirstOrDefault(a => a == type) ?? ctx.FALSE;
         }
 
-        private static StdAtom PrimTypeToType(PrimType pt)
+        static StdAtom PrimTypeToType(PrimType pt)
         {
             switch (pt)
             {
@@ -164,7 +164,7 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetApplyType(a, h));
         }
 
-        private static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject handler,
+        static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject handler,
             string name,
             Func<Context, ZilAtom, ZilObject> getter,
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
@@ -331,7 +331,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             foreach (ZilObject arg in args)
             {
@@ -381,7 +381,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            ZilChar ch = arg as ZilChar;
+            var ch = arg as ZilChar;
             if (ch != null)
                 return new ZilFix(ch.Char);
 

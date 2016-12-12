@@ -22,7 +22,7 @@ namespace Zilf.Language
     [AttributeUsage(AttributeTargets.Field)]
     class AtomAttribute : Attribute
     {
-        private readonly string name;
+        readonly string name;
 
         public AtomAttribute(string name)
         {

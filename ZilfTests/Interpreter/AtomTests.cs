@@ -101,7 +101,7 @@ namespace ZilfTests.Interpreter
                 new ZilList(new ZilObject[] {
                     new ZilFix(1),
                     ZilAtom.Parse("FOO", ctx),
-                    new ZilVector(new ZilFix(3)),
+                    new ZilVector(new ZilFix(3))
                 }));
 
             // must have 1-3 arguments
@@ -581,7 +581,7 @@ namespace ZilfTests.Interpreter
                 new ZilForm(new ZilObject[] {
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx) }),
+                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx) })
                 }));
 
             // can't replace existing link or atom

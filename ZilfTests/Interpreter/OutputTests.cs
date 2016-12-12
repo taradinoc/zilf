@@ -27,7 +27,7 @@ namespace ZilfTests.Interpreter
     [TestClass]
     public class OutputTests
     {
-        private static ZilStringChannel MakeTestChannel(Context ctx)
+        static ZilStringChannel MakeTestChannel(Context ctx)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);

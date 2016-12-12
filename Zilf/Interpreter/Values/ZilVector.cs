@@ -29,9 +29,9 @@ namespace Zilf.Interpreter.Values
     {
         #region Storage
 
-        private class VectorStorage
+        class VectorStorage
         {
-            private ZilObject[] items;
+            ZilObject[] items;
 
             public VectorStorage()
                 : this(new ZilObject[0])
@@ -48,7 +48,7 @@ namespace Zilf.Interpreter.Values
             }
 
             [ContractInvariantMethod]
-            private void ObjectInvariant()
+            void ObjectInvariant()
             {
                 Contract.Invariant(items != null);
                 Contract.Invariant(BaseOffset >= 0);
@@ -93,7 +93,7 @@ namespace Zilf.Interpreter.Values
             {
                 Contract.Requires(end >= 0);
                 Contract.Requires(beginning >= 0);
-                
+
                 if (end > 0 || beginning > 0)
                 {
                     var newItems = new ZilObject[items.Length + end + beginning];
@@ -117,8 +117,8 @@ namespace Zilf.Interpreter.Values
 
         #endregion
 
-        private readonly VectorStorage storage;
-        private readonly int offset;
+        readonly VectorStorage storage;
+        readonly int offset;
 
         public ZilVector()
         {
@@ -133,7 +133,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(other != null);
         }
 
-        private ZilVector(VectorStorage storage, int offset)
+        ZilVector(VectorStorage storage, int offset)
         {
             Contract.Requires(storage != null);
 
@@ -151,7 +151,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilVector other = obj as ZilVector;
+            var other = obj as ZilVector;
             if (other == null)
                 return false;
 
@@ -160,7 +160,7 @@ namespace Zilf.Interpreter.Values
 
         public override int GetHashCode()
         {
-            int result = (int)StdAtom.VECTOR;
+            var result = (int)StdAtom.VECTOR;
             foreach (ZilObject obj in this)
                 result = result * 31 + obj.GetHashCode();
             return result;

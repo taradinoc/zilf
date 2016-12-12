@@ -34,7 +34,7 @@ namespace Zilf.Interpreter
         public ISourceLine SourceLine { get; }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(Context != null);
             Contract.Invariant(SourceLine != null);

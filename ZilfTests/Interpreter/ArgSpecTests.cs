@@ -38,7 +38,7 @@ namespace ZilfTests.Interpreter
                 new ZilObject[]
                 {
                     ZilString.FromString("NAME"),
-                    ZilAtom.Parse("ACT", ctx),
+                    ZilAtom.Parse("ACT", ctx)
                 },
                 spec.AsZilListBody().ToArray());
         }
@@ -54,7 +54,7 @@ namespace ZilfTests.Interpreter
                 new ZilObject[]
                 {
                     ZilString.FromString("ARGS"),
-                    ZilAtom.Parse("A", ctx),
+                    ZilAtom.Parse("A", ctx)
                 },
                 spec.AsZilListBody().ToArray());
         }
@@ -70,7 +70,7 @@ namespace ZilfTests.Interpreter
                 new ZilObject[]
                 {
                     ZilString.FromString("TUPLE"),
-                    ZilAtom.Parse("A", ctx),
+                    ZilAtom.Parse("A", ctx)
                 },
                 spec.AsZilListBody().ToArray());
         }
@@ -85,7 +85,7 @@ namespace ZilfTests.Interpreter
                 ZilString.FromString("ARGS"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
-                    ctx.GetStdAtom(StdAtom.LIST)),
+                    ctx.GetStdAtom(StdAtom.LIST))
             });
 
             var spec2 = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
@@ -93,7 +93,7 @@ namespace ZilfTests.Interpreter
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
-                    ctx.GetStdAtom(StdAtom.LIST)),
+                    ctx.GetStdAtom(StdAtom.LIST))
             });
         }
 
@@ -110,13 +110,13 @@ namespace ZilfTests.Interpreter
                 new ZilAdecl(
                     new ZilForm(new ZilObject[] {
                         ctx.GetStdAtom(StdAtom.QUOTE),
-                        ZilAtom.Parse("A2", ctx),
+                        ZilAtom.Parse("A2", ctx)
                     }),
                     ctx.GetStdAtom(StdAtom.FORM)),
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A3", ctx),
-                    ctx.GetStdAtom(StdAtom.LIST)),
+                    ctx.GetStdAtom(StdAtom.LIST))
             });
 
             CollectionAssert.AreEqual(
@@ -127,13 +127,13 @@ namespace ZilfTests.Interpreter
                     new ZilAdecl(
                         new ZilForm(new ZilObject[] {
                             ctx.GetStdAtom(StdAtom.QUOTE),
-                            ZilAtom.Parse("A2", ctx),
+                            ZilAtom.Parse("A2", ctx)
                         }),
                         ctx.GetStdAtom(StdAtom.FORM)),
                     ZilString.FromString("TUPLE"),
                     new ZilAdecl(
                         ZilAtom.Parse("A3", ctx),
-                        ctx.GetStdAtom(StdAtom.LIST)),
+                        ctx.GetStdAtom(StdAtom.LIST))
                 },
                 spec.AsZilListBody().ToArray());
         }
@@ -155,8 +155,8 @@ namespace ZilfTests.Interpreter
                 {
                     ctx.GetStdAtom(StdAtom.OR),
                     ctx.GetStdAtom(StdAtom.FIX),
-                    ctx.GetStdAtom(StdAtom.FALSE),
-                }),
+                    ctx.GetStdAtom(StdAtom.FALSE)
+                })
             });
 
             CollectionAssert.AreEqual(
@@ -171,8 +171,8 @@ namespace ZilfTests.Interpreter
                     {
                         ctx.GetStdAtom(StdAtom.OR),
                         ctx.GetStdAtom(StdAtom.FIX),
-                        ctx.GetStdAtom(StdAtom.FALSE),
-                    }),
+                        ctx.GetStdAtom(StdAtom.FALSE)
+                    })
                 },
                 spec.AsZilListBody().ToArray());
         }

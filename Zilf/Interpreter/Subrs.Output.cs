@@ -182,7 +182,7 @@ namespace Zilf.Interpreter
             return ch;
         }
 
-        private static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
+        static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
 
         [Subr]
         public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
@@ -195,7 +195,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        private static string ConvertPath(string retroPath)
+        static string ConvertPath(string retroPath)
         {
             Contract.Requires(retroPath != null);
 
@@ -253,7 +253,7 @@ namespace Zilf.Interpreter
                 reading = false;
                 if (buffer.Length < maxLength)
                 {
-                    char? c = channel.ReadChar();
+                    var c = channel.ReadChar();
                     if (c != null &&
                         (stopChars == null || stopChars.Text.IndexOf(c.Value) < 0))
                     {

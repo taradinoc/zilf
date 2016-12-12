@@ -35,7 +35,7 @@ namespace DezapfTests
             //
         }
 
-        private TestContext testContextInstance;
+        TestContext testContextInstance;
 
         /// <summary>
         ///Gets or sets the test context which provides
@@ -75,7 +75,7 @@ namespace DezapfTests
         //
         #endregion
 
-        private static int RunZapf(string code, out byte[] zcode)
+        static int RunZapf(string code, out byte[] zcode)
         {
             string inputFile = Path.GetTempFileName();
             string outputFile = Path.GetTempFileName();
@@ -96,7 +96,7 @@ namespace DezapfTests
             }
         }
 
-        private static int RunDezapf(byte[] zcode, out string code)
+        static int RunDezapf(byte[] zcode, out string code)
         {
             string inputFile = Path.GetTempFileName();
             TextWriter oldOut = Console.Out;
@@ -130,7 +130,7 @@ namespace DezapfTests
             TestRoundTrip(Resources.hello_z3);
         }*/
 
-        private void TestRoundTrip(byte[] zcode)
+        void TestRoundTrip(byte[] zcode)
         {
             Assert.Inconclusive("DeZapf is not ready for end-to-end testing");
 

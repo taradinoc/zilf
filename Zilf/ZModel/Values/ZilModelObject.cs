@@ -30,9 +30,9 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
     class ZilModelObject : ZilObject
     {
-        private readonly ZilAtom name;
-        private readonly ZilList[] props;
-        private readonly bool isRoom;
+        readonly ZilAtom name;
+        readonly ZilList[] props;
+        readonly bool isRoom;
 
         public ZilModelObject(ZilAtom name, ZilList[] props, bool isRoom)
         {
@@ -84,12 +84,12 @@ namespace Zilf.ZModel.Values
             return ToString(zo => zo.ToStringContext(ctx, friendly));
         }
 
-        private string ToString(Func<ZilObject, string> convert)
+        string ToString(Func<ZilObject, string> convert)
         {
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            StringBuilder sb = new StringBuilder("#OBJECT (");
+            var sb = new StringBuilder("#OBJECT (");
             sb.Append(convert(name));
 
             foreach (ZilList p in props)

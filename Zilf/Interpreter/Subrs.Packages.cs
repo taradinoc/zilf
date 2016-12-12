@@ -204,7 +204,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
+        static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
         {
             SubrContracts(ctx);
 

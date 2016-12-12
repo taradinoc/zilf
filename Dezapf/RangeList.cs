@@ -67,7 +67,7 @@ namespace Dezapf
             }
         }
 
-        private readonly List<Range> list;
+        readonly List<Range> list;
 
         public RangeList()
         {

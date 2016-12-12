@@ -26,7 +26,7 @@ using Zilf.ZModel;
 
 namespace Zilf.Compiler.Builtins
 {
-    internal class BuiltinSpec
+    class BuiltinSpec
     {
         public readonly int MinArgs;
         public readonly int? MaxArgs;

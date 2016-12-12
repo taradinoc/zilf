@@ -29,17 +29,17 @@ namespace Zilf.ZModel.Vocab.OldParser
 {
     class OldParserWord : IWord
     {
-        private readonly ZilAtom atom;
+        readonly ZilAtom atom;
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;
 
-        private readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
-        private readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
+        readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
+        readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
         public OldParserWord(ZilAtom atom)
         {
             if (atom == null)
-                throw new ArgumentNullException("atom");
+                throw new ArgumentNullException(nameof(atom));
 
             this.atom = atom;
         }
@@ -51,7 +51,7 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.Append('"');
             sb.Append(Atom.ToString());
             sb.Append("\"");
@@ -105,13 +105,13 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        private bool IsNewVoc(Context ctx)
+        bool IsNewVoc(Context ctx)
         {
             Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
         }
 
-        private bool IsCompactVocab(Context ctx)
+        bool IsCompactVocab(Context ctx)
         {
             Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
@@ -122,7 +122,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>true if the new part of speech should set the First flag.</returns>
-        private bool ShouldSetFirst(Context ctx)
+        bool ShouldSetFirst(Context ctx)
         {
             Contract.Requires(ctx != null);
 
@@ -161,11 +161,11 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// two, and <see cref="PartOfSpeech.Preposition"/> and
         /// <see cref="PartOfSpeech.Buzzword"/> also don't count toward it.
         /// </remarks>
-        private void CheckTooMany(Context ctx)
+        void CheckTooMany(Context ctx)
         {
             Contract.Requires(ctx != null);
 
-            byte b = (byte)(PartOfSpeech & ~PartOfSpeech.FirstMask);
+            var b = (byte)(PartOfSpeech & ~PartOfSpeech.FirstMask);
             byte count = 0;
 
             while (b != 0)
@@ -177,8 +177,8 @@ namespace Zilf.ZModel.Vocab.OldParser
             bool freeObject = false, freeAdjective = false, freePrep = false, freeBuzz = false;
 
             // when ,NEW-VOC? or ,COMPACT-VOCABULARY? are true, Object is free
-            bool newVoc = IsNewVoc(ctx);
-            bool compactVocab = IsCompactVocab(ctx);
+            var newVoc = IsNewVoc(ctx);
+            var compactVocab = IsCompactVocab(ctx);
             if ((PartOfSpeech & PartOfSpeech.Object) != 0)
             {
                 if (newVoc || compactVocab)
@@ -231,7 +231,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                     new { part = PartOfSpeech.Buzzword, free = freeBuzz },
                     new { part = PartOfSpeech.Preposition, free = freePrep },
                     new { part = PartOfSpeech.Verb, free = false },
-                    new { part = PartOfSpeech.Direction, free = false },
+                    new { part = PartOfSpeech.Direction, free = false }
                 };
 
                 foreach (var trim in partsToTrim)
@@ -254,7 +254,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        private string ListDefinitionLocations()
+        string ListDefinitionLocations()
         {
             var sb = new StringBuilder();
 
@@ -371,7 +371,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        private void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
+        void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & part) == 0);

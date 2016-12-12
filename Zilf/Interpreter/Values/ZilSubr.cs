@@ -96,7 +96,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilSubr other = obj as ZilSubr;
+            var other = obj as ZilSubr;
 
             return
                 other != null &&

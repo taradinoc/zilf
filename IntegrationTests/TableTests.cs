@@ -23,7 +23,7 @@ namespace IntegrationTests
     [TestClass]
     public class TableTests
     {
-        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));

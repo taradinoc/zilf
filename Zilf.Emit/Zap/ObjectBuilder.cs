@@ -6,9 +6,9 @@ namespace Zilf.Emit.Zap
 {
     class ObjectBuilder : IObjectBuilder
     {
-        private const string INDENT = "\t";
+        const string INDENT = "\t";
 
-        private struct PropertyEntry
+        struct PropertyEntry
         {
             public const byte BYTE = 0;
             public const byte WORD = 1;
@@ -27,13 +27,13 @@ namespace Zilf.Emit.Zap
         }
 
         private readonly GameBuilder game;
-        private readonly int number;
-        private readonly string name;
-        private readonly List<PropertyEntry> props = new List<PropertyEntry>();
-        private readonly List<FlagBuilder> flags = new List<FlagBuilder>();
+        readonly int number;
+        readonly string name;
+        readonly List<PropertyEntry> props = new List<PropertyEntry>();
+        readonly List<FlagBuilder> flags = new List<FlagBuilder>();
 
-        private string descriptiveName = "";
-        private IObjectBuilder parent, child, sibling;
+        string descriptiveName = "";
+        IObjectBuilder parent, child, sibling;
 
         public ObjectBuilder(GameBuilder game, int number, string name)
         {
@@ -91,7 +91,7 @@ namespace Zilf.Emit.Zap
             get { return GetFlagsString(32); }
         }
 
-        private string GetFlagsString(int start)
+        string GetFlagsString(int start)
         {
             StringBuilder sb = new StringBuilder();
 

@@ -230,7 +230,7 @@ namespace IntegrationTests
 
     sealed class ExprAssertionHelper : AbstractAssertionHelper<ExprAssertionHelper>
     {
-        private readonly string expression;
+        readonly string expression;
 
         public ExprAssertionHelper(string expression)
         {
@@ -247,10 +247,10 @@ namespace IntegrationTests
 
     sealed class RoutineAssertionHelper : AbstractAssertionHelper<RoutineAssertionHelper>
     {
-        private readonly string argSpec, body;
-        private string arguments = "";
+        readonly string argSpec, body;
+        string arguments = "";
 
-        private const string RoutineName = "TEST?ROUTINE";
+        const string RoutineName = "TEST?ROUTINE";
 
         public RoutineAssertionHelper(string argSpec, string body)
         {

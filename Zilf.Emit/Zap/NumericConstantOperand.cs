@@ -2,8 +2,8 @@
 {
     class NumericConstantOperand : INumericOperand
     {
-        private readonly string literal;
-        private readonly int value;
+        readonly string literal;
+        readonly int value;
 
         public NumericConstantOperand(string literal, int value)
         {

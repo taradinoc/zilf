@@ -36,8 +36,8 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ASOC, PrimType.LIST)]
     class ZilAsoc : ZilObject
     {
-        private readonly AsocResult[] results;
-        private readonly int index;
+        readonly AsocResult[] results;
+        readonly int index;
 
         public ZilAsoc(AsocResult[] results, int index)
         {

@@ -37,10 +37,10 @@ namespace IntegrationTests
 
     class ReplayIO : TestCaseIO, IZMachineIO
     {
-        private readonly Stream inputStream;
-        private readonly bool wantStatusLine;
+        readonly Stream inputStream;
+        readonly bool wantStatusLine;
 
-        private MemoryStream saveStream;
+        MemoryStream saveStream;
 
         public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
         {

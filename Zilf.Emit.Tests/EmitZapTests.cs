@@ -25,8 +25,8 @@ namespace Zilf.Emit.Tests
     [TestClass]
     public class EmitZapTests
     {
-        private MockFactory mockFactory;
-        private Mock<IZapStreamFactory> mockStreamFactory;
+        MockFactory mockFactory;
+        Mock<IZapStreamFactory> mockStreamFactory;
 
         [TestInitialize]
         public void Initialize()

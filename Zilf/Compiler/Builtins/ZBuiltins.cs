@@ -30,9 +30,9 @@ using Zilf.Diagnostics;
 namespace Zilf.Compiler.Builtins
 {
 
-    internal static class ZBuiltins
+    static class ZBuiltins
     {
-        private static ILookup<string, BuiltinSpec> builtins;
+        static ILookup<string, BuiltinSpec> builtins;
 
         static ZBuiltins()
         {
@@ -102,10 +102,10 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
-        private delegate void InvalidArgumentDelegate(int index, string message);
+        delegate void InvalidArgumentDelegate(int index, string message);
 
 
-        private static IList<BuiltinArg> ValidateArguments(
+        static IList<BuiltinArg> ValidateArguments(
             CompileCtx cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
             ZilObject[] args, InvalidArgumentDelegate error)
         {
@@ -132,7 +132,7 @@ namespace Zilf.Compiler.Builtins
                 if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
                 {
                     // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
-                    ZilAtom atom = arg as ZilAtom;
+                    var atom = arg as ZilAtom;
                     QuirksMode quirks = QuirksMode.None;
                     if (atom == null)
                     {
@@ -161,7 +161,7 @@ namespace Zilf.Compiler.Builtins
                     else if (pi.ParameterType == typeof(IVariable))
                     {
                         if (!cc.Locals.ContainsKey(atom) && !cc.Globals.ContainsKey(atom))
-                            error(i, "no such variable: " + atom.ToString());
+                            error(i, "no such variable: " + atom);
 
                         var variableRef = GetVariable(cc, arg, quirks);
                         result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Hard));
@@ -169,7 +169,7 @@ namespace Zilf.Compiler.Builtins
                     else // if (pi.ParameterType == typeof(SoftGlobal))
                     {
                         if (!cc.SoftGlobals.ContainsKey(atom))
-                            error(i, "no such variable: " + atom.ToString());
+                            error(i, "no such variable: " + atom);
 
                         var variableRef = GetVariable(cc, arg, quirks);
                         result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Soft));
@@ -290,9 +290,9 @@ namespace Zilf.Compiler.Builtins
 
 
 
-        private static VariableRef? GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
+        static VariableRef? GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
         {
-            ZilAtom atom = expr as ZilAtom;
+            var atom = expr as ZilAtom;
 
             if (atom == null)
             {
@@ -335,7 +335,7 @@ namespace Zilf.Compiler.Builtins
             return null;
         }
 
-        private static List<object> MakeBuiltinMethodParams(
+        static List<object> MakeBuiltinMethodParams(
             CompileCtx cc, BuiltinSpec spec,
             ParameterInfo[] builtinParamInfos, object call,
             IList<BuiltinArg> args)
@@ -384,7 +384,6 @@ namespace Zilf.Compiler.Builtins
                     {
                         result.Add(args.Skip(j).Select(a => (IOperand)a.Value).ToArray());
                     }
-                    break;
                 }
                 else if (pi.ParameterType == typeof(ZilObject[]))
                 {
@@ -397,31 +396,27 @@ namespace Zilf.Compiler.Builtins
                     {
                         result.Add(args.Skip(j).Select(a => (ZilObject)a.Value).ToArray());
                     }
-                    break;
+                }
+                else if (j >= args.Count)
+                {
+                    result.Add(pi.DefaultValue);
                 }
                 else
                 {
-                    if (j >= args.Count)
-                    {
-                        result.Add(pi.DefaultValue);
-                    }
-                    else
-                    {
-                        result.Add(args[j].Value);
-                    }
+                    result.Add(args[j].Value);
                 }
             }
 
             return result;
         }
 
-        private static object CompileBuiltinCall<TCall>(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, TCall call)
+        static object CompileBuiltinCall<TCall>(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, TCall call)
+            where TCall : struct
         {
             Contract.Requires(name != null);
             Contract.Requires(cc != null);
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
-            Contract.Requires(call != null);
 
             int zversion = cc.Context.ZEnvironment.ZVersion;
             var argList = form.Rest;
@@ -569,7 +564,9 @@ namespace Zilf.Compiler.Builtins
 
                     return;
                 }
-                else if (arg2 is INumericOperand && ((INumericOperand)arg2).Value != value &&
+
+                if (arg2 is INumericOperand &&
+                    ((INumericOperand)arg2).Value != value &&
                     restOfArgs.All(arg => arg is INumericOperand && ((INumericOperand)arg).Value != value))
                 {
                     // we know it's not equal, and there are no stack operands, so branch accordingly
@@ -635,7 +632,6 @@ namespace Zilf.Compiler.Builtins
                     {
                         switch (queue.Count)
                         {
-                            case 3:
                             default:
                                 c.rb.BranchIfEqual(arg1, queue.Dequeue(), queue.Dequeue(), queue.Dequeue(), c.label, true);
                                 break;
@@ -790,13 +786,11 @@ namespace Zilf.Compiler.Builtins
                     case BinaryOp.ArtShift:
                         if (nright.Value < 0)
                             return c.cc.Game.MakeOperand((short)(nleft.Value >> -nright.Value));
-                        else
-                            return c.cc.Game.MakeOperand((short)(nleft.Value << nright.Value));
+                        return c.cc.Game.MakeOperand((short)(nleft.Value << nright.Value));
                     case BinaryOp.LogShift:
                         if (nright.Value < 0)
                             return c.cc.Game.MakeOperand((short)((ushort)nleft.Value >> -nright.Value));
-                        else
-                            return c.cc.Game.MakeOperand((short)((ushort)nleft.Value << nright.Value));
+                        return c.cc.Game.MakeOperand((short)((ushort)nleft.Value << nright.Value));
                 }
             }
 
@@ -832,11 +826,8 @@ namespace Zilf.Compiler.Builtins
             {
                 return c.cc.Game.MakeOperand((short)(~((INumericOperand)storage).Value));
             }
-            else
-            {
-                c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
-                return c.resultStorage;
-            }
+            c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
+            return c.resultStorage;
         }
 
         [Builtin("ADD", "+", Data = BinaryOp.Add)]
@@ -945,7 +936,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        private static IOperand FoldConstantArithmetic(CompileCtx cc, short init, Func<short, short, short> op, IOperand[] args)
+        static IOperand FoldConstantArithmetic(CompileCtx cc, short init, Func<short, short, short> op, IOperand[] args)
         {
             Contract.Requires(cc != null);
             Contract.Requires(op != null);
@@ -960,7 +951,7 @@ namespace Zilf.Compiler.Builtins
             if (args.Length == 1)
                 return cc.Game.MakeOperand(op(init, (short)((INumericOperand)args[0]).Value));
 
-            short value = (short)((INumericOperand)args[0]).Value;
+            var value = (short)((INumericOperand)args[0]).Value;
             for (int i = 1; i < args.Length; i++)
                 value = op(value, (short)((INumericOperand)args[i]).Value);
 
@@ -1011,7 +1002,7 @@ namespace Zilf.Compiler.Builtins
 
                     return;
                 }
-                else if ((constant.Value & (constant.Value - 1)) == 0)
+                if ((constant.Value & (constant.Value - 1)) == 0)
                 {
                     // power of two
                     c.rb.Branch(Condition.TestBits, variable, constant, c.label, c.polarity);
@@ -1954,10 +1945,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitRestore(c.resultStorage);
                 return c.resultStorage;
             }
-            else
-            {
-                throw new NotImplementedException("RestoreOp_V4 without HasStoreSave");
-            }
+            throw new NotImplementedException("RestoreOp_V4 without HasStoreSave");
         }
 
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
@@ -1974,10 +1962,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitRestore(table, bytes, name, c.resultStorage);
                 return c.resultStorage;
             }
-            else
-            {
-                throw new NotImplementedException("RestoreOp_V5 without HasExtendedSave");
-            }
+            throw new NotImplementedException("RestoreOp_V5 without HasExtendedSave");
         }
 
         [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true)]
@@ -2001,10 +1986,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitSave(c.resultStorage);
                 return c.resultStorage;
             }
-            else
-            {
-                throw new NotImplementedException("SaveOp_V4 without HasStoreSave");
-            }
+            throw new NotImplementedException("SaveOp_V4 without HasStoreSave");
         }
 
         [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
@@ -2021,10 +2003,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitSave(table, bytes, name, c.resultStorage);
                 return c.resultStorage;
             }
-            else
-            {
-                throw new NotImplementedException("SaveOp_V5 without HasExtendedSave");
-            }
+            throw new NotImplementedException("SaveOp_V5 without HasExtendedSave");
         }
 
         #endregion
@@ -2153,7 +2132,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
         }
 
-        private static bool GetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
+        static bool GetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
             out int offset, out LowCoreFlags flags, out int minVersion)
         {
             Contract.Requires(name != null);
@@ -2177,12 +2156,12 @@ namespace Zilf.Compiler.Builtins
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
                     return false;
                 }
-                else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
+                if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
                     return false;
                 }
-                else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
+                if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
                     return false;
@@ -2223,17 +2202,17 @@ namespace Zilf.Compiler.Builtins
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
                     return false;
                 }
-                else if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
+                if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
                     return false;
                 }
-                else if ((field.Flags & LowCoreFlags.Byte) != 0)
+                if ((field.Flags & LowCoreFlags.Byte) != 0)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Not_A_Word_Field_1, name, atom));
                     return false;
                 }
-                else if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
+                if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
                     return false;
@@ -2337,8 +2316,8 @@ namespace Zilf.Compiler.Builtins
                             new ZilForm(new ZilObject[] {
                                 c.cc.Context.GetStdAtom(StdAtom.LVAL),
                                 tmpAtom
-                            }),
-                        }),
+                            })
+                        })
                     });
                 form.SourceLine = c.form.SourceLine;
                 Compiler.CompileForm(c.cc, c.rb, form, false, null);
@@ -2353,6 +2332,7 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
+#pragma warning disable RECS0154 // Parameter is never used
         [Builtin("CHTYPE")]
         public static IOperand ChtypeValueOp(ValueCall c, IOperand value, ZilAtom type)
         {
@@ -2363,5 +2343,6 @@ namespace Zilf.Compiler.Builtins
             // TODO: check type?
             return value;
         }
+#pragma warning restore RECS0154 // Parameter is never used
     }
 }

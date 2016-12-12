@@ -21,9 +21,9 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel
 {
-    internal sealed class AtomNameEqualityComparer : IEqualityComparer<ZilAtom>
+    sealed class AtomNameEqualityComparer : IEqualityComparer<ZilAtom>
     {
-        private readonly bool ignoreCase;
+        readonly bool ignoreCase;
 
         public AtomNameEqualityComparer(bool ignoreCase)
         {

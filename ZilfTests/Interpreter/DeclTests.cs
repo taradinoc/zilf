@@ -26,7 +26,7 @@ namespace ZilfTests.Interpreter
     [TestClass]
     public class DeclTests
     {
-        private Context ctx;
+        Context ctx;
 
         [TestInitialize]
         public void TestInitialize()

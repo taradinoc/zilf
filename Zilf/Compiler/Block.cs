@@ -21,7 +21,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler
 {
-    internal sealed class Block
+    sealed class Block
     {
         /// <summary>
         /// The activation atom identifying the block, or null if it is unnamed.

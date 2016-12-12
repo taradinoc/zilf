@@ -73,7 +73,7 @@ namespace Zilf.Interpreter
         }
 
         [ContractAbbreviator]
-        private static void SubrContracts(Context ctx, ZilObject[] args)
+        static void SubrContracts(Context ctx, ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
@@ -82,7 +82,7 @@ namespace Zilf.Interpreter
         }
 
         [ContractAbbreviator]
-        private static void SubrContracts(Context ctx)
+        static void SubrContracts(Context ctx)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);

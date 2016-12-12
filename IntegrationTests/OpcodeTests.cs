@@ -31,7 +31,7 @@ namespace IntegrationTests
             Assert.AreEqual("exactly 1 argument",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
-                    new ArgCountRange(1, 1),
+                    new ArgCountRange(1, 1)
                 }));
         }
 
@@ -40,26 +40,26 @@ namespace IntegrationTests
         {
             Assert.AreEqual("1 or 2 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
-                    new ArgCountRange(1, 2),
+                    new ArgCountRange(1, 2)
                 }));
 
             Assert.AreEqual("1 or 2 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
-                    new ArgCountRange(2, 2),
+                    new ArgCountRange(2, 2)
                 }));
 
             Assert.AreEqual("2 or 4 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(2, 2),
-                    new ArgCountRange(4, 4),
+                    new ArgCountRange(4, 4)
                 }));
 
             Assert.AreEqual("0, 2, or 4 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 0),
                     new ArgCountRange(2, 2),
-                    new ArgCountRange(4, 4),
+                    new ArgCountRange(4, 4)
                 }));
         }
 
@@ -68,20 +68,20 @@ namespace IntegrationTests
         {
             Assert.AreEqual("1 to 3 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
-                    new ArgCountRange(1, 3),
+                    new ArgCountRange(1, 3)
                 }));
 
             Assert.AreEqual("1 to 3 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
-                    new ArgCountRange(3, 3),
+                    new ArgCountRange(3, 3)
                 }));
 
             Assert.AreEqual("1 to 3 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 1),
                     new ArgCountRange(2, 2),
-                    new ArgCountRange(3, 3),
+                    new ArgCountRange(3, 3)
                 }));
         }
 
@@ -90,13 +90,13 @@ namespace IntegrationTests
         {
             Assert.AreEqual("1 or more arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
-                    new ArgCountRange(1, null),
+                    new ArgCountRange(1, null)
                 }));
 
             Assert.AreEqual("1 or more arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
-                    new ArgCountRange(3, null),
+                    new ArgCountRange(3, null)
                 }));
         }
 
@@ -106,19 +106,19 @@ namespace IntegrationTests
             Assert.AreEqual("1, 2, or 4 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(1, 2),
-                    new ArgCountRange(4, 4),
+                    new ArgCountRange(4, 4)
                 }));
 
             Assert.AreEqual("0, 1, 3, or 4 arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 1),
-                    new ArgCountRange(3, 4),
+                    new ArgCountRange(3, 4)
                 }));
 
             Assert.AreEqual("0, 2, or more arguments",
                 ArgCountHelpers.FormatArgCount(new[] {
                     new ArgCountRange(0, 0),
-                    new ArgCountRange(2, null),
+                    new ArgCountRange(2, null)
                 }));
         }
     }
@@ -126,14 +126,14 @@ namespace IntegrationTests
     [TestClass]
     public class OpcodeTests
     {
-        private static ExprAssertionHelper AssertExpr(string expression)
+        static ExprAssertionHelper AssertExpr(string expression)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
             return new ExprAssertionHelper(expression);
         }
 
-        private static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));

@@ -25,7 +25,7 @@ namespace Zilf.Interpreter
     {
         public static readonly IEqualityComparer<T> Instance = new IdentityEqualityComparer<T>();
 
-        private IdentityEqualityComparer()
+        IdentityEqualityComparer()
         {
         }
 

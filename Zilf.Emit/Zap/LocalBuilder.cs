@@ -2,8 +2,8 @@ namespace Zilf.Emit.Zap
 {
     class LocalBuilder : ILocalBuilder
     {
-        private readonly string name;
-        private IOperand defaultValue;
+        readonly string name;
+        IOperand defaultValue;
 
         public LocalBuilder(string name)
         {

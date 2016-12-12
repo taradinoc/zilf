@@ -21,7 +21,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler
 {
-    internal class Action
+    class Action
     {
         public readonly int Index;
         public readonly IOperand Constant;

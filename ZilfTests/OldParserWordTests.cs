@@ -30,7 +30,7 @@ namespace ZilfTests
     [TestClass]
     public class OldParserWordTests
     {
-        private static readonly ISourceLine dummySrc = new StringSourceLine("dummy");
+        static readonly ISourceLine dummySrc = new StringSourceLine("dummy");
 
         [TestMethod]
         public void TestCtor()
@@ -60,7 +60,7 @@ namespace ZilfTests
         /// <item>verbValue (the value to use when setting PartOfSpeech.Verb), and</item>
         /// <item>prepValue (the value to use when setting PartOfSpeech.Preposition).</item>
         /// </list></param>
-        private void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
+        void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
             Context ctx;
             OldParserWord word;
@@ -84,7 +84,7 @@ namespace ZilfTests
         /// <param name="newVoc">true to test with NEW-VOC? enabled, otherwise false.</param>
         /// <param name="ctx">Returns the new Context.</param>
         /// <param name="word">Returns a new OldParserWord ("FOO") added to the context's ObList.</param>
-        private static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out OldParserWord word)
+        static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out OldParserWord word)
         {
             // set up context
             ctx = new Context();
@@ -216,7 +216,7 @@ namespace ZilfTests
             Assert.AreNotEqual(0, ctx.WarningCount);
         }
 
-        private struct WtwbTestCase
+        struct WtwbTestCase
         {
             public int ZVersion;
             public bool NewVoc;
@@ -290,7 +290,7 @@ namespace ZilfTests
             }
         }
 
-        private struct CompactWtwbTestCase
+        struct CompactWtwbTestCase
         {
             public int ZVersion;
             public bool NewVoc;
@@ -362,12 +362,12 @@ namespace ZilfTests
             }
         }
 
-        private class MockOperand : Zilf.Emit.IOperand
+        class MockOperand : Zilf.Emit.IOperand
         {
             public byte Value;
         }
 
-        private class MockWordBuilder : Zilf.Emit.IWordBuilder
+        class MockWordBuilder : Zilf.Emit.IWordBuilder
         {
             public readonly List<byte> ActualBytes = new List<byte>(3);
 
@@ -507,7 +507,7 @@ namespace ZilfTests
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
-                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, 0),
+                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, 0)
             };
 
             foreach (var tc in testCases)
@@ -688,7 +688,7 @@ namespace ZilfTests
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
-                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
+                    PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0)
             };
 
             foreach (var tc in testCases)

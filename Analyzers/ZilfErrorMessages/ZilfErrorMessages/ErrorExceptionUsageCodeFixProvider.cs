@@ -19,7 +19,7 @@ namespace ZilfErrorMessages
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ErrorExceptionUsageCodeFixProvider)), Shared]
     public class ErrorExceptionUsageCodeFixProvider : CodeFixProvider
     {
-        private const string title = "Convert message to diagnostic constant ({0})";
+        const string title = "Convert message to diagnostic constant ({0})";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -31,8 +31,8 @@ namespace ZilfErrorMessages
             return new ErrorExceptionUsageFixAllProvider();
         }
 
-        private const string DefaultSeverity = "Error";
-        private static readonly string[] Severities = { "Error", "Warning", "Info" };
+        const string DefaultSeverity = "Error";
+        static readonly string[] Severities = { "Error", "Warning", "Info" };
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -63,7 +63,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private class Invocation
+        class Invocation
         {
             public string MessagesTypeName;
             public ExpressionSyntax ExpressionToReplace;
@@ -72,7 +72,7 @@ namespace ZilfErrorMessages
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        private async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var invocations = await GetInvocationsAsync(document, creations, severity, cancellationToken);
             return await ApplyInvocationsAsync(
@@ -81,7 +81,7 @@ namespace ZilfErrorMessages
                 cancellationToken);
         }
 
-        private static async Task<Invocation[]> GetInvocationsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        static async Task<Invocation[]> GetInvocationsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var solution = document.Project.Solution;
 
@@ -122,7 +122,7 @@ namespace ZilfErrorMessages
             return invocations.ToArray();
         }
 
-        private static async Task<Solution> ApplyInvocationsAsync(
+        static async Task<Solution> ApplyInvocationsAsync(
             Solution solution,
             IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument,
             CancellationToken cancellationToken)
@@ -205,7 +205,7 @@ namespace ZilfErrorMessages
             return solution;
         }
 
-        private static IEnumerable<INamedTypeSymbol> GetAllTypes(Compilation compilation)
+        static IEnumerable<INamedTypeSymbol> GetAllTypes(Compilation compilation)
         {
             var nsQueue = new Queue<INamespaceSymbol>();
             nsQueue.Enqueue(compilation.GlobalNamespace);
@@ -226,7 +226,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static void AddUsingIfNeeded(DocumentEditor docEditor)
+        static void AddUsingIfNeeded(DocumentEditor docEditor)
         {
             var compilationUnitSyntax = docEditor.OriginalRoot as CompilationUnitSyntax;
 
@@ -243,7 +243,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code, string severity)
+        static FieldDeclarationSyntax MakeConstantSyntax(string messageFormat, string constantName, int code, string severity)
         {
             var messageFormatArgument =
                 SyntaxFactory.AttributeArgument(
@@ -318,7 +318,7 @@ namespace ZilfErrorMessages
             return sb.ToString();
         }
 
-        private class ErrorExceptionUsageFixAllProvider : FixAllProvider
+        class ErrorExceptionUsageFixAllProvider : FixAllProvider
         {
             public override async Task<CodeAction> GetFixAsync(FixAllContext fixAllContext)
             {
@@ -410,7 +410,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        private static IEnumerable<LiteralCreation> MatchLiteralCreations(
+        static IEnumerable<LiteralCreation> MatchLiteralCreations(
             IEnumerable<ObjectCreationExpressionSyntax> creationExprs, SemanticModel semanticModel)
         {
             foreach (var expr in creationExprs)

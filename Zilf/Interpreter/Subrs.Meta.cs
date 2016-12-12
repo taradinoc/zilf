@@ -31,7 +31,7 @@ namespace Zilf.Interpreter
             try
             {
                 string oldFile = ctx.CurrentFile;
-                string newFile = ctx.FindIncludeFile(file);
+                var newFile = ctx.FindIncludeFile(file);
                 var oldFlags = ctx.CurrentFileFlags;
 
                 ctx.CurrentFile = newFile;

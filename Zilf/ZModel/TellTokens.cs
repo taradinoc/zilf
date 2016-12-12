@@ -33,7 +33,7 @@ namespace Zilf.ZModel
 
     class TellPattern
     {
-        private class MatchResult : ITellPatternMatchResult
+        class MatchResult : ITellPatternMatchResult
         {
             public bool Matched { get; set; }
             public ZilForm Output { get; set; }
@@ -46,12 +46,12 @@ namespace Zilf.ZModel
             }
         }
 
-        private abstract class Token
+        abstract class Token
         {
             public abstract bool Match(Context ctx, ZilObject input, MatchResult result);
         }
 
-        private class AtomToken : Token
+        class AtomToken : Token
         {
             public IList<ZilAtom> Atoms { get; private set; }
 
@@ -70,7 +70,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private class AnyToken : Token
+        class AnyToken : Token
         {
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
@@ -79,7 +79,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private class DeclToken : Token
+        class DeclToken : Token
         {
             public ZilObject Pattern { get; set; }
 
@@ -95,7 +95,7 @@ namespace Zilf.ZModel
             }
         }
 
-        private class GvalToken : Token
+        class GvalToken : Token
         {
             public ZilAtom Atom { get; set; }
 
@@ -114,10 +114,10 @@ namespace Zilf.ZModel
             }
         }
 
-        private readonly Token[] tokens;
-        private readonly ZilForm outputForm;
+        readonly Token[] tokens;
+        readonly ZilForm outputForm;
 
-        private TellPattern(Token[] tokens, ZilForm outputForm)
+        TellPattern(Token[] tokens, ZilForm outputForm)
         {
             this.tokens = tokens;
             this.outputForm = outputForm;
@@ -280,7 +280,7 @@ namespace Zilf.ZModel
             return result;
         }
 
-        private static bool IsSimpleOutputElement(ZilObject obj)
+        static bool IsSimpleOutputElement(ZilObject obj)
         {
             Contract.Requires(obj != null);
 

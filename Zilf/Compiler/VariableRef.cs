@@ -19,7 +19,7 @@ using Zilf.Emit;
 
 namespace Zilf.Compiler
 {
-    internal struct VariableRef
+    struct VariableRef
     {
         public readonly IVariable Hard;
         public readonly SoftGlobal Soft;

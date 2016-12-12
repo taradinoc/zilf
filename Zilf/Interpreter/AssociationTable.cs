@@ -29,10 +29,10 @@ namespace Zilf.Interpreter
 {
     class AssociationTable : IEnumerable<AsocResult>
     {
-        private readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations =
+        readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations =
             new ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>>();
-        private readonly WeakCountingSet<ZilObject> firsts = new WeakCountingSet<ZilObject>();
-        private readonly WeakCountingSet<ZilObject> seconds = new WeakCountingSet<ZilObject>();
+        readonly WeakCountingSet<ZilObject> firsts = new WeakCountingSet<ZilObject>();
+        readonly WeakCountingSet<ZilObject> seconds = new WeakCountingSet<ZilObject>();
 
         /// <summary>
         /// Gets the value associated with a pair of objects.

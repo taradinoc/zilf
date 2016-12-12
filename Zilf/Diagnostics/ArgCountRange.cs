@@ -18,7 +18,7 @@
 
 namespace Zilf.Diagnostics
 {
-    internal struct ArgCountRange
+    struct ArgCountRange
     {
         public readonly int MinArgs;
         public readonly int? MaxArgs;

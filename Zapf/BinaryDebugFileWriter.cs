@@ -25,10 +25,10 @@ namespace Zapf
 {
     class BinaryDebugFileWriter : IDebugFileWriter
     {
-        private readonly Stream stream;
-        private ushort nextRoutineNumber;
-        private long routineStart = -1;
-        private int routinePoints = -1;
+        readonly Stream stream;
+        ushort nextRoutineNumber;
+        long routineStart = -1;
+        int routinePoints = -1;
 
         public BinaryDebugFileWriter(Stream debugStream)
         {
@@ -183,25 +183,25 @@ namespace Zapf
 
         #region Write Primitives
 
-        private void WriteDebugByte(byte b)
+        void WriteDebugByte(byte b)
         {
             stream.WriteByte(b);
         }
 
-        private void WriteDebugWord(ushort w)
+        void WriteDebugWord(ushort w)
         {
             stream.WriteByte((byte)(w >> 8));
             stream.WriteByte((byte)w);
         }
 
-        private void WriteDebugAddress(int a)
+        void WriteDebugAddress(int a)
         {
             stream.WriteByte((byte)(a >> 16));
             stream.WriteByte((byte)(a >> 8));
             stream.WriteByte((byte)a);
         }
 
-        private void WriteDebugLineRef(LineRef lineRef)
+        void WriteDebugLineRef(LineRef lineRef)
         {
             stream.WriteByte(lineRef.File);
             stream.WriteByte((byte)(lineRef.Line >> 8));
@@ -209,9 +209,9 @@ namespace Zapf
             stream.WriteByte(lineRef.Col);
         }
 
-        private void WriteDebugString(string s)
+        void WriteDebugString(string s)
         {
-            byte[] bytes = Encoding.ASCII.GetBytes(s);
+            var bytes = Encoding.ASCII.GetBytes(s);
             stream.Write(bytes, 0, bytes.Length);
             stream.WriteByte(0);
         }

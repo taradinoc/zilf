@@ -41,7 +41,7 @@ namespace Zilf
         internal static int Main(string[] args)
         {
             string inFile, outFile;
-            Context ctx = ParseArgs(args, out inFile, out outFile);
+            var ctx = ParseArgs(args, out inFile, out outFile);
 
             if (ctx == null)
                 return 1;       // ParseArgs signaled an error
@@ -56,7 +56,7 @@ namespace Zilf
             if (ctx.RunMode == RunMode.Interactive)
             {
                 ctx.CurrentFile = "<stdin>";
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
 
                 int angles = 0, rounds = 0, squares = 0, quotes = 0;
 
@@ -67,7 +67,7 @@ namespace Zilf
 
                     try
                     {
-                        string line = Console.ReadLine();
+                        var line = Console.ReadLine();
 
                         if (line == null)
                             break;
@@ -119,7 +119,7 @@ namespace Zilf
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.ToString());
+                        Console.WriteLine(ex);
                         sb.Length = 0;
                     }
                 }
@@ -179,7 +179,7 @@ namespace Zilf
             return 0;
         }
 
-        private static DateTime RetrieveLinkerTimestamp()
+        static DateTime RetrieveLinkerTimestamp()
         {
             // http://stackoverflow.com/questions/1600962/displaying-the-build-date
             string filePath = System.Reflection.Assembly.GetCallingAssembly().Location;
@@ -192,15 +192,15 @@ namespace Zilf
                 s.Read(b, 0, 2048);
             }
 
-            int i = System.BitConverter.ToInt32(b, c_PeHeaderOffset);
-            int secondsSince1970 = System.BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
-            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0);
+            var i = System.BitConverter.ToInt32(b, c_PeHeaderOffset);
+            var secondsSince1970 = System.BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
+            var dt = new DateTime(1970, 1, 1, 0, 0, 0);
             dt = dt.AddSeconds(secondsSince1970);
             dt = dt.ToLocalTime();
             return dt;
         }
 
-        private static Context ParseArgs(string[] args, out string inFile, out string outFile)
+        static Context ParseArgs(string[] args, out string inFile, out string outFile)
         {
             Contract.Requires(args != null);
 
@@ -211,7 +211,7 @@ namespace Zilf
             bool? caseSensitive = null;
             RunMode? mode = null;
             bool? quiet = null;
-            List<string> includePaths = new List<string>();
+            var includePaths = new List<string>();
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -330,7 +330,7 @@ namespace Zilf
                 }
             }
 
-            Context ctx = new Context(!caseSensitive.Value);
+            var ctx = new Context(!caseSensitive.Value);
 
             if (inFile != null && mode.Value != RunMode.Expression)
             {
@@ -352,7 +352,7 @@ namespace Zilf
             return ctx;
         }
 
-        private static void Usage()
+        static void Usage()
         {
             Console.WriteLine(VERSION);
             Console.WriteLine(
@@ -390,10 +390,10 @@ Compiler switches:
             Contract.Requires(ctx != null);
             Contract.Requires(charStream != null);
 
-            ZilLexer lexer = new ZilLexer(charStream);
+            var lexer = new ZilLexer(charStream);
 
             ITokenStream tokenStream = new CommonTokenStream(lexer);
-            ZilParser parser = new ZilParser(tokenStream);
+            var parser = new ZilParser(tokenStream);
 
             var fret = parser.file(ctx.CurrentFile);
             if (parser.NumberOfSyntaxErrors > 0)
@@ -458,7 +458,7 @@ Compiler switches:
                         if (first)
                         {
                             // V4 games can identify themselves this way instead of using <VERSION EZIP>
-                            ZilString str = node as ZilString;
+                            var str = node as ZilString;
                             if (str != null && str.Text.StartsWith("EXTENDED") && ctx.ZEnvironment.ZVersion == 3)
                             {
                                 ctx.SetZVersion(4);

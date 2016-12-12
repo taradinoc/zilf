@@ -27,7 +27,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.MACRO, PrimType.LIST)]
     class ZilEvalMacro : ZilObject, IApplicable, IStructure
     {
-        private ZilObject value;
+        ZilObject value;
 
         public ZilEvalMacro(ZilObject value)
         {
@@ -50,7 +50,7 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(InterpreterMessages.List_Does_Not_Match_MACRO_Pattern);
         }
 
-        private string ToString(Func<ZilObject, string> convert)
+        string ToString(Func<ZilObject, string> convert)
         {
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -97,7 +97,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(value, new ZilList(null, null));
         }
 
-        private static ZilObject MakeSpliceExpandable(ZilObject zo)
+        static ZilObject MakeSpliceExpandable(ZilObject zo)
         {
             var splice = zo as ZilSplice;
 
@@ -109,13 +109,13 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject Apply(Context ctx, ZilObject[] args)
         {
-            ZilObject expanded = Expand(ctx, args);
+            var expanded = Expand(ctx, args);
             return MakeSpliceExpandable(expanded.Eval(ctx));
         }
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            ZilObject expanded = ExpandNoEval(ctx, args);
+            var expanded = ExpandNoEval(ctx, args);
             return MakeSpliceExpandable(expanded.Eval(ctx));
         }
 
@@ -143,7 +143,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilEvalMacro other = obj as ZilEvalMacro;
+            var other = obj as ZilEvalMacro;
             return other != null && other.value.Equals(this.value);
         }
 

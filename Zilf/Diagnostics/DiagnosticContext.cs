@@ -12,9 +12,9 @@ namespace Zilf.Diagnostics
     {
         public static DiagnosticContext Current { get; private set; } = new DiagnosticContext();
 
-        private class Disposer : IDisposable
+        class Disposer : IDisposable
         {
-            private DiagnosticContext oldContext, newContext;
+            DiagnosticContext oldContext, newContext;
 
             public Disposer(DiagnosticContext oldContext, DiagnosticContext newContext)
             {
@@ -52,12 +52,12 @@ namespace Zilf.Diagnostics
             return disposer;
         }
 
-        private DiagnosticContext()
+        DiagnosticContext()
             : this(SourceLines.TopLevel, null)
         {
         }
 
-        private DiagnosticContext(ISourceLine sourceLine, Frame frame)
+        DiagnosticContext(ISourceLine sourceLine, Frame frame)
         {
             this.SourceLine = sourceLine;
             this.Frame = frame;

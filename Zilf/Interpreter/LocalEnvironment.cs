@@ -29,8 +29,8 @@ namespace Zilf.Interpreter
     /// </summary>
     class LocalEnvironment : IDisposable
     {
-        private readonly Context ctx;
-        private readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
+        readonly Context ctx;
+        readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
 
         /// <summary>
         /// Creates a new environment with no bindings.
@@ -50,7 +50,7 @@ namespace Zilf.Interpreter
         public LocalEnvironment(Context ctx, LocalEnvironment parent)
         {
             if (ctx == null)
-                throw new ArgumentNullException("ctx");
+                throw new ArgumentNullException(nameof(ctx));
 
             this.ctx = ctx;
             this.Parent = parent;
@@ -76,7 +76,7 @@ namespace Zilf.Interpreter
         /// </summary>
         public LocalEnvironment Parent { get; }
 
-        private Binding MaybeGetBinding(ZilAtom atom)
+        Binding MaybeGetBinding(ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
@@ -94,7 +94,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        private Binding GetOrCreateBinding(ZilAtom atom)
+        Binding GetOrCreateBinding(ZilAtom atom)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(Contract.Result<Binding>() != null);

@@ -41,8 +41,8 @@ namespace Zilf.Diagnostics
         public string StackTrace { get; private set; }
         public Diagnostic[] SubDiagnostics { get; private set; }
 
-        private static readonly object[] NoArguments = new object[0];
-        private static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
+        static readonly object[] NoArguments = new object[0];
+        static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
 
         public Diagnostic(ISourceLine location, Severity severity,
             string codePrefix, int code,
@@ -113,8 +113,8 @@ namespace Zilf.Diagnostics
     public class DiagnosticFactory<TMessageSet> : IDiagnosticFactory
         where TMessageSet : class
     {
-        private readonly string prefix;
-        private readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
+        readonly string prefix;
+        readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
 
         public static readonly DiagnosticFactory<TMessageSet> Instance = new DiagnosticFactory<TMessageSet>();
 

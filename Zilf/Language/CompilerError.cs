@@ -119,7 +119,7 @@ namespace Zilf.Language
             return WrongArgCount(name, countDescription, pluralSuffix, acceptableVersion);
         }
 
-        private static CompilerError WrongArgCount(string name, string countDescription, string pluralSuffix,
+        static CompilerError WrongArgCount(string name, string countDescription, string pluralSuffix,
             int? acceptableVersion)
         {
             var error = new CompilerError(

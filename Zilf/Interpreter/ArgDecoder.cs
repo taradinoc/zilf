@@ -33,16 +33,16 @@ namespace Zilf.Interpreter
     abstract class ArgumentDecodingError : InterpreterError
     {
         [Obsolete("Use a constructor that takes a Diagnostic.")]
-        public ArgumentDecodingError(string message)
+        protected ArgumentDecodingError(string message)
             : base(message) { }
 
-        public ArgumentDecodingError(Diagnostic diagnostic)
+        protected ArgumentDecodingError(Diagnostic diagnostic)
             : base(diagnostic) { }
     }
 
     abstract class CallSite
     {
-        public CallSite(string name)
+        protected CallSite(string name)
         {
             this.Name = name;
         }
@@ -83,7 +83,7 @@ namespace Zilf.Interpreter
 
     sealed class ArgumentCountError : ArgumentDecodingError
     {
-        private ArgumentCountError(Diagnostic diagnostic)
+        ArgumentCountError(Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
@@ -210,11 +210,11 @@ namespace Zilf.Interpreter
         /// that was not processed. This may point past the end of <paramref name="arguments"/>
         /// if the step consumed all input arguments, or it may be equal to <paramref name="index"/>
         /// if the step consumed none.</returns>
-        private delegate int DecodingStep(ZilObject[] arguments, int index, DecodingStepCallbacks cb);
+        delegate int DecodingStep(ZilObject[] arguments, int index, DecodingStepCallbacks cb);
 
-        private delegate void ErrorCallback(int? index = null);
+        delegate void ErrorCallback(int? index = null);
 
-        private struct DecodingStepCallbacks
+        struct DecodingStepCallbacks
         {
             public Context Context;
             public CallSite Site;
@@ -223,7 +223,7 @@ namespace Zilf.Interpreter
             public Action Missing;
         }
 
-        private struct DecodingStepInfo
+        struct DecodingStepInfo
         {
             public DecodingStep Step;
             public Constraint Constraint;
@@ -238,7 +238,7 @@ namespace Zilf.Interpreter
             public int? UpperBound;
         }
 
-        private abstract class Constraint
+        abstract class Constraint
         {
             public static readonly Constraint AnyObject = new AnyObjectConstraint();
             public static readonly Constraint Forbidden = new ForbiddenConstraint();
@@ -287,7 +287,7 @@ namespace Zilf.Interpreter
             {
                 return CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this));
             }
-            
+
             protected abstract CompareOutcome? CompareImpl(Context ctx, Constraint other);
             public abstract bool Allows(Context ctx, ZilObject arg);
             public abstract override string ToString();
@@ -314,27 +314,27 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private static string EnglishList(IEnumerable<string> items, string connector)
+            static string EnglishList(IEnumerable<string> items, string connector)
             {
                 var array = items.ToArray();
-                
+
                 switch (array.Length)
                 {
                     case 0:
                         throw new NotImplementedException("list with no items");
 
                     case 1:
-                        return array[0].ToString();
+                        return array[0];
 
                     case 2:
-                        return array[0].ToString() + " " + connector + " " + array[1].ToString();
+                        return array[0] + " " + connector + " " + array[1];
 
                     default:
                         return string.Join(", ", items.Take(array.Length - 1)) + ", " + connector + " " + array[array.Length - 1];
                 }
             }
 
-            private class AnyObjectConstraint : Constraint
+            class AnyObjectConstraint : Constraint
             {
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
@@ -352,7 +352,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class ForbiddenConstraint : Constraint
+            class ForbiddenConstraint : Constraint
             {
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
@@ -370,7 +370,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class TypeConstraint : Constraint
+            class TypeConstraint : Constraint
             {
                 public StdAtom TypeAtom { get; private set; }
 
@@ -402,7 +402,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class PrimTypeConstraint : Constraint
+            class PrimTypeConstraint : Constraint
             {
                 public PrimType PrimType { get; private set; }
 
@@ -445,7 +445,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class StructuredConstraint : Constraint
+            class StructuredConstraint : Constraint
             {
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
@@ -475,7 +475,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class ApplicableConstraint : Constraint
+            class ApplicableConstraint : Constraint
             {
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
@@ -505,7 +505,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class DeclConstraint : Constraint
+            class DeclConstraint : Constraint
             {
                 public ZilObject Pattern { get; private set; }
 
@@ -536,11 +536,11 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class Conjunction : Constraint
+            class Conjunction : Constraint
             {
                 public IEnumerable<Constraint> Constraints { get; private set; }
 
-                private Conjunction(IEnumerable<Constraint> constraints)
+                Conjunction(IEnumerable<Constraint> constraints)
                 {
                     this.Constraints = constraints;
                 }
@@ -649,11 +649,11 @@ namespace Zilf.Interpreter
                 }
             }
 
-            private class Disjunction : Constraint
+            class Disjunction : Constraint
             {
                 public IEnumerable<Constraint> Constraints { get; private set; }
 
-                private Disjunction(IEnumerable<Constraint> constraints)
+                Disjunction(IEnumerable<Constraint> constraints)
                 {
                     this.Constraints = constraints;
                 }
@@ -764,39 +764,39 @@ namespace Zilf.Interpreter
 
         }
 
-        private readonly Context ctx;
-        private readonly DecodingStepInfo[] stepInfos;
-        private readonly int lowerBound;
-        private readonly int? upperBound;
+        readonly Context ctx;
+        DecodingStepInfo[] StepInfos { get; }
+        int LowerBound { get; }
+        int? UpperBound { get; }
 
-        private ArgDecoder(Context ctx, object[] methodAttributes, ParameterInfo[] parameters)
+        ArgDecoder(Context ctx, ParameterInfo[] parameters)
         {
             this.ctx = ctx;
 
-            stepInfos = new DecodingStepInfo[parameters.Length - 1];
-            lowerBound = 0;
-            upperBound = 0;
+            StepInfos = new DecodingStepInfo[parameters.Length - 1];
+            LowerBound = 0;
+            UpperBound = 0;
 
             // skip first arg (Context)
             for (int i = 1; i < parameters.Length; i++)
             {
                 var stepInfo = PrepareOne(parameters[i]);
-                stepInfos[i - 1] = stepInfo;
+                StepInfos[i - 1] = stepInfo;
 
-                lowerBound += stepInfo.LowerBound;
+                LowerBound += stepInfo.LowerBound;
 
                 if (stepInfo.UpperBound == null)
                 {
-                    upperBound = null;
+                    UpperBound = null;
                 }
                 else
                 {
-                    upperBound += stepInfo.UpperBound;
+                    UpperBound += stepInfo.UpperBound;
                 }
             }
         }
 
-        private DecodingStepInfo PrepareOne(ParameterInfo pi)
+        DecodingStepInfo PrepareOne(ParameterInfo pi)
         {
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -824,7 +824,7 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        private DecodingStepInfo PrepareOne(FieldInfo fi)
+        DecodingStepInfo PrepareOne(FieldInfo fi)
         {
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -849,7 +849,7 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        private DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
+        DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
             bool isOptional, object defaultValueWhenOptional)
         {
             DecodingStepInfo result;
@@ -858,7 +858,7 @@ namespace Zilf.Interpreter
             ZilSequenceParamAttribute sequenceAttr;
             EitherAttribute eitherAttr;
 
-            bool isRequired = customAttributes.OfType<RequiredAttribute>().Any();
+            var isRequired = customAttributes.OfType<RequiredAttribute>().Any();
             if (isRequired && isOptional)
             {
                 throw new InvalidOperationException("A parameter can't be both optional and required");
@@ -916,7 +916,7 @@ namespace Zilf.Interpreter
                         return i + 1;
                     },
                     LowerBound = 1,
-                    UpperBound = 1,
+                    UpperBound = 1
                 };
             }
             else if (IsZilObjectType(paramType))
@@ -959,7 +959,7 @@ namespace Zilf.Interpreter
                         return i + 1;
                     },
                     LowerBound = 1,
-                    UpperBound = 1,
+                    UpperBound = 1
                 };
             }
             else if (paramType == typeof(IApplicable))
@@ -985,7 +985,7 @@ namespace Zilf.Interpreter
                         return i + 1;
                     },
                     LowerBound = 1,
-                    UpperBound = 1,
+                    UpperBound = 1
                 };
             }
             else if (paramType == typeof(int) || paramType == typeof(int?))
@@ -1060,7 +1060,7 @@ namespace Zilf.Interpreter
                         return a.Length;
                     },
                     LowerBound = 0,
-                    UpperBound = null,
+                    UpperBound = null
                 };
 
                 if (isRequired)
@@ -1104,7 +1104,7 @@ namespace Zilf.Interpreter
                         return a.Length;
                     },
                     LowerBound = 0,
-                    UpperBound = null,
+                    UpperBound = null
                 };
 
                 if (isRequired)
@@ -1141,7 +1141,7 @@ namespace Zilf.Interpreter
                         return i;
                     },
                     LowerBound = 0,
-                    UpperBound = 1,
+                    UpperBound = 1
                 };
             }
             else
@@ -1208,22 +1208,19 @@ namespace Zilf.Interpreter
                     {
                         return prevStep(a, i, c);
                     }
-                    else
-                    {
-                        c.Ready(defaultValueWhenOptional);
-                        return i;
-                    }
+                    c.Ready(defaultValueWhenOptional);
+                    return i;
                 };
             }
 
             return result;
         }
 
-        private DecodingStepInfo PrepareOneArrayFromInnerStep(
+        DecodingStepInfo PrepareOneArrayFromInnerStep(
             Type elemType, DecodingStepInfo innerStepInfo, bool isRequired,
             out object defaultValue)
         {
-            DecodingStepInfo result = new DecodingStepInfo
+            var result = new DecodingStepInfo
             {
                 Constraint = innerStepInfo.Constraint,
                 Step = (a, i, c) =>
@@ -1259,7 +1256,7 @@ namespace Zilf.Interpreter
                     return i;
                 },
                 LowerBound = 0,
-                UpperBound = null,
+                UpperBound = null
             };
 
             if (isRequired)
@@ -1269,7 +1266,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        private DecodingStepInfo PrepareOneConversion<TZil, TValue>(
+        DecodingStepInfo PrepareOneConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, out object defaultValue)
             where TZil : ZilObject
         {
@@ -1299,11 +1296,11 @@ namespace Zilf.Interpreter
                     return i + 1;
                 },
                 LowerBound = 1,
-                UpperBound = 1,
+                UpperBound = 1
             };
         }
 
-        private DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
+        DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, Type paramType,
             out object defaultValue)
             where TZil : ZilObject
@@ -1322,7 +1319,7 @@ namespace Zilf.Interpreter
             else
             {
                 throw new ArgumentException(
-                    $"Expected {typeof(TValue)} or {typeof(TValue?)} but got {paramType}", "paramType");
+                    $"Expected {typeof(TValue)} or {typeof(TValue?)} but got {paramType}", nameof(paramType));
             }
 
             return new DecodingStepInfo
@@ -1347,11 +1344,11 @@ namespace Zilf.Interpreter
                     return i + 1;
                 },
                 LowerBound = 1,
-                UpperBound = 1,
+                UpperBound = 1
             };
         }
 
-        private DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
+        DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, bool isRequired,
             out object defaultValue)
             where TZil : ZilObject
@@ -1388,7 +1385,7 @@ namespace Zilf.Interpreter
                     return a.Length;
                 },
                 LowerBound = 0,
-                UpperBound = null,
+                UpperBound = null
             };
 
             if (isRequired)
@@ -1398,7 +1395,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        private DecodingStepInfo PrepareOneStructured(Type structType)
+        DecodingStepInfo PrepareOneStructured(Type structType)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1480,13 +1477,13 @@ namespace Zilf.Interpreter
 
                     outerReady(output);
                     return i + 1;
-                },
+                }
             };
 
             return result;
         }
 
-        private DecodingStepInfo[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+        DecodingStepInfo[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1505,7 +1502,7 @@ namespace Zilf.Interpreter
             upperBound = 0;
             for (int i = 0; i < fields.Length; i++)
             {
-                DecodingStepInfo stepInfo = PrepareOne(fields[i]);
+                var stepInfo = PrepareOne(fields[i]);
                 stepInfos[i] = stepInfo;
 
                 lowerBound += stepInfo.LowerBound;
@@ -1524,7 +1521,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        private DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes)
+        DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes)
         {
             Contract.Requires(paramType != null);
             Contract.Requires(inputTypes != null);
@@ -1540,7 +1537,7 @@ namespace Zilf.Interpreter
             var noAttributes = new object[0];
             for (int i = 0; i < inputTypes.Length; i++)
             {
-                DecodingStepInfo stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null);
+                var stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null);
                 constraint = constraint.Or(ctx, stepInfo.Constraint);
                 choices[i] = stepInfo.Step;
                 choiceConstraints[i] = stepInfo.Constraint;
@@ -1606,14 +1603,14 @@ namespace Zilf.Interpreter
 
                     // shouldn't get here
                     throw new NotImplementedException();
-                },
+                }
             };
 
             return result;
         }
 
         // TODO: cache the result?
-        private DecodingStepInfo PrepareOneSequence(Type seqType)
+        DecodingStepInfo PrepareOneSequence(Type seqType)
         {
             Contract.Requires(seqType != null);
             Contract.Requires(seqType.IsValueType);
@@ -1659,7 +1656,7 @@ namespace Zilf.Interpreter
 
                     outerReady(output);
                     return i;
-                },
+                }
             };
 
             return result;
@@ -1680,7 +1677,7 @@ namespace Zilf.Interpreter
         /// Arguments must be converted to <see cref="IApplicable"/> with
         /// <see cref="ApplicableExtensions.AsApplicable(ZilObject, Context)"/> instead.</para>
         /// </remarks>
-        private static bool IsZilObjectType(Type t)
+        static bool IsZilObjectType(Type t)
         {
             return typeof(ZilObject).IsAssignableFrom(t) || t == typeof(IStructure);
         }
@@ -1688,21 +1685,19 @@ namespace Zilf.Interpreter
         public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, Context ctx)
         {
             if (methodInfo == null)
-                throw new ArgumentNullException("methodInfo");
+                throw new ArgumentNullException(nameof(methodInfo));
             if (ctx == null)
-                throw new ArgumentNullException("ctx");
+                throw new ArgumentNullException(nameof(ctx));
 
             if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType))
                 throw new ArgumentException("Method return type is not assignable to ZilObject");
 
-            var methodAttrs = methodInfo.GetCustomAttributes(false);
             var parameters = methodInfo.GetParameters();
-            var function = methodAttrs.OfType<Subrs.SubrAttribute>().FirstOrDefault()?.Name ?? methodInfo.Name;
 
             if (parameters.Length < 1 || parameters[0].ParameterType != typeof(Context))
                 throw new ArgumentException("First parameter type must be Context");
 
-            return new ArgDecoder(ctx, methodAttrs, parameters);
+            return new ArgDecoder(ctx, parameters);
         }
 
         public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx)
@@ -1713,7 +1708,7 @@ namespace Zilf.Interpreter
             return WrapMethodAsSubrDelegate(methodInfo, ctx, null);
         }
 
-        private static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
+        static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
             Dictionary<MethodInfo, SubrDelegate> alreadyDone)
         {
             Contract.Requires(methodInfo.IsStatic);
@@ -1791,17 +1786,17 @@ namespace Zilf.Interpreter
         {
             var site = new FunctionCallSite(name);
 
-            if (args.Length < lowerBound || args.Length > upperBound)
+            if (args.Length < LowerBound || args.Length > UpperBound)
             {
-                throw ArgumentCountError.WrongCount(site, lowerBound, upperBound);
+                throw ArgumentCountError.WrongCount(site, LowerBound, UpperBound);
             }
 
             var result = new List<object>(1 + args.Length) { ctx };
 
             var argIndex = 0;
             Constraint savedConstraint = null;
-            var remainingLowerBound = lowerBound;
-            var remainingUpperBound = upperBound;
+            var remainingLowerBound = LowerBound;
+            var remainingUpperBound = UpperBound;
             int? lastUnderachievingStepArgIndex = null;
 
             var callbacks = new DecodingStepCallbacks
@@ -1813,12 +1808,12 @@ namespace Zilf.Interpreter
                 {
                     throw ArgumentCountError.WrongCount(site, remainingLowerBound, remainingUpperBound, true);
                 },
-                Ready = o => result.Add(o),
+                Ready = o => result.Add(o)
             };
 
-            for (var stepIndex = 0; stepIndex < stepInfos.Length; stepIndex++)
+            for (var stepIndex = 0; stepIndex < StepInfos.Length; stepIndex++)
             {
-                var constraint = stepInfos[stepIndex].Constraint;
+                var constraint = StepInfos[stepIndex].Constraint;
                 if (savedConstraint != null)
                 {
                     constraint = constraint.Or(ctx, savedConstraint);
@@ -1827,12 +1822,12 @@ namespace Zilf.Interpreter
                 callbacks.Error = i => { throw new ArgumentTypeError(
                     site, i ?? argIndex, constraint.ToString()); };
 
-                var step = stepInfos[stepIndex].Step;
+                var step = StepInfos[stepIndex].Step;
                 var next = step(args, argIndex, callbacks);
                 Contract.Assert(next >= argIndex);
 
-                var stepLowerBound = stepInfos[stepIndex].LowerBound;
-                var stepUpperBound = stepInfos[stepIndex].UpperBound;
+                var stepLowerBound = StepInfos[stepIndex].LowerBound;
+                var stepUpperBound = StepInfos[stepIndex].UpperBound;
 
                 remainingLowerBound -= stepLowerBound;
                 remainingUpperBound -= stepUpperBound;
@@ -1878,25 +1873,23 @@ namespace Zilf.Interpreter
 
                     throw new ArgumentTypeError(site, argIndex, savedConstraint.ToString());
                 }
-                else
-                {
-                    /* The last optional argument we skipped was earlier in the list, e.g.:
-                     *
-                     *     expected   <FOO fix [atom] string>
-                     *     actual     <FOO fix string string>
-                     *
-                     * Or it might have been a sequence inside Either:
-                     *
-                     *     expected   <FOO {atom | string oblist}>
-                     *     actual     <FOO atom oblist>
-                     *
-                     * The user might have passed the wrong type for an earlier argument. We can
-                     * guess which one, if we noticed a step that didn't reach its full potential.
-                     * (Heartbreaking.) But we can't be sure, so we can't call this a type error.
-                     */
 
-                    throw ArgumentCountError.TooMany(site, argIndex + 1, lastUnderachievingStepArgIndex + 1);
-                }
+                /* The last optional argument we skipped was earlier in the list, e.g.:
+                    *
+                    *     expected   <FOO fix [atom] string>
+                    *     actual     <FOO fix string string>
+                    *
+                    * Or it might have been a sequence inside Either:
+                    *
+                    *     expected   <FOO {atom | string oblist}>
+                    *     actual     <FOO atom oblist>
+                    *
+                    * The user might have passed the wrong type for an earlier argument. We can
+                    * guess which one, if we noticed a step that didn't reach its full potential.
+                    * (Heartbreaking.) But we can't be sure, so we can't call this a type error.
+                    */
+
+                throw ArgumentCountError.TooMany(site, argIndex + 1, lastUnderachievingStepArgIndex + 1);
             }
 
             return result.ToArray();

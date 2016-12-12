@@ -198,7 +198,7 @@ namespace Zilf.Emit
     /// <typeparam name="TCode">The type used to represent instructions.</typeparam>
     class PeepholeBuffer<TCode>
     {
-        private class Line
+        class Line
         {
             public ILabel Label;
             public TCode Code;
@@ -261,10 +261,10 @@ namespace Zilf.Emit
             }
         }
 
-        private ILabel pendingLabel;
-        private IPeepholeCombiner<TCode> combiner;
-        private Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
-        private LinkedList<Line> lines = new LinkedList<Line>();
+        ILabel pendingLabel;
+        IPeepholeCombiner<TCode> combiner;
+        Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
+        LinkedList<Line> lines = new LinkedList<Line>();
 
         public PeepholeBuffer()
         {
@@ -390,7 +390,7 @@ namespace Zilf.Emit
         }
 
         [System.Diagnostics.Conditional("TRACE_PEEPHOLE")]
-        private void Trace()
+        void Trace()
         {
             Console.WriteLine();
             Console.WriteLine();
@@ -440,7 +440,7 @@ namespace Zilf.Emit
             }
         }
 
-        private void Optimize()
+        void Optimize()
         {
             // apply alias mappings and link lines to each other
             Dictionary<ILabel, Line> labelMap = new Dictionary<ILabel, PeepholeBuffer<TCode>.Line>();
@@ -496,7 +496,7 @@ namespace Zilf.Emit
                 {
                     LinkedListNode<Line> node = queue.Dequeue();
                     Line line = node.Value;
-                    
+
                     if (line.Flag != reachableFlag)
                     {
                         line.Flag = reachableFlag;
@@ -893,7 +893,7 @@ namespace Zilf.Emit
                             changed = true;
                         }
                     }
-                    
+
                     // delete code that has been doomed
                     if (delete)
                     {
@@ -938,7 +938,7 @@ namespace Zilf.Emit
             } while (changed);
         }
 
-        private static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
+        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
         {
             yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
 
@@ -948,13 +948,13 @@ namespace Zilf.Emit
             }
         }
 
-        private static bool IsInvertibleBranch(PeepholeLineType type)
+        static bool IsInvertibleBranch(PeepholeLineType type)
         {
             return type == PeepholeLineType.BranchNegative ||
                    type == PeepholeLineType.BranchPositive;
         }
 
-        private static PeepholeLineType InvertBranch(PeepholeLineType type)
+        static PeepholeLineType InvertBranch(PeepholeLineType type)
         {
             switch (type)
             {

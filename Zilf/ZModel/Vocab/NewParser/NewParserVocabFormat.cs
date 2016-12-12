@@ -33,10 +33,10 @@ namespace Zilf.ZModel.Vocab.NewParser
 {
     class NewParserVocabFormat : IVocabFormat
     {
-        private readonly Context ctx;
-        private readonly int adjClass, buzzClass, dirClass, objectClass, particleClass, prepClass, verbClass;
+        readonly Context ctx;
+        readonly int adjClass, buzzClass, dirClass, objectClass, particleClass, prepClass, verbClass;
 
-        private byte nextAdjective = 255;
+        byte nextAdjective = 255;
 
         public NewParserVocabFormat(Context ctx)
         {
@@ -54,7 +54,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 throw new InterpreterError(InterpreterMessages.GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB);
         }
 
-        private static bool AnyDuplicates<T>(params T[] args)
+        static bool AnyDuplicates<T>(params T[] args)
         {
             var seen = new HashSet<T>();
 
@@ -77,7 +77,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ctx.GetStdAtom(StdAtom.MAKE_VWORD),
                 ZilString.FromString(atom.Text),
                 ZilFix.Zero,
-                ZilFix.Zero,
+                ZilFix.Zero
             });
             var vword = form.Eval(ctx) as ZilHash;
 
@@ -205,7 +205,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if (!nw.HasClass(dirClass))
             {
-                int index = ctx.ZEnvironment.Directions.IndexOf(nw.Atom);
+                var index = ctx.ZEnvironment.Directions.IndexOf(nw.Atom);
                 if (index == -1)
                     throw new ArgumentException("Not a direction");
 
@@ -467,8 +467,8 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if (ctx.GetCompilationFlagOption(StdAtom.ONE_BYTE_PARTS_OF_SPEECH))
             {
-                byte lowByte = (byte)(nw.Classification & 0x7f);
-                byte highByte = (byte)((nw.Classification >> 7) & 0x7f);
+                var lowByte = (byte)(nw.Classification & 0x7f);
+                var highByte = (byte)((nw.Classification >> 7) & 0x7f);
                 if (lowByte != 0 && highByte != 0)
                 {
                     ctx.HandleWarning(new CompilerError(CompilerMessages.ONEBYTEPARTSOFSPEECH_Loses_Data_For_0, word.Atom.Text));
@@ -489,7 +489,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        private bool TryGetVerbStuffId(ZilObject verbStuff, out ZilObject verbStuffId)
+        bool TryGetVerbStuffId(ZilObject verbStuff, out ZilObject verbStuffId)
         {
             Contract.Ensures(!Contract.Result<bool>() || Contract.ValueAtReturn(out verbStuffId) != null);
 
@@ -503,12 +503,12 @@ namespace Zilf.ZModel.Vocab.NewParser
             return verbStuffId != null;
         }
 
-        private bool IsVerbPointer(ZilObject verbStuff)
+        bool IsVerbPointer(ZilObject verbStuff)
         {
             return verbStuff != null && verbStuff.GetTypeAtom(ctx).StdAtom == StdAtom.VERB_POINTER;
         }
 
-        private void ConditionalAddShort(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        void ConditionalAddShort(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
         {
             if (value == null)
             {
@@ -533,7 +533,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        private void ConditionalAddByte(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        void ConditionalAddByte(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
         {
             if (value == null)
             {
@@ -576,7 +576,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
 
             // find new CLASS by translating TYPE
-            ZilFix classification = TranslateType(ctx, type);
+            var classification = TranslateType(ctx, type);
 
             // create the word or merge into the existing one
             IWord iword;
@@ -589,7 +589,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     ctx.GetStdAtom(StdAtom.MAKE_VWORD),
                     ZilString.FromString(name.Text),
                     classification,
-                    flags,
+                    flags
                 });
 
                 var vword = form.Eval(ctx);
@@ -675,7 +675,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return word.Atom;
         }
 
-        private static ZilFix TranslateType(Context ctx, ZilAtom type)
+        static ZilFix TranslateType(Context ctx, ZilAtom type)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(type != null);
@@ -715,7 +715,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     var form = new ZilForm(new ZilObject[]
                     {
                         ctx.GetStdAtom(StdAtom.GET_CLASSIFICATION),
-                        type,
+                        type
                     });
 
                     classification = form.Eval(ctx) as ZilFix;
@@ -733,8 +733,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         {
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
                 return new[] { "WORD-FLAG-TABLE" };
-            else
-                return new string[0];
+            return new string[0];
         }
 
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)

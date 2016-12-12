@@ -24,14 +24,14 @@ namespace Zapf
 {
     class XmlDebugFileWriter : IDebugFileWriter
     {
-        private readonly XmlWriter xml;
-        private bool inRoutine;
+        readonly XmlWriter xml;
+        bool inRoutine;
 
         public XmlDebugFileWriter(Stream debugStream)
         {
             var settings = new XmlWriterSettings()
             {
-                Indent = true,
+                Indent = true
             };
 
             xml = XmlWriter.Create(debugStream, settings);
@@ -220,7 +220,7 @@ namespace Zapf
             xml.WriteEndElement();
         }
 
-        private void WriteSourceCodeLocation(LineRef start, LineRef end)
+        void WriteSourceCodeLocation(LineRef start, LineRef end)
         {
             xml.WriteStartElement("source-code-location");
 

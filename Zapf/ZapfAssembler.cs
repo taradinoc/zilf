@@ -50,7 +50,7 @@ namespace Zapf
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
 
-        private Stream OpenFile(string path, bool writing)
+        Stream OpenFile(string path, bool writing)
         {
             var handler = this.OpeningFile;
             if (handler != null)
@@ -69,7 +69,7 @@ namespace Zapf
                 writing ? FileAccess.ReadWrite : FileAccess.Read);
         }
 
-        private bool CheckFileExists(string path)
+        bool CheckFileExists(string path)
         {
             var handler = this.CheckingFilePresence;
             if (handler != null)
@@ -95,7 +95,7 @@ namespace Zapf
                 OutFile = outputFileName,
                 DebugFile = Path.ChangeExtension(outputFileName, ".dbg"),
                 InterceptOpenFile = this.OpenFile,
-                InterceptFileExists = this.CheckFileExists,
+                InterceptFileExists = this.CheckFileExists
             };
 
             //XXX redirect log messages

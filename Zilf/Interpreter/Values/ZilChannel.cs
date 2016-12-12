@@ -59,9 +59,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilFileChannel : ZilChannel
     {
-        private readonly FileAccess fileAccess;
-        private readonly string path;
-        private Stream stream;
+        readonly FileAccess fileAccess;
+        readonly string path;
+        Stream stream;
 
         public ZilFileChannel(string path, FileAccess fileAccess)
         {
@@ -153,12 +153,12 @@ namespace Zilf.Interpreter.Values
     [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilStringChannel : ZilChannel
     {
-        private readonly StringBuilder sb = new StringBuilder();
+        readonly StringBuilder sb = new StringBuilder();
 
         public ZilStringChannel(FileAccess fileAccess)
         {
             if (fileAccess != FileAccess.Write)
-                throw new ArgumentException("Only Write mode is supported", "fileAccess");
+                throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
         }
 
         public string String
@@ -179,7 +179,7 @@ namespace Zilf.Interpreter.Values
             {
                 ctx.GetStdAtom(StdAtom.PRINT),
                 ctx.GetStdAtom(StdAtom.STRING),
-                ZilString.FromString(sb.ToString()),
+                ZilString.FromString(sb.ToString())
             });
         }
 
@@ -228,7 +228,7 @@ namespace Zilf.Interpreter.Values
         public ZilConsoleChannel(FileAccess fileAccess)
         {
             if (fileAccess != FileAccess.Write)
-                throw new ArgumentException("Only Write mode is supported", "fileAccess");
+                throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
         }
 
         public override string ToString()
@@ -241,7 +241,7 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(new ZilObject[]
             {
                 ctx.GetStdAtom(StdAtom.PRINT),
-                ctx.GetStdAtom(StdAtom.CONSOLE),
+                ctx.GetStdAtom(StdAtom.CONSOLE)
             });
         }
 

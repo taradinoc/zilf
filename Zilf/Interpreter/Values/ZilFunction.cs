@@ -28,8 +28,8 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FUNCTION, PrimType.LIST)]
     class ZilFunction : ZilObject, IApplicable, IStructure
     {
-        private ArgSpec argspec;
-        private readonly ZilObject[] body;
+        ArgSpec argspec;
+        readonly ZilObject[] body;
 
         public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
         {
@@ -41,7 +41,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ContractInvariantMethod]
-        private void ObjectInvariant()
+        void ObjectInvariant()
         {
             Contract.Invariant(argspec != null);
             Contract.Invariant(body != null);
@@ -59,7 +59,7 @@ namespace Zilf.Interpreter.Values
                 .Invoke("FUNCTION", ctx, list.ToArray());
         }
 
-        private string ToString(Func<ZilObject, string> convert)
+        string ToString(Func<ZilObject, string> convert)
         {
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -68,7 +68,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    StringBuilder sb = new StringBuilder();
+                    var sb = new StringBuilder();
 
                     sb.Append("#FUNCTION (");
                     sb.Append(argspec.ToString(convert));
@@ -126,7 +126,7 @@ namespace Zilf.Interpreter.Values
             return ApplyImpl(ctx, args, true);
         }
 
-        private ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
+        ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
             using (var application = argspec.BeginApply(ctx, args, eval))
             {
@@ -159,7 +159,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilFunction other = obj as ZilFunction;
+            var other = obj as ZilFunction;
             if (other == null)
                 return false;
 
@@ -178,7 +178,7 @@ namespace Zilf.Interpreter.Values
 
         public override int GetHashCode()
         {
-            int result = argspec.GetHashCode();
+            var result = argspec.GetHashCode();
 
             foreach (ZilObject obj in body)
                 result ^= obj.GetHashCode();

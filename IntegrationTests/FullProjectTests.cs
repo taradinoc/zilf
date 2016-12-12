@@ -27,10 +27,10 @@ namespace IntegrationTests
     [TestClass]
     public class FullProjectTests
     {
-        private const string ProjectsDirName = "FullTestProjects";
-        private const string LibraryDirName = "Library";
+        const string ProjectsDirName = "FullTestProjects";
+        const string LibraryDirName = "Library";
 
-        private static string projectsDir, libraryDir;
+        static string projectsDir, libraryDir;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
@@ -139,10 +139,10 @@ namespace IntegrationTests
             }
         }
 
-        private static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
-        private static Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
+        static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
+        static Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
 
-        private static string MassageText(string text)
+        static string MassageText(string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -152,7 +152,7 @@ namespace IntegrationTests
             return text;
         }
 
-        private static string[] SplitLines(string text)
+        static string[] SplitLines(string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string[]>() != null);

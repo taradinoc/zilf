@@ -23,14 +23,14 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.CHARACTER, PrimType.FIX)]
     class ZilChar : ZilObject
     {
-        private readonly int value;
+        readonly int value;
 
         public ZilChar(char ch)
             : this((int)ch)
         {
         }
 
-        private ZilChar(int value)
+        ZilChar(int value)
         {
             this.value = value;
         }
@@ -79,7 +79,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            ZilChar other = obj as ZilChar;
+            var other = obj as ZilChar;
             return other != null && other.value == this.value;
         }
 
