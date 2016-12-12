@@ -78,10 +78,7 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_No_Expressions_Found, name, ex);
                     }
                 }
-                else
-                {
-                    return new ZilList(ztree);
-                }
+                return new ZilList(ztree);
             }
         }
 
@@ -155,10 +152,7 @@ namespace Zilf.Interpreter
                     atom.ObList = null;
                     return atom;
                 }
-                else
-                {
-                    return ctx.FALSE;
-                }
+                return ctx.FALSE;
             }
 
             var nameAndOblist = (RemoveParams.PnameAndObList)atomOrNameAndObList;
@@ -279,7 +273,11 @@ namespace Zilf.Interpreter
 
             var result = ctx.GetGlobalVal(atom);
             if (result == null)
-                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Global_Value, "GVAL", atom.ToStringContext(ctx, false));
+                throw new InterpreterError(
+                    InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                    "GVAL",
+                    atom.ToStringContext(ctx, false),
+                    "global");
 
             return result;
         }
@@ -391,7 +389,11 @@ namespace Zilf.Interpreter
 
             var result = env.GetLocalVal(atom);
             if (result == null)
-                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Value, "LVAL", atom.ToStringContext(ctx, false));
+                throw new InterpreterError(
+                    InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                    "LVAL",
+                    atom.ToStringContext(ctx, false),
+                    "local");
 
             return result;
         }
@@ -428,7 +430,11 @@ namespace Zilf.Interpreter
 
             var result = env.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
             if (result == null)
-                throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Or_Global_Value, "VALUE", atom.ToStringContext(ctx, false));
+                throw new InterpreterError(
+                    InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                    "VALUE",
+                    atom.ToStringContext(ctx, false),
+                    "local or global");
 
             return result;
         }
@@ -444,14 +450,11 @@ namespace Zilf.Interpreter
             {
                 return result;
             }
-            else if (defaultValue != null)
+            if (defaultValue != null)
             {
                 return defaultValue.Eval(ctx);
             }
-            else
-            {
-                return ctx.FALSE;
-            }
+            return ctx.FALSE;
         }
 
         [Subr]
@@ -466,12 +469,10 @@ namespace Zilf.Interpreter
                 ctx.PutProp(item, indicator, null);
                 return result ?? ctx.FALSE;
             }
-            else
-            {
-                // set, and return first arg
-                ctx.PutProp(item, indicator, value);
-                return item;
-            }
+
+            // set, and return first arg
+            ctx.PutProp(item, indicator, value);
+            return item;
         }
 
         [Subr]
@@ -485,10 +486,7 @@ namespace Zilf.Interpreter
             {
                 return new ZilAsoc(results, 0);
             }
-            else
-            {
-                return ctx.FALSE;
-            }
+            return ctx.FALSE;
         }
 
         [Subr]

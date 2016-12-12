@@ -127,7 +127,11 @@ namespace Zilf.Interpreter
                 var atom = (ZilAtom)printer;
                 printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
                 if (printer == null)
-                    throw new InterpreterError(InterpreterMessages._0_Atom_1_Has_No_Local_Or_Global_Value, "PRINT-MANY", atom.ToStringContext(ctx, false));
+                    throw new InterpreterError(
+                        InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                        "PRINT-MANY",
+                        atom.ToStringContext(ctx, false),
+                        "local or global");
             }
 
             var applicablePrinter = printer.AsApplicable(ctx);
@@ -202,8 +206,7 @@ namespace Zilf.Interpreter
             var match = RetroPathRE.Match(retroPath);
             if (match.Success)
                 return match.Groups["filename"].Value;
-            else
-                return retroPath;
+            return retroPath;
         }
 
         [Subr]
