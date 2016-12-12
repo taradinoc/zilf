@@ -176,7 +176,7 @@ namespace Zilf.Interpreter
                         innerEnv.Rebind(activationAtom, activation);
                     }
 
-                    var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToDictionary(p => p.Key, p => p.Value);
+                    var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToLookup(p => p.Key, p => p.Value);
 
                     foreach (var b in bindings.Bindings)
                     {
@@ -185,12 +185,12 @@ namespace Zilf.Interpreter
 
                         var value = initializer?.Eval(ctx);
 
-                        ZilObject decl1 = b.Decl, decl2 = null;
-                        bodyAtomDecls?.TryGetValue(atom, out decl2);
-                        if (decl1 != null && decl2 != null)
+                        var previousDecl = b.Decl;
+                        var firstBodyDecl = bodyAtomDecls?[atom].FirstOrDefault();
+                        if (firstBodyDecl != null && (previousDecl != null || bodyAtomDecls?[atom].Skip(1).Any() == true))
                             throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, name, atom);
 
-                        var decl = decl1 ?? decl2;
+                        var decl = previousDecl ?? firstBodyDecl;
 
                         if (value != null)
                             ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
