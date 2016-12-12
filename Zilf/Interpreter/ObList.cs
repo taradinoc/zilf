@@ -54,14 +54,14 @@ namespace Zilf.Interpreter
                 if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
                     pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
                 {
-                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists);
+                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists_String_Atom);
                 }
 
                 var key = pair.First as ZilString;
                 var value = pair.Rest.First as ZilAtom;
 
                 if (key == null || value == null)
-                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_Stringatom_Pairs);
+                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists_String_Atom);
 
                 result[key.Text] = value;
             }

@@ -149,7 +149,7 @@ namespace Zilf.ZModel
                             atomToken.Atoms.Add(atom);
 
                         if (tokensSoFar.Count != 0)
-                            throw new InterpreterError(InterpreterMessages.Lists_In_TELL_Token_Specs_Must_Come_At_The_Beginning_Of_A_Pattern);
+                            throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
 
                         tokensSoFar.Add(atomToken);
                         break;
@@ -176,7 +176,7 @@ namespace Zilf.ZModel
                         // *:DECL to capture any value that matches the decl
                         adecl = (ZilAdecl)zo;
                         if (!(adecl.First is ZilAtom) || ((ZilAtom)adecl.First).StdAtom != StdAtom.Times)
-                            throw new InterpreterError(InterpreterMessages.Left_Side_Of_ADECL_In_TELL_Token_Spec_Must_Be_);
+                            throw new InterpreterError(InterpreterMessages.Left_Side_Of_ADECL_In_TELL_Token_Spec_Must_Be_star);
                         tokensSoFar.Add(new DeclToken { Pattern = adecl.Second });
                         capturesSoFar++;
                         break;
