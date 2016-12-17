@@ -235,7 +235,14 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            return ctx.PopObPath();
+            try
+            {
+                return ctx.PopObPath();
+            }
+            catch (InvalidOperationException)
+            {
+                throw new InterpreterError(InterpreterMessages.Misplaced_0, "ENDBLOCK");
+            }
         }
 
         [Subr]

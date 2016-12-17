@@ -28,9 +28,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.OFFSET, PrimType.VECTOR)]
     sealed class ZilOffset : ZilObject, IStructure, IApplicable
     {
-        public int Index;
-        public ZilObject StructurePattern;
-        public ZilObject ValuePattern;
+        public int Index { get; }
+        public ZilObject StructurePattern { get; }
+        public ZilObject ValuePattern { get; }
 
         [ChtypeMethod]
         public ZilOffset(ZilVector vector)
@@ -38,12 +38,12 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(vector != null);
 
             if (vector.GetLength() != 3)
-                throw new InterpreterError(InterpreterMessages.Vector_Coerced_To_OFFSET_Must_Have_Length_2);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "vector coerced to OFFSET", 3);
 
             var indexFix = vector[0] as ZilFix;
 
             if (indexFix == null)
-                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_A_FIX);
+                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "vector coerced to OFFSET", "a FIX");
 
             Index = indexFix.Value;
             StructurePattern = vector[1];
@@ -101,10 +101,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "%<OFFSET ...>";
-            }
+            return "%<OFFSET ...>";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
@@ -126,10 +123,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "%<OFFSET ...>";
-            }
+            return "%<OFFSET ...>";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -248,36 +242,28 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            if (args.Length == 1)
+            try
             {
-                try
+                if (args.Length == 1)
                 {
                     ctx.MaybeCheckDecl(args[0], this.StructurePattern, "argument {0}", 1);
                     var result = Subrs.NTH(ctx, (IStructure)args[0], this.Index);
                     ctx.MaybeCheckDecl(result, this.ValuePattern, "element {0}", this.Index);
                     return result;
                 }
-                catch (InvalidCastException)
-                {
-                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
-                }
-            }
-            else if (args.Length == 2)
-            {
-                try
+
+                if (args.Length == 2)
                 {
                     ctx.MaybeCheckDecl(args[0], this.StructurePattern, "argument {0}", 1);
                     ctx.MaybeCheckDecl(args[1], this.ValuePattern, "argument {0}", 2);
                     return Subrs.PUT(ctx, (IStructure)args[0], this.Index, args[1]);
                 }
-                catch (InvalidCastException)
-                {
-                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
-                }
-            }
-            else
-            {
+
                 throw new InterpreterError(InterpreterMessages.Expected_1_Or_2_Args_After_An_OFFSET);
+            }
+            catch (InvalidCastException)
+            {
+                throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
             }
         }
     }

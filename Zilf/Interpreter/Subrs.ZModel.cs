@@ -52,7 +52,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Flag_1, "ROUTINE-FLAGS", atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ROUTINE-FLAGS", "flag", atom);
                 }
             }
 
@@ -99,11 +99,10 @@ namespace Zilf.Interpreter
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
                 ctx.HandleWarning(new InterpreterError(ctx.TopFrame.SourceLine,
-                    InterpreterMessages._0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Argument4_Will_Never_Be_Passed,
+                    InterpreterMessages._0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Arguments_Will_Never_Be_Passed,
                     "ROUTINE", maxArgsAllowed,
                     ctx.ZEnvironment.ZVersion,
-                    affectedArgCount,
-                    affectedArgCount == 1 ? "" : "s"));
+                    affectedArgCount));
             }
 
             rtn.SourceLine = ctx.TopFrame.SourceLine;
@@ -401,7 +400,7 @@ namespace Zilf.Interpreter
             foreach (var synonym in synonyms)
             {
                 if (ctx.GetZVal(synonym) != null)
-                    throw new InterpreterError(InterpreterMessages._0_Symbol_Is_Already_Defined_1, "BIT-SYNONYM", synonym);
+                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "BIT-SYNONYM", synonym);
 
                 ctx.ZEnvironment.AddBitSynonym(synonym, first);
             }
@@ -489,7 +488,7 @@ namespace Zilf.Interpreter
                             flags |= TableFlags.TempTable;
                             break;
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Flag_1, "ITABLE", flag);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ITABLE", "flag", flag);
                     }
                 }
 
@@ -582,7 +581,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Flag_1, name, flag);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "flag", flag);
                     }
 
                     flagList = flagList.Rest;
@@ -650,12 +649,12 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN, name);
 
                     if (vector.GetLength() < 2)
-                        throw new InterpreterError(InterpreterMessages._0_Vector_In_PATTERN_Must_Have_At_Least_2_Elements, name);
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "vector", "PATTERN", "at least 2");
 
                     // first element must be REST
                     var atom = vector[0] as ZilAtom;
                     if (atom == null || atom.StdAtom != StdAtom.REST)
-                        throw new InterpreterError(InterpreterMessages._0_Vector_In_PATTERN_Must_Start_With_REST, name);
+                        throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "vector", "PATTERN", "REST");
 
                     // remaining elements must be BYTE or WORD
                     if (!vector.Skip(1).All(IsByteOrWordAtom))
@@ -816,18 +815,21 @@ namespace Zilf.Interpreter
                         newVersion = 6;
                         break;
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Name_Must_Be_ZIP_EZIP_XZIP_YZIP, name);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version name", text)
+                            .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
                 }
             }
             else if (expr is ZilFix)
             {
                 newVersion = ((ZilFix)expr).Value;
                 if (newVersion < 3 || newVersion > 8)
-                    throw new InterpreterError(InterpreterMessages._0_Version_Number_Out_Of_Range_Must_Be_36, name);
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version number", newVersion)
+                        .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
             }
             else
             {
-                throw new InterpreterError(InterpreterMessages._0_Arg_Must_Be_An_Atom_Or_A_FIX, name);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version specifier", expr)
+                    .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
             }
             return newVersion;
         }
@@ -959,7 +961,7 @@ namespace Zilf.Interpreter
                         continue;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Option_1, "ZIP-OPTIONS", atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ZIP-OPTIONS", "option", atom);
                 }
 
                 ctx.DefineCompilationFlag(atom, ctx.TRUE, true);
@@ -1052,7 +1054,7 @@ namespace Zilf.Interpreter
 
             var language = ZModel.Language.Get(name.Text);
             if (language == null)
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Language_1, "LANGUAGE", name.Text);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "LANGUAGE", "language", name.Text);
 
             // update language, escape char, and possibly charset
             ctx.ZEnvironment.Language = language;
@@ -1145,7 +1147,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Part_Of_Speech_1, "VOC", type);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "VOC", "part of speech", type);
                 }
             }
 

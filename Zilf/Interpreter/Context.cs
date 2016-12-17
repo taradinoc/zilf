@@ -1627,8 +1627,14 @@ namespace Zilf.Interpreter
             return new FileStream(path, mode, fileAccess);
         }
 
+        /// <summary>
+        /// Pushes a new LVAL for the atom OBLIST, to be used for looking up atoms.
+        /// </summary>
+        /// <param name="newObPath">A list to serve as the new LVAL of OBLIST.</param>
         public void PushObPath(ZilList newObPath)
         {
+            Contract.Requires(newObPath != null);
+
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom);
 
@@ -1641,20 +1647,21 @@ namespace Zilf.Interpreter
             SetLocalVal(atom, newObPath);
         }
 
+        /// <summary>
+        /// Restores the previous LVAL of the atom OBLIST that existed before a corresponding
+        /// call to <see cref="PushObPath"/>.
+        /// </summary>
+        /// <returns>The current LVAL of OBLIST, or <b>null</b> if it's currently unassigned.</returns>
+        /// <exception cref="InvalidOperationException">There was no previous LVAL of OBLIST.</exception>
         public ZilObject PopObPath()
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom);
 
-            ZilObject popped;
-            try
-            {
-                popped = previousObPaths.Pop();
-            }
-            catch (InvalidOperationException)
-            {
-                throw new InterpreterError(InterpreterMessages.No_Previously_Pushed_Value_For_OBLIST);
-            }
+            // may throw InvalidOperationException
+            var popped = previousObPaths.Pop();
 
             SetLocalVal(atom, popped);
             return old;

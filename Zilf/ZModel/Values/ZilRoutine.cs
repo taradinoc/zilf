@@ -42,7 +42,7 @@ namespace Zilf.ZModel.Values
             Contract.Requires(body != null);
 
             this.name = name;
-            this.argspec = new ArgSpec(name, activationAtom, argspec);
+            this.argspec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
             this.body = body.ToArray();
             this.flags = flags;
         }
@@ -51,11 +51,11 @@ namespace Zilf.ZModel.Values
         public static ZilRoutine FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty || list.Rest.IsEmpty)
-                throw new InterpreterError(InterpreterMessages.List_Must_Have_At_Least_2_Elements);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to ROUTINE", "at least 2");
 
             var argList = list.First as ZilList;
             if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_A_List);
+                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
 
             return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
         }

@@ -94,10 +94,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "<...>";
-            }
+            return "<...>";
         }
 
         public override string ToString()
@@ -148,8 +145,7 @@ namespace Zilf.Interpreter.Values
                     return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
                 }
             }
-            else
-                throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
+            throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
         }
 
         public override ZilObject Expand(Context ctx)
@@ -185,8 +181,11 @@ namespace Zilf.Interpreter.Values
                     return resultForm.Expand(ctx);
                 }
             }
-            else if (target is ZilFix)
+
+            if (target is ZilFix)
             {
+                // TODO: is rewriting in place really the right behavior here?
+
                 if (Rest.First != null)
                 {
                     if (Rest.Rest.First == null)

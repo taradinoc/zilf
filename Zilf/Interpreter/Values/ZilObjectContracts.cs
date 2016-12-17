@@ -31,6 +31,7 @@ namespace Zilf.Interpreter.Values
         public override ZilObject GetPrimitive(Context ctx)
         {
             Contract.Ensures(Contract.Result<ZilObject>() != null);
+            Contract.Ensures(Contract.Result<ZilObject>().PrimType == PrimType);
             return default(ZilObject);
         }
     }

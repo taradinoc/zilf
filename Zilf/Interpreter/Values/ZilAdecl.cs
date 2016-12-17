@@ -36,7 +36,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(vector != null);
 
             if (vector.GetLength() != 2)
-                throw new InterpreterError(InterpreterMessages.Vector_Coerced_To_ADECL_Must_Have_Length_2);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "vector coerced to ADECL", 2);
 
             First = vector[0];
             Second = vector[1];
@@ -83,10 +83,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return ":...";
-            }
+            return ":...";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)

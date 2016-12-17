@@ -54,27 +54,52 @@ namespace Zilf.Interpreter
         // "VALUE"
         readonly ZilObject valueDecl;
 
-        public ArgSpec(ArgSpec prev, IEnumerable<ZilObject> argspec)
-            : this(prev.name, null, argspec)
+        ArgSpec(ZilAtom name, ZilAtom activationAtom, int optArgsStart, int auxArgsStart, ZilAtom varargsAtom, bool varargsQuoted, ZilObject varargsDecl,
+            ZilAtom environmentAtom, ZilObject valueDecl, ZilAtom quoteAtom, ZilAtom[] argAtoms, ZilObject[] argDecls, bool[] argQuoted, ZilObject[] argDefaults)
         {
-            Contract.Requires(prev != null);
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-        }
-
-        public ArgSpec(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
-        {
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-
             this.name = name;
             this.activationAtom = activationAtom;
+            this.optArgsStart = optArgsStart;
+            this.auxArgsStart = auxArgsStart;
+            this.varargsAtom = varargsAtom;
+            this.varargsQuoted = varargsQuoted;
+            this.varargsDecl = varargsDecl;
+            this.environmentAtom = environmentAtom;
+            this.valueDecl = valueDecl;
+            this.quoteAtom = quoteAtom;
+            this.argAtoms = argAtoms;
+            this.argDecls = argDecls;
+            this.argQuoted = argQuoted;
+            this.argDefaults = argDefaults;
+        }
 
-            optArgsStart = -1;
-            auxArgsStart = -1;
+        public static ArgSpec Parse(string caller, ArgSpec prev, IEnumerable<ZilObject> argspec)
+        {
+            Contract.Requires(caller != null);
+            Contract.Requires(prev != null);
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
+            Contract.Ensures(Contract.Result<ArgSpec>() != null);
 
-            var newArgAtoms = new List<ZilAtom>();
-            var newArgDecls = new List<ZilObject>();
-            var newArgQuoted = new List<bool>();
-            var newArgDefaults = new List<ZilObject>();
+            return Parse(caller, prev.name, null, argspec);
+        }
+
+        public static ArgSpec Parse(string caller, ZilAtom targetName, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
+        {
+            Contract.Requires(caller != null);
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
+            Contract.Ensures(Contract.Result<ArgSpec>() != null);
+
+            var optArgsStart = -1;
+            var auxArgsStart = -1;
+
+            ZilAtom varargsAtom = null, environmentAtom = null, quoteAtom = null;
+            bool varargsQuoted = false;
+            ZilObject varargsDecl = null, valueDecl = null;
+
+            var argAtoms = new List<ZilAtom>();
+            var argDecls = new List<ZilObject>();
+            var argQuoted = new List<bool>();
+            var argDefaults = new List<ZilObject>();
 
             const int OO_None = 0;
             const int OO_Varargs = 1;
@@ -97,21 +122,21 @@ namespace Zilf.Interpreter
                         case "OPT":
                         case "OPTIONAL":
                             if (optArgsStart != -1)
-                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"OPT\"");
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"OPT\"");
                             if (auxArgsStart != -1)
-                                throw new InterpreterError(InterpreterMessages.OPT_After_AUX);
+                                throw new InterpreterError(InterpreterMessages._0_OPT_After_AUX, caller);
                             optArgsStart = cur;
                             continue;
                         case "AUX":
                         case "EXTRA":
                             if (auxArgsStart != -1)
-                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"AUX\"");
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"AUX\"");
                             auxArgsStart = cur;
                             continue;
                         case "ARGS":
                         case "TUPLE":
                             if (varargsAtom != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"ARGS\" or \"TUPLE\"");
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"ARGS\" or \"TUPLE\"");
                             oneOffMode = OO_Varargs;
                             oneOffTag = arg;
                             varargsQuoted = (sep == "ARGS");
@@ -119,24 +144,24 @@ namespace Zilf.Interpreter
                         case "NAME":
                         case "ACT":
                             if (activationAtom != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_NAME_Clauses_Or_Activation_Atoms);
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"NAME\" or activation atom");
                             oneOffMode = OO_Activation;
                             oneOffTag = arg;
                             continue;
                         case "BIND":
                             if (environmentAtom != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"BIND\"");
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"BIND\"");
                             oneOffMode = OO_Environment;
                             oneOffTag = arg;
                             continue;
                         case "VALUE":
                             if (valueDecl != null)
-                                throw new InterpreterError(InterpreterMessages.Multiple_0_Clauses, "\"VALUE\"");
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"VALUE\"");
                             oneOffMode = OO_Value;
                             oneOffTag = arg;
                             continue;
                         default:
-                            throw new InterpreterError(InterpreterMessages.Unexpected_Clause_In_Arg_Spec_0, arg.ToString());
+                            throw new InterpreterError(InterpreterMessages._0_Unexpected_Clause_In_Arg_Spec_1, caller, arg.ToString());
                     }
                 }
 
@@ -155,7 +180,7 @@ namespace Zilf.Interpreter
                             }
                             else
                             {
-                                throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
+                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
                             }
                         }
 
@@ -163,9 +188,9 @@ namespace Zilf.Interpreter
                         continue;
 
                     case OO_Activation:
-                        this.activationAtom = arg as ZilAtom;
-                        if (this.activationAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
+                        activationAtom = arg as ZilAtom;
+                        if (activationAtom == null)
+                            throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;
@@ -173,7 +198,7 @@ namespace Zilf.Interpreter
                     case OO_Environment:
                         environmentAtom = arg as ZilAtom;
                         if (environmentAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_Must_Be_Followed_By_An_Atom, oneOffTag);
+                            throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;
@@ -196,7 +221,7 @@ namespace Zilf.Interpreter
                     var al = (ZilList)arg;
 
                     if (al.IsEmpty)
-                        throw new InterpreterError(InterpreterMessages.Empty_List_In_Arg_Spec);
+                        throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);
 
                     argName = al.First;
                     argValue = al.Rest.First;
@@ -231,19 +256,19 @@ namespace Zilf.Interpreter
                         argName = af.Rest.First;
                     }
                     else
-                        throw new InterpreterError(InterpreterMessages.Unexpected_FORM_In_Arg_Spec_0, argName.ToString());
+                        throw new InterpreterError(InterpreterMessages._0_Unexpected_FORM_In_Arg_Spec_1, caller, argName.ToString());
                 }
 
                 // it'd better be an atom by now
                 if (!(argName is ZilAtom))
                 {
-                    throw new InterpreterError(InterpreterMessages.Expected_Atom_In_Arg_Spec_But_Found_0, argName.ToString());
+                    throw new InterpreterError(InterpreterMessages._0_Expected_Atom_In_Arg_Spec_But_Found_1, caller, argName.ToString());
                 }
 
-                newArgAtoms.Add((ZilAtom)argName);
-                newArgDecls.Add(argDecl);
-                newArgDefaults.Add(argValue);
-                newArgQuoted.Add(quoted);
+                argAtoms.Add((ZilAtom)argName);
+                argDecls.Add(argDecl);
+                argDefaults.Add(argValue);
+                argQuoted.Add(quoted);
             }
 
             if (auxArgsStart == -1)
@@ -254,7 +279,7 @@ namespace Zilf.Interpreter
             // process #DECL in body
             if (bodyDecl != null)
             {
-                var argIndex = newArgAtoms.Select((atom, i) => new { atom, i }).ToLookup(p => p.atom, p => p.i);
+                var argIndex = argAtoms.Select((atom, i) => new { atom, i }).ToLookup(p => p.atom, p => p.i);
 
                 foreach (var pair in bodyDecl.GetAtomDeclPairs())
                 {
@@ -278,26 +303,25 @@ namespace Zilf.Interpreter
 
                         foreach (var i in argIndex[atom])
                         {
-                            prev = prev ?? newArgDecls[i];
-                            newArgDecls[i] = decl;
+                            prev = prev ?? argDecls[i];
+                            argDecls[i] = decl;
                         }
                     }
                     else
                     {
-                        throw new InterpreterError(InterpreterMessages.Unrecognized_Argument_Name_In_Body_DECL_0, atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Argument_Name_In_Body_DECL_1, caller, atom);
                     }
 
                     if (prev != null)
                     {
-                        throw new InterpreterError(InterpreterMessages.Conflicting_DECLs_For_Atom_0, atom);
+                        throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, caller, atom);
                     }
                 }
             }
 
-            this.argAtoms = newArgAtoms.ToArray();
-            this.argDecls = newArgDecls.ToArray();
-            this.argQuoted = newArgQuoted.ToArray();
-            this.argDefaults = newArgDefaults.ToArray();
+            return new ArgSpec(targetName, activationAtom, optArgsStart, auxArgsStart,
+                varargsAtom, varargsQuoted, varargsDecl, environmentAtom, valueDecl, quoteAtom,
+                argAtoms.ToArray(), argDecls.ToArray(), argQuoted.ToArray(), argDefaults.ToArray());
         }
 
         [ContractInvariantMethod]

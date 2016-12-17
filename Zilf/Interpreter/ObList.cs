@@ -51,17 +51,21 @@ namespace Zilf.Interpreter
                 var pair = list.First as ZilList;
                 list = list.Rest;
 
-                if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
-                    pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
+                if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 {
-                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists_String_Atom);
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "lists");
+                }
+
+                if (pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
+                {
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "elements", "OBLIST", 2);
                 }
 
                 var key = pair.First as ZilString;
                 var value = pair.Rest.First as ZilAtom;
 
                 if (key == null || value == null)
-                    throw new InterpreterError(InterpreterMessages.List_Elements_Must_Be_2element_Lists_String_Atom);
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
 
                 result[key.Text] = value;
             }

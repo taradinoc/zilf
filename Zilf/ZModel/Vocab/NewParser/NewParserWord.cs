@@ -56,13 +56,15 @@ namespace Zilf.ZModel.Vocab.NewParser
             });
             var lexicalWord = form.Eval(ctx) as ZilString;
             if (lexicalWord == null)
-                throw new InterpreterError(InterpreterMessages.WORDLEXICALWORD_Must_Return_A_String);
+                throw new InterpreterError(
+                    InterpreterMessages._0_1_Must_Return_2,
+                    InterpreterMessages.NoFunction,
+                    "WORD-LEXICAL-WORD",
+                    "a string");
 
             var atom = ZilAtom.Parse(lexicalWord.Text, ctx);
             return new NewParserWord(ctx, atom, vword);
         }
-
-        // TODO: NewParserWord properties should map to elements of Inner via accessor functions
 
         public ZilAtom Atom
         {

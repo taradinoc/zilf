@@ -85,8 +85,7 @@ namespace Zilf.Interpreter.Values
                 var rest = MakeRest(tor);
                 return new ZilList(cur, rest);
             }
-            else
-                return new ZilList(null, null);
+            return new ZilList(null, null);
         }
 
         public bool IsEmpty
@@ -145,10 +144,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "(...)";
-            }
+            return "(...)";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
@@ -164,10 +160,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "(...)";
-            }
+            return "(...)";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -184,8 +177,7 @@ namespace Zilf.Interpreter.Values
         {
             if (this.GetType() == typeof(ZilList))
                 return this;
-            else
-                return new ZilList(First, Rest);
+            return new ZilList(First, Rest);
         }
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
@@ -305,10 +297,7 @@ namespace Zilf.Interpreter.Values
             get
             {
                 var rested = ((IStructure)this).GetRest(index);
-                if (rested == null)
-                    return null;
-                else
-                    return rested.GetFirst();
+                return rested?.GetFirst();
             }
             set
             {

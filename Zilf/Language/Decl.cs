@@ -135,7 +135,10 @@ namespace Zilf.Language
                             if (aliased != null && aliased != atom)
                                 return Check(ctx, value, aliased);
 
-                            throw new InterpreterError(InterpreterMessages.Unrecognized_ATOM_In_DECL_Pattern_0, atom);
+                            throw new InterpreterError(
+                                InterpreterMessages.Unrecognized_0_1,
+                                "atom in DECL pattern",
+                                atom);
                     }
 
                 case StdAtom.SEGMENT:
@@ -184,7 +187,10 @@ namespace Zilf.Language
                     return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment);
 
                 default:
-                    throw new NotImplementedException("non-ATOM in DECL pattern: " + pattern.ToStringContext(ctx, false));
+                    throw new InterpreterError(
+                        InterpreterMessages.Unrecognized_0_1,
+                        "value in DECL pattern",
+                        pattern.ToStringContext(ctx, false));
             }
         }
 
@@ -262,18 +268,19 @@ namespace Zilf.Language
                         continue;
                     }
 
-                    throw new NotImplementedException("unhandled VECTOR in FORM: " + vector.ToStringContext(ctx, false));
+                    throw new InterpreterError(
+                        InterpreterMessages.Unrecognized_0_1,
+                        "vector in DECL pattern",
+                        vector.ToStringContext(ctx, false));
                 }
-                else
-                {
-                    if (structure.IsEmpty())
-                        return false;
 
-                    if (!Check(ctx, structure.GetFirst(), subpattern))
-                        return false;
+                if (structure.IsEmpty())
+                    return false;
 
-                    structure = structure.GetRest(1);
-                }
+                if (!Check(ctx, structure.GetFirst(), subpattern))
+                    return false;
+
+                structure = structure.GetRest(1);
             }
 
             if (segment && !structure.IsEmpty())

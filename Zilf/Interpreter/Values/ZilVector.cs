@@ -85,7 +85,7 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new InterpreterError(InterpreterMessages.Index_Out_Of_Range_0, index);
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
             }
 
@@ -179,10 +179,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "[...]";
-            }
+            return "[...]";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
@@ -198,10 +195,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "[...]";
-            }
+            return "[...]";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx)
@@ -263,10 +257,7 @@ namespace Zilf.Interpreter.Values
             {
                 return new ZilVector(this.storage, this.offset - skip);
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
         public IStructure GetTop()
@@ -275,10 +266,7 @@ namespace Zilf.Interpreter.Values
             {
                 return this;
             }
-            else
-            {
-                return new ZilVector(storage, -storage.BaseOffset);
-            }
+            return new ZilVector(storage, -storage.BaseOffset);
         }
 
         public void Grow(int end, int beginning, ZilObject defaultValue)
@@ -305,10 +293,7 @@ namespace Zilf.Interpreter.Values
         public int? GetLength(int limit)
         {
             var length = storage.GetLength(offset);
-            if (length <= limit)
-                return length;
-            else
-                return null;
+            return length <= limit ? length : (int?)null;
         }
 
         #endregion

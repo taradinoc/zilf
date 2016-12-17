@@ -22,6 +22,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Linq;
 
 namespace Zilf.ZModel.Vocab
 {
@@ -76,7 +77,7 @@ namespace Zilf.ZModel.Vocab
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null)
-                        throw new InterpreterError(InterpreterMessages.Object_Options_In_Syntax_Must_Be_Atoms);
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     switch (atom.StdAtom)
                     {
@@ -102,7 +103,7 @@ namespace Zilf.ZModel.Vocab
                             result |= Original.InRoom;
                             break;
                         default:
-                            throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_0, atom.ToString());
+                            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", atom.ToString());
                     }
                 }
             }
@@ -157,13 +158,16 @@ namespace Zilf.ZModel.Vocab
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null)
-                        throw new InterpreterError(InterpreterMessages.Object_Options_In_Syntax_Must_Be_Atoms);
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     string name = atom.Text;
                     byte value;
 
                     if (!entry.Dict.TryGetValue(name, out value))
-                        throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_NEWSFLAGS_Used_0, name);
+                        throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", name)
+                            .Combine(new InterpreterError(
+                                InterpreterMessages.Since_NEWSFLAGS_Is_Set_The_Following_Options_Are_Recognized_0,
+                                string.Join(", ", entry.Dict.Keys.OrderBy(s => s))));
 
                     if (!cleared && !entry.Additive.Contains(name))
                     {

@@ -236,9 +236,8 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (value == null) {
+            if (value == null)
                 value = ctx.TRUE;
-            }
 
             if (activation == null)
             {

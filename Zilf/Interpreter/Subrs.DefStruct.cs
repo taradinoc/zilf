@@ -193,7 +193,7 @@ namespace Zilf.Interpreter
 
             // new type name
             if (ctx.IsRegisteredType(name))
-                throw new InterpreterError(InterpreterMessages._0_Type_Is_Already_Registered_1, "DEFSTRUCT", name);
+                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFSTRUCT", name);
 
             // base type, and optional default field settings
             ZilAtom baseType;
@@ -226,7 +226,7 @@ namespace Zilf.Interpreter
 
             if (!ctx.IsRegisteredType(baseType))
             {
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Base_Type_1, "DEFSTRUCT", baseType);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "base type", baseType);
             }
 
             // field definitions
@@ -237,15 +237,16 @@ namespace Zilf.Interpreter
                 fields.Add(ParseDefStructField(ctx, defaults, ref offset, fieldSpec));
             }
 
-            var decl = MakeDefstructDecl(ctx, baseType, defaults, fields);
-
             if (!defaults.SuppressType)
             {
                 // register the type
                 ctx.RegisterType(name, ctx.GetTypePrim(baseType));
 
                 if (!defaults.SuppressDecl)
+                {
+                    var decl = MakeDefstructDecl(ctx, baseType, fields);
                     ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
+                }
             }
 
             string unparsedInitArgs;
@@ -297,7 +298,7 @@ namespace Zilf.Interpreter
                 if (argspecList == null || argspecList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     throw new InterpreterError(InterpreterMessages._0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List, "DEFSTRUCT");
 
-                var argspec = new ArgSpec(ctorName, null, argspecList);
+                var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
                 var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, unparsedInitArgs, defaults.StartOffset, argspec);
 
                 var oldFileName = ctx.CurrentFile;
@@ -379,7 +380,7 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, DefStructDefaults defaults, List<DefStructField> fields)
+        static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, List<DefStructField> fields)
         {
             var parts = new List<ZilObject>(1 + fields.Count);
 
@@ -796,7 +797,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_Nonquoted_Value_In_Field_Definition_1, "DEFSTRUCT", part);
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "object in field definition", part);
                 }
             }
 
@@ -894,7 +895,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Tag_In_Defaults_Section_1, "DEFSTRUCT", first);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "tag in defaults section", first);
                     }
                 }
             }

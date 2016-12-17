@@ -51,7 +51,12 @@ namespace Zilf.ZModel.Vocab.NewParser
             verbClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TVERB)).Value;
 
             if (AnyDuplicates(adjClass, buzzClass, dirClass, objectClass, prepClass, verbClass))
-                throw new InterpreterError(InterpreterMessages.GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB);
+                //throw new InterpreterError(InterpreterMessages.GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB);
+                throw new InterpreterError(
+                    InterpreterMessages._0_1_Must_Return_2,
+                    InterpreterMessages.NoFunction,
+                    "GET-CLASSIFICATION",
+                    "different values for ADJ, BUZZ, DIR, NOUN, PREP, and VERB");
         }
 
         static bool AnyDuplicates<T>(params T[] args)
@@ -82,7 +87,11 @@ namespace Zilf.ZModel.Vocab.NewParser
             var vword = form.Eval(ctx) as ZilHash;
 
             if (vword == null || vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
-                throw new InterpreterError(InterpreterMessages.MAKEVWORD_Must_Return_A_VWORD);
+                throw new InterpreterError(
+                    InterpreterMessages._0_1_Must_Return_2,
+                    InterpreterMessages.NoFunction,
+                    "MAKE-VWORD",
+                    "a VWORD");
 
             return new NewParserWord(ctx, atom, vword);
         }
@@ -595,7 +604,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var vword = form.Eval(ctx);
 
                 if (vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
-                    throw new InterpreterError(InterpreterMessages._0_MAKEVWORD_Must_Return_A_VWORD, "NEW-ADD-WORD");
+                    throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "NEW-ADD-WORD", "MAKE-VWORD", "a VWORD");
 
                 word = NewParserWord.FromVword(ctx, (ZilHash)vword);
                 ctx.ZEnvironment.Vocabulary.Add(name, word);
@@ -721,7 +730,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     classification = form.Eval(ctx) as ZilFix;
 
                     if (classification == null)
-                        throw new InterpreterError(InterpreterMessages._0_GETCLASSIFICATION_Must_Return_A_FIX, "NEW-ADD-WORD");
+                        throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "NEW-ADD-WORD", "GET-CLASSIFICATION", "a FIX");
 
                     break;
             }

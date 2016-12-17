@@ -71,9 +71,9 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements);
                 return result;
             }
-            catch (NotSupportedException ex)
+            catch (NotSupportedException)
             {
-                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "BACK", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "BACK");
             }
         }
 
@@ -86,9 +86,9 @@ namespace Zilf.Interpreter
             {
                 return (ZilObject)st.GetTop();
             }
-            catch (NotSupportedException ex)
+            catch (NotSupportedException)
             {
-                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "TOP", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "TOP");
             }
         }
 
@@ -111,9 +111,9 @@ namespace Zilf.Interpreter
 
                 return (ZilObject)st.GetTop();
             }
-            catch (NotSupportedException ex)
+            catch (NotSupportedException)
             {
-                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "GROW", ex);
+                throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_Type, "GROW");
             }
         }
 
@@ -176,10 +176,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var length = st.GetLength(limit);
-            if (length == null)
-                return ctx.FALSE;
-            else
-                return new ZilFix(length.Value);
+            return length != null ? new ZilFix((int)length) : ctx.FALSE;
         }
 
         [Subr]
@@ -218,6 +215,7 @@ namespace Zilf.Interpreter
 
             if (dest != null)
             {
+                // modify an existing structure
                 if (((ZilObject)dest).PrimType != ((ZilObject)from).PrimType)
                     throw new InterpreterError(InterpreterMessages._0_Fourth_Arg_Must_Have_Same_Primtype_As_First, "SUBSTRUC");
 
@@ -261,25 +259,24 @@ namespace Zilf.Interpreter
 
                 return (ZilObject)dest;
             }
-            else
+
+            // no destination, return a new structure
+            switch (((ZilObject)from).PrimType)
             {
-                switch (((ZilObject)from).PrimType)
-                {
-                    case PrimType.LIST:
-                        return new ZilList(((ZilList)primitive).Skip(rest).Take((int)amount));
+                case PrimType.LIST:
+                    return new ZilList(((ZilList)primitive).Skip(rest).Take((int)amount));
 
-                    case PrimType.STRING:
-                        return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount));
+                case PrimType.STRING:
+                    return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount));
 
-                    case PrimType.TABLE:
-                        throw new InterpreterError(InterpreterMessages._0_Primtype_TABLE_Not_Supported, "SUBSTRUC");
+                case PrimType.TABLE:
+                    throw new InterpreterError(InterpreterMessages._0_Primtype_TABLE_Not_Supported, "SUBSTRUC");
 
-                    case PrimType.VECTOR:
-                        return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
+                case PrimType.VECTOR:
+                    return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
 
-                    default:
-                        throw new NotImplementedException("unexpected structure primitive");
-                }
+                default:
+                    throw new NotImplementedException("unexpected structure primitive");
             }
         }
 
@@ -288,7 +285,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            return PerformMember(ctx, needle, haystack, (a, b) => a.Equals(b));
+            return PerformMember(ctx, needle, haystack, object.Equals);
         }
 
         [Subr]
@@ -300,8 +297,8 @@ namespace Zilf.Interpreter
             {
                 if (a is IStructure)
                     return (a == b);
-                else
-                    return a.Equals(b);
+
+                return a.Equals(b);
             });
         }
 
@@ -411,13 +408,13 @@ namespace Zilf.Interpreter
                     switch (a.PrimType)
                     {
                         case PrimType.ATOM:
-                            return ((ZilAtom)a).Text.CompareTo(((ZilAtom)b).Text);
+                            return string.Compare(((ZilAtom)a).Text, ((ZilAtom)b).Text, StringComparison.Ordinal);
 
                         case PrimType.FIX:
                             return ((ZilFix)a).Value.CompareTo(((ZilFix)b).Value);
 
                         case PrimType.STRING:
-                            return ((ZilString)a).Text.CompareTo(((ZilString)b).Text);
+                            return string.Compare(((ZilString)a).Text, ((ZilString)b).Text, StringComparison.Ordinal);
 
                         default:
                             throw new InterpreterError(InterpreterMessages._0_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison, "SORT");

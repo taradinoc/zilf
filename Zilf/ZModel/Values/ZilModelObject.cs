@@ -45,12 +45,12 @@ namespace Zilf.ZModel.Values
         public static ZilModelObject FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty)
-                throw new InterpreterError(InterpreterMessages.List_Must_Have_At_Least_1_Element);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to OBJECT", "at least 1");
 
             var atom = list.First as ZilAtom;
 
             if (atom == null)
-                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_An_Atom);
+                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
             if (list.Rest.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.LIST))
                 throw new InterpreterError(InterpreterMessages.Elements_After_First_Must_Be_Lists);

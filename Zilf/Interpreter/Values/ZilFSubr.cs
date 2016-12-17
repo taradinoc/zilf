@@ -52,7 +52,7 @@ namespace Zilf.Interpreter.Values
             {
                 return new ZilFSubr(name, del);
             }
-            throw new InterpreterError(InterpreterMessages.Unrecognized_FSUBR_Name_0, name);
+            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "FSUBR name", name);
         }
 
         public override string ToString()

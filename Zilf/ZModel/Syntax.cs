@@ -88,7 +88,7 @@ namespace Zilf.ZModel
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null || atom.StdAtom == StdAtom.Eq)
-                        throw new InterpreterError(InterpreterMessages.Missing_Verb_In_Syntax_Definition);
+                        throw new InterpreterError(InterpreterMessages.Missing_0_In_Syntax_Definition, "verb");
 
                     verb = atom;
                 }
@@ -104,7 +104,7 @@ namespace Zilf.ZModel
                             case StdAtom.OBJECT:
                                 numObjects++;
                                 if (numObjects > 2)
-                                    throw new InterpreterError(InterpreterMessages.Too_Many_OBJECT_In_Syntax_Definition);
+                                    throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "OBJECTs");
                                 break;
 
                             case StdAtom.Eq:
@@ -115,7 +115,7 @@ namespace Zilf.ZModel
                                 var numPreps = prep2 != null ? 2 : prep1 != null ? 1 : 0;
                                 if (numPreps == 2 || numPreps > numObjects)
                                 {
-                                    var error = new InterpreterError(InterpreterMessages.Too_Many_Prepositions_In_Syntax_Definition);
+                                    var error = new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "prepositions");
 
                                     if (numObjects < 2)
                                         error = error.Combine(new InterpreterError(InterpreterMessages.Did_You_Mean_To_Separate_Them_With_OBJECT));
@@ -140,7 +140,7 @@ namespace Zilf.ZModel
                         {
                             atom = list.First as ZilAtom;
                             if (atom == null)
-                                throw new InterpreterError(InterpreterMessages.List_In_Syntax_Definition_Must_Start_With_An_Atom);
+                                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "list", "syntax definition", "an atom");
 
                             if (numObjects == 0)
                             {
@@ -162,7 +162,7 @@ namespace Zilf.ZModel
 
                                     default:
                                         if (syns != null)
-                                            throw new InterpreterError(InterpreterMessages.Too_Many_Synonym_Lists_In_Syntax_Definition);
+                                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "synonym lists");
 
                                         syns = list;
                                         break;
@@ -173,7 +173,7 @@ namespace Zilf.ZModel
                                 if (atom.StdAtom == StdAtom.FIND)
                                 {
                                     if ((numObjects == 1 && find1 != null) || find2 != null)
-                                        throw new InterpreterError(InterpreterMessages.Too_Many_FIND_Lists_In_Syntax_Definition);
+                                        throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "FIND lists");
                                     if (numObjects == 1)
                                         find1 = list;
                                     else
@@ -199,7 +199,7 @@ namespace Zilf.ZModel
                             }
                         }
                         else
-                            throw new InterpreterError(InterpreterMessages.Unexpected_Value_In_Syntax_Definition);
+                            throw new InterpreterError(obj, InterpreterMessages.Unrecognized_0_1, "value in syntax definition", obj);
                     }
                 }
                 else
@@ -210,11 +210,11 @@ namespace Zilf.ZModel
                     if (atom != null)
                     {
                         if (atom.StdAtom == StdAtom.Eq)
-                            throw new InterpreterError(InterpreterMessages.Too_Many_EQ_In_Syntax_Definition);
+                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "'='");
                     }
                     else if (!(obj is ZilFalse))
                     {
-                        throw new InterpreterError(InterpreterMessages.Values_After_EQ_Must_Be_FALSE_Or_Atoms);
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "values after '='", "syntax definition", "FALSE or atoms");
                     }
 
                     switch (rhsCount)
@@ -232,7 +232,7 @@ namespace Zilf.ZModel
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages.Too_Many_Values_After_EQ_In_Syntax_Definition);
+                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "values after '='");
                     }
 
                     rhsCount++;
@@ -266,14 +266,14 @@ namespace Zilf.ZModel
             if (syns != null)
             {
                 if (!syns.All(s => s is ZilAtom))
-                    throw new InterpreterError(InterpreterMessages.Verb_Synonyms_Must_Be_Atoms);
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "verb synonyms", "syntax definition", "atoms");
 
                 synAtoms = syns.Cast<ZilAtom>();
             }
 
             if (action == null)
             {
-                throw new InterpreterError(InterpreterMessages.Action_Routine_Must_Be_Specified);
+                throw new InterpreterError(InterpreterMessages.Missing_0_In_Syntax_Definition, "action routine");
             }
 
             if (actionName == null)
