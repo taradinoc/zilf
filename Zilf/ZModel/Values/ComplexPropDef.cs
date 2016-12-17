@@ -131,7 +131,7 @@ namespace Zilf.ZModel.Values
             foreach (var patternObj in spec)
             {
                 if (patternObj.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                    throw new InterpreterError(InterpreterMessages.PROPDEF_Patterns_Must_Be_Lists);
+                    throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "PROPDEF patterns", "lists");
 
                 var list = (ZilList)patternObj;
                 bool gotEq = false;
@@ -184,7 +184,7 @@ namespace Zilf.ZModel.Values
                                         break;
 
                                     default:
-                                        throw new InterpreterError(InterpreterMessages.Strings_In_PROPDEF_Patterns_Must_Be_OPT_Or_MANY);
+                                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "strings", "PROPDEF patterns", "\"OPT\" or \"MANY\"");
                                 }
                                 break;
                         }
@@ -204,13 +204,13 @@ namespace Zilf.ZModel.Values
                                 elemList.Rest.Rest == null ||
                                 elemList.Rest.Rest.First != null)
                             {
-                                throw new InterpreterError(InterpreterMessages.List_In_PROPDEF_Output_Pattern_Must_Have_Length_2);
+                                throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "list", "PROPDEF output pattern", 2);
                             }
 
                             constant = elemList.First as ZilAtom;
                             if (constant == null)
                             {
-                                throw new InterpreterError(InterpreterMessages.First_Item_Of_List_In_PROPDEF_Output_Pattern_Must_Be_An_Atom);
+                                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, "1", "list", "PROPDEF output pattern", "an atom");
                             }
 
                             output = elemList.Rest.First;
@@ -239,7 +239,7 @@ namespace Zilf.ZModel.Values
                                         break;
 
                                     default:
-                                        throw new InterpreterError(InterpreterMessages.String_In_PROPDEF_Output_Pattern_Must_Be_MANY);
+                                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "string", "PROPDEF output pattern", @"""MANY""");
                                 }
                                 break;
 
@@ -248,14 +248,22 @@ namespace Zilf.ZModel.Values
                                 break;
 
                             default:
-                                throw new InterpreterError(InterpreterMessages.PROPDEF_Output_Elements_Must_Be_FIX_FALSE_FORM_STRING_Or_SEMI);
+                                throw new InterpreterError(
+                                    InterpreterMessages._0_In_1_Must_Be_2,
+                                    "elements",
+                                    "PROPDEF output pattern",
+                                    "FIX, FALSE, FORM, STRING, or SEMI");
                         }
                     }
                 }
 
                 if (inputs.Count == 0 || inputs[0].Type != InputElementType.Atom)
                 {
-                    throw new InterpreterError(InterpreterMessages.PROPDEF_Pattern_Must_Start_With_An_Atom);
+                    throw new InterpreterError(
+                        InterpreterMessages.Element_0_Of_1_Must_Be_2,
+                        1,
+                        "PROPDEF pattern",
+                        "an atom");
                 }
                 inputs.RemoveAt(0);
 
@@ -297,7 +305,13 @@ namespace Zilf.ZModel.Values
             var atom = form.First as ZilAtom;
             if (atom == null)
             {
-                throw new InterpreterError(form, InterpreterMessages.FORM_In_PROPDEF_Pattern_Must_Start_With_An_Atom);
+                throw new InterpreterError(
+                    form,
+                    InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3,
+                    1,
+                    "FORM",
+                    "PROPDEF pattern",
+                    "an atom");
             }
 
             int length = 2;
@@ -380,7 +394,7 @@ namespace Zilf.ZModel.Values
             }
 
             // done
-            return new OutputElement(type, constant, variable: variable, partOfSpeech: partOfSpeech, fix: fix);
+            return new OutputElement(type, constant, variable, partOfSpeech, fix);
         }
 
         public IEnumerable<KeyValuePair<ZilAtom, int>> GetConstants(Context ctx)
@@ -430,19 +444,15 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        private static int OutputElementSize(OutputElement output, Context ctx)
+        static int OutputElementSize(OutputElement output, Context ctx)
         {
             switch (output.Type)
             {
                 case OutputElementType.Adjective:
                     if (ctx.ZEnvironment.ZVersion == 3)
-                    {
                         return 1;
-                    }
-                    else
-                    {
-                        return 2;
-                    }
+
+                    return 2;
 
                 case OutputElementType.Byte:
                 case OutputElementType.Global:
@@ -460,10 +470,8 @@ namespace Zilf.ZModel.Values
                     {
                         return 1;
                     }
-                    else
-                    {
-                        return 2;
-                    }
+
+                    return 2;
 
                 case OutputElementType.Room:
                     if (ctx.ZEnvironment.ZVersion == 3 ||
@@ -472,10 +480,8 @@ namespace Zilf.ZModel.Values
                     {
                         return 1;
                     }
-                    else
-                    {
-                        return 2;
-                    }
+
+                    return 2;
 
                 default:
                     return 0;
@@ -633,7 +639,9 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
+#pragma warning disable RECS0154 // Parameter is never used
         public ComplexPropDef(ZilList list)
+#pragma warning restore RECS0154 // Parameter is never used
         {
             throw new NotImplementedException();
         }

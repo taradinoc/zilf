@@ -43,7 +43,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="tree">The root of a syntax tree, or null.</param>
         /// <param name="ctx">The current context.</param>
         /// <returns>A sequence of zero or more ZIL objects, depending
-        /// on whether <paramref name="obj"/> was null, a parsed expression,
+        /// on whether <paramref name="tree"/> was null, a parsed expression,
         /// or the phantom root of a tree containing multiple
         /// expressions.</returns>
         public static IEnumerable<ZilObject> ReadFromAST(ITree tree, Context ctx)
@@ -131,10 +131,7 @@ namespace Zilf.Interpreter.Values
                         {
                             return ctx.GetGlobalVal(atom);
                         }
-                        else
-                        {
-                            return atom;
-                        }
+                        return atom;
                     case ZilLexer.CHAR:
                         Contract.Assume(tree.Text.Length >= 3);
                         return new ZilChar(tree.Text[2]);
@@ -145,8 +142,7 @@ namespace Zilf.Interpreter.Values
                         children = ReadChildrenFromAST(tree, ctx);
                         if (children.Length == 0)
                             return ctx.FALSE;
-                        else
-                            return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
+                        return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
                     case ZilLexer.HASH:
                         return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
                     case ZilLexer.LIST:
@@ -171,8 +167,7 @@ namespace Zilf.Interpreter.Values
                                 var result = inner.Eval(ctx);
                                 if (tree.Type == ZilLexer.MACRO)
                                     return result;
-                                else
-                                    return null;
+                                return null;
                             }
                         }
                         catch (ControlException ex)
@@ -284,7 +279,7 @@ namespace Zilf.Interpreter.Values
         /// Gets the primitive form of this object.
         /// </summary>
         /// <param name="ctx">The current context.</param>
-        /// <returns>An object of the type indicated by <see cref="PrimType."/>.</returns>
+        /// <returns>An object of the type indicated by <see cref="PrimType"/>.</returns>
         public abstract ZilObject GetPrimitive(Context ctx);
 
         /// <summary>
@@ -300,21 +295,16 @@ namespace Zilf.Interpreter.Values
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             var del = ctx.GetEvalTypeDelegate(GetTypeAtom(ctx));
+
             if (del != null)
             {
                 if (environment != null)
-                {
                     return ctx.ExecuteInEnvironment(environment, () => del(this));
-                }
-                else
-                {
-                    return del(this);
-                }
+
+                return del(this);
             }
-            else
-            {
-                return EvalImpl(ctx, environment, null);
-            }
+
+            return EvalImpl(ctx, environment, null);
         }
 
         /// <summary>
@@ -357,7 +347,7 @@ namespace Zilf.Interpreter.Values
         /// its EVALTYPE set to the name of another type. When evaluating an object of the first type,
         /// it is CHTYPEd to the second type, and the second type's EvalImpl is called with the first
         /// type as a parameter. EvalImpl may use this to produce an object of the appropriate type;
-        /// for example, see <see cref="ZilList.EvalImpl(Context, LocalEnvironment)"/>.</para>
+        /// for example, see <see cref="ZilList.EvalImpl"/>.</para>
         /// </remarks>
         protected virtual ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
@@ -414,17 +404,16 @@ namespace Zilf.Interpreter.Values
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prog != null);
+            Contract.Requires(prog.Length > 0);
             Contract.Requires(Contract.ForAll(prog, p => p != null));
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            for (int i = 0; i < prog.Length; i++)
-                if (i == prog.Length - 1)
-                    return prog[i].Eval(ctx);
-                else
-                    prog[i].Eval(ctx);
+            ZilObject result = null;
 
-            // shouldn't get here
-            throw new ArgumentException("Missing program", "body");
+            for (int i = 0; i < prog.Length; i++)
+                result = prog[i].Eval(ctx);
+
+            return result;
         }
 
         public static IEnumerable<ZilObject> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
@@ -443,7 +432,11 @@ namespace Zilf.Interpreter.Values
                 if (result != null)
                     return result;
 
-                throw new InterpreterError(InterpreterMessages.Segment_Evaluation_Must_Return_A_Structure);
+                throw new InterpreterError(
+                    InterpreterMessages._0_1_Must_Return_2,
+                    InterpreterMessages.NoFunction,
+                    "segment evaluation",
+                    "a structure");
             }
             else
             {
@@ -454,10 +447,7 @@ namespace Zilf.Interpreter.Values
                 {
                     return splice;
                 }
-                else
-                {
-                    return Enumerable.Repeat(result, 1);
-                }
+                return Enumerable.Repeat(result, 1);
             }
         }
 
@@ -489,23 +479,15 @@ namespace Zilf.Interpreter.Values
             var seg = obj as ZilSegment;
 
             if (seg != null)
-            {
                 return Enumerable.Repeat(seg, 1);
-            }
-            else
-            {
-                var result = obj.Eval(ctx);
-                var splice = result as ZilSplice;
 
-                if (splice != null && splice.PopSpliceableFlag())
-                {
-                    return splice;
-                }
-                else
-                {
-                    return Enumerable.Repeat(result, 1);
-                }
-            }
+            var result = obj.Eval(ctx);
+            var splice = result as ZilSplice;
+
+            if (splice != null && splice.PopSpliceableFlag())
+                return splice;
+
+            return Enumerable.Repeat(result, 1);
         }
 
         /// <summary>
@@ -538,12 +520,13 @@ namespace Zilf.Interpreter.Values
                 if (result != null)
                     return result;
 
-                throw new InterpreterError(InterpreterMessages.Segment_Evaluation_Must_Return_A_Structure);
+                throw new InterpreterError(
+                    InterpreterMessages._0_1_Must_Return_2,
+                    InterpreterMessages.NoFunction,
+                    "segment evaluation",
+                    "a structure");
             }
-            else
-            {
-                return Enumerable.Repeat(obj, 1);
-            }
+            return Enumerable.Repeat(obj, 1);
         }
 
         /// <summary>

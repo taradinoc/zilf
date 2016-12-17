@@ -67,7 +67,7 @@ namespace Zilf.Interpreter
         [Subr("XFLOAD")]
         public static ZilObject INSERT_FILE(Context ctx, string file, ZilObject[] args)
         {
-            SubrContracts(ctx);
+            SubrContracts(ctx, args);
          
             // we ignore arguments after the first
 
@@ -98,7 +98,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Flag_1, "FILE-FLAGS", atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "FILE-FLAGS", "flag", atom);
                 }
             }
 
@@ -136,24 +136,21 @@ namespace Zilf.Interpreter
                 ctx.PutProp(name, replaceAtom, new ZilVector(body));
                 return name;
             }
-            else if (state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
+
+            if (state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
             {
                 // insert the replacement now
                 ctx.PutProp(name, replaceAtom, replaceAtom);
                 return ZilObject.EvalProgram(ctx, body);
             }
-            else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
-            {
+
+            if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
                 throw new InterpreterError(InterpreterMessages._0_Section_Has_Already_Been_Inserted_1, "REPLACE-DEFINITION", name);
-            }
-            else if (state is ZilVector)
-            {
+
+            if (state is ZilVector)
                 throw new InterpreterError(InterpreterMessages._0_Duplicate_Replacement_For_Section_1, "REPLACE-DEFINITION", name);
-            }
-            else
-            {
-                throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "REPLACE-DEFINITION", state);
-            }
+
+            throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "REPLACE-DEFINITION", state);
         }
 
         [FSubr("DEFAULT-DEFINITION")]
@@ -172,25 +169,24 @@ namespace Zilf.Interpreter
                 ctx.PutProp(name, replaceAtom, ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION));
                 return ZilObject.EvalProgram(ctx, body);
             }
-            else if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
+
+            if (state == replaceAtom || state == ctx.GetStdAtom(StdAtom.DELAY_DEFINITION))
             {
                 // ignore the default
                 return name;
             }
-            else if (state is ZilVector)
+
+            if (state is ZilVector)
             {
                 // insert the replacement now
                 ctx.PutProp(name, replaceAtom, replaceAtom);
                 return ZilObject.EvalProgram(ctx, ((ZilVector)state).ToArray());
             }
-            else if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
-            {
+
+            if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
                 throw new InterpreterError(InterpreterMessages._0_Duplicate_Default_For_Section_1, "DEFAULT-DEFINITION", name);
-            }
-            else
-            {
-                throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
-            }
+
+            throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
         }
 
         [Subr("COMPILATION-FLAG")]
@@ -200,7 +196,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var atom = name.GetAtom(ctx);
-            ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, redefine: true);
+            ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, true);
             return atom;
         }
 
@@ -211,7 +207,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var atom = name.GetAtom(ctx);
-            ctx.DefineCompilationFlag(atom, value, redefine: false);
+            ctx.DefineCompilationFlag(atom, value, false);
             return atom;
         }
 
@@ -290,10 +286,8 @@ namespace Zilf.Interpreter
                     {
                         return value;
                     }
-                    else
-                    {
-                        return zo;
-                    }
+
+                    return zo;
                 }));
 
             result.SourceLine = form.SourceLine;
@@ -370,7 +364,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject GC(Context ctx, ZilObject[] args)
         {
-            SubrContracts(ctx);
+            SubrContracts(ctx, args);
 
             System.GC.Collect();
             return ctx.TRUE;
@@ -379,7 +373,12 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ERROR(Context ctx, ZilObject[] args)
         {
-            throw new InterpreterError(InterpreterMessages.UserSpecifiedError_0_1, "ERROR", string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
+            SubrContracts(ctx, args);
+
+            throw new InterpreterError(
+                InterpreterMessages.UserSpecifiedError_0_1,
+                "ERROR",
+                string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
         }
     }
 }

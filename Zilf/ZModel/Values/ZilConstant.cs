@@ -35,16 +35,18 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
+#pragma warning disable RECS0154 // Parameter is never used
         public static ZilConstant FromList(Context ctx, ZilList list)
+#pragma warning restore RECS0154 // Parameter is never used
         {
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
-                throw new InterpreterError(InterpreterMessages.List_Must_Have_2_Elements);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to CONSTANT", 2);
 
             var name = list.First as ZilAtom;
             var value = list.Rest.First;
 
             if (name == null)
-                throw new InterpreterError(InterpreterMessages.First_Element_Must_Be_An_Atom);
+                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to CONSTANT", "an atom");
 
             return new ZilConstant(name, value);
         }

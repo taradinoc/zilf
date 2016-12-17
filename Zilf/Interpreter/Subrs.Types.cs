@@ -80,7 +80,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (!ctx.IsRegisteredType(type))
-                throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, "TYPEPRIM", type.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "TYPEPRIM", "type", type.ToStringContext(ctx, false));
 
             return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
         }
@@ -99,13 +99,13 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (ctx.IsRegisteredType(name))
-                throw new InterpreterError(InterpreterMessages._0_Already_Registered_1, "NEWTYPE", name.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "NEWTYPE", name.ToStringContext(ctx, false));
 
             PrimType primtype;
             if (ctx.IsRegisteredType(primtypeAtom))
                 primtype = ctx.GetTypePrim(primtypeAtom);
             else
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Primtype_1, "NEWTYPE", primtypeAtom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "NEWTYPE", "primtype", primtypeAtom.ToStringContext(ctx, false));
 
             ctx.RegisterType(name, primtype);
             ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
@@ -170,7 +170,7 @@ namespace Zilf.Interpreter
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
         {
             if (!ctx.IsRegisteredType(atom))
-                throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, name, atom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "type", atom.ToStringContext(ctx, false));
 
             if (handler == null)
             {
@@ -183,10 +183,11 @@ namespace Zilf.Interpreter
                     return atom;
 
                 case Context.SetTypeHandlerResult.BadHandlerType:
-                    throw new InterpreterError(InterpreterMessages._0_Second_Arg_Must_Be_An_Atom_Or_Applicable, name);
+                    // the caller should check the handler type, but just in case...
+                    throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "handler", "atom or applicable value");
 
                 case Context.SetTypeHandlerResult.OtherTypeNotRegistered:
-                    throw new InterpreterError(InterpreterMessages._0_Not_A_Registered_Type_1, name, handler.ToStringContext(ctx, false));
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "type", handler.ToStringContext(ctx, false));
 
                 case Context.SetTypeHandlerResult.OtherTypePrimDiffers:
                     throw new InterpreterError(
@@ -322,7 +323,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            return new ZilFunction(null, activationAtom, argList, decl, body);
+            return new ZilFunction("FUNCTION", null, activationAtom, argList, decl, body);
         }
 
         [Subr]

@@ -1364,6 +1364,8 @@ namespace Zilf.Compiler
 
         static ZilRoutine MaybeRewriteRoutine(Context ctx, ZilRoutine origRoutine)
         {
+            const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
+
             var rewriter = ctx.GetProp(ctx.GetStdAtom(StdAtom.ROUTINE), ctx.GetStdAtom(StdAtom.REWRITER)).AsApplicable(ctx);
 
             if (rewriter != null)
@@ -1382,7 +1384,7 @@ namespace Zilf.Compiler
                         if (((IStructure)list).GetLength(1) <= 1 || (args = list.First as ZilList) == null ||
                             args.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                         {
-                            throw new InterpreterError(InterpreterMessages.Routine_Rewriter_Result_Must_Contain_An_Arg_Spec_And_A_Body);
+                            throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
                         }
                         body = list.Rest;
                         return new ZilRoutine(origRoutine.Name, null, args, body, origRoutine.Flags);
@@ -1391,7 +1393,7 @@ namespace Zilf.Compiler
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages.Routine_Rewriter_Must_Return_A_LIST_Or_FALSE);
+                        throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
                 }
             }
 

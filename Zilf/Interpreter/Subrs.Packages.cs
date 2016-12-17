@@ -183,10 +183,7 @@ namespace Zilf.Interpreter
             {
                 return PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE);
             }
-            else
-            {
-                return condition;
-            }
+            return condition;
         }
 
         [Subr("INCLUDE-WHEN")]
@@ -198,10 +195,7 @@ namespace Zilf.Interpreter
             {
                 return PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS);
             }
-            else
-            {
-                return condition;
-            }
+            return condition;
         }
 
         static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
@@ -210,7 +204,7 @@ namespace Zilf.Interpreter
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(InterpreterMessages._0_Bad_LVAL_Of_OBLIST, name);
+                throw new InterpreterError(InterpreterMessages._0_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs, name);
 
             if (args.Length == 0)
                 return ctx.TRUE;
@@ -250,6 +244,8 @@ namespace Zilf.Interpreter
         [Subr("COMPILING?")]
         public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)
         {
+            SubrContracts(ctx, args);
+
             // always true
             return ctx.TRUE;
         }

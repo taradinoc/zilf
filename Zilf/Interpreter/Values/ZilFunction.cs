@@ -32,11 +32,20 @@ namespace Zilf.Interpreter.Values
         readonly ZilObject[] body;
 
         public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
+            : this("<internal>", name, activationAtom, argspec, decl, body)
         {
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
             Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
+        }
 
-            this.argspec = new ArgSpec(name, activationAtom, argspec, decl);
+        // TODO: convert to static method; caller parameter doesn't belong here
+        public ZilFunction(string caller, ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
+        {
+            Contract.Requires(caller != null);
+            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
+            Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
+
+            this.argspec = ArgSpec.Parse(caller, name, activationAtom, argspec, decl);
             this.body = body.ToArray();
         }
 
@@ -87,10 +96,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "#FUNCTION...";
-            }
+            return "#FUNCTION...";
         }
 
         public override string ToString()
@@ -224,13 +230,13 @@ namespace Zilf.Interpreter.Values
             {
                 if (index == 0)
                     return argspec.ToZilList();
-                else
-                    return body[index - 1];
+
+                return body[index - 1];
             }
             set
             {
                 if (index == 0)
-                    argspec = new ArgSpec(argspec, (IEnumerable<ZilObject>)value);
+                    argspec = ArgSpec.Parse("PUT", argspec, (IEnumerable<ZilObject>)value);
                 else
                     body[index - 1] = value;
             }
@@ -243,7 +249,8 @@ namespace Zilf.Interpreter.Values
 
         public int? GetLength(int limit)
         {
-            throw new NotImplementedException();
+            var length = GetLength();
+            return length <= limit ? length : (int?)null;
         }
 
         #endregion

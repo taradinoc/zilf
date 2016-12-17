@@ -49,7 +49,6 @@ namespace Zilf.Interpreter
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
-        // TODO: merge parsing code for DEFINE, DEFMAC, ROUTINE, and FUNCTION
         static ZilObject PerformDefine(Context ctx, ZilAtom name, ZilAtom activationAtom,
             ZilList argList, ZilDecl decl, ZilObject[] body, string subrName)
         {
@@ -59,6 +58,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
 
             var func = new ZilFunction(
+                subrName,
                 name,
                 activationAtom,
                 argList,
@@ -79,6 +79,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFMAC", name.ToStringContext(ctx, false));
 
             var func = new ZilFunction(
+                "DEFMAC",
                 name,
                 activationAtom,
                 argList,
@@ -106,9 +107,11 @@ namespace Zilf.Interpreter
             return value.Eval(ctx, env);
         }
 
+#pragma warning disable RECS0154 // Parameter is never used
         [Subr("EVAL-IN-SEGMENT")]
         public static ZilObject EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
             ZilObject value, ZilObject dummy2 = null)
+#pragma warning restore RECS0154 // Parameter is never used
         {
             SubrContracts(ctx);
 

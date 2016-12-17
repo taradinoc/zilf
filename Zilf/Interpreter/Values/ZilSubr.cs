@@ -57,7 +57,7 @@ namespace Zilf.Interpreter.Values
             {
                 return new ZilSubr(name, del);
             }
-            throw new InterpreterError(InterpreterMessages.Unrecognized_SUBR_Name_0, name);
+            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "SUBR name", name);
         }
 
         public override string ToString()

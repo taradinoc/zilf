@@ -459,7 +459,7 @@ Compiler switches:
                         {
                             // V4 games can identify themselves this way instead of using <VERSION EZIP>
                             var str = node as ZilString;
-                            if (str != null && str.Text.StartsWith("EXTENDED") && ctx.ZEnvironment.ZVersion == 3)
+                            if (str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true && ctx.ZEnvironment.ZVersion == 3)
                             {
                                 ctx.SetZVersion(4);
                             }
@@ -479,8 +479,8 @@ Compiler switches:
 
                     if (wantExceptions)
                         throw newEx;
-                    else
-                        ctx.HandleError(newEx);
+
+                    ctx.HandleError(newEx);
                 }
             }
 

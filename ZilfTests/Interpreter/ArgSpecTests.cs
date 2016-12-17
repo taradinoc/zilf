@@ -32,7 +32,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), new ZilObject[0]);
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), new ZilObject[0]);
 
             CollectionAssert.AreEqual(
                 new ZilObject[]
@@ -48,7 +48,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx) });
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx) });
 
             CollectionAssert.AreEqual(
                 new ZilObject[]
@@ -64,7 +64,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx) });
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx) });
 
             CollectionAssert.AreEqual(
                 new ZilObject[]
@@ -80,7 +80,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec1 = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            var spec1 = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 ZilString.FromString("ARGS"),
                 new ZilAdecl(
@@ -88,7 +88,7 @@ namespace ZilfTests.Interpreter
                     ctx.GetStdAtom(StdAtom.LIST))
             });
 
-            var spec2 = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            var spec2 = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(
@@ -102,7 +102,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 new ZilAdecl(
                     ZilAtom.Parse("A1", ctx),
@@ -144,7 +144,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 ZilString.FromString("AUX"),
                 ZilAtom.Parse("X", ctx),
@@ -184,7 +184,7 @@ namespace ZilfTests.Interpreter
 
             var args = Zilf.Program.Parse(ctx, @"""BIND"" B X ""NAME"" N").ToArray();
 
-            var spec = new ArgSpec(ZilAtom.Parse("FOO", ctx), null, args);
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
 
             CollectionAssert.AreEqual(args, spec.AsZilListBody().ToArray());
         }
