@@ -767,7 +767,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 }
                 else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                 {
-                    throw new CompilerError(CompilerMessages.GVAL_Of_WORDFLAGSLIST_Must_Be_A_List);
+                    throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }
 
                 var wordFlagTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.WORD_FLAG_TABLE)) as ITableBuilder;

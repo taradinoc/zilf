@@ -246,7 +246,8 @@ namespace Zilf.Compiler
                 {
                     return true;
                 }
-                else if (cc.Routines.ContainsKey(atom))
+
+                if (cc.Routines.ContainsKey(atom))
                 {
                     return true;
                 }

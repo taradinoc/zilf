@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Diagnostics.Contracts;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -46,6 +48,11 @@ namespace Zilf.Compiler.Builtins
             Contract.Invariant(cc != null);
             Contract.Invariant(rb != null);
             Contract.Invariant(form != null);
+        }
+
+        public void HandleMessage(int code, params object[] args)
+        {
+            cc.Context.HandleError(new CompilerError(form, code, args));
         }
     }
 }
