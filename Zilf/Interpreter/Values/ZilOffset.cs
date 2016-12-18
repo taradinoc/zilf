@@ -38,7 +38,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(vector != null);
 
             if (vector.GetLength() != 3)
-                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "vector coerced to OFFSET", 3);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
 
             var indexFix = vector[0] as ZilFix;
 

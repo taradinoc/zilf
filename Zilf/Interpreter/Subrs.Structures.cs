@@ -201,7 +201,11 @@ namespace Zilf.Interpreter
             {
                 var max = from.GetLength(rest + (int)amount);
                 if (max != null && max.Value - rest < amount)
-                    throw new InterpreterError(InterpreterMessages._0_1_Elements_Requested_But_Only_2_Available, "SUBSTRUC", amount, max.Value - rest);
+                    throw new InterpreterError(
+                        InterpreterMessages._0_1_Element1s_Requested_But_Only_2_Available,
+                        "SUBSTRUC",
+                        amount,
+                        max.Value - rest);
             }
             else
             {

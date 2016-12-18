@@ -43,7 +43,7 @@ namespace Zilf.ZModel.Values
             Contract.Ensures(Contract.Result<ZilWord>() != null);
 
             if (list.First == null || list.Rest == null || !list.Rest.IsEmpty)
-                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to WORD", 1);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to WORD", 1);
 
             return new ZilWord(list.First);
         }

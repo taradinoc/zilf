@@ -90,8 +90,8 @@ namespace Zilf.Interpreter
 
         public static ArgumentCountError WrongCount(CallSite site, int lowerBound, int? upperBound, bool morePrefix = false)
         {
-            const int PlainMessageCode = InterpreterMessages._0_Requires_1_23;
-            const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_23;
+            const int PlainMessageCode = InterpreterMessages._0_Requires_1_21s;
+            const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_21s;
 
             var range = new ArgCountRange(lowerBound, upperBound);
             CountableString cs;
@@ -100,7 +100,7 @@ namespace Zilf.Interpreter
             var diag = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
                 DiagnosticContext.Current.SourceLine,
                 morePrefix ? MessageCodeWithMore : PlainMessageCode,
-                new object[] { site.ToString(), cs, site.ChildName, cs.Plural ? "s" : "" },
+                new object[] { site.ToString(), cs, site.ChildName },
                 null);
 
             return new ArgumentCountError(diag);

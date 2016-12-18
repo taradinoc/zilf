@@ -51,7 +51,10 @@ namespace Zilf.ZModel.Values
         public static ZilRoutine FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty || list.Rest.IsEmpty)
-                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to ROUTINE", "at least 2");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Must_Have_1_Element1s,
+                    "list coerced to ROUTINE",
+                    new CountableString("at least 2", true));
 
             var argList = list.First as ZilList;
             if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)

@@ -45,7 +45,10 @@ namespace Zilf.ZModel.Values
         public static ZilModelObject FromList(Context ctx, ZilList list)
         {
             if (list.IsEmpty)
-                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to OBJECT", "at least 1");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Must_Have_1_Element1s, 
+                    "list coerced to OBJECT",
+                    new CountableString("at least 1", false));
 
             var atom = list.First as ZilAtom;
 

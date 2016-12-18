@@ -36,10 +36,11 @@ namespace Zilf.Diagnostics
         public Severity Severity { get; private set; }
         public string CodePrefix { get; private set; }
         public int Code { get; private set; }
-        public string MessageFormat { get; private set; }
-        public object[] MessageArgs { get; private set; }
         public string StackTrace { get; private set; }
         public Diagnostic[] SubDiagnostics { get; private set; }
+
+        string MessageFormat { get; set; }
+        object[] MessageArgs { get; set; }
 
         static readonly object[] NoArguments = new object[0];
         static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
@@ -77,6 +78,9 @@ namespace Zilf.Diagnostics
                 newSubDiagnostics);
         }
 
+        public string GetFormattedMessage() =>
+            string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs);
+
         public override string ToString()
         {
             return string.Format(
@@ -85,7 +89,71 @@ namespace Zilf.Diagnostics
                 Severity.ToString().ToLower(),
                 CodePrefix,
                 Code,
-                string.Format(MessageFormat, MessageArgs));
+                string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs));
+        }
+
+        sealed class CustomFormatter : IFormatProvider, ICustomFormatter
+        {
+            public static readonly CustomFormatter Instance = new CustomFormatter();
+
+            CustomFormatter()
+            {
+            }
+
+            public object GetFormat(Type formatType)
+            {
+                if (formatType == typeof(ICustomFormatter))
+                    return this;
+
+                return null;
+            }
+
+            static char[] Delimiter = { '|' };
+
+            public string Format(string format, object arg, IFormatProvider formatProvider)
+            {
+                if (format != null && (format == "s" || format.StartsWith("s|", StringComparison.Ordinal)))
+                {
+                    bool plural;
+
+                    if (arg is int)
+                    {
+                        plural = (int)arg != 1;
+                    }
+                    else if (arg is CountableString)
+                    {
+                        plural = ((CountableString)arg).Plural;
+                    }
+                    else if (arg is string)
+                    {
+                        throw new ArgumentException($"{{#:s}} format requires a {nameof(CountableString)}, not a string");
+                    }
+                    else
+                    {
+                        return HandleOther(format, arg);
+                    }
+
+                    var parts = format.Split(Delimiter, 3);
+
+                    if (plural)
+                        return parts.Length >= 2 ? parts[1] : "s";
+
+                    return parts.Length >= 3 ? parts[2] : "";
+                }
+
+                return HandleOther(format, arg);
+            }
+
+            static string HandleOther(string format, object arg)
+            {
+                if (arg is IFormattable)
+                    return ((IFormattable)arg).ToString(format, System.Globalization.CultureInfo.CurrentCulture);
+
+                if (arg != null)
+                    return arg.ToString();
+
+                return string.Empty;
+            }
         }
     }
 

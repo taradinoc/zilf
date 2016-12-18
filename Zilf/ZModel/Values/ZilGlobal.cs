@@ -42,7 +42,7 @@ namespace Zilf.ZModel.Values
 #pragma warning restore RECS0154 // Parameter is never used
         {
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
-                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Elements, "list coerced to GLOBAL", 2);
+                throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to GLOBAL", 2);
 
             var name = list.First as ZilAtom;
             var value = list.Rest.First;

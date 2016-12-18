@@ -204,7 +204,7 @@ namespace Zilf.ZModel.Values
                                 elemList.Rest.Rest == null ||
                                 elemList.Rest.Rest.First != null)
                             {
-                                throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "list", "PROPDEF output pattern", 2);
+                                throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "list", "PROPDEF output pattern", 2);
                             }
 
                             constant = elemList.First as ZilAtom;

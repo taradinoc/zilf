@@ -45,10 +45,9 @@ namespace Zilf.Diagnostics
         // Syntax Errors
 
         [Message("{0} must be {1}")] public const int _0_Must_Be_1 = 6;
-        [Obsolete("Use CountableString and plural formatter")]
-        [Message("{0} must have {1} element(s)")] public const int _0_Must_Have_1_Elements = 9;
+        [Message("{0} must have {1} element{1:s}")] public const int _0_Must_Have_1_Element1s = 9;
         [Message("{0} in {1} must be {2}")] public const int _0_In_1_Must_Be_2 = 10;
-        [Message("{0} in {1} must have {2} element(s)"), Obsolete("Use CountableString and plural formatter")] public const int _0_In_1_Must_Have_2_Elements = 3;
+        [Message("{0} in {1} must have {2} element{2:s}")] public const int _0_In_1_Must_Have_2_Element2s = 3;
         [Message("element {0} of {1} must be {2}")] public const int Element_0_Of_1_Must_Be_2 = 4;
         [Message("element {0} of {1} in {2} must be {3}")] public const int Element_0_Of_1_In_2_Must_Be_3 = 5;
         [Message("{0}: multiple {1} clauses")] public const int _0_Multiple_1_Clauses = 7;
@@ -96,8 +95,8 @@ namespace Zilf.Diagnostics
 
         // Argument Errors
 
-        [Message("{0} requires {1} {2}{3}"), Obsolete("Use CountableString and plural formatter")] public const int _0_Requires_1_23 = 263;
-        [Message("{0} requires {1} additional {2}{3}"), Obsolete("Use CountableString and plural formatter")] public const int _0_Requires_1_Additional_23 = 264;
+        [Message("{0} requires {1} {2}{1:s}")] public const int _0_Requires_1_21s = 263;
+        [Message("{0} requires {1} additional {2}{1:s}")] public const int _0_Requires_1_Additional_21s = 264;
         [Message("{0}: too many {1}s, starting at {1} {2}")] public const int _0_Too_Many_1s_Starting_At_1_2 = 265;
         [Message("check types of earlier {0}s, e.g. {0} {1}", Severity = Severity.Info)] public const int Check_Types_Of_Earlier_0s_Eg_0_1 = 266;
         [Message("{0}: expected {1}")] public const int _0_Expected_1 = 267;
@@ -172,7 +171,7 @@ namespace Zilf.Diagnostics
         [Message("word {0} is not a {1}")] public const int Word_0_Is_Not_A_1 = 169;
         [Message("{0}: new classification {1} is incompatible with previous {2}")] public const int _0_New_Classification_1_Is_Incompatible_With_Previous_2 = 171;
         [Message("value too fancy for TELL output template: {0}")] public const int Value_Too_Fancy_For_TELL_Output_Template_0 = 173;
-        [Message("expected {0} LVAL(s) in TELL output template but found {1}"), Obsolete("Use CountableString and plural formatter")] public const int Expected_0_LVALs_In_TELL_Output_Template_But_Found_1 = 174;
+        [Message("expected {0} LVAL{0:s} in TELL output template but found {1}")] public const int Expected_0_LVAL0s_In_TELL_Output_Template_But_Found_1 = 174;
         [Message("unexpected type in TELL token spec: {0}")] public const int Unexpected_Type_In_TELL_Token_Spec_0 = 175;
         [Message("{0}: all atoms must be on internal oblist {1}, failed for {2}")] public const int _0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2 = 180;
         [Message("{0}: no such package: {1}")] public const int _0_No_Such_Package_1 = 183;
@@ -180,7 +179,7 @@ namespace Zilf.Diagnostics
         [Message("not an applicable type: {0}")] public const int Not_An_Applicable_Type_0 = 191;
         [Message("{0}: unexpected FORM in arg spec: {1}")] public const int _0_Unexpected_FORM_In_Arg_Spec_1 = 192;
         [Message("{0}: expected atom in arg spec but found {1}")] public const int _0_Expected_Atom_In_Arg_Spec_But_Found_1 = 193;
-        [Message("{0}: {1} element(s) requested but only {2} available"), Obsolete("Use CountableString and plural formatter")] public const int _0_1_Elements_Requested_But_Only_2_Available = 196;
+        [Message("{0}: {1} element{1:s} requested but only {2} available")] public const int _0_1_Element1s_Requested_But_Only_2_Available = 196;
         [Message("{0}: destination type not supported: {1}")] public const int _0_Destination_Type_Not_Supported_1 = 197;
         [Message("variable in PROPDEF output pattern is not captured by input pattern: {0}")] public const int Variable_In_PROPDEF_Output_Pattern_Is_Not_Captured_By_Input_Pattern_0 = 200;
         [Message("'{0}' FORM in PROPDEF output pattern must have length {1}")] public const int _0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1 = 201;
@@ -203,9 +202,9 @@ namespace Zilf.Diagnostics
         [Message("{0}: vector may only appear at the end of a PATTERN")] public const int _0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN = 231;
         [Message("{0}: following elements of vector in PATTERN must be BYTE or WORD")] public const int _0_Following_Elements_Of_Vector_In_PATTERN_Must_Be_BYTE_Or_WORD = 234;
         [Message("{0}: PATTERN may only contain BYTE, WORD, or a REST vector")] public const int _0_PATTERN_May_Only_Contain_BYTE_WORD_Or_A_REST_Vector = 235;
-        [Message("{0}: alphabet {1} needs {2} characters"), Obsolete("Use CountableString and plural formatter")] public const int _0_Alphabet_1_Needs_2_Characters = 240;
+        [Message("{0}: alphabet {1} needs {2} character{2:s}")] public const int _0_Alphabet_1_Needs_2_Character2s = 240;
         [Message("{0}: no expressions found")] public const int _0_No_Expressions_Found = 245;
-        [Message("{0}: only {1} routine arguments allowed in V{2}, so last {3} \"OPT\" argument(s) will never be passed", Severity = Severity.Warning), Obsolete("Use CountableString and plural formatter")] public const int _0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Arguments_Will_Never_Be_Passed = 260;
+        [Message("{0}: only {1} routine argument{1:s} allowed in V{2}, so last {3} \"OPT\" argument{3:s} will never be passed", Severity = Severity.Warning)] public const int _0_Only_1_Routine_Argument1s_Allowed_In_V2_So_Last_3_OPT_Argument3s_Will_Never_Be_Passed = 260;
         [Message("overriding default value for property '{0}'", Severity = Severity.Warning)] public const int Overriding_Default_Value_For_Property_0 = 261;
         [Message("ignoring list of flags in syntax definition with no preceding OBJECT", Severity = Severity.Warning)] public const int Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT = 262;
     }

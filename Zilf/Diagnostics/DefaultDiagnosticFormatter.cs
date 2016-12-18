@@ -29,13 +29,13 @@ namespace Zilf.Diagnostics
         {
             var sb = new StringBuilder(80);
 
-            sb.Append($"[{diagnostic.Severity} {diagnostic.CodePrefix}{diagnostic.Code.ToString("0000")}] {diagnostic.Location.SourceInfo}: ");
-            sb.AppendFormat(diagnostic.MessageFormat, diagnostic.MessageArgs);
+            sb.Append($"[{diagnostic.Severity.ToString().ToLower()} {diagnostic.CodePrefix}{diagnostic.Code.ToString("0000")}] {diagnostic.Location.SourceInfo}: ");
+            sb.Append(diagnostic.GetFormattedMessage());
 
             foreach (var sd in diagnostic.SubDiagnostics)
             {
-                sb.Append($"\n  [{sd.Severity} {sd.CodePrefix}{sd.Code.ToString("0000")}] ");
-                sb.AppendFormat(sd.MessageFormat, sd.MessageArgs);
+                sb.Append($"\n  [{sd.Severity.ToString().ToLower()} {sd.CodePrefix}{sd.Code.ToString("0000")}] ");
+                sb.Append(sd.GetFormattedMessage());
             }
 
             if (diagnostic.StackTrace != null)

@@ -121,7 +121,7 @@ namespace Zilf.Language
 
         static CompilerError WrongArgCount(string name, CountableString cs, int? acceptableVersion)
         {
-            var error = new CompilerError(CompilerMessages._0_Requires_1_Arguments, name, cs);
+            var error = new CompilerError(CompilerMessages._0_Requires_1_Argument1s, name, cs);
 
             if (acceptableVersion != null)
             {
