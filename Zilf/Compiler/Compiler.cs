@@ -2026,8 +2026,7 @@ namespace Zilf.Compiler
                 default:
                     cc.Context.HandleError(new CompilerError(
                         expr.SourceLine ?? src,
-                        CompilerMessages.Expected_A_FORM_ATOM_Or_ADECL_But_Found_0,
-                        expr));
+                        CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
                     return cc.Game.Zero;
             }
         }
@@ -3393,7 +3392,7 @@ namespace Zilf.Compiler
                         break;
 
                     default:
-                        throw new CompilerError(CompilerMessages.Conditions_In_In_VERSION_Clauses_Must_Be_ATOMs);
+                        throw new CompilerError(CompilerMessages.Conditions_In_In_VERSION_Clauses_Must_Be_Atoms);
                 }
 
                 // does this clause match?
