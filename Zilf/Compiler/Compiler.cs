@@ -1861,7 +1861,11 @@ namespace Zilf.Compiler
                     case StdAtom.T_P:
                         if (form.Rest.First == null || (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
                         {
-                            cc.Context.HandleError(new CompilerError(form, CompilerMessages._0_Requires_1_Arguments, head, "exactly 1"));
+                            cc.Context.HandleError(new CompilerError(
+                                form,
+                                CompilerMessages._0_Requires_1_Argument1s,
+                                head,
+                                new CountableString("exactly 1", false)));
                             return cc.Game.Zero;
                         }
                         resultStorage = resultStorage ?? rb.Stack;
@@ -2350,9 +2354,9 @@ namespace Zilf.Compiler
                     {
                         cc.Context.HandleError(new CompilerError(
                             expr.SourceLine ?? src,
-                            CompilerMessages._0_Requires_1_Arguments,
+                            CompilerMessages._0_Requires_1_Argument1s,
                             head,
-                            "exactly 1"));
+                            new CountableString("exactly 1", false)));
                     }
                     break;
 
@@ -2622,7 +2626,7 @@ namespace Zilf.Compiler
                         if (list.First == null || list.Rest == null ||
                             list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
                         {
-                            throw new CompilerError(CompilerMessages._0_Expected_1_Elements_In_Binding_List, name, 2);
+                            throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
                         }
                         atom = list.First as ZilAtom;
                         if (atom == null)
@@ -2798,7 +2802,10 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(4);
             if (specLength < 3 || specLength == null)
             {
-                throw new CompilerError(CompilerMessages._0_Expected_1_Elements_In_Binding_List, "DO", "3 or 4");
+                throw new CompilerError(
+                    CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
+                    "DO",
+                    new CountableString("3 or 4", true));
             }
 
             var atom = spec.First as ZilAtom;
@@ -2951,7 +2958,10 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength < 2 || specLength == null)
             {
-                throw new CompilerError(CompilerMessages._0_Expected_1_Elements_In_Binding_List, "MAP-CONTENTS", "2 or 3");
+                throw new CompilerError(
+                    CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
+                    "MAP-CONTENTS",
+                    new CountableString("2 or 3", true));
             }
 
             var atom = spec.First as ZilAtom;
@@ -3093,7 +3103,7 @@ namespace Zilf.Compiler
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength != 3)
             {
-                throw new CompilerError(CompilerMessages._0_Expected_1_Elements_In_Binding_List, "MAP-DIRECTIONS", 3);
+                throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, "MAP-DIRECTIONS", 3);
             }
 
             var dirAtom = spec.First as ZilAtom;
@@ -4235,7 +4245,7 @@ namespace Zilf.Compiler
                 if (length > cc.Game.MaxPropertyLength)
                     cc.Context.HandleError(new CompilerError(
                         prop,
-                        CompilerMessages.Property_0_Is_Too_Long_Max_1_Bytes,
+                        CompilerMessages.Property_0_Is_Too_Long_Max_1_Byte1s,
                         propName.ToStringContext(cc.Context, true),
                         cc.Game.MaxPropertyLength));
             }

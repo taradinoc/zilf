@@ -58,7 +58,7 @@ namespace Zilf.Interpreter
 
                 if (pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
                 {
-                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "elements", "OBLIST", 2);
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
                 }
 
                 var key = pair.First as ZilString;

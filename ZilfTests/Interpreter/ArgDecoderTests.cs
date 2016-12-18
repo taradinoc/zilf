@@ -396,7 +396,7 @@ namespace ZilfTests.Interpreter
                 StringAssert.EndsWith(ex.Message, SExpectedMessage);
                 Assert.AreEqual(1, ex.Diagnostic.SubDiagnostics.Length);
                 var sd = ex.Diagnostic.SubDiagnostics[0];
-                Assert.AreEqual(SExpectedSubMessage, string.Format(sd.MessageFormat, sd.MessageArgs));
+                Assert.AreEqual(SExpectedSubMessage, sd.GetFormattedMessage());
                 return;
             }
 

@@ -208,8 +208,11 @@ namespace Zilf.ZModel
                             }
 
                             if (lvalCount != capturesSoFar)
-                                throw new InterpreterError(form,
-                                    InterpreterMessages.Expected_0_LVALs_In_TELL_Output_Template_But_Found_1, capturesSoFar, lvalCount);
+                                throw new InterpreterError(
+                                    form,
+                                    InterpreterMessages.Expected_0_LVAL0s_In_TELL_Output_Template_But_Found_1,
+                                    capturesSoFar,
+                                    lvalCount);
 
                             var pattern = new TellPattern(tokensSoFar.ToArray(), form);
                             tokensSoFar.Clear();

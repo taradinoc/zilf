@@ -57,12 +57,12 @@ namespace Zilf.Diagnostics
         public const int Unrecognized_Atom_In_VERSION_Must_Be_ZIP_EZIP_XZIP_YZIP_ELSET = 24;
         [Message("version number out of range (must be 3-8)")]
         public const int Version_Number_Out_Of_Range_Must_Be_38 = 25;
-        [Message("{0} requires {1} argument(s)"), Obsolete("Use CountableString and plural formatter")]
-        public const int _0_Requires_1_Arguments = 115;
+        [Message("{0} requires {1} argument{1:s}")]
+        public const int _0_Requires_1_Argument1s = 115;
         [Message("{0}: argument {1}: {2}")]
         public const int _0_Argument_1_2 = 83;
-        [Message("{0}: expected {1} element(s) in binding list"), Obsolete("Use CountableString and plural formatter")]
-        public const int _0_Expected_1_Elements_In_Binding_List = 14;
+        [Message("{0}: expected {1} element{1:s} in binding list")]
+        public const int _0_Expected_1_Element1s_In_Binding_List = 14;
         [Message("{0}: {1} element in binding list must be {2}")]
         public const int _0_1_Element_In_Binding_List_Must_Be_2 = 12;
         [Message("{0}: first list element must be an atom")]
@@ -112,8 +112,8 @@ namespace Zilf.Diagnostics
 
         [Message("property has no value: {0}")]
         public const int Property_Has_No_Value_0 = 75;
-        [Message("property '{0}' is too long (max {1} bytes)"), Obsolete("Use CountableString and plural formatter")]
-        public const int Property_0_Is_Too_Long_Max_1_Bytes = 96;
+        [Message("property '{0}' is too long (max {1} byte{1:s})")]
+        public const int Property_0_Is_Too_Long_Max_1_Byte1s = 96;
         [Message("PROPSPEC for property '{0}' returned a bad value: {1}")]
         public const int PROPSPEC_For_Property_0_Returned_A_Bad_Value_1 = 71;
         [Message("value for '{0}' property must be {1}")]

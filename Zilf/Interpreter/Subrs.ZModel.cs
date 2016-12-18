@@ -99,8 +99,9 @@ namespace Zilf.Interpreter
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
                 ctx.HandleWarning(new InterpreterError(ctx.TopFrame.SourceLine,
-                    InterpreterMessages._0_Only_1_Routine_Arguments_Allowed_In_V2_So_Last_3_OPT_Arguments_Will_Never_Be_Passed,
-                    "ROUTINE", maxArgsAllowed,
+                    InterpreterMessages._0_Only_1_Routine_Argument1s_Allowed_In_V2_So_Last_3_OPT_Argument3s_Will_Never_Be_Passed,
+                    "ROUTINE",
+                    maxArgsAllowed,
                     ctx.ZEnvironment.ZVersion,
                     affectedArgCount));
             }
@@ -649,7 +650,11 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN, name);
 
                     if (vector.GetLength() < 2)
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Elements, "vector", "PATTERN", "at least 2");
+                        throw new InterpreterError(
+                            InterpreterMessages._0_In_1_Must_Have_2_Element2s,
+                            "vector",
+                            "PATTERN",
+                            new CountableString("at least 2", true));
 
                     // first element must be REST
                     var atom = vector[0] as ZilAtom;
@@ -1027,7 +1032,11 @@ namespace Zilf.Interpreter
             var alphabetStr = sb.ToString();
             int requiredLen = (alphabetNum == 2) ? 24 : 26;
             if (alphabetStr.Length != requiredLen)
-                throw new InterpreterError(InterpreterMessages._0_Alphabet_1_Needs_2_Characters, "CHRSET", alphabetNum, requiredLen);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Alphabet_1_Needs_2_Character2s,
+                    "CHRSET",
+                    alphabetNum,
+                    requiredLen);
 
             switch (alphabetNum)
             {
