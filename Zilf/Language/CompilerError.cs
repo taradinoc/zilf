@@ -106,27 +106,22 @@ namespace Zilf.Language
         public static CompilerError WrongArgCount(string name, IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
-            string countDescription, pluralSuffix;
-            ArgCountHelpers.FormatArgCount(ranges, out countDescription, out pluralSuffix);
-            return WrongArgCount(name, countDescription, pluralSuffix, acceptableVersion);
+            CountableString cs;
+            ArgCountHelpers.FormatArgCount(ranges, out cs);
+            return WrongArgCount(name, cs, acceptableVersion);
         }
 
         public static CompilerError WrongArgCount(string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
-            string countDescription, pluralSuffix;
-            ArgCountHelpers.FormatArgCount(range, out countDescription, out pluralSuffix);
-            return WrongArgCount(name, countDescription, pluralSuffix, acceptableVersion);
+            CountableString cs;
+            ArgCountHelpers.FormatArgCount(range, out cs);
+            return WrongArgCount(name, cs, acceptableVersion);
         }
 
-        static CompilerError WrongArgCount(string name, string countDescription, string pluralSuffix,
-            int? acceptableVersion)
+        static CompilerError WrongArgCount(string name, CountableString cs, int? acceptableVersion)
         {
-            var error = new CompilerError(
-                CompilerMessages._0_Requires_1_Argument2,
-                name,
-                countDescription,
-                pluralSuffix);
+            var error = new CompilerError(CompilerMessages._0_Requires_1_Arguments, name, cs);
 
             if (acceptableVersion != null)
             {

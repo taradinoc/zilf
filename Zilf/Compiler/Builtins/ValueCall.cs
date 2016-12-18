@@ -19,6 +19,7 @@ using System.Diagnostics.Contracts;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -51,6 +52,12 @@ namespace Zilf.Compiler.Builtins
             Contract.Invariant(rb != null);
             Contract.Invariant(form != null);
             Contract.Invariant(resultStorage != null);
+        }
+
+        public IOperand HandleMessage(int code, params object[] args)
+        {
+            cc.Context.HandleError(new CompilerError(form, code, args));
+            return cc.Game.Zero;
         }
     }
 }

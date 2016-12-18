@@ -94,13 +94,13 @@ namespace Zilf.Interpreter
             const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_23;
 
             var range = new ArgCountRange(lowerBound, upperBound);
-            string countDescription, pluralSuffix;
-            ArgCountHelpers.FormatArgCount(range, out countDescription, out pluralSuffix);
+            CountableString cs;
+            ArgCountHelpers.FormatArgCount(range, out cs);
 
             var diag = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
                 DiagnosticContext.Current.SourceLine,
                 morePrefix ? MessageCodeWithMore : PlainMessageCode,
-                new object[] { site.ToString(), countDescription, site.ChildName, pluralSuffix },
+                new object[] { site.ToString(), cs, site.ChildName, cs.Plural ? "s" : "" },
                 null);
 
             return new ArgumentCountError(diag);

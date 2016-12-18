@@ -22,6 +22,25 @@ using System.Linq;
 
 namespace Zilf.Diagnostics
 {
+    struct CountableString
+    {
+        public readonly string Text;
+        public readonly bool Plural;
+
+        public CountableString(string text, bool plural)
+        {
+            Contract.Requires(text != null);
+
+            Text = text;
+            Plural = plural;
+        }
+
+        public override string ToString()
+        {
+            return Text;
+        }
+    }
+
     static class ArgCountHelpers
     {
         public static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
@@ -83,13 +102,12 @@ namespace Zilf.Diagnostics
             Contract.Requires(ranges != null);
             Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
 
-            string countDescription, pluralSuffix;
-            FormatArgCount(ranges, out countDescription, out pluralSuffix);
-            return string.Format("{0} argument{1}", countDescription, pluralSuffix);
+            CountableString cs;
+            FormatArgCount(ranges, out cs);
+            return string.Format("{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }
 
-        public static void FormatArgCount(IEnumerable<ArgCountRange> ranges,
-            out string countDescription, out string pluralSuffix)
+        public static void FormatArgCount(IEnumerable<ArgCountRange> ranges, out CountableString result)
         {
             var allCounts = new List<int>();
             bool uncapped = false;
@@ -123,7 +141,7 @@ namespace Zilf.Diagnostics
             {
                 var r = collapsed[0];
                 var range = new ArgCountRange(r.min, uncapped ? (int?)null : r.max);
-                FormatArgCount(range, out countDescription, out pluralSuffix);
+                FormatArgCount(range, out result);
                 return;
             }
 
@@ -134,48 +152,41 @@ namespace Zilf.Diagnostics
             if (uncapped)
                 unrolled = unrolled.Concat(Enumerable.Repeat("more", 1));
 
-            countDescription = EnglishJoin(unrolled, "or");
-            pluralSuffix = "s";
+            result = new CountableString(EnglishJoin(unrolled, "or"), true);
         }
 
-        public static void FormatArgCount(ArgCountRange range, out string countDescription, out string pluralSuffix)
+        public static void FormatArgCount(ArgCountRange range, out CountableString result)
         {
             // (1,_) uncapped => "1 or more arguments"
             if (range.MaxArgs == null)
             {
-                countDescription = string.Format("{0} or more", range.MinArgs);
-                pluralSuffix = "s";
+                result = new CountableString(string.Format("{0} or more", range.MinArgs), true);
                 return;
             }
 
             // (1,1) => "exactly 1 argument"
             if (range.MaxArgs == range.MinArgs)
             {
-                countDescription = string.Format("exactly {0}", range.MinArgs);
-                pluralSuffix = range.MinArgs == 1 ? "" : "s";
+                result = new CountableString(string.Format("exactly {0}", range.MinArgs), range.MinArgs != 1);
                 return;
             }
 
             // (0,1) => "at most 1 argument"
             if (range.MinArgs == 0)
             {
-                countDescription = string.Format("at most {0}", range.MaxArgs);
-                pluralSuffix = range.MaxArgs == 1 ? "" : "s";
+                result = new CountableString(string.Format("at most {0}", range.MaxArgs), range.MaxArgs != 1);
                 return;
             }
 
             // (1,2) => "1 or 2 arguments"
             if (range.MaxArgs == range.MinArgs + 1)
             {
-                countDescription = string.Format("{0} or {1}", range.MinArgs, range.MaxArgs);
-                pluralSuffix = "s";
+                result = new CountableString(string.Format("{0} or {1}", range.MinArgs, range.MaxArgs), true);
                 return;
             }
 
             // (1,3) => "1 to 3 arguments"
-            countDescription = string.Format("{0} to {1}", range.MinArgs, range.MaxArgs);
-            pluralSuffix = "s";
-            return;
+            result = new CountableString(string.Format("{0} to {1}", range.MinArgs, range.MaxArgs), true);
         }
     }
 }

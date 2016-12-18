@@ -816,8 +816,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages._0_One_Operand_Must_Be_1, "XORB"));
-                return c.cc.Game.Zero;
+                return c.HandleMessage(CompilerMessages._0_One_Operand_Must_Be_1, "XORB");
             }
 
             var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.resultStorage);
@@ -1853,8 +1852,11 @@ namespace Zilf.Compiler.Builtins
 
             if (c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value != 1)
             {
-                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages._0_Argument_1_Must_Be_1, "INPUT"));
-                return c.cc.Game.Zero;
+                return c.HandleMessage(
+                    CompilerMessages._0_Argument_1_2,
+                    "INPUT",
+                    1,
+                    "argument must be '1'");
             }
 
             c.rb.EmitReadChar(interval, routine, c.resultStorage);
@@ -2038,7 +2040,7 @@ namespace Zilf.Compiler.Builtins
                     if (value == c.rb.Stack)
                         c.rb.EmitPopStack();
 
-                    c.cc.Context.HandleWarning(new CompilerError(c.form, CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context));
+                    c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context);
                 }
 
                 block.Flags |= BlockFlags.Returned;
@@ -2060,7 +2062,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                c.cc.Context.HandleError(new CompilerError(c.form, CompilerMessages.AGAIN_Requires_A_PROGREPEAT_Block_Or_Routine));
+                c.HandleMessage(CompilerMessages.AGAIN_Requires_A_PROGREPEAT_Block_Or_Routine);
             }
         }
 
@@ -2074,11 +2076,9 @@ namespace Zilf.Compiler.Builtins
 
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
-                c.cc.Context.HandleError(new CompilerError(
-                    c.form,
+                return c.HandleMessage(
                     CompilerMessages.Too_Many_Call_Arguments_Only_0_Allowed_In_V1,
-                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion));
-                return c.cc.Game.Zero;
+                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
             }
 
             c.rb.EmitCall(routine, args, c.resultStorage);
@@ -2094,10 +2094,9 @@ namespace Zilf.Compiler.Builtins
 
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
-                c.cc.Context.HandleError(new CompilerError(
-                    c.form,
+                c.HandleMessage(
                     CompilerMessages.Too_Many_Call_Arguments_Only_0_Allowed_In_V1,
-                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion));
+                    c.cc.Game.MaxCallArguments, c.cc.Context.ZEnvironment.ZVersion);
                 return;
             }
 
@@ -2132,7 +2131,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
         }
 
-        static bool GetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
+        static bool TryGetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
             out int offset, out LowCoreFlags flags, out int minVersion)
         {
             Contract.Requires(name != null);
@@ -2153,17 +2152,17 @@ namespace Zilf.Compiler.Builtins
                 var field = LowCoreField.Get(atom);
                 if (field == null)
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages.Unrecognized_0_1, "header field", atom));
                     return false;
                 }
                 if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_1_Is_Not_Supported_In_This_Zmachine_Version, name, atom));
                     return false;
                 }
                 if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_1_Is_Not_Writable, name, atom));
                     return false;
                 }
 
@@ -2199,22 +2198,22 @@ namespace Zilf.Compiler.Builtins
                 var field = LowCoreField.Get(atom);
                 if (field == null)
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Unrecognized_Header_Field_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages.Unrecognized_0_1, "header field", atom));
                     return false;
                 }
                 if (!ctx.ZEnvironment.VersionMatches(field.MinVersion, field.MaxVersion))
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Not_Supported_In_This_Zmachine_Version_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_1_Is_Not_Supported_In_This_Zmachine_Version, name, atom));
                     return false;
                 }
                 if ((field.Flags & LowCoreFlags.Byte) != 0)
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Not_A_Word_Field_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_1_Is_Not_A_Word_Field, name, atom));
                     return false;
                 }
                 if (writing && (field.Flags & LowCoreFlags.Writable) == 0)
                 {
-                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_Is_Not_Writable_1, name, atom));
+                    ctx.HandleError(new CompilerError(src, CompilerMessages._0_Field_1_Is_Not_Writable, name, atom));
                     return false;
                 }
 
@@ -2224,7 +2223,7 @@ namespace Zilf.Compiler.Builtins
                 return true;
             }
 
-            ctx.HandleError(new CompilerError(src, CompilerMessages._0_First_Arg_Must_Be_An_Atom_Or_List, name));
+            ctx.HandleError(new CompilerError(src, CompilerMessages._0_Argument_1_2, name, 1, "argument must be an atom or list"));
             return false;
         }
 
@@ -2237,7 +2236,7 @@ namespace Zilf.Compiler.Builtins
             int offset, minVersion;
             LowCoreFlags flags;
 
-            if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
                 return c.cc.Game.Zero;
 
             var binaryOp = ((flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
@@ -2265,7 +2264,7 @@ namespace Zilf.Compiler.Builtins
             int offset, minVersion;
             LowCoreFlags flags;
 
-            if (!GetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out offset, out flags, out minVersion))
                 return;
 
             var ternaryOp = ((flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
@@ -2291,7 +2290,7 @@ namespace Zilf.Compiler.Builtins
             int offset, minVersion;
             LowCoreFlags flags;
 
-            if (!GetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
                 return;
 
             if ((flags & LowCoreFlags.Byte) == 0)
