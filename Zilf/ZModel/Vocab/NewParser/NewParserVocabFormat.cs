@@ -651,7 +651,11 @@ namespace Zilf.ZModel.Vocab.NewParser
                     }
                     else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
                     {
-                        throw new InterpreterError(InterpreterMessages._0_GVAL_Of_WORDFLAGSLIST_Must_Be_A_List, "NEW-ADD-WORD");
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Value_Of_1_Must_Be_2,
+                            "global",
+                            "WORD-FLAGS-LIST",
+                            "a list");
                     }
 
                     wordFlagsList = new ZilList(word.Inner, new ZilList(flags, (ZilList)wordFlagsList));

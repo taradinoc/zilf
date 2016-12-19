@@ -132,7 +132,7 @@ namespace Zilf.Interpreter.Values
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
                 if (target == null)
-                    throw new InterpreterError(this, InterpreterMessages.Calling_Undefined_Atom_0, fa.ToStringContext(ctx, false));
+                    throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0, fa.ToStringContext(ctx, false));
             }
             else
                 target = First.Eval(ctx);

@@ -1383,7 +1383,7 @@ namespace Zilf.Interpreter
             }
 
             // unknown type
-            throw new InterpreterError(InterpreterMessages._0_Is_Not_A_Registered_Type, newType);
+            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "type", newType);
         }
 
         void InitTellPatterns()

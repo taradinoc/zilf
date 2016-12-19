@@ -161,7 +161,11 @@ namespace Zilf.Interpreter
                             oneOffTag = arg;
                             continue;
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unexpected_Clause_In_Arg_Spec_1, caller, arg.ToString());
+                            throw new InterpreterError(
+                                InterpreterMessages._0_Unrecognized_1_2,
+                                caller,
+                                "clause in arg spec",
+                                arg.ToString());
                     }
                 }
 
@@ -180,7 +184,7 @@ namespace Zilf.Interpreter
                             }
                             else
                             {
-                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
                             }
                         }
 
@@ -190,7 +194,7 @@ namespace Zilf.Interpreter
                     case OO_Activation:
                         activationAtom = arg as ZilAtom;
                         if (activationAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
+                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;
@@ -198,7 +202,7 @@ namespace Zilf.Interpreter
                     case OO_Environment:
                         environmentAtom = arg as ZilAtom;
                         if (environmentAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, caller, oneOffTag);
+                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
 
                         oneOffMode = OO_None;
                         continue;

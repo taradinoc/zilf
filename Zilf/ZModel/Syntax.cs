@@ -88,7 +88,7 @@ namespace Zilf.ZModel
                 {
                     var atom = obj as ZilAtom;
                     if (atom == null || atom.StdAtom == StdAtom.Eq)
-                        throw new InterpreterError(InterpreterMessages.Missing_0_In_Syntax_Definition, "verb");
+                        throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "verb", "syntax definition");
 
                     verb = atom;
                 }
@@ -273,7 +273,7 @@ namespace Zilf.ZModel
 
             if (action == null)
             {
-                throw new InterpreterError(InterpreterMessages.Missing_0_In_Syntax_Definition, "action routine");
+                throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "action routine", "syntax definition");
             }
 
             if (actionName == null)
@@ -300,10 +300,10 @@ namespace Zilf.ZModel
             }
 
             return new Syntax(
-            src,
-            verbWord, numObjects,
-            word1, word2, flags1, flags2, findFlag1, findFlag2,
-            action, preaction, actionName, synAtoms);
+                src,
+                verbWord, numObjects,
+                word1, word2, flags1, flags2, findFlag1, findFlag2,
+                action, preaction, actionName, synAtoms);
         }
 
         static ZilAtom ParseFindFlag(ZilList list)
@@ -313,8 +313,14 @@ namespace Zilf.ZModel
 
             ZilAtom atom;
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty ||
-            (atom = list.Rest.First as ZilAtom) == null)
-                throw new InterpreterError(InterpreterMessages.FIND_Must_Be_Followed_By_A_Single_Atom);
+                (atom = list.Rest.First as ZilAtom) == null)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1_After_2,
+                    "SYNTAX",
+                    "a single atom",
+                    "FIND");
+            }
 
             return atom;
         }

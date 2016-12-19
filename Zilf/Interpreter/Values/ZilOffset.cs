@@ -259,11 +259,19 @@ namespace Zilf.Interpreter.Values
                     return Subrs.PUT(ctx, (IStructure)args[0], this.Index, args[1]);
                 }
 
-                throw new InterpreterError(InterpreterMessages.Expected_1_Or_2_Args_After_An_OFFSET);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1_After_2,
+                    InterpreterMessages.NoFunction,
+                    "1 or 2 args",
+                    "the OFFSET");
             }
             catch (InvalidCastException)
             {
-                throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_OFFSET);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1_After_2,
+                    InterpreterMessages.NoFunction,
+                    "a structured value",
+                    "the OFFSET");
             }
         }
     }

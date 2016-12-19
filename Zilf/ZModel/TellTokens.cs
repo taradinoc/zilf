@@ -144,7 +144,15 @@ namespace Zilf.ZModel
 
                         list = (ZilList)zo;
                         if (list.First == null || !list.All(e => e is ZilAtom))
-                            throw new InterpreterError(zo.SourceLine, InterpreterMessages.Lists_In_TELL_Token_Specs_Must_Contain_Atoms);
+                        {
+                            throw new InterpreterError(
+                                zo.SourceLine,
+                                InterpreterMessages._0_In_1_Must_Be_2,
+                                "lists",
+                                "TELL token specs",
+                                "lists of atoms");
+                        }
+
                         foreach (ZilAtom atom in list)
                             atomToken.Atoms.Add(atom);
 
@@ -153,6 +161,7 @@ namespace Zilf.ZModel
 
                         tokensSoFar.Add(atomToken);
                         break;
+
                     case StdAtom.ATOM:
                         // * to capture any value, or any other atom to introduce the token
                         if (((ZilAtom)zo).StdAtom == StdAtom.Times)
@@ -176,7 +185,10 @@ namespace Zilf.ZModel
                         // *:DECL to capture any value that matches the decl
                         adecl = (ZilAdecl)zo;
                         if (!(adecl.First is ZilAtom) || ((ZilAtom)adecl.First).StdAtom != StdAtom.Times)
-                            throw new InterpreterError(InterpreterMessages.Left_Side_Of_ADECL_In_TELL_Token_Spec_Must_Be_star);
+                            throw new InterpreterError(
+                                InterpreterMessages._0_Must_Be_1,
+                                "left side of ADECL in TELL token spec",
+                                "'*'");
                         tokensSoFar.Add(new DeclToken { Pattern = adecl.Second });
                         capturesSoFar++;
                         break;
@@ -203,7 +215,11 @@ namespace Zilf.ZModel
                                 }
                                 else if (!IsSimpleOutputElement(elem))
                                 {
-                                    throw new InterpreterError(form, InterpreterMessages.Value_Too_Fancy_For_TELL_Output_Template_0, elem.ToStringContext(ctx, false));
+                                    throw new InterpreterError(
+                                        form,
+                                        InterpreterMessages.Unrecognized_0_1,
+                                        "value in TELL output template",
+                                        elem);
                                 }
                             }
 
@@ -222,7 +238,11 @@ namespace Zilf.ZModel
                         break;
 
                     default:
-                        throw new InterpreterError(zo.SourceLine, InterpreterMessages.Unexpected_Type_In_TELL_Token_Spec_0, zo.GetTypeAtom(ctx));
+                        throw new InterpreterError(
+                            zo.SourceLine,
+                            InterpreterMessages.Unrecognized_0_1,
+                            "value in TELL token spec",
+                            zo);
                 }
             }
 

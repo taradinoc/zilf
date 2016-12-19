@@ -380,7 +380,11 @@ namespace Zilf.ZModel.Values
             }
             else
             {
-                throw new InterpreterError(form, InterpreterMessages._0_First_Argument_Must_Be_An_LVAL_Or_FIX, atom);
+                throw new InterpreterError(
+                    form,
+                    InterpreterMessages._0_Expected_1,
+                    atom + ": arg 1",
+                    "an LVAL or FIX");
             }
 
             ZilAtom partOfSpeech = null;
@@ -389,7 +393,11 @@ namespace Zilf.ZModel.Values
                 partOfSpeech = form.Rest.Rest.First as ZilAtom;
                 if (partOfSpeech == null)
                 {
-                    throw new InterpreterError(form, InterpreterMessages._0_Second_Argument_Must_Be_An_Atom, atom);
+                    throw new InterpreterError(
+                        form,
+                        InterpreterMessages._0_Expected_1,
+                        atom + ": arg 2",
+                        "an atom");
                 }
             }
 

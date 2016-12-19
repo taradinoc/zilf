@@ -41,13 +41,20 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(list != null);
             Contract.Ensures(Contract.Result<ZilEvalMacro>() != null);
 
-            if (list.First != null && list.First.IsApplicable(ctx) &&
-                list.Rest != null && list.Rest.First == null)
-            {
-                return new ZilEvalMacro(list.First);
-            }
+            if (list.First == null || list.Rest == null || list.Rest.First != null)
+                throw new InterpreterError(
+                    InterpreterMessages._0_Must_Have_1_Element1s,
+                    "list coerced to MACRO",
+                    1);
 
-            throw new InterpreterError(InterpreterMessages.List_Does_Not_Match_MACRO_Pattern);
+            if (!list.First.IsApplicable(ctx))
+                throw new InterpreterError(
+                    InterpreterMessages.Element_0_Of_1_Must_Be_2,
+                    1,
+                    "list coerced to MACRO",
+                    "applicable");
+
+            return new ZilEvalMacro(list.First);
         }
 
         string ToString(Func<ZilObject, string> convert)
@@ -66,10 +73,7 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "#MACRO...";
-            }
+            return "#MACRO...";
         }
 
         public override string ToString()

@@ -290,7 +290,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (position.Value < 0)
-                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_Nonnegative, "INDENT-TO");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1,
+                    "INDENT-TO: arg 1",
+                    "a non-negative FIX");
 
             if (channel == null)
             {

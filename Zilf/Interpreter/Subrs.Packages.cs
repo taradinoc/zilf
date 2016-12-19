@@ -100,7 +100,11 @@ namespace Zilf.Interpreter
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
             {
-                throw new InterpreterError(InterpreterMessages._0_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs, "ENTRY");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Value_Of_1_Must_Be_2,
+                    "local",
+                    "OBLIST",
+                    "a list starting with 2 OBLISTs");
             }
 
             var internalObList = (ObList)currentObPath.First;
@@ -133,7 +137,11 @@ namespace Zilf.Interpreter
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
             {
-                throw new InterpreterError(InterpreterMessages._0_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs, "RENTRY");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Value_Of_1_Must_Be_2,
+                    "local",
+                    "OBLIST",
+                    "a list starting with 2 OBLISTs");
             }
 
             var internalObList = (ObList)currentObPath.First;
@@ -204,7 +212,11 @@ namespace Zilf.Interpreter
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
-                throw new InterpreterError(InterpreterMessages._0_LVAL_Of_OBLIST_Must_Be_A_List_Starting_With_2_OBLISTs, name);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Value_Of_1_Must_Be_2,
+                    "local",
+                    "OBLIST",
+                    "a list starting with 2 OBLISTs");
 
             if (args.Length == 0)
                 return ctx.TRUE;
@@ -227,7 +239,7 @@ namespace Zilf.Interpreter
                 }
 
                 if (externalObList == null)
-                    throw new InterpreterError(InterpreterMessages._0_No_Such_Package_1, name, packageName);
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "package", packageName);
 
                 var pkgTypeAtom = ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) as ZilAtom;
                 if (pkgTypeAtom == null || pkgTypeAtom.StdAtom != requiredPackageType)
