@@ -221,7 +221,7 @@ namespace Zilf.Interpreter
             {
                 // modify an existing structure
                 if (((ZilObject)dest).PrimType != ((ZilObject)from).PrimType)
-                    throw new InterpreterError(InterpreterMessages._0_Fourth_Arg_Must_Have_Same_Primtype_As_First, "SUBSTRUC");
+                    throw new InterpreterError(InterpreterMessages._0_Destination_Must_Have_Same_Primtype_As_Source, "SUBSTRUC");
 
                 int i;
 

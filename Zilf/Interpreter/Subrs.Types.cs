@@ -264,7 +264,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "ILIST");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1,
+                    "ILIST: arg 1",
+                    "a non-negative FIX");
 
             var contents = new List<ZilObject>(count);
             for (int i = 0; i < count; i++)
@@ -284,7 +287,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "IVECTOR");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1,
+                    "IVECTOR: arg 1",
+                    "a non-negative FIX");
 
             var contents = new List<ZilObject>(count);
             for (int i = 0; i < count; i++)
@@ -358,7 +364,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (count < 0)
-                throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_A_Nonnegative_FIX, "ISTRING");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1,
+                    "ISTRING: arg 1",
+                    "a non-negative FIX");
 
             var contents = new List<char>(count);
             for (int i = 0; i < count; i++)

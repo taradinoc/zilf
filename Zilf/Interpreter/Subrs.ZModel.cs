@@ -569,7 +569,7 @@ namespace Zilf.Interpreter
                             flagList = flagList.Rest;
                             ZilList patternList;
                             if (flagList.IsEmpty || (patternList = flagList.First as ZilList) == null)
-                                throw new InterpreterError(InterpreterMessages._0_Expected_A_List_After_PATTERN, name);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, name, "a list", "PATTERN");
                             pattern = patternList.ToArray();
                             ValidateTablePattern(name, pattern);
                             break;
@@ -578,7 +578,7 @@ namespace Zilf.Interpreter
                             // ignore
                             flagList = flagList.Rest;
                             if (flagList.IsEmpty)
-                                throw new InterpreterError(InterpreterMessages._0_Expected_A_Value_After_SEGMENT, name);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, name, "a value", "SEGMENT");
                             break;
 
                         default:
@@ -759,7 +759,10 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (bytes < 0)
-                throw new InterpreterError(InterpreterMessages._0_Second_Arg_Must_Not_Be_Negative, "ZREST");
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1,
+                    "ZREST: arg 2",
+                    "non-negative FIX");
 
             return table.OffsetByBytes(ctx, bytes);
         }
@@ -893,7 +896,10 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_DEFINED_ROOMSFIRST_ROOMSANDLGSFIRST_Or_ROOMSLAST, "ORDER-OBJECTS?");
+            throw new InterpreterError(
+                InterpreterMessages._0_Expected_1,
+                "ORDER-OBJECTS?: arg 1",
+                "DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
         }
 
         [Subr("ORDER-TREE?")]
@@ -908,7 +914,10 @@ namespace Zilf.Interpreter
                     return atom;
             }
 
-            throw new InterpreterError(InterpreterMessages._0_First_Arg_Must_Be_REVERSEDEFINED, "ORDER-TREE?");
+            throw new InterpreterError(
+                InterpreterMessages._0_Expected_1,
+                "ORDER-TREE?: arg 1",
+                "REVERSE-DEFINED");
         }
 
         [Subr("ORDER-FLAGS?")]

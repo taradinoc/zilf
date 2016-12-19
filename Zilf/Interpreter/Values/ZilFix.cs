@@ -87,31 +87,32 @@ namespace Zilf.Interpreter.Values
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {
-            if (args.Length == 1)
+            try
             {
-                try
+                switch (args.Length)
                 {
-                    return Subrs.NTH(ctx, (IStructure)args[0], this.value);
-                }
-                catch (InvalidCastException)
-                {
-                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_FIX);
+                    case 1:
+                        return Subrs.NTH(ctx, (IStructure)args[0], this.value);
+
+                    case 2:
+                        return Subrs.PUT(ctx, (IStructure)args[0], this.value, args[1]);
+
+                    default:
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Expected_1_After_2,
+                            InterpreterMessages.NoFunction,
+                            "1 or 2 args",
+                            "the FIX");
+                            
                 }
             }
-            else if (args.Length == 2)
+            catch (InvalidCastException)
             {
-                try
-                {
-                    return Subrs.PUT(ctx, (IStructure)args[0], this.value, args[1]);
-                }
-                catch (InvalidCastException)
-                {
-                    throw new InterpreterError(InterpreterMessages.Expected_A_Structured_Value_After_The_FIX);
-                }
-            }
-            else
-            {
-                throw new InterpreterError(InterpreterMessages.Expected_1_Or_2_Args_After_A_FIX);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Expected_1_After_2,
+                    InterpreterMessages.NoFunction,
+                    "a structured value",
+                    "the FIX");
             }
         }
 

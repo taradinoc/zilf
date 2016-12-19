@@ -292,7 +292,7 @@ namespace Zilf.Interpreter
 
                 var ctorName = defaults.CustomCtorSpec.First as ZilAtom;
                 if (ctorName == null)
-                    throw new InterpreterError(InterpreterMessages._0_Element_After_CONSTRUCTOR_Must_Be_An_Atom, "DEFSTRUCT");
+                    throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", "'CONSTRUCTOR");
 
                 var argspecList = defaults.CustomCtorSpec.Rest.First as ZilList;
                 if (argspecList == null || argspecList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
@@ -859,21 +859,21 @@ namespace Zilf.Interpreter
                             partList = partList.Rest;
                             defaults.NthFunc = partList.First as ZilAtom;
                             if (defaults.NthFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
                             break;
 
                         case StdAtom.PUT:
                             partList = partList.Rest;
                             defaults.PutFunc = partList.First as ZilAtom;
                             if (defaults.PutFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
                             break;
 
                         case StdAtom.START_OFFSET:
                             partList = partList.Rest;
                             var fix = partList.First as ZilFix;
                             if (fix == null)
-                                throw new InterpreterError(InterpreterMessages._0_STARTOFFSET_Must_Be_Followed_By_A_FIX, "DEFSTRUCT");
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "a FIX", first);
                             defaults.StartOffset = fix.Value;
                             break;
 
@@ -881,7 +881,7 @@ namespace Zilf.Interpreter
                             partList = partList.Rest;
                             defaults.PrintFunc = partList.First as ZilAtom;
                             if (defaults.PrintFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_1_Must_Be_Followed_By_An_Atom, "DEFSTRUCT", first);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
                             break;
 
                         case StdAtom.CONSTRUCTOR:

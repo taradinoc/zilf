@@ -56,7 +56,11 @@ namespace Zilf.ZModel.Values
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
             if (list.Rest.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.LIST))
-                throw new InterpreterError(InterpreterMessages.Elements_After_First_Must_Be_Lists);
+                throw new InterpreterError(
+                    InterpreterMessages._0_In_1_Must_Be_2,
+                    "elements after first",
+                    "list coerced to OBJECT",
+                    "lists");
 
             // TODO: set isRoom
             return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);

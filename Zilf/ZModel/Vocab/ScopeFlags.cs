@@ -115,7 +115,10 @@ namespace Zilf.ZModel.Vocab
                 {
                     var length = sflagsVector.GetLength();
                     if (length % 2 != 0)
-                        throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Vector_Must_Have_An_Even_Number_Of_Elements);
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Must_Have_1_Element1s,
+                            "NEW-SFLAGS vector",
+                            new CountableString("an even number of", true));
 
                     entry = new CacheEntry();
 
@@ -139,10 +142,16 @@ namespace Zilf.ZModel.Vocab
                         else if (name is ZilAtom)
                             nameStr = ((ZilAtom)name).Text;
                         else
-                            throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Names_Must_Be_Strings_Or_Atoms);
+                            throw new InterpreterError(
+                                InterpreterMessages._0_Must_Be_1,
+                                "NEW-SFLAGS names",
+                                "strings or atoms");
 
                         if (!(value is ZilFix) || (((ZilFix)value).Value & ~255) != 0)
-                            throw new InterpreterError(InterpreterMessages.NEWSFLAGS_Values_Must_Be_FIXes_Between_0_And_255);
+                            throw new InterpreterError(
+                                InterpreterMessages._0_Must_Be_1,
+                                "NEW-SFLAGS values",
+                                "FIXes between 0 and 255");
 
                         entry.Dict[nameStr] = (byte)((ZilFix)value).Value;
                     }
@@ -191,10 +200,18 @@ namespace Zilf.ZModel.Vocab
 
             var fix = gval as ZilFix;
             if (fix == null)
-                throw new InterpreterError(InterpreterMessages.GVAL_Of_0_Must_Be_A_FIX, atom.ToStringContext(ctx, false));
+                throw new InterpreterError(
+                    InterpreterMessages._0_Value_Of_1_Must_Be_2,
+                    "global",
+                    atom.ToStringContext(ctx, false),
+                    "a FIX");
 
             if ((fix.Value & ~255) != 0)
-                throw new InterpreterError(InterpreterMessages.GVAL_Of_0_Must_Be_Between_0_And_255, atom.ToStringContext(ctx, false));
+                throw new InterpreterError(
+                    InterpreterMessages._0_Value_Of_1_Must_Be_2, 
+                    "global",
+                    atom.ToStringContext(ctx, false),
+                    "between 0 and 255");
 
             return (byte)fix.Value;
         }
