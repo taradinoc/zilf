@@ -166,7 +166,10 @@ namespace Zilf.Interpreter.Values
                             {
                                 var result = inner.Eval(ctx);
                                 if (tree.Type == ZilLexer.MACRO)
+                                {
+                                    (result as ZilSplice)?.SetSpliceableFlag();
                                     return result;
+                                }
                                 return null;
                             }
                         }

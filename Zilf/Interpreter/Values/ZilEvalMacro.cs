@@ -103,11 +103,7 @@ namespace Zilf.Interpreter.Values
 
         static ZilObject MakeSpliceExpandable(ZilObject zo)
         {
-            var splice = zo as ZilSplice;
-
-            if (splice != null)
-                splice.SetSpliceableFlag();
-
+            (zo as ZilSplice)?.SetSpliceableFlag();
             return zo;
         }
 
