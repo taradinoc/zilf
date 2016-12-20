@@ -1,0 +1,286 @@
+n
+n
+xlucky 29744
+e
+get lamp
+xyzzy
+on lamp
+e
+get cage
+w
+w
+w
+get bird
+w
+d
+s
+get gold
+n
+n
+free bird
+get axe
+drop cage
+s
+get jewelry
+n
+w
+get coins
+e
+n
+throw axe at dwarf
+get axe
+attack
+axe
+get axe
+get silver
+n
+plover
+ne
+get pyramid
+s
+plover
+throw axe at dwarf
+get axe
+plugh
+drop pyramid, coins, jewelry, silver, and gold
+get bottle, food, keys
+plugh
+s
+d
+w
+d
+w
+s
+s
+d
+s
+s
+s
+s
+s
+s
+d
+n
+s
+s
+s
+s
+s
+s
+s
+s
+s
+n
+s
+n
+s
+s
+axe
+get axe
+s
+s
+s
+n
+s
+s
+d
+pour water
+u
+w
+u
+n
+n
+fill bottle
+s
+s
+d
+s
+d
+pour
+u
+w
+u
+d
+e
+s
+d
+climb
+d
+e
+u
+e
+d
+get oil
+u
+axe him
+get axe
+w
+d
+climb
+w
+get eggs
+n
+oil door
+n
+get trident
+w
+d
+drop bottle
+sw
+u
+cross
+toss eggs
+cross
+ne
+e
+se
+s
+e
+feed bear
+open chain
+get it
+get bear
+w
+n
+w
+n
+ne
+e
+get spice
+w
+s
+w
+w
+cross
+free bear
+cross
+sw
+d
+drop keys
+se
+se
+ne
+e
+n
+open clam
+open it with the trident
+d
+d
+get pearl
+u
+u
+s
+u
+e
+u
+n
+plugh
+i
+drop pearl
+plugh
+s
+d
+w
+d
+w
+w
+nw
+nw
+n
+w
+i
+drop lamp, axe
+e
+get emerald
+w
+get axe and lamp
+nw
+s
+get vase
+se
+e
+get pillow
+w
+w
+w
+d
+climb
+w
+fee
+fie
+foe
+foo
+get eggs
+s
+d
+u
+w
+u
+s
+kill dragon
+yes
+axe dwarf
+get axe
+get rug
+e
+e
+n
+n
+plugh
+i
+drop rug, eggs, pillow, emerald
+drop vase
+xyzzy
+get rod
+w
+w
+w
+d
+w
+wave rod
+w
+get diamond
+w
+s
+e
+s
+s
+s
+n
+e
+n
+e
+nw
+get all
+i
+drop rod then get spice
+se
+n
+d
+e
+e
+xyzzy
+i
+drop all but axe and lamp
+plugh
+s
+d
+w
+d
+w
+e
+e
+get magazine
+e
+drop magazine
+n
+n
+n
+n
+n
+sw
+get rod
+ne
+drop rod
+sw
+blast

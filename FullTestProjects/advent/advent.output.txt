@@ -1,0 +1,1168 @@
+Hello, beta tester! Do you want to start transcripting now? (y/n) > At End Of Road                                                 Score: 36                                                                 Moves: 0                                                                               [Your fortune for today: "Watch out for bugs! Lucky number 2188."
+Use XLUCKY 2188 to replay this game next time.]
+
+
+Welcome to Adventure! Do you need instructions? (y/n) > At End Of Road                                                 Score: 36                                                                 Moves: 0                                                                               
+ADVENTURE (beta)
+A Modern Classic
+Based on Adventure by Willie Crowther and Don Woods (1977)
+And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others
+Adapted once more by Jesse McGrew (2015)
+Release 1 / Serial number 161219 / ZILF 0.7 lib J3
+
+At End Of Road
+You are standing at the end of a road before a small brick building. Around you is a forest. A small stream flows out of the building and down a gully.
+
+>  At End Of Road                                                 Score: 36                                                                 Moves: 0                                                                               Your lucky number is now 29744.
+
+>  At End Of Road                                                 Score: 36                                                                 Moves: 0                                                                               Inside Building
+You are inside a building, a well house for a large spring.
+
+There is a bottle here, containing some bottled water.
+
+There is a shiny brass lamp nearby.
+
+There is tasty food here.
+
+There are some keys on the ground here.
+
+>  Inside Building                                                 Score: 36                                                                 Moves: 1                                                                               You pick up the brass lantern.
+
+>  Inside Building                                                 Score: 36                                                                 Moves: 2                                                                               It is now pitch dark. If you proceed you will likely fall into a pit.
+
+>  Darkness                                                 Score: 36                                                                 Moves: 3                                                                               You switch on the brass lantern.
+You can see your surroundings now.
+
+In Debris Room
+You are in a debris room filled with stuff washed in from the surface. A low wide passage with cobbles becomes plugged with mud and debris here, but an awkward canyon leads upward and west.
+
+A note on the wall says, "Magic word XYZZY."
+
+A three foot black rod with a rusty star on one end lies nearby.
+
+>  In Debris Room                                                 Score: 36                                                                 Moves: 4                                                                               In Cobble Crawl
+You are crawling over cobbles in a low passage. There is a dim light at the east end of the passage.
+
+There is a small wicker cage discarded nearby.
+
+>  In Cobble Crawl                                                 Score: 36                                                                 Moves: 5                                                                               You pick up the wicker cage.
+
+>  In Cobble Crawl                                                 Score: 36                                                                 Moves: 6                                                                               In Debris Room
+You are in a debris room filled with stuff washed in from the surface. A low wide passage with cobbles becomes plugged with mud and debris here, but an awkward canyon leads upward and west.
+
+A note on the wall says, "Magic word XYZZY."
+
+A three foot black rod with a rusty star on one end lies nearby.
+
+>  In Debris Room                                                 Score: 36                                                                 Moves: 7                                                                               Sloping E/W Canyon
+You are in an awkward sloping east/west canyon.
+
+>  Sloping E/W Canyon                                                 Score: 36                                                                 Moves: 8                                                                               Orange River Chamber
+You are in a splendid chamber thirty feet high. The walls are frozen rivers of orange stone. An awkward canyon and a good passage exit from east and west sides of the chamber.
+
+A cheerful little bird is sitting here singing.
+
+>  Orange River Chamber                                                 Score: 36                                                                 Moves: 9                                                                               You catch the bird in the wicker cage.
+
+>  Orange River Chamber                                                 Score: 36                                                                 Moves: 10                                                                               At Top of Small Pit
+At your feet is a small pit breathing traces of white mist. A west passage ends here except for a small crack leading on.
+
+Rough stone steps lead down the pit.
+
+>  At Top of Small Pit                                                 Score: 36                                                                 Moves: 11                                                                               In Hall of Mists
+You are at one end of a vast hall stretching forward out of sight to the west. There are openings to either side. Nearby, a wide stone staircase leads downward. The hall is filled with wisps of white mist swaying to and fro almost as if alive. A cold wind blows up the staircase. There is a passage at the top of a dome behind you.
+
+Rough stone steps lead up the dome.
+
+A threatening little dwarf comes out of the shadows!
+
+[Your score has gone up by 25 points.]
+
+>  In Hall of Mists                                                 Score: 61                                                                 Moves: 12                                                                               Low Room
+This is a low room with a crude note on the wall:
+
+"You won't get it up the steps."
+
+There is a large sparkling nugget of gold here!
+
+The dwarf stalks after you...
+
+>  Low Room                                                 Score: 61                                                                 Moves: 13                                                                               You pick up the large gold nugget.
+
+[Your score has gone up by 7 points.]
+
+>  Low Room                                                 Score: 68                                                                 Moves: 14                                                                               In Hall of Mists
+You are at one end of a vast hall stretching forward out of sight to the west. There are openings to either side. Nearby, a wide stone staircase leads downward. The hall is filled with wisps of white mist swaying to and fro almost as if alive. A cold wind blows up the staircase. There is a passage at the top of a dome behind you.
+
+The dwarf stalks after you...
+
+>  In Hall of Mists                                                 Score: 68                                                                 Moves: 15                                                                               Hall of the Mountain King
+You are in the hall of the mountain king, with passages off in all directions.
+
+A huge green fierce snake bars the way!
+
+The dwarf stalks after you...
+
+>  Hall of the Mountain King                                                 Score: 68                                                                 Moves: 16                                                                               The little bird attacks the green snake, and in an astounding flurry drives the snake away.
+
+The dwarf throws a nasty little axe at you, misses, curses, and runs away.
+
+>  Hall of the Mountain King                                                 Score: 68                                                                 Moves: 17                                                                               You pick up the dwarvish axe.
+
+>  Hall of the Mountain King                                                 Score: 68                                                                 Moves: 18                                                                               You drop the wicker cage.
+
+>  Hall of the Mountain King                                                 Score: 68                                                                 Moves: 19                                                                               In South Side Chamber
+You are in the south side chamber.
+
+There is precious jewelry here!
+
+>  In South Side Chamber                                                 Score: 68                                                                 Moves: 20                                                                               You pick up the precious jewelry.
+
+[Your score has gone up by 7 points.]
+
+>  In South Side Chamber                                                 Score: 75                                                                 Moves: 21                                                                               Hall of the Mountain King
+You are in the hall of the mountain king, with passages off in all directions.
+
+A cheerful little bird is sitting here singing.
+
+There is a wicker cage here.
+
+>  Hall of the Mountain King                                                 Score: 75                                                                 Moves: 22                                                                               In West Side Chamber
+You are in the west side chamber of the hall of the mountain king. A passage continues west and up here.
+
+There are many coins here!
+
+A threatening little dwarf comes out of the shadows!
+
+>  In West Side Chamber                                                 Score: 75                                                                 Moves: 23                                                                               You pick up the rare coins.
+
+The dwarf throws a nasty little knife at you, but misses!
+
+[Your score has gone up by 7 points.]
+
+>  In West Side Chamber                                                 Score: 82                                                                 Moves: 24                                                                               Hall of the Mountain King
+You are in the hall of the mountain king, with passages off in all directions.
+
+A cheerful little bird is sitting here singing.
+
+There is a wicker cage here.
+
+The dwarf stalks after you...
+
+>  Hall of the Mountain King                                                 Score: 82                                                                 Moves: 25                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+There are bars of silver here!
+
+The dwarf stalks after you...
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 26                                                                               Missed! The little dwarf dodges out of the way of the axe.
+
+The dwarf throws a nasty little knife at you, but misses!
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 27                                                                               You pick up the dwarvish axe.
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 28                                                                               [the threatening little dwarf]
+Not with your bare hands. No way.
+
+The dwarf throws a nasty little knife at you, but misses!
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 29                                                                               [the threatening little dwarf]
+You killed a little dwarf! The body vanishes in a cloud of greasy black smoke.
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 30                                                                               You pick up the dwarvish axe.
+
+>  Low N/S Passage                                                 Score: 82                                                                 Moves: 31                                                                               You pick up the bars of silver.
+
+[Your score has gone up by 7 points.]
+
+>  Low N/S Passage                                                 Score: 89                                                                 Moves: 32                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+A threatening little dwarf comes out of the shadows!
+
+>  At "Y2"                                                 Score: 89                                                                 Moves: 33                                                                               Plover Room
+You're in a small chamber lit by an eerie green light. An extremely narrow tunnel exits to the west. A dark corridor leads northeast.
+
+There is an emerald here the size of a plover's egg!
+
+>  Plover Room                                                 Score: 89                                                                 Moves: 34                                                                               The Dark Room
+You're in the dark-room. A corridor leading south is the only exit.
+
+A massive stone tablet imbedded in the wall reads: "Congratulations on bringing light into the dark-room!"
+
+There is a platinum pyramid here, 8 inches on a side!
+
+>  The Dark Room                                                 Score: 89                                                                 Moves: 35                                                                               You pick up the platinum pyramid.
+
+[Your score has gone up by 7 points.]
+
+>  The Dark Room                                                 Score: 96                                                                 Moves: 36                                                                               Plover Room
+You're in a small chamber lit by an eerie green light. An extremely narrow tunnel exits to the west. A dark corridor leads northeast.
+
+There is an emerald here the size of a plover's egg!
+
+>  Plover Room                                                 Score: 96                                                                 Moves: 37                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+A threatening little dwarf hides in the shadows.
+
+The dwarf throws a nasty little knife at you, but misses!
+
+>  At "Y2"                                                 Score: 96                                                                 Moves: 38                                                                               You killed a little dwarf! The body vanishes in a cloud of greasy black smoke.
+
+>  At "Y2"                                                 Score: 96                                                                 Moves: 39                                                                               You pick up the dwarvish axe.
+
+>  At "Y2"                                                 Score: 96                                                                 Moves: 40                                                                               Inside Building
+You are inside a building, a well house for a large spring.
+
+There is a bottle here, containing some bottled water.
+
+There is tasty food here.
+
+There are some keys on the ground here.
+
+>  Inside Building                                                 Score: 96                                                                 Moves: 41                                                                               platinum pyramid: Safely deposited.
+rare coins: Safely deposited.
+precious jewelry: Safely deposited.
+bars of silver: Safely deposited.
+large gold nugget: Safely deposited.
+
+[Your score has gone up by 29 points.]
+
+>  Inside Building                                                 Score: 125                                                                 Moves: 42                                                                               bottle: Taken.
+tasty food: Taken.
+set of keys: Taken.
+
+>  Inside Building                                                 Score: 125                                                                 Moves: 43                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+>  At "Y2"                                                 Score: 125                                                                 Moves: 44                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+>  Low N/S Passage                                                 Score: 125                                                                 Moves: 45                                                                               Dirty Passage
+You are in a dirty broken passage. To the east is a crawl. To the west is a large passage. Above you is a hole to another passage.
+
+>  Dirty Passage                                                 Score: 125                                                                 Moves: 46                                                                               In Dusty Rock Room
+You are in a large room full of dusty rocks. There is a big hole in the floor. There are cracks everywhere, and a passage leading east.
+
+>  In Dusty Rock Room                                                 Score: 125                                                                 Moves: 47                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 125                                                                 Moves: 48                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 49                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 50                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 51                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 52                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 53                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 54                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 55                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+There are faint rustling noises from the darkness behind you. As you turn toward them, you spot a bearded pirate. He is carrying a large chest.
+
+"Shiver me timbers!" he cries, "I've been spotted! I'd best hie meself off to the maze to hide me chest!"
+
+With that, he vanishes into the gloom.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 56                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 57                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 58                                                                               You can't go that way.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 59                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 60                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 61                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 62                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 63                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 64                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 65                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 66                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 67                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 68                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 69                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 70                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 71                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 72                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 73                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+A threatening little dwarf comes out of the shadows!
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 74                                                                               [the threatening little dwarf]
+You killed a little dwarf! The body vanishes in a cloud of greasy black smoke.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 75                                                                               You pick up the dwarvish axe.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 76                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 77                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 78                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 79                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 125                                                                 Moves: 80                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 81                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 82                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a tiny little plant in the pit, murmuring "Water, water, ..."
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 83                                                                               [on the plant]
+The plant spurts into furious growth for a few seconds.
+
+There is a 12-foot-tall beanstalk stretching up out of the pit, bellowing "Water!! Water!!"
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 84                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+The top of a 12-foot-tall beanstalk is poking out of the west pit.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 85                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 86                                                                               Secret N/S Canyon
+You are in a secret N/S canyon above a large room.
+
+>  Secret N/S Canyon                                                 Score: 125                                                                 Moves: 87                                                                               In Mirror Canyon
+You are in a north/south canyon about 25 feet across. The floor is covered by white mist seeping in from the north. The walls extend upward for well over 100 feet. Suspended from some unseen point far above you, an enormous two-sided mirror is hanging parallel to and midway between the canyon walls.
+
+A small window can be seen in either wall, some fifty feet up.
+
+The mirror is obviously provided for the use of the dwarves who, as you know, are extremely vain.
+
+>  In Mirror Canyon                                                 Score: 125                                                                 Moves: 88                                                                               At Reservoir
+You are at the edge of a large underground reservoir. An opaque cloud of white mist fills the room and rises rapidly upward. The lake is fed by a stream, which tumbles out of a hole in the wall about 10 feet overhead and splashes noisily into the water somewhere within the mist. The only passage goes back toward the south.
+
+>  At Reservoir                                                 Score: 125                                                                 Moves: 89                                                                               [from the stream]
+The bottle is now full of water.
+
+>  At Reservoir                                                 Score: 125                                                                 Moves: 90                                                                               In Mirror Canyon
+You are in a north/south canyon about 25 feet across. The floor is covered by white mist seeping in from the north. The walls extend upward for well over 100 feet. Suspended from some unseen point far above you, an enormous two-sided mirror is hanging parallel to and midway between the canyon walls.
+
+A small window can be seen in either wall, some fifty feet up.
+
+The mirror is obviously provided for the use of the dwarves who, as you know, are extremely vain.
+
+>  In Mirror Canyon                                                 Score: 125                                                                 Moves: 91                                                                               Secret N/S Canyon
+You are in a secret N/S canyon above a large room.
+
+>  Secret N/S Canyon                                                 Score: 125                                                                 Moves: 92                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 93                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+The top of a 12-foot-tall beanstalk is poking out of the west pit.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 94                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a 12-foot-tall beanstalk stretching up out of the pit, bellowing "Water!! Water!!"
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 95                                                                               [the bottled water]
+[on the plant]
+The plant grows explosively, almost filling the bottom of the pit.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 96                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 97                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 98                                                                               Secret N/S Canyon
+You are in a secret N/S canyon above a large room.
+
+>  Secret N/S Canyon                                                 Score: 125                                                                 Moves: 99                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 100                                                                               You can't go that way.
+
+>  Slab Room                                                 Score: 125                                                                 Moves: 101                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 102                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 103                                                                               You clamber up the plant and scurry through the hole at the top.
+
+In Narrow Corridor
+You are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves.
+
+>  In Narrow Corridor                                                 Score: 125                                                                 Moves: 104                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 105                                                                               You can't go that way.
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 106                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 107                                                                               At East End of Twopit Room
+You are at the east end of the twopit room. The floor here is littered with thin rock slabs, which make it easy to descend the pits. There is a path here bypassing the pits to connect passages from east and west. There are holes all over, but the only big one is on the wall directly over the west pit where you can't get to it.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At East End of Twopit Room                                                 Score: 125                                                                 Moves: 108                                                                               In East Pit
+You are at the bottom of the eastern pit in the twopit room. There is a small pool of oil in one corner of the pit.
+
+>  In East Pit                                                 Score: 125                                                                 Moves: 109                                                                               The bottle is now full of oil.
+
+>  In East Pit                                                 Score: 125                                                                 Moves: 110                                                                               At East End of Twopit Room
+You are at the east end of the twopit room. The floor here is littered with thin rock slabs, which make it easy to descend the pits. There is a path here bypassing the pits to connect passages from east and west. There are holes all over, but the only big one is on the wall directly over the west pit where you can't get to it.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+A threatening little dwarf comes out of the shadows!
+
+>  At East End of Twopit Room                                                 Score: 125                                                                 Moves: 111                                                                               You killed a little dwarf! The body vanishes in a cloud of greasy black smoke.
+
+>  At East End of Twopit Room                                                 Score: 125                                                                 Moves: 112                                                                               You pick up the dwarvish axe.
+
+>  At East End of Twopit Room                                                 Score: 125                                                                 Moves: 113                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 125                                                                 Moves: 114                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 125                                                                 Moves: 115                                                                               You clamber up the plant and scurry through the hole at the top.
+
+In Narrow Corridor
+You are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves.
+
+>  In Narrow Corridor                                                 Score: 125                                                                 Moves: 116                                                                               Giant Room
+You are in the giant room. The ceiling here is too high up for your lamp to show it. Cavernous passages lead east, north, and south. On the west wall is scrawled the inscription, "Fee fie foe foo" [sic].
+
+There is a large nest here, full of golden eggs!
+
+>  Giant Room                                                 Score: 125                                                                 Moves: 117                                                                               You pick up the nest of golden eggs.
+
+[Your score has gone up by 7 points.]
+
+>  Giant Room                                                 Score: 132                                                                 Moves: 118                                                                               Immense N/S Passage
+You are at one end of an immense north/south passage.
+
+The way north is barred by a massive, rusty, iron door.
+
+>  Immense N/S Passage                                                 Score: 132                                                                 Moves: 119                                                                               The oil has freed up the hinges so that the door will move, although it requires some effort.
+
+>  Immense N/S Passage                                                 Score: 132                                                                 Moves: 120                                                                               [first wrenching the door open]
+In Cavern With Waterfall
+You are in a magnificent cavern with a rushing stream, which cascades over a sparkling waterfall into a roaring whirlpool which disappears through a hole in the floor. Passages exit to the south and west.
+
+There is a jewel-encrusted trident here!
+
+>  In Cavern With Waterfall                                                 Score: 132                                                                 Moves: 121                                                                               You pick up the jeweled trident.
+
+[Your score has gone up by 7 points.]
+
+>  In Cavern With Waterfall                                                 Score: 139                                                                 Moves: 122                                                                               Steep Incline Above Large Room
+You are at the top of a steep incline above a large room. You could climb down here, but you would not be able to climb up. There is a passage leading back to the north.
+
+>  Steep Incline Above Large Room                                                 Score: 139                                                                 Moves: 123                                                                               Large Low Room
+You are in a large low room. Crawls lead north, se, and sw.
+
+>  Large Low Room                                                 Score: 139                                                                 Moves: 124                                                                               You drop the bottle.
+
+>  Large Low Room                                                 Score: 139                                                                 Moves: 125                                                                               Sloping Corridor
+You are in a long winding corridor sloping out of sight in both directions.
+
+>  Sloping Corridor                                                 Score: 139                                                                 Moves: 126                                                                               On SW Side of Chasm
+You are on one side of a large, deep chasm. A heavy white mist rising up from below obscures all view of the far side. A southwest path leads away from the chasm into a winding corridor.
+
+A rickety bridge extends across the chasm, vanishing into the mist.
+
+A sign posted on the bridge reads, "Stop! Pay troll!"
+The troll is nowhere to be seen.
+
+>  On SW Side of Chasm                                                 Score: 139                                                                 Moves: 127                                                                               [the rickety bridge]
+The troll steps out from beneath the bridge and blocks your way.
+
+>  On SW Side of Chasm                                                 Score: 139                                                                 Moves: 128                                                                               [at the burly troll]
+The troll catches your treasure and scurries away out of sight.
+
+[Your score has gone down by 5 points.]
+
+>  On SW Side of Chasm                                                 Score: 134                                                                 Moves: 129                                                                               [the rickety bridge]
+On NE Side of Chasm
+You are on the far side of the chasm. A northeast path leads away from the chasm on this side.
+
+A rickety bridge extends across the chasm, vanishing into the mist.
+
+A sign posted on the bridge reads, "Stop! Pay troll!"
+The troll is nowhere to be seen.
+
+>  On NE Side of Chasm                                                 Score: 134                                                                 Moves: 130                                                                               In Corridor
+You're in a long east/west corridor. A faint rumbling noise can be heard in the distance.
+
+>  In Corridor                                                 Score: 134                                                                 Moves: 131                                                                               At Fork in Path
+The path forks here. The left fork leads northeast. A dull rumbling seems to get louder in that direction. The right fork leads southeast down a gentle slope. The main corridor enters from the west.
+
+>  At Fork in Path                                                 Score: 134                                                                 Moves: 132                                                                               In Limestone Passage
+You are walking along a gently sloping north/south passage lined with oddly shaped limestone formations.
+
+>  In Limestone Passage                                                 Score: 134                                                                 Moves: 133                                                                               In Front of Barren Room
+You are standing at the entrance to a large, barren room. A sign posted above the entrance reads: "Caution! Bear in room!"
+
+>  In Front of Barren Room                                                 Score: 134                                                                 Moves: 134                                                                               In Barren Room
+You are inside a barren room. The center of the room is completely empty except for some dust. Marks in the dust lead away toward the far end of the room. The only exit is the way you came in.
+
+There is a ferocious cave bear eyeing you from the far end of the room!
+The bear is held back by a solid gold chain.
+
+>  In Barren Room                                                 Score: 134                                                                 Moves: 135                                                                               [the tasty food]
+The bear eagerly wolfs down your food, after which he seems to calm down considerably and even becomes rather friendly.
+
+>  In Barren Room                                                 Score: 134                                                                 Moves: 136                                                                               Unlocked.
+
+>  In Barren Room                                                 Score: 134                                                                 Moves: 137                                                                               You pick up the golden chain.
+
+[Your score has gone up by 7 points.]
+
+>  In Barren Room                                                 Score: 141                                                                 Moves: 138                                                                               Ok, the bear's now following you around.
+
+>  In Barren Room                                                 Score: 141                                                                 Moves: 139                                                                               In Front of Barren Room
+You are standing at the entrance to a large, barren room. A sign posted above the entrance reads: "Caution! Bear in room!"
+
+The bear lumbers along behind you.
+
+>  In Front of Barren Room                                                 Score: 141                                                                 Moves: 140                                                                               You can't go that way.
+
+>  In Front of Barren Room                                                 Score: 141                                                                 Moves: 141                                                                               In Limestone Passage
+You are walking along a gently sloping north/south passage lined with oddly shaped limestone formations.
+
+The bear lumbers along behind you.
+
+>  In Limestone Passage                                                 Score: 141                                                                 Moves: 142                                                                               At Fork in Path
+The path forks here. The left fork leads northeast. A dull rumbling seems to get louder in that direction. The right fork leads southeast down a gentle slope. The main corridor enters from the west.
+
+The bear lumbers along behind you.
+
+>  At Fork in Path                                                 Score: 141                                                                 Moves: 143                                                                               At Junction With Warm Walls
+The walls are quite warm here. From the north can be heard a steady roar, so loud that the entire cave seems to be trembling. Another passage leads south, and a low crawl goes east.
+
+The bear lumbers along behind you.
+
+>  At Junction With Warm Walls                                                 Score: 141                                                                 Moves: 144                                                                               In Chamber of Boulders
+You are in a small chamber filled with large boulders. The walls are very warm, causing the air in the room to be almost stifling from the heat. The only exit is a crawl heading west, through which is coming a low rumbling.
+
+There are a selection of rare spices here.
+
+The bear lumbers along behind you.
+
+>  In Chamber of Boulders                                                 Score: 141                                                                 Moves: 145                                                                               You pick up the rare spices.
+
+[Your score has gone up by 7 points.]
+
+>  In Chamber of Boulders                                                 Score: 148                                                                 Moves: 146                                                                               At Junction With Warm Walls
+The walls are quite warm here. From the north can be heard a steady roar, so loud that the entire cave seems to be trembling. Another passage leads south, and a low crawl goes east.
+
+The bear lumbers along behind you.
+
+>  At Junction With Warm Walls                                                 Score: 148                                                                 Moves: 147                                                                               At Fork in Path
+The path forks here. The left fork leads northeast. A dull rumbling seems to get louder in that direction. The right fork leads southeast down a gentle slope. The main corridor enters from the west.
+
+The bear lumbers along behind you.
+
+>  At Fork in Path                                                 Score: 148                                                                 Moves: 148                                                                               In Corridor
+You're in a long east/west corridor. A faint rumbling noise can be heard in the distance.
+
+The bear lumbers along behind you.
+
+>  In Corridor                                                 Score: 148                                                                 Moves: 149                                                                               On NE Side of Chasm
+You are on the far side of the chasm. A northeast path leads away from the chasm on this side.
+
+A rickety bridge extends across the chasm, vanishing into the mist.
+
+A sign posted on the bridge reads, "Stop! Pay troll!"
+The troll is nowhere to be seen.
+
+The bear lumbers along behind you.
+
+>  On NE Side of Chasm                                                 Score: 148                                                                 Moves: 150                                                                               [the rickety bridge]
+The troll steps out from beneath the bridge and blocks your way.
+
+>  On NE Side of Chasm                                                 Score: 148                                                                 Moves: 151                                                                               The bear lumbers toward the troll, who lets out a startled shriek and scurries away. The bear soon gives up the pursuit and wanders back.
+
+>  On NE Side of Chasm                                                 Score: 148                                                                 Moves: 152                                                                               [the rickety bridge]
+On SW Side of Chasm
+You are on one side of a large, deep chasm. A heavy white mist rising up from below obscures all view of the far side. A southwest path leads away from the chasm into a winding corridor.
+
+A rickety bridge extends across the chasm, vanishing into the mist.
+
+A sign posted on the bridge reads, "Stop! Pay troll!"
+The troll is nowhere to be seen.
+
+>  On SW Side of Chasm                                                 Score: 148                                                                 Moves: 153                                                                               Sloping Corridor
+You are in a long winding corridor sloping out of sight in both directions.
+
+>  Sloping Corridor                                                 Score: 148                                                                 Moves: 154                                                                               Large Low Room
+You are in a large low room. Crawls lead north, se, and sw.
+
+There is an empty bottle here.
+
+>  Large Low Room                                                 Score: 148                                                                 Moves: 155                                                                               You drop the set of keys.
+
+>  Large Low Room                                                 Score: 148                                                                 Moves: 156                                                                               Oriental Room
+This is the oriental room. Ancient oriental cave drawings cover the walls. A gently sloping passage leads upward to the north, another passage leads se, and a hands and knees crawl leads west.
+
+There is a ming vase here.
+
+>  Oriental Room                                                 Score: 148                                                                 Moves: 157                                                                               In Swiss Cheese Room
+You are in a room whose walls resemble swiss cheese. Obvious passages go west, east, ne, and nw. Part of the room is occupied by a large bedrock block.
+
+>  In Swiss Cheese Room                                                 Score: 148                                                                 Moves: 158                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 148                                                                 Moves: 159                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 148                                                                 Moves: 160                                                                               Shell Room
+You're in a large room carved out of sedimentary rock. The floor and walls are littered with bits of shells imbedded in the stone. A shallow passage proceeds downward, and a somewhat steeper one leads up. A low hands and knees passage enters from the south.
+
+There is an enormous clam here with its shell tightly closed.
+
+>  Shell Room                                                 Score: 148                                                                 Moves: 161                                                                               You aren't strong enough to open the clam with your bare hands.
+
+>  Shell Room                                                 Score: 148                                                                 Moves: 162                                                                               A glistening pearl falls out of the clam and rolls away. Goodness, this must really be an oyster. (I never was very good at identifying bivalves.) Whatever it is, it has now snapped shut again.
+
+Out from the shadows behind you pounces a bearded pirate! "Har, har," he chortles. "I'll just take all this booty and hide it away with me chest deep in the maze!" He snatches your treasure and vanishes into the gloom.
+
+[Your score has gone down by 15 points.]
+
+>  Shell Room                                                 Score: 133                                                                 Moves: 163                                                                               Ragged Corridor
+You are in a long sloping corridor with ragged sharp walls.
+
+>  Ragged Corridor                                                 Score: 133                                                                 Moves: 164                                                                               Cul-de-Sac
+You are in a cul-de-sac about eight feet across.
+
+Off to one side lies a glistening pearl!
+
+>  Cul-de-Sac                                                 Score: 133                                                                 Moves: 165                                                                               You pick up the glistening pearl.
+
+[Your score has gone up by 7 points.]
+
+>  Cul-de-Sac                                                 Score: 140                                                                 Moves: 166                                                                               Ragged Corridor
+You are in a long sloping corridor with ragged sharp walls.
+
+>  Ragged Corridor                                                 Score: 140                                                                 Moves: 167                                                                               Shell Room
+You're in a large room carved out of sedimentary rock. The floor and walls are littered with bits of shells imbedded in the stone. A shallow passage proceeds downward, and a somewhat steeper one leads up. A low hands and knees passage enters from the south.
+
+There is an enormous oyster here with its shell tightly closed.
+
+>  Shell Room                                                 Score: 140                                                                 Moves: 168                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 140                                                                 Moves: 169                                                                               In Dusty Rock Room
+You are in a large room full of dusty rocks. There is a big hole in the floor. There are cracks everywhere, and a passage leading east.
+
+>  In Dusty Rock Room                                                 Score: 140                                                                 Moves: 170                                                                               Dirty Passage
+You are in a dirty broken passage. To the east is a crawl. To the west is a large passage. Above you is a hole to another passage.
+
+>  Dirty Passage                                                 Score: 140                                                                 Moves: 171                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+>  Low N/S Passage                                                 Score: 140                                                                 Moves: 172                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+>  At "Y2"                                                 Score: 140                                                                 Moves: 173                                                                               Inside Building
+You are inside a building, a well house for a large spring.
+
+There is a large gold nugget, some bars of silver, some precious jewelry, many rare coins, and a platinum pyramid here.
+
+>  Inside Building                                                 Score: 140                                                                 Moves: 174                                                                               You are carrying:
+   a glistening pearl
+   a dwarvish axe
+   a brass lantern (providing light)
+
+>  Inside Building                                                 Score: 140                                                                 Moves: 174                                                                               You safely deposit the glistening pearl.
+
+[Your score has gone up by 9 points.]
+
+>  Inside Building                                                 Score: 149                                                                 Moves: 175                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+>  At "Y2"                                                 Score: 149                                                                 Moves: 176                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+>  Low N/S Passage                                                 Score: 149                                                                 Moves: 177                                                                               Dirty Passage
+You are in a dirty broken passage. To the east is a crawl. To the west is a large passage. Above you is a hole to another passage.
+
+>  Dirty Passage                                                 Score: 149                                                                 Moves: 178                                                                               In Dusty Rock Room
+You are in a large room full of dusty rocks. There is a big hole in the floor. There are cracks everywhere, and a passage leading east.
+
+>  In Dusty Rock Room                                                 Score: 149                                                                 Moves: 179                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 149                                                                 Moves: 180                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 149                                                                 Moves: 181                                                                               In Swiss Cheese Room
+You are in a room whose walls resemble swiss cheese. Obvious passages go west, east, ne, and nw. Part of the room is occupied by a large bedrock block.
+
+>  In Swiss Cheese Room                                                 Score: 149                                                                 Moves: 182                                                                               Oriental Room
+This is the oriental room. Ancient oriental cave drawings cover the walls. A gently sloping passage leads upward to the north, another passage leads se, and a hands and knees crawl leads west.
+
+There is a ming vase here.
+
+>  Oriental Room                                                 Score: 149                                                                 Moves: 183                                                                               You can't go that way.
+
+>  Oriental Room                                                 Score: 149                                                                 Moves: 184                                                                               Misty Cavern
+You are following a wide path around the outer edge of a large cavern. Far below, through a heavy white mist, strange splashing noises can be heard. The mist rises up through a fissure in the ceiling. The path exits to the south and west.
+
+>  Misty Cavern                                                 Score: 149                                                                 Moves: 185                                                                               Alcove
+You are in an alcove. A small northwest path seems to widen after a short distance. An extremely tight tunnel leads east. It looks like a very tight squeeze. An eerie light can be seen at the other end.
+
+>  Alcove                                                 Score: 149                                                                 Moves: 186                                                                               You are carrying:
+   a dwarvish axe
+   a brass lantern (providing light)
+
+>  Alcove                                                 Score: 149                                                                 Moves: 186                                                                               brass lantern: Dropped.
+dwarvish axe: Dropped.
+
+>  Alcove                                                 Score: 149                                                                 Moves: 187                                                                               Plover Room
+You're in a small chamber lit by an eerie green light. An extremely narrow tunnel exits to the west. A dark corridor leads northeast.
+
+There is an emerald here the size of a plover's egg!
+
+>  Plover Room                                                 Score: 149                                                                 Moves: 188                                                                               You pick up the emerald the size of a plover's egg.
+
+[Your score has gone up by 7 points.]
+
+>  Plover Room                                                 Score: 156                                                                 Moves: 189                                                                               Alcove
+You are in an alcove. A small northwest path seems to widen after a short distance. An extremely tight tunnel leads east. It looks like a very tight squeeze. An eerie light can be seen at the other end.
+
+Your lamp is here, gleaming brightly.
+
+There is a dwarvish axe here.
+
+>  Alcove                                                 Score: 156                                                                 Moves: 190                                                                               dwarvish axe: Taken.
+brass lantern: Taken.
+
+>  Alcove                                                 Score: 156                                                                 Moves: 191                                                                               Misty Cavern
+You are following a wide path around the outer edge of a large cavern. Far below, through a heavy white mist, strange splashing noises can be heard. The mist rises up through a fissure in the ceiling. The path exits to the south and west.
+
+>  Misty Cavern                                                 Score: 156                                                                 Moves: 192                                                                               Oriental Room
+This is the oriental room. Ancient oriental cave drawings cover the walls. A gently sloping passage leads upward to the north, another passage leads se, and a hands and knees crawl leads west.
+
+There is a ming vase here.
+
+>  Oriental Room                                                 Score: 156                                                                 Moves: 193                                                                               You pick up the ming vase.
+
+[Your score has gone up by 7 points.]
+
+>  Oriental Room                                                 Score: 163                                                                 Moves: 194                                                                               In Swiss Cheese Room
+You are in a room whose walls resemble swiss cheese. Obvious passages go west, east, ne, and nw. Part of the room is occupied by a large bedrock block.
+
+>  In Swiss Cheese Room                                                 Score: 163                                                                 Moves: 195                                                                               In Soft Room
+You are in the soft room. The walls are covered with heavy curtains, the floor with a thick pile carpet. Moss covers the ceiling.
+
+A small velvet pillow lies on the floor.
+
+>  In Soft Room                                                 Score: 163                                                                 Moves: 196                                                                               You pick up the velvet pillow.
+
+>  In Soft Room                                                 Score: 163                                                                 Moves: 197                                                                               In Swiss Cheese Room
+You are in a room whose walls resemble swiss cheese. Obvious passages go west, east, ne, and nw. Part of the room is occupied by a large bedrock block.
+
+>  In Swiss Cheese Room                                                 Score: 163                                                                 Moves: 198                                                                               At East End of Twopit Room
+You are at the east end of the twopit room. The floor here is littered with thin rock slabs, which make it easy to descend the pits. There is a path here bypassing the pits to connect passages from east and west. There are holes all over, but the only big one is on the wall directly over the west pit where you can't get to it.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At East End of Twopit Room                                                 Score: 163                                                                 Moves: 199                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 163                                                                 Moves: 200                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 163                                                                 Moves: 201                                                                               You clamber up the plant and scurry through the hole at the top.
+
+In Narrow Corridor
+You are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves.
+
+>  In Narrow Corridor                                                 Score: 163                                                                 Moves: 202                                                                               Giant Room
+You are in the giant room. The ceiling here is too high up for your lamp to show it. Cavernous passages lead east, north, and south. On the west wall is scrawled the inscription, "Fee fie foe foo" [sic].
+
+>  Giant Room                                                 Score: 163                                                                 Moves: 203                                                                               Ok.
+
+>  Giant Room                                                 Score: 163                                                                 Moves: 204                                                                               Ok.
+
+>  Giant Room                                                 Score: 163                                                                 Moves: 205                                                                               Ok.
+
+>  Giant Room                                                 Score: 163                                                                 Moves: 206                                                                               Done!
+
+A large nest full of golden eggs suddenly appears out of nowhere!
+
+>  Giant Room                                                 Score: 163                                                                 Moves: 207                                                                               You pick up the nest of golden eggs.
+
+[Your score has gone up by 5 points.]
+
+>  Giant Room                                                 Score: 168                                                                 Moves: 208                                                                               In Narrow Corridor
+You are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves.
+
+>  In Narrow Corridor                                                 Score: 168                                                                 Moves: 209                                                                               In West Pit
+You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.
+
+There is a gigantic beanstalk stretching all the way up to the hole.
+
+>  In West Pit                                                 Score: 168                                                                 Moves: 210                                                                               At West End of Twopit Room
+You are at the west end of the twopit room. There is a large hole in the wall above the pit at the end of this room.
+
+There is a huge beanstalk growing out of the west pit up to the hole.
+
+>  At West End of Twopit Room                                                 Score: 168                                                                 Moves: 211                                                                               Slab Room
+You are in a large low circular chamber whose floor is an immense slab fallen from the ceiling (slab room). East and west there once were large passages, but they are now filled with boulders. Low small passages go north and south, and the south one quickly bends west around the boulders.
+
+>  Slab Room                                                 Score: 168                                                                 Moves: 212                                                                               Secret N/S Canyon
+You are in a secret N/S canyon above a large room.
+
+>  Secret N/S Canyon                                                 Score: 168                                                                 Moves: 213                                                                               Secret Canyon
+You are in a secret canyon which exits to the north and east.
+
+A huge green fierce dragon bars the way!
+
+The dragon is sprawled out on the Persian rug!
+
+>  Secret Canyon                                                 Score: 168                                                                 Moves: 214                                                                               With what? Your bare hands?
+
+>  Secret Canyon                                                 Score: 168                                                                 Moves: 215                                                                               Congratulations! You have just vanquished a dragon with your bare hands! (Unbelievable, isn't it?)
+
+A threatening little dwarf comes out of the shadows!
+
+>  Secret Canyon                                                 Score: 168                                                                 Moves: 216                                                                               You killed a little dwarf! The body vanishes in a cloud of greasy black smoke.
+
+>  Secret Canyon                                                 Score: 168                                                                 Moves: 217                                                                               You pick up the dwarvish axe.
+
+>  Secret Canyon                                                 Score: 168                                                                 Moves: 218                                                                               You pick up the Persian rug.
+
+[Your score has gone up by 7 points.]
+
+>  Secret Canyon                                                 Score: 175                                                                 Moves: 219                                                                               Secret E/W Canyon Above Tight Canyon
+You are in a secret canyon which here runs E/W. It crosses over a very tight canyon 15 feet below. If you go down you may not be able to get back up.
+
+>  Secret E/W Canyon Above Tight Canyon                                                 Score: 175                                                                 Moves: 220                                                                               Hall of the Mountain King
+You are in the hall of the mountain king, with passages off in all directions.
+
+A cheerful little bird is sitting here singing.
+
+There is a wicker cage here.
+
+>  Hall of the Mountain King                                                 Score: 175                                                                 Moves: 221                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+>  Low N/S Passage                                                 Score: 175                                                                 Moves: 222                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+>  At "Y2"                                                 Score: 175                                                                 Moves: 223                                                                               Inside Building
+You are inside a building, a well house for a large spring.
+
+There is a glistening pearl, a large gold nugget, some bars of silver, some precious jewelry, many rare coins, and a platinum pyramid here.
+
+>  Inside Building                                                 Score: 175                                                                 Moves: 224                                                                               You are carrying:
+   a Persian rug
+   a dwarvish axe
+   a nest of golden eggs
+   a velvet pillow
+   a ming vase
+   a brass lantern (providing light)
+   an emerald the size of a plover's egg
+
+>  Inside Building                                                 Score: 175                                                                 Moves: 224                                                                               Persian rug: Safely deposited.
+nest of golden eggs: Safely deposited.
+velvet pillow: Dropped.
+emerald the size of a plover's egg: Safely deposited.
+
+[Your score has gone up by 27 points.]
+
+>  Inside Building                                                 Score: 202                                                                 Moves: 225                                                                               (coming to rest, delicately, on the velvet pillow)
+You safely deposit the ming vase.
+
+[Your score has gone up by 9 points.]
+
+>  Inside Building                                                 Score: 211                                                                 Moves: 226                                                                               In Debris Room
+You are in a debris room filled with stuff washed in from the surface. A low wide passage with cobbles becomes plugged with mud and debris here, but an awkward canyon leads upward and west.
+
+A note on the wall says, "Magic word XYZZY."
+
+A three foot black rod with a rusty star on one end lies nearby.
+
+>  In Debris Room                                                 Score: 211                                                                 Moves: 227                                                                               You pick up the black rod with a rusty star on the end.
+
+>  In Debris Room                                                 Score: 211                                                                 Moves: 228                                                                               Sloping E/W Canyon
+You are in an awkward sloping east/west canyon.
+
+>  Sloping E/W Canyon                                                 Score: 211                                                                 Moves: 229                                                                               Orange River Chamber
+You are in a splendid chamber thirty feet high. The walls are frozen rivers of orange stone. An awkward canyon and a good passage exit from east and west sides of the chamber.
+
+>  Orange River Chamber                                                 Score: 211                                                                 Moves: 230                                                                               At Top of Small Pit
+At your feet is a small pit breathing traces of white mist. A west passage ends here except for a small crack leading on.
+
+Rough stone steps lead down the pit.
+
+>  At Top of Small Pit                                                 Score: 211                                                                 Moves: 231                                                                               In Hall of Mists
+You are at one end of a vast hall stretching forward out of sight to the west. There are openings to either side. Nearby, a wide stone staircase leads downward. The hall is filled with wisps of white mist swaying to and fro almost as if alive. A cold wind blows up the staircase. There is a passage at the top of a dome behind you.
+
+Rough stone steps lead up the dome.
+
+>  In Hall of Mists                                                 Score: 211                                                                 Moves: 232                                                                               On East Bank of Fissure
+You are on the east bank of a fissure slicing clear across the hall. The mist is quite thick here, and the fissure is too wide to jump.
+
+>  On East Bank of Fissure                                                 Score: 211                                                                 Moves: 233                                                                               A crystal bridge now spans the fissure.
+
+>  On East Bank of Fissure                                                 Score: 211                                                                 Moves: 234                                                                               West Side of Fissure
+You are on the west side of the fissure in the hall of mists.
+
+A crystal bridge now spans the fissure.
+
+There are diamonds here!
+
+>  West Side of Fissure                                                 Score: 211                                                                 Moves: 235                                                                               You pick up the diamonds.
+
+[Your score has gone up by 7 points.]
+
+>  West Side of Fissure                                                 Score: 218                                                                 Moves: 236                                                                               At West End of Hall of Mists
+You are at the west end of the hall of mists. A low wide crawl continues west and another goes north. To the south is a little passage 6 feet off the floor.
+
+>  At West End of Hall of Mists                                                 Score: 218                                                                 Moves: 237                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 238                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 239                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 240                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 241                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 242                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 243                                                                               At Brink of Pit
+You are on the brink of a thirty foot pit with a massive orange column down one wall. You could climb down here but you could not get back up. The maze continues at this level.
+
+>  At Brink of Pit                                                 Score: 218                                                                 Moves: 244                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 245                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 218                                                                 Moves: 246                                                                               Dead End
+You have reached a dead end.
+
+The pirate's treasure chest is here!
+
+A solid golden chain lies in coils on the ground!
+
+There is a jeweled trident and a selection of rare spices here.
+
+>  Dead End                                                 Score: 218                                                                 Moves: 247                                                                               treasure chest: Taken.
+jeweled trident: Taken.
+golden chain: Taken.
+rare spices: You're carrying too much.
+
+A sepulchral voice reverberating through the cave says, "Cave closing soon. All adventurers exit immediately through main office."
+
+[Your score has gone up by 42 points.]
+
+>  Dead End                                                 Score: 260                                                                 Moves: 248                                                                               You are carrying:
+   a golden chain
+   a jeweled trident
+   a treasure chest
+   some diamonds
+   a black rod with a rusty star on the end
+   a dwarvish axe
+   a brass lantern (providing light)
+
+>  Dead End                                                 Score: 260                                                                 Moves: 248                                                                               You drop the black rod with a rusty star on the end.
+
+You pick up the rare spices.
+
+[Your score has gone up by 5 points.]
+
+>  Dead End                                                 Score: 265                                                                 Moves: 250                                                                               Maze
+You are in a maze of twisty little passages, all alike.
+
+>  Maze                                                 Score: 265                                                                 Moves: 251                                                                               At Brink of Pit
+You are on the brink of a thirty foot pit with a massive orange column down one wall. You could climb down here but you could not get back up. The maze continues at this level.
+
+>  At Brink of Pit                                                 Score: 265                                                                 Moves: 252                                                                               Orange River Chamber
+You are in a splendid chamber thirty feet high. The walls are frozen rivers of orange stone. An awkward canyon and a good passage exit from east and west sides of the chamber.
+
+>  Orange River Chamber                                                 Score: 265                                                                 Moves: 253                                                                               Sloping E/W Canyon
+You are in an awkward sloping east/west canyon.
+
+>  Sloping E/W Canyon                                                 Score: 265                                                                 Moves: 254                                                                               In Debris Room
+You are in a debris room filled with stuff washed in from the surface. A low wide passage with cobbles becomes plugged with mud and debris here, but an awkward canyon leads upward and west.
+
+A note on the wall says, "Magic word XYZZY."
+
+>  In Debris Room                                                 Score: 265                                                                 Moves: 255                                                                               Inside Building
+You are inside a building, a well house for a large spring.
+
+The Persian rug is spread out on the floor here.
+
+There is a ming vase, an emerald the size of a plover's egg, a velvet pillow, a nest of golden eggs, a glistening pearl, a large gold nugget, some bars of silver, some precious jewelry, many rare coins, and a platinum pyramid here.
+
+>  Inside Building                                                 Score: 265                                                                 Moves: 256                                                                               You are carrying:
+   a selection of rare spices
+   a golden chain
+   a jeweled trident
+   a treasure chest
+   some diamonds
+   a dwarvish axe
+   a brass lantern (providing light)
+
+>  Inside Building                                                 Score: 265                                                                 Moves: 256                                                                               rare spices: Safely deposited.
+golden chain: Safely deposited.
+jeweled trident: Safely deposited.
+treasure chest: Safely deposited.
+diamonds: Safely deposited.
+
+[Your score has gone up by 39 points.]
+
+>  Inside Building                                                 Score: 304                                                                 Moves: 257                                                                               At "Y2"
+You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large "Y2" on a rock in the room's center.
+
+>  At "Y2"                                                 Score: 304                                                                 Moves: 258                                                                               Low N/S Passage
+You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.
+
+>  Low N/S Passage                                                 Score: 304                                                                 Moves: 259                                                                               Dirty Passage
+You are in a dirty broken passage. To the east is a crawl. To the west is a large passage. Above you is a hole to another passage.
+
+>  Dirty Passage                                                 Score: 304                                                                 Moves: 260                                                                               In Dusty Rock Room
+You are in a large room full of dusty rocks. There is a big hole in the floor. There are cracks everywhere, and a passage leading east.
+
+>  In Dusty Rock Room                                                 Score: 304                                                                 Moves: 261                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 304                                                                 Moves: 262                                                                               In Bedquilt
+You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down.
+
+>  In Bedquilt                                                 Score: 304                                                                 Moves: 263                                                                               At Complex Junction
+You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here.
+
+>  At Complex Junction                                                 Score: 304                                                                 Moves: 264                                                                               In Anteroom
+You are in an anteroom leading to a large passage to the east. Small passages go west and up. The remnants of recent digging are evident.
+
+A sign in midair here says "Cave under construction beyond this point. Proceed at own risk. [Witt Construction Company]"
+
+There are a few recent issues of "Spelunker Today" magazine here.
+
+>  In Anteroom                                                 Score: 304                                                                 Moves: 265                                                                               You pick up the recent issues of "Spelunker Today".
+
+>  In Anteroom                                                 Score: 304                                                                 Moves: 266                                                                               At Witt's End
+You are at Witt's End. Passages lead off in *all* directions.
+
+>  At Witt's End                                                 Score: 304                                                                 Moves: 267                                                                               You really are at wit's end.
+
+[Your score has gone up by 1 point.]
+
+>  At Witt's End                                                 Score: 305                                                                 Moves: 268                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  At Witt's End                                                 Score: 305                                                                 Moves: 269                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  At Witt's End                                                 Score: 305                                                                 Moves: 270                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  At Witt's End                                                 Score: 305                                                                 Moves: 271                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+>  At Witt's End                                                 Score: 305                                                                 Moves: 272                                                                               You have crawled around in some little holes and wound up back in the main passage.
+
+The sepulchral voice intones, "The cave is now closed." As the echoes fade, there is a blinding flash of light (and a small puff of orange smoke). . .
+
+As your eyes refocus, you look around...
+
+NE End of Repository
+You are at the northeast end of an immense room, even larger than the giant room. It appears to be a repository for the "Adventure" program. Massive torches far overhead bathe the room with smoky yellow light. Scattered about you can be seen a pile of bottles (all of them empty), a nursery of young beanstalks murmuring quietly, a bed of oysters, a bundle of black rods with rusty stars on their ends, and a collection of brass lanterns. Off to one side a great many dwarves are sleeping on the floor, snoring loudly. A sign nearby reads: "Do not disturb the dwarves!"
+
+An immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.
+
+[Your score has gone up by 10 points.]
+
+>  NE End of Repository                                                 Score: 315                                                                 Moves: 273                                                                               SW End of Repository
+You are at the southwest end of the repository. To one side is a pit full of fierce green snakes. On the other side is a row of small wicker cages, each of which contains a little sulking bird. In one corner is a bundle of black rods with rusty marks on their ends. A large number of velvet pillows are scattered about on the floor. A vast mirror stretches off to the northeast. At your feet is a large steel grate, next to which is a sign which reads, "TREASURE VAULT. Keys in main office."
+
+An immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.
+
+The grate is closed.
+
+A three foot rod with a rusty mark on one end lies nearby.
+
+>  SW End of Repository                                                 Score: 315                                                                 Moves: 274                                                                               You pick up the black rod with a rusty mark on the end.
+
+>  SW End of Repository                                                 Score: 315                                                                 Moves: 275                                                                               NE End of Repository
+You are at the northeast end of an immense room, even larger than the giant room. It appears to be a repository for the "Adventure" program. Massive torches far overhead bathe the room with smoky yellow light. Scattered about you can be seen a pile of bottles (all of them empty), a nursery of young beanstalks murmuring quietly, a bed of oysters, a bundle of black rods with rusty stars on their ends, and a collection of brass lanterns. Off to one side a great many dwarves are sleeping on the floor, snoring loudly. A sign nearby reads: "Do not disturb the dwarves!"
+
+An immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.
+
+>  NE End of Repository                                                 Score: 315                                                                 Moves: 276                                                                               You drop the black rod with a rusty mark on the end.
+
+>  NE End of Repository                                                 Score: 315                                                                 Moves: 277                                                                               SW End of Repository
+You are at the southwest end of the repository. To one side is a pit full of fierce green snakes. On the other side is a row of small wicker cages, each of which contains a little sulking bird. In one corner is a bundle of black rods with rusty marks on their ends. A large number of velvet pillows are scattered about on the floor. A vast mirror stretches off to the northeast. At your feet is a large steel grate, next to which is a sign which reads, "TREASURE VAULT. Keys in main office."
+
+An immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.
+
+The grate is closed.
+
+>  SW End of Repository                                                 Score: 315                                                                 Moves: 278                                                                               There is a loud explosion, and a twenty-foot hole appears in the far wall, burying the dwarves in the rubble. You march through the hole and find yourself in the main office, where a cheering band of friendly elves carry the conquering adventurer off into the sunset.
+
+In 278 turns, you scored 350 points out of a possible 350.
+All of adventuredom gives tribute to you, Adventurer Grandmaster!
+To achieve the next higher rating would be a neat trick!
+Congratulations!!
