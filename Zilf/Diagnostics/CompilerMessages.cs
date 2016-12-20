@@ -75,7 +75,7 @@ namespace Zilf.Diagnostics
         public const int _0_Second_List_Element_Must_Be_0_Or_1 = 120;
         [Message("elements of binding list must be atoms or lists")]
         public const int Elements_Of_Binding_List_Must_Be_Atoms_Or_Lists = 121;
-        [Message("unrecognized {0}: 1")]
+        [Message("unrecognized {0}: {1}")]
         public const int Unrecognized_0_1 = 122;
         [Message("expressions of this type cannot be compiled")]
         public const int Expressions_Of_This_Type_Cannot_Be_Compiled = 123;
