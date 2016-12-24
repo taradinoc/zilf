@@ -35,7 +35,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx, args);
 
             var defaults = new ZilList(args);
-            ctx.PutProp(ctx.GetStdAtom(StdAtom.DEFSTRUCT), ctx.GetStdAtom(StdAtom.DEFAULT), defaults);
+            ctx.CurrentFile.DefStructDefaults = defaults;
             return defaults;
         }
 
@@ -204,8 +204,8 @@ namespace Zilf.Interpreter
                 StartOffset = 1
             };
 
-            var fileDefaultList = ctx.GetProp(ctx.GetStdAtom(StdAtom.DEFSTRUCT), ctx.GetStdAtom(StdAtom.DEFAULT)) as ZilList;
-            if (fileDefaultList != null && fileDefaultList.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            var fileDefaultList = ctx.CurrentFile.DefStructDefaults;
+            if (fileDefaultList != null)
                 ParseDefStructDefaults(ctx, fileDefaultList, ref defaults);
 
             if (baseTypeOrDefaults is ZilAtom)
@@ -273,15 +273,10 @@ namespace Zilf.Interpreter
             if (!defaults.SuppressDefaultCtor)
             {
                 var ctorMacroDef = MakeDefstructCtorMacro(ctx, name, baseType, fields, unparsedInitArgs, defaults.StartOffset);
-                var oldFileName = ctx.CurrentFile;
-                try
+
+                using (ctx.PushFileContext(string.Format("<constructor for DEFSTRUCT {0}>", name)))
                 {
-                    ctx.CurrentFile = string.Format("<constructor for DEFSTRUCT {0}>", name);
                     Program.Evaluate(ctx, ctorMacroDef, true);
-                }
-                finally
-                {
-                    ctx.CurrentFile = oldFileName;
                 }
             }
 
@@ -301,15 +296,9 @@ namespace Zilf.Interpreter
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
                 var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, unparsedInitArgs, defaults.StartOffset, argspec);
 
-                var oldFileName = ctx.CurrentFile;
-                try
+                using (ctx.PushFileContext(string.Format("<constructor {0} for DEFSTRUCT {1}>", ctorName, name)))
                 {
-                    ctx.CurrentFile = string.Format("<constructor {0} for DEFSTRUCT {1}>", ctorName, name);
                     Program.Evaluate(ctx, ctorMacroDef, true);
-                }
-                finally
-                {
-                    ctx.CurrentFile = oldFileName;
                 }
             }
 
@@ -317,15 +306,10 @@ namespace Zilf.Interpreter
             foreach (var field in fields)
             {
                 var accessMacroDef = MakeDefstructAccessMacro(ctx, name, defaults, field);
-                var oldFileName = ctx.CurrentFile;
-                try
+
+                using (ctx.PushFileContext(string.Format("<accessor for field {0} of DEFSTRUCT {1}>", field.Name, name)))
                 {
-                    ctx.CurrentFile = string.Format("<accessor for field {0} of DEFSTRUCT {1}>", field.Name, name);
                     Program.Evaluate(ctx, accessMacroDef, true);
-                }
-                finally
-                {
-                    ctx.CurrentFile = oldFileName;
                 }
             }
 

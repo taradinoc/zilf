@@ -1769,7 +1769,7 @@ namespace Zilf.Interpreter
 
                 del = (name, c, args) =>
                 {
-                    if ((c.CurrentFileFlags & FileFlags.MdlZil) != 0 &&
+                    if ((c.CurrentFile.Flags & FileFlags.MdlZil) != 0 &&
                         (!topLevelOnly || c.AtTopLevel))
                     {
                         return targetDel(name, c, args);

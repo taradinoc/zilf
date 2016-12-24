@@ -100,7 +100,9 @@ namespace Zilf.Interpreter
         public Context(bool ignoreCase)
         {
             this.ignoreCase = ignoreCase;
-            this.CurrentFile = "<internal>";        // so we can create FileSourceInfos for default PROPDEFs
+
+            // so we can create FileSourceInfos for default PROPDEFs
+            CurrentFile = new FileContext(this, "<internal>");
 
             // set up the ROOT oblist manually
             rootObList = new ObList(ignoreCase);
@@ -250,9 +252,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        public string CurrentFile { get; set; }
-
-        public FileFlags CurrentFileFlags { get; set; }
+        public FileContext CurrentFile { get; set; }
 
         public RoutineFlags NextRoutineFlags { get; set; }
 
@@ -630,6 +630,24 @@ namespace Zilf.Interpreter
                 throw new InvalidOperationException("no parent frame to restore");
 
             TopFrame = TopFrame.Parent;
+        }
+
+        public FileContext PushFileContext(string path)
+        {
+            Contract.Requires(!string.IsNullOrWhiteSpace(path));
+            Contract.Ensures(Contract.Result<FileContext>() != null);
+
+            var result = new FileContext(this, path);
+            CurrentFile = result;
+            return result;
+        }
+
+        public void PopFileContext()
+        {
+            if (CurrentFile.Parent == null)
+                throw new InvalidOperationException("no parent file to restore");
+
+            CurrentFile = CurrentFile.Parent;
         }
 
         /// <summary>

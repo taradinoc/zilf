@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
+using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -315,6 +317,36 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<FOO-LIST <MAKE-FOO>>", new ZilList(null, null));
             TestHelpers.EvalAndAssert(ctx, "<FOO-VECTOR <MAKE-FOO>>", new ZilVector());
             TestHelpers.EvalAndAssert(ctx, "<FOO-MULTI <MAKE-FOO>>", ctx.FALSE);
+        }
+
+        [TestMethod]
+        public void TestSET_DEFSTRUCT_FILE_DEFAULTS()
+        {
+            var ctx = new Context();
+            ctx.IncludePaths.Add("lib");
+
+            const string FileToIntercept = "inner.zil";
+
+            ctx.InterceptFileExists = path => Path.GetFileName(path) == FileToIntercept;
+            ctx.InterceptOpenFile = (path, writing) =>
+            {
+                if (Path.GetFileName(path) == FileToIntercept)
+                {
+                    const string fileContent = @"
+<SET-DEFSTRUCT-FILE-DEFAULTS ('NTH MY-NTH)>
+<DEFINE MY-NTH (STRUC IDX) 12345>
+<DEFSTRUCT INNER VECTOR (INNER-X FIX)>";
+                    return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
+                }
+
+                return null;
+            };
+
+            TestHelpers.Evaluate(ctx, "<FLOAD \"inner\">");
+            TestHelpers.EvalAndAssert(ctx, "<INNER-X <MAKE-INNER 'INNER-X 100>>", new ZilFix(12345));
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT OUTER VECTOR (OUTER-X FIX)>");
+            TestHelpers.EvalAndAssert(ctx, "<OUTER-X <MAKE-OUTER 'OUTER-X 100>>", new ZilFix(100));
         }
 
         // TODO: test 0-based field offsets

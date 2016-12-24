@@ -79,7 +79,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "ROUTINE", oldAtom.ToStringContext(ctx, false));
             }
 
-            var flags = CombineFlags(ctx.CurrentFileFlags, ctx.NextRoutineFlags);
+            var flags = CombineFlags(ctx.CurrentFile.Flags, ctx.NextRoutineFlags);
             ctx.NextRoutineFlags = RoutineFlags.None;
 
             var rtn = new ZilRoutine(

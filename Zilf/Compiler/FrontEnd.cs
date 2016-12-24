@@ -243,29 +243,31 @@ namespace Zilf.Compiler
                 // evaluate source text
                 ICharStream charStream = new ANTLRInputStream(inputStream);
 
-                ctx.CurrentFile = inputFileName;
-                ctx.InterceptOpenFile = this.OpenFile;
-                ctx.InterceptFileExists = this.CheckFileExists;
-                ctx.IncludePaths.AddRange(this.IncludePaths);
-                Zilf.Program.Evaluate(ctx, charStream);
-
-                // compile, if there were no evaluation errors
-                if (wantCompile && ctx.ErrorCount == 0)
+                using (ctx.PushFileContext(inputFileName))
                 {
-                    ctx.SetDefaultConstants();
+                    ctx.InterceptOpenFile = this.OpenFile;
+                    ctx.InterceptFileExists = this.CheckFileExists;
+                    ctx.IncludePaths.AddRange(this.IncludePaths);
+                    Zilf.Program.Evaluate(ctx, charStream);
 
-                    try
+                    // compile, if there were no evaluation errors
+                    if (wantCompile && ctx.ErrorCount == 0)
                     {
-                        var zversion = ctx.ZEnvironment.ZVersion;
-                        var streamFactory = new ZapStreamFactory(this, outputFileName);
-                        var options = MakeGameOptions(ctx);
-                        var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
+                        ctx.SetDefaultConstants();
 
-                        Zilf.Compiler.Compiler.Compile(ctx, gameBuilder);
-                    }
-                    catch (ZilError ex)
-                    {
-                        ctx.HandleError(ex);
+                        try
+                        {
+                            var zversion = ctx.ZEnvironment.ZVersion;
+                            var streamFactory = new ZapStreamFactory(this, outputFileName);
+                            var options = MakeGameOptions(ctx);
+                            var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
+
+                            Zilf.Compiler.Compiler.Compile(ctx, gameBuilder);
+                        }
+                        catch (ZilError ex)
+                        {
+                            ctx.HandleError(ex);
+                        }
                     }
                 }
 

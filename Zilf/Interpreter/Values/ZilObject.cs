@@ -121,7 +121,7 @@ namespace Zilf.Interpreter.Values
 
             ZilObject[] children;
 
-            using (DiagnosticContext.Push(new FileSourceLine(ctx.CurrentFile, tree.Line)))
+            using (DiagnosticContext.Push(new FileSourceLine(ctx.CurrentFile.Path, tree.Line)))
             {
                 switch (tree.Type)
                 {
@@ -142,14 +142,14 @@ namespace Zilf.Interpreter.Values
                         children = ReadChildrenFromAST(tree, ctx);
                         if (children.Length == 0)
                             return ctx.FALSE;
-                        return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
+                        return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
                     case ZilLexer.HASH:
                         return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
                     case ZilLexer.LIST:
-                        return new ZilList(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
+                        return new ZilList(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
                     case ZilLexer.VECTOR:
                     case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
-                        return new ZilVector(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile, tree.Line) };
+                        return new ZilVector(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
                     case ZilLexer.ADECL:
                         children = ReadChildrenFromAST(tree, ctx);
                         Contract.Assume(children.Length == 2);

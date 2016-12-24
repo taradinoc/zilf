@@ -629,7 +629,7 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void Test_MdlZilRedirect()
         {
-            ctx.CurrentFileFlags |= FileFlags.MdlZil;
+            ctx.CurrentFile.Flags |= FileFlags.MdlZil;
 
             var methodInfo = GetMethod(nameof(Dummy_MdlZilRedirect_From));
 
