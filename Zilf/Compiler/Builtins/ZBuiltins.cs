@@ -2015,6 +2015,8 @@ namespace Zilf.Compiler.Builtins
         [Builtin("RETURN", HasSideEffect = true)]
         public static void ReturnOp(VoidCall c, IOperand value = null, Block block = null)
         {
+            var origBlock = block;
+
             if (block == null)
             {
                 block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
@@ -2040,7 +2042,13 @@ namespace Zilf.Compiler.Builtins
                     if (value == c.rb.Stack)
                         c.rb.EmitPopStack();
 
-                    c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context);
+                    // warn that the value was ignored, unless this looks like a case where
+                    // a dummy value was required in order to return from a named block
+                    if (origBlock == null ||
+                        (value != c.cc.Game.Zero && value != c.cc.Game.One))
+                    {
+                        c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context);
+                    }
                 }
 
                 block.Flags |= BlockFlags.Returned;

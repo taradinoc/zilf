@@ -73,6 +73,28 @@ namespace IntegrationTests
                 .GivesNumber("123");
         }
 
+        [TestMethod]
+        public void RETURN_With_Activation_In_Void_Context_Should_Not_Warn()
+        {
+            // activation + simple value => no warning
+            AssertRoutine("",
+                "<PROG FOO () <RETURN <> .FOO> <QUIT>> 123")
+                .WithoutWarnings()
+                .GivesNumber("123");
+
+            // no activation + simple value => warning
+            AssertRoutine("",
+                "<PROG () <RETURN <>> <QUIT>> 123")
+                .WithWarnings()
+                .GivesNumber("123");
+
+            // activation + other value => warning
+            AssertRoutine("",
+                "<PROG FOO () <RETURN 9 .FOO> <QUIT>> 123")
+                .WithWarnings()
+                .GivesNumber("123");
+        }
+
         #endregion
 
         #region AGAIN

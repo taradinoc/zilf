@@ -20,7 +20,7 @@ using System;
 namespace Zilf.Compiler
 {
     [Flags]
-enum BlockFlags
+    enum BlockFlags
     {
         None = 0,
 
