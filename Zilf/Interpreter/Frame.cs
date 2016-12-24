@@ -71,7 +71,7 @@ namespace Zilf.Interpreter
             }
             else
             {
-                throw new InvalidOperationException("Frame being disposed must be at the top of the stack");
+                throw new InvalidOperationException($"{nameof(Frame)} being disposed must be at the top of the stack");
             }
         }
     }

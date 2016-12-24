@@ -55,81 +55,85 @@ namespace Zilf
 
             if (ctx.RunMode == RunMode.Interactive)
             {
-                ctx.CurrentFile = "<stdin>";
-                var sb = new StringBuilder();
-
-                int angles = 0, rounds = 0, squares = 0, quotes = 0;
-
-                while (true)
+                using (ctx.PushFileContext("<stdin>"))
                 {
-                    if (!ctx.Quiet)
-                        Console.Write(sb.Length == 0 ? "> " : ">> ");
+                    var sb = new StringBuilder();
 
-                    try
+                    int angles = 0, rounds = 0, squares = 0, quotes = 0;
+
+                    while (true)
                     {
-                        var line = Console.ReadLine();
+                        if (!ctx.Quiet)
+                            Console.Write(sb.Length == 0 ? "> " : ">> ");
 
-                        if (line == null)
-                            break;
-
-                        if (sb.Length > 0)
-                            sb.AppendLine();
-                        sb.Append(line);
-
-                        int state = (quotes > 0) ? 1 : 0;
-                        foreach (char c in line)
+                        try
                         {
-                            switch (state)
+                            var line = Console.ReadLine();
+
+                            if (line == null)
+                                break;
+
+                            if (sb.Length > 0)
+                                sb.AppendLine();
+                            sb.Append(line);
+
+                            int state = (quotes > 0) ? 1 : 0;
+                            foreach (char c in line)
                             {
-                                case 0:
-                                    switch (c)
-                                    {
-                                        case '<': angles++; break;
-                                        case '>': angles--; break;
-                                        case '(': rounds++; break;
-                                        case ')': rounds--; break;
-                                        case '[': squares++; break;
-                                        case ']': squares--; break;
-                                        case '"': quotes++; state = 1; break;
-                                    }
-                                    break;
+                                switch (state)
+                                {
+                                    case 0:
+                                        switch (c)
+                                        {
+                                            case '<': angles++; break;
+                                            case '>': angles--; break;
+                                            case '(': rounds++; break;
+                                            case ')': rounds--; break;
+                                            case '[': squares++; break;
+                                            case ']': squares--; break;
+                                            case '"': quotes++; state = 1; break;
+                                        }
+                                        break;
 
-                                case 1:
-                                    switch (c)
-                                    {
-                                        case '"': quotes--; state = 0; break;
-                                        case '\\': state = 2; break;
-                                    }
-                                    break;
+                                    case 1:
+                                        switch (c)
+                                        {
+                                            case '"': quotes--; state = 0; break;
+                                            case '\\': state = 2; break;
+                                        }
+                                        break;
 
-                                case 2:
-                                    state = 1;
-                                    break;
+                                    case 2:
+                                        state = 1;
+                                        break;
+                                }
+                            }
+
+                            if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
+                            {
+                                var result = Evaluate(ctx, sb.ToString());
+                                if (result != null)
+                                    Console.WriteLine(result.ToStringContext(ctx, false));
+
+                                sb.Length = 0;
                             }
                         }
-
-                        if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
+                        catch (Exception ex)
                         {
-                            var result = Evaluate(ctx, sb.ToString());
-                            if (result != null)
-                                Console.WriteLine(result.ToStringContext(ctx, false));
-
+                            Console.WriteLine(ex);
                             sb.Length = 0;
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        sb.Length = 0;
                     }
                 }
             }
             else if (ctx.RunMode == RunMode.Expression)
             {
-                ctx.CurrentFile = "<cmdline>";
-                Console.WriteLine(Evaluate(ctx, inFile));
-                if (ctx.ErrorCount > 0)
-                    return 2;
+                using (ctx.PushFileContext("<cmdline>"))
+                {
+                    Console.WriteLine(Evaluate(ctx, inFile));
+                    if (ctx.ErrorCount > 0)
+                        return 2;
+                }
             }
             else
             {
@@ -395,7 +399,7 @@ Compiler switches:
             ITokenStream tokenStream = new CommonTokenStream(lexer);
             var parser = new ZilParser(tokenStream);
 
-            var fret = parser.file(ctx.CurrentFile);
+            var fret = parser.file(ctx.CurrentFile.Path);
             if (parser.NumberOfSyntaxErrors > 0)
             {
                 foreach (var error in parser.SyntaxErrors)

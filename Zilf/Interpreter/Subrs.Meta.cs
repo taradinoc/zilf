@@ -30,13 +30,9 @@ namespace Zilf.Interpreter
         {
             try
             {
-                string oldFile = ctx.CurrentFile;
                 var newFile = ctx.FindIncludeFile(file);
-                var oldFlags = ctx.CurrentFileFlags;
 
-                ctx.CurrentFile = newFile;
-                ctx.CurrentFileFlags = FileFlags.None;
-                try
+                using (ctx.PushFileContext(newFile))
                 {
                     using (var stream = ctx.OpenFile(newFile, false))
                     {
@@ -45,11 +41,6 @@ namespace Zilf.Interpreter
                         Program.Evaluate(ctx, inputStream);
                     }
                     return ZilString.FromString("DONE");
-                }
-                finally
-                {
-                    ctx.CurrentFile = oldFile;
-                    ctx.CurrentFileFlags = oldFlags;
                 }
             }
             catch (System.IO.FileNotFoundException ex)
@@ -102,7 +93,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            ctx.CurrentFileFlags = newFlags;
+            ctx.CurrentFile.Flags = newFlags;
             return ctx.TRUE;
         }
 
