@@ -585,6 +585,12 @@ namespace IntegrationTests
                 "<OBJECT ROOMS>",
                 "<OBJECT FOO (IN ROOMS) (IN \"You can't go in.\")>")
                 .Compiles();
+
+            // even if IN isn't defined as a direction!
+            AssertGlobals(
+                "<OBJECT ROOMS>",
+                "<OBJECT FOO (IN ROOMS) (IN \"You can't go in.\")>")
+                .Compiles();
         }
 
         [TestMethod]

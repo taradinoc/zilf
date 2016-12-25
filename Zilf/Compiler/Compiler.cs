@@ -3746,6 +3746,10 @@ namespace Zilf.Compiler
                                 uniquePropertyName = PseudoPropertyAtoms.Desc;
                                 break;
                             case StdAtom.IN:
+                                // (IN FOO) is a location, but (IN "foo") is a property
+                                if (prop.Rest.First is ZilAtom)
+                                    goto case StdAtom.LOC;
+                                goto default;
                             case StdAtom.LOC:
                                 phony = true;
                                 uniquePropertyName = PseudoPropertyAtoms.Location;
