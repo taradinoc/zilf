@@ -25,6 +25,7 @@ namespace Zilf.Interpreter.Values
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             Contract.Ensures(Contract.Result<ZilAtom>() != null);
+            Contract.Ensures(Contract.Result<ZilAtom>().StdAtom == StdTypeAtom || StdTypeAtom == Language.StdAtom.None);
             return default(ZilAtom);
         }
 

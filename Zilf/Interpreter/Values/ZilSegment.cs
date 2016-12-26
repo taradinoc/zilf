@@ -68,15 +68,9 @@ namespace Zilf.Interpreter.Values
             return "!" + form;
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.SEGMENT);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.SEGMENT;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

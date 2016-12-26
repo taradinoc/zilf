@@ -135,7 +135,7 @@ namespace Zilf.ZModel
                 ZilAdecl adecl;
                 AtomToken atomToken;
 
-                var type = zo.GetTypeAtom(ctx).StdAtom;
+                var type = zo.StdTypeAtom;
                 switch (type)
                 {
                     case StdAtom.LIST:

@@ -130,7 +130,7 @@ namespace Zilf.ZModel.Values
 
             foreach (var patternObj in spec)
             {
-                if (patternObj.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                if (patternObj.StdTypeAtom != StdAtom.LIST)
                     throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "PROPDEF patterns", "lists");
 
                 var list = (ZilList)patternObj;
@@ -140,7 +140,7 @@ namespace Zilf.ZModel.Values
                     if (!gotEq)
                     {
                         // inputs
-                        switch (element.GetTypeAtom(ctx).StdAtom)
+                        switch (element.StdTypeAtom)
                         {
                             case StdAtom.ADECL:
                                 var adecl = (ZilAdecl)element;
@@ -194,7 +194,7 @@ namespace Zilf.ZModel.Values
                         // outputs
                         ZilAtom constant = null;
                         var output = element;
-                        var type = output.GetTypeAtom(ctx).StdAtom;
+                        var type = output.StdTypeAtom;
 
                         if (type == StdAtom.LIST)
                         {
@@ -217,7 +217,7 @@ namespace Zilf.ZModel.Values
                             Contract.Assert(output != null);
                         }
 
-                        switch (output.GetTypeAtom(ctx).StdAtom)
+                        switch (output.StdTypeAtom)
                         {
                             case StdAtom.FIX:
                                 outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: (ZilFix)output));
@@ -631,15 +631,9 @@ namespace Zilf.ZModel.Values
             return sb.ToString();
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.PROPDEF);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.PROPDEF;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

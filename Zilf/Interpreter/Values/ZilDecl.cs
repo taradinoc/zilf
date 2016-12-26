@@ -39,10 +39,7 @@ namespace Zilf.Interpreter.Values
             return new ZilDecl(list);
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.DECL);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.DECL;
 
         public override string ToString()
         {

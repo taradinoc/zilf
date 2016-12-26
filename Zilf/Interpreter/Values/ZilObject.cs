@@ -270,7 +270,19 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <returns>The type atom.</returns>
         [Pure]
-        public abstract ZilAtom GetTypeAtom(Context ctx);
+        public virtual ZilAtom GetTypeAtom(Context ctx)
+        {
+            var stdAtom = StdTypeAtom;
+            Contract.Assert(stdAtom != StdAtom.None);
+            return ctx.GetStdAtom(stdAtom);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="StdAtom"/> representing the object's type, or
+        /// <see cref="StdAtom.None"/> if the object belongs to a user-defined type.
+        /// </summary>
+        [Pure]
+        public abstract StdAtom StdTypeAtom { get; }
 
         /// <summary>
         /// Gets a value indicating the type of this object's primitive form.

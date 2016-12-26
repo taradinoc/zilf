@@ -317,7 +317,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (rest.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+            if (rest.StdTypeAtom != StdAtom.LIST)
                 rest = new ZilList(rest);
 
             return new ZilList(first, rest);
@@ -342,7 +342,7 @@ namespace Zilf.Interpreter
 
             foreach (ZilObject arg in args)
             {
-                switch (arg.GetTypeAtom(ctx).StdAtom)
+                switch (arg.StdTypeAtom)
                 {
                     case StdAtom.STRING:
                     case StdAtom.CHARACTER:

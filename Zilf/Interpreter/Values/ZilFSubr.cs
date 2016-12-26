@@ -60,10 +60,7 @@ namespace Zilf.Interpreter.Values
             return $"#FSUBR \"{name}\"";
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.FSUBR);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.FSUBR;
 
         public override ZilObject Apply(Context ctx, ZilObject[] args)
         {

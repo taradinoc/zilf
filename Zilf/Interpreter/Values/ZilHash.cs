@@ -17,6 +17,7 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
@@ -97,15 +98,11 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return type;
-        }
+        public override ZilAtom GetTypeAtom(Context ctx) => type;
 
-        public override PrimType PrimType
-        {
-            get { return primtype; }
-        }
+        public override StdAtom StdTypeAtom => type.StdAtom;
+
+        public override PrimType PrimType => primtype;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

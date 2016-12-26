@@ -75,15 +75,9 @@ namespace Zilf.Interpreter.Values
             return string.Format("#ENVIRONMENT {0}", name.ToStringContext(ctx, friendly));
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.ENVIRONMENT);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.ENVIRONMENT;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.ATOM; }
-        }
+        public override PrimType PrimType => PrimType.ATOM;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

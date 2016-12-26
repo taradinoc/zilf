@@ -47,21 +47,15 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
         }
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.ATOM; }
-        }
+        public override StdAtom StdTypeAtom => StdAtom.ACTIVATION;
+
+        public override PrimType PrimType => PrimType.ATOM;
 
         public bool IsLegal => legal;
 
         public override ZilObject GetPrimitive(Context ctx)
         {
             return name;
-        }
-
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.ACTIVATION);
         }
 
         public override string ToString()

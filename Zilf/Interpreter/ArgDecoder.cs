@@ -393,7 +393,7 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return arg.GetTypeAtom(ctx).StdAtom == this.TypeAtom;
+                    return arg.StdTypeAtom == this.TypeAtom;
                 }
 
                 public override string ToString()
@@ -1421,7 +1421,7 @@ namespace Zilf.Interpreter
                         c.Missing();
                     }
 
-                    if (a[i].GetTypeAtom(c.Context).StdAtom != typeAtom)
+                    if (a[i].StdTypeAtom != typeAtom)
                     {
                         c.Error();
                     }

@@ -55,7 +55,7 @@ namespace Zilf.ZModel.Values
             if (atom == null)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
-            if (list.Rest.Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.LIST))
+            if (list.Rest.Any(zo => zo.StdTypeAtom != StdAtom.LIST))
                 throw new InterpreterError(
                     InterpreterMessages._0_In_1_Must_Be_2,
                     "elements after first",
@@ -109,15 +109,9 @@ namespace Zilf.ZModel.Values
             return sb.ToString();
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.OBJECT);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.OBJECT;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

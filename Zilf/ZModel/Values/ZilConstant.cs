@@ -72,15 +72,9 @@ namespace Zilf.ZModel.Values
             " " + value.ToStringContext(ctx, friendly) + ")";
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.CONSTANT);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.CONSTANT;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

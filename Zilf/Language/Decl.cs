@@ -92,7 +92,7 @@ namespace Zilf.Language
             ZilAtom atom;
             bool segment = false;
 
-            switch (pattern.GetTypeAtom(ctx).StdAtom)
+            switch (pattern.StdTypeAtom)
             {
                 case StdAtom.ATOM:
                     atom = (ZilAtom)pattern;
@@ -109,7 +109,7 @@ namespace Zilf.Language
 
                         case StdAtom.TUPLE:
                             // special case
-                            return (value.GetTypeAtom(ctx).StdAtom == StdAtom.LIST);
+                            return (value.StdTypeAtom == StdAtom.LIST);
 
                         default:
                             // arbitrary atoms can be type names...

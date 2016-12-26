@@ -184,7 +184,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (newRest.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            if (newRest.StdTypeAtom == StdAtom.LIST)
                 list.Rest = newRest;
             else
                 list.Rest = new ZilList(newRest);
@@ -225,7 +225,7 @@ namespace Zilf.Interpreter
 
                 int i;
 
-                switch (((ZilObject)dest).GetTypeAtom(ctx).StdAtom)
+                switch (((ZilObject)dest).StdTypeAtom)
                 {
                     case StdAtom.LIST:
                         var list = (ZilList)dest;
