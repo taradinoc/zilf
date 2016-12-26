@@ -57,7 +57,7 @@ namespace Zilf.ZModel.Values
                     new CountableString("at least 2", true));
 
             var argList = list.First as ZilList;
-            if (argList == null || argList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+            if (argList == null || argList.StdTypeAtom != StdAtom.LIST)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
 
             return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
@@ -120,15 +120,9 @@ namespace Zilf.ZModel.Values
             return ToString(zo => zo.ToStringContext(ctx, friendly));
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.ROUTINE);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

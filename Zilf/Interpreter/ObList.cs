@@ -22,6 +22,7 @@ using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System;
 
 namespace Zilf.Interpreter
 {
@@ -51,7 +52,7 @@ namespace Zilf.Interpreter
                 var pair = list.First as ZilList;
                 list = list.Rest;
 
-                if (pair == null || pair.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                if (pair == null || pair.StdTypeAtom != StdAtom.LIST)
                 {
                     throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "lists");
                 }
@@ -95,15 +96,9 @@ namespace Zilf.Interpreter
             return sb.ToString();
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.OBLIST);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.OBLIST;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

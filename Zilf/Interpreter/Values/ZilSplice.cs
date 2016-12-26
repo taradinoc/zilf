@@ -54,10 +54,7 @@ namespace Zilf.Interpreter.Values
             return "#SPLICE " + base.ToStringContextImpl(ctx, friendly);
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.SPLICE);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.SPLICE;
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {

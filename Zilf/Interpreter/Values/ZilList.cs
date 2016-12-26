@@ -24,6 +24,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
+    // TODO: make ZilList an abstract base class
     [BuiltinType(StdAtom.LIST, PrimType.LIST)]
     class ZilList : ZilObject, IEnumerable<ZilObject>, IStructure
     {
@@ -163,15 +164,9 @@ namespace Zilf.Interpreter.Values
             return "(...)";
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.LIST);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.LIST;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {
@@ -232,7 +227,7 @@ namespace Zilf.Interpreter.Values
                 return true;
 
             var other = obj as ZilList;
-            if (other == null)
+            if (other == null || other.StdTypeAtom != this.StdTypeAtom)
                 return false;
 
             if (this.First == null)

@@ -107,10 +107,7 @@ namespace Zilf.Interpreter.Values
             return ToString(zo => zo.ToStringContext(ctx, friendly));
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.FORM);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.FORM;
 
         static ZilObject[] EmptyObjArray = new ZilObject[0];
 
@@ -164,7 +161,7 @@ namespace Zilf.Interpreter.Values
                 target = First;
             }
 
-            if (target != null && target.GetTypeAtom(ctx).StdAtom == StdAtom.MACRO)
+            if (target != null && target.StdTypeAtom == StdAtom.MACRO)
             {
                 using (var frame = ctx.PushFrame(this))
                 using (DiagnosticContext.Push(this.SourceLine, frame))

@@ -47,7 +47,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         {
             Contract.Requires(ctx != null);
             Contract.Requires(vword != null);
-            Contract.Requires(vword.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD);
+            Contract.Requires(vword.StdTypeAtom == StdAtom.VWORD);
 
             var form = new ZilForm(new ZilObject[]
             {

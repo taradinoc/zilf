@@ -91,15 +91,9 @@ namespace Zilf.Interpreter.Values
             return First.ToStringContext(ctx, friendly) + ":" + Second.ToStringContext(ctx, friendly);
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.ADECL);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.ADECL;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.VECTOR; }
-        }
+        public override PrimType PrimType => PrimType.VECTOR;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

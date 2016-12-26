@@ -65,15 +65,9 @@ namespace Zilf.Interpreter.Values
             return $"#SUBR \"{name}\"";
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.SUBR);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.SUBR;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.STRING; }
-        }
+        public override PrimType PrimType => PrimType.STRING;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

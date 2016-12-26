@@ -86,7 +86,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             });
             var vword = form.Eval(ctx) as ZilHash;
 
-            if (vword == null || vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
+            if (vword == null || vword.StdTypeAtom != StdAtom.VWORD)
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,
@@ -437,7 +437,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 if (IsVerbPointer(verbStuff))
                 {
                     verbStuffId = verbStuff.GetPrimitive(ctx);
-                    if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
+                    if (verbStuffId.StdTypeAtom == StdAtom.VWORD)
                         verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
 
                     Contract.Assert(verbStuffId != null);
@@ -447,7 +447,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 }
                 else if (TryGetVerbStuffId(verbStuff, out verbStuffId))
                 {
-                    if (verbStuffId.GetTypeAtom(ctx).StdAtom == StdAtom.VWORD)
+                    if (verbStuffId.StdTypeAtom == StdAtom.VWORD)
                         verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
 
                     Contract.Assert(verbStuffId != null);
@@ -514,7 +514,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         bool IsVerbPointer(ZilObject verbStuff)
         {
-            return verbStuff != null && verbStuff.GetTypeAtom(ctx).StdAtom == StdAtom.VERB_POINTER;
+            return verbStuff != null && verbStuff.StdTypeAtom == StdAtom.VERB_POINTER;
         }
 
         void ConditionalAddShort(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
@@ -603,7 +603,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 var vword = form.Eval(ctx);
 
-                if (vword.GetTypeAtom(ctx).StdAtom != StdAtom.VWORD)
+                if (vword.StdTypeAtom != StdAtom.VWORD)
                     throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "NEW-ADD-WORD", "MAKE-VWORD", "a VWORD");
 
                 word = NewParserWord.FromVword(ctx, (ZilHash)vword);
@@ -649,7 +649,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     {
                         wordFlagsList = new ZilList(null, null);
                     }
-                    else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                    else if (wordFlagsList.StdTypeAtom != StdAtom.LIST)
                     {
                         throw new InterpreterError(
                             InterpreterMessages._0_Value_Of_1_Must_Be_2,
@@ -769,7 +769,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 {
                     wordFlagsList = new ZilList(null, null);
                 }
-                else if (wordFlagsList.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                else if (wordFlagsList.StdTypeAtom != StdAtom.LIST)
                 {
                     throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }

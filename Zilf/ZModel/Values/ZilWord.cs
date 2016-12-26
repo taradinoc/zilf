@@ -68,15 +68,9 @@ namespace Zilf.ZModel.Values
             return string.Format("#WORD ({0})", value.ToStringContext(ctx, friendly));
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.WORD);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.WORD;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.LIST; }
-        }
+        public override PrimType PrimType => PrimType.LIST;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

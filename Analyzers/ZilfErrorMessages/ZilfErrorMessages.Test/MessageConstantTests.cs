@@ -15,6 +15,7 @@ namespace ZilfErrorMessages.Test
 
         //No diagnostics expected to show up
         [TestMethod]
+        [Timeout(10000)]
         public async Task MessageConstantAnalyzer_NotTriggered()
         {
             var test = @"";
@@ -24,6 +25,7 @@ namespace ZilfErrorMessages.Test
 
         //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
+        [Timeout(10000)]
         public async Task MessageConstantAnalyzer_Triggered()
         {
             var test = @"

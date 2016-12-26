@@ -1295,8 +1295,7 @@ namespace Zilf.Compiler
 
             ZilAtom atom;
 
-            var exprTypeAtom = expr.GetTypeAtom(cc.Context);
-            switch (exprTypeAtom.StdAtom)
+            switch (expr.StdTypeAtom)
             {
                 case StdAtom.FIX:
                     return cc.Game.MakeOperand(((ZilFix)expr).Value);
@@ -1350,7 +1349,7 @@ namespace Zilf.Compiler
                     if (!form.IsEmpty &&
                         form.First == cc.Context.GetStdAtom(StdAtom.GVAL) &&
                         !form.Rest.IsEmpty &&
-                        form.Rest.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.ATOM &&
+                        form.Rest.First.StdTypeAtom == StdAtom.ATOM &&
                         form.Rest.Rest.IsEmpty)
                     {
                         return CompileConstant(cc, form.Rest.First);
@@ -1365,7 +1364,7 @@ namespace Zilf.Compiler
 
                 default:
                     var primitive = expr.GetPrimitive(cc.Context);
-                    if (primitive != expr && primitive.GetTypeAtom(cc.Context) != exprTypeAtom)
+                    if (primitive != expr && primitive.GetTypeAtom(cc.Context) != expr.GetTypeAtom(cc.Context))
                         return CompileConstant(cc, primitive);
                     return null;
             }
@@ -1385,13 +1384,13 @@ namespace Zilf.Compiler
                     new ZilList(origRoutine.Body)
                 });
 
-                switch (result.GetTypeAtom(ctx).StdAtom)
+                switch (result.StdTypeAtom)
                 {
                     case StdAtom.LIST:
                         var list = (ZilList)result;
                         ZilList args, body;
                         if (((IStructure)list).GetLength(1) <= 1 || (args = list.First as ZilList) == null ||
-                            args.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+                            args.StdTypeAtom != StdAtom.LIST)
                         {
                             throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
                         }
@@ -1530,7 +1529,7 @@ namespace Zilf.Compiler
                     if (value == null)
                     {
                         var error = new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
-                        if (stmt.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+                        if (stmt.StdTypeAtom == StdAtom.LIST)
                             error = error.Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND));
                         throw error;
                     }
@@ -1990,7 +1989,7 @@ namespace Zilf.Compiler
             if (constant != null)
                 return constant;
 
-            switch (expr.GetTypeAtom(cc.Context).StdAtom)
+            switch (expr.StdTypeAtom)
             {
                 case StdAtom.FORM:
                     return CompileForm(cc, rb, (ZilForm)expr, true, suggestion ?? rb.Stack);
@@ -2060,7 +2059,7 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             expr = expr.Expand(cc.Context);
-            StdAtom type = expr.GetTypeAtom(cc.Context).StdAtom;
+            StdAtom type = expr.StdTypeAtom;
             IOperand result = resultStorage;
 
             if (type == StdAtom.FALSE)
@@ -2231,8 +2230,7 @@ namespace Zilf.Compiler
             Contract.Requires(label != null);
 
             expr = expr.Expand(cc.Context);
-            var typeAtom = expr.GetTypeAtom(cc.Context);
-            StdAtom type = typeAtom.StdAtom;
+            StdAtom type = expr.StdTypeAtom;
 
             if (type == StdAtom.FALSE)
             {
@@ -2593,7 +2591,7 @@ namespace Zilf.Compiler
             }
 
             if (args == null || args.First == null ||
-                args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+                args.First.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -2604,7 +2602,7 @@ namespace Zilf.Compiler
             {
                 ZilAtom atom;
 
-                switch (obj.GetTypeAtom(cc.Context).StdAtom)
+                switch (obj.StdTypeAtom)
                 {
                     case StdAtom.ATOM:
                         atom = (ZilAtom)obj;
@@ -2792,7 +2790,7 @@ namespace Zilf.Compiler
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "DO");
             }
@@ -2819,7 +2817,7 @@ namespace Zilf.Compiler
             // look for an end block
             var body = args.Rest;
             ZilList endStmts;
-            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
             {
                 endStmts = (ZilList)body.First;
                 body = body.Rest;
@@ -2948,7 +2946,7 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             // parse binding list
-            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-CONTENTS");
             }
@@ -2991,7 +2989,7 @@ namespace Zilf.Compiler
             // look for an end block
             var body = args.Rest;
             ZilList endStmts;
-            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
             {
                 endStmts = (ZilList)body.First;
                 body = body.Rest;
@@ -3093,7 +3091,7 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             // parse binding list
-            if (args.First == null || args.First.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-DIRECTIONS");
             }
@@ -3126,7 +3124,7 @@ namespace Zilf.Compiler
             // look for an end block
             var body = args.Rest;
             ZilList endStmts;
-            if (body.First != null && body.First.GetTypeAtom(cc.Context).StdAtom == StdAtom.LIST)
+            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
             {
                 endStmts = (ZilList)body.First;
                 body = body.Rest;
@@ -3230,13 +3228,13 @@ namespace Zilf.Compiler
                     clause = newClause as ZilList;
                 }
 
-                if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
 
                 ZilObject condition = clause.First;
 
                 // if condition is always true (i.e. not a FORM or a FALSE), this is the "else" part
-                switch (condition.GetTypeAtom(cc.Context).StdAtom)
+                switch (condition.StdTypeAtom)
                 {
                     case StdAtom.FORM:
                         // must be evaluated
@@ -3352,14 +3350,14 @@ namespace Zilf.Compiler
                 var clause = clauses.First as ZilList;
                 clauses = clauses.Rest;
 
-                if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
                 ZilObject condition = clause.First;
 
                 // check version condition
                 int condVersion;
-                switch (condition.GetTypeAtom(cc.Context).StdAtom)
+                switch (condition.StdTypeAtom)
                 {
                     case StdAtom.ATOM:
                         switch (((ZilAtom)condition).StdAtom)
@@ -3437,7 +3435,7 @@ namespace Zilf.Compiler
                 var clause = clauses.First as ZilList;
                 clauses = clauses.Rest as ZilList;
 
-                if (clause == null || clause.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST)
+                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
                 ZilAtom atom;
@@ -3832,7 +3830,7 @@ namespace Zilf.Compiler
                             var form = new ZilForm(new ZilObject[] { propspec, prop }) { SourceLine = prop.SourceLine };
                             var specOutput = form.Eval(cc.Context);
                             ZilList propBody;
-                            if (specOutput.GetTypeAtom(cc.Context).StdAtom != StdAtom.LIST ||
+                            if (specOutput.StdTypeAtom != StdAtom.LIST ||
                                 (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
                             {
                                 cc.Context.HandleError(new CompilerError(model, CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
@@ -4077,7 +4075,7 @@ namespace Zilf.Compiler
                     {
                         case StdAtom.DESC:
                             handled = true;
-                            if (value.GetTypeAtom(cc.Context).StdAtom != StdAtom.STRING)
+                            if (value.StdTypeAtom != StdAtom.STRING)
                             {
                                 cc.Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_0_Property_Must_Be_1, propName, "a STRING"));
                                 continue;

@@ -1312,5 +1312,12 @@ namespace ZilfTests.Interpreter
             System.GC.Collect();
             TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ENV>", ctx.TRUE);
         }
+
+        [TestMethod]
+        public void FORM_And_LIST_Should_Not_Be_Equal()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<=? '(1 2 3) '<1 2 3>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<=? '<1 2 3> '(1 2 3)>", ctx.FALSE);
+        }
     }
 }

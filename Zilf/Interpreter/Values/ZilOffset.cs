@@ -126,15 +126,9 @@ namespace Zilf.Interpreter.Values
             return "%<OFFSET ...>";
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.OFFSET);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.OFFSET;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.VECTOR; }
-        }
+        public override PrimType PrimType => PrimType.VECTOR;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

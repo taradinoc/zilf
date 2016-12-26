@@ -20,6 +20,7 @@ using System.IO;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
@@ -34,18 +35,15 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChannel FromVector(Context ctx, ZilVector vector)
         {
+            Contract.Requires(vector != null);
+            Contract.Requires(ctx != null);
+
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "CHANNEL");
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.CHANNEL);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.CHANNEL;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.VECTOR; }
-        }
+        public override PrimType PrimType => PrimType.VECTOR;
 
         public abstract void Reset(Context ctx);
         public abstract void Close(Context ctx);

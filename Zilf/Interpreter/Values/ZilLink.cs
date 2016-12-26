@@ -33,7 +33,7 @@ namespace Zilf.Interpreter.Values
         {
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx) => ctx.GetStdAtom(StdAtom.LINK);
+        public override StdAtom StdTypeAtom => StdAtom.LINK;
 
         [ChtypeMethod]
         public static new ZilLink FromAtom(Context ctx, ZilAtom atom)

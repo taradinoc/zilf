@@ -50,7 +50,6 @@ namespace Zilf.ZModel.Values
         protected abstract ZilTable AsNewTable();
         public abstract ZilTable OffsetByBytes(Context ctx, int bytesToSkip);
 
-
         protected abstract string ToString(Func<ZilObject, string> convert);
 
         public static ZilTable Create(int repetitions, ZilObject[] initializer, TableFlags flags, ZilObject[] pattern)
@@ -80,15 +79,9 @@ namespace Zilf.ZModel.Values
             return ToString(zo => zo.ToStringContext(ctx, friendly));
         }
 
-        public sealed override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.TABLE);
-        }
+        public sealed override StdAtom StdTypeAtom => StdAtom.TABLE;
 
-        public sealed override PrimType PrimType
-        {
-            get { return PrimType.TABLE; }
-        }
+        public sealed override PrimType PrimType => PrimType.TABLE;
 
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
@@ -288,7 +281,7 @@ namespace Zilf.ZModel.Values
 
                 if (initializer != null)
                 {
-                    switch (initializer[index % initializer.Length].GetTypeAtom(ctx).StdAtom)
+                    switch (initializer[index % initializer.Length].StdTypeAtom)
                     {
                         case StdAtom.BYTE:
                             return false;

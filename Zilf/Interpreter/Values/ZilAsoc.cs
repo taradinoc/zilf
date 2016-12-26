@@ -66,8 +66,9 @@ namespace Zilf.Interpreter.Values
             return null;
         }
 
+        public override StdAtom StdTypeAtom => StdAtom.ASOC;
+
         public override PrimType PrimType => PrimType.LIST;
-        public override ZilAtom GetTypeAtom(Context ctx) => ctx.GetStdAtom(StdAtom.ASOC);
 
         public override ZilObject GetPrimitive(Context ctx)
         {

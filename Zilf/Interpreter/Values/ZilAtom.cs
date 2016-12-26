@@ -259,15 +259,9 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        public override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.ATOM);
-        }
+        public override StdAtom StdTypeAtom => StdAtom.ATOM;
 
-        public override PrimType PrimType
-        {
-            get { return PrimType.ATOM; }
-        }
+        public override PrimType PrimType => PrimType.ATOM;
 
         public override ZilObject GetPrimitive(Context ctx)
         {

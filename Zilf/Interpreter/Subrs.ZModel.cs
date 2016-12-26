@@ -609,7 +609,7 @@ namespace Zilf.Interpreter
             var newValues = new List<ZilObject>(values.Length);
             foreach (var val in values)
             {
-                if (type == T_STRING && val.GetTypeAtom(ctx).StdAtom == StdAtom.STRING)
+                if (type == T_STRING && val.StdTypeAtom == StdAtom.STRING)
                 {
                     var str = val.ToStringContext(ctx, true);
                     foreach (char c in str)
@@ -1019,7 +1019,7 @@ namespace Zilf.Interpreter
             foreach (var item in args)
             {
                 var primitive = item.GetPrimitive(ctx);
-                switch (item.GetTypeAtom(ctx).StdAtom)
+                switch (item.StdTypeAtom)
                 {
                     case StdAtom.STRING:
                         sb.Append(((ZilString)primitive).Text);

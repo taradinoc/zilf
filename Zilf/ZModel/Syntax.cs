@@ -136,7 +136,7 @@ namespace Zilf.ZModel
                     else
                     {
                         var list = obj as ZilList;
-                        if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+                        if (list != null && list.StdTypeAtom == StdAtom.LIST)
                         {
                             atom = list.First as ZilAtom;
                             if (atom == null)

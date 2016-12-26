@@ -96,9 +96,9 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
+            if (currentObPath == null || currentObPath.StdTypeAtom != StdAtom.LIST ||
                 ((IStructure)currentObPath).GetLength(1) != null ||
-                currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
+                currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
@@ -133,9 +133,9 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (currentObPath == null || currentObPath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST ||
+            if (currentObPath == null || currentObPath.StdTypeAtom != StdAtom.LIST ||
                 ((IStructure)currentObPath).GetLength(1) != null ||
-                currentObPath.Take(2).Any(zo => zo.GetTypeAtom(ctx).StdAtom != StdAtom.OBLIST))
+                currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
@@ -211,7 +211,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (obpath == null || obpath.GetTypeAtom(ctx).StdAtom != StdAtom.LIST)
+            if (obpath == null || obpath.StdTypeAtom != StdAtom.LIST)
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
                     "local",

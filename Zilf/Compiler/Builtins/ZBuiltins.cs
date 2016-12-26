@@ -238,14 +238,14 @@ namespace Zilf.Compiler.Builtins
                 }
                 else if (pi.ParameterType == typeof(ZilAtom))
                 {
-                    if (arg.GetTypeAtom(cc.Context).StdAtom != StdAtom.ATOM)
+                    if (arg.StdTypeAtom != StdAtom.ATOM)
                         error(i, "argument must be an atom");
 
                     result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
                 }
                 else if (pi.ParameterType == typeof(int))
                 {
-                    if (arg.GetTypeAtom(cc.Context).StdAtom != StdAtom.FIX)
+                    if (arg.StdTypeAtom != StdAtom.FIX)
                         error(i, "argument must be a FIX");
 
                     result.Add(new BuiltinArg(BuiltinArgType.Operand, ((ZilFix)arg).Value));
@@ -2181,7 +2181,7 @@ namespace Zilf.Compiler.Builtins
             }
 
             var list = fieldSpec as ZilList;
-            if (list != null && list.GetTypeAtom(ctx).StdAtom == StdAtom.LIST)
+            if (list != null && list.StdTypeAtom == StdAtom.LIST)
             {
                 if (((IStructure)list).GetLength(2) != 2)
                 {

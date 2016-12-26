@@ -118,15 +118,9 @@ namespace Zilf.Interpreter.Values
             return Text.GetHashCode();
         }
 
-        public sealed override ZilAtom GetTypeAtom(Context ctx)
-        {
-            return ctx.GetStdAtom(StdAtom.STRING);
-        }
+        public sealed override StdAtom StdTypeAtom => StdAtom.STRING;
 
-        public sealed override PrimType PrimType
-        {
-            get { return PrimType.STRING; }
-        }
+        public sealed override PrimType PrimType => PrimType.STRING;
 
         public abstract ZilObject this[int index] { get; set; }
 
