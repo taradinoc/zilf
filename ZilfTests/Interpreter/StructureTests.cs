@@ -596,5 +596,13 @@ namespace ZilfTests.Interpreter
                     new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX) }),
                     ctx.GetStdAtom(StdAtom.FIX)));
         }
+
+        [TestMethod]
+        public void TestPUTREST()
+        {
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<PUTREST [1 2] [FOO]>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>("<PUTREST () (5)>");
+        }
     }
 }

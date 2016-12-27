@@ -184,6 +184,9 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            if (list.IsEmpty)
+                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTREST");
+
             if (newRest.StdTypeAtom == StdAtom.LIST)
                 list.Rest = newRest;
             else
