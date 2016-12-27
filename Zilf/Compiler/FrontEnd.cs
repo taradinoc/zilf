@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -262,7 +262,7 @@ namespace Zilf.Compiler
                             var options = MakeGameOptions(ctx);
                             var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
 
-                            Zilf.Compiler.Compiler.Compile(ctx, gameBuilder);
+                            Zilf.Compiler.Compilation.Compile(ctx, gameBuilder);
                         }
                         catch (ZilError ex)
                         {

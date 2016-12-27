@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -25,13 +25,13 @@ namespace Zilf.Compiler.Builtins
 {
     struct ValueCall
     {
-        public CompileCtx cc { get; private set; }
+        public Compilation cc { get; private set; }
         public IRoutineBuilder rb { get; private set; }
         public ZilForm form { get; private set; }
 
         public IVariable resultStorage { get; private set; }
 
-        public ValueCall(CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
+        public ValueCall(Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
             : this()
         {
             Contract.Requires(cc != null);

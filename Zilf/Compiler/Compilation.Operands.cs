@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -26,33 +26,10 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
 {
-    class Operands : IDisposable
+    partial class Compilation
     {
-        readonly CompileCtx cc;
-        readonly IOperand[] values;
-        readonly bool[] temps;
-        readonly ZilAtom tempAtom;
-
-        Operands(CompileCtx cc, IOperand[] values, bool[] temps, ZilAtom tempAtom)
+        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
         {
-            Contract.Requires(cc != null);
-            Contract.Requires(values != null);
-            Contract.Requires(temps != null);
-            Contract.Requires(tempAtom != null);
-            Contract.Ensures(this.cc == cc);
-            Contract.Ensures(this.values == values);
-            Contract.Ensures(this.temps == temps);
-            Contract.Ensures(this.tempAtom == tempAtom);
-
-            this.cc = cc;
-            this.values = values;
-            this.temps = temps;
-            this.tempAtom = tempAtom;
-        }
-
-        public static Operands Compile(CompileCtx cc, IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
-        {
-            Contract.Requires(cc != null);
             Contract.Requires(rb != null);
             Contract.Requires(src != null);
             Contract.Requires(exprs != null);
@@ -60,13 +37,13 @@ namespace Zilf.Compiler
             int length = exprs.Length;
             IOperand[] values = new IOperand[length];
             bool[] temps = new bool[length];
-            var tempAtom = ZilAtom.Parse("?TMP", cc.Context);
+            var tempAtom = ZilAtom.Parse("?TMP", Context);
 
             // find the index of the last expr with side effects (or -1)
             int marker = -1;
             for (int i = length - 1; i >= 0; i--)
             {
-                if (Expression.HasSideEffects(cc, exprs[i]))
+                if (HasSideEffects(exprs[i]))
                 {
                     marker = i;
                     break;
@@ -88,19 +65,19 @@ namespace Zilf.Compiler
             {
                 bool needTemp = false;
 
-                var value = Compiler.CompileConstant(cc, exprs[i]);
+                var value = CompileConstant(exprs[i]);
                 if (value == null)
                 {
                     // could still be a constant if it compiles to a constant operand
-                    value = Compiler.CompileAsOperand(cc, rb, exprs[i], src);
+                    value = CompileAsOperand(rb, exprs[i], src);
 
-                    if (IsLocalVariableRef(exprs[i]))
+                    if (exprs[i].IsLocalVariableRef())
                     {
                         needTemp = LocalIsLaterModified(exprs, i);
                     }
-                    else if (IsGlobalVariableRef(exprs[i]))
+                    else if (exprs[i].IsGlobalVariableRef())
                     {
-                        needTemp = GlobalCouldBeLaterModified(cc, exprs, i);
+                        needTemp = GlobalCouldBeLaterModified(exprs, i);
                     }
                     else if (i == marker)
                     {
@@ -108,7 +85,7 @@ namespace Zilf.Compiler
                         {
                             for (int j = i + 1; j < length; j++)
                             {
-                                if (Compiler.CompileConstant(cc, exprs[j]) == null && !IsVariableRef(exprs[j]))
+                                if (CompileConstant(exprs[j]) == null && !exprs[j].IsVariableRef())
                                 {
                                     needTemp = true;
                                     break;
@@ -128,8 +105,8 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    Compiler.PushInnerLocal(cc, rb, tempAtom);
-                    values[i] = cc.Locals[tempAtom];
+                    PushInnerLocal(rb, tempAtom);
+                    values[i] = Locals[tempAtom];
                     rb.EmitStore((IVariable)values[i], value);
                     temps[i] = true;
                 }
@@ -138,9 +115,9 @@ namespace Zilf.Compiler
             // evaluate the rest of the arguments right to left, leaving the results
             // in their natural locations.
             for (int i = length - 1; i > marker; i--)
-                values[i] = Compiler.CompileAsOperand(cc, rb, exprs[i], src);
+                values[i] = CompileAsOperand(rb, exprs[i], src);
 
-            return new Operands(cc, values, temps, tempAtom);
+            return new Operands(this, values, temps, tempAtom);
         }
 
         static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
@@ -163,39 +140,14 @@ namespace Zilf.Compiler
                 throw new ArgumentException("LVAL/SET not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
-                if (ModifiesLocal(exprs[i], localAtom))
+                if (exprs[i].ModifiesLocal(localAtom))
                     return true;
 
             return false;
         }
 
-        static bool ModifiesLocal(ZilObject expr, ZilAtom localAtom)
+        bool GlobalCouldBeLaterModified(ZilObject[] exprs, int localIdx)
         {
-            var list = expr as ZilList;
-            if (list == null)
-                return false;
-
-            if (list is ZilForm)
-            {
-                var atom = list.First as ZilAtom;
-                if (atom != null &&
-                    (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                    list.Rest != null && list.Rest.First == localAtom)
-                {
-                    return true;
-                }
-            }
-
-            foreach (ZilObject zo in list)
-                if (ModifiesLocal(zo, localAtom))
-                    return true;
-
-            return false;
-        }
-
-        static bool GlobalCouldBeLaterModified(CompileCtx cc, ZilObject[] exprs, int localIdx)
-        {
-            Contract.Requires(cc != null);
             Contract.Requires(exprs != null);
             Contract.Requires(exprs.Length > 0);
             Contract.Requires(localIdx >= 0);
@@ -214,15 +166,14 @@ namespace Zilf.Compiler
                 throw new ArgumentException("GVAL/SETG not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
-                if (CouldModifyGlobal(cc, exprs[i], globalAtom))
+                if (CouldModifyGlobal(exprs[i], globalAtom))
                     return true;
 
             return false;
         }
 
-        static bool CouldModifyGlobal(CompileCtx cc, ZilObject expr, ZilAtom globalAtom)
+        bool CouldModifyGlobal(ZilObject expr, ZilAtom globalAtom)
         {
-            Contract.Requires(cc != null);
             Contract.Requires(expr != null);
             Contract.Requires(globalAtom != null);
 
@@ -240,124 +191,83 @@ namespace Zilf.Compiler
                     return true;
                 }
 
-                if (cc.Routines.ContainsKey(atom))
+                if (Routines.ContainsKey(atom))
                 {
                     return true;
                 }
             }
 
             foreach (ZilObject zo in list)
-                if (CouldModifyGlobal(cc, zo, globalAtom))
+                if (CouldModifyGlobal(zo, globalAtom))
                     return true;
 
             return false;
         }
 
-        static bool IsVariableRef(ZilObject expr)
+        public interface IOperands : IDisposable
         {
-            Contract.Requires(expr != null);
+            IOperand[] AsArray();
+            int Count { get; }
+            IOperand this[int index] { get; }
+        }
 
-            var form = expr as ZilForm;
-            if (form == null)
-                return false;
+        class Operands : IOperands
+        {
+            readonly Compilation compilation;
+            readonly IOperand[] values;
+            readonly bool[] temps;
+            readonly ZilAtom tempAtom;
 
-            var atom = form.First as ZilAtom;
-            if (atom == null)
-                return false;
-
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
-                return false;
-
-            switch (atom.StdAtom)
+            public Operands(Compilation compilation, IOperand[] values, bool[] temps, ZilAtom tempAtom)
             {
-                case StdAtom.LVAL:
-                case StdAtom.GVAL:
-                case StdAtom.SET:
-                case StdAtom.SETG:
-                    return true;
+                Contract.Requires(compilation != null);
+                Contract.Requires(values != null);
+                Contract.Requires(temps != null);
+                Contract.Requires(tempAtom != null);
+                Contract.Ensures(this.compilation == compilation);
+                Contract.Ensures(this.values == values);
+                Contract.Ensures(this.temps == temps);
+                Contract.Ensures(this.tempAtom == tempAtom);
 
-                default:
-                    return false;
+                this.compilation = compilation;
+                this.values = values;
+                this.temps = temps;
+                this.tempAtom = tempAtom;
             }
-        }
 
-        static bool IsLocalVariableRef(ZilObject expr)
-        {
-            Contract.Requires(expr != null);
-
-            var form = expr as ZilForm;
-            if (form == null)
-                return false;
-
-            var atom = form.First as ZilAtom;
-            if (atom == null)
-                return false;
-
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
-                return false;
-
-            return atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET;
-        }
-
-        static bool IsGlobalVariableRef(ZilObject expr)
-        {
-            Contract.Requires(expr != null);
-
-            var form = expr as ZilForm;
-            if (form == null)
-                return false;
-
-            var atom = form.First as ZilAtom;
-            if (atom == null)
-                return false;
-
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
-                return false;
-
-            return atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG;
-        }
-
-        public void Dispose()
-        {
-            for (int i = 0; i < temps.Length; i++)
-                if (temps[i])
-                    Compiler.PopInnerLocal(cc, tempAtom);
-        }
-
-        public int Count
-        {
-            [Pure]
-            get
+            public void Dispose()
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                return values.Length;
+                for (int i = 0; i < temps.Length; i++)
+                    if (temps[i])
+                        compilation.PopInnerLocal(tempAtom);
             }
-        }
 
-        public IOperand this[int index]
-        {
-            get
+            public int Count
             {
-                Contract.Requires(index >= 0);
-                Contract.Requires(index < Count);
-                Contract.Ensures(Contract.Result<IOperand>() != null);
-                return values[index];
+                [Pure]
+                get
+                {
+                    Contract.Ensures(Contract.Result<int>() >= 0);
+                    return values.Length;
+                }
             }
-        }
 
-        public IOperand[] ToArray()
-        {
-            Contract.Ensures(Contract.Result<IOperand[]>() != null);
-            return values;
-        }
+            public IOperand this[int index]
+            {
+                get
+                {
+                    Contract.Requires(index >= 0);
+                    Contract.Requires(index < Count);
+                    Contract.Ensures(Contract.Result<IOperand>() != null);
+                    return values[index];
+                }
+            }
 
-        public IEnumerable<IOperand> Skip(int count)
-        {
-            Contract.Requires(count >= 0);
-            //Contract.Ensures(Contract.Result<IEnumerable<IOperand>>() != null);
-
-            for (int i = count; i < values.Length; i++)
-                yield return values[i];
+            public IOperand[] AsArray()
+            {
+                Contract.Ensures(Contract.Result<IOperand[]>() != null);
+                return values;
+            }
         }
     }
 }
