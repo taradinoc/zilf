@@ -17,8 +17,26 @@ namespace Zilf.Emit
         ILabel RFalse { get; }
         IVariable Stack { get; }
 
+        /// <exception cref="ArgumentException">
+        /// A local variable already exists by that name.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The routine is the entry point and thus not allowed to have local variables.
+        /// </exception>
         ILocalBuilder DefineRequiredParameter(string name);
+        /// <exception cref="ArgumentException">
+        /// A local variable already exists by that name.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The routine is the entry point and thus not allowed to have local variables.
+        /// </exception>
         ILocalBuilder DefineOptionalParameter(string name);
+        /// <exception cref="ArgumentException">
+        /// A local variable already exists by that name.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The routine is the entry point and thus not allowed to have local variables.
+        /// </exception>
         ILocalBuilder DefineLocal(string name);
 
         ILabel RoutineStart { get; }

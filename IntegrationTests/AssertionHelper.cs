@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Diagnostics.Contracts;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -119,7 +120,66 @@ namespace IntegrationTests
 
             return sb.ToString();
         }
+    }
 
+    sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
+    {
+        readonly string argSpec, body;
+
+        public EntryPointAssertionHelper(string argSpec, string body)
+        {
+            this.argSpec = argSpec;
+            this.body = body;
+        }
+
+        public void DoesNotCompile()
+        {
+            var testCode = string.Format(
+                "{0}\r\n<ROUTINE GO ({1})\r\n\t{2}\r\n\t<QUIT>>",
+                GlobalCode(),
+                argSpec,
+                body);
+
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+            }
+        }
+
+        public void DoesNotThrow()
+        {
+            var testCode = string.Format(
+                "{0}\r\n<ROUTINE GO ({1})\r\n\t{2}\r\n\t<QUIT>>",
+                GlobalCode(),
+                argSpec,
+                body);
+
+            ZlrHelperRunResult result;
+
+            try
+            {
+                result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail("Expected no exception, but caught {0}", ex);
+
+                // can't get here, but the compiler doesn't know that
+                return;
+            }
+
+            if (expectWarnings != null)
+            {
+                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+            }
+        }
+    }
+
+    abstract class AbstractAssertionHelperWithEntryPoint<TThis> : AbstractAssertionHelper<TThis>
+        where TThis : AbstractAssertionHelperWithEntryPoint<TThis>
+    {
         protected abstract string Expression();
 
         public void GivesNumber(string expectedValue)
@@ -228,7 +288,7 @@ namespace IntegrationTests
         }
     }
 
-    sealed class ExprAssertionHelper : AbstractAssertionHelper<ExprAssertionHelper>
+    sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
     {
         readonly string expression;
 
@@ -245,7 +305,7 @@ namespace IntegrationTests
         }
     }
 
-    sealed class RoutineAssertionHelper : AbstractAssertionHelper<RoutineAssertionHelper>
+    sealed class RoutineAssertionHelper : AbstractAssertionHelperWithEntryPoint<RoutineAssertionHelper>
     {
         readonly string argSpec, body;
         string arguments = "";
@@ -279,7 +339,7 @@ namespace IntegrationTests
         }
     }
 
-    sealed class GlobalsAssertionHelper : AbstractAssertionHelper<GlobalsAssertionHelper>
+    sealed class GlobalsAssertionHelper : AbstractAssertionHelperWithEntryPoint<GlobalsAssertionHelper>
     {
         public GlobalsAssertionHelper(params string[] globals)
         {

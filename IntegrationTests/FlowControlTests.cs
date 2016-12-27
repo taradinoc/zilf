@@ -39,6 +39,14 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
+        static EntryPointAssertionHelper AssertEntryPoint(string argSpec, string body)
+        {
+            Contract.Requires(argSpec != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(body));
+
+            return new EntryPointAssertionHelper(argSpec, body);
+        }
+
         #region RETURN
 
         [TestMethod]
@@ -418,6 +426,41 @@ namespace IntegrationTests
                 .GivesNumber("101");
         }
 
+        #endregion
+
+        #region GO routine (entry point)
+
+        [TestMethod]
+        public void GO_Routine_With_Locals_Should_Give_Error()
+        {
+            AssertEntryPoint("X Y Z", @"<TELL ""hi"" CR>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void GO_Routine_With_Locals_In_PROG_Should_Give_Error()
+        {
+            AssertEntryPoint("", @"<PROG (X Y Z) <TELL ""hi"" CR>>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void GO_Routine_With_MultiEquals_Should_Not_Throw()
+        {
+            AssertEntryPoint("", @"<COND (<=? <FOO> 1 2 3 4> <TELL ""equals"">)>")
+                .WithGlobal("<ROUTINE FOO () 5>")
+                .DoesNotThrow();
+        }
+
+        [TestMethod]
+        public void GO_Routine_With_SETG_Indirect_Involving_Stack_Should_Not_Throw()
+        {
+            AssertEntryPoint("", @"<SETG <+ ,VARNUM 1> <* ,VARVAL 2>>")
+                .WithGlobal("<GLOBAL VARNUM 16>")
+                .WithGlobal("<GLOBAL VARVAL 100>")
+                .DoesNotThrow();
+        }
+        
         #endregion
     }
 }
