@@ -128,14 +128,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    try
-                    {
-                        Compiler.PushInnerLocal(cc, rb, tempAtom);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
-                    }
+                    Compiler.PushInnerLocal(cc, rb, tempAtom);
                     values[i] = cc.Locals[tempAtom];
                     rb.EmitStore((IVariable)values[i], value);
                     temps[i] = true;

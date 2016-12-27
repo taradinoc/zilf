@@ -34,6 +34,7 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler
 {
+    // TODO: split up this class/file
     static class Compiler
     {
         public static void Compile(Context ctx, IGameBuilder gb)
@@ -1435,7 +1436,14 @@ namespace Zilf.Compiler
                 switch (arg.Type)
                 {
                     case ArgItem.ArgType.Required:
-                        lb = rb.DefineRequiredParameter(arg.Atom.ToString());
+                        try
+                        {
+                            lb = rb.DefineRequiredParameter(arg.Atom.ToString());
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
+                        }
                         if (cc.Context.TraceRoutines)
                         {
                             rb.EmitPrint(" " + arg.Atom + "=", false);
@@ -2685,6 +2693,14 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cc"></param>
+        /// <param name="rb"></param>
+        /// <param name="atom"></param>
+        /// <returns></returns>
+        /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         public static ILocalBuilder PushInnerLocal(CompileCtx cc, IRoutineBuilder rb, ZilAtom atom)
         {
             Contract.Requires(cc != null);
@@ -2715,6 +2731,8 @@ namespace Zilf.Compiler
             else
             {
                 // allocate a new variable with a unique name
+                ZilAtom tempName;
+
                 if (cc.Locals.ContainsKey(atom) || cc.TempLocalNames.Contains(atom))
                 {
                     ZilAtom newAtom;
@@ -2726,14 +2744,23 @@ namespace Zilf.Compiler
                         newAtom = ZilAtom.Parse(name, cc.Context);
                     } while (cc.Locals.ContainsKey(newAtom) || cc.TempLocalNames.Contains(newAtom));
 
-                    cc.TempLocalNames.Add(newAtom);
+                    tempName = newAtom;
                 }
                 else
                 {
-                    cc.TempLocalNames.Add(atom);
+                    tempName = atom;
                 }
 
-                result = rb.DefineLocal(name);
+                try
+                {
+                    result = rb.DefineLocal(name);
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
+                }
+
+                cc.TempLocalNames.Add(tempName);
             }
 
             cc.Locals[atom] = result;
