@@ -545,8 +545,6 @@ namespace IntegrationTests
         {
             // third operand allowed in V6
             AssertExpr("<DIROUT 3 0 0>").InV6().Compiles();
-
-            Assert.Inconclusive();
         }
 
         [TestMethod]
@@ -1194,17 +1192,10 @@ namespace IntegrationTests
         [TestMethod]
         public void TestMARGIN_V6()
         {
-            // only exists in V6+
-            Assert.Inconclusive();
-            
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<MARGIN>").InV6().Compiles();
-            AssertExpr("<MARGIN 0>").InV6().Compiles();
+            // 2 to 3 operands
             AssertExpr("<MARGIN 0 0>").InV6().Compiles();
             AssertExpr("<MARGIN 0 0 0>").InV6().Compiles();
-            AssertExpr("<MARGIN 0 0 0 0>").InV6().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1214,25 +1205,17 @@ namespace IntegrationTests
             AssertExpr("<MARGIN>").InV5().DoesNotCompile();
 
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<MARGIN 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 2 to 3 operands
+            AssertExpr("<MARGIN 0>").InV6().DoesNotCompile();
+            AssertExpr("<MARGIN 0 0 0 0>").InV6().DoesNotCompile();
         }
 
         [TestMethod]
         public void TestMENU_V6()
         {
-            // only exists in V6+
-            Assert.Inconclusive();
-            
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<MENU>").InV6().Compiles();
-            AssertExpr("<MENU 0>").InV6().Compiles();
+            // 2 operands
             AssertExpr("<MENU 0 0>").InV6().Compiles();
-            AssertExpr("<MENU 0 0 0>").InV6().Compiles();
-            AssertExpr("<MENU 0 0 0 0>").InV6().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1242,9 +1225,11 @@ namespace IntegrationTests
             AssertExpr("<MENU>").InV5().DoesNotCompile();
 
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<MENU 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
+            // 2 operands
+            AssertExpr("<MENU>").InV6().DoesNotCompile();
+            AssertExpr("<MENU 0>").InV6().DoesNotCompile();
+            AssertExpr("<MENU 0 0 0>").InV6().DoesNotCompile();
+            AssertExpr("<MENU 0 0 0 0>").InV6().DoesNotCompile();
         }
 
         [TestMethod]
@@ -1293,23 +1278,14 @@ namespace IntegrationTests
             // V6 to V6
             // 0 to 4 operands
             AssertExpr("<MOUSE-INFO 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
         public void TestMOUSE_LIMIT_V6()
         {
-            // only exists in V6+
-            Assert.Inconclusive();
-            
             // V6 to V6
-            // 0 to 4 operands
-            AssertExpr("<MOUSE-LIMIT>").InV6().Compiles();
+            // 1 operand
             AssertExpr("<MOUSE-LIMIT 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-LIMIT 0 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-LIMIT 0 0 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-LIMIT 0 0 0 0>").InV6().Compiles();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
@@ -1319,9 +1295,12 @@ namespace IntegrationTests
             AssertExpr("<MOUSE-LIMIT>").InV5().DoesNotCompile();
 
             // V6 to V6
-            // 0 to 4 operands
+            // 1 operand
+            AssertExpr("<MOUSE-LIMIT>").InV6().DoesNotCompile();
+            AssertExpr("<MOUSE-LIMIT 0 0>").InV6().DoesNotCompile();
+            AssertExpr("<MOUSE-LIMIT 0 0 0>").InV6().DoesNotCompile();
+            AssertExpr("<MOUSE-LIMIT 0 0 0 0>").InV6().DoesNotCompile();
             AssertExpr("<MOUSE-LIMIT 0 0 0 0 0>").InV6().DoesNotCompile();
-            Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]

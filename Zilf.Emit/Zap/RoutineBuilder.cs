@@ -1154,7 +1154,7 @@ namespace Zilf.Emit.Zap
 
             game.WriteOutput(sb.ToString());
 
-            if (entryPoint && game.zversion != 6 && game.zversion != 7)
+            if (entryPoint && game.zversion != 6)
             {
                 game.WriteOutput("START::");
             }
