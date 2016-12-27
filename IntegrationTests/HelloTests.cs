@@ -70,6 +70,39 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void HelloWorld_V6()
+        {
+            const string code = @"
+<VERSION 6>
+
+<CONSTANT RELEASEID 1>
+
+<ROUTINE GO ()
+    <PRINTI ""Hello, world!"">
+    <CRLF>
+    <QUIT>>";
+            const string expectedOutput = "Hello, world!\n";
+            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+        }
+
+        [TestMethod]
+        public void HelloWorld_V7()
+        {
+            const string code = @"
+<VERSION 7>
+
+<CONSTANT RELEASEID 1>
+
+<ROUTINE GO ()
+    <PRINTI ""Hello, world!"">
+    <CRLF>
+    <QUIT>>";
+
+            const string expectedOutput = "Hello, world!\n";
+            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+        }
+
+        [TestMethod]
         public void HelloWorld_V8()
         {
             const string code = @"
