@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2016 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -106,7 +106,7 @@ namespace Zilf.Compiler.Builtins
 
 
         static IList<BuiltinArg> ValidateArguments(
-            CompileCtx cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
+            Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
             ZilObject[] args, InvalidArgumentDelegate error)
         {
             Contract.Requires(cc != null);
@@ -186,7 +186,7 @@ namespace Zilf.Compiler.Builtins
                     }
                     else
                     {
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, Compiler.TranslateString(zstr.Text, cc.Context)));
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr.Text, cc.Context)));
                     }
                 }
                 else if (pi.ParameterType == typeof(IOperand))
@@ -290,7 +290,7 @@ namespace Zilf.Compiler.Builtins
 
 
 
-        static VariableRef? GetVariable(CompileCtx cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
+        static VariableRef? GetVariable(Compilation cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
         {
             var atom = expr as ZilAtom;
 
@@ -336,7 +336,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         static List<object> MakeBuiltinMethodParams(
-            CompileCtx cc, BuiltinSpec spec,
+            Compilation cc, BuiltinSpec spec,
             ParameterInfo[] builtinParamInfos, object call,
             IList<BuiltinArg> args)
         {
@@ -410,7 +410,7 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-        static object CompileBuiltinCall<TCall>(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, TCall call)
+        static object CompileBuiltinCall<TCall>(string name, Compilation cc, IRoutineBuilder rb, ZilForm form, TCall call)
             where TCall : struct
         {
             Contract.Requires(name != null);
@@ -465,7 +465,7 @@ namespace Zilf.Compiler.Builtins
             var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
             // generate code for arguments
-            using (var operands = Operands.Compile(cc, rb, form.SourceLine, needEvalExprs))
+            using (var operands = cc.CompileOperands(rb, form.SourceLine, needEvalExprs))
             {
                 // update validatedArgs with the evaluated operands
                 for (int i = 0; i < operands.Count; i++)
@@ -487,7 +487,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        public static IOperand CompileValueCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
+        public static IOperand CompileValueCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
         {
             Contract.Requires(name != null);
             Contract.Requires(cc != null);
@@ -500,7 +500,7 @@ namespace Zilf.Compiler.Builtins
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
         }
 
-        public static void CompileVoidCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form)
+        public static void CompileVoidCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form)
         {
             Contract.Requires(name != null);
             Contract.Requires(cc != null);
@@ -510,7 +510,7 @@ namespace Zilf.Compiler.Builtins
             CompileBuiltinCall(name, cc, rb, form, new VoidCall(cc, rb, form));
         }
 
-        public static void CompilePredCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, ILabel label, bool polarity)
+        public static void CompilePredCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form, ILabel label, bool polarity)
         {
             Contract.Requires(name != null);
             Contract.Requires(cc != null);
@@ -521,7 +521,7 @@ namespace Zilf.Compiler.Builtins
             CompileBuiltinCall(name, cc, rb, form, new PredCall(cc, rb, form, label, polarity));
         }
 
-        public static void CompileValuePredCall(string name, CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
+        public static void CompileValuePredCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
         {
             Contract.Requires(name != null);
             Contract.Requires(cc != null);
@@ -616,7 +616,7 @@ namespace Zilf.Compiler.Builtins
                 if (arg1 == c.rb.Stack)
                 {
                     tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                    tempLocal = Compiler.PushInnerLocal(c.cc, c.rb, tempAtom);
+                    tempLocal = c.cc.PushInnerLocal(c.rb, tempAtom);
                     c.rb.EmitStore(tempLocal, arg1);
                     arg1 = tempLocal;
                 }
@@ -673,7 +673,7 @@ namespace Zilf.Compiler.Builtins
                 }
 
                 if (tempAtom != null)
-                    Compiler.PopInnerLocal(c.cc, tempAtom);
+                    c.cc.PopInnerLocal(tempAtom);
             }
         }
 
@@ -819,7 +819,7 @@ namespace Zilf.Compiler.Builtins
                 return c.HandleMessage(CompilerMessages._0_One_Operand_Must_Be_1, "XORB");
             }
 
-            var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.resultStorage);
+            var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.resultStorage);
 
             if (storage is INumericOperand)
             {
@@ -935,7 +935,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        static IOperand FoldConstantArithmetic(CompileCtx cc, short init, Func<short, short, short> op, IOperand[] args)
+        static IOperand FoldConstantArithmetic(Compilation cc, short init, Func<short, short, short> op, IOperand[] args)
         {
             Contract.Requires(cc != null);
             Contract.Requires(op != null);
@@ -1465,7 +1465,7 @@ namespace Zilf.Compiler.Builtins
              *   return STACK       ;value is left on stack
              */
 
-            var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, dest);
+            var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, dest);
             if (storage != dest)
                 c.rb.EmitStore(dest, storage);
             return dest;
@@ -1479,7 +1479,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(value != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, c.rb.Stack);
+            var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.rb.Stack);
 
             if (storage == c.rb.Stack)
             {
@@ -1532,18 +1532,18 @@ namespace Zilf.Compiler.Builtins
             if (dest is IIndirectOperand)
             {
                 var destVar = ((IIndirectOperand)dest).Variable;
-                var storage = Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine, destVar);
+                var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, destVar);
                 if (storage != destVar)
                     c.rb.EmitStore(destVar, storage);
             }
             else
             {
-                using (var operands = Operands.Compile(c.cc, c.rb, c.form.SourceLine, value))
+                using (var operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, value))
                 {
                     if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                     {
                         var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                        Compiler.PushInnerLocal(c.cc, c.rb, tempAtom);
+                        c.cc.PushInnerLocal(c.rb, tempAtom);
                         try
                         {
                             var tempLocal = c.cc.Locals[tempAtom];
@@ -1552,7 +1552,7 @@ namespace Zilf.Compiler.Builtins
                         }
                         finally
                         {
-                            Compiler.PopInnerLocal(c.cc, tempAtom);
+                            c.cc.PopInnerLocal(tempAtom);
                         }
                     }
                     else
@@ -1576,7 +1576,7 @@ namespace Zilf.Compiler.Builtins
                 dest.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
                 c.cc.SoftGlobalsTable,
                 c.cc.Game.MakeOperand(dest.Offset),
-                Compiler.CompileAsOperand(c.cc, c.rb, value, c.form.SourceLine),
+                c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine),
                 null);
         }
 
@@ -1608,7 +1608,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(value != null);
 
             // see note in SetValueOp regarding dest being IVariable
-            Compiler.CompileAsOperandWithBranch(c.cc, c.rb, value, dest, c.label, c.polarity);
+            c.cc.CompileAsOperandWithBranch(c.rb, value, dest, c.label, c.polarity);
         }
 
         [Builtin("SETG", HasSideEffect = true)]
@@ -2307,7 +2307,7 @@ namespace Zilf.Compiler.Builtins
             }
 
             var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-            var lb = Compiler.PushInnerLocal(c.cc, c.rb, tmpAtom);
+            var lb = c.cc.PushInnerLocal(c.rb, tmpAtom);
             try
             {
                 c.rb.EmitStore(lb, c.cc.Game.MakeOperand((int)offset));
@@ -2327,13 +2327,13 @@ namespace Zilf.Compiler.Builtins
                         })
                     });
                 form.SourceLine = c.form.SourceLine;
-                Compiler.CompileForm(c.cc, c.rb, form, false, null);
+                c.cc.CompileForm(c.rb, form, false, null);
 
                 c.rb.Branch(Condition.IncCheck, lb, c.cc.Game.MakeOperand((int)offset + length - 1), label, false);
             }
             finally
             {
-                Compiler.PopInnerLocal(c.cc, tmpAtom);
+                c.cc.PopInnerLocal(tmpAtom);
             }
         }
 

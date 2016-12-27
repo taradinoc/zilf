@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -27,7 +27,7 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler
 {
-    class CompileCtx
+    partial class Compilation
     {
         /// <summary>
         /// The ZIL context that resulted from loading the source code.
@@ -43,7 +43,7 @@ namespace Zilf.Compiler
         /// </summary>
         public bool WantDebugInfo { get; private set; }
 
-        public CompileCtx(Context ctx, IGameBuilder game, bool wantDebugInfo)
+        Compilation(Context ctx, IGameBuilder game, bool wantDebugInfo)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(game != null);

@@ -1,4 +1,4 @@
-/* Copyright 2010, 2015 Jesse McGrew
+/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -24,7 +24,7 @@ namespace Zilf.Compiler.Builtins
 {
     struct ValuePredCall
     {
-        public CompileCtx cc { get; private set; }
+        public Compilation cc { get; private set; }
         public IRoutineBuilder rb { get; private set; }
         public ZilForm form { get; private set; }
 
@@ -32,7 +32,7 @@ namespace Zilf.Compiler.Builtins
         public ILabel label { get; private set; }
         public bool polarity { get; private set; }
 
-        public ValuePredCall(CompileCtx cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
+        public ValuePredCall(Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
             : this()
         {
             Contract.Requires(cc != null);

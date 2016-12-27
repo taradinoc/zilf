@@ -138,6 +138,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\Action.cs" />
+    <Compile Include="Compiler\Compilation.Conditions.cs" />
+    <Compile Include="Compiler\Compilation.Expressions.cs" />
+    <Compile Include="Compiler\Compilation.Globals.cs" />
+    <Compile Include="Compiler\Compilation.Loops.cs" />
+    <Compile Include="Compiler\Compilation.Objects.cs" />
+    <Compile Include="Compiler\Compilation.Routines.cs" />
+    <Compile Include="Compiler\Compilation.Strings.cs" />
+    <Compile Include="Compiler\Compilation.Syntax.cs" />
+    <Compile Include="Compiler\Compilation.Tables.cs" />
+    <Compile Include="Compiler\CompilationExtensions.cs" />
     <Compile Include="Diagnostics\ArgCountRange.cs" />
     <Compile Include="Compiler\Block.cs" />
     <Compile Include="Compiler\BlockFlags.cs" />
@@ -156,10 +166,9 @@
     <Compile Include="Compiler\Builtins\VariableAttribute.cs" />
     <Compile Include="Compiler\Builtins\VoidCall.cs" />
     <Compile Include="Compiler\Builtins\ZBuiltins.cs" />
-    <Compile Include="Compiler\CompileCtx.cs" />
-    <Compile Include="Compiler\Expression.cs" />
+    <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Diagnostics\ArgCountHelpers.cs" />
-    <Compile Include="Compiler\Operands.cs" />
+    <Compile Include="Compiler\Compilation.Operands.cs" />
     <Compile Include="Compiler\SoftGlobal.cs" />
     <Compile Include="Compiler\VariableRef.cs" />
     <Compile Include="Diagnostics\CompilerMessages.cs" />
@@ -242,7 +251,7 @@
     <Compile Include="Language\ISourceLine.cs" />
     <Compile Include="Language\SourceLines.cs" />
     <Compile Include="Language\StdAtom.cs" />
-    <Compile Include="Compiler\Compiler.cs" />
+    <Compile Include="Compiler\Compilation.Compile.cs" />
     <Compile Include="Interpreter\Context.cs" />
     <Compile Include="Language\Decl.cs" />
     <Compile Include="Language\Errors.cs" />

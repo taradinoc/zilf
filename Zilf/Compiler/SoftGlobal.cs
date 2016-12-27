@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -26,7 +26,7 @@ namespace Zilf.Compiler
         public bool IsWord;
         /// <summary>
         /// The word index (if <see cref="IsWord"/> is true) or byte index (otherwise)
-        /// of the global, relative to <see cref="CompileCtx.SoftGlobalsTable"/>.
+        /// of the global, relative to <see cref="Compilation.SoftGlobalsTable"/>.
         /// </summary>
         public int Offset;
     }

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010, 2015 Jesse McGrew
+﻿/* Copyright 2010-2016 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -26,11 +26,11 @@ namespace Zilf.Compiler.Builtins
 {
     struct VoidCall
     {
-        public CompileCtx cc { get; private set; }
+        public Compilation cc { get; private set; }
         public IRoutineBuilder rb { get; private set; }
         public ZilForm form { get; private set; }
 
-        public VoidCall(CompileCtx cc, IRoutineBuilder rb, ZilForm form)
+        public VoidCall(Compilation cc, IRoutineBuilder rb, ZilForm form)
             : this()
         {
             Contract.Requires(cc != null);
