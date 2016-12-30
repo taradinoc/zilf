@@ -280,6 +280,7 @@ namespace Zilf.Compiler
                 var tempAtom = ZilAtom.Parse("?TMP", Context);
                 var lastLabel = rb.DefineLabel();
                 IVariable tempVar = null;
+                ILabel trueLabel = null, falseLabel = null;
 
                 if (resultStorage == null)
                     resultStorage = rb.Stack;
@@ -296,27 +297,57 @@ namespace Zilf.Compiler
                     }
                     return tempVar;
                 };
+                Func<ILabel> trueLabelProvider = () =>
+                {
+                    if (trueLabel == null)
+                        trueLabel = rb.DefineLabel();
+
+                    return trueLabel;
+                };
+                Func<ILabel> falseLabelProvider = () =>
+                {
+                    if (falseLabel == null)
+                        falseLabel = rb.DefineLabel();
+
+                    return falseLabel;
+                };
 
                 while (!args.Rest.IsEmpty)
                 {
                     var nextLabel = rb.DefineLabel();
+
+                    /* TODO: use "value or predicate" context here - if the expr is naturally a predicate,
+                     * branch to a final label and synthesize the value without using a temp var,
+                     * otherwise use the returned value */
 
                     if (and)
                     {
                         // for AND we only need the result of the last expr; otherwise we only care about truth value
                         CompileCondition(rb, args.First, src, nextLabel, true);
                         rb.EmitStore(resultStorage, Game.Zero);
+                        rb.Branch(lastLabel);
                     }
                     else
                     {
                         // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
-                        result = CompileAsOperandWithBranch(rb, args.First, nonStackResultStorage, nextLabel, false, tempVarProvider);
+                        // however, if the expr is a predicate anyway, we can branch out of the OR if it's true;
+                        // otherwise fall through to the next expr
+                        if (args.First.IsPredicate(Context.ZEnvironment.ZVersion))
+                        {
+                            CompileCondition(rb, args.First, src, trueLabelProvider(), true);
+                            // fall through to nextLabel
+                        }
+                        else
+                        {
+                            result = CompileAsOperandWithBranch(rb, args.First, nonStackResultStorage, nextLabel, false, tempVarProvider);
 
-                        if (result != resultStorage)
-                            rb.EmitStore(resultStorage, result);
+                            if (result != resultStorage)
+                                rb.EmitStore(resultStorage, result);
+
+                            rb.Branch(lastLabel);
+                        }
                     }
 
-                    rb.Branch(lastLabel);
                     rb.MarkLabel(nextLabel);
 
                     args = args.Rest;
@@ -325,6 +356,20 @@ namespace Zilf.Compiler
                 result = CompileAsOperand(rb, args.First, src, resultStorage);
                 if (result != resultStorage)
                     rb.EmitStore(resultStorage, result);
+
+                if (trueLabel != null)
+                {
+                    rb.Branch(lastLabel);
+                    rb.MarkLabel(trueLabel);
+                    rb.EmitStore(resultStorage, Game.One);
+                }
+
+                if (falseLabel != null)
+                {
+                    rb.Branch(lastLabel);
+                    rb.MarkLabel(falseLabel);
+                    rb.EmitStore(resultStorage, Game.Zero);
+                }
 
                 rb.MarkLabel(lastLabel);
 

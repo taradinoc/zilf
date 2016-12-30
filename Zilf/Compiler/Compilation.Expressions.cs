@@ -45,7 +45,6 @@ namespace Zilf.Compiler
         /// false if a result must not be produced.</param>
         /// <param name="resultStorage">A suggested (but not mandatory) storage location
         /// for the result, or null.</param>
-        /// 
         /// <returns><paramref name="resultStorage"/> if the suggested location was used
         /// for the result, or another operand if the suggested location was not used,
         /// or null if a result was not produced.</returns>
@@ -476,7 +475,6 @@ namespace Zilf.Compiler
         /// <param name="tempVarProvider">A delegate that returns a temporary variable to use for
         /// the result. Will only be called when <paramref name="resultStorage"/> is <b>null</b> and
         /// the expression has no natural location.</param>
-        /// 
         /// <returns>The variable where the expression value was stored: always <paramref name="resultStorage"/> if
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
