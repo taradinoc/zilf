@@ -18,19 +18,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
 using Zilf.Compiler.Builtins;
-using Zilf.Diagnostics;
-using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.ZModel;
 using Zilf.ZModel.Values;
-using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler
 {
@@ -190,6 +183,30 @@ namespace Zilf.Compiler
                     return true;
 
             return false;
+        }
+
+        public static bool IsPredicate(this ZilObject zo, int zversion)
+        {
+            var form = zo as ZilForm;
+
+            if (form == null)
+                return false;
+
+            var head = form.First as ZilAtom;
+
+            switch (head?.StdAtom)
+            {
+                case StdAtom.AND:
+                case StdAtom.OR:
+                case StdAtom.NOT:
+                    return form.Rest.All(a => a.IsPredicate(zversion));
+
+                case null:
+                    return false;
+
+                default:
+                    return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
+            }
         }
     }
 }

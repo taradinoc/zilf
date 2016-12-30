@@ -29,8 +29,8 @@ namespace IntegrationTests
         protected string versionDirective = "<VERSION ZIP>";
         protected StringBuilder miscGlobals = new StringBuilder();
         protected StringBuilder input = new StringBuilder();
-        protected bool? expectWarnings = null;
-        protected bool wantCompileOutput = false;
+        protected bool? expectWarnings;
+        protected bool wantCompileOutput;
 
         protected AbstractAssertionHelper()
         {

@@ -579,5 +579,47 @@ namespace IntegrationTests
                 .InV6()
                 .GeneratesCodeMatching(@"SET X,STACK");
         }
+
+        [TestMethod]
+        public void OR_In_Value_Context_Avoids_Unnecessary_Value_Preservation()
+        {
+            AssertRoutine("OBJ", @"
+    <OR ;""We can always see the contents of surfaces""
+            <FSET? .OBJ ,SURFACEBIT>
+            ;""We can see inside containers if they're open, transparent, or
+              unopenable (= always-open)""
+            <AND <FSET? .OBJ ,CONTBIT>
+                 <OR <FSET? .OBJ ,OPENBIT>
+                     <FSET? .OBJ ,TRANSBIT>
+                     <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>")
+                .WithGlobal("<CONSTANT SURFACEBIT 1>")
+                .WithGlobal("<CONSTANT CONTBIT 2>")
+                .WithGlobal("<CONSTANT OPENBIT 3>")
+                .WithGlobal("<CONSTANT TRANSBIT 4>")
+                .WithGlobal("<CONSTANT OPENABLEBIT 5>")
+                .WhenCalledWith("<>")
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+        }
+
+        [TestMethod]
+        public void AND_In_Value_Context_Avoids_Unnecessary_Value_Preservation()
+        {
+            AssertRoutine("OBJ", @"
+    <AND ;""We can always see the contents of surfaces""
+            <FSET? .OBJ ,SURFACEBIT>
+            ;""We can see inside containers if they're open, transparent, or
+              unopenable (= always-open)""
+            <AND <FSET? .OBJ ,CONTBIT>
+                 <OR <FSET? .OBJ ,OPENBIT>
+                     <FSET? .OBJ ,TRANSBIT>
+                     <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>")
+                .WithGlobal("<CONSTANT SURFACEBIT 1>")
+                .WithGlobal("<CONSTANT CONTBIT 2>")
+                .WithGlobal("<CONSTANT OPENBIT 3>")
+                .WithGlobal("<CONSTANT TRANSBIT 4>")
+                .WithGlobal("<CONSTANT OPENABLEBIT 5>")
+                .WhenCalledWith("<>")
+                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+        }
     }
 }
