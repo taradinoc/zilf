@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 
 namespace Zilf.Diagnostics
@@ -104,7 +105,7 @@ namespace Zilf.Diagnostics
 
             CountableString cs;
             FormatArgCount(ranges, out cs);
-            return string.Format("{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
+            return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }
 
         public static void FormatArgCount(IEnumerable<ArgCountRange> ranges, out CountableString result)
@@ -148,7 +149,7 @@ namespace Zilf.Diagnostics
             // disjoint ranges
             var unrolled = from r in collapsed
                             from n in Enumerable.Range(r.min, r.max - r.min + 1)
-                            select n.ToString();
+                            select n.ToString(CultureInfo.InvariantCulture);
             if (uncapped)
                 unrolled = unrolled.Concat(Enumerable.Repeat("more", 1));
 
@@ -160,33 +161,33 @@ namespace Zilf.Diagnostics
             // (1,_) uncapped => "1 or more arguments"
             if (range.MaxArgs == null)
             {
-                result = new CountableString(string.Format("{0} or more", range.MinArgs), true);
+                result = new CountableString(string.Format(CultureInfo.InvariantCulture, "{0} or more", range.MinArgs), true);
                 return;
             }
 
             // (1,1) => "exactly 1 argument"
             if (range.MaxArgs == range.MinArgs)
             {
-                result = new CountableString(string.Format("exactly {0}", range.MinArgs), range.MinArgs != 1);
+                result = new CountableString(string.Format(CultureInfo.InvariantCulture, "exactly {0}", range.MinArgs), range.MinArgs != 1);
                 return;
             }
 
             // (0,1) => "at most 1 argument"
             if (range.MinArgs == 0)
             {
-                result = new CountableString(string.Format("at most {0}", range.MaxArgs), range.MaxArgs != 1);
+                result = new CountableString(string.Format(CultureInfo.InvariantCulture, "at most {0}", range.MaxArgs), range.MaxArgs != 1);
                 return;
             }
 
             // (1,2) => "1 or 2 arguments"
             if (range.MaxArgs == range.MinArgs + 1)
             {
-                result = new CountableString(string.Format("{0} or {1}", range.MinArgs, range.MaxArgs), true);
+                result = new CountableString(string.Format(CultureInfo.InvariantCulture, "{0} or {1}", range.MinArgs, range.MaxArgs), true);
                 return;
             }
 
             // (1,3) => "1 to 3 arguments"
-            result = new CountableString(string.Format("{0} to {1}", range.MinArgs, range.MaxArgs), true);
+            result = new CountableString(string.Format(CultureInfo.InvariantCulture, "{0} to {1}", range.MinArgs, range.MaxArgs), true);
         }
     }
 }

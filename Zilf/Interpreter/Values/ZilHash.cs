@@ -82,20 +82,16 @@ namespace Zilf.Interpreter.Values
                     {
                         return del(this);
                     }
-                    else
-                    {
-                        return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
-                    }
+
+                    return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
                 }
                 finally
                 {
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "#" + type.Text + "...";
-            }
+
+            return "#" + type.Text + "...";
         }
 
         public override ZilAtom GetTypeAtom(Context ctx) => type;

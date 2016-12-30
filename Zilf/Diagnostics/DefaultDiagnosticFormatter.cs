@@ -17,6 +17,8 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,14 +29,16 @@ namespace Zilf.Diagnostics
     {
         public string Format(Diagnostic diagnostic)
         {
+            Contract.Requires(diagnostic != null);
+
             var sb = new StringBuilder(80);
 
-            sb.Append($"[{diagnostic.Severity.ToString().ToLower()} {diagnostic.CodePrefix}{diagnostic.Code.ToString("0000")}] {diagnostic.Location.SourceInfo}: ");
+            sb.Append($"[{diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.CodePrefix}{diagnostic.Code.ToString("0000")}] {diagnostic.Location.SourceInfo}: ");
             sb.Append(diagnostic.GetFormattedMessage());
 
             foreach (var sd in diagnostic.SubDiagnostics)
             {
-                sb.Append($"\n  [{sd.Severity.ToString().ToLower()} {sd.CodePrefix}{sd.Code.ToString("0000")}] ");
+                sb.Append($"\n  [{sd.Severity.ToString().ToLowerInvariant()} {sd.CodePrefix}{sd.Code.ToString("0000")}] ");
                 sb.Append(sd.GetFormattedMessage());
             }
 

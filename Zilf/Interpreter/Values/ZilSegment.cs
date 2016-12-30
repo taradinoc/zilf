@@ -48,6 +48,8 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilSegment FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+
             var form = list as ZilForm;
             if (form == null)
             {

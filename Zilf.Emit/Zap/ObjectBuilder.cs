@@ -93,7 +93,7 @@ namespace Zilf.Emit.Zap
 
         string GetFlagsString(int start)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             foreach (FlagBuilder flag in flags)
             {
@@ -116,27 +116,27 @@ namespace Zilf.Emit.Zap
 
         public void AddByteProperty(IPropertyBuilder prop, IOperand value)
         {
-            PropertyEntry pe = new PropertyEntry((PropertyBuilder)prop, value, PropertyEntry.BYTE);
+            var pe = new PropertyEntry((PropertyBuilder)prop, value, PropertyEntry.BYTE);
             props.Add(pe);
         }
 
         public void AddWordProperty(IPropertyBuilder prop, IOperand value)
         {
-            PropertyEntry pe = new PropertyEntry((PropertyBuilder)prop, value, PropertyEntry.WORD);
+            var pe = new PropertyEntry((PropertyBuilder)prop, value, PropertyEntry.WORD);
             props.Add(pe);
         }
 
         public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
         {
-            TableBuilder data = new TableBuilder(string.Format("?{0}?CP?{1}", this, prop));
-            PropertyEntry pe = new PropertyEntry((PropertyBuilder)prop, data, PropertyEntry.TABLE);
+            var data = new TableBuilder(string.Format("?{0}?CP?{1}", this, prop));
+            var pe = new PropertyEntry((PropertyBuilder)prop, data, PropertyEntry.TABLE);
             props.Add(pe);
             return data;
         }
 
         public void AddFlag(IFlagBuilder flag)
         {
-            FlagBuilder fb = (FlagBuilder)flag;
+            var fb = (FlagBuilder)flag;
             if (!flags.Contains(fb))
                 flags.Add(fb);
         }
@@ -162,7 +162,7 @@ namespace Zilf.Emit.Zap
                 }
                 else // TABLE
                 {
-                    TableBuilder tb = (TableBuilder)pe.Value;
+                    var tb = (TableBuilder)pe.Value;
                     writer.WriteLine(INDENT + ".PROP {0},{1}", tb.Size, pe.Property);
                     tb.WriteTo(writer);
                 }

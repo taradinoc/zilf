@@ -178,9 +178,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">
       <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
-      <Name>Zilf.StringEncoding</Name>
+      <Name>Zilf.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

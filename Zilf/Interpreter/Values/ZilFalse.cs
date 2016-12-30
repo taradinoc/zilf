@@ -54,10 +54,8 @@ namespace Zilf.Interpreter.Values
                     Recursion.Unlock(this);
                 }
             }
-            else
-            {
-                return "#FALSE...";
-            }
+
+            return "#FALSE...";
         }
 
         public override StdAtom StdTypeAtom => StdAtom.FALSE;

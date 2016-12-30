@@ -44,6 +44,8 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilModelObject FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+
             if (list.IsEmpty)
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s, 

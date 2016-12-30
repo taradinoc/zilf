@@ -33,8 +33,5 @@ namespace Zilf.Interpreter
     [AttributeUsage(AttributeTargets.Class)]
     sealed class BuiltinMetaAttribute : Attribute
     {
-        public BuiltinMetaAttribute()
-        {
-        }
     }
 }

@@ -18,11 +18,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
-using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -433,7 +429,7 @@ namespace Zilf.Compiler
                 {
                     var word = longWords.Dequeue();
                     longWordTable.AddShort(Vocabulary[word]);
-                    longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLower()));
+                    longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
                 }
             }
 

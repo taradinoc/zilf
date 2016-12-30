@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IGameBuilderContracts))]
-    public interface IGameBuilder
+    public interface IGameBuilder : IDisposable
     {
         /// <summary>
         /// Gets a target-specific options object.
@@ -163,7 +164,6 @@ namespace Zilf.Emit
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
-            Contract.Invariant(Options != null);
             Contract.Invariant(MaxPropertyLength > 0);
             Contract.Invariant(MaxProperties > 0);
             Contract.Invariant(MaxFlags > 0);
@@ -173,6 +173,8 @@ namespace Zilf.Emit
             Contract.Invariant(SelfInsertingBreaks != null);
             Contract.Invariant(VocabularyTable != null);
         }
+
+        public abstract void Dispose();
 
         public IGameOptions Options
         {

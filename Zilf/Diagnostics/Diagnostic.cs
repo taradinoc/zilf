@@ -78,6 +78,7 @@ namespace Zilf.Diagnostics
                 newSubDiagnostics);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public string GetFormattedMessage() =>
             string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs);
 
@@ -86,7 +87,7 @@ namespace Zilf.Diagnostics
             return string.Format(
                 "{0}: {1} {2}{3:0000}: {4}",
                 Location.SourceInfo,
-                Severity.ToString().ToLower(),
+                Severity.ToString().ToLowerInvariant(),
                 CodePrefix,
                 Code,
                 string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs));
@@ -161,7 +162,7 @@ namespace Zilf.Diagnostics
     public interface IDiagnosticFactory
     {
         Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace = null, Diagnostic[] subDiagnostics = null);
+            string stackTrace, Diagnostic[] subDiagnostics);
     }
 
     [ContractClassFor(typeof(IDiagnosticFactory))]
@@ -178,12 +179,34 @@ namespace Zilf.Diagnostics
         }
     }
 
+    public static class DiagnosticFactoryExtensions
+    {
+        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs)
+        {
+            Contract.Requires(fac != null);
+            Contract.Requires(location != null);
+            Contract.Requires(code >= 0);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+            return fac.GetDiagnostic(location, code, messageArgs, null, null);
+        }
+
+        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs, string stackTrace)
+        {
+            Contract.Requires(fac != null);
+            Contract.Requires(location != null);
+            Contract.Requires(code >= 0);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+            return fac.GetDiagnostic(location, code, messageArgs, stackTrace, null);
+        }
+    }
+
     public class DiagnosticFactory<TMessageSet> : IDiagnosticFactory
         where TMessageSet : class
     {
         readonly string prefix;
         readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static readonly DiagnosticFactory<TMessageSet> Instance = new DiagnosticFactory<TMessageSet>();
 
         protected DiagnosticFactory()
@@ -208,7 +231,7 @@ namespace Zilf.Diagnostics
         }
 
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace = null, Diagnostic[] subDiagnostics = null)
+            string stackTrace, Diagnostic[] subDiagnostics)
         {
             var attr = messages[code];
             return new Diagnostic(

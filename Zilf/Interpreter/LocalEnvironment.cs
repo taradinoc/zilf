@@ -81,17 +81,12 @@ namespace Zilf.Interpreter
             Contract.Requires(atom != null);
 
             if (bindings.ContainsKey(atom))
-            {
                 return bindings[atom];
-            }
-            else if (Parent != null)
-            {
+
+            if (Parent != null)
                 return Parent.MaybeGetBinding(atom);
-            }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         Binding GetOrCreateBinding(ZilAtom atom)

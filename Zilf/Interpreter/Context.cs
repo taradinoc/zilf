@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -39,7 +40,9 @@ namespace Zilf.Interpreter
     delegate ZilObject EvalTypeDelegate(ZilObject zo);
     delegate ZilObject ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
-    class Context
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
+        Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
+    sealed class Context
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
@@ -972,7 +975,7 @@ namespace Zilf.Interpreter
                         adaptChtypeCtor = AdaptChtypeCtor<ZilVector>;
                         break;
                     default:
-                        throw new NotImplementedException("Unexpected primtype: " + r.Attr.PrimType);
+                        throw UnhandledCaseException.FromEnum(r.Attr.PrimType);
                 }
 
                 ChtypeDelegate chtypeDelegate;
@@ -989,9 +992,11 @@ namespace Zilf.Interpreter
                     if (!chtypeMethod.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes))
                         throw new InvalidOperationException(
                             string.Format(
-                                "Wrong parameters for static ChtypeMethod {0} on type {1}",
+                                "Wrong parameters for static ChtypeMethod {0} on type {1}\nExpected: ({2})\nActual: ({3})",
                                 chtypeMethod.Name,
-                                r.Type.Name));
+                                r.Type.Name,
+                                string.Join(", ", chtypeParamTypes.Select(t => t.Name)),
+                                string.Join(", ", chtypeMethod.GetParameters().Select(pi => pi.ParameterType.Name))));
 
                     chtypeDelegate = adaptChtypeMethod(chtypeMethod);
                 }
@@ -1435,8 +1440,7 @@ namespace Zilf.Interpreter
                         GetStdAtom(StdAtom.PRINTB),
                         new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) })
                     })
-                },
-                this));
+                }));
         }
 
         void InitCompilationFlags()

@@ -16,16 +16,22 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Runtime.Serialization;
 
 namespace Zilf.Interpreter
 {
     /// <summary>
     /// A base class for exceptions used to implement wacky interpreter flow control.
     /// </summary>
-    abstract class ControlException : Exception
+    public abstract class ControlException : Exception
     {
         protected ControlException(string name)
             : base(name)
+        {
+        }
+
+        protected ControlException(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
         {
         }
     }

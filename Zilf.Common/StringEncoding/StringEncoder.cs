@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Zilf.StringEncoding
+namespace Zilf.Common.StringEncoding
 {
     public enum StringEncoderMode
     {

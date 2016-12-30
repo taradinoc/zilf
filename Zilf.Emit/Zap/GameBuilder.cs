@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Zilf.Emit.Zap
 {
-    public class GameBuilder : IGameBuilder
+    public sealed class GameBuilder : IGameBuilder
     {
         const string INDENT = "\t";
 
@@ -165,6 +165,23 @@ namespace Zilf.Emit.Zap
             writer = new StreamWriter(stream);
 
             Begin();
+        }
+
+        public void Dispose()
+        {
+            if (writer != null)
+            {
+                var w = writer;
+                writer = null;
+                w.Dispose();
+            }
+
+            if (stream != null)
+            {
+                var s = stream;
+                stream = null;
+                s.Dispose();
+            }
         }
 
         static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
@@ -339,7 +356,7 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            GlobalBuilder gb = new GlobalBuilder(name);
+            var gb = new GlobalBuilder(name);
             globals.Add(gb);
             symbols.Add(name, "global");
             return gb;
@@ -355,7 +372,7 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            TableBuilder tb = new TableBuilder(name);
+            var tb = new TableBuilder(name);
             if (pure)
                 pureTables.Add(tb);
             else
@@ -373,7 +390,7 @@ namespace Zilf.Emit.Zap
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
 
-            RoutineBuilder result = new RoutineBuilder(this, name, entryPoint, cleanStack);
+            var result = new RoutineBuilder(this, name, entryPoint, cleanStack);
             routines.Add(result);
             symbols.Add(name, "routine");
 
@@ -389,7 +406,7 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            ObjectBuilder result = new ObjectBuilder(this, 1 + objects.Count, name);
+            var result = new ObjectBuilder(this, 1 + objects.Count, name);
             objects.Add(result);
             symbols.Add(name, "object");
             return result;
@@ -404,7 +421,7 @@ namespace Zilf.Emit.Zap
             int max = (zversion >= 4) ? 63 : 31;
             int num = max - props.Count;
 
-            PropertyBuilder result = new PropertyBuilder(name, num);
+            var result = new PropertyBuilder(name, num);
             props.Add(name, result);
             symbols.Add(name, "property");
             return result;
@@ -419,7 +436,7 @@ namespace Zilf.Emit.Zap
             int max = (zversion >= 4) ? 47 : 31;
             int num = max - flags.Count;
 
-            FlagBuilder result = new FlagBuilder(name, num);
+            var result = new FlagBuilder(name, num);
             flags.Add(name, result);
             symbols.Add(name, "flag");
             return result;
@@ -427,11 +444,11 @@ namespace Zilf.Emit.Zap
 
         public IWordBuilder DefineVocabularyWord(string word)
         {
-            string name = "W?" + SanitizeSymbol(word.ToUpper());
+            string name = "W?" + SanitizeSymbol(word.ToUpperInvariant());
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(word));
 
-            WordBuilder result = new WordBuilder(name, word.ToLower());
+            var result = new WordBuilder(name, word.ToLowerInvariant());
             vocabulary.Add(result);
             symbols.Add(name, "word");
             return result;
@@ -439,7 +456,7 @@ namespace Zilf.Emit.Zap
 
         public void RemoveVocabularyWord(string word)
         {
-            string name = "W?" + SanitizeSymbol(word.ToUpper());
+            string name = "W?" + SanitizeSymbol(word.ToUpperInvariant());
             if (symbols.ContainsKey(name))
             {
                 symbols.Remove(name);
@@ -455,7 +472,7 @@ namespace Zilf.Emit.Zap
         public static string SanitizeString(string text)
         {
             // escape '"' as '""'
-            StringBuilder sb = new StringBuilder(text);
+            var sb = new StringBuilder(text);
 
             for (int i = sb.Length - 1; i >= 0; i--)
                 if (sb[i] == '"')
@@ -466,16 +483,19 @@ namespace Zilf.Emit.Zap
 
         public static string SanitizeSymbol(string symbol)
         {
-            if (symbol == ".")
-                return "$PERIOD";
-            else if (symbol == ",")
-                return "$COMMA";
-            else if (symbol == "\"")
-                return "$QUOTE";
-            else if (symbol == "'")
-                return "$APOSTROPHE";
+            switch (symbol)
+            {
+                case ".":
+                    return "$PERIOD";
+                case ",":
+                    return "$COMMA";
+                case "\"":
+                    return "$QUOTE";
+                case "'":
+                    return "$APOSTROPHE";
+            }
 
-            StringBuilder sb = new StringBuilder(symbol);
+            var sb = new StringBuilder(symbol);
 
             for (int i = 0; i < sb.Length; i++)
             {
@@ -794,7 +814,7 @@ namespace Zilf.Emit.Zap
 
         void MoveGlobal(string name, int index)
         {
-            int curIndex = globals.FindIndex(g => g.Name == name);
+            var curIndex = globals.FindIndex(g => g.Name == name);
             if (curIndex >= 0 && curIndex != index)
             {
                 GlobalBuilder gb = globals[curIndex];
@@ -868,7 +888,7 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + ".WORD {0}", vocabulary.Count);
 
                 writer.WriteLine(INDENT + ".VOCBEG {0},{1}", zwordBytes + dataBytes, zwordBytes);
-                vocabulary.Sort((a, b) => a.Word.CompareTo(b.Word));
+                vocabulary.Sort((a, b) => string.Compare(a.Word, b.Word, StringComparison.Ordinal));
                 foreach (WordBuilder wb in vocabulary)
                 {
                     writer.WriteLine("{0}:: .ZWORD \"{1}\"", wb.Name, GameBuilder.SanitizeString(wb.Word));

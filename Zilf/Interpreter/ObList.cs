@@ -114,7 +114,7 @@ namespace Zilf.Interpreter
 
         public bool Contains(string pname)
         {
-            string key = ignoreCase ? pname.ToUpper() : pname;
+            string key = ignoreCase ? pname.ToUpperInvariant() : pname;
             return dict.ContainsKey(key);
         }
 
@@ -122,7 +122,7 @@ namespace Zilf.Interpreter
         {
             get
             {
-                string key = ignoreCase ? pname.ToUpper() : pname;
+                string key = ignoreCase ? pname.ToUpperInvariant() : pname;
 
                 ZilAtom result;
                 if (dict.TryGetValue(key, out result))
@@ -134,7 +134,7 @@ namespace Zilf.Interpreter
             }
             set
             {
-                string key = ignoreCase ? pname.ToUpper() : pname;
+                string key = ignoreCase ? pname.ToUpperInvariant() : pname;
                 dict[key] = value;
             }
         }
@@ -146,7 +146,7 @@ namespace Zilf.Interpreter
 
             var key = newAtom.Text;
             if (ignoreCase)
-                key = key.ToUpper();
+                key = key.ToUpperInvariant();
 
             dict[key] = newAtom;
         }
@@ -158,7 +158,7 @@ namespace Zilf.Interpreter
 
             var key = atom.Text;
             if (ignoreCase)
-                key = key.ToUpper();
+                key = key.ToUpperInvariant();
 
             dict.Remove(key);
         }

@@ -23,7 +23,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Zapf.Parsing;
-using Zilf.StringEncoding;
+using Zilf.Common.StringEncoding;
 
 namespace Zapf
 {

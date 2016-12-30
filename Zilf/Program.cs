@@ -219,7 +219,7 @@ namespace Zilf
 
             for (int i = 0; i < args.Length; i++)
             {
-                switch (args[i].ToLower())
+                switch (args[i].ToLowerInvariant())
                 {
                     case "-c":
                         mode = RunMode.Compiler;

@@ -17,16 +17,23 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 
 namespace Zilf.Language
 {
-    abstract class ZilError : Exception
+    [Serializable]
+    public abstract class ZilError : Exception
     {
         protected ZilError(string message) : base(message) { }
         protected ZilError(string message, Exception innerException) : base(message, innerException) { }
+
+        protected ZilError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
+        }
 
         public Diagnostic Diagnostic { get; protected set; }
         public ISourceLine SourceLine { get; protected set; }
@@ -74,6 +81,11 @@ namespace Zilf.Language
         {
             Diagnostic = diag;
             SourceLine = diag.Location;
+        }
+
+        protected ZilError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
         }
 
         public string SourcePrefix

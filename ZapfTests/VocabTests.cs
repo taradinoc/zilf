@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using Zilf.StringEncoding;
+using Zilf.Common.StringEncoding;
 
 namespace ZapfTests
 {

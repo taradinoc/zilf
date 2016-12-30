@@ -34,6 +34,9 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ENVIRONMENT");
         }
 

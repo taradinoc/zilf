@@ -50,6 +50,8 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilRoutine FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+
             if (list.IsEmpty || list.Rest.IsEmpty)
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s,

@@ -28,6 +28,7 @@ using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
@@ -808,7 +809,7 @@ namespace Zilf.Interpreter
                 else
                     text = ((ZilString)expr).Text;
 
-                switch (text.ToUpper())
+                switch (text.ToUpperInvariant())
                 {
                     case "ZIP":
                         newVersion = 3;
@@ -1032,9 +1033,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        // shouldn't get here
-                        Contract.Assert(false);
-                        throw new NotImplementedException();
+                        throw UnhandledCaseException.FromEnum(item.StdTypeAtom, "CHRSET component type");
                 }
             }
 
@@ -1286,7 +1285,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx, args);
 
-            ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args, ctx));
+            ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args));
             return ctx.TRUE;
         }
 

@@ -15,29 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Zilf.Diagnostics
+namespace Zilf.Common
 {
-    [ContractClass(typeof(IDiagnosticFormatterContracts))]
-    public interface IDiagnosticFormatter
+    /// <summary>
+    /// Thrown at locations that should be unreachable, e.g. because previous function calls always throw an exception.
+    /// </summary>
+    [Serializable]
+    public sealed class UnreachableCodeException : Exception
     {
-        string Format(Diagnostic diagnostic);
-    }
-
-    [ContractClassFor(typeof(IDiagnosticFormatter))]
-    abstract class IDiagnosticFormatterContracts : IDiagnosticFormatter
-    {
-        public string Format(Diagnostic diagnostic)
+        /// <summary>
+        /// Shouldn't get here.
+        /// </summary>
+        public UnreachableCodeException()
+            : base("Shouldn't get here")
         {
-            Contract.Requires(diagnostic != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-            return default(string);
         }
     }
 }

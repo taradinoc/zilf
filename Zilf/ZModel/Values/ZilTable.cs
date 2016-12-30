@@ -175,7 +175,7 @@ namespace Zilf.ZModel.Values
                     {
                         for (int j = 0; j < initializer.Length; j++)
                         {
-                            array[start + i] = convert(initializer[j], IsWord(ctx, i));
+                            array[start + i] = convert(initializer[j], IsWord(i));
                             i++;
                         }
                     }
@@ -242,10 +242,9 @@ namespace Zilf.ZModel.Values
             /// <summary>
             /// Returns a value indicating whether the given element is a word rather than a byte.
             /// </summary>
-            /// <param name="ctx">The context.</param>
             /// <param name="index">The element index, or -1 to check the length prefix.</param>
             /// <returns><b>true</b> if the element is a word, or <b>false</b> if it's a byte.</returns>
-            bool IsWord(Context ctx, int index)
+            bool IsWord(int index)
             {
                 if (index == -1 && HasLengthPrefix)
                     return (flags & TableFlags.WordLength) != 0;
@@ -269,14 +268,13 @@ namespace Zilf.ZModel.Values
                         atom = rest[index % (rest.GetLength() - 1) + 1] as ZilAtom;
                         return !(atom != null && atom.StdAtom == StdAtom.BYTE);
                     }
-                    else if ((atom = pattern[index % pattern.Length] as ZilAtom) != null)
+
+                    if ((atom = pattern[index % pattern.Length] as ZilAtom) != null)
                     {
                         return atom.StdAtom != StdAtom.BYTE;
                     }
-                    else
-                    {
-                        throw new NotImplementedException("malformed pattern");
-                    }
+
+                    throw new InvalidOperationException("malformed pattern");
                 }
 
                 if (initializer != null)
@@ -339,7 +337,7 @@ namespace Zilf.ZModel.Values
 
                     for (int i = 0, j = 0; i < newPattern.Length; i++, j++)
                     {
-                        newPattern[i] = IsWord(ctx, j) ? wordAtom : byteAtom;
+                        newPattern[i] = IsWord(j) ? wordAtom : byteAtom;
 
                         if (insert && i == index)
                         {
@@ -378,7 +376,8 @@ namespace Zilf.ZModel.Values
                 {
                     if (offset == 0)
                         return -1;
-                    else if (offset == 1)
+
+                    if (offset == 1)
                         return null;
 
                     offset -= 2;
@@ -392,7 +391,7 @@ namespace Zilf.ZModel.Values
                     {
                         elementToByteOffsets[i] = nextOffset;
 
-                        if (IsWord(ctx, i))
+                        if (IsWord(i))
                             nextOffset += 2;
                         else
                             nextOffset++;
@@ -401,10 +400,7 @@ namespace Zilf.ZModel.Values
 
                 // binary search to find the element
                 var index = Array.BinarySearch(elementToByteOffsets, offset);
-                if (index >= 0)
-                    return index;
-                else
-                    return null;
+                return index >= 0 ? index : (int?)null;
             }
 
             public override ZilObject GetWord(Context ctx, int offset)
@@ -415,7 +411,7 @@ namespace Zilf.ZModel.Values
                 var index = ByteOffsetToIndex(ctx, offset);
                 if (index == null)
                     throw new ArgumentException(string.Format("No element at offset {0}", offset));
-                if (!IsWord(ctx, index.Value))
+                if (!IsWord(index.Value))
                     throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
                 if (index == -1)
@@ -442,11 +438,11 @@ namespace Zilf.ZModel.Values
                     index = 0;
                 }
 
-                if (!IsWord(ctx, index.Value))
+                if (!IsWord(index.Value))
                 {
                     // we may be able to replace 2 bytes with a word
                     var index2 = ByteOffsetToIndex(ctx, offset + 1);
-                    if (index2 == null || IsWord(ctx, index2.Value))
+                    if (index2 == null || IsWord(index2.Value))
                         throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
 
                     // remove one of the bytes from the initializer...
@@ -498,7 +494,7 @@ namespace Zilf.ZModel.Values
                 var index = ByteOffsetToIndex(ctx, offset);
                 if (index == null)
                     throw new ArgumentException(string.Format("No element at offset {0}", offset));
-                if (IsWord(ctx, index.Value))
+                if (IsWord(index.Value))
                     throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
 
                 if (index == -1)
@@ -521,7 +517,7 @@ namespace Zilf.ZModel.Values
                 {
                     // might be the second byte of a word
                     index = ByteOffsetToIndex(ctx, offset - 1);
-                    if (index != null && IsWord(ctx, index.Value))
+                    if (index != null && IsWord(index.Value))
                     {
                         second = true;
                     }
@@ -537,7 +533,7 @@ namespace Zilf.ZModel.Values
                     index = 0;
                 }
 
-                if (IsWord(ctx, index.Value))
+                if (IsWord(index.Value))
                 {
                     // split the word into 2 bytes
                     var newInitializer = new ZilObject[initializer.Length + 1];
@@ -571,7 +567,7 @@ namespace Zilf.ZModel.Values
                     initializer[index.Value] = value;
                 }
 
-                if (IsWord(ctx, index.Value))
+                if (IsWord(index.Value))
                 {
                     ExpandPattern(ctx, index.Value, false);
                     pattern[index.Value] = ctx.GetStdAtom(StdAtom.BYTE);
@@ -675,7 +671,7 @@ namespace Zilf.ZModel.Values
 
             protected override ZilTable AsNewTable()
             {
-                //XXX
+                // TODO: implement me
                 throw new NotImplementedException();
             }
 

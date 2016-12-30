@@ -16,20 +16,15 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
-using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
-using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler

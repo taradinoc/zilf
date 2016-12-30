@@ -37,7 +37,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.StringEncoding", "Zilf.StringEncoding\Zilf.StringEncoding.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Common", "Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
 EndProject

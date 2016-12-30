@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -553,7 +554,7 @@ namespace Zilf.ZModel.Values
                             break;
 
                         default:
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(i.Type);
                     }
 
                     sb.Append(' ');
@@ -614,7 +615,7 @@ namespace Zilf.ZModel.Values
                             break;
 
                         default:
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(o.Type);
                     }
 
                     if (o.Constant != null)
@@ -637,15 +638,14 @@ namespace Zilf.ZModel.Values
 
         public override ZilObject GetPrimitive(Context ctx)
         {
+            // TODO: implement me
             throw new NotImplementedException();
         }
 
         [ChtypeMethod]
-#pragma warning disable RECS0154 // Parameter is never used
-        public ComplexPropDef(ZilList list)
-#pragma warning restore RECS0154 // Parameter is never used
+        public static ComplexPropDef FromList(Context ctx, ZilList list)
         {
-            throw new NotImplementedException();
+            return Parse(list, ctx);
         }
 
         public struct ElementPreBuilders

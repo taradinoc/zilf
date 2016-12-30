@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -34,6 +35,11 @@ namespace Zilf.Interpreter
             Contract.Requires(activation != null);
 
             this.activation = activation;
+        }
+
+        protected AgainException(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
         }
 
         public ZilActivation Activation

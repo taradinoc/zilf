@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
@@ -212,16 +213,11 @@ namespace Zilf.Interpreter
             {
                 baseType = (ZilAtom)baseTypeOrDefaults;
             }
-            else if (baseTypeOrDefaults is DefStructParams.DefaultsList)
+            else
             {
                 var defaultsParam = (DefStructParams.DefaultsList)baseTypeOrDefaults;
                 baseType = defaultsParam.BaseType;
                 ParseDefStructDefaults(ctx, defaultsParam, ref defaults);
-            }
-            else
-            {
-                // shouldn't get here
-                throw new NotImplementedException();
             }
 
             if (!ctx.IsRegisteredType(baseType))
@@ -439,7 +435,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new NotImplementedException();
+                        throw UnhandledCaseException.FromEnum(arg.Type);
                 }
             }
 
@@ -736,8 +732,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(af.ClauseType, "atom clause type");
                     }
                 }
                 else if (part is DefStructParams.FixFieldSequence)
@@ -752,8 +747,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(ff.ClauseType, "FIX clause type");
                     }
                 }
                 else if (part is DefStructParams.NullaryFieldSequence)
@@ -770,8 +764,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(nf.ClauseType, "nullary clause type");
                     }
                 }
                 else if (part is ZilObject && !gotDefault)
@@ -824,7 +817,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new NotImplementedException("DEFSTRUCT: unrecognized part in defaults section: " + tag);
+                            throw UnhandledCaseException.FromEnum(tag.StdAtom, "tag in defaults section");
                     }
                 }
                 else
@@ -913,8 +906,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(ec.ClauseType, "nullary clause type");
                     }
                 }
                 else if (clause is DefStructParams.AtomDefaultClause)
@@ -935,8 +927,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(ac.ClauseType, "atom clause type");
                     }
                 }
                 else if (clause is DefStructParams.FixDefaultClause)
@@ -949,8 +940,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(fc.ClauseType, "FIX clause type");
                     }
                 }
                 else if (clause is DefStructParams.VarargsDefaultClause)
@@ -968,14 +958,12 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            // shouldn't get here
-                            throw new NotImplementedException();
+                            throw UnhandledCaseException.FromEnum(vc.ClauseType, "varargs clause type");
                     }
                 }
                 else
                 {
-                    // shouldn't get here
-                    throw new NotImplementedException();
+                    throw UnhandledCaseException.FromTypeOf(clause, "clause");
                 }
             }
         }

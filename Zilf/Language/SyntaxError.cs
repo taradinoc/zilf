@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
@@ -27,6 +28,11 @@ namespace Zilf.Language
         {
             Contract.Requires(filename != null);
             Contract.Requires(message != null);
+        }
+
+        protected SyntaxError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
         }
     }
 }

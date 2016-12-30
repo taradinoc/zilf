@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
 
@@ -100,6 +101,11 @@ namespace Zilf.Language
 
         public CompilerError(Diagnostic diagnostic)
             : base(diagnostic)
+        {
+        }
+
+        protected CompilerError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
         {
         }
 

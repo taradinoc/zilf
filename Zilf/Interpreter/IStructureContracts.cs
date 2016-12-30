@@ -28,7 +28,8 @@ namespace Zilf.Interpreter
     {
         public ZilObject GetFirst()
         {
-            throw new NotImplementedException();
+            Contract.Ensures(Contract.Result<ZilObject>() != null || IsEmpty());
+            return default(ZilObject);
         }
 
         public IStructure GetRest(int skip)
@@ -55,20 +56,20 @@ namespace Zilf.Interpreter
             Contract.Requires(beginning >= 0);
         }
 
-        public bool IsEmpty()
-        {
-            throw new NotImplementedException();
-        }
+        [Pure]
+        public abstract bool IsEmpty();
 
         public ZilObject this[int index]
         {
             get
             {
-                throw new NotImplementedException();
+                Contract.Requires(index >= 0);
+                return default(ZilObject);
             }
             set
             {
-                throw new NotImplementedException();
+                Contract.Requires(index >= 0);
+                Contract.Requires(value != null);
             }
         }
 
