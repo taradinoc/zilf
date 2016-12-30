@@ -47,6 +47,7 @@ namespace Zilf.ZModel
             Contract.Invariant(MaxVersion == null || MaxVersion >= MinVersion);
         }
 
+#pragma warning disable RECS0070 // Redundant explicit argument name specification
         static readonly Dictionary<string, LowCoreField> allFields = new Dictionary<string, LowCoreField>
         {
             { "ZVERSION", new LowCoreField(0) },
@@ -103,6 +104,7 @@ namespace Zilf.ZModel
             { "TRUFGC", new LowCoreField(5, LowCoreFlags.Extended, minVersion: 5) },
             { "TRUBGC", new LowCoreField(6, LowCoreFlags.Extended, minVersion: 5) }
         };
+#pragma warning restore RECS0070 // Redundant explicit argument name specification
 
         public static LowCoreField Get(ZilAtom atom)
         {

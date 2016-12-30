@@ -10,6 +10,7 @@ namespace Zilf.Diagnostics
 {
     sealed class DiagnosticContext
     {
+        // TODO: this should be thread-local
         public static DiagnosticContext Current { get; private set; } = new DiagnosticContext();
 
         class Disposer : IDisposable

@@ -58,8 +58,8 @@ namespace Zilf.Interpreter.Values
         {
             if (friendly)
                 return Char.ToString();
-            else
-                return ToString();
+
+            return ToString();
         }
 
         public override StdAtom StdTypeAtom => StdAtom.CHARACTER;

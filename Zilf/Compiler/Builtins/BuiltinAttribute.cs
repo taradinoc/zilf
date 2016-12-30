@@ -20,6 +20,8 @@ using System.Collections.Generic;
 
 namespace Zilf.Compiler.Builtins
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments",
+        Justification = nameof(Names) + " exposes the values passed in as positional arguments")]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class BuiltinAttribute : Attribute
     {

@@ -35,18 +35,24 @@ namespace Zilf.ZModel
             if (x == y)
                 return true;
 
+            if (x == null || y == null)
+                return false;
+
             if (ignoreCase)
-                return x.Text.ToUpper() == y.Text.ToUpper();
-            else
-                return x.Text == y.Text;
+                return x.Text.ToUpperInvariant() == y.Text.ToUpperInvariant();
+
+            return x.Text == y.Text;
         }
 
         public int GetHashCode(ZilAtom obj)
         {
+            if (obj == null || obj.Text == null)
+                return 0;
+
             if (ignoreCase)
-                return obj.Text.ToUpper().GetHashCode();
-            else
-                return obj.Text.GetHashCode();
+                return obj.Text.ToUpperInvariant().GetHashCode();
+
+            return obj.Text.GetHashCode();
         }
     }
 }

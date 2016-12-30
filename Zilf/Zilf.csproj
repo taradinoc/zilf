@@ -177,6 +177,7 @@
     <Compile Include="Diagnostics\DiagnosticContext.cs" />
     <Compile Include="Diagnostics\IDiagnosticFormatter.cs" />
     <Compile Include="Diagnostics\InterpreterMessages.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interpreter\AgainException.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
     <Compile Include="Interpreter\ArgDecoder.cs" />
@@ -321,16 +322,18 @@
       <Project>{3dd99678-f71c-4caa-a8bf-7dba6188c3c4}</Project>
       <Name>Zilf.Emit</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">
       <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
-      <Name>Zilf.StringEncoding</Name>
+      <Name>Zilf.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Zilf.ruleset" />
   </ItemGroup>
   <ItemGroup>

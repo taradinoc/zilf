@@ -303,8 +303,8 @@ namespace Zilf.Interpreter
 
             if (arg is ZilFix && ((ZilFix)arg).Value == 0)
                 return ctx.TRUE;
-            else
-                return ctx.FALSE;
+
+            return ctx.FALSE;
         }
 
         [Subr("1?")]
@@ -314,8 +314,8 @@ namespace Zilf.Interpreter
 
             if (arg is ZilFix && ((ZilFix)arg).Value == 1)
                 return ctx.TRUE;
-            else
-                return ctx.FALSE;
+
+            return ctx.FALSE;
         }
 
     }

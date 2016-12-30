@@ -41,6 +41,8 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAtom FromAtom(Context ctx, ZilAtom other)
         {
+            Contract.Requires(ctx != null);
+
             // we can't construct a new atom since it wouldn't be equal to the old one
             return other;
         }
@@ -102,7 +104,7 @@ namespace Zilf.Interpreter.Values
 
             ObList list;
             ZilAtom result;
-            var idx = text.IndexOf("!-");
+            var idx = text.IndexOf("!-", System.StringComparison.Ordinal);
 
             text = Unquote(text);
 
@@ -129,8 +131,12 @@ namespace Zilf.Interpreter.Values
                                 gotDefault = false;
                             }
                         }
-                        else if (obj is ZilAtom && ((ZilAtom)obj).StdAtom == StdAtom.DEFAULT)
-                            gotDefault = true;
+                        else
+                        {
+                            var atom = obj as ZilAtom;
+                            if (atom != null && atom.StdAtom == StdAtom.DEFAULT)
+                                gotDefault = true;
+                        }
                     }
 
                     // not found, insert
@@ -138,8 +144,8 @@ namespace Zilf.Interpreter.Values
                     insertList[text] = result;
                     return result;
                 }
-                else
-                    throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
+
+                throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
             }
 
             // look for it in the specified oblist

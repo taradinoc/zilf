@@ -77,7 +77,7 @@ namespace Zilf.Interpreter
         /// <param name="index">The zero-based index of the element to access.</param>
         /// <returns>The element value, or null if the specified element is past the end of
         /// the structure.</returns>
-        /// <exception cref="InterpreterError">
+        /// <exception cref="Zilf.Language.InterpreterError">
         /// An attempt was made to set an element past the end of the structure.
         /// </exception>
         ZilObject this[int index] { get; set; }

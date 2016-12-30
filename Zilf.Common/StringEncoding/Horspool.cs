@@ -19,7 +19,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Zilf.StringEncoding
+namespace Zilf.Common.StringEncoding
 {
     /// <summary>
     /// Implements the Boyer-Moore-Horspool algorithm for abbreviation searches.

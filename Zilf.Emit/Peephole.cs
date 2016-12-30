@@ -229,7 +229,7 @@ namespace Zilf.Emit
 
             public override string ToString()
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
 
                 if (Label != null)
                 {
@@ -265,10 +265,6 @@ namespace Zilf.Emit
         IPeepholeCombiner<TCode> combiner;
         Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
         LinkedList<Line> lines = new LinkedList<Line>();
-
-        public PeepholeBuffer()
-        {
-        }
 
         /// <summary>
         /// Gets or sets the delegate that will be used to combine adjacent instructions.
@@ -403,7 +399,9 @@ namespace Zilf.Emit
 
                 Console.Write('\t');
 
+#pragma warning disable RECS0017 // Possible compare of value type with 'null'
                 Console.Write(line.Code == null ? "(null)" : line.Code.ToString());
+#pragma warning restore RECS0017 // Possible compare of value type with 'null'
 
                 Console.Write(' ');
 
@@ -443,7 +441,7 @@ namespace Zilf.Emit
         void Optimize()
         {
             // apply alias mappings and link lines to each other
-            Dictionary<ILabel, Line> labelMap = new Dictionary<ILabel, PeepholeBuffer<TCode>.Line>();
+            var labelMap = new Dictionary<ILabel, PeepholeBuffer<TCode>.Line>();
 
             foreach (Line line in lines)
             {
@@ -469,8 +467,8 @@ namespace Zilf.Emit
             // apply optimizations
             bool changed;
             bool reachableFlag = false;
-            Queue<LinkedListNode<Line>> queue = new Queue<LinkedListNode<Line>>();
-            Dictionary<ILabel, bool> usedLabels = new Dictionary<ILabel, bool>();
+            var queue = new Queue<LinkedListNode<Line>>();
+            var usedLabels = new Dictionary<ILabel, bool>();
 
             int iterations = 0;
             const int MaxIterations = 10000;
@@ -483,7 +481,7 @@ namespace Zilf.Emit
                     break;
 
                 if (++iterations > MaxIterations)
-                    throw new NotImplementedException("Optimizer iteration count exceeded, this is probably a bug");
+                    throw new InvalidOperationException("Optimizer iteration count exceeded, this is probably a bug");
 
                 changed = false;
 
@@ -494,7 +492,7 @@ namespace Zilf.Emit
 
                 while (queue.Count > 0)
                 {
-                    LinkedListNode<Line> node = queue.Dequeue();
+                    var node = queue.Dequeue();
                     Line line = node.Value;
 
                     if (line.Flag != reachableFlag)
@@ -513,7 +511,7 @@ namespace Zilf.Emit
 
                         if (line.TargetLine != null)
                         {
-                            LinkedListNode<Line> targetNode = lines.Find(line.TargetLine);
+                            var targetNode = lines.Find(line.TargetLine);
                             Contract.Assume(targetNode != null);
                             queue.Enqueue(targetNode);
                         }
@@ -693,7 +691,7 @@ namespace Zilf.Emit
 
                             line.Type = InvertBranch(line.Type);
 
-                            Line newLine = new Line(
+                            var newLine = new Line(
                                 null,
                                 combiner == null ? default(TCode) : combiner.SynthesizeBranchAlways(),
                                 line.TargetLabel,

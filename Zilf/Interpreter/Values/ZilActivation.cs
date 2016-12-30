@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
@@ -44,6 +45,9 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilActivation FromAtom(Context ctx, ZilAtom name)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
         }
 

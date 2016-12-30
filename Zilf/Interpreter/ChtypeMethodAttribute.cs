@@ -32,8 +32,5 @@ namespace Zilf.Interpreter
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]
     class ChtypeMethodAttribute : Attribute
     {
-        public ChtypeMethodAttribute()
-        {
-        }
     }
 }

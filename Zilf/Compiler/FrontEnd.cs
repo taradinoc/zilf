@@ -63,9 +63,9 @@ namespace Zilf.Compiler
 
     public struct FrontEndResult
     {
-        public bool Success;
-        public int ErrorCount;
-        public int WarningCount;
+        public bool Success { get; set; }
+        public int ErrorCount { get; set; }
+        public int WarningCount { get; set; }
     }
 
     public sealed class FrontEnd
@@ -223,7 +223,12 @@ namespace Zilf.Compiler
             return InterpretOrCompile(ctx, inputFileName, null, false, false);
         }
 
-        public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        public FrontEndResult Compile(string inputFileName, string outputFileName)
+        {
+            return Compile(inputFileName, outputFileName, false);
+        }
+
+        public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo)
         {
             return Compile(NewContext(), inputFileName, outputFileName, wantDebugInfo);
         }
@@ -260,9 +265,11 @@ namespace Zilf.Compiler
                             var zversion = ctx.ZEnvironment.ZVersion;
                             var streamFactory = new ZapStreamFactory(this, outputFileName);
                             var options = MakeGameOptions(ctx);
-                            var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
 
-                            Zilf.Compiler.Compilation.Compile(ctx, gameBuilder);
+                            using (var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options))
+                            {
+                                Compilation.Compile(ctx, gameBuilder);
+                            }
                         }
                         catch (ZilError ex)
                         {

@@ -24,7 +24,7 @@ namespace Zilf.Compiler.Builtins
     /// The caller may pass an atom, which will be interpreted as the name of
     /// a variable, and its index will be used instead of its value.
     /// </summary>
-    /// <seealso cref="IVariable.Indirect"/>
+    /// <seealso cref="Zilf.Emit.IVariable.Indirect"/>
     [AttributeUsage(AttributeTargets.Parameter)]
     public class VariableAttribute : Attribute
     {

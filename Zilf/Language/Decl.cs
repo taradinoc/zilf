@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace Zilf.Language
 {
@@ -77,6 +78,11 @@ namespace Zilf.Language
         public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
             string usageFormat, object arg0)
             : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
+        {
+        }
+
+        protected DeclCheckError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
         {
         }
     }
@@ -175,14 +181,12 @@ namespace Zilf.Language
                     if (!Check(ctx, value, first))
                         return false;
 
-                    var valueAsStructure = value as IStructure;
-
-                    if (valueAsStructure == null && value is IProvideStructureForDeclCheck)
-                        valueAsStructure = ((IProvideStructureForDeclCheck)value).GetStructureForDeclCheck(ctx);
+                    var valueAsStructure =
+                        value as IStructure ??
+                        (value as IProvideStructureForDeclCheck)?.GetStructureForDeclCheck(ctx);
 
                     if (valueAsStructure == null)
-                        throw new NotImplementedException(
-                            "non-structured type used in structure DECL: " + value.GetTypeAtom(ctx).ToStringContext(ctx, false));
+                        return false;
 
                     return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment);
 

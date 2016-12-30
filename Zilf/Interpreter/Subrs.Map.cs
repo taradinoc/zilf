@@ -17,6 +17,7 @@
  */
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -68,6 +69,11 @@ namespace Zilf.Interpreter
                 this.values = values;
             }
 
+            protected MapRetException(SerializationInfo si, StreamingContext sc)
+                : base(si, sc)
+            {
+            }
+
             public ZilObject[] Values
             {
                 get
@@ -85,6 +91,11 @@ namespace Zilf.Interpreter
             {
                 Contract.Requires(values != null);
             }
+
+            protected MapStopException(SerializationInfo si, StreamingContext sc)
+                : base(si, sc)
+            {
+            }
         }
 
         class MapLeaveException : ControlException
@@ -95,6 +106,11 @@ namespace Zilf.Interpreter
                 : base("MAPLEAVE")
             {
                 this.value = value;
+            }
+
+            protected MapLeaveException(SerializationInfo si, StreamingContext sc)
+                : base(si, sc)
+            {
             }
 
             public ZilObject Value

@@ -22,8 +22,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Serialization;
+using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -38,6 +38,11 @@ namespace Zilf.Interpreter
 
         protected ArgumentDecodingError(Diagnostic diagnostic)
             : base(diagnostic) { }
+
+        protected ArgumentDecodingError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
+        }
     }
 
     abstract class CallSite
@@ -88,6 +93,11 @@ namespace Zilf.Interpreter
         {
         }
 
+        ArgumentCountError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
+        }
+
         public static ArgumentCountError WrongCount(CallSite site, int lowerBound, int? upperBound, bool morePrefix = false)
         {
             const int PlainMessageCode = InterpreterMessages._0_Requires_1_21s;
@@ -127,7 +137,8 @@ namespace Zilf.Interpreter
                 sourceLine,
                 InterpreterMessages._0_Too_Many_1s_Starting_At_1_2,
                 new object[] { site.ToString(), site.ChildName, firstUnexpectedIndex },
-                subDiagnostics: info != null ? new[] { info } : null);
+                null,
+                info != null ? new[] { info } : null);
 
             return new ArgumentCountError(diag);
         }
@@ -140,6 +151,11 @@ namespace Zilf.Interpreter
                 null,
                 InterpreterMessages._0_Expected_1,
                 new object[] { site.DescribeArgument(index), constraintDesc }))
+        {
+        }
+
+        ArgumentTypeError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
         {
         }
     }
@@ -318,11 +334,10 @@ namespace Zilf.Interpreter
             {
                 var array = items.ToArray();
 
+                Contract.Assert(array.Length > 0);
+
                 switch (array.Length)
                 {
-                    case 0:
-                        throw new NotImplementedException("list with no items");
-
                     case 1:
                         return array[0];
 
@@ -1146,7 +1161,7 @@ namespace Zilf.Interpreter
             }
             else
             {
-                throw new NotImplementedException($"Unhandled parameter type: {paramType}");
+                throw new ArgumentOutOfRangeException(nameof(paramType));
             }
 
             // modifiers
@@ -1602,7 +1617,7 @@ namespace Zilf.Interpreter
                     }
 
                     // shouldn't get here
-                    throw new NotImplementedException();
+                    throw new UnreachableCodeException();
                 }
             };
 
@@ -1736,9 +1751,7 @@ namespace Zilf.Interpreter
                 catch (TargetInvocationException ex)
                 {
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-
-                    // shouldn't get here
-                    throw new NotImplementedException();
+                    throw new UnreachableCodeException();
                 }
             };
 

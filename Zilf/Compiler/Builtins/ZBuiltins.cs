@@ -26,6 +26,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -281,7 +282,9 @@ namespace Zilf.Compiler.Builtins
                 }
                 else
                 {
-                    throw new NotImplementedException("Unexpected parameter type");
+                    throw new ArgumentException(
+                        $"Unsupported type {pi.ParameterType} for parameter {j} ({pi.Name})",
+                        nameof(builtinParamInfos));
                 }
             }
 
@@ -872,7 +875,7 @@ namespace Zilf.Compiler.Builtins
                         foldedInit = 0;
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw UnhandledCaseException.FromEnum(op, "binary operation");
                 }
 
                 var folded = FoldConstantArithmetic(c.cc, foldedInit, foldedOp, args);
@@ -1078,7 +1081,7 @@ namespace Zilf.Compiler.Builtins
                         branch = (nleft.Value & nright.Value) == nright.Value;
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw UnhandledCaseException.FromEnum(cond);
                 }
 
                 if (branch == c.polarity)
@@ -1935,7 +1938,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                throw new NotImplementedException("RestoreOp_V3 without HasBranchSave");
+                throw new NotSupportedException("RestoreOp_V3 without HasBranchSave");
             }
         }
 
@@ -1947,7 +1950,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitRestore(c.resultStorage);
                 return c.resultStorage;
             }
-            throw new NotImplementedException("RestoreOp_V4 without HasStoreSave");
+            throw new NotSupportedException("RestoreOp_V4 without HasStoreSave");
         }
 
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
@@ -1964,7 +1967,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitRestore(table, bytes, name, c.resultStorage);
                 return c.resultStorage;
             }
-            throw new NotImplementedException("RestoreOp_V5 without HasExtendedSave");
+            throw new NotSupportedException("RestoreOp_V5 without HasExtendedSave");
         }
 
         [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true)]
@@ -1976,7 +1979,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                throw new NotImplementedException("SaveOp_V3 without HasBranchSave");
+                throw new NotSupportedException("SaveOp_V3 without HasBranchSave");
             }
         }
 
@@ -1988,7 +1991,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitSave(c.resultStorage);
                 return c.resultStorage;
             }
-            throw new NotImplementedException("SaveOp_V4 without HasStoreSave");
+            throw new NotSupportedException("SaveOp_V4 without HasStoreSave");
         }
 
         [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
@@ -2005,7 +2008,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitSave(table, bytes, name, c.resultStorage);
                 return c.resultStorage;
             }
-            throw new NotImplementedException("SaveOp_V5 without HasExtendedSave");
+            throw new NotSupportedException("SaveOp_V5 without HasExtendedSave");
         }
 
         #endregion

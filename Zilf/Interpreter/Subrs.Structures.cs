@@ -22,6 +22,7 @@ using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
@@ -283,7 +284,7 @@ namespace Zilf.Interpreter
                     return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
 
                 default:
-                    throw new NotImplementedException("unexpected structure primitive");
+                    throw UnhandledCaseException.FromEnum(((ZilObject)from).PrimType, "structured primtype");
             }
         }
 

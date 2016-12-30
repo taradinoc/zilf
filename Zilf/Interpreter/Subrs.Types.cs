@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
@@ -62,7 +63,7 @@ namespace Zilf.Interpreter
                 case PrimType.VECTOR:
                     return StdAtom.VECTOR;
                 default:
-                    throw new NotImplementedException("unknown primtype " + pt);
+                    throw UnhandledCaseException.FromEnum(pt, "primtype");
             }
         }
 
@@ -177,7 +178,8 @@ namespace Zilf.Interpreter
                 return getter(ctx, atom) ?? ctx.FALSE;
             }
 
-            switch (setter(ctx, atom, handler))
+            var result = setter(ctx, atom, handler);
+            switch (result)
             {
                 case Context.SetTypeHandlerResult.OK:
                     return atom;
@@ -194,7 +196,7 @@ namespace Zilf.Interpreter
                         InterpreterMessages._0_Primtypes_Of_1_And_2_Differ, name, atom.ToStringContext(ctx, false), handler.ToStringContext(ctx, false));
 
                 default:
-                    throw new NotImplementedException();
+                    throw UnhandledCaseException.FromEnum(result);
             }
         }
 
@@ -342,17 +344,7 @@ namespace Zilf.Interpreter
 
             foreach (ZilObject arg in args)
             {
-                switch (arg.StdTypeAtom)
-                {
-                    case StdAtom.STRING:
-                    case StdAtom.CHARACTER:
-                        sb.Append(arg.ToStringContext(ctx, true));
-                        break;
-
-                    default:
-                        // shouldn't get here
-                        throw new NotImplementedException();
-                }
+                sb.Append(arg.ToStringContext(ctx, true));
             }
 
             return ZilString.FromString(sb.ToString());

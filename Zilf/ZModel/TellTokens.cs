@@ -123,7 +123,7 @@ namespace Zilf.ZModel
             this.outputForm = outputForm;
         }
 
-        public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec, Context ctx)
+        public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec)
         {
             var tokensSoFar = new List<Token>();
             int capturesSoFar = 0;

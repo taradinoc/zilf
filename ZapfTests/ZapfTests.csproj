@@ -57,9 +57,9 @@
       <Project>{c4379053-b0c7-4826-ac41-cea59a743b15}</Project>
       <Name>Zapf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Zilf.StringEncoding\Zilf.StringEncoding.csproj">
+    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">
       <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
-      <Name>Zilf.StringEncoding</Name>
+      <Name>Zilf.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -23,7 +24,7 @@ namespace Zilf.Interpreter
     /// <summary>
     /// Indicates that an inner block is returning.
     /// </summary>
-    class ReturnException : ControlException
+    sealed class ReturnException : ControlException
     {
         readonly ZilActivation activation;
         readonly ZilObject value;
@@ -36,6 +37,11 @@ namespace Zilf.Interpreter
 
             this.activation = activation;
             this.value = value;
+        }
+
+        ReturnException(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
         }
 
         [ContractInvariantMethod]

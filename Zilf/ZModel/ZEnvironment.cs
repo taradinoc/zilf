@@ -24,12 +24,13 @@ using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.StringEncoding;
+using Zilf.Common.StringEncoding;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
 using Zilf.ZModel.Vocab.OldParser;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.ZModel
 {
@@ -563,7 +564,7 @@ namespace Zilf.ZModel
                     return Objects;
 
                 default:
-                    throw new NotImplementedException();
+                    throw UnhandledCaseException.FromEnum(TreeOrdering);
             }
         }
 
@@ -641,7 +642,7 @@ namespace Zilf.ZModel
             var groupedWords =
                 from pair in this.Vocabulary
                 orderby pair.Key.Text
-                let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLower(), resolution, StringEncoderMode.NoAbbreviations))
+                let enc = new EncodedWord(encoder.Encode(pair.Value.Atom.Text.ToLowerInvariant(), resolution, StringEncoderMode.NoAbbreviations))
                 group new { Atom = pair.Key, Word = pair.Value } by enc;
 
             foreach (var g in groupedWords)
@@ -672,9 +673,12 @@ namespace Zilf.ZModel
 
             public EncodedWord(byte[] data)
             {
+                Contract.Requires(data != null);
+
                 this.data = data;
             }
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
             public bool Equals(EncodedWord other)
             {
                 if (other.data == this.data)
@@ -732,7 +736,7 @@ namespace Zilf.ZModel
         {
             Contract.Requires(word != null);
 
-            var text = word.Atom.Text.ToLower();
+            var text = word.Atom.Text.ToLowerInvariant();
             return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
         }
 

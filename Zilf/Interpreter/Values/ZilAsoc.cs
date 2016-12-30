@@ -51,6 +51,9 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAsoc FromList(Context ctx, ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
         }
 

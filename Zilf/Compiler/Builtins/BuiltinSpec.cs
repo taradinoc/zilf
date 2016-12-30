@@ -17,6 +17,7 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Zilf.Emit;
@@ -133,29 +134,24 @@ namespace Zilf.Compiler.Builtins
 
                 // validate return type vs. call type
                 if (CallType == typeof(ValueCall) && method.ReturnType != typeof(IOperand))
-                {
                     throw new ArgumentException("Value call must return IOperand");
-                }
-                else if (CallType == typeof(VoidCall) && method.ReturnType != typeof(void))
-                {
+
+                if (CallType == typeof(VoidCall) && method.ReturnType != typeof(void))
                     throw new ArgumentException("Void call must return void");
-                }
-                else if (CallType == typeof(PredCall) && method.ReturnType != typeof(void))
-                {
+
+                if (CallType == typeof(PredCall) && method.ReturnType != typeof(void))
                     throw new ArgumentException("Predicate call must return void");
-                }
-                else if (CallType == typeof(ValuePredCall) && method.ReturnType != typeof(void))
-                {
+
+                if (CallType == typeof(ValuePredCall) && method.ReturnType != typeof(void))
                     throw new ArgumentException("Value+predicate call must return void");
-                }
             }
             catch (ArgumentException ex)
             {
-                throw new ArgumentException(
-                string.Format(
-                "Bad attribute {0} on method {1}",
-                attr.Names.First(), method.Name),
-                ex);
+                throw new ArgumentException(string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Bad attribute {0} on method {1}",
+                    attr.Names.First(), method.Name),
+                    ex);
             }
         }
 

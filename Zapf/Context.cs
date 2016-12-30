@@ -20,7 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Zilf.StringEncoding;
+using Zilf.Common.StringEncoding;
 
 namespace Zapf
 {

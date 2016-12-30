@@ -24,6 +24,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.ZModel.Vocab.OldParser
 {
@@ -409,7 +410,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                         SetObject(ctx, p.location);
                         break;
                     default:
-                        throw new NotImplementedException("Unexpected part of speech: " + p);
+                        throw UnhandledCaseException.FromEnum(p.part);
                 }
             }
         }

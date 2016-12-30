@@ -28,6 +28,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
@@ -110,22 +111,22 @@ namespace Zilf.ZModel.Vocab.NewParser
             if (adjId is ZilFix)
                 return (byte)((ZilFix)adjId).Value;
 
-            throw new NotImplementedException("Unexpected AdjId value: " + adjId.ToStringContext(ctx, false));
+            throw new ArgumentException("Unexpected AdjId value: " + adjId.ToStringContext(ctx, false), nameof(word));
         }
 
         public byte GetDirectionValue(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public byte GetPrepositionValue(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public byte GetVerbValue(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word)
@@ -144,7 +145,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public bool IsBuzzword(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public bool IsDirection(IWord word)
@@ -164,7 +165,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public bool IsVerb(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void MakeAdjective(IWord word, ISourceLine location)
@@ -320,7 +321,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public bool IsSynonym(IWord word)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void MakeSynonym(IWord synonym, IWord original)
@@ -355,7 +356,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     break;
                 default:
                     // shouldn't get here due to contract
-                    throw new NotImplementedException();
+                    throw new UnreachableCodeException();
             }
 
             if (!norig.HasClass(classification))

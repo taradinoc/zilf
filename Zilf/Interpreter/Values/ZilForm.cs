@@ -119,15 +119,13 @@ namespace Zilf.Interpreter.Values
             }
 
             if (First == null)
-                throw new NotImplementedException("Can't evaluate null");
+                throw new InvalidOperationException("Can't evaluate null");
 
             ZilObject target;
             if (First is ZilAtom)
             {
                 var fa = (ZilAtom)First;
-                target = ctx.GetGlobalVal(fa);
-                if (target == null)
-                    target = ctx.GetLocalVal(fa);
+                target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
                 if (target == null)
                     throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0, fa.ToStringContext(ctx, false));
             }
@@ -139,7 +137,7 @@ namespace Zilf.Interpreter.Values
                 using (var frame = ctx.PushFrame(this))
                 using (DiagnosticContext.Push(this.SourceLine, frame))
                 {
-                    return target.AsApplicable(ctx).Apply(ctx, ((ZilList)Rest).ToArray());
+                    return target.AsApplicable(ctx).Apply(ctx, Rest.ToArray());
                 }
             }
             throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));

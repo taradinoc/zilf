@@ -17,6 +17,7 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
@@ -85,6 +86,11 @@ namespace Zilf.Language
 
         public InterpreterError(Diagnostic diagnostic)
             : base(diagnostic)
+        {
+        }
+
+        protected InterpreterError(SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
         {
         }
     }
