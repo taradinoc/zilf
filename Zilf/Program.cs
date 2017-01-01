@@ -380,16 +380,41 @@ Compiler switches:
   -d                    include debug information");
         }
 
+        // TODO: move Parse somewhere more sensible
         public static IEnumerable<ZilObject> Parse(Context ctx, string str)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
 
+            return Parse(ctx, null, str, null);
+        }
+
+        public static IEnumerable<ZilObject> Parse(Context ctx, string str, params ZilObject[] templateParams)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+
+            return Parse(ctx, null, str, templateParams);
+        }
+
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, string str, params ZilObject[] templateParams)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(str != null);
+
             ICharStream charStream = new ANTLRStringStream(str);
-            return Parse(ctx, charStream);
+            return Parse(ctx, src, charStream, templateParams);
         }
 
         public static IEnumerable<ZilObject> Parse(Context ctx, ICharStream charStream)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(charStream != null);
+
+            return Parse(ctx, null, charStream, null);
+        }
+
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, ICharStream charStream, params ZilObject[] templateParams)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(charStream != null);
@@ -412,7 +437,7 @@ Compiler switches:
             if (fret.Tree == null)
                 return Enumerable.Empty<ZilObject>();
 
-            return ZilObject.ReadFromAST((ITree)fret.Tree, ctx);
+            return ZilObject.ReadAllFromAST((ITree)fret.Tree, ctx, templateParams, src);
         }
 
         public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)

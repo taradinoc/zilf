@@ -319,38 +319,11 @@ namespace Zilf.Interpreter
                     var handler = ctx.GetGlobalVal(printFuncAtom);
                     if (handler == null)
                     {
-                        // #FUNCTION ((X "AUX" (D ,printFuncAtom)) <PRINTTYPE name .D> <APPLY .D .X>)
-                        var xAtom = ctx.GetStdAtom(StdAtom.X);
-                        var dAtom = ctx.GetStdAtom(StdAtom.D);
-                        handler = new ZilFunction(
-                            null,
-                            null,
-                            new ZilObject[]
-                            {
-                                xAtom,
-                                ZilString.FromString("AUX"),
-                                new ZilList(new ZilObject[]
-                                {
-                                    dAtom,
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), printFuncAtom })
-                                })
-                            },
-                            null,
-                            new ZilObject[]
-                            {
-                                new ZilForm(new ZilObject[]
-                                {
-                                    ctx.GetStdAtom(StdAtom.PRINTTYPE),
-                                    name,
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom })
-                                }),
-                                new ZilForm(new ZilObject[]
-                                {
-                                    ctx.GetStdAtom(StdAtom.APPLY),
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), dAtom }),
-                                    new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.LVAL), xAtom })
-                                })
-                            });
+                        handler = Program.Parse(
+                            ctx,
+                            @"#FUNCTION ((X ""AUX"" (D ,{0})) <PRINTTYPE {1} .D> <APPLY .D .X>)",
+                            printFuncAtom,
+                            name).Single();
                     }
 
                     ctx.SetPrintType(name, handler);

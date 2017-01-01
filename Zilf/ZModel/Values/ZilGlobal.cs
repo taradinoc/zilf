@@ -86,7 +86,7 @@ namespace Zilf.ZModel.Values
         {
             return new ZilList(name,
                 new ZilList(value,
-                new ZilList(null, null)));
+                    new ZilList(null, null)));
         }
     }
 }

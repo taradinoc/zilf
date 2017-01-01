@@ -199,6 +199,8 @@ namespace Zilf.Diagnostics
         public const int _0_Writing_Past_End_Of_Structure = 314;
         [Message("{0}: {1} element{1:s} requested but only {2} available")]
         public const int _0_1_Element1s_Requested_But_Only_2_Available = 315;
+        [Message("templates cannot be used here")]
+        public const int Templates_Cannot_Be_Used_Here = 316;
 
         // Z-machine Structures - 0400
 

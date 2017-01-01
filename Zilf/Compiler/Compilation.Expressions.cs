@@ -46,6 +46,8 @@ namespace Zilf.Compiler
         internal IOperand CompileForm(IRoutineBuilder rb, ZilForm form, bool wantResult,
             IVariable resultStorage)
         {
+            // TODO: split up this method
+
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
@@ -74,16 +76,11 @@ namespace Zilf.Compiler
                 {
                     form = (ZilForm)expanded;
                 }
-                else if (expanded is ZilSplice && ((ZilSplice)expanded).PopSpliceableFlag())
+                else if (expanded is IMayExpandAfterEvaluation && ((IMayExpandAfterEvaluation)expanded).ShouldExpandAfterEvaluation)
                 {
                     var src = form.SourceLine;
-                    form = new ZilForm(Enumerable.Concat(
-                        new ZilObject[] {
-                            Context.GetStdAtom(StdAtom.BIND),
-                            new ZilList(null, null)
-                        },
-                        (ZilList)expanded.GetPrimitive(Context)));
-                    form.SourceLine = src;
+                    var reexpanded = ((IMayExpandAfterEvaluation)expanded).ExpandAfterEvaluation(Context, Context.LocalEnvironment);
+                    form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
                 }
                 else
                 {
@@ -696,11 +693,8 @@ namespace Zilf.Compiler
                     var innerForm = (ZilForm)args[index];
                     if (innerForm.First is ZilAtom && ((ZilAtom)innerForm.First).StdAtom == StdAtom.QUOTE && innerForm.Rest != null)
                     {
-                        var transformed = new ZilForm(new ZilObject[] {
-                            Context.GetStdAtom(StdAtom.GVAL),
-                            innerForm.Rest.First
-                        })
-                        { SourceLine = form.SourceLine };
+                        var transformed = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
+                        transformed.SourceLine = form.SourceLine;
                         var obj = CompileAsOperand(rb, transformed, innerForm.SourceLine);
                         rb.EmitPrint(PrintOp.Object, obj);
                         index++;
@@ -711,18 +705,9 @@ namespace Zilf.Compiler
                 // P?foo expr -> <PRINT <GETP expr ,P?foo>>
                 if (args[index] is ZilAtom && index + 1 < args.Length)
                 {
-                    var transformed = new ZilForm(new ZilObject[] {
-                        Context.GetStdAtom(StdAtom.PRINT),
-                        new ZilForm(new ZilObject[] {
-                            Context.GetStdAtom(StdAtom.GETP),
-                            args[index+1],
-                            new ZilForm(new ZilObject[] {
-                                Context.GetStdAtom(StdAtom.GVAL),
-                                args[index]
-                            }) { SourceLine = form.SourceLine }
-                        }) { SourceLine = form.SourceLine }
-                    })
-                    { SourceLine = form.SourceLine };
+                    var transformed = (ZilForm)Program.Parse(Context, form.SourceLine,
+                        "<PRINT <GETP {0} ,{1}>>", args[index + 1], args[index])
+                        .Single();
                     CompileForm(rb, transformed, false, null);
                     index += 2;
                     continue;
