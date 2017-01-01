@@ -566,6 +566,16 @@ namespace ZilfTests.Interpreter
             // now FOO!-BAR!- has a trailer
             zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-");
             Assert.AreEqual("FOO!-BAR!-", zo.ToStringContext(ctx, false));
+
+            // trailer should be present in short forms too
+            zo = TestHelpers.Evaluate(ctx, "''FOO!-BAR!-");
+            Assert.AreEqual("'FOO!-BAR!-", zo.ToStringContext(ctx, false));
+
+            zo = TestHelpers.Evaluate(ctx, "',FOO!-BAR!-");
+            Assert.AreEqual(",FOO!-BAR!-", zo.ToStringContext(ctx, false));
+
+            zo = TestHelpers.Evaluate(ctx, "'.FOO!-BAR!-");
+            Assert.AreEqual(".FOO!-BAR!-", zo.ToStringContext(ctx, false));
         }
 
         [TestMethod]
