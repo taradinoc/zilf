@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
+using System.Collections.Generic;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SPLICE, PrimType.LIST)]
-    class ZilSplice : ZilList
+    class ZilSplice : ZilList, IMayExpandAfterEvaluation
     {
         bool spliceable;
 
@@ -33,13 +35,6 @@ namespace Zilf.Interpreter.Values
         public void SetSpliceableFlag()
         {
             spliceable = true;
-        }
-
-        public bool PopSpliceableFlag()
-        {
-            var result = spliceable;
-            spliceable = false;
-            return result;
         }
 
         public override string ToString()
@@ -56,8 +51,16 @@ namespace Zilf.Interpreter.Values
 
         public override StdAtom StdTypeAtom => StdAtom.SPLICE;
 
+        public bool ShouldExpandAfterEvaluation => spliceable;
+
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
+            return this;
+        }
+
+        public IEnumerable<ZilObject> ExpandAfterEvaluation(Context ctx, LocalEnvironment env)
+        {
+            spliceable = false;
             return this;
         }
     }

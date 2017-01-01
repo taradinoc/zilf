@@ -25,7 +25,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]
-    class ZilSegment : ZilObject, IStructure
+    class ZilSegment : ZilObject, IStructure, IMayExpandBeforeEvaluation
     {
         readonly ZilForm form;
 
@@ -73,6 +73,8 @@ namespace Zilf.Interpreter.Values
         public override StdAtom StdTypeAtom => StdAtom.SEGMENT;
 
         public override PrimType PrimType => PrimType.LIST;
+
+        public bool ShouldExpandBeforeEvaluation => true;
 
         public override ZilObject GetPrimitive(Context ctx)
         {
@@ -159,6 +161,20 @@ namespace Zilf.Interpreter.Values
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public IEnumerable<ZilObject> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env)
+        {
+            var result = Form.Eval(ctx, env) as IEnumerable<ZilObject>;
+
+            if (result != null)
+                return result;
+
+            throw new InterpreterError(
+                InterpreterMessages._0_1_Must_Return_2,
+                InterpreterMessages.NoFunction,
+                "segment evaluation",
+                "a structure");
         }
     }
 }

@@ -196,6 +196,7 @@
     <Compile Include="Interpreter\IApplicableContracts.cs" />
     <Compile Include="Interpreter\IdentityEqualityComparer.cs" />
     <Compile Include="Interpreter\IEvanescent.cs" />
+    <Compile Include="Interpreter\IMayExpand.cs" />
     <Compile Include="Interpreter\IStructure.cs" />
     <Compile Include="Interpreter\IStructureContracts.cs" />
     <Compile Include="Interpreter\PrimType.cs" />

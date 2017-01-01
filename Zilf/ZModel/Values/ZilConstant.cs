@@ -79,8 +79,8 @@ namespace Zilf.ZModel.Values
         public override ZilObject GetPrimitive(Context ctx)
         {
             return new ZilList(name,
-            new ZilList(value,
-            new ZilList(null, null)));
+                new ZilList(value,
+                    new ZilList(null, null)));
         }
     }
 }

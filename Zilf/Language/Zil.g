@@ -23,7 +23,7 @@ options {
 	output = AST;
 }
 
-tokens { COMMENT; FORM; LIST; VECTOR; UVECTOR; SEGMENT; MACRO; VMACRO; HASH; GVAL; LVAL; ADECL; }
+tokens { COMMENT; FORM; LIST; VECTOR; UVECTOR; SEGMENT; MACRO; VMACRO; HASH; GVAL; LVAL; ADECL; TEMPLATE; }
 
 @lexer::namespace { Zilf.Language.Lexing }
 @parser::namespace { Zilf.Language.Parsing }
@@ -96,6 +96,8 @@ LPAREN	:	'(';
 RPAREN	:	')';
 LSQUARE	:	'[';
 RSQUARE	:	']';
+LCURLY	:	'{';
+RCURLY	:	'}';
 BANG	:	'!';
 DOT	:	'.';
 COMMA	:	',';
@@ -133,6 +135,7 @@ non_adecl_expr
 	|	list
 	|	macro
 	|	HASH ATOM expr		-> ^(HASH ATOM expr)
+	|	template
 	;
 
 macro
@@ -164,4 +167,8 @@ vector	:	LSQUARE comment_or_expr* RSQUARE
 					-> ^(VECTOR comment_or_expr*)
 	|	BANG LSQUARE comment_or_expr* BANG? RSQUARE
 					-> ^(UVECTOR comment_or_expr*)
+	;
+
+template
+	:	LCURLY comment_or_expr* RCURLY -> ^(TEMPLATE comment_or_expr*)
 	;

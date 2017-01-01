@@ -1411,36 +1411,15 @@ namespace Zilf.Interpreter
 
         void InitTellPatterns()
         {
-            zenv.TellPatterns.AddRange(TellPattern.Parse(
-                new ZilObject[] {
-                    // (CR CRLF) <CRLF>
-                    new ZilList(new ZilObject[] { GetStdAtom(StdAtom.CR), GetStdAtom(StdAtom.CRLF) }),
-                    new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.CRLF) }),
-                    // D * <PRINTD .X>
-                    GetStdAtom(StdAtom.D), GetStdAtom(StdAtom.Times),
-                    new ZilForm(new ZilObject[] {
-                        GetStdAtom(StdAtom.PRINTD),
-                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) })
-                    }),
-                    // N * <PRINTN .X>
-                    GetStdAtom(StdAtom.N), GetStdAtom(StdAtom.Times),
-                    new ZilForm(new ZilObject[] {
-                        GetStdAtom(StdAtom.PRINTN),
-                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) })
-                    }),
-                    // C * <PRINTC .X>
-                    GetStdAtom(StdAtom.C), GetStdAtom(StdAtom.Times),
-                    new ZilForm(new ZilObject[] {
-                        GetStdAtom(StdAtom.PRINTC),
-                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) })
-                    }),
-                    // B * <PRINTB .X>
-                    GetStdAtom(StdAtom.B), GetStdAtom(StdAtom.Times),
-                    new ZilForm(new ZilObject[] {
-                        GetStdAtom(StdAtom.PRINTB),
-                        new ZilForm(new ZilObject[] { GetStdAtom(StdAtom.LVAL), GetStdAtom(StdAtom.X) })
-                    })
-                }));
+            const string STellPatterns = @"
+(CR CRLF) <CRLF>
+D * <PRINTD .X>
+N * <PRINTN .X>
+C * <PRINTC .X>
+B * <PRINTB .X>
+";
+
+            zenv.TellPatterns.AddRange(TellPattern.Parse(Program.Parse(this, STellPatterns)));
         }
 
         void InitCompilationFlags()

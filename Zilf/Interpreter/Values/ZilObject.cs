@@ -42,11 +42,15 @@ namespace Zilf.Interpreter.Values
         /// </remarks>
         /// <param name="tree">The root of a syntax tree, or null.</param>
         /// <param name="ctx">The current context.</param>
+        /// <param name="templateParams">An array of objects to replace
+        /// template placeholders with, or <b>null</b>.</param>
+        /// <param name="src">The source line to use for translated structures, or <b>null</b> to
+        /// generate it from <see cref="Context.CurrentFile"/> and <see cref="ITree.Line"/>.</param>
         /// <returns>A sequence of zero or more ZIL objects, depending
         /// on whether <paramref name="tree"/> was null, a parsed expression,
         /// or the phantom root of a tree containing multiple
         /// expressions.</returns>
-        public static IEnumerable<ZilObject> ReadFromAST(ITree tree, Context ctx)
+        public static IEnumerable<ZilObject> ReadAllFromAST(ITree tree, Context ctx, ZilObject[] templateParams, ISourceLine src)
         {
             Contract.Requires(tree != null);
             Contract.Requires(ctx != null);
@@ -54,32 +58,20 @@ namespace Zilf.Interpreter.Values
             //Contract.Ensures(Contract.ForAll(Contract.Result<IEnumerable<ZilObject>>(), r => r != null));
 
             if (tree == null)
-                yield break;
+                return EmptyArray;
 
             /* obj might be an expression if the source file only contained
              * one expression. otherwise it's a fake node created by antlr to
              * contain multiple expressions. */
-            List<ZilObject> result;
-            int i;
             if (tree.Type == 0)
             {
                 // multiple expressions
-                result = new List<ZilObject>(tree.ChildCount);
-                for (i = 0; i < tree.ChildCount; i++)
-                {
-                    var obj = ReadOneFromAST(tree.GetChild(i), ctx);
-                    if (obj != null)
-                        yield return obj;
-                }
+                return Enumerable.Range(0, tree.ChildCount)
+                    .SelectMany(i => ReadOneFromAST(tree.GetChild(i), ctx, templateParams, src));
             }
-            else
-            {
-                // just one
-                result = new List<ZilObject>(1);
-                var obj = ReadOneFromAST(tree, ctx);
-                if (obj != null)
-                    yield return obj;
-            }
+
+            // just one
+            return ReadOneFromAST(tree, ctx, templateParams, src);
         }
 
         /// <summary>
@@ -87,8 +79,12 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="tree">The tree node.</param>
         /// <param name="ctx">The current context.</param>
+        /// <param name="templateParams">An array of objects to replace
+        /// template placeholders with, or <b>null</b>.</param>
+        /// <param name="src">The source line to use for translated structures, or <b>null</b> to
+        /// generate it from <see cref="Context.CurrentFile"/> and <see cref="ITree.Line"/>.</param>
         /// <returns>The array of translated child objects.</returns>
-        static ZilObject[] ReadChildrenFromAST(ITree tree, Context ctx)
+        static ZilObject[] ReadChildrenFromAST(ITree tree, Context ctx, ZilObject[] templateParams, ISourceLine src)
         {
             Contract.Requires(tree != null);
             Contract.Requires(ctx != null);
@@ -101,93 +97,144 @@ namespace Zilf.Interpreter.Values
             var result = new List<ZilObject>(tree.ChildCount);
             for (int i = 0; i < tree.ChildCount; i++)
             {
-                var obj = ReadOneFromAST(tree.GetChild(i), ctx);
-                if (obj != null)
-                    result.Add(obj);
+                foreach (var obj in ReadOneFromAST(tree.GetChild(i), ctx, templateParams, src))
+                {
+                    var expandAfter = obj as IMayExpandAfterEvaluation;
+
+                    if (expandAfter?.ShouldExpandAfterEvaluation == true)
+                    {
+                        result.AddRange(expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment));
+                    }
+                    else
+                    {
+                        if (obj != null)
+                            result.Add(obj);
+                    }
+                }
             }
             return result.ToArray();
         }
 
+        static readonly ZilObject[] EmptyArray = new ZilObject[0];
+
         /// <summary>
-        /// Translates a single syntax tree node into ZIL objects.
+        /// Translates a single syntax tree node into some number of ZIL objects.
         /// </summary>
         /// <param name="tree">The tree node.</param>
         /// <param name="ctx">The current context.</param>
-        /// <returns>The translated object, or null if it was untranslatable.</returns>
-        static ZilObject ReadOneFromAST(ITree tree, Context ctx)
+        /// <param name="templateParams">An array of objects to replace
+        /// template placeholders with, or <b>null</b>.</param>
+        /// <param name="src">The source line to use for translated structures, or <b>null</b> to
+        /// generate it from <see cref="Context.CurrentFile"/> and <see cref="ITree.Line"/>.</param>
+        /// <returns>The sequence of translated objects. This may be empty if the node
+        /// could not be translated, or it may contain more than one object if the node
+        /// caused a splice.</returns>
+        static IEnumerable<ZilObject> ReadOneFromAST(ITree tree, Context ctx, ZilObject[] templateParams, ISourceLine src)
         {
             Contract.Requires(tree != null);
             Contract.Requires(ctx != null);
 
+            var curSourceLine = src ?? new FileSourceLine(ctx.CurrentFile.Path, tree.Line);
+
             ZilObject[] children;
 
-            using (DiagnosticContext.Push(new FileSourceLine(ctx.CurrentFile.Path, tree.Line)))
+            using (DiagnosticContext.Push(curSourceLine))
             {
                 switch (tree.Type)
                 {
                     case ZilLexer.ATOM:
                         var atom = ZilAtom.Parse(tree.Text, ctx);
                         if (atom is ZilLink)
-                        {
-                            return ctx.GetGlobalVal(atom);
-                        }
-                        return atom;
+                            return new[] { ctx.GetGlobalVal(atom) };
+
+                        return new[] { atom };
                     case ZilLexer.CHAR:
                         Contract.Assume(tree.Text.Length >= 3);
-                        return new ZilChar(tree.Text[2]);
+                        return new[] { new ZilChar(tree.Text[2]) };
                     case ZilLexer.COMMENT:
                         // ignore comments
-                        return null;
+                        return EmptyArray;
                     case ZilLexer.FORM:
-                        children = ReadChildrenFromAST(tree, ctx);
+                        children = ReadChildrenFromAST(tree, ctx, templateParams, src);
                         if (children.Length == 0)
-                            return ctx.FALSE;
-                        return new ZilForm(children) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
+                            return new[] { ctx.FALSE };
+
+                        return new[] { new ZilForm(children) { SourceLine = curSourceLine } };
                     case ZilLexer.HASH:
-                        return ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx));
+                        return new[] { ZilHash.Parse(ctx, ReadChildrenFromAST(tree, ctx, templateParams, src)) };
                     case ZilLexer.LIST:
-                        return new ZilList(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
+                        return new[] { new ZilList(ReadChildrenFromAST(tree, ctx, templateParams, src)) { SourceLine = curSourceLine } };
                     case ZilLexer.VECTOR:
                     case ZilLexer.UVECTOR:  // TODO: a real UVECTOR type?
-                        return new ZilVector(ReadChildrenFromAST(tree, ctx)) { SourceLine = new FileSourceLine(ctx.CurrentFile.Path, tree.Line) };
+                        return new[] { new ZilVector(ReadChildrenFromAST(tree, ctx, templateParams, src)) { SourceLine = curSourceLine } };
                     case ZilLexer.ADECL:
-                        children = ReadChildrenFromAST(tree, ctx);
+                        children = ReadChildrenFromAST(tree, ctx, templateParams, src);
                         Contract.Assume(children.Length == 2);
-                        return new ZilAdecl(children[0], children[1]);
+                        return new[] { new ZilAdecl(children[0], children[1]) };
                     case ZilLexer.MACRO:
                     case ZilLexer.VMACRO:
                         // expand macros
-                        var inner = ReadOneFromAST(tree.GetChild(0), ctx);
-                        if (inner == null)
-                            return null;
-                        try
+                        var inner = ReadOneFromAST(tree.GetChild(0), ctx, templateParams, src).SingleOrDefault();
+                        if (inner != null)
                         {
                             using (DiagnosticContext.Push(inner.SourceLine))
                             {
-                                var result = inner.Eval(ctx);
-                                if (tree.Type == ZilLexer.MACRO)
+                                try
                                 {
-                                    (result as ZilSplice)?.SetSpliceableFlag();
-                                    return result;
+                                    var result = inner.Eval(ctx);
+
+                                    if (tree.Type == ZilLexer.MACRO)
+                                        return result as ZilSplice ?? (IEnumerable<ZilObject>)new[] { result };
                                 }
-                                return null;
+                                catch (ControlException ex)
+                                {
+                                    throw new InterpreterError(inner.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
+                                }
                             }
                         }
-                        catch (ControlException ex)
-                        {
-                            throw new InterpreterError(inner.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
-                        }
+                        return EmptyArray;
                     case ZilLexer.NUM:
-                        return new ZilFix(ParseNumber(tree.Text));
+                        return new[] { new ZilFix(ParseNumber(tree.Text)) };
                     case ZilLexer.SEGMENT:
-                        return new ZilSegment(ReadOneFromAST(tree.GetChild(0), ctx));
+                        return new[] { new ZilSegment(ReadOneFromAST(tree.GetChild(0), ctx, templateParams, src).Single()) };
                     case ZilLexer.STRING:
                         Contract.Assume(tree.Text.Length >= 2);
-                        return ZilString.Parse(tree.Text);
+                        return new[] { ZilString.Parse(tree.Text) };
+                    case ZilLexer.TEMPLATE:
+                        var selector = ReadOneFromAST(tree.GetChild(0), ctx, templateParams, src).Single();
+                        return ExpandTemplateToken(selector, templateParams);
                     default:
                         throw new ArgumentException("Unexpected tree type: " + tree.Type.ToString(), nameof(tree));
                 }
             }
+        }
+
+        static IEnumerable<ZilObject> ExpandTemplateToken(ZilObject selector, ZilObject[] templateParams)
+        {
+            if (templateParams == null)
+                throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
+
+            if (selector is ZilFix)
+            {
+                var idx = ((ZilFix)selector).Value;
+                if (idx >= 0 && idx < templateParams.Length)
+                    return new[] { templateParams[idx] };
+            }
+            else if (selector is ZilAdecl)
+            {
+                var adecl = (ZilAdecl)selector;
+                var idx = (adecl.First as ZilFix)?.Value;
+                var atom = adecl.Second as ZilAtom;
+
+                if (idx >= 0 && idx < templateParams.Length && atom?.StdAtom == StdAtom.SPLICE)
+                {
+                    var result = templateParams[(int)idx] as IEnumerable<ZilObject>;
+                    if (result != null)
+                        return result;
+                }
+            }
+
+            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "template reference", selector);
         }
 
         static int ParseNumber(string text)
@@ -438,32 +485,19 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(obj != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            var seg = obj as ZilSegment;
+            var expandBefore = obj as IMayExpandBeforeEvaluation;
 
-            if (seg != null)
-            {
-                var result = seg.Form.Eval(ctx, environment) as IEnumerable<ZilObject>;
+            if (expandBefore != null && expandBefore.ShouldExpandBeforeEvaluation)
+                return expandBefore.ExpandBeforeEvaluation(ctx, environment);
 
-                if (result != null)
-                    return result;
+            var result = obj.Eval(ctx, environment);
 
-                throw new InterpreterError(
-                    InterpreterMessages._0_1_Must_Return_2,
-                    InterpreterMessages.NoFunction,
-                    "segment evaluation",
-                    "a structure");
-            }
-            else
-            {
-                var result = obj.Eval(ctx, environment);
-                var splice = result as ZilSplice;
+            var expandAfter = result as IMayExpandAfterEvaluation;
 
-                if (splice != null && splice.PopSpliceableFlag())
-                {
-                    return splice;
-                }
-                return Enumerable.Repeat(result, 1);
-            }
+            if (expandAfter != null && expandAfter.ShouldExpandAfterEvaluation)
+                return expandAfter.ExpandAfterEvaluation(ctx, environment);
+
+            return Enumerable.Repeat(result, 1);
         }
 
         /// <summary>
@@ -491,16 +525,15 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(obj != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            var seg = obj as ZilSegment;
-
-            if (seg != null)
-                return Enumerable.Repeat(seg, 1);
+            if (obj is IMayExpandBeforeEvaluation)
+                return Enumerable.Repeat(obj, 1);
 
             var result = obj.Eval(ctx);
-            var splice = result as ZilSplice;
 
-            if (splice != null && splice.PopSpliceableFlag())
-                return splice;
+            var expandAfter = result as IMayExpandAfterEvaluation;
+
+            if (expandAfter?.ShouldExpandAfterEvaluation == true)
+                return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
 
             return Enumerable.Repeat(result, 1);
         }
@@ -520,30 +553,6 @@ namespace Zilf.Interpreter.Values
             return sequence.SelectMany(zo => EvalWithSplice(ctx, zo));
         }
 
-        public static IEnumerable<ZilObject> ExpandIfSegment(Context ctx, ZilObject obj)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
-
-            var seg = obj as ZilSegment;
-
-            if (seg != null)
-            {
-                var result = seg.Form.Eval(ctx) as IEnumerable<ZilObject>;
-
-                if (result != null)
-                    return result;
-
-                throw new InterpreterError(
-                    InterpreterMessages._0_1_Must_Return_2,
-                    InterpreterMessages.NoFunction,
-                    "segment evaluation",
-                    "a structure");
-            }
-            return Enumerable.Repeat(obj, 1);
-        }
-
         /// <summary>
         /// Expands segment references (!.X) in a sequence of expressions, leaving the rest unchanged.
         /// </summary>
@@ -556,7 +565,15 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(sequence != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            return sequence.SelectMany(zo => ExpandIfSegment(ctx, zo));
+            return sequence.SelectMany(zo =>
+            {
+                var expandBefore = zo as IMayExpandBeforeEvaluation;
+
+                if (expandBefore?.ShouldExpandBeforeEvaluation == true)
+                    return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
+
+                return Enumerable.Repeat(zo, 1);
+            });
         }
     }
 }

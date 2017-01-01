@@ -604,5 +604,15 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndCatch<InterpreterError>("<PUTREST () (5)>");
         }
+
+        [TestMethod]
+        public void OBJECT_Clauses_Can_Be_Generated_By_READ_Macros()
+        {
+            TestHelpers.Evaluate(@"
+<OBJECT FOO
+    (DESC ""foo"")
+    %<VERSION? (ZIP '(SYNONYM FOOV3)) (ELSE '(SYNONYM FOOV4))>>
+");
+        }
     }
 }

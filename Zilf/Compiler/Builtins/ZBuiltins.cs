@@ -2318,18 +2318,7 @@ namespace Zilf.Compiler.Builtins
                 var label = c.rb.DefineLabel();
                 c.rb.MarkLabel(label);
 
-                var form = new ZilForm(new ZilObject[] {
-                        handler,
-                        new ZilForm(new ZilObject[] {
-                            c.cc.Context.GetStdAtom(StdAtom.GETB),
-                            ZilFix.Zero,
-                            new ZilForm(new ZilObject[] {
-                                c.cc.Context.GetStdAtom(StdAtom.LVAL),
-                                tmpAtom
-                            })
-                        })
-                    });
-                form.SourceLine = c.form.SourceLine;
+                var form = (ZilForm)Program.Parse(c.cc.Context, c.form.SourceLine, "<{0} <GETB 0 .{1}>>", handler, tmpAtom).Single();
                 c.cc.CompileForm(c.rb, form, false, null);
 
                 c.rb.Branch(Condition.IncCheck, lb, c.cc.Game.MakeOperand((int)offset + length - 1), label, false);
