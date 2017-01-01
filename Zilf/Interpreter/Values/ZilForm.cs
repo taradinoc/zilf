@@ -71,23 +71,24 @@ namespace Zilf.Interpreter.Values
                 try
                 {
                     // check for special forms
-                    if (First is ZilAtom && Rest.Rest != null && Rest.Rest.First == null)
+                    var firstAtom = First as ZilAtom;
+                    if (firstAtom != null && Rest.Rest != null && Rest.Rest.First == null)
                     {
-                        ZilObject arg = ((ZilList)Rest).First;
+                        ZilObject arg = Rest.First;
 
-                        switch (((ZilAtom)First).StdAtom)
+                        switch (firstAtom.StdAtom)
                         {
                             case StdAtom.GVAL:
-                                return "," + arg;
+                                return "," + convert(arg);
                             case StdAtom.LVAL:
-                                return "." + arg;
+                                return "." + convert(arg);
                             case StdAtom.QUOTE:
-                                return "'" + arg;
+                                return "'" + convert(arg);
                         }
                     }
 
                     // otherwise display like a list with angle brackets
-                    return ZilList.SequenceToString(this, "<", ">", convert);
+                    return SequenceToString(this, "<", ">", convert);
                 }
                 finally
                 {
