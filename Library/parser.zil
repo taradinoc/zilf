@@ -798,7 +798,6 @@ Sets:
                              <RFALSE>)>
                       <TRACE 3 "[PARSE-NOUN-PHRASE returned " N .VAL "]" CR>
                       <TRACE-OUT>
-                      <TRACE-OUT>
                       <COND (.VAL
                              <SET I .VAL>
                              <AGAIN>)
@@ -1299,14 +1298,17 @@ Returns:
             ;"match adjectives, keeping only the first"
             (<VERSION?
                 (ZIP <SET VAL <WORD? .W ADJECTIVE>>)
-                (ELSE <AND <CHKWORD? .W ,PS?ADJECTIVE> <SET VAL .W>>)>
+                (ELSE <CHKWORD? <SET VAL .W> ,PS?ADJECTIVE>)>
              <TRACE 4 "[adjective '" B .W "' at word " N .WN "]" CR>
+             ;"if we already have a noun, this must start a new noun phrase"
+             <COND (.NOUN
+                    <TRACE 4 "[terminating]" CR>
+                    <RETURN>)>
              <SET SPEC-WN .WN>
              <COND
-                 ;"if W can also be a noun, treat it as such if we don't
-                   already have a noun, and it isn't followed by an adj or noun"
-                 (<AND <0? .NOUN>                       ;"no noun"
-                       <CHKWORD? .W ,PS?OBJECT>         ;"word can be a noun"
+                 ;"if W can also be a noun, treat it as such if
+                   it isn't followed by an adj or noun"
+                 (<AND <CHKWORD? .W ,PS?OBJECT>         ;"word can be a noun"
                        <OR ;"word is at end of line"
                            <==? .WN ,P-LEN>
                            ;"next word is not adj/noun"
