@@ -135,14 +135,62 @@ other versions. These macros let us write the same code for all versions."
 "Parser"
 
 <CONSTANT READBUF-SIZE 100>
-<CONSTANT KBD-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
-<CONSTANT HELD-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>>
-<GLOBAL READBUF KBD-READBUF>
+<DEFINE MAKE-READBUF () <ITABLE NONE ,READBUF-SIZE (BYTE)>>
 
 <CONSTANT LEXBUF-SIZE 59>
-<CONSTANT KBD-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
-<CONSTANT HELD-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+<DEFINE MAKE-LEXBUF () <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>
+
+;"We need to use up to three sets of input buffers to parse an action before
+  performing it. These sets are prefixed with KBD, EDIT, and CONT.
+
+    >MAN, OPEN DOOR
+
+  The command is read into KBD, then copied into EDIT and expanded, then
+  copied into CONT.
+
+  KBD:  MAN, OPEN DOOR
+  EDIT: ,TELL MAN . OPEN DOOR
+  CONT: ,TELL MAN . OPEN DOOR
+
+    Which do you mean, the tall man or the short man?
+    >TLL
+
+  The answer to the question is read into KBD, then copied into EDIT.
+
+  KBD:  TLL
+  EDIT: TLL
+  CONT: ,TELL MAN . OPEN DOOR
+
+    I don't know the word 'tll'.
+    >OOPS TALL
+
+  The correction command is read into KBD, and the word in EDIT is corrected.
+
+  KBD:  OOPS TALL
+  EDIT: TALL
+  CONT: ,TELL MAN . OPEN DOOR
+
+    The tall man opens the door."
+
+<CONSTANT KBD-READBUF <MAKE-READBUF>>
+<CONSTANT KBD-LEXBUF <MAKE-LEXBUF>>
+<CONSTANT EDIT-READBUF <MAKE-READBUF>>
+<CONSTANT EDIT-LEXBUF <MAKE-LEXBUF>>
+<CONSTANT CONT-READBUF <MAKE-READBUF>>
+<CONSTANT CONT-LEXBUF <MAKE-LEXBUF>>
+
+<GLOBAL READBUF KBD-READBUF>
 <GLOBAL LEXBUF KBD-LEXBUF>
+
+<DEFMAC ACTIVATE-BUFS (PREFIX)
+    <FORM BIND '()
+        <FORM SETG READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
+        <FORM SETG LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
+
+<DEFMAC COPY-TO-BUFS (PREFIX)
+    <FORM BIND '()
+        <FORM COPY-READBUF ',READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
+        <FORM COPY-LEXBUF ',LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
 
 <CONSTANT P1MASK 3>
 
@@ -248,11 +296,29 @@ Args:
 <GLOBAL P-P1 <>>            ;"Prep number before first NP"
 <GLOBAL P-P2 <>>            ;"Prep number before second NP"
 <GLOBAL P-SYNTAX <>>        ;"Matched syntax line pointer"
-<GLOBAL P-OOPS-WN 0>        ;"Word number in held buffer to be corrected by OOPS"
-<GLOBAL P-OOPS-O-REASON <>> ;"Value of P-O-REASON at the time P-OOPS-WN was set"
 <GLOBAL P-CONT 0>           ;"Word number in held buffer where next parse should resume;
                               0 or less = get fresh input"
 
+"Structure type for OOPS"
+
+<DEFSTRUCT OOPS-RECORD (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
+    (OOPS-O-REASON FIX)     ;"Value of P-O-REASON before parsing the failed command"
+    (OOPS-WINNER <OR OBJECT FALSE>)
+                            ;"Value of WINNER before parsing the failed command"
+    (OOPS-WN FIX 'OFFSET 4 'NTH GETB 'PUT PUTB)
+                            ;"Word number in EDIT buffer to be corrected by OOPS"
+    (OOPS-CONT FIX 'OFFSET 5 'NTH GETB 'PUT PUTB)
+                            ;"Value of P-CONT before parsing the failed command">
+
+<CONSTANT P-OOPS-DATA 
+    <MAKE-OOPS-RECORD 'OOPS-RECORD <TABLE 0 0 <BYTE 0> <BYTE 0>>>>
+
+<MAPF <>
+    <FUNCTION (FIELD)
+        <EVAL <FORM DEFMAC <PARSE <STRING "P-" <SPNAME .FIELD>>> '("ARGS" A)
+                    <FORM FORM .FIELD '',P-OOPS-DATA '!.A>>>>
+    '(OOPS-WN OOPS-CONT OOPS-O-REASON OOPS-WINNER)>
+            
 "Structured types for storing noun phrases.
 
  NOUN-PHRASE:
@@ -430,8 +496,8 @@ Args:
         'PARSER-RESULT <ITABLE 26 (BYTE)>
         'PST-PRSOS <PRSTBL>
         'PST-PRSIS <PRSTBL>
-        'PST-READBUF <ITABLE NONE ,READBUF-SIZE (BYTE)>
-        'PST-LEXBUF <ITABLE ,LEXBUF-SIZE (LEXV) 0 #BYTE 0 #BYTE 0>>>
+        'PST-READBUF <MAKE-READBUF>
+        'PST-LEXBUF <MAKE-LEXBUF>>>
 
 <CONSTANT AGAIN-STORAGE <PARSER-RESULT>>
 <CONSTANT TEMP-PARSER-RESULT <PARSER-RESULT>>
@@ -609,11 +675,11 @@ Sets:
   USAVE
   P-NP-DOBJ
   P-NP-IOBJ
-  P-OOPS-WN
-  P-OOPS-O-REASON
+  P-OOPS-DATA
   P-CONT
 "
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL)
+<PRINC <EXPAND '<P-OOPS-WN>>> <CRLF>
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL O-RESP?)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET OW ,WINNER>
     <SET OH ,HERE>
@@ -622,12 +688,12 @@ Sets:
     <SET VAL <>>
     <SET DIR <>>
     <SET DIR-WN <>>
+    <SET O-RESP? <>>
     ;"Fill READBUF and LEXBUF"
     <COND (<L? ,P-CONT 0> <SETG P-CONT 0>)>
     <COND (,P-CONT
            <TRACE 1 "[PARSER: continuing from word " N ,P-CONT "]" CR>
-           <SETG READBUF ,HELD-READBUF>
-           <SETG LEXBUF ,HELD-LEXBUF>
+           <ACTIVATE-BUFS "CONT">
            <COND (<1? ,P-CONT> <SETG P-CONT 0>)
                  (<N=? ,MODE ,SUPERBRIEF>
                   ;"Print a blank line between multiple commands"
@@ -640,12 +706,13 @@ Sets:
            <READLINE T>)>
     
     <IF-DEBUG <SETG TRACE-INDENT 0>>
-    <TRACE-DO 1 <DUMPLINE>>
+    <TRACE-DO 1 <DUMPBUFS> ;<DUMPLINE>>
     <TRACE-IN>
     
     <SETG P-LEN <GETB ,LEXBUF 1>>
     <COND (<0? ,P-LEN>
            <TELL "..." CR>
+           <SETG P-CONT 0>
            <RFALSE>)>
     
     ;"Save undo state unless this looks like an undo command"
@@ -670,7 +737,7 @@ Sets:
            ;"Handle OOPS"
            <COND (<AND ,P-LEN <=? <GETWORD? 1> ,W?OOPS>>
                   <COND (<=? ,P-LEN 2>
-                         <COND (,P-OOPS-WN
+                         <COND (<P-OOPS-WN>
                                 <TRACE 2 "[handling OOPS]" CR>
                                 <HANDLE-OOPS 2>
                                 <SETG P-LEN <GETB ,LEXBUF 1>>
@@ -686,16 +753,15 @@ Sets:
                          <RFALSE>)>)>)>
     
     <SET KEEP 0>
-    <SETG P-OOPS-WN 0>
-    <SETG P-OOPS-O-REASON ,P-O-REASON>
+    <P-OOPS-WN 0>
+    <P-OOPS-CONT 0>
+    <P-OOPS-O-REASON ,P-O-REASON>
     
     <COND (<0? ,P-CONT>
-           ;"Save command in held buffer for OOPS and THEN"
-           <COND (<N=? ,READBUF ,HELD-READBUF>
-                  <COPY-READBUF ,READBUF ,HELD-READBUF>
-                  <SETG READBUF ,HELD-READBUF>
-                  <COPY-LEXBUF ,LEXBUF ,HELD-LEXBUF>
-                  <SETG LEXBUF ,HELD-LEXBUF>)>
+           ;"Save command in edit buffer for OOPS"
+           <COND (<N=? ,READBUF ,EDIT-READBUF>
+                  <COPY-TO-BUFS "EDIT">
+                  <ACTIVATE-BUFS "EDIT">)>
            ;"Handle an orphan response, which may abort parsing or ask us to skip steps"
            <COND (<ORPHANING?>
                   <SET O-R <HANDLE-ORPHAN-RESPONSE>>
@@ -714,6 +780,7 @@ Sets:
                          ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
                            we know about the command-to-be when we ask the orphaning question, not
                            when we get the response?"
+                         <SET O-RESP? T>
                          <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
                          <COND (<ORPHANING-PRSI?>
                                 <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
@@ -723,14 +790,18 @@ Sets:
                                 <SET KEEP 1>)
                                (ELSE <SETG P-NOBJ 1>)>)
                         (<=? .O-R ,O-RES-SET-PRSTBL>
+                         <SET O-RESP? T>
                          <COND (<ORPHANING-PRSI?> <SET KEEP 2>)
                                (ELSE <SET KEEP 1>)>)>
                   <SETG P-O-REASON <>>)>
-                  
-           ;"Translate order syntax (HAL, OPEN THE POD BAY DOOR or TELL HAL TO OPEN THE POD BAY DOOR)
-             into multi-command syntax (\,TELL HAL THEN OPEN THE POD BAY DOOR)."
-           <COND (<CONVERT-ORDER-TO-TELL?>
-                  <SETG P-LEN <GETB ,LEXBUF 1>>)>)>
+           ;"If we aren't handling this command as an orphan response, convert it if needed
+             and copy it to CONT bufs"
+           <COND (<NOT .O-RESP?>
+                  ;"Translate order syntax (HAL, OPEN THE POD BAY DOOR or
+                    TELL HAL TO OPEN THE POD BAY DOOR) into multi-command syntax
+                    (\,TELL HAL THEN OPEN THE POD BAY DOOR)."
+                  <COND (<CONVERT-ORDER-TO-TELL?>
+                         <SETG P-LEN <GETB ,LEXBUF 1>>)>)>)>
     
     ;"Identify parts of speech, parse noun phrases"
     <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
@@ -749,7 +820,7 @@ Sets:
                      (<NOT <OR <SET W <GETWORD? .I>>
                                <AND <PARSE-NUMBER? .I> <SET W ,W?\,NUMBER>>>>
                       ;"Word not in vocabulary"
-                      <SETG P-OOPS-WN .I>
+                      <STORE-OOPS .I>
                       <SETG P-CONT 0>
                       <TELL "I don't know the word \"" WORD .I "\"." CR>
                       <RFALSE>)
@@ -757,7 +828,8 @@ Sets:
                       ;"End of command, maybe start of a new one"
                       <TRACE 3 "['then' word " N .I "]" CR>
                       <SETG P-CONT <+ .I 1>>
-                      <COND (<G? ,P-CONT ,P-LEN> <SETG P-CONT 0>)>
+                      <COND (<G? ,P-CONT ,P-LEN> <SETG P-CONT 0>)
+                            (ELSE <COPY-TO-BUFS "CONT">)>
                       <RETURN>)
                      (<AND <NOT ,P-V>
                            <SET V <WORD? .W VERB>>
@@ -806,11 +878,9 @@ Sets:
                              <RFALSE>)>)
                      (ELSE
                       ;"Unexpected word type"
-                      <SETG P-OOPS-WN .I>
+                      <STORE-OOPS .I>
                       <SETG P-CONT 0>
-                      <TELL "I didn't expect the word \"">
-                      <PRINT-WORD .I>
-                      <TELL "\" there." CR>
+                      <TELL "I didn't expect the word \"" WORD .I "\" there." CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
@@ -848,7 +918,7 @@ Sets:
                   <TRACE-OUT>
                   <RFALSE>)
                  (.DIR
-                  <SETG P-OOPS-WN .DIR-WN>
+                  <STORE-OOPS .DIR-WN>
                   <SETG P-CONT 0>
                   <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
                   <TRACE-OUT>
@@ -885,87 +955,103 @@ Sets:
     <DEFMAC ORDERING? ()
         '<N=? ,WINNER ,PLAYER>>>
 
-;"Replaces word P-OOPS-WN in HELD-LEXBUF (and -READBUF) with word N from the active buffer, then
+;"Stores WN and P-CONT in P-OOPS-WN/CONT, and copies LEXBUF/READBUF to EDIT-LEXBUF/READBUF if needed."
+<ROUTINE STORE-OOPS (WN)
+    <COND (<N=? ,LEXBUF ,EDIT-LEXBUF>
+           <COPY-TO-BUFS "EDIT">)>
+    ;"NOTE: P-OOPS-O-REASON is not set here."
+    <P-OOPS-CONT ,P-CONT>
+    <P-OOPS-WINNER ,WINNER>
+    <P-OOPS-WN .WN>>
+
+;"Replaces word P-OOPS-WN in EDIT-LEXBUF (and -READBUF) with word N from the active buffer, then
   sets the active buffer to the held buffer."
-<ROUTINE HANDLE-OOPS (N "AUX" W SS SL DS DL BL MAX DELTA)
+<ROUTINE HANDLE-OOPS (N "AUX" W WN SS SL DS DL BL MAX DELTA
+                      (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF))
     <SET W <GETWORD? .N>>
     ;"Copy word into LEXBUF"
-    <PUT ,HELD-LEXBUF <- <* ,P-OOPS-WN 2> 1> .W>
+    <SET WN <P-OOPS-WN>>
+    <PUT .LBUF <- <* .WN 2> 1> .W>
     ;"Copy word into READBUF"
     <SET SS <GETB ,LEXBUF <+ <* .N 4> 1>>>
     <SET SL <GETB ,LEXBUF <* .N 4>>>
-    <SET DS <GETB ,HELD-LEXBUF <+ <* ,P-OOPS-WN 4> 1>>>
-    <SET DL <GETB ,HELD-LEXBUF <* ,P-OOPS-WN 4>>>
-    <PUTB ,HELD-LEXBUF <* ,P-OOPS-WN 4> .SL>
+    <SET DS <GETB .LBUF <+ <* .WN 4> 1>>>
+    <SET DL <GETB .LBUF <* .WN 4>>>
+    <PUTB .LBUF <* .WN 4> .SL>
     <COND (<L? .SL .DL>
            ;"Copy the new word and overwrite the end of the old one with spaces"
-           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,HELD-READBUF .DS> .SL>
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST .RBUF .DS> .SL>
            <SET MAX <- <+ .DS .DL> 1>>
            <DO (I <+ .SL 1> .MAX)
-               <PUTB ,HELD-READBUF .I !\ >>)
+               <PUTB .RBUF .I !\ >>)
           (<G? .SL .DL>
            ;"Shift the rest of the buffer up to make room"
-           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
+           <SET BL <READBUF-LENGTH .RBUF>>
            <VERSION? (ZIP <SET BL <+ .BL 1>>)>
            <SET DELTA <- .SL .DL>>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
            <DO (I .BL .DS -1)
-               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
-           <COPY-TABLE-B <REST ,READBUF .SS> <REST ,HELD-READBUF .DS> .SL>
+               <PUTB .RBUF <+ .I .DELTA> <GETB .RBUF .I>>>
+           <COPY-TABLE-B <REST ,READBUF .SS> <REST .RBUF .DS> .SL>
            ;"Update pointers to subsequent words"
-           <SET MAX <GETB ,HELD-LEXBUF 1>>
+           <SET MAX <GETB .LBUF 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB ,HELD-LEXBUF
+                      <PUTB .LBUF
                             <+ <* .I 4> 1>
-                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
     ;"Activate held buffers, restore orphaning state, and clear oops state"
-    <SETG READBUF ,HELD-READBUF>
-    <SETG LEXBUF ,HELD-LEXBUF>
-    <SETG P-O-REASON ,P-OOPS-O-REASON>
-    <SETG P-OOPS-WN 0>
-    <SETG P-OOPS-O-REASON <>>>
+    <SETG READBUF .RBUF>
+    <SETG LEXBUF .LBUF>
+    <SETG P-O-REASON <P-OOPS-O-REASON>>
+    <SETG P-CONT <P-OOPS-CONT>>
+    <SETG WINNER <P-OOPS-WINNER>>
+    <P-OOPS-WN 0>
+    <P-OOPS-CONT 0>
+    <P-OOPS-O-REASON <>>>
 
-<ROUTINE REPLACE-HELD-WORD (N NEW-WORD "AUX" S OL NL BL MAX DELTA)
+<ROUTINE REPLACE-HELD-WORD (N NEW-WORD "AUX" S OL NL BL MAX DELTA
+                            (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF))
     <TRACE 5 "[replace held word " N .N " with '" B .NEW-WORD "']" CR>
     ;"Copy word into LEXBUF"
-    <PUT ,HELD-LEXBUF <- <* .N 2> 1> .NEW-WORD>
+    <PUT .LBUF <- <* .N 2> 1> .NEW-WORD>
     ;"Copy word into READBUF"
     <DIROUT 3 ,TEMPTABLE>
     <PRINTB .NEW-WORD>
     <DIROUT -3>
-    <SET S <GETB ,HELD-LEXBUF <+ <* .N 4> 1>>>
-    <SET OL <GETB ,HELD-LEXBUF <* .N 4>>>
+    <SET S <GETB .LBUF <+ <* .N 4> 1>>>
+    <SET OL <GETB .LBUF <* .N 4>>>
     <SET NL <GET ,TEMPTABLE 0>>
-    <PUTB ,HELD-LEXBUF <* .N 4> .NL>
+    <PUTB .LBUF <* .N 4> .NL>
     <COND (<L? .NL .OL>
            ;"Overwrite the end of the old word with spaces"
            <SET MAX <- <+ .S .OL> 1>>
            <DO (I <+ .S .NL 1> .MAX)
-               <PUTB ,HELD-READBUF .I !\ >>)
+               <PUTB .RBUF .I !\ >>)
           (<G? .NL .OL>
            ;"Shift the rest of the buffer up to make room"
-           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
+           <SET BL <READBUF-LENGTH .RBUF>>
            <VERSION? (ZIP <SET BL <+ .BL 1>>)>
            <SET DELTA <- .NL .OL>>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
            <DO (I .BL .S -1)
-               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
+               <PUTB .RBUF <+ .I .DELTA> <GETB .RBUF .I>>>
            ;"Update pointers to subsequent words"
-           <SET MAX <GETB ,HELD-LEXBUF 1>>
+           <SET MAX <GETB .LBUF 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB ,HELD-LEXBUF
+                      <PUTB .LBUF
                             <+ <* .I 4> 1>
-                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
     ;"Copy the new word"
     <TRACE 5 "[at char " N .S "]" CR>
-    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST ,HELD-READBUF .S> .NL>
+    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST .RBUF .S> .NL>
     <TRACE-DO 5 <DUMPLINE T>>>
 
-<ROUTINE INSERT-HELD-WORD (N NEW-WORD "AUX" (LEN <GETB ,HELD-LEXBUF 1>) MIN BL S MAX NL DELTA)
+<ROUTINE INSERT-HELD-WORD (N NEW-WORD "AUX" (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF)
+                           (LEN <GETB .LBUF 1>) MIN BL S MAX NL DELTA)
     <TRACE 5 "[insert '" B .NEW-WORD "' as held word " N .N "]" CR>
     <COND (<L? .N 1> <SET N 1>)
           (<G? .N .LEN> <SET N <+ .LEN 1>>)>
@@ -978,37 +1064,37 @@ Sets:
     <COND (<L=? .N .LEN>
            <SET MIN <* .N 2>>
            <DO (I <* .LEN 2> .MIN -2)
-               <PUT ,HELD-LEXBUF <+ .I 2> <GET ,HELD-LEXBUF .I>>
-               <PUT ,HELD-LEXBUF <+ .I 1> <GET ,HELD-LEXBUF <- .I 1>>>>)>
+               <PUT .LBUF <+ .I 2> <GET .LBUF .I>>
+               <PUT .LBUF <+ .I 1> <GET .LBUF <- .I 1>>>>)>
     ;"Write the new entry and set the word count"
-    <COND (<G? .N .LEN> <SET S <+ <READBUF-LENGTH ,HELD-READBUF> 1>>)
-          (ELSE <SET S <GETB ,HELD-LEXBUF <+ <* .N 4> 1>>>)>
-    <PUT ,HELD-LEXBUF <- <* .N 2> 1> .NEW-WORD>
-    <PUTB ,HELD-LEXBUF <* .N 4> .NL>
-    <PUTB ,HELD-LEXBUF <+ <* .N 4> 1> .S>
-    <PUTB ,HELD-LEXBUF 1 <+ .LEN 1>>
+    <COND (<G? .N .LEN> <SET S <+ <READBUF-LENGTH .RBUF> 1>>)
+          (ELSE <SET S <GETB .LBUF <+ <* .N 4> 1>>>)>
+    <PUT .LBUF <- <* .N 2> 1> .NEW-WORD>
+    <PUTB .LBUF <* .N 4> .NL>
+    <PUTB .LBUF <+ <* .N 4> 1> .S>
+    <PUTB .LBUF 1 <+ .LEN 1>>
     <COND (<L=? .N .LEN>
            ;"Shift READBUF up to make room"
-           <SET BL <READBUF-LENGTH ,HELD-READBUF>>
+           <SET BL <READBUF-LENGTH .RBUF>>
            <SET DELTA <+ .NL 1>>
            <VERSION? (ZIP <SET BL <+ .BL 1>>)>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
            <VERSION? (ZIP)
-                     (ELSE <PUTB ,HELD-READBUF 1 <+ .BL .DELTA>>)>
+                     (ELSE <PUTB .RBUF 1 <+ .BL .DELTA>>)>
            <DO (I .BL .S -1)
-               <PUTB ,HELD-READBUF <+ .I .DELTA> <GETB ,HELD-READBUF .I>>>
+               <PUTB .RBUF <+ .I .DELTA> <GETB .RBUF .I>>>
            ;"Update pointers to subsequent words"
            <SET MAX <+ .LEN 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB ,HELD-LEXBUF
+                      <PUTB .LBUF
                             <+ <* .I 4> 1>
-                            <+ <GETB ,HELD-LEXBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
     ;"Write word into READBUF, with space before/after as appropriate"
     <TRACE 5 "[at char " N .S "]" CR>
-    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST ,HELD-READBUF .S> .NL>
-    <PUTB ,HELD-READBUF
+    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST .RBUF .S> .NL>
+    <PUTB .RBUF
           <COND (<G? .N .LEN> <- .S 1>) (ELSE <+ .S .NL>)>
           !\ >
     <TRACE-DO 5 <DUMPLINE T>>>
@@ -1226,7 +1312,7 @@ Returns:
 If the match fails, an error message may be printed.
 
 Sets:
-  P-OOPS-WN
+  P-OOPS-DATA
 
 Uses:
   P-LEN
@@ -1235,7 +1321,7 @@ Args:
   WN: The 1-based word number where the noun clause starts.
   NP: A NOUN-PHRASE in which to return the parsed result.
   SILENT?: If true, don't print a message on failure, and don't set any error-related
-    parser state (i.e. P-OOPS-WN). Defaults to false.
+    parser state (i.e. P-OOPS-DATA). Defaults to false.
 
 Returns:
   If parsing is successful, returns a positive number: the number of the first word that is
@@ -1261,7 +1347,7 @@ Returns:
                       <AND <PARSE-NUMBER? .WN> <SET W ,W?\,NUMBER>>>>
              <TRACE 4 "[stop at unrecognized word: " WORD .WN "]" CR>
              <COND (<NOT .SILENT?>
-                    <SETG P-OOPS-WN .WN>
+                    <STORE-OOPS .WN>
                     <TELL "I don't know the word \"" WORD .WN "\"." CR>)>
              <TRACE-OUT>
              <RFALSE>)
@@ -2199,7 +2285,12 @@ Returns:
 <IF-DEBUG
     ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
     <ROUTINE DUMPLINE ("OPT" RAW? "AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
-        <TELL N .WDS " words:">
+        <TELL N .WDS " words in ">
+        <COND (<==? ,LEXBUF ,KBD-LEXBUF> <TELL "KBD">)
+              (<==? ,LEXBUF ,EDIT-LEXBUF> <TELL "EDIT">)
+              (<==? ,LEXBUF ,CONT-LEXBUF> <TELL "CONT">)
+              (ELSE <TELL "?">)>
+        <TELL " buf:">
         <DO (I 1 .WDS)
             <TELL " ">
             <DUMPWORD <GET .P 0>>
@@ -2218,6 +2309,17 @@ Returns:
         ;<TELL N .WDS " words:">
         <DO (C 1 ,READBUF-SIZE)
             <TELL N .C " of READBUF is " N <GET ,READBUF .C> CR>>>
+
+    ;"Prints the contents of various LEXBUFS using DUMPLINE."
+    <ROUTINE DUMPBUFS ("AUX" (OLB ,LEXBUF) (ORB ,READBUF))
+        <ACTIVATE-BUFS "KBD">
+        <DUMPLINE>
+        <ACTIVATE-BUFS "EDIT">
+        <DUMPLINE>
+        <ACTIVATE-BUFS "CONT">
+        <DUMPLINE>
+        <SETG LEXBUF .OLB>
+        <SETG READBUF .ORB>>
 
     ;"Prints a vocabulary word and its parts of speech."
     <ROUTINE DUMPWORD (W "AUX" FL)

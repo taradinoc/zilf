@@ -36,6 +36,7 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
 <CONSTANT P-OF-PRSI 8192>
 
 <GLOBAL P-O-REASON <>>
+<GLOBAL P-O-CONT <>>
 
 <DEFMAC ORPHANING? () '<NOT <0? ,P-O-REASON>>>
 <DEFMAC ORPHANING-PRSI? () '<BTST ,P-O-REASON ,P-OF-PRSI>>
@@ -58,7 +59,8 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
                   <ERROR BAD-ARGUMENT WHICH .WHICH>)>)>
     <FORM PROG '()
           <FORM SETG P-O-REASON .V>
-          <FORM SETG P-V-WORDN 0>>>
+          '<SETG P-V-WORDN 0>
+          '<SETG P-O-CONT ,P-CONT>>>
 
 <CONSTANT O-RES-NOT-HANDLED 0>   ;"Not an orphaning response; parse as usual"
 <CONSTANT O-RES-REORPHANED 1>    ;"We asked another question; abort parse"
@@ -92,7 +94,12 @@ Returns:
              <COND (<ORPHANING-PRSI?> " PRSI") (ELSE " PRSO")>
              "]" CR>
     <TRACE-IN>
-    
+
+    ;"If we were processing an order, restore P-CONT."
+    <AND <VERB? TELL>
+         <SETG P-CONT ,P-O-CONT>
+         <ACTIVATE-BUFS "CONT">>
+
     ;"To fill in a missing noun phrase, just copy the new one in place."
     <COND (<ORPHANING-BECAUSE-MISSING?>
            <COPY-NOUN-PHRASE
@@ -147,6 +154,7 @@ Returns:
     ;"See if we solved the problem."
     <COND (<0? .CNT>
            <TELL "That wasn't an option." ,TRY-REPHRASING-CMD CR>
+           <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)
           (<OR <1? .CNT> <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>>
            <RETURN ,O-RES-SET-PRSTBL>)
@@ -156,4 +164,5 @@ Returns:
            <RETURN ,O-RES-REORPHANED>)
           (ELSE
            <TELL "That didn't narrow it down at all." ,TRY-REPHRASING-CMD CR>
+           <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)>>
