@@ -1,5 +1,7 @@
 <VERSION ZIP>
 
+<COMPILATION-FLAG DEBUG T>
+
 <INSERT-FILE "testing">
 
 <OBJECT STARTROOM
@@ -18,7 +20,16 @@
     (IN STARTROOM)
     (DESC "robot")
     (SYNONYM ROBOT)
+    (ADJECTIVE EVIL)
     (ACTION ROBOT-F)
+    (FLAGS PERSONBIT TRANSBIT)>
+
+<OBJECT CAT
+    (IN STARTROOM)
+    (DESC "cat")
+    (SYNONYM CAT)
+    (ADJECTIVE EVIL)
+    (ACTION CAT-F)
     (FLAGS PERSONBIT TRANSBIT)>
 
 <OBJECT RED-CUBE
@@ -62,7 +73,12 @@
                  (ELSE
                   <TELL "The robot doesn't respond." CR>)>)>>
 
+<ROUTINE CAT-F (ARG)
+    <COND (<=? .ARG ,M-WINNER>
+           <TELL "The cat doesn't respond." CR>)>>
+
 <TEST-SETUP ()
+    <SETG TRACE-LEVEL 0>
     ;"In case a test leaves it in the wrong place..."
     <MOVE ,APPLE ,STARTROOM>
     <MOVE ,ROBOT ,STARTROOM>
@@ -96,10 +112,28 @@
     <CHECK <IN? ,ROBOT ,STARTROOM>>>
 
 <TEST-CASE ("Ambiguous actor")
-    <COMMAND [CUBE \, LOOK]>
+    <COMMAND [EVIL \, LOOK]>
+    <EXPECT "Which do you mean, the robot or the cat?|">
+    <COMMAND [CAT]>
+    <EXPECT "The cat doesn't respond.|">>
+
+<TEST-CASE ("Ambiguous actor with oops on actor")
+    <COMMAND [EVIL \, LOOK]>
+    <EXPECT "Which do you mean, the robot or the cat?|">
+    <COMMAND ["XAT"]>
+    <EXPECT "I don't know the word \"xat\".|">
+    <COMMAND [OOPS CAT]>
+    <EXPECT "The cat doesn't respond.|">>
+
+<TEST-CASE ("Ambiguous actor with oops on noun")
+    <COMMAND [EVIL \, GET "XUBE"]>
+    <EXPECT "Which do you mean, the robot or the cat?|">
+    <COMMAND [CAT]>
+    <EXPECT "I don't know the word \"xube\".|">
+    <COMMAND [OOPS CUBE]>
     <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
-    <COMMAND [RED]>
-    <EXPECT "Talking to a red cube, huh?|">>
+    <COMMAND [GREEN]>
+    <EXPECT "The cat doesn't respond.|">>
 
 <TEST-CASE ("Too many actors")
     <COMMAND [RED CUBE AND GREEN CUBE \, LOOK]>

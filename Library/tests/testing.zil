@@ -57,7 +57,7 @@
                         (<==? .F CHECK>
                          <FORM OR <FORM TEST-CHECK-CONDITION <UNPARSE <2 .I>> !<REST .I>>
                                   '<RFALSE>>)
-                        (<MEMQ .F '(MOVE REMOVE FSET FCLEAR)> .I)
+                        (<MEMQ .F '(MOVE REMOVE FSET FCLEAR SETG TELL)> .I)
                         (ELSE <ERROR ILLEGAL-TEST-STEP .F>)>>
               .BODY>>
     ;"Create routine"
