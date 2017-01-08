@@ -41,41 +41,48 @@ namespace Zilf.Compiler
             expr = expr.Expand(Context);
             StdAtom type = expr.StdTypeAtom;
 
-            if (type == StdAtom.FALSE)
+            switch (type)
             {
-                if (polarity == false)
-                    rb.Branch(label);
-                return;
-            }
-            if (type == StdAtom.ATOM)
-            {
-                var atom = (ZilAtom)expr;
-                if (atom.StdAtom != StdAtom.T && atom.StdAtom != StdAtom.ELSE)
-                {
-                    // could be a missing , or . before variable name
-                    var warning = new CompilerError(src, CompilerMessages.Bare_Atom_0_Treated_As_True_Here, expr);
+                case StdAtom.FALSE:
+                    if (polarity == false)
+                        rb.Branch(label);
+                    return;
 
-                    if (Locals.ContainsKey(atom) || Globals.ContainsKey(atom))
-                        warning = warning.Combine(new CompilerError(src, CompilerMessages.Did_You_Mean_The_Variable));
+                case StdAtom.ATOM:
+                    var atom = (ZilAtom)expr;
+                    if (atom.StdAtom != StdAtom.T && atom.StdAtom != StdAtom.ELSE)
+                    {
+                        // could be a missing , or . before variable name
+                        var warning = new CompilerError(src, CompilerMessages.Bare_Atom_0_Treated_As_True_Here, expr);
 
-                    Context.HandleWarning(warning);
-                }
+                        if (Locals.ContainsKey(atom) || Globals.ContainsKey(atom))
+                            warning = warning.Combine(new CompilerError(src, CompilerMessages.Did_You_Mean_The_Variable));
 
-                if (polarity == true)
-                    rb.Branch(label);
-                return;
-            }
-            if (type == StdAtom.FIX)
-            {
-                bool nonzero = ((ZilFix)expr).Value != 0;
-                if (polarity == nonzero)
-                    rb.Branch(label);
-                return;
-            }
-            if (type != StdAtom.FORM)
-            {
-                Context.HandleError(new CompilerError(expr.SourceLine ?? src, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
-                return;
+                        Context.HandleWarning(warning);
+                    }
+
+                    if (polarity == true)
+                        rb.Branch(label);
+                    return;
+
+                case StdAtom.FIX:
+                    bool nonzero = ((ZilFix)expr).Value != 0;
+                    if (polarity == nonzero)
+                        rb.Branch(label);
+                    return;
+
+                case StdAtom.ADECL:
+                    // TODO: check DECL
+                    CompileCondition(rb, ((ZilAdecl)expr).First, src, label, polarity);
+                    return;
+
+                case StdAtom.FORM:
+                    // handled below
+                    break;
+
+                default:
+                    Context.HandleError(new CompilerError(expr.SourceLine ?? src, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                    return;
             }
 
             // it's a FORM
