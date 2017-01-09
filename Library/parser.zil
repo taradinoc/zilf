@@ -679,7 +679,7 @@ Sets:
   P-CONT
 "
 <PRINC <EXPAND '<P-OOPS-WN>>> <CRLF>
-<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL O-RESP?)
+<ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET OW ,WINNER>
     <SET OH ,HERE>
@@ -688,7 +688,6 @@ Sets:
     <SET VAL <>>
     <SET DIR <>>
     <SET DIR-WN <>>
-    <SET O-RESP? <>>
     ;"Fill READBUF and LEXBUF"
     <COND (<L? ,P-CONT 0> <SETG P-CONT 0>)>
     <COND (,P-CONT
@@ -780,7 +779,6 @@ Sets:
                          ;"TODO: Set the P-variables somewhere else? Shouldn't we fill in what
                            we know about the command-to-be when we ask the orphaning question, not
                            when we get the response?"
-                         <SET O-RESP? T>
                          <SETG P-P1 <GETB ,P-SYNTAX ,SYN-PREP1>>
                          <COND (<ORPHANING-PRSI?>
                                 <SETG P-P2 <GETB ,P-SYNTAX ,SYN-PREP2>>
@@ -790,13 +788,12 @@ Sets:
                                 <SET KEEP 1>)
                                (ELSE <SETG P-NOBJ 1>)>)
                         (<=? .O-R ,O-RES-SET-PRSTBL>
-                         <SET O-RESP? T>
                          <COND (<ORPHANING-PRSI?> <SET KEEP 2>)
                                (ELSE <SET KEEP 1>)>)>
                   <SETG P-O-REASON <>>)>
            ;"If we aren't handling this command as an orphan response, convert it if needed
              and copy it to CONT bufs"
-           <COND (<NOT .O-RESP?>
+           <COND (<NOT .O-R>
                   ;"Translate order syntax (HAL, OPEN THE POD BAY DOOR or
                     TELL HAL TO OPEN THE POD BAY DOOR) into multi-command syntax
                     (\,TELL HAL THEN OPEN THE POD BAY DOOR)."
@@ -1646,12 +1643,12 @@ Returns:
     <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N .SNOBJ ", we have " N ,P-NOBJ "]" CR>
     <TRACE-IN>
     
-    <COND (<G=? .KEEP 1>)
-          (<L? .SNOBJ 1>
+    ;"Direct object (PRSO)"
+    <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
+    <COND (<L? .SNOBJ 1>
            <SETG PRSO <>>)
-          (ELSE
+          (<L? .KEEP 1>
            <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
-           <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
            <COND (<L? ,P-NOBJ 1>
                   <TRACE 3 "[gwimming PRSO]" CR>
                   <SETG PRSO
@@ -1674,18 +1671,22 @@ Returns:
                   <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED>
                          <TRACE-OUT>
                          <RFALSE>)>)>
-           <COND (<NOT <AND ,PRSO
-                            <OR ,PRSO-DIR
-                                <AND <MANY-CHECK ,PRSO .O <>>
-                                     <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
+           <COND (<NOT ,PRSO>
                   <TRACE-OUT>
                   <RFALSE>)>)>
-    <COND (<G=? .KEEP 2>)
-          (<L? .SNOBJ 2>
+    <COND (<AND ,PRSO
+                <NOT <OR ,PRSO-DIR
+                         <AND <MANY-CHECK ,PRSO .O <>>
+                              <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
+           <TRACE-OUT>
+           <RFALSE>)>
+
+    ;"Indirect object (PRSI)"
+    <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
+    <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
-          (ELSE
+          (<L? .KEEP 2>
            <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>
-           <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
            <COND (<L? ,P-NOBJ 2>
                   <TRACE 3 "[gwimming PRSI]" CR>
                   <SETG PRSI
@@ -1708,11 +1709,14 @@ Returns:
                   <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED>
                          <TRACE-OUT>
                          <RFALSE>)>)>
-           <COND (<NOT <AND ,PRSI
-                            <MANY-CHECK ,PRSI .O T>
-                            <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>
+           <COND (<NOT ,PRSI>
                   <TRACE-OUT>
                   <RFALSE>)>)>
+    <COND (<AND ,PRSI
+                <NOT <AND <MANY-CHECK ,PRSI .O T>
+                          <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>>
+           <TRACE-OUT>
+           <RFALSE>)>
     <TRACE-OUT>
     <RTRUE>>
 

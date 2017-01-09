@@ -252,4 +252,10 @@ red cube: Taken.|">
     <COMMAND [AGAIN]>
     <EXPECT "The bugle is no longer here.|">>
 
+<TEST-CASE ("Implicit take of ambiguous noun")
+    <COMMAND [EAT CUBE]>
+    <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
+    <COMMAND [BLUE]>
+    <EXPECT "[taking the blue cube]|That's hardly edible.|">>
+
 <TEST-GO ,STARTROOM>
