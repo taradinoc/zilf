@@ -678,7 +678,6 @@ Sets:
   P-OOPS-DATA
   P-CONT
 "
-<PRINC <EXPAND '<P-OOPS-WN>>> <CRLF>
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL)
     ;"Need to (re)initialize locals here since we use AGAIN"
     <SET OW ,WINNER>
