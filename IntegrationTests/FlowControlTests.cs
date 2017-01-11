@@ -331,6 +331,19 @@ namespace IntegrationTests
 
         #endregion
 
+        #region BIND/PROG
+
+        [TestMethod]
+        public void BIND_Deferred_Return_Pattern_In_Void_Context_Should_Not_Use_A_Variable()
+        {
+            AssertRoutine("",
+                "<BIND (RESULT) <SET RESULT <FOO>> <PRINTN 1> .RESULT> <CRLF>")
+                .WithGlobal("<ROUTINE FOO () 123>")
+                .GeneratesCodeMatching(@"\A(?:(?!RESULT).)*\Z");
+        }
+
+        #endregion
+
         #region VERSION?
 
         [TestMethod]
