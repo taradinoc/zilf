@@ -16,9 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -42,6 +44,7 @@ namespace Zilf.Compiler
             // a RETURN statement (and REPEAT's result can *only* come from RETURN).
             // thus we have to return the result on the stack, because RETURN doesn't have
             // the context needed to put its result in the right place.
+            // TODO: make resultStorage a field in the Block so RETURN has that context.
 
             if (args == null || args.First == null)
             {
@@ -58,6 +61,31 @@ namespace Zilf.Compiler
                 args.First.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
+            }
+
+            if (!wantResult)
+            {
+                /* Recognize the "deferred return" pattern:
+                 * 
+                 *   <PROG (... var ...)
+                 *       ...
+                 *       <SET var expr>
+                 *       ...
+                 *       <LVAL var>>
+                 *       
+                 * In this pattern, the PROG (or BIND) binds an atom and references it exactly twice:
+                 * with SET anywhere in the body, and with LVAL as the last expression in the PROG.
+                 * 
+                 * In void context, since the variable value is discarded anyway, we can eliminate the
+                 * store and the binding, transforming it to this:
+                 * 
+                 *   <PROG (...)
+                 *       ...
+                 *       expr
+                 *       ...>
+                 */
+
+                args = TransformProgArgsIfImplementingDeferredReturn(args);
             }
 
             // add new locals, if any
@@ -147,6 +175,102 @@ namespace Zilf.Compiler
 
                 Blocks.Pop();
             }
+        }
+
+        static ZilList TransformProgArgsIfImplementingDeferredReturn(ZilList args)
+        {
+            var bindingList = args.First as ZilList;
+
+            if (bindingList != null && bindingList.StdTypeAtom == StdAtom.LIST)
+            {
+                // ends with <LVAL atom>?
+                var lastExpr = args.EnumerateNonRecursive().LastOrDefault() as ZilForm;
+
+                if (lastExpr != null && lastExpr.IsLVAL())
+                {
+                    var atom = lastExpr.Rest.First as ZilAtom;
+
+                    if (atom != null)
+                    {
+                        // atom is bound in the prog?
+                        if (GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
+                        {
+                            // atom is set earlier in the prog?
+                            var setExpr = args.Rest.OfType<ZilForm>().FirstOrDefault(form =>
+                                    ((IStructure)form).GetLength(3) == 3 &&
+                                    ((form.First as ZilAtom)?.StdAtom == StdAtom.SET) &&
+                                    form.Rest.First == atom);
+
+                            if (setExpr != null)
+                            {
+                                // atom is not referenced anywhere else?
+                                if (args.Rest.All(zo => zo == setExpr || zo == lastExpr || !RecursivelyContains(zo, atom)))
+                                {
+                                    // we got a winner!
+                                    var newBindingList = new ZilList(
+                                        bindingList.Where(
+                                            zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
+
+                                    var newBody = new ZilList(
+                                        args.Rest
+                                        .Where(zo => zo != lastExpr)
+                                        .Select(zo => zo == setExpr ? ((IStructure)zo)[2] : zo));
+
+                                    return new ZilList(newBindingList, newBody);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return args;
+        }
+
+        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList(ZilList bindingList)
+        {
+            Contract.Assert(bindingList != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilAtom>>() != null);
+
+            return bindingList.EnumerateNonRecursive()
+                .Select(GetUninitializedAtomFromBindingListItem)
+                .Where(a => a != null);
+        }
+
+        static ZilAtom GetUninitializedAtomFromBindingListItem(ZilObject zo)
+        {
+            Contract.Assert(zo != null);
+
+            switch (zo.StdTypeAtom)
+            {
+                case StdAtom.ATOM:
+                    return (ZilAtom)zo;
+
+                case StdAtom.ADECL:
+                    return ((ZilAdecl)zo).First as ZilAtom;
+
+                default:
+                    return null;
+            }
+        }
+
+        static bool RecursivelyContains(ZilObject haystack, ZilObject needle)
+        {
+            if (Equals(haystack, needle))
+                return true;
+
+            var sequence = haystack as IEnumerable<ZilObject>;
+
+            if (sequence != null)
+            {
+                foreach (var zo in sequence)
+                {
+                    if (RecursivelyContains(zo, needle))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
