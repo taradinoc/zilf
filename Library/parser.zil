@@ -1207,32 +1207,34 @@ Sets:
 
 Returns:
   True if the number was parsed and the buffer updated; otherwise false."
-<ROUTINE PARSE-NUMBER? (WN "AUX" I MAX V C DIG NEG F)
+<ROUTINE PARSE-NUMBER? (WN "AUX" I MAX V C NEG)
     <SET I <GETB ,LEXBUF <+ <* .WN 4> 1>>>
     <SET MAX <- <+ .I <GETB ,LEXBUF <* .WN 4>>> 1>>
     <COND (<0? .MAX> <RFALSE>)>
-    <SET F T>
-    <REPEAT ()
-        <SET C <GETB ,READBUF .I>>
-        <COND (<AND .F <=? .C !\->>
-               <SET NEG T>)
-              (<AND <G=? .C !\0> <L=? .C !\9>>
+    <COND (<=? <SET C <GETB ,READBUF .I>> !\->
+           <SET NEG T>
+           <AND <IGRTR? I .MAX> <RFALSE>>
+           <SET C <GETB ,READBUF .I>>)>
+    <PROG ()
+        <COND (<AND <G=? .C !\0> <L=? .C !\9>>
                ;"Special case for -32768"
                <COND (<AND <=? .V 3276>
                            <=? .C !\8>
                            .NEG
                            <=? .I .MAX>>
                       <SET V -32768>
-                      <SET NEG <>>
                       <RETURN>)>
-               <SET DIG T>
-               <SET V <+ <* .V 10> <- .C !\0>>>
-               <COND (<L? .V 0> <RFALSE>)>)
+               ;"Detect overflow"
+               <COND (<AND <G=? .V 3276>
+                           <OR <G? .V 3276>
+                               <G? .C !\7>>>
+                      <RFALSE>)>
+               <SET V <+ <* .V 10> <- .C !\0>>>)
               (ELSE <RFALSE>)>
-        <SET F <>>
-        <AND <IGRTR? I .MAX> <RETURN>>>
-    <COND (<NOT .DIG> <RFALSE>)>
-    <COND (.NEG <SET V <- .V>>)>
+        <COND (<NOT <IGRTR? I .MAX>>
+               <SET C <GETB ,READBUF .I>>
+               <AGAIN>)>
+        <COND (.NEG <SET V <- .V>>)>>
     <SETG P-NUMBER .V>
     <PUT ,LEXBUF <- <* .I 2> 1> ,W?\,NUMBER>
     <RETURN ,NUMBER>>
