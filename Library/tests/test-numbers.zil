@@ -24,15 +24,35 @@
 
 <TEST-CASE ("Positive number")
     <COMMAND [TURN DIAL TO "45"]>
-    <EXPECT "You set the dial to 45.|">>
+    <EXPECT "You set the dial to 45.|">
+    <COMMAND [TURN DIAL TO "32767"]>
+    <EXPECT "You set the dial to 32767.|">>
 
 <TEST-CASE ("Negative number")
     <COMMAND [TURN DIAL TO "-10000"]>
-    <EXPECT "You set the dial to -10000.|">>
+    <EXPECT "You set the dial to -10000.|">
+    <COMMAND [TURN DIAL TO "-32768"]>
+    <EXPECT "You set the dial to -32768.|">>
 
 <TEST-CASE ("Zero")
     <COMMAND [TURN DIAL TO "0"]>
     <EXPECT "You set the dial to 0.|">>
+
+<TEST-CASE ("Overflow")
+    <COMMAND [TURN DIAL TO "80000"]>
+    <EXPECT "I don't know the word \"80000\".|">
+    <COMMAND [TURN DIAL TO "65536"]>
+    <EXPECT "I don't know the word \"65536\".|">
+    <COMMAND [TURN DIAL TO "50000"]>
+    <EXPECT "I don't know the word \"50000\".|">
+    <COMMAND [TURN DIAL TO "32768"]>
+    <EXPECT "I don't know the word \"32768\".|">
+    <COMMAND [TURN DIAL TO "-32769"]>
+    <EXPECT "I don't know the word \"-32769\".|">
+    <COMMAND [TURN DIAL TO "-50000"]>
+    <EXPECT "I don't know the word \"-50000\".|">
+    <COMMAND [TURN DIAL TO "-80000"]>
+    <EXPECT "I don't know the word \"-80000\".|">>
 
 <TEST-CASE ("Numbers for PRSO and PRSI")
     <COMMAND [TURN "5" TO "6"]>
