@@ -384,19 +384,19 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
             TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
 
-            // it should be expanded even when the arg is quoted
+            // it shouldn't be expanded when the arg is quoted
             ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE FOO ('A 'B 'C) <+ .A .B .C>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
-            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO 5 !.L>");
 
             // or with "ARGS"
             ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"ARGS\" A) <+ !.A>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");
-            TestHelpers.EvalAndAssert(ctx, "<FOO 5 !.L>", new ZilFix(155));
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<FOO 5 !.L>");
 
-            // or with "TUPLE"
+            // but it should be expanded with "TUPLE"
             ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (\"TUPLE\" A) <+ !.A>>");
             TestHelpers.Evaluate(ctx, "<SET L '(100 50)>");

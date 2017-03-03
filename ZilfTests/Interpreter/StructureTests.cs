@@ -320,6 +320,17 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void TestDEFSTRUCT_Segment_Constructor_Argument()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y FIX)>");
+            TestHelpers.Evaluate(ctx, "<SET L '('POINT-X 123 'POINT-Y 456)>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<POINT-X <MAKE-POINT !.L>>");
+        }
+
+        [TestMethod]
         public void TestSET_DEFSTRUCT_FILE_DEFAULTS()
         {
             var ctx = new Context();

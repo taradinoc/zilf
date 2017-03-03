@@ -245,34 +245,16 @@ namespace Zilf.Interpreter
                 }
             }
 
-            string unparsedInitArgs;
-            if (defaults.InitArgs != null)
-            {
-                var sb = new StringBuilder();
-
-                foreach (var zo in defaults.InitArgs)
-                {
-                    if (sb.Length > 0)
-                        sb.Append(' ');
-
-                    sb.Append(zo.ToStringContext(ctx, false, true));
-                }
-
-                unparsedInitArgs = sb.ToString();
-            }
-            else
-            {
-                unparsedInitArgs = "";
-            }
+            var initArgs = defaults.InitArgs ?? new ZilList(null, null);
 
             // define constructor macro
             if (!defaults.SuppressDefaultCtor)
             {
-                var ctorMacroDef = MakeDefstructCtorMacro(ctx, name, baseType, fields, unparsedInitArgs, defaults.StartOffset);
+                var ctorMacroDef = MakeDefstructCtorMacro(ctx, name, baseType, fields, initArgs, defaults.StartOffset);
 
                 using (ctx.PushFileContext(string.Format("<constructor for DEFSTRUCT {0}>", name)))
                 {
-                    Program.Evaluate(ctx, ctorMacroDef, true);
+                    ctorMacroDef.Eval(ctx);
                 }
             }
 
@@ -290,11 +272,11 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List, "DEFSTRUCT");
 
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
-                var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, unparsedInitArgs, defaults.StartOffset, argspec);
+                var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, initArgs, defaults.StartOffset, argspec);
 
                 using (ctx.PushFileContext(string.Format("<constructor {0} for DEFSTRUCT {1}>", ctorName, name)))
                 {
-                    Program.Evaluate(ctx, ctorMacroDef, true);
+                    ctorMacroDef.Eval(ctx);
                 }
             }
 
@@ -343,30 +325,30 @@ namespace Zilf.Interpreter
             return new ZilSegment(new ZilForm(parts));
         }
 
-        static string MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
-            List<DefStructField> fields, string unparsedInitArgs, int startOffset, ArgSpec argspec)
+        static ZilObject MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
+            List<DefStructField> fields, ZilList initArgs, int startOffset, ArgSpec argspec)
         {
             Contract.Requires(typeName != null);
             Contract.Requires(baseType != null);
             Contract.Requires(fields != null);
-            Contract.Requires(unparsedInitArgs != null);
+            Contract.Requires(initArgs != null);
 
             // {0} = constructor name
             // {1} = type name
             // {2} = argspec
             // {3} = field count
             // {4} = base constructor atom
-            // {5} = unparsed INIT-ARGS, or empty string
-            // {6} = PUT statements for fields
+            // {5} = list of INIT-ARGS, or empty list
+            // {6} = list of PUT statements for fields
             const string SMacroTemplate = @"
 <DEFMAC {0} {2}
     <BIND ((RESULT-INIT <IVECTOR {3} <>>))
-        {6}
-        <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {1}>>>";
+        {6:SPLICE}
+        <FORM CHTYPE <FORM {4} {5:SPLICE} !.RESULT-INIT> {1}>>>";
 
             var remainingFields = fields.ToDictionary(f => f.Name);
 
-            var resultInitializers = new StringBuilder();
+            var resultInitializers = new List<ZilObject>();
             foreach (var arg in argspec)
             {
                 // NOTE: we don't handle NoDefault ('NONE) here because this ctor allocates a new object
@@ -391,20 +373,24 @@ namespace Zilf.Interpreter
                 switch (arg.Type)
                 {
                     case ArgItem.ArgType.Required:
-                        resultInitializers.AppendFormat(
+                        resultInitializers.Add(Program.Parse(
+                            ctx,
                             SRequiredArgInitializer,
-                            field.Offset - startOffset + 1,
-                            arg.Atom.ToStringContext(ctx, false),
-                            field.Default == null ? UnparsedDefaultForDecl(ctx, field.Decl) : field.Default.ToStringContext(ctx, false));
+                            new ZilFix(field.Offset - startOffset + 1),
+                            arg.Atom,
+                            field.Default ?? DefaultForDecl(ctx, field.Decl))
+                            .Single());
                         break;
 
                     case ArgItem.ArgType.Optional:
                     case ArgItem.ArgType.Auxiliary:
-                        resultInitializers.AppendFormat(
+                        resultInitializers.Add(Program.Parse(
+                            ctx,
                             SOptAuxArgInitializer,
-                            field.Offset - startOffset + 1,
-                            arg.Atom.ToStringContext(ctx, false),
-                            field.Default == null ? UnparsedDefaultForDecl(ctx, field.Decl) : field.Default.ToStringContext(ctx, false));
+                            new ZilFix(field.Offset - startOffset + 1),
+                            arg.Atom,
+                            field.Default ?? DefaultForDecl(ctx, field.Decl))
+                            .Single());
                         break;
 
                     default:
@@ -420,35 +406,39 @@ namespace Zilf.Interpreter
                 // {0} = offset
                 // {1} = default value
                 const string SOmittedFieldInitializer = "<PUT .RESULT-INIT {0} {1}>";
-                resultInitializers.AppendFormat(
+                resultInitializers.Add(Program.Parse(
+                    ctx,
                     SOmittedFieldInitializer,
-                    field.Offset - startOffset + 1,
-                    field.Default.ToStringContext(ctx, false));
+                    new ZilFix(field.Offset - startOffset + 1),
+                    field.Default)
+                    .Single());
             }
 
-            return string.Format(
+            return Program.Parse(
+                ctx,
                 SMacroTemplate,
-                ctorName.ToStringContext(ctx, false),
-                typeName.ToStringContext(ctx, false),
-                argspec.ToString(zo => zo.ToStringContext(ctx, false)),
-                fields.Count,
-                baseType.ToStringContext(ctx, false),
-                unparsedInitArgs,
-                resultInitializers);
+                ctorName,
+                typeName,
+                argspec.ToZilList(),
+                new ZilFix(fields.Count),
+                baseType,
+                initArgs,
+                new ZilList(resultInitializers))
+                .Single();
         }
 
-        static string UnparsedDefaultForDecl(Context ctx, ZilObject decl)
+        static ZilObject DefaultForDecl(Context ctx, ZilObject decl)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(decl != null);
-            Contract.Ensures(Contract.Result<string>() != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             foreach (var zo in LikelyDefaults(ctx))
             {
                 try
                 {
                     if (Decl.Check(ctx, zo, decl))
-                        return zo.ToStringContext(ctx, false);
+                        return zo;
                 }
                 catch (InterpreterError)
                 {
@@ -457,7 +447,7 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return "<>";
+            return ctx.FALSE;
         }
 
         static IEnumerable<ZilObject> LikelyDefaults(Context ctx)
@@ -472,14 +462,14 @@ namespace Zilf.Interpreter
             yield return ctx.GetStdAtom(StdAtom.SORRY);
         }
 
-        static string MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
-            string unparsedInitArgs, int startOffset)
+        static ZilObject MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
+            ZilList initArgs, int startOffset)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);
             Contract.Requires(baseType != null);
             Contract.Requires(fields != null);
-            Contract.Requires(unparsedInitArgs != null);
+            Contract.Requires(initArgs != null);
 
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
@@ -492,16 +482,22 @@ namespace Zilf.Interpreter
 
             // {0} = name
             // {1} = field count
-            // {2} = COND clauses for tags ("existing object" mode, returning a FORM that PUTs into .RESULT)
-            // {3} = COND clauses for tags ("new object" mode, PUTting into the temp vector .RESULT-INIT)
+            // {2} = list of COND clauses for tags ("existing object" mode, returning a FORM that PUTs into .RESULT)
+            // {3} = list of COND clauses for tags ("new object" mode, PUTting into the temp vector .RESULT-INIT)
             // {4} = base constructor atom
-            // {5} = unparsed INIT-ARGS, or empty string
-            // {6} = COND clauses for indices ("BOA constructor" mode, PUTting into the temp vector .RESULT-INIT)
-            // {7} = COND clauses for index defaults
-            // {8} = COND statements for tag defaults ("new object" mode)
-            // {9} = expressions returning a FORM or SPLICE for tag defaults ("existing object" mode)
+            // {5} = list of INIT-ARGS, or empty list
+            // {6} = list of COND clauses for indices ("BOA constructor" mode, PUTting into the temp vector .RESULT-INIT)
+            // {7} = list of COND clauses for index defaults
+            // {8} = list of COND statements for tag defaults ("new object" mode)
+            // {9} = list of expressions returning a FORM or SPLICE for tag defaults ("existing object" mode)
             const string SMacroTemplate = @"
-<DEFMAC MAKE-{0} (""ARGS"" A ""AUX"" RESULT-INIT SEEN)
+<DEFMAC %<PARSE <STRING ""MAKE-"" <SPNAME {0}>>> (""ARGS"" A ""AUX"" RESULT-INIT SEEN)
+    ;""expand segments""
+    <SET A <MAPF ,LIST
+                 <FUNCTION (X)
+                     <COND (<TYPE? .X SEGMENT> <MAPRET !<CHTYPE .X FORM>>)
+                           (ELSE .X)>>
+                 .A>>
     <COND (<AND <NOT <EMPTY? .A>>
                 <=? <1 .A> '<QUOTE {0}>>>
            <SET RESULT-INIT <2 .A>>
@@ -516,9 +512,9 @@ namespace Zilf.Interpreter
                          <SET N <1 .A>>
                          <SET V <2 .A>>
                          <SET A <REST .A 2>>
-                         <COND {2}
+                         <COND {2:SPLICE}
                                (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>>
-                 !<VECTOR {9}>
+                 !<VECTOR {9:SPLICE}>
                  '.RESULT>)
           (<OR <EMPTY? .A>
                <NOT <TYPE? <1 .A> FORM>>
@@ -527,15 +523,15 @@ namespace Zilf.Interpreter
            <BIND ((I 1))
                <MAPF <>
                      <FUNCTION (V)
-                         <COND {6}
+                         <COND {6:SPLICE}
                                (T <ERROR TOO-MANY-ARGS!-ERRORS .A>)>
                          <SET I <+ .I 1>>>
                      .A>
                <REPEAT ()
                    <COND (<G? .I {1}> <RETURN>)
-                         {7}>
+                         {7:SPLICE}>
                    <SET I <+ .I 1>>>>
-           <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>)
+           <FORM CHTYPE <FORM {4} {5:SPLICE} !.RESULT-INIT> {0}>)
           (T
            <SET RESULT-INIT <IVECTOR {1} <>>>
            <SET SEEN '()>
@@ -545,17 +541,17 @@ namespace Zilf.Interpreter
                <SET N <1 .A>>
                <SET V <2 .A>>
                <SET A <REST .A 2>>
-               <COND {3}
+               <COND {3:SPLICE}
                        (T <ERROR INVALID-DEFSTRUCT-TAG!-ERRORS .N>)>>
-           {8}
-           <FORM CHTYPE <FORM {4} {5} !.RESULT-INIT> {0}>)>>
+           {8:SPLICE}
+           <FORM CHTYPE <FORM {4} {5:SPLICE} !.RESULT-INIT> {0}>)>>
 ";
 
             // {0} = tag name
             // {1} = PUT atom
             // {2} = offset in structure (for existing object) or RESULT-INIT (for others)
             // {3} = definition order (1-based)
-            // {4} = unparsed default value
+            // {4} = default value
             const string SExistingObjectCondClauseTemplate = "(<=? .N '<QUOTE {0}>> <SET SEEN <CONS {0} .SEEN>> <FORM {1} '.RESULT {2} .V>)";
             const string SExistingObjectDefaultTemplate = "<COND (<MEMQ {0} .SEEN> #SPLICE ()) (T <FORM {1} '.RESULT {2} {4}>)>";
             const string SExistingObjectDefaultTemplate_NoDefault = "#SPLICE ()";
@@ -564,61 +560,71 @@ namespace Zilf.Interpreter
             const string SBoaConstructorCondClauseTemplate = "(<=? .I {3}> <PUT .RESULT-INIT {2} .V>)";
             const string SBoaConstructorDefaultClauseTemplate = "(<=? .I {3}> <PUT .RESULT-INIT {2} {4}>)";
 
-            var existingObjectClauses = new StringBuilder();
-            var existingObjectDefaults = new StringBuilder();
-            var newObjectClauses = new StringBuilder();
-            var newObjectDefaults = new StringBuilder();
-            var boaConstructorClauses = new StringBuilder();
-            var boaConstructorDefaultClauses = new StringBuilder();
+            var existingObjectClauses = new List<ZilObject>();
+            var existingObjectDefaults = new List<ZilObject>();
+            var newObjectClauses = new List<ZilObject>();
+            var newObjectDefaults = new List<ZilObject>();
+            var boaConstructorClauses = new List<ZilObject>();
+            var boaConstructorDefaultClauses = new List<ZilObject>();
 
             int definitionOrder = 1;
             foreach (var field in fields)
             {
-                string unparsedDefault;
-                if (field.Default != null)
-                {
-                    unparsedDefault = field.Default.ToStringContext(ctx, false, true);
-                }
-                else
-                {
-                    unparsedDefault = UnparsedDefaultForDecl(ctx, field.Decl);
-                }
+                var defaultValue = field.Default ?? DefaultForDecl(ctx, field.Decl);
+                var actualOffset = new ZilFix(field.Offset);
+                var adjustedOffset = new ZilFix(field.Offset - startOffset + 1);
+                var orderFix = new ZilFix(definitionOrder);
 
-                existingObjectDefaults.AppendFormat(
+                existingObjectDefaults.Add(Program.Parse(
+                    ctx,
                     field.NoDefault ? SExistingObjectDefaultTemplate_NoDefault : SExistingObjectDefaultTemplate,
-                    field.Name, field.PutFunc, field.Offset, definitionOrder, unparsedDefault);
-                newObjectDefaults.AppendFormat(
+                    field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
+                    .Single());
+                newObjectDefaults.Add(Program.Parse(
+                    ctx,
                     SNewObjectDefaultTemplate,
-                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
-                boaConstructorDefaultClauses.AppendFormat(
+                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                    .Single());
+                boaConstructorDefaultClauses.Add(Program.Parse(
+                    ctx,
                     SBoaConstructorDefaultClauseTemplate,
-                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
+                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                    .Single());
 
-                existingObjectClauses.AppendFormat(
+                existingObjectClauses.Add(Program.Parse(
+                    ctx,
                     SExistingObjectCondClauseTemplate,
-                    field.Name, field.PutFunc, field.Offset, definitionOrder, unparsedDefault);
-                newObjectClauses.AppendFormat(
+                    field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
+                    .Single());
+                newObjectClauses.Add(Program.Parse(
+                    ctx,
                     SNewObjectCondClauseTemplate,
-                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
-                boaConstructorClauses.AppendFormat(
+                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                    .Single());
+                boaConstructorClauses.Add(Program.Parse(
+                    ctx,
                     SBoaConstructorCondClauseTemplate,
-                    field.Name, field.PutFunc, field.Offset - startOffset + 1, definitionOrder, unparsedDefault);
+                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                    .Single());
 
                 definitionOrder++;
             }
 
-            return string.Format(
+            // TODO: use Program.Parse instead of string formatting
+            return Program.Parse(
+                ctx,
                 SMacroTemplate,
-                name.ToStringContext(ctx, false),
-                fields.Count,
-                existingObjectClauses,
-                newObjectClauses,
-                baseType.ToStringContext(ctx, false),
-                unparsedInitArgs,
-                boaConstructorClauses,
-                boaConstructorDefaultClauses,
-                newObjectDefaults,
-                existingObjectDefaults);
+                name,
+                new ZilFix(fields.Count),
+                new ZilList(existingObjectClauses),
+                new ZilList(newObjectClauses),
+                baseType,
+                initArgs,
+                new ZilList(boaConstructorClauses),
+                new ZilList(boaConstructorDefaultClauses),
+                new ZilList(newObjectDefaults),
+                new ZilList(existingObjectDefaults))
+                .Single();
         }
 
         static string MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
@@ -662,6 +668,7 @@ namespace Zilf.Interpreter
             else
                 template = SFullCheckTemplate;
 
+            // TODO: use Program.Parse instead of string formatting
             return string.Format(
                 template,
                 field.Name,

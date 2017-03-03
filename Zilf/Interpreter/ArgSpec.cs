@@ -477,8 +477,122 @@ namespace Zilf.Interpreter
             }
         }
 
+        class ArgEvaluator : IDisposable
+        {
+            readonly Context ctx;
+            readonly LocalEnvironment env;
+            readonly Action throwWrongCount;
+            IEnumerator<ZilObject> enumerator, expansion;
+
+            public ArgEvaluator(Context ctx, LocalEnvironment env, IEnumerable<ZilObject> rawArgs, Action throwWrongCount)
+            {
+                Contract.Requires(ctx != null);
+                Contract.Requires(rawArgs != null);
+
+                this.ctx = ctx;
+                this.env = env;
+                this.throwWrongCount = throwWrongCount;
+
+                enumerator = rawArgs.GetEnumerator();
+            }
+
+            public void Dispose()
+            {
+                try
+                {
+                    enumerator?.Dispose();
+                    expansion?.Dispose();
+                }
+                finally
+                {
+                    enumerator = expansion = null;
+                }
+            }
+
+            public ZilObject GetOne(bool eval, out IProvideSourceLine src)
+            {
+                Contract.Ensures(Contract.Result<ZilObject>() != null);
+                Contract.Ensures(Contract.ValueAtReturn(out src) != null);
+
+                var result = GetOneOptional(eval, out src);
+
+                if (result == null)
+                {
+                    throwWrongCount();
+                    throw new InvalidOperationException();
+                }
+
+                return result;
+            }
+
+            public ZilObject GetOneOptional(bool eval, out IProvideSourceLine src)
+            {
+                Contract.Ensures(Contract.ValueAtReturn(out src) != null || Contract.Result<ZilObject>() == null);
+
+                while (true)
+                {
+                    if (enumerator == null)
+                    {
+                        src = null;
+                        return null;
+                    }
+
+                    if (expansion != null)
+                    {
+                        if (expansion.MoveNext())
+                        {
+                            if (!eval)
+                            {
+                                throwWrongCount();
+                                throw new InvalidOperationException();
+                            }
+
+                            src = expansion.Current;
+                            return expansion.Current;
+                        }
+
+                        expansion.Dispose();
+                        expansion = null;
+                    }
+
+                    if (enumerator.MoveNext())
+                    {
+                        var result = enumerator.Current;
+
+                        if (!eval)
+                        {
+                            src = result;
+                            return result;
+                        }
+
+                        var expandable = result as IMayExpandBeforeEvaluation;
+                        if (expandable != null && expandable.ShouldExpandBeforeEvaluation)
+                        {
+                            expansion = expandable.ExpandBeforeEvaluation(ctx, env).GetEnumerator();
+                            continue;
+                        }
+
+                        src = result;
+                        return result.Eval(ctx, env);
+                    }
+
+                    enumerator.Dispose();
+                    enumerator = null;
+                }
+            }
+
+            public IEnumerable<ZilObject> GetRest(bool eval)
+            {
+                ZilObject zo;
+                IProvideSourceLine dummy;
+
+                while ((zo = GetOneOptional(eval, out dummy)) != null)
+                    yield return zo;
+            }
+        }
+
         /// <summary>
-        /// Pushes a new local environment and binds argument values in preparation for a functino call.
+        /// Pushes a new local environment and binds argument values in preparation for a function call.
         /// </summary>
         /// <param name="ctx">The context.</param>
         /// <param name="args">The unevaluated arguments provided at the call site.</param>
@@ -503,71 +617,69 @@ namespace Zilf.Interpreter
             var wasTopLevel = ctx.AtTopLevel;
             ctx.AtTopLevel = false;
 
+            Action throwWrongCount = () =>
+            {
+                throw ArgumentCountError.WrongCount(
+                    new FunctionCallSite(name?.ToString() ?? "user-defined function"),
+                    optArgsStart,
+                    auxArgsStart);
+            };
+
             try
             {
-                if (eval)
+                using (var evaluator = new ArgEvaluator(ctx, outerEnv, args, throwWrongCount))
                 {
-                    // expand segments
-                    args = ZilObject.ExpandSegments(ctx, args).ToArray();
-                }
-
-                if (args.Length < optArgsStart || (args.Length > auxArgsStart && varargsAtom == null))
-                    throw ArgumentCountError.WrongCount(
-                        new FunctionCallSite(name?.ToString() ?? "user-defined function"),
-                        optArgsStart,
-                        auxArgsStart);
-
-                if (environmentAtom != null)
-                {
-                    innerEnv.Rebind(environmentAtom,
-                        new ZilEnvironment(outerEnv, environmentAtom),
-                        ctx.GetStdAtom(StdAtom.ENVIRONMENT));
-                }
-
-                for (int i = 0; i < optArgsStart; i++)
-                {
-                    var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
-                    ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
-                    innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
-                }
-
-                for (int i = optArgsStart; i < auxArgsStart; i++)
-                {
-                    if (i < args.Length)
+                    if (environmentAtom != null)
                     {
-                        var value = (!eval || argQuoted[i]) ? args[i] : args[i].Eval(ctx, outerEnv);
-                        ctx.MaybeCheckDecl(args[i], value, argDecls[i], "argument {0}", argAtoms[i]);
+                        innerEnv.Rebind(environmentAtom,
+                            new ZilEnvironment(outerEnv, environmentAtom),
+                            ctx.GetStdAtom(StdAtom.ENVIRONMENT));
+                    }
+
+                    IProvideSourceLine src;
+
+                    for (int i = 0; i < optArgsStart; i++)
+                    {
+                        var value = evaluator.GetOne(eval && !argQuoted[i], out src);
+                        ctx.MaybeCheckDecl(src, value, argDecls[i], "argument {0}", argAtoms[i]);
                         innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
                     }
-                    else
+
+                    for (int i = optArgsStart; i < auxArgsStart; i++)
+                    {
+                        var value = evaluator.GetOneOptional(eval && !argQuoted[i], out src);
+                        if (value != null)
+                        {
+                            ctx.MaybeCheckDecl(src, value, argDecls[i], "argument {0}", argAtoms[i]);
+                            innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
+                        }
+                        else
+                        {
+                            var init = argDefaults[i]?.Eval(ctx);
+                            if (init != null)
+                            {
+                                ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                            }
+                            innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
+                        }
+                    }
+
+                    for (int i = auxArgsStart; i < argAtoms.Length; i++)
                     {
                         var init = argDefaults[i]?.Eval(ctx);
                         if (init != null)
                         {
                             ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
                         }
-                        innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
+                        innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
                     }
-                }
 
-                for (int i = auxArgsStart; i < argAtoms.Length; i++)
-                {
-                    var init = argDefaults[i]?.Eval(ctx);
-                    if (init != null)
+                    if (varargsAtom != null)
                     {
-                        ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                        var value = new ZilList(evaluator.GetRest(eval && !varargsQuoted));
+                        ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
+                        innerEnv.Rebind(varargsAtom, value, varargsDecl);
                     }
-                    innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
-                }
-
-                if (varargsAtom != null)
-                {
-                    var extras = args.Skip(auxArgsStart);
-                    if (eval && !varargsQuoted)
-                        extras = ZilObject.EvalSequenceLeavingSegments(ctx, extras);
-                    var value = new ZilList(extras);
-                    ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
-                    innerEnv.Rebind(varargsAtom, new ZilList(extras), varargsDecl);
                 }
 
                 ZilActivation activation;
