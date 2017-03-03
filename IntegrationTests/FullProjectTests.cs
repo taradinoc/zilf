@@ -97,20 +97,20 @@ namespace IntegrationTests
                         string[] expectedLines = SplitLines(massagedExpected);
                         string[] actualLines = SplitLines(massagedActual);
 
-                        var diff = Diff.Calculate(expectedLines, actualLines);
+                        var diff = Diff.CalculateSections(expectedLines, actualLines);
                         int e = 0, a = 0;
                         foreach (var change in diff)
                         {
-                            if (!change.Equal)
+                            if (!change.IsMatch)
                             {
                                 Console.WriteLine("=== At line {0}, {1} ===", e + 1, a + 1);
 
-                                for (int k = e; k < e + change.Length1; k++)
+                                for (int k = e; k < e + change.LengthInCollection1; k++)
                                 {
                                     Console.WriteLine("-{0}", expectedLines[k]);
                                 }
 
-                                for (int m = a; m < a + change.Length2; m++)
+                                for (int m = a; m < a + change.LengthInCollection2; m++)
                                 {
                                     Contract.Assume(m >= 0);        // prevent spurious "Array access might be below lower bound"
                                     Console.WriteLine("+{0}", actualLines[m]);
@@ -119,8 +119,8 @@ namespace IntegrationTests
                                 Console.WriteLine();
                             }
 
-                            e += change.Length1;
-                            a += change.Length2;
+                            e += change.LengthInCollection1;
+                            a += change.LengthInCollection2;
                         }
 
                         Assert.Fail("Expected output not found (diff written to console)");
