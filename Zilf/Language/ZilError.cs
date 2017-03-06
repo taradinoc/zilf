@@ -143,9 +143,9 @@ namespace Zilf.Language
                     sb.AppendLine();
 
                 string caller;
-                if (frame.CallingForm != null)
+                if (frame.Description != null)
                 {
-                    caller = $"in {frame.CallingForm.First.ToString()} called ";
+                    caller = $"in {frame.Description} called ";
                 }
                 else
                 {

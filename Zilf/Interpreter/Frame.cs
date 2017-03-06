@@ -16,22 +16,19 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
-    class Frame : IDisposable
+    abstract class Frame : IDisposable
     {
         public Context Context { get; }
         public Frame Parent { get; }
-        public ZilForm CallingForm { get; }
         public ISourceLine SourceLine { get; }
+
+        public abstract string Description { get; }
 
         [ContractInvariantMethod]
         void ObjectInvariant()
@@ -40,23 +37,20 @@ namespace Zilf.Interpreter
             Contract.Invariant(SourceLine != null);
         }
 
-        public Frame(Context ctx, ZilForm callingForm)
+        protected Frame(Context ctx, ZilForm callingForm)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(callingForm != null);
-            Contract.Ensures(CallingForm != null);
 
             Context = ctx;
             Parent = ctx.TopFrame;
-            CallingForm = callingForm;
             SourceLine = callingForm.SourceLine;
         }
 
-        public Frame(Context ctx, ISourceLine sourceLine)
+        protected Frame(Context ctx, ISourceLine sourceLine)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sourceLine != null);
-            Contract.Ensures(CallingForm == null);
 
             Context = ctx;
             Parent = ctx.TopFrame;
