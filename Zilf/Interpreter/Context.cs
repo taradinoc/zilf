@@ -152,7 +152,7 @@ namespace Zilf.Interpreter
             SetGlobalVal(outchanAtom, consoleOutChannel);
 
             AtTopLevel = true;
-            TopFrame = new Frame(this, SourceLines.TopLevel);
+            TopFrame = new NativeFrame(this, SourceLines.TopLevel);
             CheckDecls = true;
 
             InitTellPatterns();
@@ -612,17 +612,17 @@ namespace Zilf.Interpreter
             Contract.Requires(callingForm != null);
             Contract.Ensures(Contract.Result<Frame>() != null);
 
-            var result = new Frame(this, callingForm);
+            var result = new CallFrame(this, callingForm);
             TopFrame = result;
             return result;
         }
 
-        public Frame PushFrame(ISourceLine sourceLine)
+        public Frame PushFrame(ISourceLine sourceLine, string description = null)
         {
             Contract.Requires(sourceLine != null);
             Contract.Ensures(Contract.Result<Frame>() != null);
 
-            var result = new Frame(this, sourceLine);
+            var result = new NativeFrame(this, sourceLine, description);
             TopFrame = result;
             return result;
         }
@@ -1177,6 +1177,7 @@ namespace Zilf.Interpreter
                     var stringChannel = new ZilStringChannel(FileAccess.Write);
                     var outchanAtom = ctx.GetStdAtom(StdAtom.OUTCHAN);
                     using (var innerEnv = ctx.PushEnvironment())
+                    using (ctx.PushFrame(SourceLines.Unknown, $"<PRINTTYPE for {t}>"))
                     {
                         innerEnv.Rebind(outchanAtom, stringChannel);
                         applicable.Apply(ctx, new ZilObject[] { zo });
@@ -1203,7 +1204,10 @@ namespace Zilf.Interpreter
                 },
                 (ctx, t, applicable) => zo =>
                 {
-                    return applicable.ApplyNoEval(ctx, new[] { zo });
+                    using (ctx.PushFrame(SourceLines.Unknown, $"<EVALTYPE for {t}>"))
+                    {
+                        return applicable.ApplyNoEval(ctx, new[] { zo });
+                    }
                 });
         }
 
@@ -1231,7 +1235,10 @@ namespace Zilf.Interpreter
                     var innerArgs = new ZilObject[args.Length + 1];
                     innerArgs[0] = zo;
                     Array.Copy(args, 0, innerArgs, 1, args.Length);
-                    return applicable.ApplyNoEval(ctx, innerArgs);
+                    using (ctx.PushFrame(SourceLines.Unknown, $"<EVALTYPE for {t}>"))
+                    {
+                        return applicable.ApplyNoEval(ctx, innerArgs);
+                    }
                 });
         }
 
