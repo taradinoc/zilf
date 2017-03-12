@@ -168,7 +168,7 @@ namespace IntegrationTests
 
             AssertRoutine("NAME", "<TELL \"Hello, \" .NAME \".\" CR>")
                 .WithGlobal(SMyRewriter)
-                .WithGlobal("<PUTPROP ROUTINE REWRITER ,MY-REWRITER>")
+                .WithGlobal("<SETG REWRITE-ROUTINE!-HOOKS!-ZILF ,MY-REWRITER>")
                 .WhenCalledWith("\"world\"")
                 .Outputs("Arg: world\nHello, world.\nReturn: 1\n");
 
