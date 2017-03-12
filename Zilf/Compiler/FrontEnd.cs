@@ -258,6 +258,7 @@ namespace Zilf.Compiler
                     // compile, if there were no evaluation errors
                     if (wantCompile && ctx.ErrorCount == 0)
                     {
+                        ctx.RunHook("PRE-COMPILE");
                         ctx.SetDefaultConstants();
 
                         try
