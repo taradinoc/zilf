@@ -69,7 +69,7 @@ namespace Zilf.Interpreter
         readonly bool ignoreCase;
         readonly List<string> includePaths;
 
-        readonly ObList rootObList, packageObList, compilationFlagsOblist;
+        readonly ObList rootObList, packageObList, compilationFlagsObList, hooksObList;
         readonly Stack<ZilObject> previousObPaths;
         LocalEnvironment localEnvironment;
         readonly Dictionary<ZilAtom, Binding> globalValues;
@@ -116,7 +116,8 @@ namespace Zilf.Interpreter
 
             // now we can use MakeObList
             packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
-            compilationFlagsOblist = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
+            compilationFlagsObList = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
+            hooksObList = MakeObList(MakeObList(GetStdAtom(StdAtom.ZILF))["HOOKS"]);
             previousObPaths = new Stack<ZilObject>();
             localEnvironment = new LocalEnvironment(this);
             globalValues = new Dictionary<ZilAtom, Binding>();
@@ -373,7 +374,7 @@ namespace Zilf.Interpreter
                     else
                         sub = new ZilSubr(name, del);
 
-                    // can't use ZilAtom.Parse here because the OBLIST path isn't set up
+                    // these need to be on the root oblist
                     ZilAtom atom = rootObList[name];
                     SetGlobalVal(atom, sub);
                 }
@@ -1492,13 +1493,13 @@ B * <PRINTB .X>
         [Pure]
         public ZilObject GetCompilationFlagValue(string name)
         {
-            var atom = compilationFlagsOblist[name];
+            var atom = compilationFlagsObList[name];
             return GetGlobalVal(atom);
         }
 
         void SetCompilationFlagValue(ZilAtom name, ZilObject value)
         {
-            name = compilationFlagsOblist[name.Text];
+            name = compilationFlagsObList[name.Text];
             SetGlobalVal(name, value);
         }
 
@@ -1683,6 +1684,19 @@ B * <PRINTB .X>
         public ZilAtom EnclosingProgActivationAtom
         {
             get { return enclosingProgActivationAtom; }
+        }
+
+        public ZilObject RunHook(string name, params ZilObject[] args)
+        {
+            var hook = GetGlobalVal(hooksObList[name]);
+
+            if (hook != null && hook.IsApplicable(this))
+            {
+                var applicable = hook.AsApplicable(this);
+                return applicable.ApplyNoEval(this, args);
+            }
+
+            return null;
         }
     }
 }

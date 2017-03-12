@@ -35,16 +35,14 @@ namespace Zilf.Compiler
         {
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
 
-            var rewriter = ctx.GetProp(ctx.GetStdAtom(StdAtom.ROUTINE), ctx.GetStdAtom(StdAtom.REWRITER)).AsApplicable(ctx);
+            var result = ctx.RunHook(
+                "REWRITE-ROUTINE",
+                origRoutine.Name,
+                origRoutine.ArgSpec.ToZilList(),
+                new ZilList(origRoutine.Body));
 
-            if (rewriter != null)
+            if (result != null)
             {
-                var result = rewriter.ApplyNoEval(ctx, new ZilObject[] {
-                    origRoutine.Name,
-                    origRoutine.ArgSpec.ToZilList(),
-                    new ZilList(origRoutine.Body)
-                });
-
                 switch (result.StdTypeAtom)
                 {
                     case StdAtom.LIST:
