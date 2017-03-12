@@ -312,13 +312,12 @@ namespace Zilf
                 }
             }
 
-            // defaults
+            // set defaults and validate
             if (mode == null)
                 mode = (inFile == null ? RunMode.Interactive : RunMode.Compiler);
             if (quiet == null)
                 quiet = (mode == RunMode.Expression || mode == RunMode.Interpreter);
 
-            // validate
             switch (mode.Value)
             {
                 case RunMode.Compiler:
@@ -352,26 +351,67 @@ namespace Zilf
                 }
             }
 
-            var ctx = new Context(!caseSensitive.Value);
-
-            if (inFile != null && mode.Value != RunMode.Expression)
+            // initialize and return Context
+            var ctx = new Context(!caseSensitive.Value)
             {
-                ctx.IncludePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
-            }
+                TraceRoutines = traceRoutines,
+                WantDebugInfo = debugInfo,
+                RunMode = mode.Value,
+                Quiet = quiet.Value
+            };
 
             ctx.IncludePaths.AddRange(includePaths);
-
-            if (ctx.IncludePaths.Count == 0)
-            {
-                ctx.IncludePaths.Add(Environment.CurrentDirectory);
-            }
-
-            ctx.TraceRoutines = traceRoutines;
-            ctx.WantDebugInfo = debugInfo;
-            ctx.RunMode = mode.Value;
-            ctx.Quiet = quiet.Value;
+            AddImplicitIncludePaths(ctx.IncludePaths, inFile, mode.Value);
 
             return ctx;
+        }
+
+        static void AddImplicitIncludePaths(List<string> includePaths, string inFile, RunMode mode)
+        {
+            if (inFile != null && mode != RunMode.Expression)
+            {
+                includePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
+            }
+
+            if (includePaths.Count == 0)
+            {
+                includePaths.Add(Environment.CurrentDirectory);
+            }
+
+            // look for a "library" directory somewhere near zilf.exe
+            var strippables = new HashSet<string> { "bin", "debug", "release", "zilf" };
+            string[] libraryDirNames = { "Library", "library", "lib" };
+
+            var zilfDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+            while (true)
+            {
+                bool found = false;
+
+                foreach (var n in libraryDirNames)
+                {
+                    var candidate = Path.Combine(zilfDir, n);
+                    if (Directory.Exists(candidate))
+                    {
+                        includePaths.Insert(0, candidate);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    var segment = Path.GetFileName(zilfDir);
+                    if (strippables.Contains(segment.ToLowerInvariant()))
+                    {
+                        // strip last segment and keep looking
+                        zilfDir = Path.GetDirectoryName(zilfDir);
+                        continue;
+                    }
+                }
+
+                break;
+            }
         }
 
         static void Usage()
