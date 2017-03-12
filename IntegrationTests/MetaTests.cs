@@ -174,5 +174,35 @@ namespace IntegrationTests
 
             // TODO: make sure rewritten routine has the same routine flags as the original
         }
+
+        [TestMethod]
+        public void PRE_COMPILE_Hook_Can_Add_To_Compilation_Environment()
+        {
+            const string SMyHook = @"
+<DEFINE MY-PRE-COMPILE (""AUX"" ROUTINES)
+    <SET ROUTINES
+        <PROG ((A <ASSOCIATIONS>))
+            <MAPF ,VECTOR
+                  <FUNCTION (""AUX"" (L <CHTYPE .A LIST>) ITEM IND VAL)
+                      <OR .A <MAPSTOP>>
+                      <SET ITEM <1 .L>>
+	                  <SET IND <2 .L>>
+	                  <SET VAL <3 .L>>
+                      <SET A <NEXT .A>>
+	                  <COND (<AND <TYPE? .ITEM ATOM>
+			                      <==? .IND ZVAL>
+			                      <TYPE? .VAL ROUTINE>>
+	                         .ITEM)
+	                        (ELSE <MAPRET>)>>>>>
+    <EVAL <FORM ROUTINE LIST-ROUTINES '()
+              !<MAPF ,LIST
+                     <FUNCTION (A) <FORM TELL <SPNAME .A> CR>>
+                     <SORT <> .ROUTINES>>>>>";
+
+            AssertRoutine("", "<LIST-ROUTINES>")
+                .WithGlobal(SMyHook)
+                .WithGlobal("<SETG PRE-COMPILE!-HOOKS!-ZILF ,MY-PRE-COMPILE>")
+                .Outputs("GO\nTEST?ROUTINE\n");
+        }
     }
 }
