@@ -155,7 +155,17 @@ namespace Zilf.Interpreter.Values
 
         public IStructure GetRest(int skip)
         {
-            return null;
+            switch (skip)
+            {
+                case 0:
+                    return new ZilList(this);
+
+                case 1:
+                    return new ZilList(null, null);
+
+                default:
+                    return null;
+            }
         }
 
         public IStructure GetBack(int skip)
