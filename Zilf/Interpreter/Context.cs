@@ -1180,7 +1180,7 @@ namespace Zilf.Interpreter
                     using (ctx.PushFrame(SourceLines.Unknown, $"<PRINTTYPE for {t}>"))
                     {
                         innerEnv.Rebind(outchanAtom, stringChannel);
-                        applicable.Apply(ctx, new ZilObject[] { zo });
+                        applicable.ApplyNoEval(ctx, new ZilObject[] { zo });
                         return stringChannel.String;
                     }
                 });

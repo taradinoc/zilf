@@ -1148,6 +1148,11 @@ namespace ZilfTests.Interpreter
             // it does affect ROMAN2 if we change it again
             TestHelpers.Evaluate(ctx, "<PRINTTYPE ROMAN2 FIX>");
             Assert.AreEqual("MMXV", roman2.ToStringContext(ctx, false));
+
+            // the object to print should not be double-evaluated
+            TestHelpers.Evaluate(ctx, "<PRINTTYPE FORM <FUNCTION (F) <PRIN1 <CHTYPE .F LIST>>>>");
+            var form = TestHelpers.Evaluate(ctx, "<FORM + 1 2>");
+            Assert.AreEqual("(+ I II)", form.ToStringContext(ctx, false));
         }
 
         [TestMethod]

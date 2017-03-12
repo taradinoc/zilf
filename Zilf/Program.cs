@@ -55,76 +55,7 @@ namespace Zilf
 
             if (ctx.RunMode == RunMode.Interactive)
             {
-                using (ctx.PushFileContext("<stdin>"))
-                {
-                    var sb = new StringBuilder();
-
-                    int angles = 0, rounds = 0, squares = 0, quotes = 0;
-
-                    while (true)
-                    {
-                        if (!ctx.Quiet)
-                            Console.Write(sb.Length == 0 ? "> " : ">> ");
-
-                        try
-                        {
-                            var line = Console.ReadLine();
-
-                            if (line == null)
-                                break;
-
-                            if (sb.Length > 0)
-                                sb.AppendLine();
-                            sb.Append(line);
-
-                            int state = (quotes > 0) ? 1 : 0;
-                            foreach (char c in line)
-                            {
-                                switch (state)
-                                {
-                                    case 0:
-                                        switch (c)
-                                        {
-                                            case '<': angles++; break;
-                                            case '>': angles--; break;
-                                            case '(': rounds++; break;
-                                            case ')': rounds--; break;
-                                            case '[': squares++; break;
-                                            case ']': squares--; break;
-                                            case '"': quotes++; state = 1; break;
-                                        }
-                                        break;
-
-                                    case 1:
-                                        switch (c)
-                                        {
-                                            case '"': quotes--; state = 0; break;
-                                            case '\\': state = 2; break;
-                                        }
-                                        break;
-
-                                    case 2:
-                                        state = 1;
-                                        break;
-                                }
-                            }
-
-                            if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
-                            {
-                                var result = Evaluate(ctx, sb.ToString());
-                                if (result != null)
-                                    Console.WriteLine(result.ToStringContext(ctx, false));
-
-                                sb.Length = 0;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex);
-                            sb.Length = 0;
-                        }
-                    }
-                }
+                DoREPL(ctx);
             }
             else if (ctx.RunMode == RunMode.Expression)
             {
@@ -181,6 +112,93 @@ namespace Zilf
             }
 
             return 0;
+        }
+
+        static void DoREPL(Context ctx)
+        {
+            using (ctx.PushFileContext("<stdin>"))
+            {
+                var sb = new StringBuilder();
+
+                int angles = 0, rounds = 0, squares = 0, quotes = 0;
+
+                while (true)
+                {
+                    if (!ctx.Quiet)
+                        Console.Write(sb.Length == 0 ? "> " : ">> ");
+
+                    try
+                    {
+                        var line = Console.ReadLine();
+
+                        if (line == null)
+                            break;
+
+                        if (sb.Length > 0)
+                            sb.AppendLine();
+                        sb.Append(line);
+
+                        int state = (quotes > 0) ? 1 : 0;
+                        foreach (char c in line)
+                        {
+                            switch (state)
+                            {
+                                case 0:
+                                    switch (c)
+                                    {
+                                        case '<': angles++; break;
+                                        case '>': angles--; break;
+                                        case '(': rounds++; break;
+                                        case ')': rounds--; break;
+                                        case '[': squares++; break;
+                                        case ']': squares--; break;
+                                        case '"': quotes++; state = 1; break;
+                                    }
+                                    break;
+
+                                case 1:
+                                    switch (c)
+                                    {
+                                        case '"': quotes--; state = 0; break;
+                                        case '\\': state = 2; break;
+                                    }
+                                    break;
+
+                                case 2:
+                                    state = 1;
+                                    break;
+                            }
+                        }
+
+                        if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
+                        {
+                            var result = Evaluate(ctx, sb.ToString());
+                            if (result != null)
+                            {
+                                try
+                                {
+                                    Console.WriteLine(result.ToStringContext(ctx, false));
+                                }
+                                catch (InterpreterError ex)
+                                {
+                                    ctx.HandleError(ex);
+                                }
+                                catch (ControlException ex)
+                                {
+                                    ctx.HandleError(new InterpreterError(InterpreterMessages.Misplaced_0, ex.Message));
+                                }
+                            }
+
+                            sb.Length = 0;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        sb.Length = 0;
+                    }
+                }
+            }
         }
 
         static DateTime RetrieveLinkerTimestamp()
