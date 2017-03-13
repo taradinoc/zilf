@@ -16,6 +16,9 @@
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation />
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
+    <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -28,11 +31,8 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -180,6 +180,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interpreter\AgainException.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
+    <Compile Include="Interpreter\ArgDecoder.Constraint.cs" />
     <Compile Include="Interpreter\ArgDecoder.cs" />
     <Compile Include="Interpreter\ArgItem.cs" />
     <Compile Include="Interpreter\ArgSpec.cs" />

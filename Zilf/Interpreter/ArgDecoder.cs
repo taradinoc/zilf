@@ -23,6 +23,8 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
@@ -202,6 +204,7 @@ namespace Zilf.Interpreter
         }
 
         public Type[] Types { get; }
+        public string DefaultParamDesc { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
@@ -209,7 +212,20 @@ namespace Zilf.Interpreter
     {
     }
 
-    class ArgDecoder
+    [AttributeUsage(
+        AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface |
+        AttributeTargets.Parameter | AttributeTargets.Field)]
+    sealed class ParamDescAttribute : Attribute
+    {
+        public ParamDescAttribute(string name)
+        {
+            this.Description = name;
+        }
+
+        public string Description { get; }
+    }
+
+    partial class ArgDecoder
     {
         /// <summary>
         /// A function that decodes some number of <see cref="ZilObject"/> arguments into objects,
@@ -243,6 +259,7 @@ namespace Zilf.Interpreter
         {
             public DecodingStep Step;
             public Constraint Constraint;
+            public string Description;
 
             /// <summary>
             /// The minimum number of arguments this step will consume.
@@ -254,535 +271,12 @@ namespace Zilf.Interpreter
             public int? UpperBound;
         }
 
-        abstract class Constraint
-        {
-            public static readonly Constraint AnyObject = new AnyObjectConstraint();
-            public static readonly Constraint Forbidden = new ForbiddenConstraint();
-            public static readonly Constraint Structured = new StructuredConstraint();
-            public static readonly Constraint Applicable = new ApplicableConstraint();
-            public static Constraint OfType(StdAtom typeAtom) => new TypeConstraint(typeAtom);
-            public static Constraint OfPrimType(PrimType primtype) => new PrimTypeConstraint(primtype);
-
-            public static Constraint FromDecl(ZilObject pattern)
-            {
-                // TODO: replace simple decls like APPLICABLE with equivalent Constraints
-                return new DeclConstraint(pattern);
-            }
-
-            public virtual Constraint And(Context ctx, Constraint other)
-            {
-                switch (this.CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
-                {
-                    case CompareOutcome.Looser:
-                        return other;
-
-                    case CompareOutcome.Stricter:
-                        return this;
-
-                    default:
-                        return Conjunction.From(ctx, this, other);
-                }
-            }
-
-            public virtual Constraint Or(Context ctx, Constraint other)
-            {
-                switch (this.CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
-                {
-                    case CompareOutcome.Looser:
-                        return this;
-
-                    case CompareOutcome.Stricter:
-                        return other;
-
-                    default:
-                        return Disjunction.From(ctx, this, other);
-                }
-            }
-
-            protected CompareOutcome? CompareTo(Context ctx, Constraint other)
-            {
-                return CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this));
-            }
-
-            protected abstract CompareOutcome? CompareImpl(Context ctx, Constraint other);
-            public abstract bool Allows(Context ctx, ZilObject arg);
-            public abstract override string ToString();
-
-            protected enum CompareOutcome
-            {
-                Looser,
-                Equal,
-                Stricter,
-            }
-
-            protected static CompareOutcome? Invert(CompareOutcome? co)
-            {
-                switch (co)
-                {
-                    case CompareOutcome.Looser:
-                        return CompareOutcome.Stricter;
-
-                    case CompareOutcome.Stricter:
-                        return CompareOutcome.Looser;
-
-                    default:
-                        return co;
-                }
-            }
-
-            static string EnglishList(IEnumerable<string> items, string connector)
-            {
-                var array = items.ToArray();
-
-                Contract.Assert(array.Length > 0);
-
-                switch (array.Length)
-                {
-                    case 1:
-                        return array[0];
-
-                    case 2:
-                        return array[0] + " " + connector + " " + array[1];
-
-                    default:
-                        return string.Join(", ", items.Take(array.Length - 1)) + ", " + connector + " " + array[array.Length - 1];
-                }
-            }
-
-            class AnyObjectConstraint : Constraint
-            {
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return true;
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    return (other is AnyObjectConstraint) ? CompareOutcome.Equal : CompareOutcome.Looser;
-                }
-
-                public override string ToString()
-                {
-                    return "anything";
-                }
-            }
-
-            class ForbiddenConstraint : Constraint
-            {
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return false;
-                }
-
-                public override string ToString()
-                {
-                    return "nothing";
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    return (other is AnyObjectConstraint) ? CompareOutcome.Equal : CompareOutcome.Stricter;
-                }
-            }
-
-            class TypeConstraint : Constraint
-            {
-                public StdAtom TypeAtom { get; private set; }
-
-                public TypeConstraint(StdAtom typeAtom)
-                {
-                    this.TypeAtom = typeAtom;
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && otherType.TypeAtom == this.TypeAtom)
-                    {
-                        return CompareOutcome.Equal;
-                    }
-
-                    return null;
-                }
-
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return arg.StdTypeAtom == this.TypeAtom;
-                }
-
-                public override string ToString()
-                {
-                    return this.TypeAtom.ToString();
-                }
-            }
-
-            class PrimTypeConstraint : Constraint
-            {
-                public PrimType PrimType { get; private set; }
-
-                public PrimTypeConstraint(PrimType primtype)
-                {
-                    this.PrimType = primtype;
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    var otherPrimType = other as PrimTypeConstraint;
-
-                    if (otherPrimType != null)
-                    {
-                        if (otherPrimType.PrimType == this.PrimType)
-                            return CompareOutcome.Equal;
-
-                        return null;
-                    }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null &&
-                        ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) == this.PrimType)
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
-                }
-
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return arg.PrimType == this.PrimType;
-                }
-
-                public override string ToString()
-                {
-                    return "PRIMTYPE " + this.PrimType.ToString();
-                }
-            }
-
-            class StructuredConstraint : Constraint
-            {
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return arg is IStructure;
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    if (other is StructuredConstraint)
-                    {
-                        return CompareOutcome.Equal;
-                    }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && ctx.IsStructuredType(ctx.GetStdAtom(otherType.TypeAtom)))
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
-                }
-
-                public override string ToString()
-                {
-                    return "structured value";
-                }
-            }
-
-            class ApplicableConstraint : Constraint
-            {
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return arg.IsApplicable(ctx);
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    if (other is ApplicableConstraint)
-                    {
-                        return CompareOutcome.Equal;
-                    }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && ctx.IsApplicableType(ctx.GetStdAtom(otherType.TypeAtom)))
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
-                }
-
-                public override string ToString()
-                {
-                    return "applicable value";
-                }
-            }
-
-            class DeclConstraint : Constraint
-            {
-                public ZilObject Pattern { get; private set; }
-
-                public DeclConstraint(ZilObject pattern)
-                {
-                    this.Pattern = pattern;
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    if (other is DeclConstraint &&
-                        this.Pattern.Equals(((DeclConstraint)other).Pattern))
-                    {
-                        return CompareOutcome.Equal;
-                    }
-
-                    return null;
-                }
-
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return Decl.Check(ctx, arg, this.Pattern);
-                }
-
-                public override string ToString()
-                {
-                    return this.Pattern.ToString();
-                }
-            }
-
-            class Conjunction : Constraint
-            {
-                public IEnumerable<Constraint> Constraints { get; private set; }
-
-                Conjunction(IEnumerable<Constraint> constraints)
-                {
-                    this.Constraints = constraints;
-                }
-
-                public static Conjunction From(Context ctx, Constraint left, Constraint right)
-                {
-                    var parts = new List<Constraint>();
-
-                    if (left is Conjunction)
-                    {
-                        parts.AddRange(((Conjunction)left).Constraints);
-                    }
-                    else
-                    {
-                        parts.Add(left);
-                    }
-
-                    IEnumerable<Constraint> todo;
-                    if (right is Conjunction)
-                    {
-                        todo = ((Conjunction)right).Constraints;
-                    }
-                    else
-                    {
-                        todo = Enumerable.Repeat(right, 1);
-                    }
-
-                    foreach (var c in todo)
-                    {
-                        int stricter = 0, looserOrEqual = 0;
-
-                        foreach (var p in parts)
-                        {
-                            switch (c.CompareTo(ctx, p))
-                            {
-                                case CompareOutcome.Stricter:
-                                    stricter++;
-                                    break;
-
-                                case CompareOutcome.Looser:
-                                case CompareOutcome.Equal:
-                                    looserOrEqual++;
-                                    break;
-                            }
-                        }
-
-                        if (looserOrEqual > 0)
-                        {
-                            // we already have this one, skip it
-                            continue;
-                        }
-
-                        if (stricter > 0)
-                        {
-                            // this one is stricter than some we currently have, remove them
-                            parts.RemoveAll(p => c.CompareTo(ctx, p) == CompareOutcome.Stricter);
-                        }
-
-                        parts.Add(c);
-                    }
-
-                    return new Conjunction(parts);
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    int count = 0, looser = 0, equal = 0;
-
-                    foreach (var c in this.Constraints)
-                    {
-                        count++;
-
-                        switch (c.CompareTo(ctx, other))
-                        {
-                            case CompareOutcome.Stricter:
-                                // done
-                                return CompareOutcome.Stricter;
-
-                            case CompareOutcome.Looser:
-                                looser++;
-                                break;
-
-                            case CompareOutcome.Equal:
-                                equal++;
-                                break;
-                        }
-                    }
-
-                    if (equal == count)
-                        return CompareOutcome.Equal;
-
-                    if (looser == count)
-                        return CompareOutcome.Looser;
-
-                    return null;
-                }
-
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return this.Constraints.All(c => c.Allows(ctx, arg));
-                }
-
-                public override string ToString()
-                {
-                    return EnglishList(this.Constraints.Select(c => c.ToString()).OrderBy(s => s), "and");
-                }
-            }
-
-            class Disjunction : Constraint
-            {
-                public IEnumerable<Constraint> Constraints { get; private set; }
-
-                Disjunction(IEnumerable<Constraint> constraints)
-                {
-                    this.Constraints = constraints;
-                }
-
-                public static Disjunction From(Context ctx, Constraint left, Constraint right)
-                {
-                    var parts = new List<Constraint>();
-
-                    if (left is Disjunction)
-                    {
-                        parts.AddRange(((Disjunction)left).Constraints);
-                    }
-                    else
-                    {
-                        parts.Add(left);
-                    }
-
-                    IEnumerable<Constraint> todo;
-                    if (right is Disjunction)
-                    {
-                        todo = ((Disjunction)right).Constraints;
-                    }
-                    else
-                    {
-                        todo = Enumerable.Repeat(right, 1);
-                    }
-
-                    foreach (var c in todo)
-                    {
-                        int looser = 0, stricterOrEqual = 0;
-
-                        foreach (var p in parts)
-                        {
-                            switch (c.CompareTo(ctx, p))
-                            {
-                                case CompareOutcome.Looser:
-                                    looser++;
-                                    break;
-
-                                case CompareOutcome.Stricter:
-                                case CompareOutcome.Equal:
-                                    stricterOrEqual++;
-                                    break;
-                            }
-                        }
-
-                        if (stricterOrEqual > 0)
-                        {
-                            // we already have this one, skip it
-                            continue;
-                        }
-
-                        if (looser > 0)
-                        {
-                            // this one is looser than some we currently have, remove them
-                            parts.RemoveAll(p => c.CompareTo(ctx, p) == CompareOutcome.Looser);
-                        }
-
-                        parts.Add(c);
-                    }
-
-                    return new Disjunction(parts);
-                }
-
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
-                {
-                    int count = 0, stricter = 0, equal = 0;
-
-                    foreach (var c in this.Constraints)
-                    {
-                        count++;
-
-                        switch (c.CompareTo(ctx, other))
-                        {
-                            case CompareOutcome.Looser:
-                                // done
-                                return CompareOutcome.Looser;
-
-                            case CompareOutcome.Stricter:
-                                stricter++;
-                                break;
-
-                            case CompareOutcome.Equal:
-                                equal++;
-                                break;
-                        }
-                    }
-
-                    if (equal == count)
-                        return CompareOutcome.Equal;
-
-                    if (stricter == count)
-                        return CompareOutcome.Stricter;
-
-                    return null;
-                }
-
-                public override bool Allows(Context ctx, ZilObject arg)
-                {
-                    return this.Constraints.Any(c => c.Allows(ctx, arg));
-                }
-
-                public override string ToString()
-                {
-                    return EnglishList(this.Constraints.Select(c => c.ToString()).OrderBy(s => s), "or");
-                }
-            }
-
-        }
-
         readonly Context ctx;
         DecodingStepInfo[] StepInfos { get; }
         int LowerBound { get; }
         int? UpperBound { get; }
+
+        public string Description { get; }
 
         ArgDecoder(Context ctx, ParameterInfo[] parameters)
         {
@@ -791,6 +285,8 @@ namespace Zilf.Interpreter
             StepInfos = new DecodingStepInfo[parameters.Length - 1];
             LowerBound = 0;
             UpperBound = 0;
+
+            var sb = new StringBuilder();
 
             // skip first arg (Context)
             for (int i = 1; i < parameters.Length; i++)
@@ -808,7 +304,16 @@ namespace Zilf.Interpreter
                 {
                     UpperBound += stepInfo.UpperBound;
                 }
+
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append(stepInfo.Description);
             }
+
+            this.Description = sb.ToString();
         }
 
         DecodingStepInfo PrepareOne(ParameterInfo pi)
@@ -832,11 +337,16 @@ namespace Zilf.Interpreter
                 defaultValue = pi.HasDefaultValue ? pi.DefaultValue : null;
             }
 
-            return PrepareOne(
+            var result = PrepareOne(
                 pi.ParameterType,
+                Hyphenate(pi.Name),
                 pi.GetCustomAttributes(false),
                 isOptional,
                 defaultValue);
+
+            result.Description = OverrideParamDesc(pi, isOptional) ?? result.Description;
+
+            return result;
         }
 
         DecodingStepInfo PrepareOne(FieldInfo fi)
@@ -857,14 +367,179 @@ namespace Zilf.Interpreter
                 defaultValue = null;
             }
 
-            return PrepareOne(
+            var result = PrepareOne(
                 fi.FieldType,
+                Hyphenate(fi.Name),
                 fi.GetCustomAttributes(false),
                 isOptional,
                 defaultValue);
+
+            result.Description = OverrideParamDesc(fi, isOptional) ?? result.Description;
+
+            return result;
         }
 
-        DecodingStepInfo PrepareOne(Type paramType, object[] customAttributes,
+        static string OverrideParamDesc(FieldInfo fi, bool isOptional)
+        {
+            return MaybeWithBrackets(OverrideParamDesc(fi), isOptional);
+        }
+
+        static string OverrideParamDesc(FieldInfo fi)
+        {
+            var attr = fi.GetCustomAttribute<ParamDescAttribute>();
+
+            if (attr != null)
+                return attr.Description;
+
+            var decl = fi.GetCustomAttribute<DeclAttribute>();
+
+            if (decl != null)
+            {
+                var result = OverrideParamDesc(decl);
+                if (result != null)
+                    return result;
+            }
+
+            return OverrideParamDesc(fi.FieldType);
+        }
+
+        static string OverrideParamDesc(ParameterInfo pi, bool isOptional)
+        {
+            return MaybeWithBrackets(OverrideParamDesc(pi), isOptional);
+        }
+
+        static string OverrideParamDesc(ParameterInfo pi)
+        {
+            var attr = pi.GetCustomAttribute<ParamDescAttribute>();
+
+            if (attr != null)
+                return attr.Description;
+
+            var decl = pi.GetCustomAttribute<DeclAttribute>();
+
+            if (decl != null)
+            {
+                var result = OverrideParamDesc(decl);
+                if (result != null)
+                    return result;
+            }
+
+            return OverrideParamDesc(pi.ParameterType);
+        }
+
+        static string OverrideParamDesc(Type t)
+        {
+            var typeAttr = t.GetCustomAttribute<ParamDescAttribute>();
+
+            if (typeAttr != null)
+            {
+                return typeAttr.Description;
+            }
+
+            if (t.IsValueType && !t.IsPrimitive)
+            {
+                var fields = GetStructFieldsInOrder(t);
+                if (fields.Length == 2)
+                {
+                    if (fields[0].GetCustomAttribute<DeclAttribute>()?.Pattern == "'QUOTE")
+                    {
+                        var decl = fields[1].GetCustomAttribute<DeclAttribute>();
+                        if (decl != null)
+                        {
+                            var result = OverrideParamDesc(decl, "'");
+                            if (result != null)
+                            {
+                                return result;
+                            }
+                        }
+
+                        var second = OverrideParamDesc(fields[1]);
+                        if (second != null)
+                        {
+                            return "'" + second;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        static Regex orDeclRegex = new Regex(@"^<OR (?:'([^ >]+)\s*)+>$");
+
+        static string OverrideParamDesc(DeclAttribute decl, string prefix = "")
+        {
+            if (decl.Pattern.StartsWith("'", StringComparison.Ordinal))
+            {
+                return decl.Pattern.Substring(1);
+            }
+
+            var match = orDeclRegex.Match(decl.Pattern);
+            if (match.Success)
+            {
+                return WithCurlies(
+                    string.Join(
+                        " | ",
+                        from Capture c in match.Groups[1].Captures
+                        select prefix + c.Value));
+            }
+
+            return null;
+        }
+
+        static string WithEllipsis(string s)
+        {
+            return s + " ...";
+        }
+
+        static string WithBrackets(string s)
+        {
+            return "[" + s + "]";
+        }
+
+        static string MaybeWithBrackets(string s, bool isOptional)
+        {
+            return s != null && isOptional ? WithBrackets(s) : s;
+        }
+
+        static string WithCurlies(string s)
+        {
+            return "{" + s + "}";
+        }
+
+        static string WithParens(string s)
+        {
+            return "(" + s + ")";
+        }
+
+        static string WithAngles(string s)
+        {
+            return "<" + s + ">";
+        }
+
+        static string Hyphenate(string s)
+        {
+            var sb = new StringBuilder(s.Length);
+            sb.Append(char.ToLowerInvariant(s[0]));
+
+            for (int i = 1; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (char.IsUpper(c))
+                {
+                    sb.Append('-');
+                    sb.Append(char.ToLowerInvariant(c));
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        DecodingStepInfo PrepareOne(Type paramType, string name, object[] customAttributes,
             bool isOptional, object defaultValueWhenOptional)
         {
             DecodingStepInfo result;
@@ -882,12 +557,12 @@ namespace Zilf.Interpreter
             if ((eitherAttr = customAttributes.OfType<EitherAttribute>().SingleOrDefault()) != null &&
                 !paramType.IsArray)
             {
-                result = PrepareOneEither(paramType, eitherAttr.Types);
+                result = PrepareOneEither(paramType, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
             }
             else if (eitherAttr != null && paramType.IsArray)
             {
                 var elemType = paramType.GetElementType();
-                var innerStepInfo = PrepareOneEither(elemType, eitherAttr.Types);
+                var innerStepInfo = PrepareOneEither(elemType, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
@@ -920,6 +595,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = Constraint.AnyObject,
+                    Description = name,
                     Step = (a, i, c) =>
                     {
                         if (i >= a.Length)
@@ -958,6 +634,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = constraint,
+                    Description = name,
                     Step = (a, i, c) =>
                     {
                         if (i >= a.Length)
@@ -982,6 +659,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = Constraint.Applicable,
+                    Description = name,
                     Step = (a, i, c) =>
                     {
                         if (i >= a.Length)
@@ -1006,22 +684,22 @@ namespace Zilf.Interpreter
             else if (paramType == typeof(int) || paramType == typeof(int?))
             {
                 result = PrepareOneNullableConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
-                    paramType, out defaultValue);
+                    paramType, name, out defaultValue);
             }
             else if (paramType == typeof(string))
             {
                 result = PrepareOneConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
-                    out defaultValue);
+                    name, out defaultValue);
             }
             else if (paramType == typeof(char) || paramType == typeof(char?))
             {
                 result = PrepareOneNullableConversion<ZilChar, char>(StdAtom.CHARACTER, ch => ch.Char,
-                    paramType, out defaultValue);
+                    paramType, name, out defaultValue);
             }
             else if (paramType == typeof(bool) || paramType == typeof(bool?))
             {
                 result = PrepareOneNullableConversion<ZilObject, bool>(null, zo => zo.IsTrue,
-                    paramType, out defaultValue);
+                    paramType, name, out defaultValue);
             }
             else if (paramType.IsArray && IsZilObjectType(paramType.GetElementType()))
             {
@@ -1053,6 +731,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = constraint,
+                    Description = WithEllipsis(name),
                     Step = (a, i, c) =>
                     {
                         for (int j = i; j < a.Length; j++)
@@ -1089,6 +768,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = Constraint.Applicable,
+                    Description = WithEllipsis(name),
                     Step = (a, i, c) =>
                     {
                         if (i >= a.Length)
@@ -1128,12 +808,12 @@ namespace Zilf.Interpreter
             else if (paramType == typeof(int[]))
             {
                 result = PrepareOneArrayConversion<ZilFix, int>(StdAtom.FIX, fix => fix.Value,
-                    isRequired, out defaultValue);
+                    isRequired, name, out defaultValue);
             }
             else if (paramType == typeof(string[]))
             {
                 result = PrepareOneArrayConversion<ZilString, string>(StdAtom.STRING, str => str.Text,
-                    isRequired, out defaultValue);
+                    isRequired, name, out defaultValue);
             }
             else if (paramType == typeof(LocalEnvironment))
             {
@@ -1144,6 +824,7 @@ namespace Zilf.Interpreter
                 result = new DecodingStepInfo
                 {
                     Constraint = Constraint.OfType(StdAtom.ENVIRONMENT),
+                    Description = "[environment]",
                     Step = (a, i, c) =>
                     {
                         if (i < a.Length && a[i] is ZilEnvironment)
@@ -1171,7 +852,7 @@ namespace Zilf.Interpreter
                 var prevStep = result.Step;
                 var decl = Program.Parse(ctx, declAttr.Pattern).Single();
 
-                result.Constraint = result.Constraint.And(ctx, Constraint.FromDecl(decl));
+                result.Constraint = result.Constraint.And(ctx, Constraint.FromDecl(ctx, decl));
 
                 // for array (varargs) parameters, the decl is checked against a LIST containing all the args
                 if (paramType.IsArray)
@@ -1217,6 +898,8 @@ namespace Zilf.Interpreter
 
                 defaultValueWhenOptional = defaultValueWhenOptional ?? defaultValue;
 
+                result.Description = WithBrackets(result.Description);
+
                 result.Step = (a, i, c) =>
                 {
                     if (i < a.Length && constraint.Allows(c.Context, a[i]))
@@ -1238,6 +921,7 @@ namespace Zilf.Interpreter
             var result = new DecodingStepInfo
             {
                 Constraint = innerStepInfo.Constraint,
+                Description = WithEllipsis(innerStepInfo.Description),
                 Step = (a, i, c) =>
                 {
                     if (isRequired && a.Length <= i)
@@ -1282,7 +966,7 @@ namespace Zilf.Interpreter
         }
 
         DecodingStepInfo PrepareOneConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, out object defaultValue)
+            StdAtom? typeAtom, Func<TZil, TValue> convert, string name, out object defaultValue)
             where TZil : ZilObject
         {
             var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
@@ -1292,6 +976,7 @@ namespace Zilf.Interpreter
             return new DecodingStepInfo
             {
                 Constraint = constraint,
+                Description = name,
                 Step = (a, i, c) =>
                 {
                     if (i >= a.Length)
@@ -1317,7 +1002,7 @@ namespace Zilf.Interpreter
 
         DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, Type paramType,
-            out object defaultValue)
+            string name, out object defaultValue)
             where TZil : ZilObject
             where TValue : struct
         {
@@ -1340,6 +1025,7 @@ namespace Zilf.Interpreter
             return new DecodingStepInfo
             {
                 Constraint = constraint,
+                Description = name,
                 Step = (a, i, c) =>
                 {
                     if (i >= a.Length)
@@ -1365,7 +1051,7 @@ namespace Zilf.Interpreter
 
         DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, bool isRequired,
-            out object defaultValue)
+            string name, out object defaultValue)
             where TZil : ZilObject
         {
             var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
@@ -1375,6 +1061,7 @@ namespace Zilf.Interpreter
             var result = new DecodingStepInfo
             {
                 Constraint = constraint,
+                Description = WithEllipsis(name),
                 Step = (a, i, c) =>
                 {
                     var array = new TValue[a.Length - i];
@@ -1423,12 +1110,30 @@ namespace Zilf.Interpreter
             int? upperBound;
             var stepInfos = PrepareStepsFromStruct(structType, out fields, out lowerBound, out upperBound);
 
+            var descPieces = stepInfos.Select(i => i.Description);
+            string description;
+            switch (typeAtom)
+            {
+                case StdAtom.ADECL:
+                    description = string.Join(":", descPieces);
+                    break;
+
+                case StdAtom.FORM:
+                    description = WithAngles(string.Join(" ", descPieces));
+                    break;
+
+                default:
+                    description = WithParens(string.Join(" ", descPieces));
+                    break;
+            }
+
             var result = new DecodingStepInfo
             {
                 LowerBound = 1,
                 UpperBound = 1,
 
                 Constraint = Constraint.OfType(typeAtom),
+                Description = description,
                 Step = (a, i, c) =>
                 {
                     if (i >= a.Length)
@@ -1509,9 +1214,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.ValueAtReturn(out lowerBound) >= 0);
             Contract.Ensures(!(Contract.ValueAtReturn(out upperBound) < 0));
 
-            fields = structType.GetFields()
-                .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
-                .ToArray();
+            fields = GetStructFieldsInOrder(structType);
             var stepInfos = new DecodingStepInfo[fields.Length];
             lowerBound = 0;
             upperBound = 0;
@@ -1535,8 +1238,15 @@ namespace Zilf.Interpreter
             return stepInfos;
         }
 
+        static FieldInfo[] GetStructFieldsInOrder(Type structType)
+        {
+            return structType.GetFields()
+                .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
+                .ToArray();
+        }
+
         // TODO: cache the result?
-        DecodingStepInfo PrepareOneEither(Type paramType, Type[] inputTypes)
+        DecodingStepInfo PrepareOneEither(Type paramType, string name, Type[] inputTypes)
         {
             Contract.Requires(paramType != null);
             Contract.Requires(inputTypes != null);
@@ -1549,10 +1259,13 @@ namespace Zilf.Interpreter
             int? upperBound = 0;
             var constraint = Constraint.Forbidden;
 
+            var names = new HashSet<string>();
+
             var noAttributes = new object[0];
             for (int i = 0; i < inputTypes.Length; i++)
             {
-                var stepInfo = PrepareOne(inputTypes[i], noAttributes, false, null);
+                var stepInfo = PrepareOne(inputTypes[i], name, noAttributes, false, null);
+                names.Add(OverrideParamDesc(inputTypes[i]) ?? stepInfo.Description);
                 constraint = constraint.Or(ctx, stepInfo.Constraint);
                 choices[i] = stepInfo.Step;
                 choiceConstraints[i] = stepInfo.Constraint;
@@ -1568,12 +1281,29 @@ namespace Zilf.Interpreter
                 }
             }
 
+            string description;
+            switch (names.Count)
+            {
+                case 0:
+                    description = name;
+                    break;
+
+                case 1:
+                    description = names.Single();
+                    break;
+
+                default:
+                    description = WithCurlies(string.Join(" | ", names));
+                    break;
+            }
+
             var result = new DecodingStepInfo
             {
                 LowerBound = (int)lowerBound,
                 UpperBound = upperBound,
 
                 Constraint = constraint,
+                Description = description,
 
                 Step = (a, i, c) =>
                 {
@@ -1636,12 +1366,15 @@ namespace Zilf.Interpreter
             int? upperBound;
             var stepInfos = PrepareStepsFromStruct(seqType, out fields, out lowerBound, out upperBound);
 
+            var description = string.Join(" ", stepInfos.Select(i => i.Description));
+
             var result = new DecodingStepInfo
             {
                 LowerBound = lowerBound,
                 UpperBound = upperBound,
 
                 Constraint = stepInfos[0].Constraint,
+                Description = description,
                 Step = (a, i, c) =>
                 {
                     var remainingArgs = a.Length - i;
@@ -1715,15 +1448,17 @@ namespace Zilf.Interpreter
             return new ArgDecoder(ctx, parameters);
         }
 
-        public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx)
+        public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
+            out string paramDescription)
         {
             Contract.Requires(methodInfo.IsStatic);
             Contract.Ensures(Contract.Result<SubrDelegate>() != null);
 
-            return WrapMethodAsSubrDelegate(methodInfo, ctx, null);
+            return WrapMethodAsSubrDelegate(methodInfo, ctx, out paramDescription, null);
         }
 
         static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
+            out string paramDescription,
             Dictionary<MethodInfo, SubrDelegate> alreadyDone)
         {
             Contract.Requires(methodInfo.IsStatic);
@@ -1736,11 +1471,13 @@ namespace Zilf.Interpreter
                 parameters[1].ParameterType == typeof(Context) &&
                 parameters[2].ParameterType == typeof(ZilObject[]))
             {
+                paramDescription = "args ...";
                 return (SubrDelegate)Delegate.CreateDelegate(
                     typeof(SubrDelegate), methodInfo);
             }
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            paramDescription = decoder.Description;
 
             SubrDelegate del = (name, c, args) =>
             {
@@ -1771,7 +1508,8 @@ namespace Zilf.Interpreter
                 SubrDelegate targetDel;
                 if (alreadyDone.TryGetValue(targetMethodInfo, out targetDel) == false)
                 {
-                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, ctx, alreadyDone);
+                    string dummy;
+                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, ctx, out dummy, alreadyDone);
 
                     if (!alreadyDone.ContainsKey(targetMethodInfo))
                         alreadyDone.Add(targetMethodInfo, targetDel);

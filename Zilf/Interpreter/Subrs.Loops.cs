@@ -38,15 +38,15 @@ namespace Zilf.Interpreter
             [ZilSequenceParam]
             public struct Binding
             {
-                [Either(typeof(BindingName), typeof(BindingWithInitializer))]
+                [Either(typeof(AtomParams.AdeclOrAtom), typeof(BindingWithInitializer))]
                 public object Content;
 
                 public ZilAtom Atom
                 {
                     get
                     {
-                        if (Content is BindingName)
-                            return ((BindingName)Content).Atom;
+                        if (Content is AtomParams.AdeclOrAtom)
+                            return ((AtomParams.AdeclOrAtom)Content).Atom;
 
                         return ((BindingWithInitializer)Content).Name.Atom;
                     }
@@ -56,8 +56,8 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        if (Content is BindingName)
-                            return ((BindingName)Content).Decl;
+                        if (Content is AtomParams.AdeclOrAtom)
+                            return ((AtomParams.AdeclOrAtom)Content).Decl;
 
                         return ((BindingWithInitializer)Content).Name.Decl;
                     }
@@ -75,47 +75,10 @@ namespace Zilf.Interpreter
                 }
             }
 
-            [ZilSequenceParam]
-            public struct BindingName
-            {
-                [Either(typeof(ZilAtom), typeof(BindingAdecl))]
-                public object Content;
-
-                public ZilAtom Atom
-                {
-                    get
-                    {
-                        var atom = Content as ZilAtom;
-                        if (atom != null)
-                            return atom;
-
-                        return ((BindingAdecl)Content).Atom;
-                    }
-                }
-
-                public ZilObject Decl
-                {
-                    get
-                    {
-                        if (Content is BindingAdecl)
-                            return ((BindingAdecl)Content).Decl;
-
-                        return null;
-                    }
-                }
-            }
-
-            [ZilStructuredParam(StdAtom.ADECL)]
-            public struct BindingAdecl
-            {
-                public ZilAtom Atom;
-                public ZilObject Decl;
-            }
-
             [ZilStructuredParam(StdAtom.LIST)]
             public struct BindingWithInitializer
             {
-                public BindingName Name;
+                public AtomParams.AdeclOrAtom Name;
                 public ZilObject Initializer;
             }
         }

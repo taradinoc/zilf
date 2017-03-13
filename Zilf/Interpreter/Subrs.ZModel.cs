@@ -126,10 +126,11 @@ namespace Zilf.Interpreter
         public static class AtomParams
         {
             [ZilSequenceParam]
+            [ParamDesc("atom-or-adecl")]
             public struct AdeclOrAtom
             {
-                [Decl("<OR ATOM <ADECL ATOM>>"), Either(typeof(ZilAtom), typeof(ZilAdecl))]
-                public ZilObject Content;
+                [Either(typeof(ZilAtom), typeof(AdeclForAtom))]
+                public object Content;
 
                 public ZilAtom Atom
                 {
@@ -139,7 +140,7 @@ namespace Zilf.Interpreter
                         if (atom != null)
                             return atom;
 
-                        return (ZilAtom)((ZilAdecl)Content).First;
+                        return ((AdeclForAtom)Content).Atom;
                     }
                 }
 
@@ -147,13 +148,23 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        var adecl = Content as ZilAdecl;
-                        return adecl?.Second;
+                        if (Content is AdeclForAtom)
+                            return ((AdeclForAtom)Content).Decl;
+
+                        return null;
                     }
                 }
             }
 
+            [ZilStructuredParam(StdAtom.ADECL)]
+            public struct AdeclForAtom
+            {
+                public ZilAtom Atom;
+                public ZilObject Decl;
+            }
+
             [ZilSequenceParam]
+            [ParamDesc("atom-or-string")]
             public struct StringOrAtom
             {
                 [Either(typeof(ZilAtom), typeof(string))]

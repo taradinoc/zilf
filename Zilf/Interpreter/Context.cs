@@ -353,6 +353,8 @@ namespace Zilf.Interpreter
         {
             Contract.Ensures(globalValues.Count > Contract.OldValue(globalValues.Count));
 
+            var descAtom = GetStdAtom(StdAtom.DESC);
+
             var methods = typeof(Subrs).GetMethods(BindingFlags.Static | BindingFlags.Public);
             foreach (MethodInfo mi in methods)
             {
@@ -360,7 +362,8 @@ namespace Zilf.Interpreter
                 if (attrs.Length == 0)
                     continue;
 
-                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this);
+                string desc;
+                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this, out desc);
 
                 foreach (Subrs.SubrAttribute attr in attrs)
                 {
@@ -377,6 +380,8 @@ namespace Zilf.Interpreter
                     // these need to be on the root oblist
                     ZilAtom atom = rootObList[name];
                     SetGlobalVal(atom, sub);
+
+                    PutProp(sub, descAtom, ZilString.FromString(desc));
                 }
             }
         }

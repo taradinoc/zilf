@@ -25,6 +25,7 @@ namespace Zilf.Interpreter
     /// to a set of arguments.
     /// </summary>
     [ContractClass(typeof(IApplicableContracts))]
+    [ParamDesc("applicable")]
     interface IApplicable
     {
         /// <summary>

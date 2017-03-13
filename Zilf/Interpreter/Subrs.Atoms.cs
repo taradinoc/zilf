@@ -140,7 +140,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject REMOVE(Context ctx,
-            [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList))] object atomOrNameAndObList)
+            [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList), DefaultParamDesc = "atom")] object atomOrNameAndObList)
         {
             SubrContracts(ctx);
 

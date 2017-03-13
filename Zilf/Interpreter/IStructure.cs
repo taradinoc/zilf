@@ -25,6 +25,7 @@ namespace Zilf.Interpreter
     /// Provides methods common to structured types (LIST, STRING, possibly others).
     /// </summary>
     [ContractClass(typeof(IStructureContracts))]
+    [ParamDesc("structure")]
     interface IStructure : IEnumerable<ZilObject>
     {
         /// <summary>
