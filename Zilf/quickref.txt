@@ -1,171 +1,228 @@
 === MDL SUBRs and FSUBRs ===
 (i.e. "things you can use outside a routine")
 
-<- numbers...>
-<* numbers...>
-</ numbers...>
-<+ numbers...>
-<=? value values...>
-<==? value values...>
+<* numbers ...>
+<+ numbers ...>
+<- numbers ...>
+</ numbers ...>
 <0? value>
 <1? value>
-<ADD-TELL-TOKENS token-specs...>
-<ADJ-SYNONYM word new-words...>
-<AGAIN>
-<AND values...>
-<AND? values...>
-<ANDB numbers...>
+<==? value1 value2>
+<=? value1 value2>
+<ADD-TELL-TOKENS {pattern form} ...> **F
+<ADD-WORD atom-or-string [part-of-speech] [value] [flags]>
+<ADJ-SYNONYM original synonyms ...>
+<AGAIN [activation]>
+<ALLTYPES>
+<AND conditions ...> **F
+<AND? values ...>
+<ANDB numbers ...>
 <APPLICABLE? value>
-<APPLY applicable args...>
-<ASCII number/character>
-<ASSIGNED? name>
-<BIND (bindings...) expressions...>
-<BIT-SYNONYM flag-name new-names...>
-<BUZZ word...>
+<APPLY applicable args ...>
+<APPLYTYPE atom [handler]>
+<ASCII {number | character}>
+<ASSIGNED? atom [environment]>
+<ASSOCIATIONS>
+<ATOM pname>
+<AVALUE asoc>
+<BACK structure [count]>
+<BIND [activation-atom] (bindings ...) [body-decl] body ...> **F
+<BIT-SYNONYM first synonyms ...>
+<BLOCK (oblist ...)>
+<BOUND? atom [environment]>
+<BUZZ atoms ...>
 <BYTE number>
-<CHECK-VERSION? name/number>
-<CHRSET chrset0 chrset1 chrset2>
-<CHTYPE value type>
+<CHECK-VERSION? version-spec>
+<CHRSET alphabet-number {string | character | number | byte} ...>
+<CHTYPE value type-atom>
 <CLOSE channel>
-<COMPILATION-FLAG name [value]>
-<COMPILATION-FLAG-DEFAULT name value>
-<COMPILATION-FLAG-VALUE name>
-<COND (condition expressions...)...>
-<CONS value list>
-<CONSTANT name value>
-<CRLF>
-<DEFAULT-DEFINITION name expressions...>
-<DEFINE name (arguments...) expressions...>
-<DEFINE-GLOBALS name (name [BYTE|WORD] [default-value])...>
-<DEFINE20 name (arguments...) expressions...>
-<DEFMAC name (arguments...) expressions...>
-<DEFSTRUCT struct-spec>
+<COMPILATION-FLAG atom-or-string [value]>
+<COMPILATION-FLAG-DEFAULT atom-or-string value>
+<COMPILATION-FLAG-VALUE atom-or-string>
+<COND (condition body ...) ...> **F
+<CONS first rest>
+<CONSTANT atom-or-adecl value> **F
+<CRLF [channel]>
+<DECL-CHECK boolean>
+<DECL? value pattern>
+<DEFAULT-DEFINITION name body ...> **F
+<DEFINE name [activation-atom] arg-list [decl] body ...> **F
+<DEFINE-GLOBALS group-name
+    (atom-or-adecl [{BYTE | WORD}] [initializer]) ...> **F
+<DEFINE20 name [activation-atom] arg-list [decl] body ...> **F
+<DEFINITIONS package-name>
+<DEFMAC name [activation-atom] arg-list [decl] body ...> **F
+<DEFSTRUCT
+    type-name {base-type | (base-type struct-options ...)}
+    (field-name decl field-options ...) ...> **F
 <DELAY-DEFINITION name>
-<DIR-SYNONYM word new-words...>
-<DIRECTIONS word...>
-<EMPTY? structured>
-<EQVB numbers...>
-<ERROR values...>
-<EVAL value>
+<DIR-SYNONYM original synonyms ...>
+<DIRECTIONS atoms ...>
+<EMPTY? structure>
+<END-DEFINITIONS>
+<ENDBLOCK>
+<ENDPACKAGE>
+<ENDSECTION>
+<ENTRY atoms ...>
+<EQVB numbers ...>
+<ERROR values ...>
+<EVAL value [environment]>
+<EVALTYPE atom [handler]>
 <EXPAND value>
-<FILE-FLAGS word...>
+<FILE-FLAGS {CLEAN-STACK? | MDL-ZIL?} ...>
 <FILE-LENGTH channel>
-<FIRST structured>
-<FORM values...>
-<FREQUENT-WORDS?>
-<FUNCTION (arguments...) expressions...>
-<FUNNY-GLOBALS?>
-<G? number number>
-<G=? number number>
-<GASSIGNED? name>
-<GDECL name decl>
-<GETB table number>
-<GETPROP value value>
-<GLOBAL name value>
-<GVAL name>
-<ID value>
-<IFFLAG (compilation-flag-condition expressions...)...>
-<ILIST length initializer>
-<IMAGE number>
-<INSERT string oblist>
+<FLOAD filename>
+<FORM values ...>
+<FUNCTION [activation-atom] arg-list [decl] body ...> **F
+<FUNNY-GLOBALS? [boolean]>
+<G=? value1 value2>
+<G? value1 value2>
+<GASSIGNED? atom>
+<GBOUND? atom>
+<GC>
+<GDECL (atoms ...) decl ...> **F
+<GET-DECL item>
+<GETB table index>
+<GETPROP item indicator [default-value]>
+<GLOBAL atom-or-adecl default-value [decl] [size]> **F
+<GROW structure end beginning>
+<GUNASSIGN atom>
+<GVAL atom>
+<IFFLAG (condition body ...) ...> **F
+<ILIST count [init]>
+<IMAGE ch [channel]>
+<INCLUDE package-name ...>
+<INCLUDE-WHEN condition package-name ...>
+<INDENT-TO position [channel]>
+<INDEX offset>
+<INDICATOR asoc>
+<INSERT string-or-atom oblist>
 <INSERT-FILE filename>
-<ISTRING length initializer>
-<ITABLE [length-spec] number [(table-flags...)] [const-expressions...]>
-<IVECTOR length initializer>
-<L? number number>
-<L=? number number>
-<LANGUAGE name>
-<LENGTH structured>
-<LENGTH? structured number>
-<LIST values...>
-<LONG-WORDS?>
-<LOOKUP string oblist>
-<LSH number number>
-<LTABLE [(table-flags...)] values...>
-<LVAL name>
-<MAKE-GVAL atom>
-<MAPF reduce-func map-func [structured]>
-<MAPLEAVE>
-<MAPR reduce-func map-func [structured]>
-<MAPRET values...>
-<MAPSTOP>
-<MAX numbers...>
-<MEMBER value structured>
-<MEMQ value structured>
-<MIN numbers...>
-<MOD number number>
-<N=? value values...>
-<N==? value values...>
+<ISTRING count [init]>
+<ITABLE [specifier] count [flag-list] initializer ...>
+<ITEM asoc>
+<IVECTOR count [init]>
+<L=? value1 value2>
+<L? value1 value2>
+<LANGUAGE name [escape-char] [change-chrset]>
+<LEGAL? value>
+<LENGTH structure>
+<LENGTH? structure limit>
+<LINK value str oblist>
+<LIST values ...>
+<LONG-WORDS? [boolean]>
+<LOOKUP str oblist>
+<LPARSE text [10] [lookup-oblist]>
+<LSH number1 number2>
+<LTABLE [flag-list] values ...>
+<LVAL atom [environment]>
+<M-HPOS channel>
+<MAPF finalf applicable structs ...>
+<MAPLEAVE [value]>
+<MAPR finalf applicable structs ...>
+<MAPRET [value] ...>
+<MAPSTOP [value] ...>
+<MAX numbers ...>
+<MEMBER item structure>
+<MEMQ item structure>
+<MIN numbers ...>
+<MOBLIST name>
+<MOD number1 number2>
+<MSETG atom-or-adecl value> **F
+<N==? value1 value2>
+<N=? value1 value2>
+<NEW-ADD-WORD atom-or-string [type] [value] [flags]>
+<NEWTYPE name primtype-atom [decl]>
+<NEXT asoc>
 <NOT value>
-<NTH structured number>
-<OBJECT name (property values...)...>
-<OPEN "READ" filename>
-<OR values...>
-<OR? values...>
-<ORB numbers...>
-<ORDER-FLAGS? name>
-<ORDER-OBJECTS? name>
-<ORDER-TREE? name>
-<PARSE string>
-<PLTABLE [(table-flags...)] values...>
-<PREP-SYNONYM word new-words...>
-<PRINC value>
-<PROG (bindings...) expressions...>
-<PROPDEF name value [spec...]>
-<PTABLE [(table-flags...)] values...>
-<PUT structured number value>
-<PUTB table number value>
-<PUTPROP value value value>
-<PUTREST list list>
-<QUIT>
-<QUOTE value>
-<READSTRING string channel number>
-<REPEAT (bindings...) expressions...>
-<REPLACE-DEFINITION name expressions...>
-<REST structured [number]>
-<RETURN [value]>
-<ROOM name (property values...)>>
+<NTH structure index>
+<OBJECT name (property values ...) ...>
+<OBLIST? atom>
+<OFFSET offset structure-decl [value-decl]>
+<OPEN "READ" path>
+<OR conditions ...> **F
+<OR? values ...>
+<ORB numbers ...>
+<ORDER-FLAGS? LAST objects ...>
+<ORDER-OBJECTS? atom>
+<ORDER-TREE? atom>
+<PACKAGE package-name>
+<PARSE text [10] [lookup-oblist]>
+<PLTABLE [flag-list] values ...>
+<PNAME atom>
+<PREP-SYNONYM original synonyms ...>
+<PRIMTYPE value>
+<PRIN1 value [channel]>
+<PRINC value [channel]>
+<PRINT value [channel]>
+<PRINT-MANY channel printer items ...>
+<PRINTTYPE atom [handler]>
+<PROG [activation-atom] (bindings ...) [body-decl] body ...> **F
+<PROPDEF atom default-value spec ...> **F
+<PTABLE [flag-list] values ...>
+<PUT structure index new-value>
+<PUT-DECL item pattern>
+<PUTB table index new-value>
+<PUTPROP item indicator [value]>
+<PUTREST list new-rest>
+<QUIT [exit-code]>
+<QUOTE value> **F
+<READSTRING dest channel [max-length-or-stop-chars]>
+<REMOVE {atom | pname oblist}>
+<RENTRY atoms ...>
+<REPEAT [activation-atom] (bindings ...) [body-decl] body ...> **F
+<REPLACE-DEFINITION name body ...> **F
+<REST structure [count]>
+<RETURN [value] [activation]>
+<ROOM name (property value ...) ...>
 <ROOT>
-<ROUTINE name [activation] (arguments...) expressions...>
-<ROUTINE-FLAGS name...>
-<SET name value>
-<SET-DEFSTRUCT-FILE-DEFAULTS spec...>
-<SETG name value>
-<SETG20 name value>
-<SNAME atom>
+<ROUTINE name [activation-atom] arg-list body ...> **F
+<ROUTINE-FLAGS flags ...>
+<SET atom value [environment]>
+<SET-DEFSTRUCT-FILE-DEFAULTS args ...> **F
+<SETG atom value>
+<SETG20 atom value>
+<SORT predicate vector [record-size] [key-offset] [vector [record-size] ...]>
 <SPNAME atom>
-<STRING value...>
+<STRING values ...>
 <STRUCTURED? value>
-<SUBSTRUC structured number number [dest-structured]>
-<SYNONYM word new-words...>
-<SYNTAX verb [prep1] [OBJECT] [(FIND flag-name)] [(search-flags)]
-             [prep2] [OBJECT] [(FIND flag-name)] [(search-flags)]
-             = action-routine [preaction-routine] [name]>
-<TABLE (table-flags...)] values..>
-<TELL-TOKENS spec...>
-<TIME>
+<SUBSTRUC structure [rest] [amount] [structure]>
+<SYNONYM original synonyms ...>
+<SYNTAX verb [prep1] [OBJECT] [(FIND flag-name)] [(search-flags ...)]
+             [prep2] [OBJECT] [(FIND flag-name)] [(search-flags ...)]
+        = action-routine-name [preaction-routine-name] [action-name]>
+<TABLE [flag-list] values ...>
+<TELL-TOKENS {pattern form} ...> **F
+<TOP structure>
+<TUPLE values ...>
 <TYPE value>
-<TYPE? value type>
+<TYPE? value types ...>
+<TYPEPRIM type>
+<UNASSIGN atom [environment]>
 <UNPARSE value>
-<VECTOR values...>
-<VERB-SYNONYM word new-words...>
-<VERSION name/number>
-<VERSION? (name/number expressions...)...>
-<VOC string>
-<XORB numbers...>
-<ZGET table number>
-<ZIP-OPTIONS name...>
-<ZPUT table number value>
-<ZSTART name>
-
+<USE package-name ...>
+<USE-WHEN condition package-name ...>
+<VALID-TYPE? atom>
+<VALUE atom [environment]>
+<VECTOR values ...>
+<VERB-SYNONYM original synonyms ...>
+<VERSION {ZIP | EZIP | XZIP | YZIP | number} [TIME]>
+<VERSION? (version-spec body ...) ...> **F
+<VOC string [part-of-speech]>
+<XORB numbers ...>
+<ZGET table index>
+<ZIP-OPTIONS {COLOR | MOUSE | UNDO | DISPLAY | SOUND | MENU} ...>
+<ZPUT table index new-value>
+<ZREST table bytes>
+<ZSTART atom>
 
 === Z-code builtins ===
 (i.e. "things you can use inside a routine")
 
-<- values...>
-<* values...>
-</ values...>
-<+ values...>
+<- numbers...>
+<* numbers...>
+</ numbers...>
+<+ numbers...>
 <==? value values...>
 <0? value>
 <1? value>
@@ -175,10 +232,10 @@
 <ASH number places>
 <ASSIGNED? name>
 <BACK table [bytes]>
-<BAND number number>
+<BAND numbers...>
 <BCOM value>
 <BIND (bindings...) expressions...>
-<BOR number number>
+<BOR numbers...>
 <BUFOUT value>
 <CATCH>
 <CHECKU character>
@@ -189,10 +246,11 @@
 <CRLF>
 <CURGET table>
 <CURSET row column>
+<DCLEAR picture-number row column>
 <DEC name>
 <DIRIN stream-number>
-<DIROUT stream-number [table]>
-<DIROUT stream-number>
+<DIROUT stream-number [table] [width]>
+<DISPLAY picture-number row column>
 <DLESS? name value>
 <DO (name start end [step]) expressions...>
 <ERASE value>
@@ -202,6 +260,7 @@
 <FONT number>
 <FSET object flag>
 <FSET? object flag>
+<FSTACK [stack]>
 <G? value value>
 <G=? value value>
 <GET table offset>
@@ -230,7 +289,11 @@
 <LVAL name>
 <MAP-CONTENTS (name [next] object) expressions...>
 <MAP-DIRECTIONS (name pt room) expressions...>
+<MARGIN left right window-number>
+<MENU number table>
 <MOD number number>
+<MOUSE-INFO table>
+<MOUSE-LIMIT window-number>
 <MOVE object object>
 <N==? value values...>
 <NEXT? object>
@@ -238,11 +301,15 @@
 <NOT expression>
 <OR expressions...>
 <ORIGINAL?>
+<PICINF picture-number table>
+<PICSET table>
 <PLTABLE [(table-flags...)] values...>
+<POP [stack]>
 <PRINT packed-string>
 <PRINTB unpacked-string>
 <PRINTC character>
 <PRINTD object>
+<PRINTF table>
 <PRINTI string>
 <PRINTN number>
 <PRINTR string>
@@ -270,6 +337,7 @@
 <RTRUE>
 <SAVE [table] [bytes] [filename]>
 <SCREEN window-number>
+<SCROLL window-number pixels>
 <SET name value>
 <SETG name value>
 <SOUND number [effect] [volume] [routine]>
@@ -282,4 +350,10 @@
 <VALUE name/number>
 <VERIFY>
 <VERSION? (name/number expressions...)...>
+<WINATTR window-number flags operation>
+<WINGET window-number property>
+<WINPOS window-number row column>
+<WINPUT window-number property value>
+<WINSIZE window-number height width>
+<XPUSH value stack>
 <ZWSTR src-table length offset dest-table>
