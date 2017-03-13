@@ -185,7 +185,7 @@ namespace Zilf.Interpreter
 
         [FSubr]
         public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
-            [Either(typeof(ZilAtom), typeof(DefStructParams.DefaultsList))]
+            [Either(typeof(ZilAtom), typeof(DefStructParams.DefaultsList), DefaultParamDesc = "base-type")]
             object baseTypeOrDefaults,
             [Required]
             DefStructParams.FieldSpecList[] fieldSpecs)
