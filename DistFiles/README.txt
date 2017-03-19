@@ -1,4 +1,4 @@
-ZILF 0.7 distribution
+ZILF 0.8 distribution
 
 bin
 	Contains ZILF and ZAPF executables.
@@ -10,5 +10,4 @@ library
 	Contains the ZILF interactive fiction library.
 
 sample
-	Contains sample games for use with the library. When compiling these,
-	use the -ip command line option to set the library include path.
+	Contains sample games for use with the library.
