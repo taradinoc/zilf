@@ -370,7 +370,7 @@ namespace Zilf
         {
             if (inFile != null && mode != RunMode.Expression)
             {
-                includePaths.Add(Path.GetDirectoryName(Path.GetFullPath(inFile)));
+                includePaths.Insert(0, Path.GetDirectoryName(Path.GetFullPath(inFile)));
             }
 
             if (includePaths.Count == 0)
@@ -393,7 +393,7 @@ namespace Zilf
                     var candidate = Path.Combine(zilfDir, n);
                     if (Directory.Exists(candidate))
                     {
-                        includePaths.Insert(0, candidate);
+                        includePaths.Add(candidate);
                         found = true;
                         break;
                     }
