@@ -16,21 +16,18 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Antlr.Runtime;
-using Antlr.Runtime.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Language.Lexing;
-using Zilf.Language.Parsing;
 
 namespace Zilf
 {
@@ -439,83 +436,86 @@ Compiler switches:
         }
 
         // TODO: move Parse somewhere more sensible
-        public static IEnumerable<ZilObject> Parse(Context ctx, string str)
+        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(str != null);
+            Contract.Requires(chars != null);
 
-            return Parse(ctx, null, str, null);
+            return Parse(ctx, null, chars, null);
         }
 
-        public static IEnumerable<ZilObject> Parse(Context ctx, string str, params ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars, params ZilObject[] templateParams)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(str != null);
+            Contract.Requires(chars != null);
 
-            return Parse(ctx, null, str, templateParams);
+            return Parse(ctx, null, chars, templateParams);
         }
 
-        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, string str, params ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, IEnumerable<char> chars, params ZilObject[] templateParams)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(str != null);
+            Contract.Requires(chars != null);
 
-            ICharStream charStream = new ANTLRStringStream(str);
-            return Parse(ctx, src, charStream, templateParams);
-        }
+            var parser = new Parser(ctx, src, templateParams);
 
-        public static IEnumerable<ZilObject> Parse(Context ctx, ICharStream charStream)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(charStream != null);
-
-            return Parse(ctx, null, charStream, null);
-        }
-
-        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, ICharStream charStream, params ZilObject[] templateParams)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(charStream != null);
-
-            var lexer = new ZilLexer(charStream);
-
-            ITokenStream tokenStream = new CommonTokenStream(lexer);
-            var parser = new ZilParser(tokenStream);
-
-            var fret = parser.file(ctx.CurrentFile.Path);
-            if (parser.NumberOfSyntaxErrors > 0)
+            foreach (var po in parser.Parse(chars))
             {
-                foreach (var error in parser.SyntaxErrors)
+                switch (po.Type)
                 {
-                    ctx.HandleError(error);
+                    case ParserOutputType.Comment:
+                        // skip
+                        break;
+
+                    case ParserOutputType.Object:
+                        yield return po.Object;
+                        break;
+
+                    case ParserOutputType.EndOfInput:
+                        yield break;
+
+                    case ParserOutputType.SyntaxError:
+                        throw new InterpreterError(
+                            src ?? new FileSourceLine(ctx.CurrentFile.Path, parser.Line),
+                            InterpreterMessages.Syntax_Error_0, po.Exception.Message);
+
+                    case ParserOutputType.Terminator:
+                        throw new InterpreterError(
+                            src ?? new FileSourceLine(ctx.CurrentFile.Path, parser.Line),
+                            InterpreterMessages.Syntax_Error_0, "misplaced terminator");    //XXX
+
+                    default:
+                        throw new UnhandledCaseException("parser output type");
                 }
-                return null;
             }
-
-            if (fret.Tree == null)
-                return Enumerable.Empty<ZilObject>();
-
-            return ZilObject.ReadAllFromAST((ITree)fret.Tree, ctx, templateParams, src);
         }
 
-        public static ZilObject Evaluate(Context ctx, string str, bool wantExceptions = false)
+        static IEnumerable<char> ReadAllChars(Stream stream)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(str != null);
-
-            ICharStream charStream = new ANTLRStringStream(str);
-            return Evaluate(ctx, charStream, wantExceptions);
+            using (var rdr = new StreamReader(stream))
+            {
+                int c;
+                while ((c = rdr.Read()) >= 0)
+                {
+                    yield return (char)c;
+                }
+            }
         }
 
-        public static ZilObject Evaluate(Context ctx, ICharStream charStream, bool wantExceptions = false)
+        public static ZilObject Evaluate(Context ctx, Stream stream, bool wantExceptions = false)
         {
             Contract.Requires(ctx != null);
-            Contract.Requires(charStream != null);
+            Contract.Requires(stream != null);
 
+            return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
+        }
+
+        public static ZilObject Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
+        {
             IEnumerable<ZilObject> ztree;
             try
             {
-                ztree = Parse(ctx, charStream);
+                ztree = Parse(ctx, chars);
             }
             catch (InterpreterError ex) when (wantExceptions == false)
             {

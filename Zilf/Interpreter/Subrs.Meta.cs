@@ -36,9 +36,7 @@ namespace Zilf.Interpreter
                 {
                     using (var stream = ctx.OpenFile(newFile, false))
                     {
-                        Antlr.Runtime.ICharStream inputStream =
-                            new Antlr.Runtime.ANTLRInputStream(stream);
-                        Program.Evaluate(ctx, inputStream);
+                        Program.Evaluate(ctx, stream);
                     }
                     return ZilString.FromString("DONE");
                 }

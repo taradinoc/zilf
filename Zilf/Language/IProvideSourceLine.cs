@@ -21,4 +21,9 @@ namespace Zilf.Language
     {
         ISourceLine SourceLine { get; }
     }
+
+    interface ISettableSourceLine
+    {
+        ISourceLine SourceLine { set; }
+    }
 }

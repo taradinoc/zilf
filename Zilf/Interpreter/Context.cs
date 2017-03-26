@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
-    sealed class Context
+    sealed class Context : IParserSite
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
@@ -1703,5 +1703,17 @@ B * <PRINTB .X>
 
             return null;
         }
+
+        #region IParserSite
+
+        string IParserSite.CurrentFilePath => CurrentFile.Path;
+
+        ZilAtom IParserSite.ParseAtom(string text) => ZilAtom.Parse(text, this);
+
+        ZilAtom IParserSite.GetTypeAtom(ZilObject zo) => zo.GetTypeAtom(this);
+
+        ZilObject IParserSite.Evaluate(ZilObject zo) => zo.Eval(this);
+
+        #endregion
     }
 }
