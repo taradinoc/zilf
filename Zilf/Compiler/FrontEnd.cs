@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Antlr.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -246,14 +245,12 @@ namespace Zilf.Compiler
             using (var inputStream = OpenFile(inputFileName, false))
             {
                 // evaluate source text
-                ICharStream charStream = new ANTLRInputStream(inputStream);
-
                 using (ctx.PushFileContext(inputFileName))
                 {
                     ctx.InterceptOpenFile = this.OpenFile;
                     ctx.InterceptFileExists = this.CheckFileExists;
                     ctx.IncludePaths.AddRange(this.IncludePaths);
-                    Zilf.Program.Evaluate(ctx, charStream);
+                    Zilf.Program.Evaluate(ctx, inputStream);
 
                     // compile, if there were no evaluation errors
                     if (wantCompile && ctx.ErrorCount == 0)

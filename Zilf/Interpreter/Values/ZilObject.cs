@@ -15,25 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using Antlr.Runtime.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Language;
-using Zilf.Language.Lexing;
 
 namespace Zilf.Interpreter.Values
 {
     [ContractClass(typeof(ZilObjectContracts))]
-    abstract class ZilObject : IProvideSourceLine
+    abstract class ZilObject : IProvideSourceLine, ISettableSourceLine
     {
         /// <summary>
         /// Gets or sets a value indicating the object's source code location.
         /// </summary>
         public virtual ISourceLine SourceLine { get; set; }
 
+#if ANTLR_PARSER
         /// <summary>
         /// Translates a syntax tree (from the Antlr parser) to ZIL objects.
         /// </summary>
@@ -208,8 +207,9 @@ namespace Zilf.Interpreter.Values
                 }
             }
         }
+#endif
 
-        static IEnumerable<ZilObject> ExpandTemplateToken(ZilObject selector, ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> ExpandTemplateToken(ZilObject selector, ZilObject[] templateParams)
         {
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);

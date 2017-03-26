@@ -52,6 +52,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Interpreter\PackageTests.cs" />
+    <Compile Include="Interpreter\ParserTests.cs" />
     <Compile Include="Interpreter\TestHelpers.cs" />
     <Compile Include="Interpreter\FunctionTests.cs" />
     <Compile Include="Interpreter\TypeTests.cs" />
