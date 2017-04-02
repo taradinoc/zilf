@@ -512,10 +512,48 @@ Compiler switches:
 
         public static ZilObject Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
         {
-            IEnumerable<ZilObject> ztree;
             try
             {
-                ztree = Parse(ctx, chars);
+                var ztree = Parse(ctx, chars);
+
+                ZilObject result = null;
+                bool first = true;
+                foreach (ZilObject node in ztree)
+                {
+                    try
+                    {
+                        using (DiagnosticContext.Push(node.SourceLine))
+                        {
+                            if (first)
+                            {
+                                // V4 games can identify themselves this way instead of using <VERSION EZIP>
+                                var str = node as ZilString;
+                                if (str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true && ctx.ZEnvironment.ZVersion == 3)
+                                {
+                                    ctx.SetZVersion(4);
+                                }
+
+                                first = false;
+                            }
+                            result = node.Eval(ctx);
+                        }
+                    }
+                    catch (InterpreterError ex) when (wantExceptions == false)
+                    {
+                        ctx.HandleError(ex);
+                    }
+                    catch (ControlException ex)
+                    {
+                        var newEx = new InterpreterError(node.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
+
+                        if (wantExceptions)
+                            throw newEx;
+
+                        ctx.HandleError(newEx);
+                    }
+                }
+
+                return result;
             }
             catch (InterpreterError ex) when (wantExceptions == false)
             {
@@ -527,51 +565,6 @@ Compiler switches:
                 ctx.HandleError(new InterpreterError(InterpreterMessages.Misplaced_0, ex.Message));
                 return null;
             }
-
-            if (ztree == null)
-            {
-                // TODO: handle this better
-                throw new NotImplementedException("unhandled parse failure");
-            }
-
-            ZilObject result = null;
-            bool first = true;
-            foreach (ZilObject node in ztree)
-            {
-                try
-                {
-                    using (DiagnosticContext.Push(node.SourceLine))
-                    {
-                        if (first)
-                        {
-                            // V4 games can identify themselves this way instead of using <VERSION EZIP>
-                            var str = node as ZilString;
-                            if (str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true && ctx.ZEnvironment.ZVersion == 3)
-                            {
-                                ctx.SetZVersion(4);
-                            }
-
-                            first = false;
-                        }
-                        result = node.Eval(ctx);
-                    }
-                }
-                catch (InterpreterError ex) when (wantExceptions == false)
-                {
-                    ctx.HandleError(ex);
-                }
-                catch (ControlException ex)
-                {
-                    var newEx = new InterpreterError(node.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
-
-                    if (wantExceptions)
-                        throw newEx;
-
-                    ctx.HandleError(newEx);
-                }
-            }
-
-            return result;
         }
     }
 }

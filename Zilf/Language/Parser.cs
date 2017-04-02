@@ -83,14 +83,14 @@ namespace Zilf.Language
 
     sealed class ExpectedButFound : ParserException
     {
-        public ExpectedButFound(string whatYaWant, string whatYaNeed)
-            : base($"Expected {whatYaWant} but found {whatYaNeed}") { }
+        public ExpectedButFound(string expected, string actual)
+            : base($"expected {expected} but found {actual}") { }
     }
 
-    sealed class MisplacedTerminator : ParserException
+    sealed class ParsedNumberOverflowed : ParserException
     {
-        public MisplacedTerminator()
-            : base("Misplaced terminator") { }
+        public ParsedNumberOverflowed(string number, string radix = "decimal")
+            : base($"{radix} number '{number}' cannot be represented in 32 bits") { }
     }
 
     interface IParserSite
@@ -243,7 +243,7 @@ namespace Zilf.Language
                         yield break;
 
                     case ParserOutputType.Terminator:
-                        yield return ParserOutput.FromException(new MisplacedTerminator());
+                        yield return ParserOutput.FromException(new ExpectedButFound("object", $"'{Rebang(chars.Current)}'"));
                         yield break;
                 }
 
@@ -506,7 +506,14 @@ namespace Zilf.Language
                                             }
                                         } while (run && chars.MoveNext());
 
-                                        return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
+                                        try
+                                        {
+                                            return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
+                                        }
+                                        catch (OverflowException)
+                                        {
+                                            throw new ParsedNumberOverflowed(sb.ToString(), "binary");
+                                        }
                                     }
 
                                     throw new ExpectedButFound("binary number after '#2'", "<EOF>");
@@ -704,7 +711,14 @@ namespace Zilf.Language
                     (length == digits || (length == digits + 1 && (sb[0] == '-' || sb[0] == '+'))))
                 {
                     // decimal
-                    return new ZilFix(int.Parse(sb.ToString()));
+                    try
+                    {
+                        return new ZilFix(Convert.ToInt32(sb.ToString()));
+                    }
+                    catch (OverflowException)
+                    {
+                        throw new ParsedNumberOverflowed(sb.ToString());
+                    }
                 }
 
                 if (length > 2 && octalDigits == length - 2 && sb[0] == '*' && sb[length - 1] == '*')
@@ -712,7 +726,14 @@ namespace Zilf.Language
                     // octal
                     sb.Remove(0, 1);
                     sb.Length = length - 2;
-                    return new ZilFix(Convert.ToInt32(sb.ToString(), 8));
+                    try
+                    {
+                        return new ZilFix(Convert.ToInt32(sb.ToString(), 8));
+                    }
+                    catch (OverflowException)
+                    {
+                        throw new ParsedNumberOverflowed(sb.ToString(), "octal");
+                    }
                 }
             }
 
