@@ -304,7 +304,7 @@ namespace Zapf
 @"Assemble: zapf [switches] <inFile.zap> [<outFile.z#>]
 
 General switches:
-  -i                    use Inform-like syntax
+  -i                    use Inform opcode/stack names
   -q                    quiet (no banner)
   -v #                  set default Z-machine version (.NEW overrides this)
   -la                   list global label addresses
@@ -793,7 +793,7 @@ General switches:
         {
             using (var stream = ctx.OpenFile(path, false))
             {
-                var parser = new AntlrBasedParser(ctx.InformMode, ctx.OpcodeDict);
+                var parser = new ZapParser(ctx, ctx.OpcodeDict);
                 var result = parser.Parse(stream, path);
 
                 if (result.NumberOfSyntaxErrors > 0)
@@ -807,22 +807,23 @@ General switches:
         {
             if (node is NumericLiteral)
             {
-                return new Symbol(int.Parse(node.Text));
+                return new Symbol(int.Parse(((NumericLiteral)node).Text));
             }
             else if (node is SymbolExpr)
             {
                 Symbol result;
-                if (!ctx.LocalSymbols.TryGetValue(node.Text, out result) &&
-                    !ctx.GlobalSymbols.TryGetValue(node.Text, out result))
+                var text = ((SymbolExpr)node).Text;
+                if (!ctx.LocalSymbols.TryGetValue(text, out result) &&
+                    !ctx.GlobalSymbols.TryGetValue(text, out result))
                 {
                     if (ctx.FinalPass)
                     {
-                        Errors.ThrowFatal(node, "undefined symbol: " + node.Text, "node");
+                        Errors.ThrowFatal(node, "undefined symbol: " + text, "node");
                     }
                     else
                     {
-                        result = new Symbol(node.Text, SymbolType.Unknown, 0);
-                        ctx.GlobalSymbols.Add(node.Text, result);
+                        result = new Symbol(text, SymbolType.Unknown, 0);
+                        ctx.GlobalSymbols.Add(text, result);
                     }
                 }
 
@@ -866,7 +867,7 @@ General switches:
 
             if (node is NumericLiteral)
             {
-                value = (ushort)int.Parse(node.Text);
+                value = (ushort)int.Parse(((NumericLiteral)node).Text);
                 if (value < 256)
                     type = OPERAND_BYTE;
                 else
@@ -875,7 +876,8 @@ General switches:
             else if (node is SymbolExpr)
             {
                 Symbol sym;
-                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
+                var text = ((SymbolExpr)node).Text;
+                if (ctx.LocalSymbols.TryGetValue(text, out sym))
                 {
                     if (sym.Type == SymbolType.Label)
                     {
@@ -895,7 +897,7 @@ General switches:
                         value = (byte)sym.Value;
                     }
                 }
-                else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
+                else if (ctx.GlobalSymbols.TryGetValue(text, out sym))
                 {
                     if (sym.Type == SymbolType.Variable)
                         type = OPERAND_VAR;
@@ -907,7 +909,7 @@ General switches:
                 }
                 else if (ctx.FinalPass && !allowLocalLabel)
                 {
-                    Errors.ThrowFatal(node, "undefined symbol: {0}", node.Text);
+                    Errors.ThrowFatal(node, "undefined symbol: {0}", text);
                     type = 0;
                     value = 0;
                 }
@@ -917,9 +919,9 @@ General switches:
                     type = OPERAND_BYTE;
                     value = 0;
                     if (allowLocalLabel)
-                        ctx.MarkUnknownBranch(node.Text);
+                        ctx.MarkUnknownBranch(text);
                     else
-                        fixup = new Fixup(node.Text);
+                        fixup = new Fixup(text);
                 }
             }
             else
@@ -937,18 +939,19 @@ General switches:
 
             if (node is NumericLiteral)
             {
-                value = int.Parse(node.Text);
+                value = int.Parse(((NumericLiteral)node).Text);
                 return ((uint)value & 0xffffff00) != 0;
             }
             else if (node is SymbolExpr)
             {
                 Symbol sym;
-                if (ctx.LocalSymbols.TryGetValue(node.Text, out sym))
+                var text = ((SymbolExpr)node).Text;
+                if (ctx.LocalSymbols.TryGetValue(text, out sym))
                 {
                     // the only legal local symbol operand is a local variable
                     return false;
                 }
-                else if (ctx.GlobalSymbols.TryGetValue(node.Text, out sym))
+                else if (ctx.GlobalSymbols.TryGetValue(text, out sym))
                 {
                     return sym.Value < 0 || sym.Value > 255;
                 }
@@ -1083,7 +1086,7 @@ General switches:
                     var sym = EvalExpr(ctx, elements[i]);
                     if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
                     {
-                        Errors.ThrowFatal(elements[i], "unrecognized symbol: " + elements[i].Text);
+                        Errors.ThrowFatal(elements[i], "unrecognized symbol: " + ((SymbolExpr)elements[i]).Text);
                     }
                     if (node is ByteDirective)
                     {
@@ -1612,7 +1615,7 @@ General switches:
                         Errors.ThrowSerious(node, "expected literal string as only operand");
 
                     ctx.WriteByte((byte)opcode);
-                    ctx.WriteZString(node.Operands[0].Text, false);
+                    ctx.WriteZString(((StringLiteral)node.Operands[0]).Text, false);
                 }
             }
             else

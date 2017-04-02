@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Antlr.Runtime.Tree;
 using System;
 
 namespace Zapf
@@ -25,6 +24,12 @@ namespace Zapf
     {
         string SourceFile { get; }
         int LineNum { get; }
+    }
+
+    public interface IErrorSink
+    {
+        void HandleFatalError(FatalError fer);
+        void HandleSeriousError(SeriousError ser);
     }
 
     /// <summary>
@@ -88,24 +93,34 @@ namespace Zapf
             Warn(node, string.Format(format, args));
         }
 
-        public static void Serious(Context ctx, string message)
+        public static void Serious(IErrorSink sink, string message)
         {
-            Serious(ctx, null, message);
+            Serious(sink, null, message);
         }
 
-        public static void Serious(Context ctx, string format, params object[] args)
+        public static void Serious(IErrorSink sink, string format, params object[] args)
         {
-            Serious(ctx, string.Format(format, args));
+            Serious(sink, string.Format(format, args));
         }
 
-        public static void Serious(Context ctx, ISourceLine node, string message)
+        public static void Serious(IErrorSink sink, ISourceLine node, string message)
         {
-            ctx.HandleSeriousError(new SeriousError(node, message));
+            sink.HandleSeriousError(new SeriousError(node, message));
         }
 
-        public static void Serious(Context ctx, ISourceLine node, string format, params object[] args)
+        public static void Serious(IErrorSink sink, ISourceLine node, string format, params object[] args)
         {
-            Serious(ctx, node, string.Format(format, args));
+            Serious(sink, node, string.Format(format, args));
+        }
+
+        public static SeriousError MakeSerious(ISourceLine node, string message)
+        {
+            return new SeriousError(node, message);
+        }
+
+        public static SeriousError MakeSerious(ISourceLine node, string format, params object[] args)
+        {
+            return MakeSerious(node, string.Format(format, args));
         }
 
         public static void ThrowSerious(string message)
@@ -120,12 +135,12 @@ namespace Zapf
 
         public static void ThrowSerious(ISourceLine node, string message)
         {
-            throw new SeriousError(node, message);
+            throw MakeSerious(node, message);
         }
 
         public static void ThrowSerious(ISourceLine node, string format, params object[] args)
         {
-            ThrowSerious(node, string.Format(format, args));
+            throw MakeSerious(node, format, args);
         }
 
         public static void ThrowFatal(string message)
@@ -146,12 +161,6 @@ namespace Zapf
         public static void ThrowFatal(ISourceLine node, string format, params object[] args)
         {
             ThrowFatal(node, string.Format(format, args));
-        }
-
-        public static void ThrowFatal(ITree node, string message)
-        {
-            //XXX
-            throw new NotImplementedException();
         }
     }
 }
