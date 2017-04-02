@@ -27,7 +27,7 @@ namespace Zapf
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
 
-    class Context
+    class Context : IErrorSink
     {
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
         public string InFile, OutFile, DebugFile;
