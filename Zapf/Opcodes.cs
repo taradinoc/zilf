@@ -167,7 +167,7 @@ namespace Zapf
         Dless_P = 4,
         /*[ZOp("ENDMOVE", "ENDMOVE", 5, 6, ZOpFlags.Store)]
         Endmove = 271,*/
-        [ZOp("EQUAL?", "jeq", 1, 6, ZOpFlags.Branch | ZOpFlags.VarArgs)]
+        [ZOp("EQUAL?", "je", 1, 6, ZOpFlags.Branch | ZOpFlags.VarArgs)]
         Equal_P = 1,
         [ZOp("ERASE", "erase_line", 4, 6, 0)]
         Erase = 238,
