@@ -27,7 +27,7 @@ namespace Zapf
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
 
-    class Context : IErrorSink
+    class Context : IErrorSink, IDisposable
     {
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
         public string InFile, OutFile, DebugFile;
@@ -826,6 +826,23 @@ namespace Zapf
                     LanguageSpecialChars.Add('<', '«');
                     LanguageSpecialChars.Add('>', '»');
                     break;
+            }
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (stream != null)
+                    stream.Dispose();
+
+                if (prevStream != null)
+                    prevStream.Dispose();
+            }
+            finally
+            {
+                stream = null;
+                prevStream = null;
             }
         }
     }

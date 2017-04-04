@@ -75,7 +75,7 @@ namespace Zapf.Parsing
         }
     }
 
-    class Tokenizer
+    class Tokenizer : IDisposable
     {
         static readonly Dictionary<char, TokenType> CharTokens = new Dictionary<char, TokenType>
         {
@@ -88,8 +88,7 @@ namespace Zapf.Parsing
             { '\'', TokenType.Apostrophe },
         };
 
-        readonly Stream stream;
-        readonly StreamReader rdr;
+        StreamReader rdr;
         readonly string filename;
         int line = 1;
         Token? heldToken;
@@ -114,7 +113,6 @@ namespace Zapf.Parsing
             Contract.Requires(stream != null);
             Contract.Requires(filename != null);
 
-            this.stream = stream;
             this.rdr = new StreamReader(stream);
             this.filename = filename;
         }
@@ -330,9 +328,22 @@ namespace Zapf.Parsing
 
             return CanStartSymbol(c);
         }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (rdr != null)
+                    rdr.Dispose();
+            }
+            finally
+            {
+                rdr = null;
+            }
+        }
     }
 
-    class ZapParser
+    class ZapParser : IDisposable
     {
         readonly IErrorSink sink;
         readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
@@ -386,6 +397,19 @@ namespace Zapf.Parsing
 
                 // TODO: .TRUE and .FALSE?
             };
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (toks != null)
+                    toks.Dispose();
+            }
+            finally
+            {
+                toks = null;
+            }
         }
 
         public ParseResult Parse(Stream stream, string filename)
