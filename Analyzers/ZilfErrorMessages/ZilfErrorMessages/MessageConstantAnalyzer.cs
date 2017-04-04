@@ -88,9 +88,7 @@ namespace ZilfErrorMessages
 
                             if (constValue.HasValue)
                             {
-                                var formatStr = constValue.Value as string;
-
-                                if (formatStr != null)
+                                if (constValue.Value is string formatStr)
                                 {
                                     // check for duplicate message
                                     if (seenFormats.ContainsKey(formatStr))

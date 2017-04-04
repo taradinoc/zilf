@@ -117,21 +117,21 @@ namespace Zilf.Diagnostics
                 {
                     bool plural;
 
-                    if (arg is int)
+                    switch (arg)
                     {
-                        plural = (int)arg != 1;
-                    }
-                    else if (arg is CountableString)
-                    {
-                        plural = ((CountableString)arg).Plural;
-                    }
-                    else if (arg is string)
-                    {
-                        throw new ArgumentException($"{{#:s}} format requires a {nameof(CountableString)}, not a string");
-                    }
-                    else
-                    {
-                        return HandleOther(format, arg);
+                        case int i:
+                            plural = i != 1;
+                            break;
+
+                        case CountableString cs:
+                            plural = cs.Plural;
+                            break;
+
+                        case string _:
+                            throw new ArgumentException($"{{#:s}} format requires a {nameof(CountableString)}, not a string");
+
+                        default:
+                            return HandleOther(format, arg);
                     }
 
                     var parts = format.Split(Delimiter, 3);
@@ -147,13 +147,10 @@ namespace Zilf.Diagnostics
 
             static string HandleOther(string format, object arg)
             {
-                if (arg is IFormattable)
-                    return ((IFormattable)arg).ToString(format, System.Globalization.CultureInfo.CurrentCulture);
+                if (arg is IFormattable formattable)
+                    return formattable.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
 
-                if (arg != null)
-                    return arg.ToString();
-
-                return string.Empty;
+                return arg?.ToString() ?? string.Empty;
             }
         }
     }

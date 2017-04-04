@@ -738,8 +738,7 @@ namespace Zapf.Parsing
                     return new EqualsDirective(head.Text, expr);
                 }
 
-                DirectiveParseHandler handler;
-                if (directiveDict.TryGetValue(head.Text, out handler))
+                if (directiveDict.TryGetValue(head.Text, out DirectiveParseHandler handler))
                 {
                     return handler(head);
                 }

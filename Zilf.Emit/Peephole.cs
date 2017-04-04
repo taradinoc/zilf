@@ -445,10 +445,9 @@ namespace Zilf.Emit
 
             foreach (Line line in lines)
             {
-                ILabel canonical;
                 if (line.Label != null)
                     labelMap.Add(line.Label, line);
-                if (line.TargetLabel != null && aliases.TryGetValue(line.TargetLabel, out canonical))
+                if (line.TargetLabel != null && aliases.TryGetValue(line.TargetLabel, out var canonical))
                     line.TargetLabel = canonical;
             }
 
@@ -458,8 +457,7 @@ namespace Zilf.Emit
             {
                 if (line.TargetLabel != null)
                 {
-                    Line labeledLine;
-                    if (labelMap.TryGetValue(line.TargetLabel, out labeledLine))
+                    if (labelMap.TryGetValue(line.TargetLabel, out var labeledLine))
                         line.TargetLine = labeledLine;
                 }
             }
@@ -882,8 +880,7 @@ namespace Zilf.Emit
                             {
                                 if (l.TargetLabel != null)
                                 {
-                                    Line labeledLine;
-                                    if (labelMap.TryGetValue(l.TargetLabel, out labeledLine))
+                                    if (labelMap.TryGetValue(l.TargetLabel, out var labeledLine))
                                         l.TargetLine = labeledLine;
                                 }
                             }

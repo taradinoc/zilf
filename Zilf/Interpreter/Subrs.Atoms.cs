@@ -66,7 +66,7 @@ namespace Zilf.Interpreter
                     innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
                 }
 
-                var ztree = Program.Parse(ctx, text);        //XXX move into FrontEnd class
+                var ztree = Program.Parse(ctx, text);        // TODO: move into FrontEnd class
                 if (singleResult)
                 {
                     try
@@ -106,9 +106,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var str = stringOrAtom as string;
-
-            if (str != null)
+            if (stringOrAtom is string str)
             {
                 if (oblist.Contains(str))
                     throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT", str);
@@ -144,8 +142,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var atom = atomOrNameAndObList as ZilAtom;
-            if (atom != null)
+            if (atomOrNameAndObList is ZilAtom atom)
             {
                 if (atom.ObList != null)
                 {
@@ -206,11 +203,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var result = ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-            if (result == null)
-                result = ctx.MakeObList(name);
-
-            return result;
+            return ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(name);
         }
 
         [Subr("OBLIST?")]
@@ -370,10 +363,9 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var offset = item as ZilOffset;
-            if (offset != null)
+            if (item is ZilOffset offset)
                 return offset.StructurePattern;
-            
+
             return GETPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL));
         }
 
@@ -382,8 +374,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var offset = item as ZilOffset;
-            if (offset != null)
+            if (item is ZilOffset offset)
                 return new ZilOffset(offset.Index, pattern, offset.ValuePattern);
 
             return PUTPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL), pattern);

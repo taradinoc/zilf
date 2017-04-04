@@ -76,8 +76,7 @@ namespace Dezapf
 
         public static CompoundChunk Combine(Chunk first, Chunk second)
         {
-            CompoundChunk cc = first as CompoundChunk;
-            if (cc != null)
+            if (first is CompoundChunk cc)
             {
                 cc.Add(second);
                 return cc;

@@ -40,9 +40,7 @@ namespace Zilf.Interpreter.Values
             if (vector.GetLength() != 3)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
 
-            var indexFix = vector[0] as ZilFix;
-
-            if (indexFix == null)
+            if (!(vector[0] is ZilFix indexFix))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "vector coerced to OFFSET", "a FIX");
 
             Index = indexFix.Value;
@@ -52,23 +50,15 @@ namespace Zilf.Interpreter.Values
 
         public ZilOffset(int index, ZilObject structurePattern, ZilObject valuePattern)
         {
-            if (structurePattern == null)
-                throw new ArgumentNullException(nameof(structurePattern));
-            if (valuePattern == null)
-                throw new ArgumentNullException(nameof(valuePattern));
-
             this.Index = index;
-            this.StructurePattern = structurePattern;
-            this.ValuePattern = valuePattern;
+            this.StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
+            this.ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
         }
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilOffset;
-            if (other == null)
-                return false;
-
-            return other.Index == Index &&
+            return obj is ZilOffset other &&
+                other.Index == Index &&
                 this.StructurePattern.Equals(other.StructurePattern) &&
                 this.ValuePattern.Equals(other.ValuePattern);
         }

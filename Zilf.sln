@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
@@ -12,10 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4E29B85-317C-4E0F-AABD-D0101C558D91}"
-	ProjectSection(SolutionItems) = preProject
-		LocalTestRun.testrunconfig = LocalTestRun.testrunconfig
-		Zilf.vsmdi = Zilf.vsmdi
-	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf", "Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
 EndProject
@@ -36,8 +34,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Common", "Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages", "Analyzers\ZilfErrorMessages\ZilfErrorMessages\ZilfErrorMessages.csproj", "{D1A7D72F-8AF5-4225-A68B-985354E7BA86}"
 EndProject

@@ -37,23 +37,22 @@ namespace Zilf.Interpreter.Values
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
 
-            if (selector is ZilFix)
+            if (selector is ZilFix fix)
             {
-                var idx = ((ZilFix)selector).Value;
+                var idx = fix.Value;
                 if (idx >= 0 && idx < templateParams.Length)
                     return new[] { templateParams[idx] };
             }
-            else if (selector is ZilAdecl)
+            else if (selector is ZilAdecl adecl)
             {
-                var adecl = (ZilAdecl)selector;
-                var idx = (adecl.First as ZilFix)?.Value;
-                var atom = adecl.Second as ZilAtom;
-
-                if (idx >= 0 && idx < templateParams.Length && atom?.StdAtom == StdAtom.SPLICE)
+                if (adecl.First is ZilFix idx &&
+                    idx.Value >= 0 &&
+                    idx.Value < templateParams.Length &&
+                    adecl.Second is ZilAtom atom &&
+                    atom.StdAtom == StdAtom.SPLICE &&
+                    templateParams[idx.Value] is IEnumerable<ZilObject> result)
                 {
-                    var result = templateParams[(int)idx] as IEnumerable<ZilObject>;
-                    if (result != null)
-                        return result;
+                    return result;
                 }
             }
 
@@ -241,18 +240,22 @@ namespace Zilf.Interpreter.Values
         /// <summary>
         /// Gets a value indicating whether this object is a local variable reference (.FOO).
         /// </summary>
+        /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is an LVAL.</returns>
-        public virtual bool IsLVAL()
+        public virtual bool IsLVAL(out ZilAtom atom)
         {
+            atom = null;
             return false;
         }
 
         /// <summary>
         /// Gets a value indicating whether this object is a global variable reference (,FOO).
         /// </summary>
+        /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is a GVAL.</returns>
-        public virtual bool IsGVAL()
+        public virtual bool IsGVAL(out ZilAtom atom)
         {
+            atom = null;
             return false;
         }
 
@@ -285,16 +288,12 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(obj != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
-            var expandBefore = obj as IMayExpandBeforeEvaluation;
-
-            if (expandBefore != null && expandBefore.ShouldExpandBeforeEvaluation)
+            if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, environment);
 
             var result = obj.Eval(ctx, environment);
 
-            var expandAfter = result as IMayExpandAfterEvaluation;
-
-            if (expandAfter != null && expandAfter.ShouldExpandAfterEvaluation)
+            if (result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
                 return expandAfter.ExpandAfterEvaluation(ctx, environment);
 
             return Enumerable.Repeat(result, 1);
@@ -330,9 +329,7 @@ namespace Zilf.Interpreter.Values
 
             var result = obj.Eval(ctx);
 
-            var expandAfter = result as IMayExpandAfterEvaluation;
-
-            if (expandAfter?.ShouldExpandAfterEvaluation == true)
+            if (result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
                 return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
 
             return Enumerable.Repeat(result, 1);
@@ -367,9 +364,7 @@ namespace Zilf.Interpreter.Values
 
             return sequence.SelectMany(zo =>
             {
-                var expandBefore = zo as IMayExpandBeforeEvaluation;
-
-                if (expandBefore?.ShouldExpandBeforeEvaluation == true)
+                if (zo is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                     return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
 
                 return Enumerable.Repeat(zo, 1);

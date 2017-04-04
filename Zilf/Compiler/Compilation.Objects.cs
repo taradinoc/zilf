@@ -37,8 +37,7 @@ namespace Zilf.Compiler
             if (flag == null)
                 return null;
 
-            ZilAtom originalFlag;
-            if (Context.ZEnvironment.TryGetBitSynonym(flag, out originalFlag))
+            if (Context.ZEnvironment.TryGetBitSynonym(flag, out var originalFlag))
             {
                 flag = originalFlag;
             }
@@ -156,8 +155,7 @@ namespace Zilf.Compiler
 
                 ReserveGlobal = atom =>
                 {
-                    ZilGlobal g;
-                    if (globalsByName.TryGetValue(atom, out g))
+                    if (globalsByName.TryGetValue(atom, out var g))
                         g.StorageType = GlobalStorageType.Hard;
                 }
             };
@@ -174,8 +172,7 @@ namespace Zilf.Compiler
                 using (DiagnosticContext.Push(prop.SourceLine))
                 {
                     // the first element must be an atom identifying the property
-                    var atom = prop.First as ZilAtom;
-                    if (atom == null)
+                    if (!(prop.First is ZilAtom atom))
                     {
                         Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                         continue;
@@ -284,9 +281,8 @@ namespace Zilf.Compiler
 
                         if ((bool)isSynonym)
                         {
-                            IPropertyBuilder origPb;
                             var origAtom = synonym.OriginalWord.Atom;
-                            if (Properties.TryGetValue(origAtom, out origPb) == false)
+                            if (Properties.TryGetValue(origAtom, out var origPb) == false)
                             {
                                 DefineProperty(origAtom);
                                 origPb = Properties[origAtom];
@@ -309,8 +305,7 @@ namespace Zilf.Compiler
                     var propspec = Context.GetProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC));
                     if (propspec != null)
                     {
-                        var complexDef = propspec as ComplexPropDef;
-                        if (complexDef != null)
+                        if (propspec is ComplexPropDef complexDef)
                         {
                             // PROPDEF pattern
                             if (complexDef.Matches(Context, prop))
@@ -378,8 +373,7 @@ namespace Zilf.Compiler
                             case StdAtom.PSEUDO:
                                 foreach (ZilObject obj in prop.Rest)
                                 {
-                                    var str = obj as ZilString;
-                                    if (str == null)
+                                    if (!(obj is ZilString str))
                                         continue;
 
                                     try
@@ -402,8 +396,7 @@ namespace Zilf.Compiler
 
                                     try
                                     {
-                                        ZilAtom original;
-                                        if (Context.ZEnvironment.TryGetBitSynonym(atom, out original))
+                                        if (Context.ZEnvironment.TryGetBitSynonym(atom, out var original))
                                         {
                                             DefineFlag(original);
                                         }
@@ -495,9 +488,8 @@ namespace Zilf.Compiler
                 bool noSpecialCases = false;
 
                 // the first element must be an atom identifying the property
-                var propName = prop.First as ZilAtom;
                 ZilList propBody = prop.Rest;
-                if (propName == null)
+                if (!(prop.First is ZilAtom propName))
                 {
                     Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                     continue;
@@ -508,14 +500,12 @@ namespace Zilf.Compiler
                 if (propName.StdAtom == StdAtom.LOC ||
                     (propName.StdAtom == StdAtom.IN && ((IStructure)propBody).GetLength(1) == 1) && value is ZilAtom)
                 {
-                    var valueAtom = value as ZilAtom;
-                    if (valueAtom == null)
+                    if (!(value is ZilAtom valueAtom))
                     {
                         Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_0_Property_Must_Be_1, propName, "an atom"));
                         continue;
                     }
-                    IObjectBuilder parent;
-                    if (Objects.TryGetValue(valueAtom, out parent) == false)
+                    if (Objects.TryGetValue(valueAtom, out var parent) == false)
                     {
                         Context.HandleError(new CompilerError(
                             model,
@@ -533,8 +523,7 @@ namespace Zilf.Compiler
                 var propspec = Context.GetProp(propName, Context.GetStdAtom(StdAtom.PROPSPEC));
                 if (propspec != null)
                 {
-                    var complexDef = propspec as ComplexPropDef;
-                    if (complexDef != null)
+                    if (propspec is ComplexPropDef complexDef)
                     {
                         // PROPDEF pattern
                         if (complexDef.Matches(Context, prop))
@@ -580,15 +569,13 @@ namespace Zilf.Compiler
                             handled = true;
                             foreach (ZilObject obj in propBody)
                             {
-                                var atom = obj as ZilAtom;
-                                if (atom == null)
+                                if (!(obj is ZilAtom atom))
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
                                 }
 
-                                ZilAtom original;
-                                if (Context.ZEnvironment.TryGetBitSynonym(atom, out original))
+                                if (Context.ZEnvironment.TryGetBitSynonym(atom, out var original))
                                     atom = original;
 
                                 IFlagBuilder fb = Flags[atom];
@@ -601,8 +588,7 @@ namespace Zilf.Compiler
                             tb = ob.AddComplexProperty(Properties[propName]);
                             foreach (ZilObject obj in propBody)
                             {
-                                var atom = obj as ZilAtom;
-                                if (atom == null)
+                                if (!(obj is ZilAtom atom))
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
@@ -620,8 +606,7 @@ namespace Zilf.Compiler
                             tb = ob.AddComplexProperty(Properties[propName]);
                             foreach (ZilObject obj in propBody)
                             {
-                                var atom = obj as ZilAtom;
-                                if (atom == null)
+                                if (!(obj is ZilAtom atom))
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
@@ -647,9 +632,7 @@ namespace Zilf.Compiler
                             tb = ob.AddComplexProperty(Properties[propName]);
                             foreach (ZilObject obj in propBody)
                             {
-                                var str = obj as ZilString;
-
-                                if (str != null)
+                                if (obj is ZilString str)
                                 {
                                     var word = Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), prop.SourceLine);
                                     IWordBuilder wb = Vocabulary[word];
@@ -670,15 +653,13 @@ namespace Zilf.Compiler
                                 tb = ob.AddComplexProperty(Properties[propName]);
                                 foreach (ZilObject obj in propBody)
                                 {
-                                    var atom = obj as ZilAtom;
-                                    if (atom == null)
+                                    if (!(obj is ZilAtom atom))
                                     {
                                         Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                         break;
                                     }
 
-                                    IObjectBuilder ob2;
-                                    if (Objects.TryGetValue(atom, out ob2) == false)
+                                    if (Objects.TryGetValue(atom, out var ob2) == false)
                                     {
                                         Context.HandleError(new CompilerError(model, CompilerMessages.No_Such_Object_0, atom));
                                         break;

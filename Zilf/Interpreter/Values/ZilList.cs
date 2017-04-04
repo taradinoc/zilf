@@ -112,9 +112,9 @@ namespace Zilf.Interpreter.Values
             var sb = new StringBuilder(2);
             sb.Append(start);
 
-            if (items is ZilList)
+            if (items is ZilList list)
             {
-                items = ((ZilList)items).EnumerateNonRecursive();
+                items = list.EnumerateNonRecursive();
             }
 
             foreach (ZilObject obj in items)
@@ -193,10 +193,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
         /// Enumerates the items of the list, yielding a final <b>null</b> instead of repeating if the list is recursive.
@@ -226,8 +223,7 @@ namespace Zilf.Interpreter.Values
             if (obj == this)
                 return true;
 
-            var other = obj as ZilList;
-            if (other == null || other.StdTypeAtom != this.StdTypeAtom)
+            if (!(obj is ZilList other) || other.StdTypeAtom != this.StdTypeAtom)
                 return false;
 
             if (this.First == null)
@@ -254,10 +250,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        ZilObject IStructure.GetFirst()
-        {
-            return First;
-        }
+        ZilObject IStructure.GetFirst() => First;
 
         IStructure IStructure.GetRest(int skip)
         {
@@ -267,25 +260,14 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        IStructure IStructure.GetBack(int skip)
-        {
-            throw new NotSupportedException();
-        }
+        IStructure IStructure.GetBack(int skip) => throw new NotSupportedException();
 
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
+        public IStructure GetTop() => throw new NotSupportedException();
 
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
+        public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
-        }
 
-        bool IStructure.IsEmpty()
-        {
-            return First == null;
-        }
+        bool IStructure.IsEmpty() => First == null;
 
         ZilObject IStructure.this[int index]
         {
@@ -296,17 +278,13 @@ namespace Zilf.Interpreter.Values
             }
             set
             {
-                var rested = ((IStructure)this).GetRest(index) as ZilList;
-                if (rested == null || rested.IsEmpty)
+                if (!(((IStructure)this).GetRest(index) is ZilList rested) || rested.IsEmpty)
                     throw new ArgumentOutOfRangeException(nameof(index), "writing past end of list");
                 rested.First = value;
             }
         }
 
-        int IStructure.GetLength()
-        {
-            return this.Count();
-        }
+        int IStructure.GetLength() => this.Count();
 
         int? IStructure.GetLength(int limit)
         {

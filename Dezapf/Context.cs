@@ -156,8 +156,7 @@ namespace Dezapf
 
         public ZOpAttribute GetOpcodeInfo(ushort op)
         {
-            ZOpAttribute result;
-            opcodes.TryGetValue(op, out result);
+            opcodes.TryGetValue(op, out var result);
             return result;
         }
 

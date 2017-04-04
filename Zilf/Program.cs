@@ -37,8 +37,7 @@ namespace Zilf
 
         internal static int Main(string[] args)
         {
-            string inFile, outFile;
-            var ctx = ParseArgs(args, out inFile, out outFile);
+            var ctx = ParseArgs(args, out var inFile, out var outFile);
 
             if (ctx == null)
                 return 1;       // ParseArgs signaled an error
@@ -527,8 +526,9 @@ Compiler switches:
                             if (first)
                             {
                                 // V4 games can identify themselves this way instead of using <VERSION EZIP>
-                                var str = node as ZilString;
-                                if (str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true && ctx.ZEnvironment.ZVersion == 3)
+                                if (node is ZilString str &&
+                                    str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true &&
+                                    ctx.ZEnvironment.ZVersion == 3)
                                 {
                                     ctx.SetZVersion(4);
                                 }

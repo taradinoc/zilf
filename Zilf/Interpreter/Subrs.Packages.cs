@@ -34,16 +34,12 @@ namespace Zilf.Interpreter
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
-            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-            if (externalObList == null)
-                externalObList = ctx.MakeObList(externalAtom);
+            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(externalAtom);
 
             // internal oblist
             var iname = "I" + pname;
             var internalAtom = externalObList[iname];
-            var internalObList = ctx.GetProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-            if (internalObList == null)
-                internalObList = ctx.MakeObList(internalAtom);
+            var internalObList = ctx.GetProp(internalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(internalAtom);
 
             // new oblist path
             var newObPath = new ZilList(new ZilObject[] { internalObList, externalObList, ctx.RootObList });
@@ -65,9 +61,7 @@ namespace Zilf.Interpreter
 
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
-            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-            if (externalObList == null)
-                externalObList = ctx.MakeObList(externalAtom);
+            var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(externalAtom);
 
             // new oblist path
             var newObPath = new ZilList(new ZilObject[] { externalObList, ctx.RootObList });
@@ -95,8 +89,8 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (currentObPath == null || currentObPath.StdTypeAtom != StdAtom.LIST ||
+            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
+                currentObPath.StdTypeAtom != StdAtom.LIST ||
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
@@ -132,8 +126,8 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var currentObPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (currentObPath == null || currentObPath.StdTypeAtom != StdAtom.LIST ||
+            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
+                currentObPath.StdTypeAtom != StdAtom.LIST ||
                 ((IStructure)currentObPath).GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
@@ -210,13 +204,15 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var obpath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
-            if (obpath == null || obpath.StdTypeAtom != StdAtom.LIST)
+            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList obpath) ||
+                obpath.StdTypeAtom != StdAtom.LIST)
+            {
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
                     "local",
                     "OBLIST",
                     "a list starting with 2 OBLISTs");
+            }
 
             if (args.Length == 0)
                 return ctx.TRUE;
@@ -241,9 +237,11 @@ namespace Zilf.Interpreter
                 if (externalObList == null)
                     throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "package", packageName);
 
-                var pkgTypeAtom = ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) as ZilAtom;
-                if (pkgTypeAtom == null || pkgTypeAtom.StdAtom != requiredPackageType)
+                if (!(ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) is ZilAtom pkgTypeAtom) ||
+                    pkgTypeAtom.StdAtom != requiredPackageType)
+                {
                     throw new InterpreterError(InterpreterMessages._0_Wrong_Package_Type_Expected_1, name, ctx.GetStdAtom(requiredPackageType).ToString());
+                }
 
                 if (!obpathList.Contains(externalObList))
                     obpathList.Add(externalObList);

@@ -52,7 +52,7 @@ namespace Zilf.Interpreter
                 var pair = list.First as ZilList;
                 list = list.Rest;
 
-                if (pair == null || pair.StdTypeAtom != StdAtom.LIST)
+                if (pair?.StdTypeAtom != StdAtom.LIST)
                 {
                     throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "lists");
                 }
@@ -62,10 +62,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
                 }
 
-                var key = pair.First as ZilString;
-                var value = pair.Rest.First as ZilAtom;
-
-                if (key == null || value == null)
+                if (!(pair.First is ZilString key && pair.Rest.First is ZilAtom value))
                     throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
 
                 result[key.Text] = value;
@@ -124,8 +121,7 @@ namespace Zilf.Interpreter
             {
                 string key = ignoreCase ? pname.ToUpperInvariant() : pname;
 
-                ZilAtom result;
-                if (dict.TryGetValue(key, out result))
+                if (dict.TryGetValue(key, out var result))
                     return result;
 
                 result = new ZilAtom(pname, this, StdAtom.None);

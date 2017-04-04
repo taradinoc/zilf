@@ -362,8 +362,7 @@ namespace Zilf.Interpreter
                 if (attrs.Length == 0)
                     continue;
 
-                string desc;
-                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this, out desc);
+                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this, out var desc);
 
                 foreach (Subrs.SubrAttribute attr in attrs)
                 {
@@ -388,8 +387,7 @@ namespace Zilf.Interpreter
 
         public SubrDelegate GetSubrDelegate(string name)
         {
-            SubrDelegate result;
-            subrDelegates.TryGetValue(name, out result);
+            subrDelegates.TryGetValue(name, out var result);
             return result;
         }
 
@@ -669,9 +667,9 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(atom != null);
 
-            Binding binding;
-            if (globalValues.TryGetValue(atom, out binding))
+            if (globalValues.TryGetValue(atom, out var binding))
                 return binding.Value;
+
             return null;
         }
 
@@ -686,8 +684,7 @@ namespace Zilf.Interpreter
             Contract.Requires(atom != null);
             Contract.Ensures(Contract.Result<Binding>() != null || create == false);
 
-            Binding binding;
-            globalValues.TryGetValue(atom, out binding);
+            globalValues.TryGetValue(atom, out var binding);
 
             if (binding == null && create)
             {
@@ -813,14 +810,21 @@ namespace Zilf.Interpreter
 
             var obj = GetZVal(atom);
 
-            if (obj is ZilGlobal)
-                zenv.Globals.Remove((ZilGlobal)obj);
-            else if (obj is ZilRoutine)
-                zenv.Routines.Remove((ZilRoutine)obj);
-            else if (obj is ZilModelObject)
-                zenv.Objects.Remove((ZilModelObject)obj);
-            else if (obj is ZilConstant)
-                zenv.Constants.Remove((ZilConstant)obj);
+            switch (obj)
+            {
+                case ZilGlobal glob:
+                    zenv.Globals.Remove(glob);
+                    break;
+                case ZilRoutine rtn:
+                    zenv.Routines.Remove(rtn);
+                    break;
+                case ZilModelObject zmo:
+                    zenv.Objects.Remove(zmo);
+                    break;
+                case ZilConstant cnst:
+                    zenv.Constants.Remove(cnst);
+                    break;
+            }
         }
 
         [Obsolete("Use the overload that takes a " + nameof(ZilError) + " instead.")]
@@ -1114,8 +1118,7 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(atom != null);
 
-            TypeMapEntry entry;
-            if (typeMap.TryGetValue(atom, out entry))
+            if (typeMap.TryGetValue(atom, out var entry))
             {
                 if (entry.IsBuiltin && typeof(IApplicable).IsAssignableFrom(entry.BuiltinType))
                     return true;
@@ -1129,8 +1132,7 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(atom != null);
 
-            TypeMapEntry entry;
-            if (typeMap.TryGetValue(atom, out entry))
+            if (typeMap.TryGetValue(atom, out var entry))
             {
                 if (entry.ApplyTypeDelegate != null)
                     return true;
@@ -1265,11 +1267,9 @@ namespace Zilf.Interpreter
 
             var entry = typeMap[type];
 
-            if (handler is ZilAtom)
+            if (handler is ZilAtom otherType)
             {
-                var otherType = (ZilAtom)handler;
-                TypeMapEntry otherEntry;
-                if (!typeMap.TryGetValue(otherType, out otherEntry))
+                if (!typeMap.TryGetValue(otherType, out var otherEntry))
                 {
                     return SetTypeHandlerResult.OtherTypeNotRegistered;
                 }
@@ -1406,8 +1406,7 @@ namespace Zilf.Interpreter
             }
 
             // look it up in the typemap
-            TypeMapEntry entry;
-            if (typeMap.TryGetValue(newType, out entry))
+            if (typeMap.TryGetValue(newType, out var entry))
             {
                 if (value.PrimType != entry.PrimType)
                     throw new InterpreterError(
@@ -1615,8 +1614,7 @@ B * <PRINTB .X>
             Contract.Requires(path != null);
             Contract.Ensures(Contract.Result<Stream>() != null);
 
-            var fileSourceLine = TopFrame.SourceLine as FileSourceLine;
-            if (fileSourceLine != null)
+            if (TopFrame.SourceLine is FileSourceLine fileSourceLine)
                 path = Path.Combine(Path.GetDirectoryName(fileSourceLine.FileName), path);
 
             if (StreamOpener != null)

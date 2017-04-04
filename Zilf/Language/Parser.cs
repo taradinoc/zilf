@@ -231,9 +231,7 @@ namespace Zilf.Language
         {
             while (true)
             {
-                ISourceLine src;
-
-                var po = ParseOne(chars, out src);
+                var po = ParseOne(chars, out ISourceLine src);
 
                 switch (po.Type)
                 {
@@ -272,11 +270,10 @@ namespace Zilf.Language
                         
                         if (c == ':')
                         {
-                            ISourceLine dummy;
                             ParserOutput po2;
                             do
                             {
-                                po2 = ParseOneNonAdecl(chars, out dummy);
+                                po2 = ParseOneNonAdecl(chars, out _);
                             } while (po2.Type == ParserOutputType.Comment);
 
                             switch (po2.Type)
@@ -451,9 +448,9 @@ namespace Zilf.Language
                             {
                                 po.Type = ParserOutputType.Comment;
                             }
-                            else if (po.Object is ZilSplice)
+                            else if (po.Object is ZilSplice splice)
                             {
-                                foreach (var zo in (ZilSplice)po.Object)
+                                foreach (var zo in splice)
                                     heldObjects.Enqueue(zo);
 
                                 if (heldObjects.Count > 0)
@@ -471,8 +468,7 @@ namespace Zilf.Language
                             '#',
                             zo =>
                             {
-                                var fix = zo as ZilFix;
-                                if (fix != null && fix.Value == 2)
+                                if (zo is ZilFix fix && fix.Value == 2)
                                 {
                                     if (SkipWhitespace(chars))
                                     {
@@ -519,14 +515,15 @@ namespace Zilf.Language
                                     throw new ExpectedButFound("binary number after '#2'", "<EOF>");
                                 }
 
-                                var atom = zo as ZilAtom;
-                                if (atom == null)
-                                    throw new ExpectedButFound("atom or '2' after '#'", site.GetTypeAtom(zo).ToString());
+                                if (zo is ZilAtom atom)
+                                {
+                                    return ParsePrefixed(
+                                        chars,
+                                        atom.Text,
+                                        zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom)));
+                                }
 
-                                return ParsePrefixed(
-                                    chars,
-                                    atom.Text,
-                                    zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom)));
+                                throw new ExpectedButFound("atom or '2' after '#'", site.GetTypeAtom(zo).ToString());
                             });
 
                     case ';':
@@ -807,8 +804,7 @@ namespace Zilf.Language
 
             while (true)
             {
-                ISourceLine src;
-                var po = ParseOne(chars, out src);
+                var po = ParseOne(chars, out ISourceLine src);
 
                 switch (po.Type)
                 {
@@ -834,8 +830,7 @@ namespace Zilf.Language
                         {
                             var result = build(items);
 
-                            var asSettableSource = result as ISettableSourceLine;
-                            if (asSettableSource != null)
+                            if (result is ISettableSourceLine asSettableSource)
                                 asSettableSource.SourceLine = src;
 
                             return result;

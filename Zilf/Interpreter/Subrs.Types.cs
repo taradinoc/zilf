@@ -366,8 +366,7 @@ namespace Zilf.Interpreter
             {
                 if (init != null)
                 {
-                    var ch = init.Eval(ctx) as ZilChar;
-                    if (ch == null)
+                    if (!(init.Eval(ctx) is ZilChar ch))
                         throw new InterpreterError(InterpreterMessages._0_Iterated_Values_Must_Be_CHARACTERs, "ISTRING");
                     contents.Add(ch.Char);
                 }
@@ -383,8 +382,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var ch = arg as ZilChar;
-            if (ch != null)
+            if (arg is ZilChar ch)
                 return new ZilFix(ch.Char);
 
             return new ZilChar((char)((ZilFix)arg).Value);

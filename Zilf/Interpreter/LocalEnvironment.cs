@@ -160,9 +160,7 @@ namespace Zilf.Interpreter
         /// </remarks>
         public void Rebind(ZilAtom atom, ZilObject value = null, ZilObject decl = null)
         {
-            Binding binding;
-
-            if (bindings.TryGetValue(atom, out binding))
+            if (bindings.TryGetValue(atom, out var binding))
             {
                 binding.Value = value;
             }

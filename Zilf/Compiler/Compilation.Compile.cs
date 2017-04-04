@@ -72,14 +72,15 @@ namespace Zilf.Compiler
                 DefineProperty(pair.Key);
 
             // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
-            ZilAtom originalFlag;
+            ZilAtom getOriginal(ZilAtom flag) =>
+                ctx.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
             var highestFlags =
                 ctx.ZEnvironment.FlagsOrderedLast
                     .Concat(
                         from syn in ctx.ZEnvironment.Syntaxes
                         from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
                         where flag != null
-                        select ctx.ZEnvironment.TryGetBitSynonym(flag, out originalFlag) ? originalFlag : flag)
+                        select getOriginal(flag))
                     .Distinct()
                     .ToList();
 
@@ -122,8 +123,7 @@ namespace Zilf.Compiler
                 Constants.Add(ctx.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
 
             // self-inserting breaks
-            var siBreaks = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) as ZilString;
-            if (siBreaks != null)
+            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks)
             {
                 gb.SelfInsertingBreaks.Clear();
                 foreach (var c in siBreaks.Text)
@@ -168,9 +168,7 @@ namespace Zilf.Compiler
                 var nameAtom = ZilAtom.Parse(pair.Key, ctx);
                 var symbolAtom = ZilAtom.Parse(pair.Value, ctx);
 
-                IWord symbolWord;
-
-                if (ctx.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out symbolWord) && 
+                if (ctx.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out var symbolWord) &&
                     !ctx.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
                 {
                     var nameWord = ctx.ZEnvironment.VocabFormat.CreateWord(nameAtom);
@@ -190,8 +188,7 @@ namespace Zilf.Compiler
                 {
                     var mainAtom = ZilAtom.Parse(prefix + mainWord.Atom.Text, ctx);
 
-                    IOperand value;
-                    if (Constants.TryGetValue(mainAtom, out value))
+                    if (Constants.TryGetValue(mainAtom, out var value))
                     {
                         var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, ctx);
                         Constants[dupAtom] = value;
@@ -289,12 +286,11 @@ namespace Zilf.Compiler
             Constants.Add(Context.GetStdAtom(StdAtom.VOCAB), Game.VocabularyTable);
 
             // builders and values for globals (which may refer to constants)
-            IGlobalBuilder glb;
             foreach (ZilGlobal global in ctx.ZEnvironment.Globals)
             {
                 if (global.StorageType == GlobalStorageType.Hard)
                 {
-                    glb = gb.DefineGlobal(global.Name.ToString());
+                    var glb = gb.DefineGlobal(global.Name.ToString());
                     glb.DefaultValue = GetGlobalDefaultValue(global);
                     Globals.Add(global.Name, glb);
                 }
@@ -304,7 +300,7 @@ namespace Zilf.Compiler
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
             foreach (var name in reservedGlobals)
             {
-                glb = Game.DefineGlobal(name);
+                var glb = Game.DefineGlobal(name);
                 Globals.Add(ctx.RootObList[name], glb);
             }
 

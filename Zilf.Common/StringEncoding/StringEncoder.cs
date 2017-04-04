@@ -151,23 +151,10 @@ namespace Zilf.Common.StringEncoding
             };
         }
 
-        public static byte UnicodeToZscii(char c)
-        {
-            byte b;
-            if (unicodeTranslations.TryGetValue(c, out b))
-            {
-                return b;
-            }
-            else
-            {
-                return (byte)c;
-            }
-        }
+        public static byte UnicodeToZscii(char c) =>
+            unicodeTranslations.TryGetValue(c, out byte b) ? b : (byte)c;
 
-        public bool Frozen
-        {
-            get { return frozen; }
-        }
+        public bool Frozen => frozen;
 
         public void AddAbbreviation(string str)
         {
@@ -181,26 +168,17 @@ namespace Zilf.Common.StringEncoding
             abbrevs.Insert(idx < 0 ? ~idx : idx, entry);
         }
 
-        public byte[] Encode(string str)
-        {
-            return Encode(str, null, StringEncoderMode.Normal);
-        }
+        public byte[] Encode(string str) =>
+            Encode(str, null, StringEncoderMode.Normal);
 
-        public byte[] Encode(string str, StringEncoderMode mode)
-        {
-            return Encode(str, null, mode);
-        }
+        public byte[] Encode(string str, StringEncoderMode mode) =>
+            Encode(str, null, mode);
 
-        public byte[] Encode(string str, int? size)
-        {
-            return Encode(str, size, StringEncoderMode.Normal);
-        }
+        public byte[] Encode(string str, int? size) =>
+            Encode(str, size, StringEncoderMode.Normal);
 
-        public byte[] Encode(string str, int? size, StringEncoderMode mode)
-        {
-            int dummy;
-            return Encode(str, size, mode, out dummy);
-        }
+        public byte[] Encode(string str, int? size, StringEncoderMode mode) =>
+            Encode(str, size, mode, out _);
 
         public byte[] Encode(string str, int? size, StringEncoderMode mode, out int zchars)
         {
@@ -248,8 +226,7 @@ namespace Zilf.Common.StringEncoding
                 }
                 else
                 {
-                    byte b;
-                    if (unicodeTranslations.TryGetValue(c, out b) == false)
+                    if (unicodeTranslations.TryGetValue(c, out byte b) == false)
                     {
                         b = (byte)c;
                     }

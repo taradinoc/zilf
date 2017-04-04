@@ -1669,9 +1669,8 @@ namespace Zilf.Emit.Zap
             {
                 /* if 'a' pushes a constant and 'b' is ZERO? testing the stack, the
                  * answer depends on the value of the constant. */
-                int value;
-                if (a.Text.StartsWith("PUSH ", StringComparison.Ordinal) && int.TryParse(a.Text.Substring(5), out value) &&
-                    b.Text == "ZERO? STACK")
+                if (a.Text.StartsWith("PUSH ", StringComparison.Ordinal) && int.TryParse(a.Text.Substring(5), out int value) &&
+    b.Text == "ZERO? STACK")
                 {
                     if (value == 0)
                         return ControlsConditionResult.CausesBranchIfPositive;

@@ -36,8 +36,7 @@ W?MULE::
     .VOCEND
     .END";
 
-            MemoryStream mstr;
-            Assert.IsTrue(TestHelper.Assemble(SCode, out mstr));
+            Assert.IsTrue(TestHelper.Assemble(SCode, out var mstr));
 
             var buffer = mstr.GetBuffer();
 

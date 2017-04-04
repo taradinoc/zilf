@@ -53,10 +53,9 @@ namespace Dezapf
 
                 while (todo.Count > 0)
                 {
-                    Chunk chunk;
                     int pc = todo.Pop();
 
-                    if (ranges.TryGetValue(pc, out chunk) == false)
+                    if (ranges.TryGetValue(pc, out var chunk) == false)
                     {
                         stream.Seek(pc, SeekOrigin.Begin);
                         Instruction inst = Instruction.Decode(ctx, rdr, pc);
@@ -155,8 +154,7 @@ namespace Dezapf
                     DataChunk chunk = gapChunks.Dequeue();
 
                     // skip padding chunks filled with zeroes
-                    Chunk nextChunk;
-                    if (ranges.TryGetValue(chunk.PC + chunk.Length, out nextChunk) &&
+                    if (ranges.TryGetValue(chunk.PC + chunk.Length, out var nextChunk) &&
                         chunk.Length < nextChunk.GetAlignment(ctx) &&
                         chunk.Bytes.All(b => b == 0))
                     {
@@ -224,8 +222,7 @@ namespace Dezapf
                     localDefaults[i] = rdr.ReadZWord();
             }
 
-            int minExtent, maxExtent;
-            MeasureExtents(ctx, ranges, address, out minExtent, out maxExtent);
+            MeasureExtents(ctx, ranges, address, out int minExtent, out int maxExtent);
 
             FunctChunk funct = new FunctChunk(address, codeStart - address);
             funct.Locals = localDefaults;
@@ -233,8 +230,7 @@ namespace Dezapf
             ranges.Coalesce(address, maxExtent,
                 (int s1, int l1, Chunk v1, int s2, int l2, Chunk v2, out Chunk nv) =>
                 {
-                    FunctChunk fc = v1 as FunctChunk;
-                    if (fc != null)
+                    if (v1 is FunctChunk fc)
                     {
                         fc.Add(v2);
                         nv = fc;
@@ -280,12 +276,10 @@ namespace Dezapf
                 else
                     visited.Add(addr);
 
-                Chunk chunk;
-                if (!ranges.TryGetValue(addr, out chunk))
+                if (!ranges.TryGetValue(addr, out var chunk))
                     continue;
 
-                Instruction inst = chunk as Instruction;
-                if (inst != null)
+                if (chunk is Instruction inst)
                 {
                     minExtent = Math.Min(minExtent, inst.PC);
                     maxExtent = Math.Max(maxExtent, inst.PC + inst.Length - 1);

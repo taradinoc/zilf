@@ -62,9 +62,7 @@ namespace ZilfTests
         /// </list></param>
         void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
-            Context ctx;
-            OldParserWord word;
-            CreateWordInContext(zversion, newVoc, out ctx, out word);
+            CreateWordInContext(zversion, newVoc, out var ctx, out var word);
 
             // set parts of speech
             const byte VERB_VALUE = 115, PREPOSITION_VALUE = 200;
@@ -134,9 +132,7 @@ namespace ZilfTests
         [TestMethod]
         public void V3_OldVoc_Verb_Prep_Object_Should_Warn()
         {
-            Context ctx;
-            OldParserWord word;
-            CreateWordInContext(3, false, out ctx, out word);
+            CreateWordInContext(3, false, out var ctx, out var word);
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
@@ -149,9 +145,7 @@ namespace ZilfTests
         [TestMethod]
         public void V4_OldVoc_Verb_Prep_Object_Should_Warn()
         {
-            Context ctx;
-            OldParserWord word;
-            CreateWordInContext(4, false, out ctx, out word);
+            CreateWordInContext(4, false, out var ctx, out var word);
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
@@ -164,9 +158,7 @@ namespace ZilfTests
         [TestMethod]
         public void V4_OldVoc_CompactVocab_Verb_Dir_Should_Warn()
         {
-            Context ctx;
-            OldParserWord word;
-            CreateWordInContext(4, false, out ctx, out word);
+            CreateWordInContext(4, false, out var ctx, out var word);
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
 
             word.SetVerb(ctx, dummySrc, 100);
@@ -203,9 +195,7 @@ namespace ZilfTests
         [TestMethod]
         public void V3_NewVoc_Verb_Prep_Object_Adj_Should_Warn()
         {
-            Context ctx;
-            OldParserWord word;
-            CreateWordInContext(3, true, out ctx, out word);
+            CreateWordInContext(3, true, out var ctx, out var word);
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
@@ -513,9 +503,7 @@ namespace ZilfTests
             foreach (var tc in testCases)
             {
                 // set up word according to test case
-                Context ctx;
-                OldParserWord word;
-                CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
+                CreateWordInContext(tc.ZVersion, tc.NewVoc, out var ctx, out var word);
 
                 // TODO: catch exceptions in this block to indicate which test failed
 
@@ -694,9 +682,7 @@ namespace ZilfTests
             foreach (var tc in testCases)
             {
                 // set up word according to test case
-                Context ctx;
-                OldParserWord word;
-                CreateWordInContext(tc.ZVersion, tc.NewVoc, out ctx, out word);
+                CreateWordInContext(tc.ZVersion, tc.NewVoc, out var ctx, out var word);
                 ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.COMPACT_VOCABULARY_P), ctx.TRUE);
 
                 // TODO: catch exceptions in this block to indicate which test failed

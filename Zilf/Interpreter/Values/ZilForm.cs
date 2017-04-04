@@ -71,8 +71,7 @@ namespace Zilf.Interpreter.Values
                 try
                 {
                     // check for special forms
-                    var firstAtom = First as ZilAtom;
-                    if (firstAtom != null && Rest.Rest != null && Rest.Rest.First == null)
+                    if (First is ZilAtom firstAtom && Rest.Rest != null && Rest.Rest.First == null)
                     {
                         ZilObject arg = Rest.First;
 
@@ -123,9 +122,8 @@ namespace Zilf.Interpreter.Values
                 throw new InvalidOperationException("Can't evaluate null");
 
             ZilObject target;
-            if (First is ZilAtom)
+            if (First is ZilAtom fa)
             {
-                var fa = (ZilAtom)First;
                 target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
                 if (target == null)
                     throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0, fa.ToStringContext(ctx, false));
@@ -148,9 +146,8 @@ namespace Zilf.Interpreter.Values
         {
             ZilObject target;
 
-            if (First is ZilAtom)
+            if (First is ZilAtom fa)
             {
-                var fa = (ZilAtom)First;
                 target = ctx.GetGlobalVal(fa);
                 if (target == null)
                     target = ctx.GetLocalVal(fa);
@@ -166,10 +163,9 @@ namespace Zilf.Interpreter.Values
                 using (DiagnosticContext.Push(this.SourceLine, frame))
                 {
                     var result = ((ZilEvalMacro)target).Expand(ctx,
-                        Rest == null ? EmptyObjArray : ((ZilList)Rest).ToArray());
+                        Rest == null ? EmptyObjArray : Rest.ToArray());
 
-                    var resultForm = result as ZilForm;
-                    if (resultForm == null || resultForm == this)
+                    if (!(result is ZilForm resultForm) || resultForm == this)
                         return result;
 
                     // set the source info on the expansion to match the macro invocation
@@ -216,9 +212,9 @@ namespace Zilf.Interpreter.Values
         {
             foreach (var item in contents)
             {
-                if (item is ZilForm)
+                if (item is ZilForm form)
                 {
-                    yield return DeepRewriteSourceInfo((ZilForm)item, src);
+                    yield return DeepRewriteSourceInfo(form, src);
                 }
                 else
                 {
@@ -227,16 +223,34 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public override bool IsLVAL()
+        public override bool IsLVAL(out ZilAtom atom)
         {
-            var atom = First as ZilAtom;
-            return (atom != null && atom.StdAtom == StdAtom.LVAL && Rest.Rest != null && Rest.Rest.First == null);
+            if (First is ZilAtom head &&
+                head.StdAtom == StdAtom.LVAL &&
+                Rest.Rest?.IsEmpty == true
+                && Rest.First is ZilAtom name)
+            {
+                atom = name;
+                return true;
+            }
+
+            atom = null;
+            return false;
         }
 
-        public override bool IsGVAL()
+        public override bool IsGVAL(out ZilAtom atom)
         {
-            var atom = First as ZilAtom;
-            return (atom != null && atom.StdAtom == StdAtom.GVAL && Rest.Rest != null && Rest.Rest.First == null);
+            if (First is ZilAtom head &&
+                head.StdAtom == StdAtom.GVAL &&
+                Rest.Rest?.IsEmpty == true
+                && Rest.First is ZilAtom name)
+            {
+                atom = name;
+                return true;
+            }
+
+            atom = null;
+            return false;
         }
     }
 }

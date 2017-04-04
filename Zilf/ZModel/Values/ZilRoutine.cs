@@ -58,8 +58,7 @@ namespace Zilf.ZModel.Values
                     "list coerced to ROUTINE",
                     new CountableString("at least 2", true));
 
-            var argList = list.First as ZilList;
-            if (argList == null || argList.StdTypeAtom != StdAtom.LIST)
+            if (!(list.First is ZilList argList) || argList.StdTypeAtom != StdAtom.LIST)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
 
             return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
@@ -136,8 +135,7 @@ namespace Zilf.ZModel.Values
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilRoutine;
-            if (other == null)
+            if (!(obj is ZilRoutine other))
                 return false;
 
             if (!other.argspec.Equals(this.argspec))

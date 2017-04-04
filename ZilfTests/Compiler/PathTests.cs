@@ -60,8 +60,7 @@ namespace ZilfTests
                     }
                     else
                     {
-                        string content;
-                        if (inputs.TryGetValue(e.FileName, out content))
+                        if (inputs.TryGetValue(e.FileName, out var content))
                         {
                             var result = new MemoryStream();
                             using (var wtr = new StreamWriter(result, Encoding.UTF8, 512, true))

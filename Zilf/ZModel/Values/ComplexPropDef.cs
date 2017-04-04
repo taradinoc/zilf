@@ -303,8 +303,7 @@ namespace Zilf.ZModel.Values
             Contract.Requires(form != null);
 
             // validate and parse
-            var atom = form.First as ZilAtom;
-            if (atom == null)
+            if (!(form.First is ZilAtom head))
             {
                 throw new InterpreterError(
                     form,
@@ -318,7 +317,7 @@ namespace Zilf.ZModel.Values
             int length = 2;
             OutputElementType type;
 
-            switch (atom.StdAtom)
+            switch (head.StdAtom)
             {
                 case StdAtom.BYTE:
                     type = OutputElementType.Byte;
@@ -364,32 +363,33 @@ namespace Zilf.ZModel.Values
 
             if (((IStructure)form).GetLength(length) != length)
             {
-                throw new InterpreterError(form, InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1, atom, length);
+                throw new InterpreterError(form, InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1, head, length);
             }
 
-            ZilAtom variable;
-            ZilFix fix;
-            if (form.Rest.First.IsLVAL())
+            ZilAtom outVariable;
+            ZilFix outFix;
+            switch (form.Rest.First)
             {
-                variable = (ZilAtom)((ZilForm)form.Rest.First).Rest.First;
-                fix = null;
-            }
-            else if (form.Rest.First is ZilFix)
-            {
-                variable = null;
-                fix = (ZilFix)form.Rest.First;
-            }
-            else
-            {
-                throw new InterpreterError(
-                    form,
-                    InterpreterMessages._0_Expected_1,
-                    atom + ": arg 1",
-                    "an LVAL or FIX");
+                case var zo when (zo.IsLVAL(out var atom)):
+                    outVariable = atom;
+                    outFix = null;
+                    break;
+
+                case ZilFix fix:
+                    outVariable = null;
+                    outFix = fix;
+                    break;
+
+                default:
+                    throw new InterpreterError(
+                        form,
+                        InterpreterMessages._0_Expected_1,
+                        head + ": arg 1",
+                        "an LVAL or FIX");
             }
 
             ZilAtom partOfSpeech = null;
-            if (atom.StdAtom == StdAtom.VOC)
+            if (head.StdAtom == StdAtom.VOC)
             {
                 partOfSpeech = form.Rest.Rest.First as ZilAtom;
                 if (partOfSpeech == null)
@@ -397,13 +397,13 @@ namespace Zilf.ZModel.Values
                     throw new InterpreterError(
                         form,
                         InterpreterMessages._0_Expected_1,
-                        atom + ": arg 2",
+                        head + ": arg 2",
                         "an atom");
                 }
             }
 
             // done
-            return new OutputElement(type, constant, variable, partOfSpeech, fix);
+            return new OutputElement(type, constant, outVariable, partOfSpeech, outFix);
         }
 
         public IEnumerable<KeyValuePair<ZilAtom, int>> GetConstants(Context ctx)
@@ -438,8 +438,7 @@ namespace Zilf.ZModel.Values
                         continue;
 
                     // create the constant, or confirm its value
-                    int previousValue;
-                    if (used.TryGetValue(output.Constant, out previousValue))
+                    if (used.TryGetValue(output.Constant, out int previousValue))
                     {
                         if (constantValue != previousValue)
                             throw new InterpreterError(InterpreterMessages.PROPDEF_Constant_0_Defined_At_Conflicting_Positions, output.Constant);
@@ -754,8 +753,7 @@ namespace Zilf.ZModel.Values
                         if (captures != null)
                         {
                             var atom = input.Variable;
-                            Queue<ZilObject> queue;
-                            if (!captures.TryGetValue(atom, out queue))
+                            if (!captures.TryGetValue(atom, out var queue))
                             {
                                 queue = new Queue<ZilObject>(1);
                                 captures.Add(atom, queue);
@@ -793,13 +791,11 @@ namespace Zilf.ZModel.Values
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom)
             {
-                var constant = ctx.GetZVal((ZilAtom)value) as ZilConstant;
-                if (constant != null)
+                if (ctx.GetZVal((ZilAtom)value) is ZilConstant constant)
                     value = constant.Value;
             }
 
-            var declAtom = decl as ZilAtom;
-            if (declAtom != null)
+            if (decl is ZilAtom declAtom)
             {
                 switch (declAtom.StdAtom)
                 {
@@ -837,8 +833,7 @@ namespace Zilf.ZModel.Values
                 ZilObject capturedValue;
                 if (output.Variable != null)
                 {
-                    Queue<ZilObject> queue;
-                    if (captures.TryGetValue(output.Variable, out queue))
+                    if (captures.TryGetValue(output.Variable, out var queue))
                     {
                         if (queue.Count == 0)
                             return false;
@@ -905,8 +900,7 @@ namespace Zilf.ZModel.Values
                 ZilObject capturedValue;
                 if (output.Variable != null)
                 {
-                    Queue<ZilObject> queue;
-                    if (captures.TryGetValue(output.Variable, out queue))
+                    if (captures.TryGetValue(output.Variable, out var queue))
                     {
                         if (queue.Count == 0)
                             return false;

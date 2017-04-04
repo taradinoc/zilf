@@ -110,8 +110,7 @@ namespace Zilf.ZModel
         {
             Contract.Requires(atom != null);
 
-            LowCoreField result;
-            allFields.TryGetValue(atom.Text, out result);
+            allFields.TryGetValue(atom.Text, out var result);
             return result;
         }
     }

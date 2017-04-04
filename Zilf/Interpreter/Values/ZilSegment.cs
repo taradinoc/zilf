@@ -33,8 +33,8 @@ namespace Zilf.Interpreter.Values
         {
             Contract.Requires(obj != null);
 
-            if (obj is ZilForm)
-                this.form = (ZilForm)obj;
+            if (obj is ZilForm form)
+                this.form = form;
             else
                 throw new ArgumentException("Segment must be based on a FORM");
         }
@@ -50,25 +50,17 @@ namespace Zilf.Interpreter.Values
         {
             Contract.Requires(ctx != null);
 
-            var form = list as ZilForm;
-            if (form == null)
+            if (!(list is ZilForm form))
             {
-                form = new ZilForm(list);
-                form.SourceLine = SourceLines.Chtyped;
+                form = new ZilForm(list) { SourceLine = SourceLines.Chtyped };
             }
 
             return new ZilSegment(form);
         }
 
-        public ZilForm Form
-        {
-            get { return form; }
-        }
+        public ZilForm Form => form;
 
-        public override string ToString()
-        {
-            return "!" + form;
-        }
+        public override string ToString() => "!" + form;
 
         public override StdAtom StdTypeAtom => StdAtom.SEGMENT;
 
@@ -76,98 +68,50 @@ namespace Zilf.Interpreter.Values
 
         public bool ShouldExpandBeforeEvaluation => true;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilList(form);
-        }
+        public override ZilObject GetPrimitive(Context ctx) => new ZilList(form);
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
-        {
+        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
             throw new InterpreterError(InterpreterMessages.A_SEGMENT_Can_Only_Be_Evaluated_Inside_A_Structure);
-        }
 
-        public override bool Equals(object obj)
-        {
-            var other = obj as ZilSegment;
-            return other != null && other.form.Equals(this.form);
-        }
+        public override bool Equals(object obj) =>
+            obj is ZilSegment other && other.form.Equals(this.form);
 
-        public override int GetHashCode()
-        {
-            return form.GetHashCode();
-        }
+        public override int GetHashCode() => form.GetHashCode();
 
         #region IStructure Members
 
-        public ZilObject GetFirst()
-        {
-            return ((IStructure)form).GetFirst();
-        }
+        public ZilObject GetFirst() => ((IStructure)form).GetFirst();
 
-        public IStructure GetRest(int skip)
-        {
-            return ((IStructure)form).GetRest(skip);
-        }
+        public IStructure GetRest(int skip) => ((IStructure)form).GetRest(skip);
 
-        public IStructure GetBack(int skip)
-        {
+        public IStructure GetBack(int skip) => throw new NotSupportedException();
+
+        public IStructure GetTop() => throw new NotSupportedException();
+
+        public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
-        }
 
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool IsEmpty()
-        {
-            return ((IStructure)form).IsEmpty();
-        }
+        public bool IsEmpty() => ((IStructure)form).IsEmpty();
 
         public ZilObject this[int index]
         {
-            get
-            {
-                return ((IStructure)form)[index];
-            }
-            set
-            {
-                ((IStructure)form)[index] = value;
-            }
+            get => ((IStructure)form)[index];
+            set => ((IStructure)form)[index] = value;
         }
 
-        public int GetLength()
-        {
-            return ((IStructure)form).GetLength();
-        }
+        public int GetLength() => ((IStructure)form).GetLength();
 
-        public int? GetLength(int limit)
-        {
-            return ((IStructure)form).GetLength(limit);
-        }
+        public int? GetLength(int limit) => ((IStructure)form).GetLength(limit);
 
         #endregion
 
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            return form.GetEnumerator();
-        }
+        public IEnumerator<ZilObject> GetEnumerator() => form.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public IEnumerable<ZilObject> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env)
         {
-            var result = Form.Eval(ctx, env) as IEnumerable<ZilObject>;
-
-            if (result != null)
+            if (Form.Eval(ctx, env) is IEnumerable<ZilObject> result)
                 return result;
 
             throw new InterpreterError(

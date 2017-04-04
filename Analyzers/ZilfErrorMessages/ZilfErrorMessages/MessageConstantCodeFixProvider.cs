@@ -192,8 +192,7 @@ namespace ZilfErrorMessages
         {
             var root = await location.Document.GetSyntaxRootAsync(cancellationToken);
 
-            var accessExpr = root.FindToken(location.Location.SourceSpan.Start).Parent?.Parent as MemberAccessExpressionSyntax;
-            if (accessExpr == null)
+            if (!(root.FindToken(location.Location.SourceSpan.Start).Parent?.Parent is MemberAccessExpressionSyntax accessExpr))
                 return null;
 
             var argumentListExpr = accessExpr.FirstAncestorOrSelf<ArgumentListSyntax>();

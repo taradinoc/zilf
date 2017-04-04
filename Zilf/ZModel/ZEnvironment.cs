@@ -214,9 +214,7 @@ namespace Zilf.ZModel
 
         public IWord GetVocab(ZilAtom text)
         {
-            IWord result;
-
-            if (Vocabulary.TryGetValue(text, out result) == false)
+            if (Vocabulary.TryGetValue(text, out var result) == false)
             {
                 result = VocabFormat.CreateWord(text);
                 Vocabulary.Add(text, result);
@@ -346,13 +344,12 @@ namespace Zilf.ZModel
 
         static IEnumerable<ZilAtom> ObjectNamesMentionedInProperty(ZilList prop)
         {
-            if (prop.First is ZilAtom && prop.Rest.First != null)
+            if (prop.First is ZilAtom atom && prop.Rest?.First != null)
             {
-                switch (((ZilAtom)prop.First).StdAtom)
+                switch (atom.StdAtom)
                 {
                     case StdAtom.LOC:
-                        var loc = prop.Rest.First as ZilAtom;
-                        if (loc != null)
+                        if (prop.Rest.First is ZilAtom loc)
                             yield return loc;
                         break;
                     case StdAtom.IN:
@@ -400,8 +397,7 @@ namespace Zilf.ZModel
                 var atom = obj.Name;
 
                 // add this object if it hasn't already been added
-                ObjectOrderingEntry entry;
-                if (objectsByName.TryGetValue(atom, out entry) == false)
+                if (objectsByName.TryGetValue(atom, out var entry) == false)
                 {
                     // add this object
                     entry = new ObjectOrderingEntry(atom, obj, null, definitionOrder, mentionOrder++);
@@ -519,12 +515,9 @@ namespace Zilf.ZModel
 
             foreach (var p in obj.Properties)
             {
-                var name = p.First as ZilAtom;
-                if (name == null)
-                    continue;
-
-                if (name.StdAtom == StdAtom.LOC ||
-                    (name.StdAtom == StdAtom.IN && p.Count() == 2))
+                if (p.First is ZilAtom name &&
+                    (name.StdAtom == StdAtom.LOC ||
+                     (name.StdAtom == StdAtom.IN && p.Count() == 2)))
                 {
                     return p.Rest.First as ZilAtom;
                 }
@@ -758,8 +751,7 @@ namespace Zilf.ZModel
                 throw new ArgumentException("Alias is already defined", nameof(alias));
             }
 
-            ZilAtom original;
-            if (TryGetBitSynonym(target, out original))
+            if (TryGetBitSynonym(target, out var original))
             {
                 target = original;
             }
@@ -784,8 +776,7 @@ namespace Zilf.ZModel
 
         public ZilAtom InternGlobalName(ZilAtom atom)
         {
-            ZilAtom result;
-            if (InternedGlobalNames.TryGetValue(atom, out result))
+            if (InternedGlobalNames.TryGetValue(atom, out var result))
                 return result;
 
             InternedGlobalNames.Add(atom, atom);

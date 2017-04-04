@@ -27,11 +27,7 @@ namespace ZapfTests
 {
     internal static class TestHelper
     {
-        public static bool Assemble(string code)
-        {
-            MemoryStream dummy;
-            return Assemble(code, out dummy);
-        }
+        public static bool Assemble(string code) => Assemble(code, out _);
 
         public static bool Assemble(string code, out MemoryStream storyFile)
         {

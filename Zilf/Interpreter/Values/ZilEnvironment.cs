@@ -48,14 +48,9 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilEnvironment;
-            if (other == null)
-                return false;
-
-            LocalEnvironment thisTarget, otherTarget;
-
-            if (this.env.TryGetTarget(out thisTarget) &&
-                other.env.TryGetTarget(out otherTarget))
+            if (obj is ZilEnvironment other &&
+                this.env.TryGetTarget(out var thisTarget) &&
+                other.env.TryGetTarget(out var otherTarget))
             {
                 return thisTarget == otherTarget;
             }
@@ -87,27 +82,11 @@ namespace Zilf.Interpreter.Values
             return name;
         }
 
-        public LocalEnvironment LocalEnvironment
-        {
-            get
-            {
-                LocalEnvironment result;
-                if (env.TryGetTarget(out result))
-                {
-                    return result;
-                }
+        public LocalEnvironment LocalEnvironment =>
+            env.TryGetTarget(out var result)
+            ? result
+            : throw new InterpreterError(InterpreterMessages.Environment_Has_Expired);
 
-                throw new InterpreterError(InterpreterMessages.Environment_Has_Expired);
-            }
-        }
-
-        public bool IsLegal
-        {
-            get
-            {
-                LocalEnvironment dummy;
-                return env.TryGetTarget(out dummy);
-            }
-        }
+        public bool IsLegal => env.TryGetTarget(out _);
     }
 }

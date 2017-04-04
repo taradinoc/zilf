@@ -152,11 +152,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilVector;
-            if (other == null)
-                return false;
-
-            return this.SequenceEqual(other);
+            return obj is ZilVector other && this.SequenceEqual(other);
         }
 
         public override int GetHashCode()

@@ -136,12 +136,10 @@ namespace DezapfTests
 
             int rc;
 
-            string code;
-            rc = RunDezapf(zcode, out code);
+            rc = RunDezapf(zcode, out var code);
             Assert.AreEqual(0, rc, "Dezapf signaled error");
 
-            byte[] actual;
-            rc = RunZapf(code, out actual);
+            rc = RunZapf(code, out var actual);
             Assert.AreEqual(0, rc, "Zapf signaled error");
 
             CollectionAssert.AreEqual(zcode, actual);

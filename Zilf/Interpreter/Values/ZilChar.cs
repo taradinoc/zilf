@@ -66,20 +66,13 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.FIX;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilFix(value);
-        }
+        public override ZilObject GetPrimitive(Context ctx) => new ZilFix(value);
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilChar;
-            return other != null && other.value == this.value;
+            return obj is ZilChar other && other.value == this.value;
         }
 
-        public override int GetHashCode()
-        {
-            return value;
-        }
+        public override int GetHashCode() => value;
     }
 }

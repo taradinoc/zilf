@@ -260,18 +260,15 @@ namespace Zilf.ZModel.Values
 
                 if (pattern != null && pattern.Length > 0)
                 {
-                    ZilAtom atom;
-                    ZilVector rest;
-                    if (index >= pattern.Length - 1 && (rest = pattern[pattern.Length - 1] as ZilVector) != null)
+                    if (index >= pattern.Length - 1 && pattern[pattern.Length - 1] is ZilVector rest)
                     {
                         index -= pattern.Length - 1;
-                        atom = rest[index % (rest.GetLength() - 1) + 1] as ZilAtom;
-                        return !(atom != null && atom.StdAtom == StdAtom.BYTE);
+                        return !(rest[index % (rest.GetLength() - 1) + 1] is ZilAtom atom && atom.StdAtom == StdAtom.BYTE);
                     }
 
-                    if ((atom = pattern[index % pattern.Length] as ZilAtom) != null)
+                    if (pattern[index % pattern.Length] is ZilAtom atom2)
                     {
-                        return atom.StdAtom != StdAtom.BYTE;
+                        return atom2.StdAtom != StdAtom.BYTE;
                     }
 
                     throw new InvalidOperationException("malformed pattern");

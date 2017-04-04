@@ -301,7 +301,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (arg is ZilFix && ((ZilFix)arg).Value == 0)
+            if (arg is ZilFix fix && fix.Value == 0)
                 return ctx.TRUE;
 
             return ctx.FALSE;
@@ -312,7 +312,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (arg is ZilFix && ((ZilFix)arg).Value == 1)
+            if (arg is ZilFix fix && fix.Value == 1)
                 return ctx.TRUE;
 
             return ctx.FALSE;

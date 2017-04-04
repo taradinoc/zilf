@@ -31,14 +31,12 @@ namespace Zilf.Compiler
     {
         public static void WalkChildren(this ZilObject obj, Action<ZilForm> action)
         {
-            var enumerable = obj as IEnumerable<ZilObject>;
-
-            if (enumerable != null)
+            if (obj is IEnumerable<ZilObject> enumerable)
             {
                 foreach (var child in enumerable)
                 {
-                    if (child is ZilForm)
-                        action((ZilForm)child);
+                    if (child is ZilForm form)
+                        action(form);
 
                     WalkChildren(child, action);
                 }
@@ -63,19 +61,14 @@ namespace Zilf.Compiler
 
         public static bool IsSetToZeroForm(this ZilObject last)
         {
-            var form = last as ZilForm;
-            if (form == null)
+            if (!(last is ZilForm form))
                 return false;
 
-            var atom = form.First as ZilAtom;
-            if (atom == null ||
+            if (!(form.First is ZilAtom atom) ||
                 (atom.StdAtom != StdAtom.SET && atom.StdAtom != StdAtom.SETG))
                 return false;
 
-            ZilFix fix;
-            if (form.Rest == null || form.Rest.Rest == null ||
-                (fix = form.Rest.Rest.First as ZilFix) == null ||
-                fix.Value != 0)
+            if (!(form.Rest?.Rest?.First is ZilFix fix) || fix.Value != 0)
                 return false;
 
             return true;
@@ -86,12 +79,10 @@ namespace Zilf.Compiler
             if (zo == null)
                 return false;
 
-            var form = zo as ZilForm;
-            if (form == null)
+            if (!(zo is ZilForm form))
                 return false;
 
-            var first = form.First as ZilAtom;
-            if (first == null)
+            if (!(form.First is ZilAtom first))
                 return true;
 
             return first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
@@ -101,15 +92,13 @@ namespace Zilf.Compiler
         {
             Contract.Requires(expr != null);
 
-            var form = expr as ZilForm;
-            if (form == null)
+            if (!(expr is ZilForm form))
                 return false;
 
-            var atom = form.First as ZilAtom;
-            if (atom == null)
+            if (!(form.First is ZilAtom atom))
                 return false;
 
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
+            if (!(form.Rest?.First is ZilAtom))
                 return false;
 
             switch (atom.StdAtom)
@@ -129,15 +118,13 @@ namespace Zilf.Compiler
         {
             Contract.Requires(expr != null);
 
-            var form = expr as ZilForm;
-            if (form == null)
+            if (!(expr is ZilForm form))
                 return false;
 
-            var atom = form.First as ZilAtom;
-            if (atom == null)
+            if (!(form.First is ZilAtom atom))
                 return false;
 
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
+            if (!(form.Rest?.First is ZilAtom))
                 return false;
 
             return atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET;
@@ -147,15 +134,13 @@ namespace Zilf.Compiler
         {
             Contract.Requires(expr != null);
 
-            var form = expr as ZilForm;
-            if (form == null)
+            if (!(expr is ZilForm form))
                 return false;
 
-            var atom = form.First as ZilAtom;
-            if (atom == null)
+            if (!(form.First is ZilAtom atom))
                 return false;
 
-            if (form.Rest == null || !(form.Rest.First is ZilAtom))
+            if (!(form.Rest?.First is ZilAtom))
                 return false;
 
             return atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG;
@@ -163,16 +148,14 @@ namespace Zilf.Compiler
 
         public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
         {
-            var list = expr as ZilList;
-            if (list == null)
+            if (!(expr is ZilList list))
                 return false;
 
             if (list is ZilForm)
             {
-                var atom = list.First as ZilAtom;
-                if (atom != null &&
+                if (list.First is ZilAtom atom &&
                     (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                    list.Rest != null && list.Rest.First == localAtom)
+                    list.Rest?.First == localAtom)
                 {
                     return true;
                 }
@@ -187,26 +170,21 @@ namespace Zilf.Compiler
 
         public static bool IsPredicate(this ZilObject zo, int zversion)
         {
-            var form = zo as ZilForm;
-
-            if (form == null)
-                return false;
-
-            var head = form.First as ZilAtom;
-
-            switch (head?.StdAtom)
+            if (zo is ZilForm form && form.First is ZilAtom head)
             {
-                case StdAtom.AND:
-                case StdAtom.OR:
-                case StdAtom.NOT:
-                    return form.Rest.All(a => a.IsPredicate(zversion));
+                switch (head.StdAtom)
+                {
+                    case StdAtom.AND:
+                    case StdAtom.OR:
+                    case StdAtom.NOT:
+                        return form.Rest.All(a => a.IsPredicate(zversion));
 
-                case null:
-                    return false;
-
-                default:
-                    return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
+                    default:
+                        return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
+                }
             }
+
+            return false;
         }
     }
 }

@@ -347,8 +347,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
 
             var vectorLength = vector.GetLength();
-            int numRecords, remainder;
-            numRecords = Math.DivRem(vectorLength, recordSize, out remainder);
+            int numRecords = Math.DivRem(vectorLength, recordSize, out var remainder);
 
             if (remainder != 0)
                 throw new InterpreterError(InterpreterMessages._0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size, "SORT");
@@ -361,8 +360,7 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
 
                     var len = asp.Vector.GetLength();
-                    int recs, rem;
-                    recs = Math.DivRem(len, asp.RecordSize, out rem);
+                    int recs = Math.DivRem(len, asp.RecordSize, out var rem);
 
                     if (rem != 0)
                         throw new InterpreterError(InterpreterMessages._0_Vector_Length_Must_Be_A_Multiple_Of_Record_Size, "SORT");

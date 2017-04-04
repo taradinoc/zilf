@@ -165,11 +165,11 @@ namespace Zilf.Interpreter
                 return name;
             }
 
-            if (state is ZilVector)
+            if (state is ZilVector vec)
             {
                 // insert the replacement now
                 ctx.PutProp(name, replaceAtom, replaceAtom);
-                return ZilObject.EvalProgram(ctx, ((ZilVector)state).ToArray());
+                return ZilObject.EvalProgram(ctx, vec.ToArray());
             }
 
             if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
@@ -218,21 +218,17 @@ namespace Zilf.Interpreter
             foreach (var clause in args)
             {
                 bool match;
-
-                ZilAtom atom;
-                ZilString str;
-                ZilForm form;
                 ZilObject value;
 
-                if (((atom = clause.Condition as ZilAtom) != null &&
+                if ((clause.Condition is ZilAtom atom &&
                      (value = ctx.GetCompilationFlagValue(atom)) != null) ||
-                    ((str = clause.Condition as ZilString) != null &&
-                    (value = ctx.GetCompilationFlagValue(str.Text)) != null))
+                    (clause.Condition is ZilString str &&
+                     (value = ctx.GetCompilationFlagValue(str.Text)) != null))
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;
                 }
-                else if ((form = clause.Condition as ZilForm) != null)
+                else if (clause.Condition is ZilForm form)
                 {
                     form = SubstituteIfflagForm(ctx, form);
                     match = form.Eval(ctx).IsTrue;
@@ -265,22 +261,21 @@ namespace Zilf.Interpreter
         /// the values of compilation flags.</returns>
         internal static ZilForm SubstituteIfflagForm(Context ctx, ZilForm form)
         {
-            var result = new ZilForm(
-                form.Select(zo =>
+            var body = form.Select(zo =>
+            {
+                ZilObject value;
+
+                switch (zo)
                 {
-                    ZilAtom atom;
-                    ZilObject value;
-                    if ((atom = zo as ZilAtom) != null &&
-                        (value = ctx.GetCompilationFlagValue(atom)) != null)
-                    {
+                    case ZilAtom atom when ((value = ctx.GetCompilationFlagValue(atom)) != null):
                         return value;
-                    }
 
-                    return zo;
-                }));
+                    default:
+                        return zo;
+                }
+            });
 
-            result.SourceLine = form.SourceLine;
-            return result;
+            return new ZilForm(body) { SourceLine = form.SourceLine };
         }
 
         [Subr("TIME")]
@@ -298,17 +293,19 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             int code;
-            if (exitCode == null)
+            switch (exitCode)
             {
-                code = 0;
-            }
-            else if (exitCode is ZilFix)
-            {
-                code = ((ZilFix)exitCode).Value;
-            }
-            else
-            {
-                code = 4;
+                case null:
+                    code = 0;
+                    break;
+
+                case ZilFix fix:
+                    code = fix.Value;
+                    break;
+
+                default:
+                    code = 4;
+                    break;
             }
 
             Environment.Exit(code);

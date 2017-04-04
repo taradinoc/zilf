@@ -102,7 +102,6 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(text != null);
             Contract.Requires(ctx != null);
 
-            ObList list;
             ZilAtom result;
             var idx = text.IndexOf("!-", System.StringComparison.Ordinal);
 
@@ -112,30 +111,29 @@ namespace Zilf.Interpreter.Values
             {
                 // look for it in <1 .OBLIST>, <2 .OBLIST>...
                 var pathspec = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
-                if (pathspec is IEnumerable<ZilObject>)
+                if (pathspec is IEnumerable<ZilObject> zos)
                 {
                     ObList insertList = null;
                     bool gotDefault = false;
 
-                    foreach (ZilObject obj in (IEnumerable<ZilObject>)pathspec)
+                    foreach (ZilObject obj in zos)
                     {
-                        list = obj as ObList;
-                        if (list != null)
+                        switch (obj)
                         {
-                            if (list.Contains(text))
-                                return list[text];
+                            case ObList oblist:
+                                if (oblist.Contains(text))
+                                    return oblist[text];
 
-                            if (insertList == null || gotDefault)
-                            {
-                                insertList = list;
-                                gotDefault = false;
-                            }
-                        }
-                        else
-                        {
-                            var atom = obj as ZilAtom;
-                            if (atom != null && atom.StdAtom == StdAtom.DEFAULT)
+                                if (insertList == null || gotDefault)
+                                {
+                                    insertList = oblist;
+                                    gotDefault = false;
+                                }
+                                break;
+
+                            case ZilAtom atom when (atom.stdAtom == StdAtom.DEFAULT):
                                 gotDefault = true;
+                                break;
                         }
                     }
 
@@ -149,6 +147,7 @@ namespace Zilf.Interpreter.Values
             }
 
             // look for it in the specified oblist
+            ObList list;
             if (idx == text.Length - 2)
             {
                 list = ctx.RootObList;

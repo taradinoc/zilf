@@ -30,8 +30,7 @@ namespace Zilf.Interpreter
 
         public static bool TryLock(object obj)
         {
-            object dummy;
-            if (table.TryGetValue(obj, out dummy))
+            if (table.TryGetValue(obj, out _))
             {
                 return false;
             }
