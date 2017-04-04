@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Runtime.Serialization;
 
 namespace Zapf
 {
@@ -36,10 +37,12 @@ namespace Zapf
     /// Thrown when a configuration change has occurred that
     /// requires the assembler to restart.
     /// </summary>
+    [Serializable]
     public class RestartException : Exception
     {
     }
 
+    [Serializable]
     public class AssemblerError : Exception
     {
         readonly ISourceLine node;
@@ -50,15 +53,32 @@ namespace Zapf
             this.node = node;
         }
 
+        protected AssemblerError(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            this.node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
+        }
+
         public ISourceLine Node
         {
             get { return node; }
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            if (node != null)
+            {
+                info.AddValue("node", this.node);
+            }
         }
     }
 
     /// <summary>
     /// Thrown when an unrecoverable error occurs.
     /// </summary>
+    [Serializable]
     public class FatalError : AssemblerError
     {
         public FatalError(ISourceLine node, string message)
@@ -70,6 +90,7 @@ namespace Zapf
     /// <summary>
     /// Thrown when a serious (but not totally unrecoverable) error occurs.
     /// </summary>
+    [Serializable]
     public class SeriousError : AssemblerError
     {
         public SeriousError(ISourceLine node, string message)
