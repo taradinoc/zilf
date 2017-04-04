@@ -101,10 +101,9 @@ namespace Zilf.ZModel
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                var form = input as ZilForm;
-                if (form != null)
+                if (input is ZilForm form)
                 {
-                    if (form.First is ZilAtom && ((ZilAtom)form.First).StdAtom == StdAtom.GVAL)
+                    if (form.First is ZilAtom head && head.StdAtom == StdAtom.GVAL)
                     {
                         return form.Rest.First == this.Atom;
                     }
@@ -184,7 +183,7 @@ namespace Zilf.ZModel
                     case StdAtom.ADECL:
                         // *:DECL to capture any value that matches the decl
                         adecl = (ZilAdecl)zo;
-                        if (!(adecl.First is ZilAtom) || ((ZilAtom)adecl.First).StdAtom != StdAtom.Times)
+                        if (!(adecl.First is ZilAtom adeclAtom) || adeclAtom.StdAtom != StdAtom.Times)
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
                                 "left side of ADECL in TELL token spec",
@@ -196,12 +195,9 @@ namespace Zilf.ZModel
                     case StdAtom.FORM:
                         // <GVAL atom> to match an exact GVAL, or any other FORM to specify the pattern's output
                         form = (ZilForm)zo;
-                        if (form.IsGVAL())
+                        if (form.IsGVAL(out var gvAtom))
                         {
-                            var atom = form.Rest.First as ZilAtom;
-                            if (atom == null)
-                                throw new InterpreterError(form.SourceLine, InterpreterMessages.Malformed_GVAL_In_TELL_Token_Spec);
-                            tokensSoFar.Add(new GvalToken { Atom = atom });
+                            tokensSoFar.Add(new GvalToken { Atom = gvAtom });
                         }
                         else
                         {
@@ -209,7 +205,7 @@ namespace Zilf.ZModel
                             int lvalCount = 0;
                             foreach (var elem in form)
                             {
-                                if (elem.IsLVAL())
+                                if (elem.IsLVAL(out _))
                                 {
                                     lvalCount++;
                                 }
@@ -265,8 +261,7 @@ namespace Zilf.ZModel
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<ITellPatternMatchResult>() != null);
 
-            var result = new MatchResult();
-            result.Matched = false;
+            var result = new MatchResult() { Matched = false };
 
             if (input.Count - startIndex < tokens.Length)
             {
@@ -286,10 +281,9 @@ namespace Zilf.ZModel
             int nextCapture = 0;
             foreach (var element in this.outputForm)
             {
-                if (element is ZilForm)
+                if (element is ZilForm form)
                 {
-                    var first = ((ZilForm)element).First;
-                    if (first is ZilAtom && ((ZilAtom)first).StdAtom == StdAtom.LVAL)
+                    if (form.First is ZilAtom atom && atom.StdAtom == StdAtom.LVAL)
                     {
                         outputElements.Add(result.Captures[nextCapture++]);
                         continue;
@@ -310,7 +304,7 @@ namespace Zilf.ZModel
             if (obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse)
                 return true;
 
-            if (obj.IsLVAL() || obj.IsGVAL())
+            if (obj.IsLVAL(out _) || obj.IsGVAL(out _))
                 return true;
 
             return false;

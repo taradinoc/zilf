@@ -44,11 +44,10 @@ namespace ZilfErrorMessages
             // find the 'new XError()' expression
             var creationExpr = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ObjectCreationExpressionSyntax>().First();
 
-            LiteralCreation literalCreation;
 
             var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
 
-            if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creationExpr, semanticModel, out literalCreation))
+            if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(creationExpr, semanticModel, out var literalCreation))
             {
                 // Register a code action that will invoke the fix.
                 foreach (var sev in Severities)
@@ -228,9 +227,7 @@ namespace ZilfErrorMessages
 
         static void AddUsingIfNeeded(DocumentEditor docEditor)
         {
-            var compilationUnitSyntax = docEditor.OriginalRoot as CompilationUnitSyntax;
-
-            if (compilationUnitSyntax != null)
+            if (docEditor.OriginalRoot is CompilationUnitSyntax compilationUnitSyntax)
             {
                 if (!compilationUnitSyntax.Usings.Any(
                     u => u.Name.ToString() == "Zilf.Diagnostics"))
@@ -415,9 +412,8 @@ namespace ZilfErrorMessages
         {
             foreach (var expr in creationExprs)
             {
-                LiteralCreation literalCreation;
 
-                if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(expr, semanticModel, out literalCreation))
+                if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(expr, semanticModel, out var literalCreation))
                     yield return literalCreation;
             }
         }

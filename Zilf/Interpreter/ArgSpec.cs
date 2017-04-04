@@ -114,10 +114,9 @@ namespace Zilf.Interpreter
             foreach (ZilObject arg in argspec)
             {
                 // check for arg clause separators: "OPT", "AUX", etc.
-                if (arg is ZilString)
+                if (arg is ZilString sep)
                 {
-                    string sep = ((ZilString)arg).Text;
-                    switch (sep)
+                    switch (sep.Text)
                     {
                         case "OPT":
                         case "OPTIONAL":
@@ -134,12 +133,13 @@ namespace Zilf.Interpreter
                             auxArgsStart = cur;
                             continue;
                         case "ARGS":
+                            varargsQuoted = true;
+                            goto case "TUPLE";
                         case "TUPLE":
                             if (varargsAtom != null)
                                 throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"ARGS\" or \"TUPLE\"");
                             oneOffMode = OO_Varargs;
                             oneOffTag = arg;
-                            varargsQuoted = (sep == "ARGS");
                             continue;
                         case "NAME":
                         case "ACT":
@@ -173,19 +173,19 @@ namespace Zilf.Interpreter
                 switch (oneOffMode)
                 {
                     case OO_Varargs:
-                        varargsAtom = arg as ZilAtom;
-                        if (varargsAtom == null)
+                        switch (arg)
                         {
-                            var adecl = arg as ZilAdecl;
-                            if (adecl != null)
-                            {
+                            case ZilAtom atom:
+                                varargsAtom = atom;
+                                break;
+
+                            case ZilAdecl adecl:
                                 varargsDecl = adecl.Second;
                                 varargsAtom = (ZilAtom)adecl.First;
-                            }
-                            else
-                            {
+                                break;
+
+                            default:
                                 throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
-                            }
                         }
 
                         oneOffMode = OO_None;
@@ -220,10 +220,8 @@ namespace Zilf.Interpreter
                 ZilObject argName, argValue, argDecl;
 
                 // could be an atom or a list: (atom defaultValue)
-                if (arg is ZilList && !(arg is ZilForm))
+                if (arg is ZilList al && !(arg is ZilForm))
                 {
-                    var al = (ZilList)arg;
-
                     if (al.IsEmpty)
                         throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);
 
@@ -237,11 +235,10 @@ namespace Zilf.Interpreter
                 }
 
                 // could be an ADECL
-                if (argName is ZilAdecl)
+                if (argName is ZilAdecl aad)
                 {
-                    var adecl = (ZilAdecl)argName;
-                    argDecl = adecl.Second;
-                    argName = adecl.First;
+                    argDecl = aad.Second;
+                    argName = aad.First;
                 }
                 else
                 {
@@ -249,14 +246,13 @@ namespace Zilf.Interpreter
                 }
 
                 // could be quoted
-                if (argName is ZilForm)
+                if (argName is ZilForm af)
                 {
-                    var af = (ZilForm)argName;
-                    if (af.First is ZilAtom && ((ZilAtom)af.First).StdAtom == StdAtom.QUOTE &&
+                    if (af.First is ZilAtom head && head.StdAtom == StdAtom.QUOTE &&
                         !af.Rest.IsEmpty)
                     {
                         quoted = true;
-                        quoteAtom = (ZilAtom)af.First;
+                        quoteAtom = head;
                         argName = af.Rest.First;
                     }
                     else
@@ -264,12 +260,12 @@ namespace Zilf.Interpreter
                 }
 
                 // it'd better be an atom by now
-                if (!(argName is ZilAtom))
+                if (!(argName is ZilAtom argAtom))
                 {
                     throw new InterpreterError(InterpreterMessages._0_Expected_Atom_In_Arg_Spec_But_Found_1, caller, argName.ToString());
                 }
 
-                argAtoms.Add((ZilAtom)argName);
+                argAtoms.Add(argAtom);
                 argDecls.Add(argDecl);
                 argDefaults.Add(argValue);
                 argQuoted.Add(quoted);
@@ -355,7 +351,7 @@ namespace Zilf.Interpreter
 
         public IEnumerator<ArgItem> GetEnumerator()
         {
-            ArgItem.ArgType type = ArgItem.ArgType.Required;
+            var type = ArgItem.ArgType.Required;
 
             for (int i = 0; i < argAtoms.Length; i++)
             {
@@ -400,8 +396,7 @@ namespace Zilf.Interpreter
 
         public override bool Equals(object obj)
         {
-            var other = obj as ArgSpec;
-            if (other == null)
+            if (!(obj is ArgSpec other))
                 return false;
 
             int numArgs = this.argAtoms.Length;
@@ -565,8 +560,7 @@ namespace Zilf.Interpreter
                             return result;
                         }
 
-                        var expandable = result as IMayExpandBeforeEvaluation;
-                        if (expandable != null && expandable.ShouldExpandBeforeEvaluation)
+                        if (result is IMayExpandBeforeEvaluation expandable && expandable.ShouldExpandBeforeEvaluation)
                         {
                             expansion = expandable.ExpandBeforeEvaluation(ctx, env).GetEnumerator();
                             continue;
@@ -584,9 +578,8 @@ namespace Zilf.Interpreter
             public IEnumerable<ZilObject> GetRest(bool eval)
             {
                 ZilObject zo;
-                IProvideSourceLine dummy;
 
-                while ((zo = GetOneOptional(eval, out dummy)) != null)
+                while ((zo = GetOneOptional(eval, out _)) != null)
                     yield return zo;
             }
         }

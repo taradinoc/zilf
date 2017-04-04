@@ -137,8 +137,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilEvalMacro;
-            return other != null && other.value.Equals(this.value);
+            return obj is ZilEvalMacro other && other.value.Equals(this.value);
         }
 
         public override int GetHashCode()

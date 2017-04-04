@@ -186,8 +186,7 @@ namespace IntegrationTests
                     return;
                 }
 
-                MemoryStream mstr;
-                if (zilfOutputFiles.TryGetValue(e.FileName, out mstr))
+                if (zilfOutputFiles.TryGetValue(e.FileName, out var mstr))
                 {
                     e.Stream = mstr;
                     return;
@@ -350,8 +349,7 @@ namespace IntegrationTests
                 {
                     if (e.Writing)
                     {
-                        MemoryStream mstr;
-                        if (zilfOutputFiles.TryGetValue(e.FileName, out mstr))
+                        if (zilfOutputFiles.TryGetValue(e.FileName, out var mstr))
                         {
                             e.Stream = mstr;
                             return;
@@ -361,8 +359,7 @@ namespace IntegrationTests
                     }
                     else
                     {
-                        Stream result;
-                        if (codeStreams.TryGetValue(e.FileName, out result))
+                        if (codeStreams.TryGetValue(e.FileName, out var result))
                         {
                             e.Stream = result;
                             return;

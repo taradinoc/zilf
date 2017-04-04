@@ -35,9 +35,7 @@ namespace ZilfErrorMessages
         {
             var creationExpr = (ObjectCreationExpressionSyntax)context.Node;
 
-            LiteralCreation dummy;
-
-            if (TryMatchLiteralCreation(creationExpr, context.SemanticModel, out dummy))
+            if (TryMatchLiteralCreation(creationExpr, context.SemanticModel, out _))
             {
                 var diagnostic = Diagnostic.Create(Rule, creationExpr.GetLocation());
                 context.ReportDiagnostic(diagnostic);
@@ -91,10 +89,7 @@ namespace ZilfErrorMessages
                         // we got a winner!
                         var expressionToReplace = args[i].Expression;
 
-                        string newMessageFormat;
-                        IImmutableList<ExpressionSyntax> newMessageArgs;
-
-                        if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out newMessageFormat, out newMessageArgs))
+                        if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out var newMessageFormat, out var newMessageArgs))
                         {
                             literalCreation = new LiteralCreation(
                                 exceptionTypeName: exceptionTypeName,
@@ -113,7 +108,7 @@ namespace ZilfErrorMessages
 
         static bool TryExtractFormatAndArgs(
             ExpressionSyntax expressionToReplace, SemanticModel semanticModel,
-            out string newMessageFormat, out IImmutableList<ExpressionSyntax> newMessageArgs)
+            out string newMessageFormat, out ImmutableList<ExpressionSyntax> newMessageArgs)
         {
             string format;
             ImmutableList<ExpressionSyntax> newArgs;
@@ -168,9 +163,7 @@ namespace ZilfErrorMessages
             formatStr = null;
             formatArgs = null;
 
-            var invocationExpr = expressionToReplace as InvocationExpressionSyntax;
-
-            if (invocationExpr == null)
+            if (!(expressionToReplace is InvocationExpressionSyntax invocationExpr))
                 return false;
 
             var invokedSymbol = semanticModel.GetSymbolInfo(invocationExpr.Expression);
@@ -198,9 +191,7 @@ namespace ZilfErrorMessages
             formatStr = null;
             formatArgs = null;
 
-            var binaryExpr = expressionToReplace as BinaryExpressionSyntax;
-
-            if (binaryExpr == null || binaryExpr.Kind() != SyntaxKind.AddExpression)
+            if (!(expressionToReplace is BinaryExpressionSyntax binaryExpr) || binaryExpr.Kind() != SyntaxKind.AddExpression)
                 return false;
 
             var sb = new StringBuilder();
@@ -211,9 +202,9 @@ namespace ZilfErrorMessages
             {
                 var constValue = semanticModel.GetConstantValue(expr);
 
-                if (constValue.HasValue && constValue.Value is string)
+                if (constValue.HasValue && constValue.Value is string constStr)
                 {
-                    sb.Append((string)constValue.Value);
+                    sb.Append(constStr);
                 }
                 else
                 {
@@ -232,9 +223,8 @@ namespace ZilfErrorMessages
 
         static IEnumerable<ExpressionSyntax> UnravelAddExpressions(ExpressionSyntax expr)
         {
-            var binaryExpr = expr as BinaryExpressionSyntax;
-
-            if (binaryExpr?.Kind() == SyntaxKind.AddExpression)
+            if (expr is BinaryExpressionSyntax binaryExpr &&
+                binaryExpr.Kind() == SyntaxKind.AddExpression)
             {
                 foreach (var child in UnravelAddExpressions(binaryExpr.Left))
                     yield return child;

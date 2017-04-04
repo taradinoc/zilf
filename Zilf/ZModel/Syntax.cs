@@ -86,8 +86,7 @@ namespace Zilf.ZModel
             {
                 if (verb == null)
                 {
-                    var atom = obj as ZilAtom;
-                    if (atom == null || atom.StdAtom == StdAtom.Eq)
+                    if (!(obj is ZilAtom atom) || atom.StdAtom == StdAtom.Eq)
                         throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "verb", "syntax definition");
 
                     verb = atom;
@@ -96,8 +95,7 @@ namespace Zilf.ZModel
                 {
                     // left side:
                     //   [[prep] OBJECT [(FIND ...)] [(options...) ...] [[prep] OBJECT [(FIND ...)] [(options...)]]]
-                    var atom = obj as ZilAtom;
-                    if (atom != null)
+                    if (obj is ZilAtom atom)
                     {
                         switch (atom.StdAtom)
                         {
@@ -135,8 +133,7 @@ namespace Zilf.ZModel
                     }
                     else
                     {
-                        var list = obj as ZilList;
-                        if (list != null && list.StdTypeAtom == StdAtom.LIST)
+                        if (obj is ZilList list && list.StdTypeAtom == StdAtom.LIST)
                         {
                             atom = list.First as ZilAtom;
                             if (atom == null)
@@ -311,9 +308,8 @@ namespace Zilf.ZModel
             if (list == null)
                 return null;
 
-            ZilAtom atom;
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty ||
-                (atom = list.Rest.First as ZilAtom) == null)
+                !(list.Rest.First is ZilAtom atom))
             {
                 throw new InterpreterError(
                     InterpreterMessages._0_Expected_1_After_2,

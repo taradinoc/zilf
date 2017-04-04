@@ -42,24 +42,17 @@ namespace Zilf.ZModel.Values
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to CONSTANT", 2);
 
-            var name = list.First as ZilAtom;
-            var value = list.Rest.First;
-
-            if (name == null)
+            if (!(list.First is ZilAtom name))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to CONSTANT", "an atom");
+
+            var value = list.Rest.First;
 
             return new ZilConstant(name, value);
         }
 
-        public ZilAtom Name
-        {
-            get { return name; }
-        }
+        public ZilAtom Name => name;
 
-        public ZilObject Value
-        {
-            get { return value; }
-        }
+        public ZilObject Value => value;
 
         public override string ToString()
         {

@@ -106,8 +106,7 @@ namespace Zilf.Interpreter
             const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_21s;
 
             var range = new ArgCountRange(lowerBound, upperBound);
-            CountableString cs;
-            ArgCountHelpers.FormatArgCount(range, out cs);
+            ArgCountHelpers.FormatArgCount(range, out var cs);
 
             var diag = DiagnosticFactory<InterpreterMessages>.Instance.GetDiagnostic(
                 DiagnosticContext.Current.SourceLine,
@@ -827,9 +826,9 @@ namespace Zilf.Interpreter
                     Description = "[environment]",
                     Step = (a, i, c) =>
                     {
-                        if (i < a.Length && a[i] is ZilEnvironment)
+                        if (i < a.Length && a[i] is ZilEnvironment zenv)
                         {
-                            c.Ready(((ZilEnvironment)a[i]).LocalEnvironment);
+                            c.Ready(zenv.LocalEnvironment);
                             return i + 1;
                         }
 
@@ -984,8 +983,7 @@ namespace Zilf.Interpreter
                         c.Missing();
                     }
 
-                    var zo = a[i] as TZil;
-                    if (zo == null)
+                    if (!(a[i] is TZil zo))
                     {
                         c.Error();
                     }
@@ -1033,8 +1031,7 @@ namespace Zilf.Interpreter
                         c.Missing();
                     }
 
-                    var zo = a[i] as TZil;
-                    if (zo == null)
+                    if (!(a[i] is TZil zo))
                     {
                         c.Error();
                     }
@@ -1073,8 +1070,7 @@ namespace Zilf.Interpreter
 
                     for (int j = 0; j < array.Length; j++)
                     {
-                        var zo = a[i + j] as TZil;
-                        if (zo == null)
+                        if (!(a[i + j] is TZil zo))
                         {
                             c.Error();
                         }
@@ -1105,10 +1101,7 @@ namespace Zilf.Interpreter
 
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>().TypeAtom;
 
-            FieldInfo[] fields;
-            int lowerBound;
-            int? upperBound;
-            var stepInfos = PrepareStepsFromStruct(structType, out fields, out lowerBound, out upperBound);
+            var stepInfos = PrepareStepsFromStruct(structType, out var fields, out var lowerBound, out var upperBound);
 
             var descPieces = stepInfos.Select(i => i.Description);
             string description;
@@ -1361,10 +1354,7 @@ namespace Zilf.Interpreter
             Contract.Requires(seqType.IsValueType);
             Contract.Requires(seqType.IsLayoutSequential);
 
-            FieldInfo[] fields;
-            int lowerBound;
-            int? upperBound;
-            var stepInfos = PrepareStepsFromStruct(seqType, out fields, out lowerBound, out upperBound);
+            var stepInfos = PrepareStepsFromStruct(seqType, out var fields, out var lowerBound, out var upperBound);
 
             var description = string.Join(" ", stepInfos.Select(i => i.Description));
 
@@ -1505,12 +1495,9 @@ namespace Zilf.Interpreter
                 alreadyDone = alreadyDone ?? new Dictionary<MethodInfo, SubrDelegate>();
                 alreadyDone.Add(methodInfo, del);
 
-                SubrDelegate targetDel;
-                if (alreadyDone.TryGetValue(targetMethodInfo, out targetDel) == false)
+                if (alreadyDone.TryGetValue(targetMethodInfo, out var targetDel) == false)
                 {
-                    string dummy;
-                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, ctx, out dummy, alreadyDone);
-
+                    targetDel = WrapMethodAsSubrDelegate(targetMethodInfo, ctx, out _, alreadyDone);
                     if (!alreadyDone.ContainsKey(targetMethodInfo))
                         alreadyDone.Add(targetMethodInfo, targetDel);
                 }

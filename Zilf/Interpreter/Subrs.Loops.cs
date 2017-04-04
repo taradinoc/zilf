@@ -45,8 +45,8 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        if (Content is AtomParams.AdeclOrAtom)
-                            return ((AtomParams.AdeclOrAtom)Content).Atom;
+                        if (Content is AtomParams.AdeclOrAtom aoa)
+                            return aoa.Atom;
 
                         return ((BindingWithInitializer)Content).Name.Atom;
                     }
@@ -56,8 +56,8 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        if (Content is AtomParams.AdeclOrAtom)
-                            return ((AtomParams.AdeclOrAtom)Content).Decl;
+                        if (Content is AtomParams.AdeclOrAtom aoa)
+                            return aoa.Decl;
 
                         return ((BindingWithInitializer)Content).Name.Decl;
                     }
@@ -67,8 +67,8 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        if (Content is BindingWithInitializer)
-                            return ((BindingWithInitializer)Content).Initializer;
+                        if (Content is BindingWithInitializer bwi)
+                            return bwi.Initializer;
 
                         return null;
                     }

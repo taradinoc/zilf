@@ -112,16 +112,14 @@ namespace Zilf.Language
         public static CompilerError WrongArgCount(string name, IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
-            CountableString cs;
-            ArgCountHelpers.FormatArgCount(ranges, out cs);
+            ArgCountHelpers.FormatArgCount(ranges, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
         public static CompilerError WrongArgCount(string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
-            CountableString cs;
-            ArgCountHelpers.FormatArgCount(range, out cs);
+            ArgCountHelpers.FormatArgCount(range, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 

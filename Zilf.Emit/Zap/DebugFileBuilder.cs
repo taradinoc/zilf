@@ -12,8 +12,7 @@ namespace Zilf.Emit.Zap
             if (filename == null)
                 return 0;
 
-            int result;
-            if (files.TryGetValue(filename, out result) == false)
+            if (files.TryGetValue(filename, out int result) == false)
             {
                 result = files.Count + 1;
                 files[filename] = result;

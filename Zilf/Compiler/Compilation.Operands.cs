@@ -125,16 +125,16 @@ namespace Zilf.Compiler
             Contract.Requires(localIdx >= 0);
             Contract.Requires(localIdx < exprs.Length);
 
-            var form = exprs[localIdx] as ZilForm;
-            if (form == null)
+            if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
 
-            var atom = form.First as ZilAtom;
-            if (atom == null || (atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET))
+            if (!(form.First is ZilAtom atom) ||
+                (atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET))
+            {
                 throw new ArgumentException("not an LVAL/SET FORM");
+            }
 
-            var localAtom = form.Rest.First as ZilAtom;
-            if (localAtom == null)
+            if (!(form.Rest.First is ZilAtom localAtom))
                 throw new ArgumentException("LVAL/SET not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -151,16 +151,16 @@ namespace Zilf.Compiler
             Contract.Requires(localIdx >= 0);
             Contract.Requires(localIdx < exprs.Length);
 
-            var form = exprs[localIdx] as ZilForm;
-            if (form == null)
+            if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
 
-            var atom = form.First as ZilAtom;
-            if (atom == null || (atom.StdAtom != StdAtom.GVAL && atom.StdAtom != StdAtom.SETG))
+            if (!(form.First is ZilAtom atom) ||
+                (atom.StdAtom != StdAtom.GVAL && atom.StdAtom != StdAtom.SETG))
+            {
                 throw new ArgumentException("not a GVAL/SETG FORM");
+            }
 
-            var globalAtom = form.Rest.First as ZilAtom;
-            if (globalAtom == null)
+            if (!(form.Rest.First is ZilAtom globalAtom))
                 throw new ArgumentException("GVAL/SETG not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -175,16 +175,14 @@ namespace Zilf.Compiler
             Contract.Requires(expr != null);
             Contract.Requires(globalAtom != null);
 
-            var list = expr as ZilList;
-            if (list == null)
+            if (!(expr is ZilList list))
                 return false;
 
-            if (list is ZilForm)
+            if (list is ZilForm && list.First is ZilAtom atom)
             {
-                var atom = list.First as ZilAtom;
-                if (atom != null &&
-                    (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                    list.Rest != null && list.Rest.First == globalAtom)
+                if ((atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
+                    list.Rest != null &&
+                    list.Rest.First == globalAtom)
                 {
                     return true;
                 }

@@ -460,63 +460,66 @@ General switches:
         /// to rewind the source file.</param>
         static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            if (node is NewDirective)
+            switch (node)
             {
-                var versionExpr = ((NewDirective)node).Version;
-                int version = versionExpr == null ? 4 : EvalExpr(ctx, versionExpr).Value;
-                if (version < 3 || version > 8)
-                    Errors.ThrowFatal("Only Z-machine versions 3-8 are supported");
-                if (version != ctx.ZVersion)
-                {
-                    ctx.ZVersion = (byte)version;
-                    ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
-                    throw new RestartException();
-                }
-            }
-            else if (node is TimeDirective)
-            {
-                if (ctx.ZVersion == 3)
-                {
-                    ctx.ZFlags |= 2;
-                }
-                else
-                {
-                    Errors.ThrowFatal(".TIME is only supported in Z-machine version 3");
-                }
-            }
-            else if (node is SoundDirective)
-            {
-                if (ctx.ZVersion == 3)
-                {
-                    ctx.ZFlags2 |= 16;
-                }
-                else if (ctx.ZVersion == 4)
-                {
-                    ctx.ZFlags2 |= 128;
-                }
-                else
-                {
-                    Errors.ThrowFatal(".SOUND is only supported in Z-machine versions 3-4");
-                }
-            }
-            else if (node is Instruction)
-            {
-                HandleInstruction(ctx, (Instruction)node);
-            }
-            else if (node is BareSymbolLine)
-            {
-                if (((BareSymbolLine)node).UsedAsInstruction)
-                    Errors.Serious(ctx, node, "unrecognized opcode: " + ((BareSymbolLine)node).Text);
-                else
+                case NewDirective newd:
+                    var versionExpr = newd.Version;
+                    int version = versionExpr == null ? 4 : EvalExpr(ctx, versionExpr).Value;
+                    if (version < 3 || version > 8)
+                        Errors.ThrowFatal("Only Z-machine versions 3-8 are supported");
+                    if (version != ctx.ZVersion)
+                    {
+                        ctx.ZVersion = (byte)version;
+                        ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
+                        throw new RestartException();
+                    }
+                    break;
+
+                case TimeDirective _:
+                    if (ctx.ZVersion == 3)
+                    {
+                        ctx.ZFlags |= 2;
+                    }
+                    else
+                    {
+                        Errors.ThrowFatal(".TIME is only supported in Z-machine version 3");
+                    }
+                    break;
+
+                case SoundDirective _:
+                    if (ctx.ZVersion == 3)
+                    {
+                        ctx.ZFlags2 |= 16;
+                    }
+                    else if (ctx.ZVersion == 4)
+                    {
+                        ctx.ZFlags2 |= 128;
+                    }
+                    else
+                    {
+                        Errors.ThrowFatal(".SOUND is only supported in Z-machine versions 3-4");
+                    }
+                    break;
+
+                case Instruction inst:
+                    HandleInstruction(ctx, (Instruction)node);
+                    break;
+
+                case BareSymbolLine bsl:
+                    if (bsl.UsedAsInstruction)
+                        Errors.Serious(ctx, node, "unrecognized opcode: " + bsl.Text);
+                    else
+                        HandleDirective(ctx, node, nodeIndex, false);
+                    break;
+
+                case LocalLabel _:
+                case GlobalLabel _:
+                    HandleLabel(ctx, node, ref nodeIndex);
+                    break;
+
+                default:
                     HandleDirective(ctx, node, nodeIndex, false);
-            }
-            else if (node is LocalLabel || node is GlobalLabel)
-            {
-                HandleLabel(ctx, node, ref nodeIndex);
-            }
-            else
-            {
-                HandleDirective(ctx, node, nodeIndex, false);
+                    break;
             }
         }
 
@@ -574,8 +577,7 @@ General switches:
 
         static int GetHeaderValue(Context ctx, string name1, string name2, bool required)
         {
-            Symbol sym;
-            if (ctx.GlobalSymbols.TryGetValue(name1, out sym) ||
+            if (ctx.GlobalSymbols.TryGetValue(name1, out var sym) ||
                 (name2 != null && ctx.GlobalSymbols.TryGetValue(name2, out sym)))
             {
                 switch (sym.Type)
@@ -599,8 +601,7 @@ General switches:
 
         static Symbol GetDebugMapValue(Context ctx, string name)
         {
-            Symbol sym;
-            if (ctx.GlobalSymbols.TryGetValue(name, out sym))
+            if (ctx.GlobalSymbols.TryGetValue(name, out var sym))
                 return sym;
             else
                 return null;
@@ -741,17 +742,20 @@ General switches:
         /// to rewind the source file.</param>
         static void PassTwo(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            if (node is Instruction)
+            switch (node)
             {
-                HandleInstruction(ctx, (Instruction)node);
-            }
-            else if (node is LocalLabel || node is GlobalLabel)
-            {
-                HandleLabel(ctx, node, ref nodeIndex);
-            }
-            else
-            {
-                HandleDirective(ctx, node, nodeIndex, true);
+                case Instruction inst:
+                    HandleInstruction(ctx, (Instruction)node);
+                    break;
+
+                case LocalLabel _:
+                case GlobalLabel _:
+                    HandleLabel(ctx, node, ref nodeIndex);
+                    break;
+
+                default:
+                    HandleDirective(ctx, node, nodeIndex, true);
+                    break;
             }
         }
 
@@ -759,9 +763,9 @@ General switches:
         {
             foreach (var node in roots)
             {
-                if (node is InsertDirective)
+                if (node is InsertDirective insert)
                 {
-                    string arg = ((InsertDirective)node).InsertFileName;
+                    string arg = insert.InsertFileName;
                     var insertedFile = ctx.FindInsertedFile(arg);
 
                     if (insertedFile == null)
@@ -805,46 +809,43 @@ General switches:
 
         static Symbol EvalExpr(Context ctx, AsmExpr node)
         {
-            if (node is NumericLiteral)
+            switch (node)
             {
-                return new Symbol(int.Parse(((NumericLiteral)node).Text));
-            }
-            else if (node is SymbolExpr)
-            {
-                Symbol result;
-                var text = ((SymbolExpr)node).Text;
-                if (!ctx.LocalSymbols.TryGetValue(text, out result) &&
-                    !ctx.GlobalSymbols.TryGetValue(text, out result))
-                {
-                    if (ctx.FinalPass)
-                    {
-                        Errors.ThrowFatal(node, "undefined symbol: " + text, "node");
-                    }
-                    else
-                    {
-                        result = new Symbol(text, SymbolType.Unknown, 0);
-                        ctx.GlobalSymbols.Add(text, result);
-                    }
-                }
+                case NumericLiteral num:
+                    return new Symbol(int.Parse(num.Text));
 
-                return result;
-            }
-            else if (node is AdditionExpr)
-            {
-                var left = EvalExpr(ctx, ((AdditionExpr)node).Left);
-                var right = EvalExpr(ctx, ((AdditionExpr)node).Right);
-                if (!ctx.FinalPass &&
-                    (left.Type == SymbolType.Unknown || right.Type == SymbolType.Unknown))
-                {
-                    return new Symbol(null, SymbolType.Unknown, 0);
-                }
-                if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
-                    return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
-                throw new NotImplementedException("Unimplemented symbol addition");
-            }
-            else
-            {
-                throw new NotImplementedException();
+                case SymbolExpr sym:
+                    Symbol result;
+                    if (!ctx.LocalSymbols.TryGetValue(sym.Text, out result) &&
+                        !ctx.GlobalSymbols.TryGetValue(sym.Text, out result))
+                    {
+                        if (ctx.FinalPass)
+                        {
+                            Errors.ThrowFatal(node, "undefined symbol: " + sym.Text, "node");
+                        }
+                        else
+                        {
+                            result = new Symbol(sym.Text, SymbolType.Unknown, 0);
+                            ctx.GlobalSymbols.Add(sym.Text, result);
+                        }
+                    }
+
+                    return result;
+
+                case AdditionExpr add:
+                    var left = EvalExpr(ctx, add.Left);
+                    var right = EvalExpr(ctx, add.Right);
+                    if (!ctx.FinalPass &&
+                        (left.Type == SymbolType.Unknown || right.Type == SymbolType.Unknown))
+                    {
+                        return new Symbol(null, SymbolType.Unknown, 0);
+                    }
+                    if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
+                        return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
+                    throw new NotImplementedException("Unimplemented symbol addition");
+
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -859,10 +860,10 @@ General switches:
             fixup = null;
 
             bool apos = false;
-            if (node is QuoteExpr)
+            if (node is QuoteExpr quote)
             {
                 apos = true;
-                node = ((QuoteExpr)node).Inner;
+                node = quote.Inner;
             }
 
             if (node is NumericLiteral)
@@ -875,9 +876,8 @@ General switches:
             }
             else if (node is SymbolExpr)
             {
-                Symbol sym;
                 var text = ((SymbolExpr)node).Text;
-                if (ctx.LocalSymbols.TryGetValue(text, out sym))
+                if (ctx.LocalSymbols.TryGetValue(text, out var sym))
                 {
                     if (sym.Type == SymbolType.Label)
                     {
@@ -937,45 +937,40 @@ General switches:
         {
             int value;
 
-            if (node is NumericLiteral)
+            switch (node)
             {
-                value = int.Parse(((NumericLiteral)node).Text);
-                return ((uint)value & 0xffffff00) != 0;
-            }
-            else if (node is SymbolExpr)
-            {
-                Symbol sym;
-                var text = ((SymbolExpr)node).Text;
-                if (ctx.LocalSymbols.TryGetValue(text, out sym))
-                {
-                    // the only legal local symbol operand is a local variable
-                    return false;
-                }
-                else if (ctx.GlobalSymbols.TryGetValue(text, out sym))
-                {
-                    return sym.Value < 0 || sym.Value > 255;
-                }
-                else
-                {
-                    // not defined yet, assume it's a faraway global label
-                    // (could also be a local label if we're assembling a JUMP instruction,
-                    // but that's assembled as a word anyway)
-                    return true;
-                }
+                case NumericLiteral num:
+                    value = int.Parse(num.Text);
+                    return ((uint)value & 0xffffff00) != 0;
 
-            }
-            else if (node is AdditionExpr)
-            {
-                // TODO: should this be || instead of &&, or even always true?
-                return IsLongConstant(ctx, ((AdditionExpr)node).Left) && IsLongConstant(ctx, ((AdditionExpr)node).Right);
-            }
-            else if (node is StringLiteral || node is QuoteExpr)
-            {
-                return false;
-            }
-            else
-            {
-                throw new ArgumentException("Unexpected expr type: " + node.GetType().Name, nameof(node));
+                case SymbolExpr symExpr:
+                    if (ctx.LocalSymbols.TryGetValue(symExpr.Text, out var sym))
+                    {
+                        // the only legal local symbol operand is a local variable
+                        return false;
+                    }
+                    else if (ctx.GlobalSymbols.TryGetValue(symExpr.Text, out sym))
+                    {
+                        return sym.Value < 0 || sym.Value > 255;
+                    }
+                    else
+                    {
+                        // not defined yet, assume it's a faraway global label
+                        // (could also be a local label if we're assembling a JUMP instruction,
+                        // but that's assembled as a word anyway)
+                        return true;
+                    }
+
+                case AdditionExpr add:
+                    // TODO: should this be || instead of &&, or even always true?
+                    return IsLongConstant(ctx, add.Left) && IsLongConstant(ctx, add.Right);
+
+                case StringLiteral _:
+                case QuoteExpr _:
+                    return false;
+
+                default:
+                    throw new ArgumentException("Unexpected expr type: " + node.GetType().Name, nameof(node));
             }
         }
 
@@ -985,258 +980,257 @@ General switches:
             if (!(node is DebugLineDirective))
                 ctx.EndReassemblyScope(nodeIndex);
 
-            if (node is NewDirective || node is TimeDirective || node is SoundDirective)
+            switch (node)
             {
-                // these are explicitly handled by PassOne or PassTwo
-            }
-            else if (node is LangDirective)
-            {
-                var langNode = (LangDirective)node;
-                ctx.SetLanguage(EvalExpr(ctx, langNode.LanguageId).Value, EvalExpr(ctx, langNode.EscapeChar).Value);
-            }
-            else if (node is ChrsetDirective)
-            {
-                var chrsetNode = (ChrsetDirective)node;
+                case NewDirective _:
+                case TimeDirective _:
+                case SoundDirective _:
+                    // these are explicitly handled by PassOne or PassTwo
+                    break;
 
-                if (ctx.ZVersion >= 5)
-                {
-                    int charsetNum = EvalExpr(ctx, chrsetNode.CharsetNum).Value;
+                case LangDirective langNode:
+                    ctx.SetLanguage(EvalExpr(ctx, langNode.LanguageId).Value, EvalExpr(ctx, langNode.EscapeChar).Value);
+                    break;
 
-                    switch (charsetNum)
+                case ChrsetDirective chrsetNode:
+                    if (ctx.ZVersion >= 5)
                     {
-                        case 0:
-                        case 1:
-                        case 2:
-                            ctx.StringEncoder.SetCharset(
-                                charsetNum,
-                                chrsetNode.Characters.Select(e => (byte)EvalExpr(ctx, e).Value));
-                            break;
+                        int charsetNum = EvalExpr(ctx, chrsetNode.CharsetNum).Value;
 
-                        default:
-                            Errors.ThrowFatal("no such character set");
-                            break;
-                    }
-                }
-                else
-                {
-                    Errors.ThrowFatal(".CHRSET is only supported in Z-machine versions 5-8");
-                }
-            }
-            else if (node is FunctDirective)
-            {
-                BeginFunction(ctx, (FunctDirective)node, nodeIndex);
-            }
-            else if (node is TableDirective)
-            {
-                if (ctx.TableStart != null)
-                    Errors.Warn(node, "starting new table before ending old table");
-                ctx.TableStart = ctx.Position;
-                ctx.TableSize = null;
-                if (((TableDirective)node).Size != null)
-                {
-                    var sym = EvalExpr(ctx, ((TableDirective)node).Size);
-                    if (sym.Type != SymbolType.Constant)
-                        Errors.Warn(node, "ignoring non-constant table size specifier");
-                    else
-                        ctx.TableSize = sym.Value;
-                }
-            }
-            else if (node is EndtDirective)
-            {
-                if (ctx.TableStart == null)
-                    Errors.Warn(node, "ignoring .ENDT outside of a table definition");
-                if (ctx.TableSize != null)
-                {
-                    if (ctx.Position - ctx.TableStart.Value != ctx.TableSize.Value)
-                        Errors.Warn(node, "incorrect table size: expected {0}, actual {1}",
-                            ctx.TableSize.Value,
-                            ctx.Position - ctx.TableStart.Value);
-                }
-                ctx.TableStart = null;
-                ctx.TableSize = null;
-            }
-            else if (node is VocbegDirective)
-            {
-                if (ctx.InVocab)
-                {
-                    Errors.Warn(node, "ignoring .VOCBEG inside another vocabulary block");
-                }
-                else
-                {
-                    var sym1 = EvalExpr(ctx, ((VocbegDirective)node).RecordSize);
-                    var sym2 = EvalExpr(ctx, ((VocbegDirective)node).KeySize);
-                    if (sym1.Type != SymbolType.Constant || sym2.Type != SymbolType.Constant)
-                        Errors.Warn(node, "ignoring .VOCBEG with non-constant size specifiers");
-                    else
-                        ctx.EnterVocab(sym1.Value, sym2.Value);
-                }
-            }
-            else if (node is VocendDirective)
-            {
-                if (!ctx.InVocab)
-                    Errors.Warn(node, "ignoring .VOCEND outside of a vocabulary block");
-                else
-                    ctx.LeaveVocab(node);
-            }
-            else if (node is ByteDirective || node is WordDirective)
-            {
-                var elements = ((DataDirective)node).Elements;
-                for (int i = 0; i < elements.Count; i++)
-                {
-                    var sym = EvalExpr(ctx, elements[i]);
-                    if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
-                    {
-                        Errors.ThrowFatal(elements[i], "unrecognized symbol: " + ((SymbolExpr)elements[i]).Text);
-                    }
-                    if (node is ByteDirective)
-                    {
-                        if (sym.Type == SymbolType.Label && ctx.InVocab)
+                        switch (charsetNum)
                         {
-                            Errors.ThrowFatal(elements[i], "global label refs inside vocab secion must be assembled as words");
-                        }
+                            case 0:
+                            case 1:
+                            case 2:
+                                ctx.StringEncoder.SetCharset(
+                                    charsetNum,
+                                    chrsetNode.Characters.Select(e => (byte)EvalExpr(ctx, e).Value));
+                                break;
 
-                        ctx.WriteByte((byte)sym.Value);
+                            default:
+                                Errors.ThrowFatal("no such character set");
+                                break;
+                        }
                     }
                     else
                     {
-                        if (sym.Type == SymbolType.Label && ctx.InVocab)
-                        {
-                            // global labels inside the vocab table need to be fixed up at .VOCEND,
-                            // since they may refer to other vocab words
-                            var fixup = new Fixup(sym.Name);
-                            fixup.Location = ctx.Position;
-                            ctx.Fixups.Add(fixup);
-                        }
+                        Errors.ThrowFatal(".CHRSET is only supported in Z-machine versions 5-8");
+                    }
+                    break;
 
+                case FunctDirective functNode:
+                    BeginFunction(ctx, (FunctDirective)node, nodeIndex);
+                    break;
+
+                case TableDirective tableNode:
+                    if (ctx.TableStart != null)
+                        Errors.Warn(node, "starting new table before ending old table");
+                    ctx.TableStart = ctx.Position;
+                    ctx.TableSize = null;
+                    if (tableNode.Size != null)
+                    {
+                        var sym = EvalExpr(ctx, tableNode.Size);
+                        if (sym.Type != SymbolType.Constant)
+                            Errors.Warn(node, "ignoring non-constant table size specifier");
+                        else
+                            ctx.TableSize = sym.Value;
+                    }
+                    break;
+
+                case EndtDirective _:
+                    if (ctx.TableStart == null)
+                        Errors.Warn(node, "ignoring .ENDT outside of a table definition");
+                    if (ctx.TableSize != null)
+                    {
+                        if (ctx.Position - ctx.TableStart.Value != ctx.TableSize.Value)
+                            Errors.Warn(node, "incorrect table size: expected {0}, actual {1}",
+                                ctx.TableSize.Value,
+                                ctx.Position - ctx.TableStart.Value);
+                    }
+                    ctx.TableStart = null;
+                    ctx.TableSize = null;
+                    break;
+
+                case VocbegDirective vocbegNode:
+                    if (ctx.InVocab)
+                    {
+                        Errors.Warn(node, "ignoring .VOCBEG inside another vocabulary block");
+                    }
+                    else
+                    {
+                        var sym1 = EvalExpr(ctx, vocbegNode.RecordSize);
+                        var sym2 = EvalExpr(ctx, vocbegNode.KeySize);
+                        if (sym1.Type != SymbolType.Constant || sym2.Type != SymbolType.Constant)
+                            Errors.Warn(node, "ignoring .VOCBEG with non-constant size specifiers");
+                        else
+                            ctx.EnterVocab(sym1.Value, sym2.Value);
+                    }
+                    break;
+
+                case VocendDirective _:
+                    if (!ctx.InVocab)
+                        Errors.Warn(node, "ignoring .VOCEND outside of a vocabulary block");
+                    else
+                        ctx.LeaveVocab(node);
+                    break;
+
+                case DataDirective dataNode:
+                    var elements = dataNode.Elements;
+                    for (int i = 0; i < elements.Count; i++)
+                    {
+                        var sym = EvalExpr(ctx, elements[i]);
+                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
+                        {
+                            Errors.ThrowFatal(elements[i], "unrecognized symbol: " + ((SymbolExpr)elements[i]).Text);
+                        }
+                        if (node is ByteDirective)
+                        {
+                            if (sym.Type == SymbolType.Label && ctx.InVocab)
+                            {
+                                Errors.ThrowFatal(elements[i], "global label refs inside vocab section must be assembled as words");
+                            }
+
+                            ctx.WriteByte((byte)sym.Value);
+                        }
+                        else
+                        {
+                            if (sym.Type == SymbolType.Label && ctx.InVocab)
+                            {
+                                // global labels inside the vocab table need to be fixed up at .VOCEND,
+                                // since they may refer to other vocab words
+                                var fixup = new Fixup(sym.Name);
+                                fixup.Location = ctx.Position;
+                                ctx.Fixups.Add(fixup);
+                            }
+
+                            ctx.WriteWord((ushort)sym.Value);
+                        }
+                    }
+                    break;
+
+                case FstrDirective fstrNode:
+                    AddAbbreviation(ctx, fstrNode);
+                    break;
+
+                case GstrDirective fstrNode:
+                    PackString(ctx, fstrNode);
+                    break;
+
+                case StrDirective strNode:
+                    ctx.WriteZString(strNode.Text, false);
+                    break;
+
+                case StrlDirective strlNode:
+                    ctx.WriteZString(strlNode.Text, true);
+                    break;
+
+                case LenDirective lenNode:
+                    ctx.WriteZStringLength(lenNode.Text);
+                    break;
+
+                case ZwordDirective zwordNode:
+                    ctx.WriteZWord(zwordNode.Text);
+                    break;
+
+                case EqualsDirective equalsNode:
+                    var rvalue = EvalExpr(ctx, equalsNode.Right);
+                    if (rvalue.Type == SymbolType.Unknown && ctx.FinalPass)
+                    {
+                        Errors.ThrowFatal(equalsNode.Right, "unrecognized symbol");
+                    }
+                    else
+                    {
+                        ctx.GlobalSymbols[equalsNode.Left] = rvalue;
+                    }
+                    break;
+
+                case GvarDirective gvarNode:
+                    ctx.AddGlobalVar(gvarNode.Name);
+                    if (gvarNode.InitialValue != null)
+                    {
+                        var sym = EvalExpr(ctx, gvarNode.InitialValue);
+                        if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
+                        {
+                            Errors.ThrowFatal(gvarNode.InitialValue, "unrecognized symbol");
+                        }
                         ctx.WriteWord((ushort)sym.Value);
                     }
-                }
-            }
-            else if (node is FstrDirective)
-            {
-                AddAbbreviation(ctx, (FstrDirective)node);
-            }
-            else if (node is GstrDirective)
-            {
-                PackString(ctx, (GstrDirective)node);
-            }
-            else if (node is StrDirective)
-            {
-                ctx.WriteZString(((StrDirective)node).Text, false);
-            }
-            else if (node is StrlDirective)
-            {
-                ctx.WriteZString(((StrlDirective)node).Text, true);
-            }
-            else if (node is LenDirective)
-            {
-                ctx.WriteZStringLength(((LenDirective)node).Text);
-            }
-            else if (node is ZwordDirective)
-            {
-                ctx.WriteZWord(((ZwordDirective)node).Text);
-            }
-            else if (node is EqualsDirective)
-            {
-                var rvalue = EvalExpr(ctx, ((EqualsDirective)node).Right);
-                if (rvalue.Type == SymbolType.Unknown && ctx.FinalPass)
-                {
-                    Errors.ThrowFatal(((EqualsDirective)node).Right, "unrecognized symbol");
-                }
-                else
-                {
-                    ctx.GlobalSymbols[((EqualsDirective)node).Left] = rvalue;
-                }
-            }
-            else if (node is GvarDirective)
-            {
-                ctx.AddGlobalVar(((GvarDirective)node).Name);
-                if (((GvarDirective)node).InitialValue != null)
-                {
-                    var sym = EvalExpr(ctx, ((GvarDirective)node).InitialValue);
-                    if (sym.Type == SymbolType.Unknown && ctx.FinalPass)
+                    else
                     {
-                        Errors.ThrowFatal(((GvarDirective)node).InitialValue, "unrecognized symbol");
+                        ctx.WriteWord(0);
                     }
-                    ctx.WriteWord((ushort)sym.Value);
-                }
-                else
-                {
-                    ctx.WriteWord(0);
-                }
-            }
-            else if (node is ObjectDirective)
-            {
-                var od = (ObjectDirective)node;
-                ctx.AddObject(od.Name);
-                //XXX const string ObjectVersionError = "wrong .OBJECT syntax for this version";
-                if (ctx.ZVersion < 4)
-                {
-                    // 2 flag words
-                    ctx.WriteWord(EvalExpr(ctx, od.Flags1));
-                    ctx.WriteWord(EvalExpr(ctx, od.Flags2));
-                    // 3 object link bytes
-                    ctx.WriteByte(EvalExpr(ctx, od.Parent));
-                    ctx.WriteByte(EvalExpr(ctx, od.Sibling));
-                    ctx.WriteByte(EvalExpr(ctx, od.Child));
-                    // property table
-                    ctx.WriteWord(EvalExpr(ctx, od.PropTable));
-                }
-                else
-                {
-                    // 3 flag words
-                    ctx.WriteWord(EvalExpr(ctx, od.Flags1));
-                    ctx.WriteWord(EvalExpr(ctx, od.Flags2));
-                    ctx.WriteWord(EvalExpr(ctx, od.Flags3));
-                    // 3 object link words
-                    ctx.WriteWord(EvalExpr(ctx, od.Parent));
-                    ctx.WriteWord(EvalExpr(ctx, od.Sibling));
-                    ctx.WriteWord(EvalExpr(ctx, od.Child));
-                    // property table
-                    ctx.WriteWord(EvalExpr(ctx, od.PropTable));
-                }
-            }
-            else if (node is PropDirective)
-            {
-                var size = EvalExpr(ctx, ((PropDirective)node).Size);
-                var prop = EvalExpr(ctx, ((PropDirective)node).Prop);
-                if (ctx.FinalPass &&
-                    (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
-                    Errors.Serious(ctx, node, "non-constant arguments to .PROP");
-                if (ctx.ZVersion < 4)
-                {
-                    if (size.Value > 8)
-                        Errors.Serious(ctx, node, "property too long (8 bytes max in V3)");
-                    ctx.WriteByte((byte)(32 * (size.Value - 1) + prop.Value));
-                }
-                else if (size.Value > 2)
-                {
-                    if (size.Value > 64)
-                        Errors.Serious(ctx, node, "property too long (64 bytes max in V4+)");
-                    ctx.WriteByte((byte)(prop.Value | 128));
-                    ctx.WriteByte((byte)(size.Value | 128));
-                }
-                else
-                {
-                    var b = (byte)prop.Value;
-                    if (size.Value == 2)
-                        b |= 64;
-                    ctx.WriteByte(b);
-                }
-            }
-            else if (node is DebugDirective)
-            {
-                if (assembling)
-                {
-                    if (!ctx.IsDebugFileOpen)
-                        ctx.OpenDebugFile();
+                    break;
 
-                    HandleDebugDirective(ctx, (DebugDirective)node);
-                }
-            }
-            else
-            {
-                throw new NotImplementedException();
+                case ObjectDirective od:
+                    ctx.AddObject(od.Name);
+                    //XXX const string ObjectVersionError = "wrong .OBJECT syntax for this version";
+                    if (ctx.ZVersion < 4)
+                    {
+                        // 2 flag words
+                        ctx.WriteWord(EvalExpr(ctx, od.Flags1));
+                        ctx.WriteWord(EvalExpr(ctx, od.Flags2));
+                        // 3 object link bytes
+                        ctx.WriteByte(EvalExpr(ctx, od.Parent));
+                        ctx.WriteByte(EvalExpr(ctx, od.Sibling));
+                        ctx.WriteByte(EvalExpr(ctx, od.Child));
+                        // property table
+                        ctx.WriteWord(EvalExpr(ctx, od.PropTable));
+                    }
+                    else
+                    {
+                        // 3 flag words
+                        ctx.WriteWord(EvalExpr(ctx, od.Flags1));
+                        ctx.WriteWord(EvalExpr(ctx, od.Flags2));
+                        ctx.WriteWord(EvalExpr(ctx, od.Flags3));
+                        // 3 object link words
+                        ctx.WriteWord(EvalExpr(ctx, od.Parent));
+                        ctx.WriteWord(EvalExpr(ctx, od.Sibling));
+                        ctx.WriteWord(EvalExpr(ctx, od.Child));
+                        // property table
+                        ctx.WriteWord(EvalExpr(ctx, od.PropTable));
+                    }
+                    break;
+
+                case PropDirective propNode:
+                    var size = EvalExpr(ctx, propNode.Size);
+                    var prop = EvalExpr(ctx, propNode.Prop);
+                    if (ctx.FinalPass &&
+                        (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
+                        Errors.Serious(ctx, node, "non-constant arguments to .PROP");
+                    if (ctx.ZVersion < 4)
+                    {
+                        if (size.Value > 8)
+                            Errors.Serious(ctx, node, "property too long (8 bytes max in V3)");
+                        ctx.WriteByte((byte)(32 * (size.Value - 1) + prop.Value));
+                    }
+                    else if (size.Value > 2)
+                    {
+                        if (size.Value > 64)
+                            Errors.Serious(ctx, node, "property too long (64 bytes max in V4+)");
+                        ctx.WriteByte((byte)(prop.Value | 128));
+                        ctx.WriteByte((byte)(size.Value | 128));
+                    }
+                    else
+                    {
+                        var b = (byte)prop.Value;
+                        if (size.Value == 2)
+                            b |= 64;
+                        ctx.WriteByte(b);
+                    }
+                    break;
+
+                case DebugDirective debugNode:
+                    if (assembling)
+                    {
+                        if (!ctx.IsDebugFileOpen)
+                            ctx.OpenDebugFile();
+
+                        HandleDebugDirective(ctx, debugNode);
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -1249,130 +1243,119 @@ General switches:
                 return;
             }
 
-            Symbol sym1, sym2;
-            if (node is DebugActionDirective)
+            LineRef MakeLineRef(AsmExpr file, AsmExpr line, AsmExpr column)
             {
-                ctx.DebugWriter.WriteAction(
-                    (ushort)EvalExpr(ctx, ((DebugActionDirective)node).Number).Value,
-                    ((DebugActionDirective)node).Name);
+                return new LineRef(
+                    file: (byte)EvalExpr(ctx, file).Value,
+                    line: (ushort)EvalExpr(ctx, line).Value,
+                    col: (byte)EvalExpr(ctx, column).Value);
             }
-            else if (node is DebugArrayDirective)
+
+            Symbol sym2;
+            switch (node)
             {
-                if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out sym1) == false)
-                {
-                    Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
-                    return;
-                }
-                sym2 = EvalExpr(ctx, ((DebugArrayDirective)node).Number);
-                ctx.DebugWriter.WriteArray(
-                    (ushort)(sym2.Value - sym1.Value),
-                    ((DebugArrayDirective)node).Name);
-            }
-            else if (node is DebugAttrDirective)
-            {
-                ctx.DebugWriter.WriteAttr(
-                    (ushort)EvalExpr(ctx, ((DebugAttrDirective)node).Number).Value,
-                    ((DebugAttrDirective)node).Name);
-            }
-            else if (node is DebugClassDirective)
-            {
-                ctx.DebugWriter.WriteClass(
-                    ((DebugClassDirective)node).Name,
-                    new LineRef(
-                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).StartFile).Value,
-                        (ushort)EvalExpr(ctx, ((DebugClassDirective)node).StartLine).Value,
-                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).StartColumn).Value),
-                    new LineRef(
-                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).EndFile).Value,
-                        (ushort)EvalExpr(ctx, ((DebugClassDirective)node).EndLine).Value,
-                        (byte)EvalExpr(ctx, ((DebugClassDirective)node).EndColumn).Value));
-            }
-            else if (node is DebugFakeActionDirective)
-            {
-                ctx.DebugWriter.WriteFakeAction(
-                    (ushort)EvalExpr(ctx, ((DebugFakeActionDirective)node).Number).Value,
-                    ((DebugFakeActionDirective)node).Name);
-            }
-            else if (node is DebugFileDirective)
-            {
-                ctx.DebugWriter.WriteFile(
-                    (byte)EvalExpr(ctx, ((DebugFileDirective)node).Number).Value,
-                    ((DebugFileDirective)node).IncludeName,
-                    ((DebugFileDirective)node).ActualName);
-            }
-            else if (node is DebugGlobalDirective)
-            {
-                ctx.DebugWriter.WriteGlobal(
-                    (byte)(EvalExpr(ctx, ((DebugGlobalDirective)node).Number).Value - 16),
-                    ((DebugGlobalDirective)node).Name);
-            }
-            else if (node is DebugLineDirective)
-            {
-                if (!ctx.DebugWriter.InRoutine)
-                {
-                    Errors.Serious(ctx, node, ".DEBUG-LINE outside of .DEBUG-ROUTINE");
-                }
-                else
-                {
-                    ctx.DebugWriter.WriteLine(
-                        new LineRef(
-                            (byte)EvalExpr(ctx, ((DebugLineDirective)node).TheFile).Value,
-                            (ushort)EvalExpr(ctx, ((DebugLineDirective)node).TheLine).Value,
-                            (byte)EvalExpr(ctx, ((DebugLineDirective)node).TheColumn).Value),
-                        ctx.Position);
-                }
-            }
-            else if (node is DebugMapDirective)
-            {
-                ctx.DebugFileMap[((DebugMapDirective)node).Key] = EvalExpr(ctx, ((DebugMapDirective)node).Value);
-            }
-            else if (node is DebugObjectDirective)
-            {
-                ctx.DebugWriter.WriteObject(
-                    (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).Number).Value,
-                    ((DebugObjectDirective)node).Name,
-                    new LineRef(
-                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).StartFile).Value,
-                        (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).StartLine).Value,
-                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).StartColumn).Value),
-                    new LineRef(
-                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).EndFile).Value,
-                        (ushort)EvalExpr(ctx, ((DebugObjectDirective)node).EndLine).Value,
-                        (byte)EvalExpr(ctx, ((DebugObjectDirective)node).EndColumn).Value));
-            }
-            else if (node is DebugPropDirective)
-            {
-                ctx.DebugWriter.WriteProp(
-                    (ushort)EvalExpr(ctx, ((DebugPropDirective)node).Number).Value,
-                    ((DebugPropDirective)node).Name);
-            }
-            else if (node is DebugRoutineDirective)
-            {
-                AlignRoutine(ctx);
-                ctx.DebugWriter.StartRoutine(
-                    new LineRef(
-                            (byte)EvalExpr(ctx, ((DebugRoutineDirective)node).TheFile).Value,
-                            (ushort)EvalExpr(ctx, ((DebugRoutineDirective)node).TheLine).Value,
-                            (byte)EvalExpr(ctx, ((DebugRoutineDirective)node).TheColumn).Value),
-                    ctx.Position,
-                    ((DebugRoutineDirective)node).Name,
-                    ((DebugRoutineDirective)node).Locals);
-            }
-            else if (node is DebugRoutineEndDirective)
-            {
-                if (!ctx.DebugWriter.InRoutine)
-                {
-                    Errors.Serious(ctx, node, ".DEBUG-ROUTINE-END outside of .DEBUG-ROUTINE");
-                }
-                else
-                {
-                    ctx.DebugWriter.EndRoutine(
-                        new LineRef(
-                            (byte)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheFile).Value,
-                            (ushort)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheLine).Value,
-                            (byte)EvalExpr(ctx, ((DebugRoutineEndDirective)node).TheColumn).Value),
-                        ctx.Position);
-                }
+                case DebugActionDirective dact:
+                    ctx.DebugWriter.WriteAction(
+                        (ushort)EvalExpr(ctx, dact.Number).Value,
+                        dact.Name);
+                    break;
+
+                case DebugArrayDirective darr:
+                    if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out var sym1) == false)
+                    {
+                        Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
+                        return;
+                    }
+                    sym2 = EvalExpr(ctx, darr.Number);
+                    ctx.DebugWriter.WriteArray(
+                        (ushort)(sym2.Value - sym1.Value),
+                        darr.Name);
+                    break;
+
+                case DebugAttrDirective dattr:
+                    ctx.DebugWriter.WriteAttr(
+                        (ushort)EvalExpr(ctx, dattr.Number).Value,
+                        dattr.Name);
+                    break;
+
+                case DebugClassDirective dclass:
+                    ctx.DebugWriter.WriteClass(
+                        dclass.Name,
+                        MakeLineRef(dclass.StartFile, dclass.StartLine, dclass.StartColumn),
+                        MakeLineRef(dclass.EndFile, dclass.EndLine, dclass.EndColumn));
+                    break;
+
+                case DebugFakeActionDirective dfake:
+                    ctx.DebugWriter.WriteFakeAction(
+                        (ushort)EvalExpr(ctx, dfake.Number).Value,
+                        dfake.Name);
+                    break;
+
+                case DebugFileDirective dfile:
+                    ctx.DebugWriter.WriteFile(
+                        (byte)EvalExpr(ctx, dfile.Number).Value,
+                        dfile.IncludeName,
+                        dfile.ActualName);
+                    break;
+
+                case DebugGlobalDirective dglob:
+                    ctx.DebugWriter.WriteGlobal(
+                        (byte)(EvalExpr(ctx, dglob.Number).Value - 16),
+                        dglob.Name);
+                    break;
+
+                case DebugLineDirective dline:
+                    if (!ctx.DebugWriter.InRoutine)
+                    {
+                        Errors.Serious(ctx, node, ".DEBUG-LINE outside of .DEBUG-ROUTINE");
+                    }
+                    else
+                    {
+                        ctx.DebugWriter.WriteLine(
+                            MakeLineRef(dline.TheFile, dline.TheLine, dline.TheColumn),
+                            ctx.Position);
+                    }
+                    break;
+
+                case DebugMapDirective dmap:
+                    ctx.DebugFileMap[dmap.Key] = EvalExpr(ctx, dmap.Value);
+                    break;
+
+                case DebugObjectDirective dobj:
+                    ctx.DebugWriter.WriteObject(
+                        (ushort)EvalExpr(ctx, dobj.Number).Value,
+                        ((DebugObjectDirective)node).Name,
+                        MakeLineRef(dobj.StartFile, dobj.StartLine, dobj.StartColumn),
+                        MakeLineRef(dobj.EndFile, dobj.EndLine, dobj.EndColumn));
+                    break;
+
+                case DebugPropDirective dprop:
+                    ctx.DebugWriter.WriteProp(
+                        (ushort)EvalExpr(ctx, dprop.Number).Value,
+                        dprop.Name);
+                    break;
+
+                case DebugRoutineDirective drtn:
+                    AlignRoutine(ctx);
+                    ctx.DebugWriter.StartRoutine(
+                        MakeLineRef(drtn.TheFile, drtn.TheLine, drtn.TheColumn),
+                        ctx.Position,
+                        drtn.Name,
+                        drtn.Locals);
+                    break;
+
+                case DebugRoutineEndDirective drend:
+                    if (!ctx.DebugWriter.InRoutine)
+                    {
+                        Errors.Serious(ctx, node, ".DEBUG-ROUTINE-END outside of .DEBUG-ROUTINE");
+                    }
+                    else
+                    {
+                        ctx.DebugWriter.EndRoutine(
+                            MakeLineRef(drend.TheFile, drend.TheLine, drend.TheColumn),
+                            ctx.Position);
+                    }
+                    break;
             }
         }
 
@@ -1412,9 +1395,8 @@ General switches:
 
             AlignRoutine(ctx);
 
-            Symbol sym;
             int paddr = (ctx.Position - ctx.FunctionsOffset) / ctx.PackingDivisor;
-            if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
+            if (ctx.GlobalSymbols.TryGetValue(name, out var sym) == false)
             {
                 sym = new Symbol(name, SymbolType.Function, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
@@ -1480,9 +1462,8 @@ General switches:
 
             AlignString(ctx);
 
-            Symbol sym;
             int paddr = (ctx.Position - ctx.StringsOffset) / ctx.PackingDivisor;
-            if (ctx.GlobalSymbols.TryGetValue(name, out sym) == false)
+            if (ctx.GlobalSymbols.TryGetValue(name, out var sym) == false)
             {
                 sym = new Symbol(name, SymbolType.String, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
@@ -1682,8 +1663,7 @@ General switches:
                 }
                 else
                 {
-                    Symbol sym;
-                    if ((ctx.LocalSymbols.TryGetValue(node.StoreTarget, out sym) == false &&
+                    if ((ctx.LocalSymbols.TryGetValue(node.StoreTarget, out var sym) == false &&
                          ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) == false) ||
                         sym.Type != SymbolType.Variable)
                     {
@@ -1745,71 +1725,73 @@ General switches:
 
         static void HandleLabel(Context ctx, AsmLine node, ref int nodeIndex)
         {
-            if (node is GlobalLabel)
+            Symbol sym;
+            string name;
+
+            switch (node)
             {
-                string name = ((GlobalLabel)node).Name;
-
-                Symbol sym;
-                if (ctx.GlobalSymbols.TryGetValue(name, out sym) == true)
-                {
-                    // we don't require it to be a phantom because a global label might be
-                    // defined inside a routine, and reassembly could cause it to be defined twice
-                    if (sym.Type != SymbolType.Label && sym.Type != SymbolType.Unknown /*|| !sym.Phantom*/)
-                        Errors.ThrowSerious(node, "redefining global label");
-
-                    if (ctx.InVocab)
+                case GlobalLabel globalNode:
+                    name = globalNode.Name;
+                    if (ctx.GlobalSymbols.TryGetValue(name, out sym) == true)
                     {
-                        if (!ctx.AtVocabRecord)
-                            Errors.ThrowSerious(node, "unaligned global label in vocab section");
+                        // we don't require it to be a phantom because a global label might be
+                        // defined inside a routine, and reassembly could cause it to be defined twice
+                        if (sym.Type != SymbolType.Label && sym.Type != SymbolType.Unknown /*|| !sym.Phantom*/)
+                            Errors.ThrowSerious(node, "redefining global label");
 
-                        sym.Value = ctx.Position;
-                    }
-                    else if (sym.Value != ctx.Position)
-                    {
-                        if (ctx.FinalPass)
-                            Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
-                                name, sym.Value, ctx.Position);
+                        if (ctx.InVocab)
+                        {
+                            if (!ctx.AtVocabRecord)
+                                Errors.ThrowSerious(node, "unaligned global label in vocab section");
 
-                        ctx.MeasureAgain = true;
-                        sym.Value = ctx.Position;
-                    }
+                            sym.Value = ctx.Position;
+                        }
+                        else if (sym.Value != ctx.Position)
+                        {
+                            if (ctx.FinalPass)
+                                Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
+                                    name, sym.Value, ctx.Position);
 
-                    sym.Type = SymbolType.Label;
-                    sym.Phantom = false;
-                }
-                else
-                {
-                    ctx.GlobalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(node is LocalLabel);
+                            ctx.MeasureAgain = true;
+                            sym.Value = ctx.Position;
+                        }
 
-                string name = ((LocalLabel)node).Name;
-
-                if (!ctx.InReassemblyScope)
-                    Errors.ThrowSerious(node, "local labels not allowed outside a function");
-
-                Symbol sym;
-                if (ctx.LocalSymbols.TryGetValue(name, out sym) == false)
-                {
-                    if (ctx.CausesReassembly(name))
-                        nodeIndex = ctx.Reassemble(name) - 1;
-                    else
-                        ctx.LocalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
-                }
-                else if (sym.Type == SymbolType.Label && sym.Phantom)
-                {
-                    if (sym.Value != ctx.Position)
-                        nodeIndex = ctx.Reassemble(name) - 1;
-                    else
+                        sym.Type = SymbolType.Label;
                         sym.Phantom = false;
-                }
-                else
-                {
-                    Errors.ThrowSerious(node, "redefining local label");
-                }
+                    }
+                    else
+                    {
+                        ctx.GlobalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
+                    }
+                    break;
+
+                case LocalLabel localNode:
+                    if (!ctx.InReassemblyScope)
+                        Errors.ThrowSerious(node, "local labels not allowed outside a function");
+
+                    name = localNode.Name;
+                    if (ctx.LocalSymbols.TryGetValue(name, out sym) == false)
+                    {
+                        if (ctx.CausesReassembly(name))
+                            nodeIndex = ctx.Reassemble(name) - 1;
+                        else
+                            ctx.LocalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
+                    }
+                    else if (sym.Type == SymbolType.Label && sym.Phantom)
+                    {
+                        if (sym.Value != ctx.Position)
+                            nodeIndex = ctx.Reassemble(name) - 1;
+                        else
+                            sym.Phantom = false;
+                    }
+                    else
+                    {
+                        Errors.ThrowSerious(node, "redefining local label");
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException();
             }
         }
     }

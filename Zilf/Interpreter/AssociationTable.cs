@@ -46,9 +46,7 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-            ZilObject result;
-            if (associations.TryGetValue(first, out innerTable) && innerTable.TryGetValue(second, out result))
+            if (associations.TryGetValue(first, out var innerTable) && innerTable.TryGetValue(second, out var result))
                 return result;
 
             return null;
@@ -66,16 +64,13 @@ namespace Zilf.Interpreter
             Contract.Requires(first != null);
             Contract.Requires(second != null);
 
-            ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-            ZilObject dummy;
-
             if (value == null)
             {
-                if (associations.TryGetValue(first, out innerTable))
+                if (associations.TryGetValue(first, out var innerTable))
                 {
                     firsts.Remove(first);
 
-                    if (innerTable.TryGetValue(second, out dummy))
+                    if (innerTable.TryGetValue(second, out _))
                     {
                         innerTable.Remove(second);
                         seconds.Remove(second);
@@ -84,14 +79,14 @@ namespace Zilf.Interpreter
             }
             else
             {
-                if (!associations.TryGetValue(first, out innerTable))
+                if (!associations.TryGetValue(first, out var innerTable))
                 {
                     innerTable = new ConditionalWeakTable<ZilObject, ZilObject>();
                     associations.Add(first, innerTable);
                     firsts.Add(first);
                     seconds.Add(second);
                 }
-                else if (innerTable.TryGetValue(second, out dummy))
+                else if (innerTable.TryGetValue(second, out _))
                 {
                     innerTable.Remove(second);
                 }
@@ -110,15 +105,11 @@ namespace Zilf.Interpreter
 
             foreach (var first in firsts)
             {
-                ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-
-                if (associations.TryGetValue(first, out innerTable))
+                if (associations.TryGetValue(first, out var innerTable))
                 {
                     foreach (var second in seconds)
                     {
-                        ZilObject value;
-
-                        if (innerTable.TryGetValue(second, out value))
+                        if (innerTable.TryGetValue(second, out var value))
                         {
                             result.Add(new AsocResult { Item = first, Indicator = second, Value = value });
                         }
@@ -133,15 +124,11 @@ namespace Zilf.Interpreter
         {
             foreach (var first in firsts)
             {
-                ConditionalWeakTable<ZilObject, ZilObject> innerTable;
-
-                if (associations.TryGetValue(first, out innerTable))
+                if (associations.TryGetValue(first, out var innerTable))
                 {
                     foreach (var second in seconds)
                     {
-                        ZilObject value;
-
-                        if (innerTable.TryGetValue(second, out value))
+                        if (innerTable.TryGetValue(second, out var value))
                         {
                             yield return new AsocResult { Item = first, Indicator = second, Value = value };
                         }

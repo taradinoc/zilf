@@ -137,11 +137,7 @@ namespace Dezapf
             return false;
         }
 
-        public bool Contains(int position)
-        {
-            T dummy;
-            return TryGetValue(position, out dummy);
-        }
+        public bool Contains(int position) => TryGetValue(position, out _);
 
         public delegate bool RangeCombiner(int start1, int length1, T value1,
                                          int start2, int length2, T value2,

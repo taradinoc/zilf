@@ -139,11 +139,9 @@ namespace Zilf.Compiler.Builtins
                     {
                         var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
                         quirks = attr.QuirksMode;
-                        if (quirks != QuirksMode.None && arg is ZilForm)
+                        if (quirks != QuirksMode.None && arg is ZilForm form)
                         {
-                            var form = (ZilForm)arg;
-                            var fatom = form.First as ZilAtom;
-                            if (fatom != null &&
+                            if (form.First is ZilAtom fatom &&
                                 (((quirks & QuirksMode.Global) != 0 && fatom.StdAtom == StdAtom.GVAL) ||
                                  ((quirks & QuirksMode.Local) != 0 && fatom.StdAtom == StdAtom.LVAL)) &&
                                 form.Rest.First is ZilAtom &&
@@ -179,8 +177,7 @@ namespace Zilf.Compiler.Builtins
                 else if (pi.ParameterType == typeof(string))
                 {
                     // arg must be a string
-                    var zstr = arg as ZilString;
-                    if (zstr == null)
+                    if (!(arg is ZilString zstr))
                     {
                         error(i, "argument must be a literal string");
                         result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
@@ -263,9 +260,8 @@ namespace Zilf.Compiler.Builtins
                 else if (pi.ParameterType == typeof(Block))
                 {
                     // arg must be an LVAL reference
-                    if (arg.IsLVAL())
+                    if (arg.IsLVAL(out var atom))
                     {
-                        var atom = (ZilAtom)((ZilForm)arg).Rest.First;
                         var block = cc.Blocks.FirstOrDefault(b => b.Name == atom);
                         if (block == null)
                         {
@@ -302,11 +298,10 @@ namespace Zilf.Compiler.Builtins
                 if (quirks == QuirksMode.None)
                     return null;
 
-                var form = expr as ZilForm;
-                if (form == null || !(form.First is ZilAtom))
+                if (!(expr is ZilForm form) || !(form.First is ZilAtom head))
                     return null;
 
-                switch (((ZilAtom)form.First).StdAtom)
+                switch (head.StdAtom)
                 {
                     case StdAtom.GVAL:
                         if ((quirks & QuirksMode.Global) == 0)
@@ -318,21 +313,17 @@ namespace Zilf.Compiler.Builtins
                         break;
                 }
 
-                if (form.Rest == null || !(form.Rest.First is ZilAtom))
+                if (!(form.Rest?.First is ZilAtom variable))
                     return null;
 
-                atom = (ZilAtom)form.Rest.First;
+                atom = variable;
             }
 
-            ILocalBuilder lb;
-            IGlobalBuilder gb;
-            SoftGlobal sg;
-
-            if (cc.Locals.TryGetValue(atom, out lb))
+            if (cc.Locals.TryGetValue(atom, out var lb))
                 return new VariableRef(lb);
-            if (cc.Globals.TryGetValue(atom, out gb))
+            if (cc.Globals.TryGetValue(atom, out var gb))
                 return new VariableRef(gb);
-            if (cc.SoftGlobals.TryGetValue(atom, out sg))
+            if (cc.SoftGlobals.TryGetValue(atom, out var sg))
                 return new VariableRef(sg);
 
             return null;
@@ -547,11 +538,12 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(arg2 != null);
             Contract.Requires(restOfArgs != null);
 
-            if (arg1 is INumericOperand)
+            if (arg1 is INumericOperand num1)
             {
-                var value = ((INumericOperand)arg1).Value;
+                var value = num1.Value;
+                var num2 = arg2 as INumericOperand;
 
-                if ((arg2 is INumericOperand && ((INumericOperand)arg2).Value == value) ||
+                if (num2?.Value == value ||
                     restOfArgs.OfType<INumericOperand>().Any(arg => arg.Value == value))
                 {
                     // we know it's equal, so pop any stack operands and branch accordingly
@@ -568,9 +560,9 @@ namespace Zilf.Compiler.Builtins
                     return;
                 }
 
-                if (arg2 is INumericOperand &&
-                    ((INumericOperand)arg2).Value != value &&
-                    restOfArgs.All(arg => arg is INumericOperand && ((INumericOperand)arg).Value != value))
+                if (num2 != null &&
+                    num2.Value != value &&
+                    restOfArgs.All(arg => arg is INumericOperand numArg && numArg.Value != value))
                 {
                     // we know it's not equal, and there are no stack operands, so branch accordingly
                     if (!c.polarity)
@@ -580,11 +572,11 @@ namespace Zilf.Compiler.Builtins
                 }
 
                 // we can't simplify the branch, but we can still skip testing all the constants
-                if (arg2 is INumericOperand || restOfArgs.Any(arg => arg is INumericOperand))
+                if (num2 != null || restOfArgs.Any(arg => arg is INumericOperand))
                 {
                     var queue = new Queue<IOperand>(restOfArgs.Length);
 
-                    if (!(arg2 is INumericOperand))
+                    if (num2 == null)
                         queue.Enqueue(arg2);
 
                     foreach (var arg in restOfArgs)
@@ -778,9 +770,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(right != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            var nleft = left as INumericOperand;
-            var nright = right as INumericOperand;
-            if (nleft != null && nright != null)
+            if (left is INumericOperand nleft && right is INumericOperand nright)
             {
                 switch (op)
                 {
@@ -809,11 +799,11 @@ namespace Zilf.Compiler.Builtins
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             ZilObject value;
-            if (left is ZilFix && ((ZilFix)left).Value == -1)
+            if (left is ZilFix lf && lf.Value == -1)
             {
                 value = right;
             }
-            else if (right is ZilFix && ((ZilFix)right).Value == -1)
+            else if (right is ZilFix rf && rf.Value == -1)
             {
                 value = left;
             }
@@ -824,9 +814,9 @@ namespace Zilf.Compiler.Builtins
 
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.resultStorage);
 
-            if (storage is INumericOperand)
+            if (storage is INumericOperand num)
             {
-                return c.cc.Game.MakeOperand((short)(~((INumericOperand)storage).Value));
+                return c.cc.Game.MakeOperand((short)(~num.Value));
             }
             c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
             return c.resultStorage;
@@ -1064,9 +1054,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(left != null);
             Contract.Requires(right != null);
 
-            var nleft = left as INumericOperand;
-            var nright = right as INumericOperand;
-            if (nleft != null && nright != null)
+            if (left is INumericOperand nleft && right is INumericOperand nright)
             {
                 bool branch;
                 switch (cond)
@@ -1264,9 +1252,9 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(value != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            if (op == UnaryOp.Not && value is INumericOperand)
+            if (op == UnaryOp.Not && value is INumericOperand num)
             {
-                return c.cc.Game.MakeOperand((short)(~((INumericOperand)value).Value));
+                return c.cc.Game.MakeOperand((short)(~num.Value));
             }
 
             c.rb.EmitUnary(op, value, c.resultStorage);
@@ -1295,9 +1283,9 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(value != null);
 
-            if (value is INumericOperand)
+            if (value is INumericOperand num)
             {
-                if ((((INumericOperand)value).Value == 0) == c.polarity)
+                if ((num.Value == 0) == c.polarity)
                     c.rb.Branch(c.label);
             }
             else
@@ -1311,9 +1299,9 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(value != null);
 
-            if (value is INumericOperand)
+            if (value is INumericOperand num)
             {
-                if ((((INumericOperand)value).Value == 1) == c.polarity)
+                if ((num.Value == 1) == c.polarity)
                     c.rb.Branch(c.label);
             }
             else
@@ -1532,9 +1520,9 @@ namespace Zilf.Compiler.Builtins
             // in void context, we don't need to return the newly set value, so we
             // can support <SET <fancy-expression> value>.
 
-            if (dest is IIndirectOperand)
+            if (dest is IIndirectOperand ind)
             {
-                var destVar = ((IIndirectOperand)dest).Variable;
+                var destVar = ind.Variable;
                 var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, destVar);
                 if (storage != destVar)
                     c.rb.EmitStore(destVar, storage);
@@ -1853,7 +1841,7 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(dummy != null);
 
-            if (c.form.Rest.First is ZilFix && ((ZilFix)c.form.Rest.First).Value != 1)
+            if (c.form.Rest.First is ZilFix fix && fix.Value != 1)
             {
                 return c.HandleMessage(
                     CompilerMessages._0_Argument_1_2,
@@ -2157,8 +2145,7 @@ namespace Zilf.Compiler.Builtins
             flags = LowCoreFlags.None;
             minVersion = 0;
 
-            var atom = fieldSpec as ZilAtom;
-            if (atom != null)
+            if (fieldSpec is ZilAtom atom)
             {
                 var field = LowCoreField.Get(atom);
                 if (field == null)
@@ -2183,8 +2170,7 @@ namespace Zilf.Compiler.Builtins
                 return true;
             }
 
-            var list = fieldSpec as ZilList;
-            if (list != null && list.StdTypeAtom == StdAtom.LIST)
+            if (fieldSpec is ZilList list && list.StdTypeAtom == StdAtom.LIST)
             {
                 if (((IStructure)list).GetLength(2) != 2)
                 {
@@ -2199,8 +2185,7 @@ namespace Zilf.Compiler.Builtins
                     return false;
                 }
 
-                var fix = list.Rest.First as ZilFix;
-                if (fix == null || fix.Value < 0 || fix.Value > 1)
+                if (!(list.Rest.First is ZilFix fix) || fix.Value < 0 || fix.Value > 1)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Second_List_Element_Must_Be_0_Or_1, name));
                     return false;
@@ -2244,10 +2229,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(fieldSpec != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            int offset, minVersion;
-            LowCoreFlags flags;
-
-            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out var minVersion))
                 return c.cc.Game.Zero;
 
             var binaryOp = ((flags & LowCoreFlags.Byte) != 0) ? BinaryOp.GetByte : BinaryOp.GetWord;
@@ -2272,10 +2254,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(fieldSpec != null);
             Contract.Requires(newValue != null);
 
-            int offset, minVersion;
-            LowCoreFlags flags;
-
-            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out var offset, out var flags, out var minVersion))
                 return;
 
             var ternaryOp = ((flags & LowCoreFlags.Byte) != 0) ? TernaryOp.PutByte : TernaryOp.PutWord;
@@ -2298,10 +2277,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(fieldSpec != null);
             Contract.Requires(handler != null);
 
-            int offset, minVersion;
-            LowCoreFlags flags;
-
-            if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out offset, out flags, out minVersion))
+            if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out var minVersion))
                 return;
 
             if ((flags & LowCoreFlags.Byte) == 0)

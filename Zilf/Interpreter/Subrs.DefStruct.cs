@@ -209,9 +209,9 @@ namespace Zilf.Interpreter
             if (fileDefaultList != null)
                 ParseDefStructDefaults(ctx, fileDefaultList, ref defaults);
 
-            if (baseTypeOrDefaults is ZilAtom)
+            if (baseTypeOrDefaults is ZilAtom atom)
             {
-                baseType = (ZilAtom)baseTypeOrDefaults;
+                baseType = atom;
             }
             else
             {
@@ -263,12 +263,10 @@ namespace Zilf.Interpreter
                 if (defaults.CustomCtorSpec.IsEmpty || defaults.CustomCtorSpec.Rest.IsEmpty)
                     throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements_In_CONSTRUCTOR_Spec, "DEFSTRUCT");
 
-                var ctorName = defaults.CustomCtorSpec.First as ZilAtom;
-                if (ctorName == null)
+                if (!(defaults.CustomCtorSpec.First is ZilAtom ctorName))
                     throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", "'CONSTRUCTOR");
 
-                var argspecList = defaults.CustomCtorSpec.Rest.First as ZilList;
-                if (argspecList == null || argspecList.StdTypeAtom != StdAtom.LIST)
+                if (!(defaults.CustomCtorSpec.Rest.First is ZilList argspecList) || argspecList.StdTypeAtom != StdAtom.LIST)
                     throw new InterpreterError(InterpreterMessages._0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List, "DEFSTRUCT");
 
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
@@ -295,8 +293,7 @@ namespace Zilf.Interpreter
             if (defaults.PrintFunc != null)
             {
                 // annoyingly, the argument can be an atom naming a function that hasn't been defined yet
-                var printFuncAtom = defaults.PrintFunc as ZilAtom;
-                if (printFuncAtom != null)
+                if (defaults.PrintFunc is ZilAtom printFuncAtom)
                 {
                     var handler = ctx.GetGlobalVal(printFuncAtom);
                     if (handler == null)
@@ -359,8 +356,7 @@ namespace Zilf.Interpreter
                 const string SRequiredArgInitializer = "<PUT .RESULT-INIT {0} .{1}>";
                 const string SOptAuxArgInitializer = "<PUT .RESULT-INIT {0} <COND (<ASSIGNED? {1}> .{1}) (T {2})>>";
 
-                DefStructField field;
-                if (remainingFields.TryGetValue(arg.Atom, out field))
+                if (remainingFields.TryGetValue(arg.Atom, out var field))
                 {
                     remainingFields.Remove(arg.Atom);
                 }
@@ -697,64 +693,59 @@ namespace Zilf.Interpreter
 
             foreach (var part in fieldSpec.Parts)
             {
-                if (part is DefStructParams.AtomFieldSequence)
+                switch (part)
                 {
-                    var af = (DefStructParams.AtomFieldSequence)part;
+                    case DefStructParams.AtomFieldSequence af:
+                        switch (af.ClauseType)
+                        {
+                            case StdAtom.NTH:
+                                result.NthFunc = af.Atom;
+                                break;
 
-                    switch (af.ClauseType)
-                    {
-                        case StdAtom.NTH:
-                            result.NthFunc = af.Atom;
-                            break;
+                            case StdAtom.PUT:
+                                result.PutFunc = af.Atom;
+                                break;
 
-                        case StdAtom.PUT:
-                            result.PutFunc = af.Atom;
-                            break;
+                            default:
+                                throw UnhandledCaseException.FromEnum(af.ClauseType, "atom clause type");
+                        }
+                        break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(af.ClauseType, "atom clause type");
-                    }
-                }
-                else if (part is DefStructParams.FixFieldSequence)
-                {
-                    var ff = (DefStructParams.FixFieldSequence)part;
+                    case DefStructParams.FixFieldSequence ff:
+                        switch (ff.ClauseType)
+                        {
+                            case StdAtom.OFFSET:
+                                result.Offset = ff.Fix;
+                                gotOffset = true;
+                                break;
 
-                    switch (ff.ClauseType)
-                    {
-                        case StdAtom.OFFSET:
-                            result.Offset = ff.Fix;
-                            gotOffset = true;
-                            break;
+                            default:
+                                throw UnhandledCaseException.FromEnum(ff.ClauseType, "FIX clause type");
+                        }
+                        break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(ff.ClauseType, "FIX clause type");
-                    }
-                }
-                else if (part is DefStructParams.NullaryFieldSequence)
-                {
-                    var nf = (DefStructParams.NullaryFieldSequence)part;
+                    case DefStructParams.NullaryFieldSequence nf:
+                        switch (nf.ClauseType)
+                        {
+                            case StdAtom.NONE:
+                                if (gotDefault)
+                                    throw new InterpreterError(InterpreterMessages._0_NONE_Is_Not_Allowed_After_A_Default_Field_Value, "DEFSTRUCT");
+                                result.NoDefault = true;
+                                gotDefault = true;
+                                break;
 
-                    switch (nf.ClauseType)
-                    {
-                        case StdAtom.NONE:
-                            if (gotDefault)
-                                throw new InterpreterError(InterpreterMessages._0_NONE_Is_Not_Allowed_After_A_Default_Field_Value, "DEFSTRUCT");
-                            result.NoDefault = true;
-                            gotDefault = true;
-                            break;
+                            default:
+                                throw UnhandledCaseException.FromEnum(nf.ClauseType, "nullary clause type");
+                        }
+                        break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(nf.ClauseType, "nullary clause type");
-                    }
-                }
-                else if (part is ZilObject && !gotDefault)
-                {
-                    result.Default = (ZilObject)part;
-                    gotDefault = true;
-                }
-                else
-                {
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "object in field definition", part);
+                    case ZilObject zo when (!gotDefault):
+                        result.Default = zo;
+                        gotDefault = true;
+                        break;
+
+                    default:
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "object in field definition", part);
                 }
             }
 
@@ -770,13 +761,13 @@ namespace Zilf.Interpreter
             Contract.Requires(ctx != null);
             Contract.Requires(fileDefaults != null);
 
-            ZilAtom tag;
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
             foreach (var part in fileDefaults)
             {
-                var partForm = part as ZilForm;
-                if (partForm != null && partForm.First == quoteAtom && (tag = partForm.Rest.First as ZilAtom) != null)
+                if (part is ZilForm partForm &&
+                    partForm.First == quoteAtom &&
+                    partForm.Rest.First is ZilAtom tag)
                 {
                     switch (tag.StdAtom)
                     {
@@ -802,15 +793,17 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    var partList = part as ZilList;
-                    if (partList == null || partList.StdTypeAtom != StdAtom.LIST)
+                    if (!(part is ZilList partList) || partList.StdTypeAtom != StdAtom.LIST)
                         throw new InterpreterError(InterpreterMessages._0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists, "DEFSTRUCT");
 
-                    var first = partList.First as ZilForm;
-                    if (first == null || first.First != quoteAtom || (tag = first.Rest.First as ZilAtom) == null)
+                    if (!(partList.First is ZilForm first) ||
+                        first.First != quoteAtom ||
+                        !(first.Rest.First is ZilAtom tag2))
+                    {
                         throw new InterpreterError(InterpreterMessages._0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom, "DEFSTRUCT");
+                    }
 
-                    switch (tag.StdAtom)
+                    switch (tag2.StdAtom)
                     {
                         case StdAtom.NTH:
                             partList = partList.Rest;
@@ -828,8 +821,7 @@ namespace Zilf.Interpreter
 
                         case StdAtom.START_OFFSET:
                             partList = partList.Rest;
-                            var fix = partList.First as ZilFix;
-                            if (fix == null)
+                            if (!(partList.First is ZilFix fix))
                                 throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "a FIX", first);
                             defaults.StartOffset = fix.Value;
                             break;
@@ -864,86 +856,83 @@ namespace Zilf.Interpreter
 
             foreach (var clause in param.Clauses)
             {
-                if (clause is DefStructParams.NullaryDefaultClause)
+                switch (clause)
                 {
-                    var ec = (DefStructParams.NullaryDefaultClause)clause;
-                    switch (ec.ClauseType)
-                    {
-                        case StdAtom.NODECL:
-                            defaults.SuppressDecl = true;
-                            break;
+                    case DefStructParams.NullaryDefaultClause ec:
+                        switch (ec.ClauseType)
+                        {
+                            case StdAtom.NODECL:
+                                defaults.SuppressDecl = true;
+                                break;
 
-                        case StdAtom.NOTYPE:
-                            defaults.SuppressType = true;
-                            break;
+                            case StdAtom.NOTYPE:
+                                defaults.SuppressType = true;
+                                break;
 
-                        case StdAtom.PRINTTYPE:
-                            defaults.PrintFunc = null;
-                            break;
+                            case StdAtom.PRINTTYPE:
+                                defaults.PrintFunc = null;
+                                break;
 
-                        case StdAtom.CONSTRUCTOR:
-                            defaults.SuppressDefaultCtor = true;
-                            break;
+                            case StdAtom.CONSTRUCTOR:
+                                defaults.SuppressDefaultCtor = true;
+                                break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(ec.ClauseType, "nullary clause type");
-                    }
-                }
-                else if (clause is DefStructParams.AtomDefaultClause)
-                {
-                    var ac = (DefStructParams.AtomDefaultClause)clause;
-                    switch (ac.ClauseType)
-                    {
-                        case StdAtom.NTH:
-                            defaults.NthFunc = ac.Atom;
-                            break;
+                            default:
+                                throw UnhandledCaseException.FromEnum(ec.ClauseType, "nullary clause type");
+                        }
+                        break;
 
-                        case StdAtom.PUT:
-                            defaults.PutFunc = ac.Atom;
-                            break;
+                    case DefStructParams.AtomDefaultClause ac:
+                        switch (ac.ClauseType)
+                        {
+                            case StdAtom.NTH:
+                                defaults.NthFunc = ac.Atom;
+                                break;
 
-                        case StdAtom.PRINTTYPE:
-                            defaults.PrintFunc = ac.Atom;
-                            break;
+                            case StdAtom.PUT:
+                                defaults.PutFunc = ac.Atom;
+                                break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(ac.ClauseType, "atom clause type");
-                    }
-                }
-                else if (clause is DefStructParams.FixDefaultClause)
-                {
-                    var fc = (DefStructParams.FixDefaultClause)clause;
-                    switch (fc.ClauseType)
-                    {
-                        case StdAtom.START_OFFSET:
-                            defaults.StartOffset = fc.Fix;
-                            break;
+                            case StdAtom.PRINTTYPE:
+                                defaults.PrintFunc = ac.Atom;
+                                break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(fc.ClauseType, "FIX clause type");
-                    }
-                }
-                else if (clause is DefStructParams.VarargsDefaultClause)
-                {
-                    var vc = (DefStructParams.VarargsDefaultClause)clause;
-                    var body = new ZilList(vc.Body);
-                    switch (vc.ClauseType)
-                    {
-                        case StdAtom.CONSTRUCTOR:
-                            defaults.CustomCtorSpec = body;
-                            break;
+                            default:
+                                throw UnhandledCaseException.FromEnum(ac.ClauseType, "atom clause type");
+                        }
+                        break;
 
-                        case StdAtom.INIT_ARGS:
-                            defaults.InitArgs = body;
-                            break;
+                    case DefStructParams.FixDefaultClause fc:
+                        switch (fc.ClauseType)
+                        {
+                            case StdAtom.START_OFFSET:
+                                defaults.StartOffset = fc.Fix;
+                                break;
 
-                        default:
-                            throw UnhandledCaseException.FromEnum(vc.ClauseType, "varargs clause type");
-                    }
-                }
-                else
-                {
-                    throw UnhandledCaseException.FromTypeOf(clause, "clause");
+                            default:
+                                throw UnhandledCaseException.FromEnum(fc.ClauseType, "FIX clause type");
+                        }
+                        break;
+
+                    case DefStructParams.VarargsDefaultClause vc:
+                        var body = new ZilList(vc.Body);
+                        switch (vc.ClauseType)
+                        {
+                            case StdAtom.CONSTRUCTOR:
+                                defaults.CustomCtorSpec = body;
+                                break;
+
+                            case StdAtom.INIT_ARGS:
+                                defaults.InitArgs = body;
+                                break;
+
+                            default:
+                                throw UnhandledCaseException.FromEnum(vc.ClauseType, "varargs clause type");
+                        }
+                        break;
+
+                    default:
+                        throw UnhandledCaseException.FromTypeOf(clause, "clause");
                 }
             }
         }

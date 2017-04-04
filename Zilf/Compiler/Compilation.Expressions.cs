@@ -52,7 +52,6 @@ namespace Zilf.Compiler
             Contract.Requires(form != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
-            ILabel label1, label2;
             IOperand operand;
 
             using (DiagnosticContext.Push(form.SourceLine))
@@ -76,10 +75,10 @@ namespace Zilf.Compiler
                 {
                     form = (ZilForm)expanded;
                 }
-                else if (expanded is IMayExpandAfterEvaluation && ((IMayExpandAfterEvaluation)expanded).ShouldExpandAfterEvaluation)
+                else if (expanded is IMayExpandAfterEvaluation expAfter && expAfter.ShouldExpandAfterEvaluation)
                 {
                     var src = form.SourceLine;
-                    var reexpanded = ((IMayExpandAfterEvaluation)expanded).ExpandAfterEvaluation(Context, Context.LocalEnvironment);
+                    var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment);
                     form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
                 }
                 else
@@ -89,8 +88,7 @@ namespace Zilf.Compiler
                     return null;
                 }
 
-                var head = form.First as ZilAtom;
-                if (head == null)
+                if (!(form.First is ZilAtom head))
                 {
                     Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                     return wantResult ? Game.Zero : null;
@@ -109,7 +107,7 @@ namespace Zilf.Compiler
                     }
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
                     {
-                        label1 = rb.DefineLabel();
+                        var label1 = rb.DefineLabel();
                         resultStorage = resultStorage ?? rb.Stack;
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label1, true);
                         rb.MarkLabel(label1);
@@ -117,8 +115,8 @@ namespace Zilf.Compiler
                     }
                     if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
                     {
-                        label1 = rb.DefineLabel();
-                        label2 = rb.DefineLabel();
+                        var label1 = rb.DefineLabel();
+                        var label2 = rb.DefineLabel();
                         resultStorage = resultStorage ?? rb.Stack;
                         ZBuiltins.CompilePredCall(head.Text, this, rb, form, label1, true);
                         rb.EmitStore(resultStorage, Game.Zero);
@@ -158,7 +156,7 @@ namespace Zilf.Compiler
                     }
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
                     {
-                        label1 = rb.DefineLabel();
+                        var label1 = rb.DefineLabel();
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, rb.Stack, label1, true);
                         rb.MarkLabel(label1);
                         rb.EmitPopStack();
@@ -169,7 +167,6 @@ namespace Zilf.Compiler
                 // built-in statements handled specially
                 ZilAtom atom;
                 IGlobalBuilder global;
-                SoftGlobal softGlobal;
                 ILocalBuilder local;
                 IObjectBuilder objbld;
                 IRoutineBuilder routine;
@@ -195,7 +192,7 @@ namespace Zilf.Compiler
                             return routine;
 
                         // soft global
-                        if (SoftGlobals.TryGetValue(atom, out softGlobal))
+                        if (SoftGlobals.TryGetValue(atom, out var softGlobal))
                         {
                             if (wantResult)
                             {
@@ -325,8 +322,8 @@ namespace Zilf.Compiler
                             return Game.Zero;
                         }
                         resultStorage = resultStorage ?? rb.Stack;
-                        label1 = rb.DefineLabel();
-                        label2 = rb.DefineLabel();
+                        var label1 = rb.DefineLabel();
+                        var label2 = rb.DefineLabel();
                         CompileCondition(rb, form.Rest.First, form.SourceLine, label1, head.StdAtom != StdAtom.T_P);
                         rb.EmitStore(resultStorage, Game.One);
                         rb.Branch(label2);
@@ -346,59 +343,57 @@ namespace Zilf.Compiler
                 // routine calls
                 var obj = Context.GetZVal(Context.ZEnvironment.InternGlobalName(head));
 
-                while (obj is ZilConstant)
-                    obj = ((ZilConstant)obj).Value;
+                while (obj is ZilConstant cnst)
+                    obj = cnst.Value;
 
-                if (obj is ZilRoutine)
+                switch (obj)
                 {
-                    var rtn = (ZilRoutine)obj;
-
-                    // check argument count
-                    var args = form.Skip(1).ToArray();
-                    if (args.Length < rtn.ArgSpec.MinArgCount ||
-                        (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
-                    {
-                        Context.HandleError(CompilerError.WrongArgCount(
-                            rtn.Name.ToString(),
-                            new ArgCountRange(rtn.ArgSpec.MinArgCount, rtn.ArgSpec.MaxArgCount)));
-                        return wantResult ? Game.Zero : null;
-                    }
-
-                    // compile routine call
-                    result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                    using (var argOperands = CompileOperands(rb, form.SourceLine, args))
-                    {
-                        rb.EmitCall(Routines[head], argOperands.AsArray(), result);
-                    }
-                    return result;
-                }
-                if (obj is ZilFalse)
-                {
-                    // this always returns 0. we can eliminate the call if none of the arguments have side effects.
-                    var argsWithSideEffects = form.Skip(1).Where(zo => HasSideEffects(zo)).ToArray();
-
-                    if (argsWithSideEffects.Length > 0)
-                    {
-                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                        using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
+                    case ZilRoutine rtn:
+                        // check argument count
+                        var args = form.Skip(1).ToArray();
+                        if (args.Length < rtn.ArgSpec.MinArgCount ||
+                            (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
                         {
-                            var operands = argOperands.AsArray();
-                            if (operands.Any(o => o == rb.Stack))
-                                rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
+                            Context.HandleError(CompilerError.WrongArgCount(
+                                rtn.Name.ToString(),
+                                new ArgCountRange(rtn.ArgSpec.MinArgCount, rtn.ArgSpec.MaxArgCount)));
+                            return wantResult ? Game.Zero : null;
+                        }
+
+                        // compile routine call
+                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                        using (var argOperands = CompileOperands(rb, form.SourceLine, args))
+                        {
+                            rb.EmitCall(Routines[head], argOperands.AsArray(), result);
                         }
                         return result;
-                    }
-                    return Game.Zero;
-                }
 
-                // unrecognized
-                CompilerError error;
-                if (!ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out error))
-                {
-                    error = new CompilerError(CompilerMessages.Unrecognized_0_1, "routine or instruction", head);
+                    case ZilFalse _:
+                        // this always returns 0. we can eliminate the call if none of the arguments have side effects.
+                        var argsWithSideEffects = form.Skip(1).Where(zo => HasSideEffects(zo)).ToArray();
+
+                        if (argsWithSideEffects.Length > 0)
+                        {
+                            result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                            using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
+                            {
+                                var operands = argOperands.AsArray();
+                                if (operands.Any(o => o == rb.Stack))
+                                    rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
+                            }
+                            return result;
+                        }
+                        return Game.Zero;
+
+                    default:
+                        // unrecognized
+                        if (!ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out var error))
+                        {
+                            error = new CompilerError(CompilerMessages.Unrecognized_0_1, "routine or instruction", head);
+                        }
+                        Context.HandleError(error);
+                        return wantResult ? Game.Zero : null;
                 }
-                Context.HandleError(error);
-                return wantResult ? Game.Zero : null;
             }
         }
 
@@ -549,10 +544,9 @@ namespace Zilf.Compiler
             }
 
             // it's a FORM
-            var form = expr as ZilForm;
-            var head = form.First as ZilAtom;
+            var form = (ZilForm)expr;
 
-            if (head == null)
+            if (!(form.First is ZilAtom head))
             {
                 Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                 return Game.Zero;
@@ -672,26 +666,25 @@ namespace Zilf.Compiler
                     continue;
 
                 // literal string -> PRINTI
-                if (args[index] is ZilString)
+                if (args[index] is ZilString zstr)
                 {
-                    rb.EmitPrint(TranslateString(((ZilString)args[index]).Text, Context), false);
+                    rb.EmitPrint(TranslateString(zstr.Text, Context), false);
                     index++;
                     continue;
                 }
 
                 // literal character -> PRINTC
-                if (args[index] is ZilChar)
+                if (args[index] is ZilChar zch)
                 {
-                    rb.EmitPrint(PrintOp.Character, Game.MakeOperand((int)((ZilChar)args[index]).Char));
+                    rb.EmitPrint(PrintOp.Character, Game.MakeOperand(zch.Char));
                     index++;
                     continue;
                 }
 
                 // <QUOTE foo> -> <PRINTD ,foo>
-                if (args[index] is ZilForm)
+                if (args[index] is ZilForm innerForm)
                 {
-                    var innerForm = (ZilForm)args[index];
-                    if (innerForm.First is ZilAtom && ((ZilAtom)innerForm.First).StdAtom == StdAtom.QUOTE && innerForm.Rest != null)
+                    if (innerForm.First is ZilAtom atom && atom.StdAtom == StdAtom.QUOTE && innerForm.Rest != null)
                     {
                         var transformed = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
                         transformed.SourceLine = form.SourceLine;
@@ -703,10 +696,10 @@ namespace Zilf.Compiler
                 }
 
                 // P?foo expr -> <PRINT <GETP expr ,P?foo>>
-                if (args[index] is ZilAtom && index + 1 < args.Length)
+                if (args[index] is ZilAtom prop && index + 1 < args.Length)
                 {
                     var transformed = (ZilForm)Program.Parse(Context, form.SourceLine,
-                        "<PRINT <GETP {0} ,{1}>>", args[index + 1], args[index])
+                        "<PRINT <GETP {0} ,{1}>>", args[index + 1], prop)
                         .Single();
                     CompileForm(rb, transformed, false, null);
                     index += 2;
@@ -725,15 +718,12 @@ namespace Zilf.Compiler
 
         bool HasSideEffects(ZilObject expr)
         {
-            var form = expr as ZilForm;
-
             // only forms can have side effects
-            if (form == null)
+            if (!(expr is ZilForm form))
                 return false;
 
             // malformed forms are errors anyway
-            var head = form.First as ZilAtom;
-            if (head == null)
+            if (!(form.First is ZilAtom head))
                 return false;
 
             // some instructions always have side effects

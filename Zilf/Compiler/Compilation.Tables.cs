@@ -33,8 +33,7 @@ namespace Zilf.Compiler
             var size = Context.ZEnvironment.HeaderExtensionWords;
             if (size > 0)
             {
-                var v5options = Game.Options as Zilf.Emit.Zap.GameOptions.V5Plus;
-                if (v5options != null)
+                if (Game.Options is Zilf.Emit.Zap.GameOptions.V5Plus v5options)
                 {
                     var extab = Game.DefineTable("EXTAB", false);
                     extab.AddShort((short)size);
@@ -92,9 +91,12 @@ namespace Zilf.Compiler
                         return new TableElementOperand(constVal, isWord);
 
                     // but we'll also allow a global name if the global contains a table
-                    IGlobalBuilder global;
-                    if (zo is ZilAtom && Globals.TryGetValue((ZilAtom)zo, out global) && global.DefaultValue is ITableBuilder)
+                    if (zo is ZilAtom atom &&
+                        Globals.TryGetValue(atom, out var global) &&
+                        global.DefaultValue is ITableBuilder)
+                    {
                         return new TableElementOperand(global.DefaultValue, isWord);
+                    }
 
                     return null;
                 };

@@ -54,8 +54,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ctx.GetStdAtom(StdAtom.WORD_LEXICAL_WORD),
                 vword
             });
-            var lexicalWord = form.Eval(ctx) as ZilString;
-            if (lexicalWord == null)
+            if (!(form.Eval(ctx) is ZilString lexicalWord))
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,

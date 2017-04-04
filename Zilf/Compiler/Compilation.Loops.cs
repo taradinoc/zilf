@@ -120,8 +120,7 @@ namespace Zilf.Compiler
                         atom = list.First as ZilAtom;
                         if (atom == null)
                         {
-                            var adecl = list.First as ZilAdecl;
-                            if (adecl != null)
+                            if (list.First is ZilAdecl adecl)
                                 atom = adecl.First as ZilAtom;
                         }
                         ZilObject value = list.Rest.First;
@@ -157,7 +156,7 @@ namespace Zilf.Compiler
             try
             {
                 // generate code for prog body
-                args = args.Rest as ZilList;
+                args = args.Rest;
                 var clauseResult = CompileClauseBody(rb, args, wantResult, rb.Stack);
 
                 if (repeat)
@@ -179,45 +178,37 @@ namespace Zilf.Compiler
 
         static ZilList TransformProgArgsIfImplementingDeferredReturn(ZilList args)
         {
-            var bindingList = args.First as ZilList;
-
-            if (bindingList != null && bindingList.StdTypeAtom == StdAtom.LIST)
+            if (args.First is ZilList bindingList && bindingList.StdTypeAtom == StdAtom.LIST)
             {
                 // ends with <LVAL atom>?
-                var lastExpr = args.EnumerateNonRecursive().LastOrDefault() as ZilForm;
-
-                if (lastExpr != null && lastExpr.IsLVAL())
+                if (args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr &&
+                    lastExpr.IsLVAL(out var atom))
                 {
-                    var atom = lastExpr.Rest.First as ZilAtom;
-
-                    if (atom != null)
+                    // atom is bound in the prog?
+                    if (GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
                     {
-                        // atom is bound in the prog?
-                        if (GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
+                        // atom is set earlier in the prog?
+                        var setExpr = args.Rest.OfType<ZilForm>().FirstOrDefault(form =>
+                                ((IStructure)form).GetLength(3) == 3 &&
+                                ((form.First as ZilAtom)?.StdAtom == StdAtom.SET) &&
+                                form.Rest.First == atom);
+
+                        if (setExpr != null)
                         {
-                            // atom is set earlier in the prog?
-                            var setExpr = args.Rest.OfType<ZilForm>().FirstOrDefault(form =>
-                                    ((IStructure)form).GetLength(3) == 3 &&
-                                    ((form.First as ZilAtom)?.StdAtom == StdAtom.SET) &&
-                                    form.Rest.First == atom);
-
-                            if (setExpr != null)
+                            // atom is not referenced anywhere else?
+                            if (args.Rest.All(zo => zo == setExpr || zo == lastExpr || !RecursivelyContains(zo, atom)))
                             {
-                                // atom is not referenced anywhere else?
-                                if (args.Rest.All(zo => zo == setExpr || zo == lastExpr || !RecursivelyContains(zo, atom)))
-                                {
-                                    // we got a winner!
-                                    var newBindingList = new ZilList(
-                                        bindingList.Where(
-                                            zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
+                                // we got a winner!
+                                var newBindingList = new ZilList(
+                                    bindingList.Where(
+                                        zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
 
-                                    var newBody = new ZilList(
-                                        args.Rest
-                                        .Where(zo => zo != lastExpr)
-                                        .Select(zo => zo == setExpr ? ((IStructure)zo)[2] : zo));
+                                var newBody = new ZilList(
+                                    args.Rest
+                                    .Where(zo => zo != lastExpr)
+                                    .Select(zo => zo == setExpr ? ((IStructure)zo)[2] : zo));
 
-                                    return new ZilList(newBindingList, newBody);
-                                }
+                                return new ZilList(newBindingList, newBody);
                             }
                         }
                     }
@@ -259,9 +250,7 @@ namespace Zilf.Compiler
             if (Equals(haystack, needle))
                 return true;
 
-            var sequence = haystack as IEnumerable<ZilObject>;
-
-            if (sequence != null)
+            if (haystack is IEnumerable<ZilObject> sequence)
             {
                 foreach (var zo in sequence)
                 {
@@ -287,12 +276,11 @@ namespace Zilf.Compiler
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "DO");
             }
 
-            var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(4);
             if (specLength < 3 || specLength == null)
             {
@@ -302,8 +290,7 @@ namespace Zilf.Compiler
                     new CountableString("3 or 4", true));
             }
 
-            var atom = spec.First as ZilAtom;
-            if (atom == null)
+            if (!(spec.First is ZilAtom atom))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "DO", "first", "an atom");
             }
@@ -313,10 +300,8 @@ namespace Zilf.Compiler
 
             // look for an end block
             var body = args.Rest;
-            ZilList endStmts;
-            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts && endStmts.StdTypeAtom == StdAtom.LIST)
             {
-                endStmts = (ZilList)body.First;
                 body = body.Rest;
             }
             else
@@ -371,7 +356,7 @@ namespace Zilf.Compiler
                 var inc = spec.Rest.Rest.Rest.First;
                 int incValue;
 
-                if (inc is ZilFix && (incValue = ((ZilFix)inc).Value) < 0)
+                if (inc is ZilFix fix && (incValue = fix.Value) < 0)
                 {
                     rb.EmitBinary(BinaryOp.Sub, counter, Game.MakeOperand(-incValue), counter);
                     down = true;
@@ -392,7 +377,7 @@ namespace Zilf.Compiler
             }
             else
             {
-                down = (start is ZilFix && end is ZilFix && ((ZilFix)end).Value < ((ZilFix)start).Value);
+                down = (start is ZilFix fix1 && end is ZilFix fix2 && fix2.Value < fix1.Value);
                 rb.EmitBinary(down ? BinaryOp.Sub : BinaryOp.Add, counter, Game.One, counter);
             }
 
@@ -441,12 +426,11 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             // parse binding list
-            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-CONTENTS");
             }
 
-            var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength < 2 || specLength == null)
             {
@@ -456,8 +440,7 @@ namespace Zilf.Compiler
                     new CountableString("2 or 3", true));
             }
 
-            var atom = spec.First as ZilAtom;
-            if (atom == null)
+            if (!(spec.First is ZilAtom atom))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
             }
@@ -483,10 +466,8 @@ namespace Zilf.Compiler
 
             // look for an end block
             var body = args.Rest;
-            ZilList endStmts;
-            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts && body.First.StdTypeAtom == StdAtom.LIST)
             {
-                endStmts = (ZilList)body.First;
                 body = body.Rest;
             }
             else
@@ -584,42 +565,37 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             // parse binding list
-            if (args.First == null || args.First.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-DIRECTIONS");
             }
 
-            var spec = (ZilList)args.First;
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength != 3)
             {
                 throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, "MAP-DIRECTIONS", 3);
             }
 
-            var dirAtom = spec.First as ZilAtom;
-            if (dirAtom == null)
+            if (!(spec.First is ZilAtom dirAtom))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "first", "an atom");
             }
 
-            var ptAtom = spec.Rest.First as ZilAtom;
-            if (ptAtom == null)
+            if (!(spec.Rest?.First is ZilAtom ptAtom))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "middle", "an atom");
             }
 
             var room = spec.Rest.Rest.First;
-            if (!room.IsLVAL() && !room.IsGVAL())
+            if (!room.IsLVAL(out _) && !room.IsGVAL(out _))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "last", "an LVAL or GVAL");
             }
 
             // look for an end block
             var body = args.Rest;
-            ZilList endStmts;
-            if (body.First != null && body.First.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts && endStmts.StdTypeAtom == StdAtom.LIST)
             {
-                endStmts = (ZilList)body.First;
                 body = body.Rest;
             }
             else

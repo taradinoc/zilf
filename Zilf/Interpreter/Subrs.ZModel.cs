@@ -136,8 +136,7 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        var atom = Content as ZilAtom;
-                        if (atom != null)
+                        if (Content is ZilAtom atom)
                             return atom;
 
                         return ((AdeclForAtom)Content).Atom;
@@ -148,8 +147,8 @@ namespace Zilf.Interpreter
                 {
                     get
                     {
-                        if (Content is AdeclForAtom)
-                            return ((AdeclForAtom)Content).Decl;
+                        if (Content is AdeclForAtom afa)
+                            return afa.Decl;
 
                         return null;
                     }
@@ -172,8 +171,7 @@ namespace Zilf.Interpreter
 
                 public ZilAtom GetAtom(Context ctx)
                 {
-                    var atom = Content as ZilAtom;
-                    if (atom != null)
+                    if (Content is ZilAtom atom)
                         return atom;
 
                     return ZilAtom.Parse((string)Content, ctx);
@@ -205,7 +203,7 @@ namespace Zilf.Interpreter
                     ctx.Redefine(oldAtom);
                     ctx.ZEnvironment.InternGlobalName(atom);
                 }
-                else if (previous is ZilConstant && ((ZilConstant)previous).Value.Equals(value))
+                else if (previous is ZilConstant cnst && cnst.Value.Equals(value))
                 {
                     // silently ignore duplicate constants as long as the values are equal
                     return previous;
@@ -244,14 +242,13 @@ namespace Zilf.Interpreter
             {
                 if (ctx.AllowRedefine)
                 {
-                    if (oldVal is ZilGlobal)
+                    if (oldVal is ZilGlobal glob)
                     {
-                        var oldDefault = ((ZilGlobal)oldVal).Value;
-                        if (oldDefault is ZilTable)
+                        if (glob.Value is ZilTable tbl)
                         {
                             // prevent errors about duplicate symbol T?GLOBAL-NAME
                             // TODO: undefine the table if it hasn't been referenced anywhere yet
-                            ((ZilTable)oldDefault).Name = null;
+                            tbl.Name = null;
                         }
                     }
 
@@ -262,8 +259,8 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "GLOBAL", oldAtom.ToStringContext(ctx, false));
             }
 
-            if (defaultValue is ZilTable)
-                ((ZilTable)defaultValue).Name = "T?" + atom.Text;
+            if (defaultValue is ZilTable table)
+                table.Name = "T?" + atom.Text;
 
             var g = new ZilGlobal(atom, defaultValue);
             ctx.SetZVal(atom, g);
@@ -364,8 +361,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, name, oldAtom.ToStringContext(ctx, false));
             }
 
-            var zmo = new ZilModelObject(atom, props, isRoom);
-            zmo.SourceLine = ctx.TopFrame.SourceLine;
+            var zmo = new ZilModelObject(atom, props, isRoom) { SourceLine = ctx.TopFrame.SourceLine };
             ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
             return zmo;
@@ -406,8 +402,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            ZilAtom original;
-            if (ctx.ZEnvironment.TryGetBitSynonym(first, out original))
+            if (ctx.ZEnvironment.TryGetBitSynonym(first, out var original))
                 first = original;
 
             foreach (var synonym in synonyms)
@@ -473,10 +468,8 @@ namespace Zilf.Interpreter
             {
                 bool gotLength = false;
 
-                foreach (ZilObject obj in flagList)
+                foreach (ZilAtom flag in flagList)
                 {
-                    var flag = (ZilAtom)obj;
-
                     switch (flag.StdAtom)
                     {
                         case StdAtom.BYTE:
@@ -548,8 +541,7 @@ namespace Zilf.Interpreter
             {
                 while (!flagList.IsEmpty)
                 {
-                    var flag = flagList.First as ZilAtom;
-                    if (flag == null)
+                    if (!(flagList.First is ZilAtom flag))
                         throw new InterpreterError(InterpreterMessages._0_Flags_Must_Be_Atoms, name);
 
                     switch (flag.StdAtom)
@@ -579,8 +571,7 @@ namespace Zilf.Interpreter
 
                         case StdAtom.PATTERN:
                             flagList = flagList.Rest;
-                            ZilList patternList;
-                            if (flagList.IsEmpty || (patternList = flagList.First as ZilList) == null)
+                            if (flagList.IsEmpty || !(flagList.First is ZilList patternList))
                                 throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, name, "a list", "PATTERN");
                             pattern = patternList.ToArray();
                             ValidateTablePattern(name, pattern);
@@ -655,8 +646,7 @@ namespace Zilf.Interpreter
                     continue;
                 }
 
-                var vector = pattern[i] as ZilVector;
-                if (vector != null)
+                if (pattern[i] is ZilVector vector)
                 {
                     if (i != pattern.Length - 1)
                         throw new InterpreterError(InterpreterMessages._0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN, name);
@@ -669,8 +659,7 @@ namespace Zilf.Interpreter
                             new CountableString("at least 2", true));
 
                     // first element must be REST
-                    var atom = vector[0] as ZilAtom;
-                    if (atom == null || atom.StdAtom != StdAtom.REST)
+                    if (!(vector[0] is ZilAtom atom) || atom.StdAtom != StdAtom.REST)
                         throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "vector", "PATTERN", "REST");
 
                     // remaining elements must be BYTE or WORD
@@ -687,8 +676,7 @@ namespace Zilf.Interpreter
 
         static bool IsByteOrWordAtom(ZilObject value)
         {
-            var atom = value as ZilAtom;
-            return atom != null && (atom.StdAtom == StdAtom.BYTE || atom.StdAtom == StdAtom.WORD);
+            return value is ZilAtom atom && (atom.StdAtom == StdAtom.BYTE || atom.StdAtom == StdAtom.WORD);
         }
 
         [Subr]
@@ -812,44 +800,47 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<int>() >= 1 && Contract.Result<int>() <= 8);
 
             int newVersion;
-            if (expr is ZilAtom || expr is ZilString)
+            switch (expr)
             {
-                string text;
-                if (expr is ZilAtom)
-                    text = ((ZilAtom)expr).Text;
-                else
-                    text = ((ZilString)expr).Text;
+                case ZilAtom atom:
+                    string text = atom.Text;
+                    goto HandleNamedVersion;
 
-                switch (text.ToUpperInvariant())
-                {
-                    case "ZIP":
-                        newVersion = 3;
-                        break;
-                    case "EZIP":
-                        newVersion = 4;
-                        break;
-                    case "XZIP":
-                        newVersion = 5;
-                        break;
-                    case "YZIP":
-                        newVersion = 6;
-                        break;
-                    default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version name", text)
+                case ZilString str:
+                    text = str.Text;
+                    goto HandleNamedVersion;
+
+                HandleNamedVersion:
+                    switch (text.ToUpperInvariant())
+                    {
+                        case "ZIP":
+                            newVersion = 3;
+                            break;
+                        case "EZIP":
+                            newVersion = 4;
+                            break;
+                        case "XZIP":
+                            newVersion = 5;
+                            break;
+                        case "YZIP":
+                            newVersion = 6;
+                            break;
+                        default:
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version name", text)
+                                .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
+                    }
+                    break;
+
+                case ZilFix fix:
+                    newVersion = fix.Value;
+                    if (newVersion < 3 || newVersion > 8)
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version number", newVersion)
                             .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
-                }
-            }
-            else if (expr is ZilFix)
-            {
-                newVersion = ((ZilFix)expr).Value;
-                if (newVersion < 3 || newVersion > 8)
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version number", newVersion)
+                    break;
+
+                default:
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version specifier", expr)
                         .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
-            }
-            else
-            {
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version specifier", expr)
-                    .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
             }
             return newVersion;
         }
@@ -1143,8 +1134,7 @@ namespace Zilf.Interpreter
             var atom = ZilAtom.Parse(text, ctx);
             var word = ctx.ZEnvironment.GetVocab(atom);
 
-            var typeAtom = type as ZilAtom;
-            if (typeAtom != null)
+            if (type is ZilAtom typeAtom)
             {
                 switch (typeAtom.StdAtom)
                 {
@@ -1211,8 +1201,7 @@ namespace Zilf.Interpreter
             Contract.Requires(name != null);
             Contract.Requires(synonymType != null);
 
-            IWord oldWord;
-            if (ctx.ZEnvironment.Vocabulary.TryGetValue(original, out oldWord) == false)
+            if (ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord) == false)
             {
                 oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(original);
                 ctx.ZEnvironment.Vocabulary.Add(original, oldWord);
@@ -1223,8 +1212,7 @@ namespace Zilf.Interpreter
 
             foreach (var synonym in synonyms)
             {
-                IWord newWord;
-                if (ctx.ZEnvironment.Vocabulary.TryGetValue(synonym, out newWord) == false)
+                if (ctx.ZEnvironment.Vocabulary.TryGetValue(synonym, out var newWord) == false)
                 {
                     newWord = ctx.ZEnvironment.VocabFormat.CreateWord(synonym);
                     ctx.ZEnvironment.Vocabulary.Add(synonym, newWord);

@@ -90,9 +90,8 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilSubr;
-
             return
+                obj is ZilSubr other &&
                 other != null &&
                 other.GetType() == this.GetType() &&
                 other.name.Equals(this.name) &&

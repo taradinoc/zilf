@@ -86,10 +86,9 @@ namespace Zilf.Compiler
             }
 
             // it's a FORM
-            var form = expr as ZilForm;
-            var head = form.First as ZilAtom;
+            var form = (ZilForm)expr;
 
-            if (head == null)
+            if (!(form.First is ZilAtom head))
             {
                 Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                 return;
@@ -108,8 +107,7 @@ namespace Zilf.Compiler
             if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, rb.Stack);
-                var numericResult = result as INumericOperand;
-                if (numericResult != null)
+                if (result is INumericOperand numericResult)
                 {
                     if ((numericResult.Value != 0) == polarity)
                         rb.Branch(label);
@@ -180,8 +178,7 @@ namespace Zilf.Compiler
 
                 default:
                     op1 = CompileAsOperand(rb, form, form.SourceLine);
-                    var numericResult = op1 as INumericOperand;
-                    if (numericResult != null)
+                    if (op1 is INumericOperand numericResult)
                     {
                         if ((numericResult.Value != 0) == polarity)
                             rb.Branch(label);
@@ -268,8 +265,8 @@ namespace Zilf.Compiler
                 if (wantResult)
                     return CompileAsOperand(rb, args.First, src, resultStorage);
 
-                if (args.First is ZilForm)
-                    return CompileForm(rb, (ZilForm)args.First, wantResult, resultStorage);
+                if (args.First is ZilForm form)
+                    return CompileForm(rb, form, wantResult, resultStorage);
 
                 return Game.Zero;
             }
@@ -395,8 +392,8 @@ namespace Zilf.Compiler
                     args = args.Rest;
                 }
 
-                if (args.First is ZilForm)
-                    CompileForm(rb, (ZilForm)args.First, false, null);
+                if (args.First is ZilForm form)
+                    CompileForm(rb, form, false, null);
 
                 rb.MarkLabel(lastLabel);
 
@@ -510,11 +507,10 @@ namespace Zilf.Compiler
                 // only want the result of the last statement (if any)
                 bool wantThisResult = wantResult && clause.Rest.IsEmpty;
                 var stmt = clause.First;
-                if (stmt is ZilAdecl)
-                    stmt = ((ZilAdecl)stmt).First;
-                var form = stmt as ZilForm;
+                if (stmt is ZilAdecl adecl)
+                    stmt = adecl.First;
                 IOperand result;
-                if (form != null)
+                if (stmt is ZilForm form)
                 {
                     MarkSequencePoint(rb, form);
 
@@ -643,20 +639,17 @@ namespace Zilf.Compiler
                 if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
-                ZilAtom atom;
-                ZilString str;
-                ZilForm form;
                 ZilObject value;
                 bool match, isElse = false;
-                if (((atom = clause.First as ZilAtom) != null &&
+                if ((clause.First is ZilAtom atom &&
                      (value = Context.GetCompilationFlagValue(atom)) != null) ||
-                    ((str = clause.First as ZilString) != null &&
+                    (clause.First is ZilString str &&
                      (value = Context.GetCompilationFlagValue(str.Text)) != null))
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;
                 }
-                else if ((form = clause.First as ZilForm) != null)
+                else if (clause.First is ZilForm form)
                 {
                     form = Subrs.SubstituteIfflagForm(Context, form);
                     match = form.Eval(Context).IsTrue;

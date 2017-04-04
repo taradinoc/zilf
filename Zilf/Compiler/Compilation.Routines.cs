@@ -47,8 +47,9 @@ namespace Zilf.Compiler
                 {
                     case StdAtom.LIST:
                         var list = (ZilList)result;
-                        ZilList args, body;
-                        if (((IStructure)list).GetLength(1) <= 1 || (args = list.First as ZilList) == null ||
+                        ZilList body;
+                        if (((IStructure)list).GetLength(1) <= 1 ||
+                            !(list.First is ZilList args) ||
                             args.StdTypeAtom != StdAtom.LIST)
                         {
                             throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
@@ -185,8 +186,7 @@ namespace Zilf.Compiler
 
         void CompileStmt(IRoutineBuilder rb, ZilObject stmt, bool wantResult)
         {
-            var form = stmt as ZilForm;
-            if (form == null)
+            if (!(stmt is ZilForm form))
             {
                 if (wantResult)
                 {
@@ -224,8 +224,7 @@ namespace Zilf.Compiler
 
             if (WantDebugInfo)
             {
-                var fileSourceLine = node.SourceLine as FileSourceLine;
-                if (fileSourceLine != null)
+                if (node.SourceLine is FileSourceLine fileSourceLine)
                 {
                     Game.DebugFile.MarkSequencePoint(rb,
                         new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
@@ -248,12 +247,10 @@ namespace Zilf.Compiler
 
             string name = atom.Text;
 
-            ILocalBuilder prev;
-            if (Locals.TryGetValue(atom, out prev))
+            if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
-                Stack<ILocalBuilder> stk;
-                if (OuterLocals.TryGetValue(atom, out stk) == false)
+                if (OuterLocals.TryGetValue(atom, out var stk) == false)
                 {
                     stk = new Stack<ILocalBuilder>();
                     OuterLocals.Add(atom, stk);
@@ -312,8 +309,7 @@ namespace Zilf.Compiler
 
             SpareLocals.Push(Locals[atom]);
 
-            Stack<ILocalBuilder> stk;
-            if (OuterLocals.TryGetValue(atom, out stk))
+            if (OuterLocals.TryGetValue(atom, out var stk))
             {
                 Locals[atom] = stk.Pop();
                 if (stk.Count == 0)

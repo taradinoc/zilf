@@ -202,15 +202,14 @@ namespace Zilf.Language
         {
             foreach (var subpattern in pattern.Rest)
             {
-                if (subpattern is ZilVector)
+                if (subpattern is ZilVector vector)
                 {
-                    var vector = (ZilVector)subpattern;
                     var len = vector.GetLength();
-                    if (len > 0 && vector[0] is ZilAtom)
+                    if (len > 0 && vector[0] is ZilAtom atom)
                     {
                         int i;
 
-                        switch (((ZilAtom)vector[0]).StdAtom)
+                        switch (atom.StdAtom)
                         {
                             case StdAtom.REST:
                                 i = 1;
@@ -250,9 +249,9 @@ namespace Zilf.Language
                                 continue;
                         }
                     }
-                    else if (len > 0 && vector[0] is ZilFix)
+                    else if (len > 0 && vector[0] is ZilFix fix)
                     {
-                        var count = ((ZilFix)vector[0]).Value;
+                        var count = fix.Value;
 
                         for (int i = 0; i < count; i++)
                         {

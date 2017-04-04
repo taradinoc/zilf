@@ -121,10 +121,9 @@ namespace Zilf.Interpreter.Values
             return new ZilList(result);
         }
 
-        public ZilObject Apply(Context ctx, ZilObject[] args)
-        {
-            return ApplyImpl(ctx, args, true);
-        }
+        public ZilObject Apply(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, true);
+
+        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, false);
 
         ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
@@ -152,15 +151,9 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
-        {
-            return ApplyImpl(ctx, args, false);
-        }
-
         public override bool Equals(object obj)
         {
-            var other = obj as ZilFunction;
-            if (other == null)
+            if (!(obj is ZilFunction other))
                 return false;
 
             if (!other.argspec.Equals(this.argspec))
@@ -188,35 +181,18 @@ namespace Zilf.Interpreter.Values
 
         #region IStructure Members
 
-        public ZilObject GetFirst()
-        {
-            return argspec.ToZilList();
-        }
+        public ZilObject GetFirst() => argspec.ToZilList();
 
-        public IStructure GetRest(int skip)
-        {
-            return new ZilList(body.Skip(skip - 1));
-        }
+        public IStructure GetRest(int skip) => new ZilList(body.Skip(skip - 1));
 
-        public IStructure GetBack(int skip)
-        {
+        public IStructure GetBack(int skip) => throw new NotSupportedException();
+
+        public IStructure GetTop() => throw new NotSupportedException();
+
+        public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
-        }
 
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool IsEmpty()
-        {
-            return false;
-        }
+        public bool IsEmpty() => false;
 
         public ZilObject this[int index]
         {
@@ -236,10 +212,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public int GetLength()
-        {
-            return body.Length + 1;
-        }
+        public int GetLength() => body.Length + 1;
 
         public int? GetLength(int limit)
         {
@@ -256,9 +229,6 @@ namespace Zilf.Interpreter.Values
                 yield return zo;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

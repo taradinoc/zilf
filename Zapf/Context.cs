@@ -211,8 +211,7 @@ namespace Zapf
                     else
                     {
                         // translate according to LanguageSpecialChars
-                        char translation;
-                        if (LanguageSpecialChars.TryGetValue(next, out translation))
+                        if (LanguageSpecialChars.TryGetValue(next, out var translation))
                         {
                             sb.Remove(i, 1);
                             sb[i] = translation;
@@ -344,8 +343,8 @@ namespace Zapf
                 {
                     if (f.Location >= vocabStart && f.Location < vocabEnd)
                     {
-                        Symbol sym;
-                        if (GlobalSymbols.TryGetValue(f.Symbol, out sym) && sym.Type == SymbolType.Label &&
+                        if (GlobalSymbols.TryGetValue(f.Symbol, out var sym) &&
+                            sym.Type == SymbolType.Label &&
                             sym.Value >= vocabStart && sym.Value < vocabEnd)
                         {
                             Position = MapVocabAddress(f.Location, newIndexes);
@@ -603,8 +602,7 @@ namespace Zapf
         public int Reassemble(string curLabel)
         {
             // define the current label, which is the one causing us to reassemble
-            Symbol sym;
-            if (LocalSymbols.TryGetValue(curLabel, out sym) == true)
+            if (LocalSymbols.TryGetValue(curLabel, out var sym) == true)
                 sym.Value = position;
             else
                 LocalSymbols.Add(curLabel, new Symbol(curLabel, SymbolType.Label, position));
@@ -650,8 +648,7 @@ namespace Zapf
         {
             int num = 16 + globalVarCount++;
 
-            Symbol sym;
-            if (GlobalSymbols.TryGetValue(name, out sym) == false)
+            if (GlobalSymbols.TryGetValue(name, out var sym) == false)
             {
                 sym = new Symbol(name, SymbolType.Variable, num);
                 GlobalSymbols.Add(name, sym);
@@ -682,8 +679,7 @@ namespace Zapf
         {
             int num = 1 + objectCount++;
 
-            Symbol sym;
-            if (GlobalSymbols.TryGetValue(name, out sym) == false)
+            if (GlobalSymbols.TryGetValue(name, out var sym) == false)
             {
                 sym = new Symbol(name, SymbolType.Object, num);
                 GlobalSymbols.Add(name, sym);

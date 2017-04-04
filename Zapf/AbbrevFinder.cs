@@ -144,8 +144,7 @@ namespace Zapf
 
         int CountSavings(string word)
         {
-            int zchars;
-            encoder.Encode(word, 0, StringEncoderMode.NoAbbreviations, out zchars);
+            encoder.Encode(word, 0, StringEncoderMode.NoAbbreviations, out int zchars);
             return zchars - 2;
         }
 

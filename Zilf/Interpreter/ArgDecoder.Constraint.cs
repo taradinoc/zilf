@@ -36,11 +36,9 @@ namespace Zilf.Interpreter
 
             public static Constraint FromDecl(Context ctx, ZilObject pattern)
             {
-                var form = pattern as ZilForm;
-                if (form != null)
+                if (pattern is ZilForm form)
                 {
-                    var head = form.First as ZilAtom;
-                    if (head != null)
+                    if (form.First is ZilAtom head)
                     {
                         switch (head.StdAtom)
                         {
@@ -55,15 +53,14 @@ namespace Zilf.Interpreter
                             case StdAtom.None:
                                 break;
 
-                            // XXX may need to combine this with a contents constraint
-                            //default:
-                            //    return OfType(head.StdAtom);
+                                // XXX may need to combine this with a contents constraint
+                                //default:
+                                //    return OfType(head.StdAtom);
                         }
                     }
                 }
 
-                var atom = pattern as ZilAtom;
-                if (atom != null)
+                if (pattern is ZilAtom atom)
                 {
                     switch (atom.StdAtom)
                     {
@@ -214,9 +211,7 @@ namespace Zilf.Interpreter
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && otherType.TypeAtom == this.TypeAtom)
+                    if (other is TypeConstraint otherType && otherType.TypeAtom == this.TypeAtom)
                     {
                         return CompareOutcome.Equal;
                     }
@@ -246,25 +241,17 @@ namespace Zilf.Interpreter
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
-                    var otherPrimType = other as PrimTypeConstraint;
-
-                    if (otherPrimType != null)
+                    switch (other)
                     {
-                        if (otherPrimType.PrimType == this.PrimType)
+                        case PrimTypeConstraint otherPrimType when (otherPrimType.PrimType == this.PrimType):
                             return CompareOutcome.Equal;
 
-                        return null;
+                        case TypeConstraint otherType when (ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) == this.PrimType):
+                            return CompareOutcome.Looser;
+
+                        default:
+                            return null;
                     }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null &&
-                        ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) == this.PrimType)
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
                 }
 
                 public override bool Allows(Context ctx, ZilObject arg)
@@ -287,19 +274,17 @@ namespace Zilf.Interpreter
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
-                    if (other is StructuredConstraint)
+                    switch (other)
                     {
-                        return CompareOutcome.Equal;
+                        case StructuredConstraint _:
+                            return CompareOutcome.Equal;
+
+                        case TypeConstraint otherType when (ctx.IsStructuredType(ctx.GetStdAtom(otherType.TypeAtom))):
+                            return CompareOutcome.Looser;
+
+                        default:
+                            return null;
                     }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && ctx.IsStructuredType(ctx.GetStdAtom(otherType.TypeAtom)))
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
                 }
 
                 public override string ToString()
@@ -317,19 +302,17 @@ namespace Zilf.Interpreter
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
-                    if (other is ApplicableConstraint)
+                    switch (other)
                     {
-                        return CompareOutcome.Equal;
+                        case ApplicableConstraint _:
+                            return CompareOutcome.Equal;
+
+                        case TypeConstraint otherType when (ctx.IsApplicableType(ctx.GetStdAtom(otherType.TypeAtom))):
+                            return CompareOutcome.Looser;
+
+                        default:
+                            return null;
                     }
-
-                    var otherType = other as TypeConstraint;
-
-                    if (otherType != null && ctx.IsApplicableType(ctx.GetStdAtom(otherType.TypeAtom)))
-                    {
-                        return CompareOutcome.Looser;
-                    }
-
-                    return null;
                 }
 
                 public override string ToString()
@@ -349,13 +332,14 @@ namespace Zilf.Interpreter
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
-                    if (other is DeclConstraint &&
-                        this.Pattern.Equals(((DeclConstraint)other).Pattern))
+                    switch (other)
                     {
-                        return CompareOutcome.Equal;
-                    }
+                        case DeclConstraint otherDecl when (this.Pattern.Equals(otherDecl.Pattern)):
+                            return CompareOutcome.Equal;
 
-                    return null;
+                        default:
+                            return null;
+                    }
                 }
 
                 public override bool Allows(Context ctx, ZilObject arg)
@@ -382,9 +366,9 @@ namespace Zilf.Interpreter
                 {
                     var parts = new List<Constraint>();
 
-                    if (left is Conjunction)
+                    if (left is Conjunction lc)
                     {
-                        parts.AddRange(((Conjunction)left).Constraints);
+                        parts.AddRange(lc.Constraints);
                     }
                     else
                     {
@@ -392,9 +376,9 @@ namespace Zilf.Interpreter
                     }
 
                     IEnumerable<Constraint> todo;
-                    if (right is Conjunction)
+                    if (right is Conjunction rc)
                     {
-                        todo = ((Conjunction)right).Constraints;
+                        todo = rc.Constraints;
                     }
                     else
                     {
@@ -495,9 +479,9 @@ namespace Zilf.Interpreter
                 {
                     var parts = new List<Constraint>();
 
-                    if (left is Disjunction)
+                    if (left is Disjunction ld)
                     {
-                        parts.AddRange(((Disjunction)left).Constraints);
+                        parts.AddRange(ld.Constraints);
                     }
                     else
                     {
@@ -505,9 +489,9 @@ namespace Zilf.Interpreter
                     }
 
                     IEnumerable<Constraint> todo;
-                    if (right is Disjunction)
+                    if (right is Disjunction rd)
                     {
-                        todo = ((Disjunction)right).Constraints;
+                        todo = rd.Constraints;
                     }
                     else
                     {

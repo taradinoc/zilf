@@ -125,8 +125,7 @@ namespace Zilf.Common.StringEncoding
                     if (c < (char)256)
                         return small[(int)c];
 
-                    int result;
-                    if (big == null || big.TryGetValue(c, out result) == false)
+                    if (big == null || big.TryGetValue(c, out int result) == false)
                         return defaultValue;
                     else
                         return result;

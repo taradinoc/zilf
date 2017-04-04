@@ -239,10 +239,10 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
         {
-            var prepositionsTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PRTBL)) as ITableBuilder;
-            var actionsTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL)) as ITableBuilder;
-            var preactionsTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL)) as ITableBuilder;
-            var verbsTable = helpers.CompileConstant(ctx.GetStdAtom(StdAtom.VTBL)) as ITableBuilder;
+            var prepositionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PRTBL));
+            var actionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
+            var preactionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
+            var verbsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.VTBL));
 
             Contract.Assert(prepositionsTable != null);
             Contract.Assert(actionsTable != null);

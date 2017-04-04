@@ -89,8 +89,7 @@ namespace Zilf.ZModel
         {
             Contract.Requires(name != null);
 
-            Language result;
-            allLanguages.TryGetValue(name, out result);
+            allLanguages.TryGetValue(name, out var result);
             return result;
         }
 

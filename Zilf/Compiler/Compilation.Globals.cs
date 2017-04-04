@@ -107,8 +107,7 @@ namespace Zilf.Compiler
                     if (args != null && !args.IsEmpty)
                     {
                         // skip the first argument to operations that operate on a variable
-                        var firstAtom = f.First as ZilAtom;
-                        if (firstAtom != null)
+                        if (f.First is ZilAtom firstAtom)
                         {
                             switch (firstAtom.StdAtom)
                             {
@@ -128,9 +127,7 @@ namespace Zilf.Compiler
 
                         while (args != null && !args.IsEmpty)
                         {
-                            var atom = args.First as ZilAtom;
-                            ZilGlobal g;
-                            if (atom != null && globalsByName.TryGetValue(atom, out g))
+                            if (args.First is ZilAtom atom && globalsByName.TryGetValue(atom, out var g))
                             {
                                 g.StorageType = GlobalStorageType.Hard;
                             }
@@ -250,17 +247,14 @@ namespace Zilf.Compiler
                     return Game.MakeOperand((byte)((ZilChar)expr).Char);
 
                 case StdAtom.ATOM:
-                    IRoutineBuilder routine;
-                    IObjectBuilder obj;
-                    IOperand operand;
                     atom = (ZilAtom)expr;
                     if (atom.StdAtom == StdAtom.T)
                         return Game.One;
-                    if (Routines.TryGetValue(atom, out routine))
+                    if (Routines.TryGetValue(atom, out var routine))
                         return routine;
-                    if (Objects.TryGetValue(atom, out obj))
+                    if (Objects.TryGetValue(atom, out var obj))
                         return obj;
-                    if (Constants.TryGetValue(atom, out operand))
+                    if (Constants.TryGetValue(atom, out var operand))
                         return operand;
                     return null;
 
@@ -269,8 +263,7 @@ namespace Zilf.Compiler
 
                 case StdAtom.TABLE:
                     var table = (ZilTable)expr;
-                    ITableBuilder tb;
-                    if (!Tables.TryGetValue(table, out tb))
+                    if (!Tables.TryGetValue(table, out var tb))
                     {
                         Contract.Assert((table.Flags & TableFlags.TempTable) != 0);
                         tb = Game.DefineTable(table.Name, true);

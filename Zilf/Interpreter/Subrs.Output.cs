@@ -122,9 +122,8 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            if (printer is ZilAtom)
+            if (printer is ZilAtom atom)
             {
-                var atom = (ZilAtom)printer;
                 printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
                 if (printer == null)
                     throw new InterpreterError(
@@ -277,8 +276,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            var hposChannel = channel as IChannelWithHPos;
-            if (hposChannel == null)
+            if (!(channel is IChannelWithHPos hposChannel))
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "M-HPOS");
 
             return new ZilFix(hposChannel.HPos);
@@ -304,8 +302,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "INDENT-TO");
             }
 
-            var hposChannel = channel as IChannelWithHPos;
-            if (hposChannel == null)
+            if (!(channel is IChannelWithHPos hposChannel))
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "INDENT-TO");
 
             var cur = hposChannel.HPos;

@@ -42,42 +42,27 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(other != null);
         }
 
-        public int Value
-        {
-            get { return value; }
-        }
+        public int Value => value;
 
-        public override string ToString()
-        {
-            return value.ToString();
-        }
+        public override string ToString() => value.ToString();
 
         public override StdAtom StdTypeAtom => StdAtom.FIX;
 
         public override PrimType PrimType => PrimType.FIX;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return this;
-        }
+        public override ZilObject GetPrimitive(Context ctx) => this;
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilFix;
-            return other != null && other.value == this.value;
+            return obj is ZilFix other && other.value == this.value;
         }
 
-        public override int GetHashCode()
-        {
-            return value.GetHashCode();
-        }
+        public override int GetHashCode() => value.GetHashCode();
 
         #region IApplicable Members
 
-        public ZilObject Apply(Context ctx, ZilObject[] args)
-        {
-            return ApplyNoEval(ctx, EvalSequence(ctx, args).ToArray());
-        }
+        public ZilObject Apply(Context ctx, ZilObject[] args) =>
+            ApplyNoEval(ctx, EvalSequence(ctx, args).ToArray());
 
         public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
         {

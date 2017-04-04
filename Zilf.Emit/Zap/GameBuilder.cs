@@ -137,9 +137,7 @@ namespace Zilf.Emit.Zap
 
             this.zversion = zversion;
             this.streamFactory = streamFactory;
-
-            Type requiredOptionsType, concreteOptionsType;
-            GetOptionsTypeForZVersion(zversion, out requiredOptionsType, out concreteOptionsType);
+            GetOptionsTypeForZVersion(zversion, out var requiredOptionsType, out var concreteOptionsType);
 
             if (options != null)
             {
@@ -314,8 +312,7 @@ namespace Zilf.Emit.Zap
 
             foreach (char c in alphabet)
             {
-                byte b;
-                if (DefaultUnicodeMapping.TryGetValue(c, out b) == false)
+                if (DefaultUnicodeMapping.TryGetValue(c, out var b) == false)
                     b = (byte)c;
 
                 sb.Append(b);
@@ -344,8 +341,8 @@ namespace Zilf.Emit.Zap
 
             constants.Add(name, value);
             symbols.Add(name, "constant");
-            if (value is INumericOperand)
-                return new NumericConstantOperand(name, ((INumericOperand)value).Value);
+            if (value is INumericOperand num)
+                return new NumericConstantOperand(name, num.Value);
             else
                 return new LiteralOperand(name);
         }
@@ -535,8 +532,7 @@ namespace Zilf.Emit.Zap
 
         public IOperand MakeOperand(string value)
         {
-            IOperand result;
-            if (stringPool.TryGetValue(value, out result) == false)
+            if (stringPool.TryGetValue(value, out var result) == false)
             {
                 result = new LiteralOperand("STR?" + stringPool.Count);
                 stringPool.Add(value, result);

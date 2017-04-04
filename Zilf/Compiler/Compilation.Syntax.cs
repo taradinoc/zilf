@@ -87,8 +87,7 @@ namespace Zilf.Compiler
 
                 foreach (Syntax line in verb.Reverse())
                 {
-                    Action act;
-                    if (actions.TryGetValue(line.ActionName, out act) == false)
+                    if (actions.TryGetValue(line.ActionName, out var act) == false)
                     {
                         // this can happen if an exception (e.g. undefined action routine) stops us from adding the action during the first pass.
                         continue;
@@ -289,11 +288,9 @@ namespace Zilf.Compiler
             {
                 using (DiagnosticContext.Push(line.SourceLine))
                 {
-                    Action act;
-                    if (actions.TryGetValue(line.ActionName, out act) == false)
+                    if (actions.TryGetValue(line.ActionName, out var act) == false)
                     {
-                        IRoutineBuilder routine;
-                        if (Routines.TryGetValue(line.Action, out routine) == false)
+                        if (Routines.TryGetValue(line.Action, out var routine) == false)
                             throw new CompilerError(CompilerMessages.Undefined_0_1, "action routine", line.Action);
 
                         IRoutineBuilder preRoutine = null;
@@ -358,8 +355,7 @@ namespace Zilf.Compiler
             if (!Vocabulary.ContainsKey(word))
             {
                 var wAtom = ZilAtom.Parse("W?" + rawWord, Context);
-                IOperand constantValue;
-                if (Constants.TryGetValue(wAtom, out constantValue) == false)
+                if (Constants.TryGetValue(wAtom, out var constantValue) == false)
                 {
                     var wb = Game.DefineVocabularyWord(rawWord);
                     Vocabulary.Add(word, wb);
@@ -367,9 +363,9 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    if (constantValue is IWordBuilder)
+                    if (constantValue is IWordBuilder wb)
                     {
-                        Vocabulary.Add(word, (IWordBuilder)constantValue);
+                        Vocabulary.Add(word, wb);
                     }
                     else
                     {

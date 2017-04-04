@@ -64,14 +64,15 @@ namespace Zilf.Interpreter.Values
 
             while (!list.IsEmpty)
             {
-                var atoms = list.First as ZilList;
-                var decl = list.Rest.First;
-
-                if (atoms == null || decl == null || !atoms.All(a => a is ZilAtom))
+                if (!(list.First is ZilList atoms) ||
+                    !atoms.All(a => a is ZilAtom) ||
+                    !(list.Rest?.First is ZilObject decl))
+                {
                     break;
+                }
 
-                foreach (var atom in atoms)
-                    yield return new KeyValuePair<ZilAtom, ZilObject>((ZilAtom)atom, decl);
+                foreach (ZilAtom atom in atoms)
+                    yield return new KeyValuePair<ZilAtom, ZilObject>(atom, decl);
 
                 list = list.Rest.Rest;
             }

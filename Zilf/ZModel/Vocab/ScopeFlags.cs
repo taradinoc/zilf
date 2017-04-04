@@ -75,8 +75,7 @@ namespace Zilf.ZModel.Vocab
 
                 foreach (var obj in list)
                 {
-                    var atom = obj as ZilAtom;
-                    if (atom == null)
+                    if (!(obj is ZilAtom atom))
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     switch (atom.StdAtom)
@@ -110,8 +109,7 @@ namespace Zilf.ZModel.Vocab
             else
             {
                 // use custom flags
-                CacheEntry entry;
-                if (sflagsCache.TryGetValue(sflagsVector, out entry) == false)
+                if (sflagsCache.TryGetValue(sflagsVector, out var entry) == false)
                 {
                     var length = sflagsVector.GetLength();
                     if (length % 2 != 0)
@@ -137,17 +135,17 @@ namespace Zilf.ZModel.Vocab
                         var value = sflagsVector[i + 1];
 
                         string nameStr;
-                        if (name is ZilString)
-                            nameStr = ((ZilString)name).Text;
-                        else if (name is ZilAtom)
-                            nameStr = ((ZilAtom)name).Text;
+                        if (name is ZilString zstr)
+                            nameStr = zstr.Text;
+                        else if (name is ZilAtom atom)
+                            nameStr = atom.Text;
                         else
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
                                 "NEW-SFLAGS names",
                                 "strings or atoms");
 
-                        if (!(value is ZilFix) || (((ZilFix)value).Value & ~255) != 0)
+                        if (!(value is ZilFix fix) || (fix.Value & ~255) != 0)
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
                                 "NEW-SFLAGS values",
@@ -165,14 +163,12 @@ namespace Zilf.ZModel.Vocab
 
                 foreach (var obj in list)
                 {
-                    var atom = obj as ZilAtom;
-                    if (atom == null)
+                    if (!(obj is ZilAtom atom))
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     string name = atom.Text;
-                    byte value;
 
-                    if (!entry.Dict.TryGetValue(name, out value))
+                    if (!entry.Dict.TryGetValue(name, out var value))
                         throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", name)
                             .Combine(new InterpreterError(
                                 InterpreterMessages.Since_NEWSFLAGS_Is_Set_The_Following_Options_Are_Recognized_0,
@@ -198,8 +194,7 @@ namespace Zilf.ZModel.Vocab
             if (gval == null)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_A_GVAL_To_Use_NEWSFLAGS, atom.ToStringContext(ctx, false));
 
-            var fix = gval as ZilFix;
-            if (fix == null)
+            if (!(gval is ZilFix fix))
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
                     "global",

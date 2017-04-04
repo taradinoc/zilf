@@ -57,11 +57,8 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(ctx != null);
             Contract.Requires(initializer != null);
 
-            if (initializer.Length != 2 || !(initializer[0] is ZilAtom) || initializer[1] == null)
+            if (initializer.Length != 2 || !(initializer[0] is ZilAtom type) || !(initializer[1] is ZilObject value))
                 throw new ArgumentException("Expected 2 objects, the first a ZilAtom");
-
-            var type = (ZilAtom)initializer[0];
-            ZilObject value = initializer[1];
 
             return ctx.ChangeType(value, type);
         }

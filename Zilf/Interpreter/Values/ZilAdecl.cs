@@ -44,22 +44,13 @@ namespace Zilf.Interpreter.Values
 
         public ZilAdecl(ZilObject first, ZilObject second)
         {
-            if (first == null)
-                throw new ArgumentNullException(nameof(first));
-            if (second == null)
-                throw new ArgumentNullException(nameof(second));
-
-            this.First = first;
-            this.Second = second;
+            this.First = first ?? throw new ArgumentNullException(nameof(first));
+            this.Second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilAdecl;
-            if (other == null)
-                return false;
-
-            return other.First.Equals(First) && other.Second.Equals(Second);
+            return obj is ZilAdecl other && other.First.Equals(First) && other.Second.Equals(Second);
         }
 
         public override int GetHashCode()

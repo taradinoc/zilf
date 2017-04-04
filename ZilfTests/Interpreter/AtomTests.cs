@@ -500,7 +500,7 @@ namespace ZilfTests.Interpreter
             // remove an atom from its oblist
             var ctx = new Context();
             var oldFoo = ZilAtom.Parse("FOO", ctx);
-            var atom = TestHelpers.Evaluate(ctx, "<REMOVE FOO>") as ZilAtom;
+            var atom = (ZilAtom)TestHelpers.Evaluate(ctx, "<REMOVE FOO>");
             Assert.AreSame(oldFoo, atom);
             Assert.IsNull(atom.ObList);
             Assert.AreNotEqual(ZilAtom.Parse("FOO", ctx), atom);
@@ -509,7 +509,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<REMOVE <ATOM \"FOO\">>", ctx.FALSE);
 
             // remove an atom by name
-            atom = TestHelpers.Evaluate(ctx, "<REMOVE \"FOO\" <1 .OBLIST>>") as ZilAtom;
+            atom = (ZilAtom)TestHelpers.Evaluate(ctx, "<REMOVE \"FOO\" <1 .OBLIST>>");
             Assert.IsNotNull(atom);
             Assert.AreEqual("FOO", atom.Text);
             Assert.IsNull(atom.ObList);
@@ -534,8 +534,7 @@ namespace ZilfTests.Interpreter
 
             foreach (var zo in (ZilList)ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)))
             {
-                var oblist = zo as ObList;
-                if (oblist == null)
+                if (!(zo is ObList oblist))
                     continue;
 
                 var atomList = (ZilList)oblist.GetPrimitive(ctx);

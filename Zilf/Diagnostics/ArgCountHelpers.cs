@@ -103,8 +103,7 @@ namespace Zilf.Diagnostics
             Contract.Requires(ranges != null);
             Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
 
-            CountableString cs;
-            FormatArgCount(ranges, out cs);
+            FormatArgCount(ranges, out var cs);
             return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }
 

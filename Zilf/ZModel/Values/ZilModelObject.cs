@@ -52,9 +52,7 @@ namespace Zilf.ZModel.Values
                     "list coerced to OBJECT",
                     new CountableString("at least 1", false));
 
-            var atom = list.First as ZilAtom;
-
-            if (atom == null)
+            if (!(list.First is ZilAtom atom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
             if (list.Rest.Any(zo => zo.StdTypeAtom != StdAtom.LIST))

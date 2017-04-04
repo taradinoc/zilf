@@ -62,91 +62,46 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.LIST;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return value;
-        }
+        public override ZilObject GetPrimitive(Context ctx) => value;
 
-        public override bool IsTrue
-        {
-            get { return false; }
-        }
+        public override bool IsTrue => false;
 
         public override bool Equals(object obj)
         {
-            var other = obj as ZilFalse;
-            return other != null && other.value.Equals(this.value);
+            return obj is ZilFalse other && other.value.Equals(this.value);
         }
 
-        public override int GetHashCode()
-        {
-            return value.GetHashCode();
-        }
+        public override int GetHashCode() => value.GetHashCode();
 
         #region IStructure Members
 
-        public ZilObject GetFirst()
-        {
-            return value.First;
-        }
+        public ZilObject GetFirst() => value.First;
 
-        public IStructure GetRest(int skip)
-        {
-            return ((IStructure)value).GetRest(skip);
-        }
+        public IStructure GetRest(int skip) => ((IStructure)value).GetRest(skip);
 
-        public IStructure GetBack(int skip)
-        {
+        public IStructure GetBack(int skip) => throw new NotSupportedException();
+
+        public IStructure GetTop() => throw new NotSupportedException();
+
+        public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
-        }
 
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool IsEmpty()
-        {
-            return value.IsEmpty;
-        }
+        public bool IsEmpty() => value.IsEmpty;
 
         public ZilObject this[int index]
         {
-            get
-            {
-                return ((IStructure)value)[index];
-            }
-            set
-            {
-                ((IStructure)value)[index] = value;
-            }
+            get => ((IStructure)value)[index];
+            set => ((IStructure)value)[index] = value;
         }
 
-        public int GetLength()
-        {
-            return ((IStructure)value).GetLength();
-        }
+        public int GetLength() => ((IStructure)value).GetLength();
 
-        public int? GetLength(int limit)
-        {
-            return ((IStructure)value).GetLength(limit);
-        }
+        public int? GetLength(int limit) => ((IStructure)value).GetLength(limit);
 
         #endregion
 
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            return value.GetEnumerator();
-        }
+        public IEnumerator<ZilObject> GetEnumerator() => value.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return value.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => value.GetEnumerator();
     }
 }
