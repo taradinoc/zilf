@@ -135,10 +135,7 @@ namespace Zilf.Interpreter.Values
             throw new NotSupportedException();
         }
 
-        public bool IsEmpty()
-        {
-            return false;
-        }
+        public bool IsEmpty => false;
 
         public ZilObject this[int index]
         {

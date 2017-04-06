@@ -145,13 +145,17 @@ namespace Zilf.ZModel.Vocab
                                 "NEW-SFLAGS names",
                                 "strings or atoms");
 
-                        if (!(value is ZilFix fix) || (fix.Value & ~255) != 0)
+                        if (value is ZilFix fix && (fix.Value & ~255) == 0)
+                        {
+                            entry.Dict[nameStr] = (byte)fix.Value;
+                        }
+                        else
+                        {
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
                                 "NEW-SFLAGS values",
                                 "FIXes between 0 and 255");
-
-                        entry.Dict[nameStr] = (byte)((ZilFix)value).Value;
+                        }
                     }
                 }
 

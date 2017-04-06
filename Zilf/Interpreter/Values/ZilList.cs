@@ -89,16 +89,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(null, null);
         }
 
-        public bool IsEmpty
-        {
-            get
-            {
-                Contract.Ensures(
-                    (Contract.Result<bool>() == false && First != null && Rest != null) ||
-                    (Contract.Result<bool>() == true && First == null && Rest == null));
-                return First == null && Rest == null;
-            }
-        }
+        public bool IsEmpty => First == null;
 
         public static string SequenceToString(IEnumerable<ZilObject> items,
             string start, string end, Func<ZilObject, string> convert)
@@ -250,9 +241,9 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        ZilObject IStructure.GetFirst() => First;
+        public ZilObject GetFirst() => First;
 
-        IStructure IStructure.GetRest(int skip)
+        public IStructure GetRest(int skip)
         {
             ZilList result = this;
             while (skip-- > 0 && result != null)
@@ -260,33 +251,36 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        IStructure IStructure.GetBack(int skip) => throw new NotSupportedException();
+        public IStructure GetBack(int skip) => throw new NotSupportedException();
 
         public IStructure GetTop() => throw new NotSupportedException();
 
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        bool IStructure.IsEmpty() => First == null;
-
-        ZilObject IStructure.this[int index]
+        public ZilObject this[int index]
         {
             get
             {
-                var rested = ((IStructure)this).GetRest(index);
+                var rested = GetRest(index);
                 return rested?.GetFirst();
             }
             set
             {
-                if (!(((IStructure)this).GetRest(index) is ZilList rested) || rested.IsEmpty)
+                if (GetRest(index) is ZilList rested && !rested.IsEmpty)
+                {
+                    rested.First = value;
+                }
+                else
+                {
                     throw new ArgumentOutOfRangeException(nameof(index), "writing past end of list");
-                rested.First = value;
+                }
             }
         }
 
-        int IStructure.GetLength() => this.Count();
+        public int GetLength() => this.Count();
 
-        int? IStructure.GetLength(int limit)
+        public int? GetLength(int limit)
         {
             int count = 0;
 

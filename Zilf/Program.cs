@@ -110,6 +110,8 @@ namespace Zilf
             return 0;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
         static void DoREPL(Context ctx)
         {
             using (ctx.PushFileContext("<stdin>"))

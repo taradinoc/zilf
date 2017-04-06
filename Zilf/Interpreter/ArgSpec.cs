@@ -83,6 +83,7 @@ namespace Zilf.Interpreter
             return Parse(caller, prev.name, null, argspec);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         public static ArgSpec Parse(string caller, ZilAtom targetName, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
         {
             Contract.Requires(caller != null);
@@ -324,6 +325,8 @@ namespace Zilf.Interpreter
                 argAtoms.ToArray(), argDecls.ToArray(), argQuoted.ToArray(), argDefaults.ToArray());
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
@@ -598,6 +601,7 @@ namespace Zilf.Interpreter
         /// In the case of an exception, the new local environment will not be pushed.</para>
         /// <para>Make sure to call <see cref="IDisposable.Dispose"/> on the returned object!</para>
         /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Application BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
             Contract.Requires(ctx != null);

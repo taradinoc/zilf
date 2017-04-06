@@ -23,7 +23,7 @@ namespace Zilf.Compiler.Builtins
     /// Indicates that the parameter will be used as a routine address.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
-    public class RoutineAttribute : Attribute
+    public sealed class RoutineAttribute : Attribute
     {
     }
 }

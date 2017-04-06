@@ -178,6 +178,7 @@ namespace Zilf.Diagnostics
 
     public static class DiagnosticFactoryExtensions
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs)
         {
             Contract.Requires(fac != null);
@@ -187,6 +188,7 @@ namespace Zilf.Diagnostics
             return fac.GetDiagnostic(location, code, messageArgs, null, null);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs, string stackTrace)
         {
             Contract.Requires(fac != null);

@@ -26,7 +26,7 @@ namespace Zilf.Compiler.Builtins
     /// </summary>
     /// <seealso cref="Zilf.Emit.IVariable.Indirect"/>
     [AttributeUsage(AttributeTargets.Parameter)]
-    public class VariableAttribute : Attribute
+    public sealed class VariableAttribute : Attribute
     {
         /// <summary>
         /// If true, then even a reference to a variable's value via

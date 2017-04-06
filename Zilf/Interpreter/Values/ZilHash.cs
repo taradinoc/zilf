@@ -21,6 +21,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
+    // TODO: make ZilHash an abstract base class
     [BuiltinMeta]
     class ZilHash : ZilObject
     {
@@ -37,19 +38,14 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            return (obj is ZilHash && ((ZilHash)obj).type == this.type &&
-                    ((ZilHash)obj).primvalue.Equals(this.primvalue));
+            return (obj is ZilHash hash && hash.type == this.type &&
+                    hash.primvalue.Equals(this.primvalue));
         }
 
-        public override int GetHashCode()
-        {
-            return type.GetHashCode() ^ primvalue.GetHashCode();
-        }
+        public override int GetHashCode() =>
+            type.GetHashCode() ^ primvalue.GetHashCode();
 
-        public ZilAtom Type
-        {
-            get { return type; }
-        }
+        public ZilAtom Type => type;
 
         // TODO: eliminate ZilHash.Parse in favor of Context.ChangeType
         public static ZilObject Parse(Context ctx, ZilObject[] initializer)
@@ -63,10 +59,7 @@ namespace Zilf.Interpreter.Values
             return ctx.ChangeType(value, type);
         }
 
-        public override string ToString()
-        {
-            return "#" + type + " " + primvalue;
-        }
+        public override string ToString() => "#" + type + " " + primvalue;
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
@@ -97,9 +90,6 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => primtype;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return primvalue;
-        }
+        public override ZilObject GetPrimitive(Context ctx) => primvalue;
     }
 }

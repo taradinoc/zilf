@@ -28,7 +28,7 @@ namespace Zilf.Interpreter
     {
         public ZilObject GetFirst()
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null || IsEmpty());
+            Contract.Ensures(Contract.Result<ZilObject>() != null || IsEmpty);
             return default(ZilObject);
         }
 
@@ -57,7 +57,7 @@ namespace Zilf.Interpreter
         }
 
         [Pure]
-        public abstract bool IsEmpty();
+        public abstract bool IsEmpty { get; }
 
         public ZilObject this[int index]
         {
@@ -75,7 +75,7 @@ namespace Zilf.Interpreter
 
         public int GetLength()
         {
-            Contract.Ensures(Contract.Result<int>() > 0 || IsEmpty());
+            Contract.Ensures(Contract.Result<int>() > 0 || IsEmpty);
             return default(int);
         }
 

@@ -24,7 +24,7 @@ namespace Zilf.Compiler.Builtins
     /// should be passed in. This does not correspond to a ZIL parameter.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
-    public class DataAttribute : Attribute
+    public sealed class DataAttribute : Attribute
     {
     }
 }

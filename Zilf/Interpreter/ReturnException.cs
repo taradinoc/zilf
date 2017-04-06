@@ -44,6 +44,8 @@ namespace Zilf.Interpreter
         {
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {

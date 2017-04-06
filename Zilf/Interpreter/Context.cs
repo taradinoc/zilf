@@ -162,6 +162,7 @@ namespace Zilf.Interpreter
             InitPackages();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
@@ -583,6 +584,7 @@ namespace Zilf.Interpreter
         /// <remarks>The MDL documentation refers to the macro expansion environment as a
         /// "top level environment", but for the purposes of MDL-ZIL?, the environment is
         /// not considered "top level" (i.e. SUBR names are not redirected).</remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public T ExecuteInMacroEnvironment<T>(Func<T> func)
         {
             var oblistAtom = GetStdAtom(StdAtom.OBLIST);
@@ -935,6 +937,7 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
         void InitTypeMap()
         {
             Contract.Ensures(typeMap.Count > 0);

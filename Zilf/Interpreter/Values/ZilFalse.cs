@@ -26,19 +26,19 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FALSE, PrimType.LIST)]
     class ZilFalse : ZilObject, IStructure
     {
-        readonly ZilList value;
+        readonly ZilList wrappedList;
 
         [ChtypeMethod]
         public ZilFalse(ZilList value)
         {
             Contract.Requires(value != null);
-            this.value = value;
+            this.wrappedList = value;
         }
 
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
-            Contract.Invariant(value != null);
+            Contract.Invariant(wrappedList != null);
         }
 
         public override string ToString()
@@ -47,7 +47,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return "#FALSE " + value;
+                    return "#FALSE " + wrappedList;
                 }
                 finally
                 {
@@ -62,22 +62,22 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.LIST;
 
-        public override ZilObject GetPrimitive(Context ctx) => value;
+        public override ZilObject GetPrimitive(Context ctx) => wrappedList;
 
         public override bool IsTrue => false;
 
         public override bool Equals(object obj)
         {
-            return obj is ZilFalse other && other.value.Equals(this.value);
+            return obj is ZilFalse other && other.wrappedList.Equals(this.wrappedList);
         }
 
-        public override int GetHashCode() => value.GetHashCode();
+        public override int GetHashCode() => wrappedList.GetHashCode();
 
         #region IStructure Members
 
-        public ZilObject GetFirst() => value.First;
+        public ZilObject GetFirst() => wrappedList.First;
 
-        public IStructure GetRest(int skip) => ((IStructure)value).GetRest(skip);
+        public IStructure GetRest(int skip) => ((IStructure)wrappedList).GetRest(skip);
 
         public IStructure GetBack(int skip) => throw new NotSupportedException();
 
@@ -86,22 +86,22 @@ namespace Zilf.Interpreter.Values
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        public bool IsEmpty() => value.IsEmpty;
+        public bool IsEmpty => wrappedList.IsEmpty;
 
         public ZilObject this[int index]
         {
-            get => ((IStructure)value)[index];
+            get => ((IStructure)wrappedList)[index];
             set => ((IStructure)value)[index] = value;
         }
 
-        public int GetLength() => ((IStructure)value).GetLength();
+        public int GetLength() => wrappedList.GetLength();
 
-        public int? GetLength(int limit) => ((IStructure)value).GetLength(limit);
+        public int? GetLength(int limit) => wrappedList.GetLength(limit);
 
         #endregion
 
-        public IEnumerator<ZilObject> GetEnumerator() => value.GetEnumerator();
+        public IEnumerator<ZilObject> GetEnumerator() => wrappedList.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => value.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => wrappedList.GetEnumerator();
     }
 }

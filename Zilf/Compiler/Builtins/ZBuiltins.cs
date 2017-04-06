@@ -33,17 +33,12 @@ namespace Zilf.Compiler.Builtins
 
     static class ZBuiltins
     {
-        static ILookup<string, BuiltinSpec> builtins;
-
-        static ZBuiltins()
-        {
-            var query = from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                        from BuiltinAttribute a in mi.GetCustomAttributes(typeof(BuiltinAttribute), false)
-                        from name in a.Names
-                        select new { Name = name, Attr = a, Method = mi };
-
-            builtins = query.ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
-        }
+        static ILookup<string, BuiltinSpec> builtins =
+            (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
+             from BuiltinAttribute a in mi.GetCustomAttributes(typeof(BuiltinAttribute), false)
+             from name in a.Names
+             select new { Name = name, Attr = a, Method = mi })
+            .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
 
         public static bool IsBuiltinValueCall(string name, int zversion, int argCount)
         {
@@ -105,7 +100,8 @@ namespace Zilf.Compiler.Builtins
 
         delegate void InvalidArgumentDelegate(int index, string message);
 
-
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static IList<BuiltinArg> ValidateArguments(
             Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
             ZilObject[] args, InvalidArgumentDelegate error)
@@ -130,6 +126,7 @@ namespace Zilf.Compiler.Builtins
                 var arg = args[i];
                 var pi = builtinParamInfos[j];
 
+                // TODO: use switch (need a dict to translate System.Type to something switchable?)
                 if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
                 {
                     // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
@@ -163,7 +160,7 @@ namespace Zilf.Compiler.Builtins
                             error(i, "no such variable: " + atom);
 
                         var variableRef = GetVariable(cc, arg, quirks);
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Hard));
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef?.Hard));
                     }
                     else // if (pi.ParameterType == typeof(SoftGlobal))
                     {
@@ -171,7 +168,7 @@ namespace Zilf.Compiler.Builtins
                             error(i, "no such variable: " + atom);
 
                         var variableRef = GetVariable(cc, arg, quirks);
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef == null ? null : variableRef.Value.Soft));
+                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef?.Soft));
                     }
                 }
                 else if (pi.ParameterType == typeof(string))
@@ -191,19 +188,18 @@ namespace Zilf.Compiler.Builtins
                 {
                     // if marked with [Variable], allow a variable reference and forbid a non-variable bare atom
                     var varAttr = (VariableAttribute)pi.GetCustomAttributes(typeof(VariableAttribute), false).SingleOrDefault();
-                    VariableRef? variable;
                     if (varAttr != null)
                     {
-                        if ((variable = GetVariable(cc, arg, varAttr.QuirksMode)) != null)
+                        if (GetVariable(cc, arg, varAttr.QuirksMode) is VariableRef variable)
                         {
-                            if (!variable.Value.IsHard)
+                            if (!variable.IsHard)
                             {
                                 error(i, "soft variable may not be used here");
                                 result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
                             }
                             else
                             {
-                                result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Value.Hard.Indirect));
+                                result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Hard.Indirect));
                             }
                         }
                         else if (arg is ZilAtom)
@@ -287,18 +283,14 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-
-
         static VariableRef? GetVariable(Compilation cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
         {
-            var atom = expr as ZilAtom;
-
-            if (atom == null)
+            if (!(expr is ZilAtom atom))
             {
                 if (quirks == QuirksMode.None)
                     return null;
 
-                if (!(expr is ZilForm form) || !(form.First is ZilAtom head))
+                if (!(expr is ZilForm form && form.First is ZilAtom head))
                     return null;
 
                 switch (head.StdAtom)
@@ -313,10 +305,14 @@ namespace Zilf.Compiler.Builtins
                         break;
                 }
 
-                if (!(form.Rest?.First is ZilAtom variable))
+                if (form.Rest?.First is ZilAtom variable)
+                {
+                    atom = variable;
+                }
+                else
+                {
                     return null;
-
-                atom = variable;
+                }
             }
 
             if (cc.Locals.TryGetValue(atom, out var lb))
@@ -330,11 +326,9 @@ namespace Zilf.Compiler.Builtins
         }
 
         static List<object> MakeBuiltinMethodParams(
-            Compilation cc, BuiltinSpec spec,
-            ParameterInfo[] builtinParamInfos, object call,
-            IList<BuiltinArg> args)
+            BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
+            object call, IList<BuiltinArg> args)
         {
-            Contract.Requires(cc != null);
             Contract.Requires(spec != null);
             Contract.Requires(builtinParamInfos != null);
             Contract.Requires(builtinParamInfos.Length >= 1);
@@ -347,10 +341,7 @@ namespace Zilf.Compiler.Builtins
             /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
              * due to optional arguments and params arrays. */
 
-            var result = new List<object>(builtinParamInfos.Length);
-
-            // call
-            result.Add(call);
+            var result = new List<object>(builtinParamInfos.Length) { call };
 
             // data (optional)
             int i = 1;
@@ -469,7 +460,7 @@ namespace Zilf.Compiler.Builtins
                 }
 
                 // call the spec method to generate code for the builtin
-                var builtinParams = MakeBuiltinMethodParams(cc, spec, builtinParamInfos, call, validatedArgs);
+                var builtinParams = MakeBuiltinMethodParams(spec, builtinParamInfos, call, validatedArgs);
                 try
                 {
                     return spec.Method.Invoke(null, builtinParams.ToArray());
@@ -1363,6 +1354,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.Branch(cond, var, null, c.label, c.polarity);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "var")]
         [Builtin("ASSIGNED?", MinVersion = 5)]
         public static void SoftGlobalAssignedOp(PredCall c, [Variable] SoftGlobal var)
         {

@@ -70,6 +70,7 @@ namespace Zilf.ZModel
 
         public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
         {
+            // TODO: refactor this method or convert to a builder class
             Contract.Requires(definition != null);
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<Syntax>() != null);
@@ -86,10 +87,14 @@ namespace Zilf.ZModel
             {
                 if (verb == null)
                 {
-                    if (!(obj is ZilAtom atom) || atom.StdAtom == StdAtom.Eq)
+                    if (obj is ZilAtom atom && atom.StdAtom != StdAtom.Eq)
+                    {
+                        verb = atom;
+                    }
+                    else
+                    {
                         throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "verb", "syntax definition");
-
-                    verb = atom;
+                    }
                 }
                 else if (!rightSide)
                 {
@@ -97,210 +102,236 @@ namespace Zilf.ZModel
                     //   [[prep] OBJECT [(FIND ...)] [(options...) ...] [[prep] OBJECT [(FIND ...)] [(options...)]]]
                     if (obj is ZilAtom atom)
                     {
-                        switch (atom.StdAtom)
-                        {
-                            case StdAtom.OBJECT:
-                                numObjects++;
-                                if (numObjects > 2)
-                                    throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "OBJECTs");
-                                break;
-
-                            case StdAtom.Eq:
-                                rightSide = true;
-                                break;
-
-                            default:
-                                var numPreps = prep2 != null ? 2 : prep1 != null ? 1 : 0;
-                                if (numPreps == 2 || numPreps > numObjects)
-                                {
-                                    var error = new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "prepositions");
-
-                                    if (numObjects < 2)
-                                        error = error.Combine(new InterpreterError(InterpreterMessages.Did_You_Mean_To_Separate_Them_With_OBJECT));
-
-                                    throw error;
-                                }
-                                if (numObjects == 0)
-                                {
-                                    prep1 = atom;
-                                }
-                                else
-                                {
-                                    prep2 = atom;
-                                }
-                                break;
-                        }
+                        HandleLeftSideAtom(atom);
                     }
                     else
                     {
                         if (obj is ZilList list && list.StdTypeAtom == StdAtom.LIST)
                         {
-                            atom = list.First as ZilAtom;
-                            if (atom == null)
-                                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "list", "syntax definition", "an atom");
+                            HandleLeftSideList(list);
+                        }
+                        else
+                        {
+                            throw new InterpreterError(obj, InterpreterMessages.Unrecognized_0_1, "value in syntax definition", obj);
+                        }
+                    }
+                }
+                else
+                {
+                    HandleRightSide(obj);
+                }
+            }
 
-                            if (numObjects == 0)
+            return ValidateAndBuild();
+
+            // helpers...
+            void HandleLeftSideList(ZilList list)
+            {
+                if (list.First is ZilAtom atom)
+                {
+                    if (numObjects == 0)
+                    {
+                        // could be a list of synonyms, but could also be a mistake (scope/find flags in the wrong place)
+                        switch (atom.StdAtom)
+                        {
+                            case StdAtom.FIND:
+                            case StdAtom.TAKE:
+                            case StdAtom.HAVE:
+                            case StdAtom.MANY:
+                            case StdAtom.HELD:
+                            case StdAtom.CARRIED:
+                            case StdAtom.ON_GROUND:
+                            case StdAtom.IN_ROOM:
+                                ctx.HandleWarning(new InterpreterError(
+                                    src,
+                                    InterpreterMessages.Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT));
+                                break;
+
+                            default:
+                                if (syns != null)
+                                    throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "synonym lists");
+
+                                syns = list;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        if (atom.StdAtom == StdAtom.FIND)
+                        {
+                            if ((numObjects == 1 && find1 != null) || find2 != null)
+                                throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "FIND lists");
+                            if (numObjects == 1)
+                                find1 = list;
+                            else
+                                find2 = list;
+                        }
+                        else
+                        {
+                            if (numObjects == 1)
                             {
-                                // could be a list of synonyms, but could also be a mistake (scope/find flags in the wrong place)
-                                switch (atom.StdAtom)
-                                {
-                                    case StdAtom.FIND:
-                                    case StdAtom.TAKE:
-                                    case StdAtom.HAVE:
-                                    case StdAtom.MANY:
-                                    case StdAtom.HELD:
-                                    case StdAtom.CARRIED:
-                                    case StdAtom.ON_GROUND:
-                                    case StdAtom.IN_ROOM:
-                                        ctx.HandleWarning(new InterpreterError(
-                                            src,
-                                            InterpreterMessages.Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT));
-                                        break;
-
-                                    default:
-                                        if (syns != null)
-                                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "synonym lists");
-
-                                        syns = list;
-                                        break;
-                                }
+                                if (bits1 != null)
+                                    bits1 = new ZilList(Enumerable.Concat(bits1, list));
+                                else
+                                    bits1 = list;
                             }
                             else
                             {
-                                if (atom.StdAtom == StdAtom.FIND)
-                                {
-                                    if ((numObjects == 1 && find1 != null) || find2 != null)
-                                        throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "FIND lists");
-                                    if (numObjects == 1)
-                                        find1 = list;
-                                    else
-                                        find2 = list;
-                                }
+                                if (bits2 != null)
+                                    bits2 = new ZilList(Enumerable.Concat(bits2, list));
                                 else
-                                {
-                                    if (numObjects == 1)
-                                    {
-                                        if (bits1 != null)
-                                            bits1 = new ZilList(Enumerable.Concat(bits1, list));
-                                        else
-                                            bits1 = list;
-                                    }
-                                    else
-                                    {
-                                        if (bits2 != null)
-                                            bits2 = new ZilList(Enumerable.Concat(bits2, list));
-                                        else
-                                            bits2 = list;
-                                    }
-                                }
+                                    bits2 = list;
                             }
                         }
+                    }
+                }
+                else
+                {
+                    throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "list", "syntax definition", "an atom");
+                }
+            }
+
+            void HandleLeftSideAtom(ZilAtom atom)
+            {
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.OBJECT:
+                        numObjects++;
+                        if (numObjects > 2)
+                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "OBJECTs");
+                        break;
+
+                    case StdAtom.Eq:
+                        rightSide = true;
+                        break;
+
+                    default:
+                        var numPreps = prep2 != null ? 2 : prep1 != null ? 1 : 0;
+                        if (numPreps == 2 || numPreps > numObjects)
+                        {
+                            var error = new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "prepositions");
+
+                            if (numObjects < 2)
+                                error = error.Combine(new InterpreterError(InterpreterMessages.Did_You_Mean_To_Separate_Them_With_OBJECT));
+
+                            throw error;
+                        }
+                        if (numObjects == 0)
+                        {
+                            prep1 = atom;
+                        }
                         else
-                            throw new InterpreterError(obj, InterpreterMessages.Unrecognized_0_1, "value in syntax definition", obj);
+                        {
+                            prep2 = atom;
+                        }
+                        break;
+                }
+            }
+
+            void HandleRightSide(ZilObject obj)
+            {
+                // right side:
+                //   action [preaction [action-name]]
+                var atom = obj as ZilAtom;
+                if (atom != null)
+                {
+                    if (atom.StdAtom == StdAtom.Eq)
+                        throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "'='");
+                }
+                else if (!(obj is ZilFalse))
+                {
+                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "values after '='", "syntax definition", "FALSE or atoms");
+                }
+
+                switch (rhsCount)
+                {
+                    case 0:
+                        action = atom;
+                        break;
+
+                    case 1:
+                        preaction = atom;
+                        break;
+
+                    case 2:
+                        actionName = atom;
+                        break;
+
+                    default:
+                        throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "values after '='");
+                }
+
+                rhsCount++;
+            }
+
+            Syntax ValidateAndBuild()
+            {
+                Contract.Assume(numObjects <= 2);
+
+                if (numObjects < 1)
+                {
+                    prep1 = null;
+                    find1 = null;
+                    bits1 = null;
+                }
+                if (numObjects < 2)
+                {
+                    prep2 = null;
+                    find2 = null;
+                    bits2 = null;
+                }
+
+                var verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
+                IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
+                IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
+                var flags1 = ScopeFlags.Parse(bits1, ctx);
+                var flags2 = ScopeFlags.Parse(bits2, ctx);
+                var findFlag1 = ParseFindFlag(find1);
+                var findFlag2 = ParseFindFlag(find2);
+                IEnumerable<ZilAtom> synAtoms = null;
+
+                if (syns != null)
+                {
+                    if (!syns.All(s => s is ZilAtom))
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "verb synonyms", "syntax definition", "atoms");
+
+                    synAtoms = syns.Cast<ZilAtom>();
+                }
+
+                if (action == null)
+                {
+                    throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "action routine", "syntax definition");
+                }
+
+                if (actionName == null)
+                {
+                    var sb = new StringBuilder(action.ToString());
+                    if (sb.Length > 2 && sb[0] == 'V' && sb[1] == '-')
+                    {
+                        sb[1] = '?';
                     }
+                    else
+                    {
+                        sb.Insert(0, "V?");
+                    }
+
+                    actionName = ZilAtom.Parse(sb.ToString(), ctx);
                 }
                 else
                 {
-                    // right side:
-                    //   action [preaction [action-name]]
-                    var atom = obj as ZilAtom;
-                    if (atom != null)
+                    var actionNameStr = actionName.ToString();
+                    if (!actionNameStr.StartsWith("V?", StringComparison.Ordinal))
                     {
-                        if (atom.StdAtom == StdAtom.Eq)
-                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "'='");
+                        actionName = ZilAtom.Parse("V?" + actionNameStr, ctx);
                     }
-                    else if (!(obj is ZilFalse))
-                    {
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "values after '='", "syntax definition", "FALSE or atoms");
-                    }
-
-                    switch (rhsCount)
-                    {
-                        case 0:
-                            action = atom;
-                            break;
-
-                        case 1:
-                            preaction = atom;
-                            break;
-
-                        case 2:
-                            actionName = atom;
-                            break;
-
-                        default:
-                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "values after '='");
-                    }
-
-                    rhsCount++;
-                }
-            }
-
-            // validation
-            Contract.Assume(numObjects <= 2);
-            if (numObjects < 1)
-            {
-                prep1 = null;
-                find1 = null;
-                bits1 = null;
-            }
-            if (numObjects < 2)
-            {
-                prep2 = null;
-                find2 = null;
-                bits2 = null;
-            }
-
-            var verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
-            IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
-            IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
-            var flags1 = ScopeFlags.Parse(bits1, ctx);
-            var flags2 = ScopeFlags.Parse(bits2, ctx);
-            var findFlag1 = ParseFindFlag(find1);
-            var findFlag2 = ParseFindFlag(find2);
-            IEnumerable<ZilAtom> synAtoms = null;
-
-            if (syns != null)
-            {
-                if (!syns.All(s => s is ZilAtom))
-                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "verb synonyms", "syntax definition", "atoms");
-
-                synAtoms = syns.Cast<ZilAtom>();
-            }
-
-            if (action == null)
-            {
-                throw new InterpreterError(InterpreterMessages.Missing_0_In_1, "action routine", "syntax definition");
-            }
-
-            if (actionName == null)
-            {
-                var sb = new StringBuilder(action.ToString());
-                if (sb.Length > 2 && sb[0] == 'V' && sb[1] == '-')
-                {
-                    sb[1] = '?';
-                }
-                else
-                {
-                    sb.Insert(0, "V?");
                 }
 
-                actionName = ZilAtom.Parse(sb.ToString(), ctx);
+                return new Syntax(
+                    src,
+                    verbWord, numObjects,
+                    word1, word2, flags1, flags2, findFlag1, findFlag2,
+                    action, preaction, actionName, synAtoms);
             }
-            else
-            {
-                var actionNameStr = actionName.ToString();
-                if (!actionNameStr.StartsWith("V?", StringComparison.Ordinal))
-                {
-                    actionName = ZilAtom.Parse("V?" + actionNameStr, ctx);
-                }
-            }
-
-            return new Syntax(
-                src,
-                verbWord, numObjects,
-                word1, word2, flags1, flags2, findFlag1, findFlag2,
-                action, preaction, actionName, synAtoms);
         }
 
         static ZilAtom ParseFindFlag(ZilList list)

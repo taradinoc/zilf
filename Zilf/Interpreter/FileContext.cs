@@ -40,6 +40,7 @@ namespace Zilf.Interpreter
             Path = path;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "FileContext")]
         public void Dispose()
         {
             if (this == Context.CurrentFile)

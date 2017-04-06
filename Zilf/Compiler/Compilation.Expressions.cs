@@ -71,9 +71,9 @@ namespace Zilf.Compiler
                     return Game.Zero;
                 }
 
-                if (expanded is ZilForm)
+                if (expanded is ZilForm expandedForm)
                 {
-                    form = (ZilForm)expanded;
+                    form = expandedForm;
                 }
                 else if (expanded is IMayExpandAfterEvaluation expAfter && expAfter.ShouldExpandAfterEvaluation)
                 {
@@ -285,7 +285,8 @@ namespace Zilf.Compiler
                     case StdAtom.PTABLE:
                     case StdAtom.LTABLE:
                     case StdAtom.PLTABLE:
-                        return CompileImpromptuTable(rb, form, wantResult, resultStorage);
+                        operand = CompileImpromptuTable(form);
+                        return wantResult ? operand : null;
 
                     case StdAtom.PROG:
                         return CompilePROG(rb, form.Rest, form.SourceLine, wantResult, resultStorage, "PROG", false, true);

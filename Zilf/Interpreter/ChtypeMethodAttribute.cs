@@ -30,7 +30,7 @@ namespace Zilf.Interpreter
     /// </remarks>
     /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]
-    class ChtypeMethodAttribute : Attribute
+    sealed class ChtypeMethodAttribute : Attribute
     {
     }
 }

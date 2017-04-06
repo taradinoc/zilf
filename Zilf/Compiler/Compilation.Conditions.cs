@@ -286,6 +286,7 @@ namespace Zilf.Compiler
                 Contract.Assert(resultStorage != null);
 
                 IVariable nonStackResultStorage = (resultStorage != rb.Stack) ? resultStorage : null;
+                // TODO: use local functions?
                 Func<IVariable> tempVarProvider = () =>
                 {
                     if (tempVar == null)
@@ -301,13 +302,6 @@ namespace Zilf.Compiler
                         trueLabel = rb.DefineLabel();
 
                     return trueLabel;
-                };
-                Func<ILabel> falseLabelProvider = () =>
-                {
-                    if (falseLabel == null)
-                        falseLabel = rb.DefineLabel();
-
-                    return falseLabel;
                 };
 
                 while (!args.Rest.IsEmpty)

@@ -33,7 +33,7 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
-            return st.IsEmpty() ? ctx.TRUE : ctx.FALSE;
+            return st.IsEmpty ? ctx.TRUE : ctx.FALSE;
         }
 
         /*[Subr]
@@ -196,6 +196,7 @@ namespace Zilf.Interpreter
             return list;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         [Subr]
         public static ZilObject SUBSTRUC(Context ctx, IStructure from, int rest = 0, int? amount = null, IStructure dest = null)
         {
@@ -219,17 +220,19 @@ namespace Zilf.Interpreter
             if (amount < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "SUBSTRUC");
 
-            var primitive = ((ZilObject)from).GetPrimitive(ctx);
+            var fromObj = (ZilObject)from;
+            var destObj = (ZilObject)dest;
+            var primitive = fromObj.GetPrimitive(ctx);
 
-            if (dest != null)
+            if (destObj != null)
             {
                 // modify an existing structure
-                if (((ZilObject)dest).PrimType != ((ZilObject)from).PrimType)
+                if (destObj.PrimType != fromObj.PrimType)
                     throw new InterpreterError(InterpreterMessages._0_Destination_Must_Have_Same_Primtype_As_Source, "SUBSTRUC");
 
                 int i;
 
-                switch (((ZilObject)dest).StdTypeAtom)
+                switch (destObj.StdTypeAtom)
                 {
                     case StdAtom.LIST:
                         var list = (ZilList)dest;
@@ -262,14 +265,14 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Destination_Type_Not_Supported_1, "SUBSTRUC", ((ZilObject)dest).GetTypeAtom(ctx));
+                        throw new InterpreterError(InterpreterMessages._0_Destination_Type_Not_Supported_1, "SUBSTRUC", destObj.GetTypeAtom(ctx));
                 }
 
-                return (ZilObject)dest;
+                return destObj;
             }
 
             // no destination, return a new structure
-            switch (((ZilObject)from).PrimType)
+            switch (fromObj.PrimType)
             {
                 case PrimType.LIST:
                     return new ZilList(((ZilList)primitive).Skip(rest).Take((int)amount));
@@ -284,7 +287,7 @@ namespace Zilf.Interpreter
                     return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
 
                 default:
-                    throw UnhandledCaseException.FromEnum(((ZilObject)from).PrimType, "structured primtype");
+                    throw UnhandledCaseException.FromEnum(fromObj.PrimType, "structured primtype");
             }
         }
 
@@ -316,7 +319,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
             Contract.Requires(equality != null);
 
-            while (haystack != null && !haystack.IsEmpty())
+            while (haystack != null && !haystack.IsEmpty)
             {
                 if (equality(needle, haystack.GetFirst()))
                     return (ZilObject)haystack;
