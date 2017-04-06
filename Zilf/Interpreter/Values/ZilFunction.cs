@@ -192,7 +192,7 @@ namespace Zilf.Interpreter.Values
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        public bool IsEmpty() => false;
+        public bool IsEmpty => false;
 
         public ZilObject this[int index]
         {

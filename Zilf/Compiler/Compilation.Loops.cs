@@ -425,6 +425,8 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
+            // resultStorage is unused here for the same reason as in CompilePROG.
+
             // parse binding list
             if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
             {
@@ -563,6 +565,8 @@ namespace Zilf.Compiler
             Contract.Requires(args != null);
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+
+            // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
             if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)

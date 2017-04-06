@@ -135,12 +135,8 @@ namespace Zilf.Compiler
             }
         }
 
-        IOperand CompileImpromptuTable(IRoutineBuilder rb, ZilForm form, bool wantResult,
-#pragma warning disable RECS0154 // Parameter is never used
-            IVariable resultStorage)
-#pragma warning restore RECS0154 // Parameter is never used
+        IOperand CompileImpromptuTable(ZilForm form)
         {
-            Contract.Requires(rb != null);
             Contract.Requires(form != null);
 
             var type = ((ZilAtom)form.First).StdAtom;
@@ -150,7 +146,7 @@ namespace Zilf.Compiler
 
             var tableBuilder = Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
             Tables.Add(table, tableBuilder);
-            return wantResult ? tableBuilder : null;
+            return tableBuilder;
         }
     }
 }

@@ -20,10 +20,11 @@ using System.Collections.Generic;
 
 namespace Zilf.Compiler.Builtins
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Builtin")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments",
         Justification = nameof(Names) + " exposes the values passed in as positional arguments")]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class BuiltinAttribute : Attribute
+    public sealed class BuiltinAttribute : Attribute
     {
         public BuiltinAttribute(string name)
             : this(name, null)

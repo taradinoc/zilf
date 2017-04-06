@@ -30,8 +30,8 @@ namespace Zilf.Language
         protected ZilError(string message) : base(message) { }
         protected ZilError(string message, Exception innerException) : base(message, innerException) { }
 
-        protected ZilError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
+        protected ZilError(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
 

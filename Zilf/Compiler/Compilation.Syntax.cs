@@ -70,8 +70,6 @@ namespace Zilf.Compiler
 
             foreach (var verb in query)
             {
-                int num = vf.GetVerbValue(verb.Key);
-
                 // syntax table
                 var stbl = Game.DefineTable("ST?" + verb.Key.Atom, true);
                 verbTable.AddShort(stbl);
@@ -170,8 +168,6 @@ namespace Zilf.Compiler
 
             tables.Add("ATBL", actionTable);
             tables.Add("PATBL", preactionTable);
-
-            var vf = Context.ZEnvironment.VocabFormat;
 
             var query = from s in Context.ZEnvironment.Syntaxes
                         group s by s.Verb into verbGrouping

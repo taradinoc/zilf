@@ -49,6 +49,7 @@ namespace Zilf.Compiler.Builtins
             this.polarity = polarity;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {

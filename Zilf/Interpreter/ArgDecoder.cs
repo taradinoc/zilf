@@ -270,7 +270,6 @@ namespace Zilf.Interpreter
             public int? UpperBound;
         }
 
-        readonly Context ctx;
         DecodingStepInfo[] StepInfos { get; }
         int LowerBound { get; }
         int? UpperBound { get; }
@@ -279,8 +278,6 @@ namespace Zilf.Interpreter
 
         ArgDecoder(Context ctx, ParameterInfo[] parameters)
         {
-            this.ctx = ctx;
-
             StepInfos = new DecodingStepInfo[parameters.Length - 1];
             LowerBound = 0;
             UpperBound = 0;
@@ -290,7 +287,7 @@ namespace Zilf.Interpreter
             // skip first arg (Context)
             for (int i = 1; i < parameters.Length; i++)
             {
-                var stepInfo = PrepareOne(parameters[i]);
+                var stepInfo = PrepareOne(ctx, parameters[i]);
                 StepInfos[i - 1] = stepInfo;
 
                 LowerBound += stepInfo.LowerBound;
@@ -315,7 +312,8 @@ namespace Zilf.Interpreter
             this.Description = sb.ToString();
         }
 
-        DecodingStepInfo PrepareOne(ParameterInfo pi)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
+        DecodingStepInfo PrepareOne(Context ctx, ParameterInfo pi)
         {
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -337,6 +335,7 @@ namespace Zilf.Interpreter
             }
 
             var result = PrepareOne(
+                ctx,
                 pi.ParameterType,
                 Hyphenate(pi.Name),
                 pi.GetCustomAttributes(false),
@@ -348,7 +347,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        DecodingStepInfo PrepareOne(FieldInfo fi)
+        static DecodingStepInfo PrepareOne(Context ctx, FieldInfo fi)
         {
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -367,6 +366,7 @@ namespace Zilf.Interpreter
             }
 
             var result = PrepareOne(
+                ctx,
                 fi.FieldType,
                 Hyphenate(fi.Name),
                 fi.GetCustomAttributes(false),
@@ -538,12 +538,13 @@ namespace Zilf.Interpreter
             return sb.ToString();
         }
 
-        DecodingStepInfo PrepareOne(Type paramType, string name, object[] customAttributes,
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
+        static DecodingStepInfo PrepareOne(Context ctx, Type paramType, string name, object[] customAttributes,
             bool isOptional, object defaultValueWhenOptional)
         {
             DecodingStepInfo result;
             object defaultValue = null;
-            ZilStructuredParamAttribute zilStructAttr;
             ZilSequenceParamAttribute sequenceAttr;
             EitherAttribute eitherAttr;
 
@@ -556,36 +557,36 @@ namespace Zilf.Interpreter
             if ((eitherAttr = customAttributes.OfType<EitherAttribute>().SingleOrDefault()) != null &&
                 !paramType.IsArray)
             {
-                result = PrepareOneEither(paramType, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
+                result = PrepareOneEither(ctx, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
             }
             else if (eitherAttr != null && paramType.IsArray)
             {
                 var elemType = paramType.GetElementType();
-                var innerStepInfo = PrepareOneEither(elemType, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
+                var innerStepInfo = PrepareOneEither(ctx, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
-                (zilStructAttr = paramType.GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
+                paramType.GetCustomAttribute<ZilStructuredParamAttribute>() != null)
             {
-                result = PrepareOneStructured(paramType);
+                result = PrepareOneStructured(ctx, paramType);
             }
             else if (paramType.IsArray &&
-                (zilStructAttr = paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>()) != null)
+                paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>() != null)
             {
                 var elemType = paramType.GetElementType();
-                var innerStepInfo = PrepareOneStructured(elemType);
+                var innerStepInfo = PrepareOneStructured(ctx, elemType);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
                 (sequenceAttr = paramType.GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
             {
-                result = PrepareOneSequence(paramType);
+                result = PrepareOneSequence(ctx, paramType);
             }
             else if (paramType.IsArray &&
                 (sequenceAttr = paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
             {
                 var elemType = paramType.GetElementType();
-                var innerStepInfo = PrepareOneSequence(elemType);
+                var innerStepInfo = PrepareOneSequence(ctx, elemType);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType == typeof(ZilObject))
@@ -913,7 +914,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        DecodingStepInfo PrepareOneArrayFromInnerStep(
+        static DecodingStepInfo PrepareOneArrayFromInnerStep(
             Type elemType, DecodingStepInfo innerStepInfo, bool isRequired,
             out object defaultValue)
         {
@@ -964,7 +965,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        DecodingStepInfo PrepareOneConversion<TZil, TValue>(
+        static DecodingStepInfo PrepareOneConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, string name, out object defaultValue)
             where TZil : ZilObject
         {
@@ -998,7 +999,7 @@ namespace Zilf.Interpreter
             };
         }
 
-        DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
+        static DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, Type paramType,
             string name, out object defaultValue)
             where TZil : ZilObject
@@ -1046,7 +1047,7 @@ namespace Zilf.Interpreter
             };
         }
 
-        DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
+        static DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
             StdAtom? typeAtom, Func<TZil, TValue> convert, bool isRequired,
             string name, out object defaultValue)
             where TZil : ZilObject
@@ -1093,7 +1094,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        DecodingStepInfo PrepareOneStructured(Type structType)
+        static DecodingStepInfo PrepareOneStructured(Context ctx, Type structType)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1101,7 +1102,7 @@ namespace Zilf.Interpreter
 
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>().TypeAtom;
 
-            var stepInfos = PrepareStepsFromStruct(structType, out var fields, out var lowerBound, out var upperBound);
+            var stepInfos = PrepareStepsFromStruct(ctx, structType, out var fields, out var lowerBound, out var upperBound);
 
             var descPieces = stepInfos.Select(i => i.Description);
             string description;
@@ -1196,7 +1197,8 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        DecodingStepInfo[] PrepareStepsFromStruct(Type structType, out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+        static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, Type structType,
+            out FieldInfo[] fields, out int lowerBound, out int? upperBound)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1213,7 +1215,7 @@ namespace Zilf.Interpreter
             upperBound = 0;
             for (int i = 0; i < fields.Length; i++)
             {
-                var stepInfo = PrepareOne(fields[i]);
+                var stepInfo = PrepareOne(ctx, fields[i]);
                 stepInfos[i] = stepInfo;
 
                 lowerBound += stepInfo.LowerBound;
@@ -1239,12 +1241,10 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        DecodingStepInfo PrepareOneEither(Type paramType, string name, Type[] inputTypes)
+        static DecodingStepInfo PrepareOneEither(Context ctx, string name, Type[] inputTypes)
         {
-            Contract.Requires(paramType != null);
             Contract.Requires(inputTypes != null);
             Contract.Requires(inputTypes.Length > 0);
-            Contract.Requires(Contract.ForAll(inputTypes, t => paramType.IsAssignableFrom(t)));
 
             var choices = new DecodingStep[inputTypes.Length];
             var choiceConstraints = new Constraint[inputTypes.Length];
@@ -1257,7 +1257,7 @@ namespace Zilf.Interpreter
             var noAttributes = new object[0];
             for (int i = 0; i < inputTypes.Length; i++)
             {
-                var stepInfo = PrepareOne(inputTypes[i], name, noAttributes, false, null);
+                var stepInfo = PrepareOne(ctx, inputTypes[i], name, noAttributes, false, null);
                 names.Add(OverrideParamDesc(inputTypes[i]) ?? stepInfo.Description);
                 constraint = constraint.Or(ctx, stepInfo.Constraint);
                 choices[i] = stepInfo.Step;
@@ -1348,13 +1348,13 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        DecodingStepInfo PrepareOneSequence(Type seqType)
+        static DecodingStepInfo PrepareOneSequence(Context ctx, Type seqType)
         {
             Contract.Requires(seqType != null);
             Contract.Requires(seqType.IsValueType);
             Contract.Requires(seqType.IsLayoutSequential);
 
-            var stepInfos = PrepareStepsFromStruct(seqType, out var fields, out var lowerBound, out var upperBound);
+            var stepInfos = PrepareStepsFromStruct(ctx, seqType, out var fields, out var lowerBound, out var upperBound);
 
             var description = string.Join(" ", stepInfos.Select(i => i.Description));
 

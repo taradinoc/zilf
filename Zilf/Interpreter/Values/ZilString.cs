@@ -133,7 +133,7 @@ namespace Zilf.Interpreter.Values
         public abstract IStructure GetRest(int skip);
         public abstract IStructure GetBack(int skip);
         public abstract IStructure GetTop();
-        public abstract bool IsEmpty();
+        public abstract bool IsEmpty { get; }
         public abstract int GetLength();
         public abstract int? GetLength(int limit);
         public abstract IEnumerator<ZilObject> GetEnumerator();
@@ -175,7 +175,7 @@ namespace Zilf.Interpreter.Values
 
             public override IStructure GetTop() => this;
 
-            public override bool IsEmpty() => Text.Length == 0;
+            public override bool IsEmpty => Text.Length == 0;
 
             public override ZilObject this[int index]
             {
@@ -255,7 +255,7 @@ namespace Zilf.Interpreter.Values
 
             public override IStructure GetTop() => orig;
 
-            public override bool IsEmpty() => offset >= orig.Text.Length;
+            public override bool IsEmpty => offset >= orig.Text.Length;
 
             public override ZilObject this[int index]
             {

@@ -42,6 +42,7 @@ namespace Zilf.Compiler.Builtins
             this.form = form;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {

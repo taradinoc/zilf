@@ -45,6 +45,7 @@ namespace Zilf.Compiler.Builtins
             this.resultStorage = resultStorage;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
         void ObjectInvariant()
         {

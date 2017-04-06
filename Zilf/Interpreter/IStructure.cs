@@ -66,11 +66,11 @@ namespace Zilf.Interpreter
         void Grow(int end, int beginning, ZilObject defaultValue);
 
         /// <summary>
-        /// Determines whether the structure is empty.
+        /// Gets a value indicating whether the structure is empty.
         /// </summary>
         /// <returns>true if the structure has no elements; false if it has any elements.</returns>
         [Pure]
-        bool IsEmpty();
+        bool IsEmpty { get; }
 
         /// <summary>
         /// Gets or sets an element by its numeric index.

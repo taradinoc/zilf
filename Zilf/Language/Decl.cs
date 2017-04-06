@@ -27,9 +27,21 @@ namespace Zilf.Language
     /// <summary>
     /// Allows non-structured types to be checked against structure DECLs.
     /// </summary>
+    [ContractClass(typeof(IProvideStructureForDeclCheckContract))]
     interface IProvideStructureForDeclCheck
     {
         IStructure GetStructureForDeclCheck(Context ctx);
+    }
+
+    [ContractClassFor(typeof(IProvideStructureForDeclCheck))]
+    abstract class IProvideStructureForDeclCheckContract : IProvideStructureForDeclCheck
+    {
+        public IStructure GetStructureForDeclCheck(Context ctx)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<IStructure>() != null);
+            return default(IStructure);
+        }
     }
 
     /// <summary>
@@ -89,6 +101,7 @@ namespace Zilf.Language
 
     class Decl
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         public static bool Check(Context ctx, ZilObject value, ZilObject pattern)
         {
             Contract.Requires(ctx != null);
@@ -181,12 +194,18 @@ namespace Zilf.Language
                     if (!Check(ctx, value, first))
                         return false;
 
-                    var valueAsStructure =
-                        value as IStructure ??
-                        (value as IProvideStructureForDeclCheck)?.GetStructureForDeclCheck(ctx);
-
-                    if (valueAsStructure == null)
+                    if (value is IStructure valueAsStructure)
+                    {
+                        // yay
+                    }
+                    else if (value is IProvideStructureForDeclCheck structProvider)
+                    {
+                        valueAsStructure = structProvider.GetStructureForDeclCheck(ctx);
+                    }
+                    else
+                    {
                         return false;
+                    }
 
                     return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment);
 
@@ -213,7 +232,7 @@ namespace Zilf.Language
                         {
                             case StdAtom.REST:
                                 i = 1;
-                                while (!structure.IsEmpty())
+                                while (!structure.IsEmpty)
                                 {
                                     if (!Check(ctx, structure.GetFirst(), vector[i]))
                                         return false;
@@ -239,7 +258,7 @@ namespace Zilf.Language
                                 // greedily match OPT elements until the structure ends or a match fails
                                 for (i = 1; i < len; i++)
                                 {
-                                    if (structure.IsEmpty() || !Check(ctx, structure.GetFirst(), vector[i]))
+                                    if (structure.IsEmpty || !Check(ctx, structure.GetFirst(), vector[i]))
                                         break;
 
                                     structure = structure.GetRest(1);
@@ -257,7 +276,7 @@ namespace Zilf.Language
                         {
                             for (int j = 1; j < vector.GetLength(); j++)
                             {
-                                if (structure.IsEmpty())
+                                if (structure.IsEmpty)
                                     return false;
 
                                 if (!Check(ctx, structure.GetFirst(), vector[j]))
@@ -277,7 +296,7 @@ namespace Zilf.Language
                         vector.ToStringContext(ctx, false));
                 }
 
-                if (structure.IsEmpty())
+                if (structure.IsEmpty)
                     return false;
 
                 if (!Check(ctx, structure.GetFirst(), subpattern))
@@ -286,7 +305,7 @@ namespace Zilf.Language
                 structure = structure.GetRest(1);
             }
 
-            if (segment && !structure.IsEmpty())
+            if (segment && !structure.IsEmpty)
             {
                 return false;
             }

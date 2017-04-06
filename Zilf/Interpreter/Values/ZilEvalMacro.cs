@@ -27,11 +27,11 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.MACRO, PrimType.LIST)]
     class ZilEvalMacro : ZilObject, IApplicable, IStructure
     {
-        ZilObject value;
+        ZilObject wrappedValue;
 
         public ZilEvalMacro(ZilObject value)
         {
-            this.value = value;
+            this.wrappedValue = value;
         }
 
         [ChtypeMethod]
@@ -66,7 +66,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return "#MACRO (" + convert(value) + ")";
+                    return "#MACRO (" + convert(wrappedValue) + ")";
                 }
                 finally
                 {
@@ -92,7 +92,7 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            return new ZilList(value, new ZilList(null, null));
+            return new ZilList(wrappedValue, new ZilList(null, null));
         }
 
         static ZilObject MakeSpliceExpandable(ZilObject zo)
@@ -121,7 +121,7 @@ namespace Zilf.Interpreter.Values
 
             return MakeSpliceExpandable(
                 ctx.ExecuteInMacroEnvironment(
-                    () => value.AsApplicable(ctx).Apply(ctx, args)));
+                    () => wrappedValue.AsApplicable(ctx).Apply(ctx, args)));
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
@@ -132,24 +132,24 @@ namespace Zilf.Interpreter.Values
 
             return MakeSpliceExpandable(
                 ctx.ExecuteInMacroEnvironment(
-                    () => value.AsApplicable(ctx).ApplyNoEval(ctx, args)));
+                    () => wrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args)));
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ZilEvalMacro other && other.value.Equals(this.value);
+            return obj is ZilEvalMacro other && other.wrappedValue.Equals(this.wrappedValue);
         }
 
         public override int GetHashCode()
         {
-            return value.GetHashCode();
+            return wrappedValue.GetHashCode();
         }
 
         #region IStructure Members
 
         public ZilObject GetFirst()
         {
-            return value;
+            return wrappedValue;
         }
 
         public IStructure GetRest(int skip)
@@ -182,21 +182,18 @@ namespace Zilf.Interpreter.Values
             throw new NotSupportedException();
         }
 
-        public bool IsEmpty()
-        {
-            return false;
-        }
+        public bool IsEmpty => false;
 
         public ZilObject this[int index]
         {
             get
             {
-                return index == 0 ? value : null;
+                return index == 0 ? wrappedValue : null;
             }
             set
             {
                 if (index == 0)
-                    this.value = value;
+                    this.wrappedValue = value;
             }
         }
 
@@ -214,7 +211,7 @@ namespace Zilf.Interpreter.Values
 
         public IEnumerator<ZilObject> GetEnumerator()
         {
-            yield return value;
+            yield return wrappedValue;
         }
 
         IEnumerator IEnumerable.GetEnumerator()

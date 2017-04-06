@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
         }
 
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-        public class FSubrAttribute : SubrAttribute
+        public sealed class FSubrAttribute : SubrAttribute
         {
             public FSubrAttribute()
             {
@@ -55,7 +55,7 @@ namespace Zilf.Interpreter
         }
 
         [AttributeUsage(AttributeTargets.Method)]
-        public class MdlZilRedirectAttribute : Attribute
+        public sealed class MdlZilRedirectAttribute : Attribute
         {
             public MdlZilRedirectAttribute(Type type, string target)
             {
@@ -72,6 +72,8 @@ namespace Zilf.Interpreter
             public bool TopLevelOnly { get; set; }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
         [ContractAbbreviator]
         static void SubrContracts(Context ctx, ZilObject[] args)
         {
@@ -81,6 +83,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
         [ContractAbbreviator]
         static void SubrContracts(Context ctx)
         {

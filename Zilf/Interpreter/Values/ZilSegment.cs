@@ -91,12 +91,12 @@ namespace Zilf.Interpreter.Values
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        public bool IsEmpty() => ((IStructure)form).IsEmpty();
+        public bool IsEmpty => form.IsEmpty;
 
         public ZilObject this[int index]
         {
-            get => ((IStructure)form)[index];
-            set => ((IStructure)form)[index] = value;
+            get => form[index];
+            set => form[index] = value;
         }
 
         public int GetLength() => ((IStructure)form).GetLength();

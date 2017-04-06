@@ -139,7 +139,7 @@ namespace Zilf.Interpreter
                 for (i = 0; i < numStructs; i++)
                 {
                     IStructure st = structs[i];
-                    if (st == null || st.IsEmpty())
+                    if (st == null || st.IsEmpty)
                         break;
 
                     if (first)

@@ -20,6 +20,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
@@ -75,22 +76,34 @@ namespace Zilf.Language
         }
     }
 
-    abstract class ParserException : Exception
+    [Serializable]
+    public abstract class ParserException : Exception
     {
         protected ParserException(string message)
             : base(message) { }
+
+        protected ParserException(SerializationInfo info, StreamingContext context)
+            : base(info, context) { }
     }
 
+    [Serializable]
     sealed class ExpectedButFound : ParserException
     {
         public ExpectedButFound(string expected, string actual)
             : base($"expected {expected} but found {actual}") { }
+
+        private ExpectedButFound(SerializationInfo info, StreamingContext context)
+            : base(info, context) { }
     }
 
+    [Serializable]
     sealed class ParsedNumberOverflowed : ParserException
     {
         public ParsedNumberOverflowed(string number, string radix = "decimal")
             : base($"{radix} number '{number}' cannot be represented in 32 bits") { }
+
+        private ParsedNumberOverflowed(SerializationInfo info, StreamingContext context)
+            : base(info, context) { }
     }
 
     interface IParserSite

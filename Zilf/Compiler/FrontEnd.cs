@@ -28,9 +28,9 @@ namespace Zilf.Compiler
 {
     public class OpeningFileEventArgs : EventArgs
     {
-        public OpeningFileEventArgs(string filename, bool writing)
+        public OpeningFileEventArgs(string fileName, bool writing)
         {
-            this.FileName = filename;
+            this.FileName = fileName;
             this.Writing = writing;
         }
 
@@ -41,9 +41,9 @@ namespace Zilf.Compiler
 
     public class CheckingFilePresenceEventArgs : EventArgs
     {
-        public CheckingFilePresenceEventArgs(string filename)
+        public CheckingFilePresenceEventArgs(string fileName)
         {
-            this.FileName = filename;
+            this.FileName = fileName;
         }
 
         public string FileName { get; private set; }
@@ -60,6 +60,7 @@ namespace Zilf.Compiler
         public Context Context { get; private set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     public struct FrontEndResult
     {
         public bool Success { get; set; }

@@ -789,11 +789,8 @@ namespace Zilf.ZModel.Values
         bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
         {
             // value can be the name of a constant, in which case we need to check the constant value instead
-            if (value is ZilAtom)
-            {
-                if (ctx.GetZVal((ZilAtom)value) is ZilConstant constant)
-                    value = constant.Value;
-            }
+            if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
+                value = constant.Value;
 
             if (decl is ZilAtom declAtom)
             {
@@ -850,30 +847,39 @@ namespace Zilf.ZModel.Values
                     capturedValue = null;
                 }
 
-                switch (output.Type)
+                if (output.Type == OutputElementType.Many)
                 {
-                    case OutputElementType.Adjective:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.ADJ), src);
-                        break;
+                    while (PartialPreBuild(ctx, captures, preBuilders, outputs, i + 1, src))
+                    {
+                        // repeat
+                    }
+                }
+                else
+                {
+                    var atom = capturedValue as ZilAtom;
 
-                    case OutputElementType.Noun:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT), src);
-                        break;
+                    switch (output.Type)
+                    {
+                        case OutputElementType.Adjective:
+                            Contract.Assert(atom != null);
+                            preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.ADJ), src);
+                            break;
 
-                    case OutputElementType.Voc:
-                        preBuilders.CreateVocabWord((ZilAtom)capturedValue, output.PartOfSpeech, src);
-                        break;
+                        case OutputElementType.Noun:
+                            Contract.Assert(atom != null);
+                            preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.OBJECT), src);
+                            break;
+                            
+                        case OutputElementType.Voc:
+                            Contract.Assert(atom != null);
+                            preBuilders.CreateVocabWord(atom, output.PartOfSpeech, src);
+                            break;
 
-                    case OutputElementType.Global:
-                        preBuilders.ReserveGlobal((ZilAtom)capturedValue);
-                        break;
-
-                    case OutputElementType.Many:
-                        while (PartialPreBuild(ctx, captures, preBuilders, outputs, i + 1, src))
-                        {
-                            // repeat
-                        }
-                        break;
+                        case OutputElementType.Global:
+                            Contract.Assert(atom != null);
+                            preBuilders.ReserveGlobal(atom);
+                            break;
+                    }
                 }
             }
 
@@ -918,25 +924,39 @@ namespace Zilf.ZModel.Values
                 }
 
                 IOperand capturedConstantValue;
-                if (capturedValue != null &&
-                    output.Type != OutputElementType.Global && output.Type != OutputElementType.Adjective &&
-                    output.Type != OutputElementType.Noun && output.Type != OutputElementType.Voc)
+                ZilAtom capturedAtom;
+                if (capturedValue != null)
                 {
-                    capturedConstantValue = converters.CompileConstant(capturedValue);
-                    if (capturedConstantValue == null)
+                    switch (output.Type)
                     {
-                        ctx.HandleError(new CompilerError(
-                            src,
-                            CompilerMessages.Nonconstant_Initializer_For_0_1_2,
-                            "property",
-                            propName,
-                            capturedValue));
-                        capturedConstantValue = converters.CompileConstant(ctx.FALSE);
-                        Contract.Assume(capturedConstantValue != null);
+                        case OutputElementType.Global:
+                        case OutputElementType.Adjective:
+                        case OutputElementType.Noun:
+                        case OutputElementType.Voc:
+                            capturedAtom = (ZilAtom)capturedValue;
+                            capturedConstantValue = null;
+                            break;
+
+                        default:
+                            capturedConstantValue = converters.CompileConstant(capturedValue);
+                            if (capturedConstantValue == null)
+                            {
+                                ctx.HandleError(new CompilerError(
+                                    src,
+                                    CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                                    "property",
+                                    propName,
+                                    capturedValue));
+                                capturedConstantValue = converters.CompileConstant(ctx.FALSE);
+                                Contract.Assume(capturedConstantValue != null);
+                            }
+                            capturedAtom = null;
+                            break;
                     }
                 }
                 else
                 {
+                    capturedAtom = null;
                     capturedConstantValue = null;
                 }
 
@@ -986,26 +1006,26 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case OutputElementType.Global:
-                        tb.AddByte(converters.GetGlobalNumber((ZilAtom)capturedValue));
+                        tb.AddByte(converters.GetGlobalNumber(capturedAtom));
                         break;
 
                     case OutputElementType.Adjective:
                         if (OutputElementSize(output, ctx) == 1)
                         {
-                            tb.AddByte(converters.GetAdjectiveValue((ZilAtom)capturedValue, src));
+                            tb.AddByte(converters.GetAdjectiveValue(capturedAtom, src));
                         }
                         else
                         {
-                            tb.AddShort(converters.GetAdjectiveValue((ZilAtom)capturedValue, src));
+                            tb.AddShort(converters.GetAdjectiveValue(capturedAtom, src));
                         }
                         break;
 
                     case OutputElementType.Noun:
-                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, ctx.GetStdAtom(StdAtom.OBJECT), src));
+                        tb.AddShort(converters.GetVocabWord(capturedAtom, ctx.GetStdAtom(StdAtom.OBJECT), src));
                         break;
 
                     case OutputElementType.Voc:
-                        tb.AddShort(converters.GetVocabWord((ZilAtom)capturedValue, output.PartOfSpeech, src));
+                        tb.AddShort(converters.GetVocabWord(capturedAtom, output.PartOfSpeech, src));
                         break;
 
                     case OutputElementType.Many:

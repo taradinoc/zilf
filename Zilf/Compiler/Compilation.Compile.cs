@@ -353,7 +353,7 @@ namespace Zilf.Compiler
                 {
                     using (DiagnosticContext.Push(routine.SourceLine))
                     {
-                        BuildRoutine(routine, gb, rb, entryPoint);
+                        BuildRoutine(routine, rb, entryPoint);
                     }
                 }
                 catch (ZilError ex)

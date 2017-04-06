@@ -23,6 +23,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinMeta]
     class ZilStructuredHash : ZilHash, IStructure
     {
+        // TODO: make primvalue IStructure
         public ZilStructuredHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
             : base(type, primtype, primvalue)
         {
@@ -30,8 +31,8 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            return (obj is ZilStructuredHash && ((ZilStructuredHash)obj).type == this.type &&
-                    ((ZilStructuredHash)obj).primvalue.Equals(this.primvalue));
+            return (obj is ZilStructuredHash hash && hash.type == this.type &&
+                    hash.primvalue.Equals(this.primvalue));
         }
 
         public override int GetHashCode()
@@ -66,10 +67,7 @@ namespace Zilf.Interpreter.Values
             ((IStructure)primvalue).Grow(end, beginning, defaultValue);
         }
 
-        public bool IsEmpty()
-        {
-            return ((IStructure)primvalue).IsEmpty();
-        }
+        public bool IsEmpty => ((IStructure)primvalue).IsEmpty;
 
         public ZilObject this[int index]
         {

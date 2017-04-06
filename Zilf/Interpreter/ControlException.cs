@@ -23,6 +23,7 @@ namespace Zilf.Interpreter
     /// <summary>
     /// A base class for exceptions used to implement wacky interpreter flow control.
     /// </summary>
+    [Serializable]
     public abstract class ControlException : Exception
     {
         protected ControlException(string name)
@@ -30,8 +31,8 @@ namespace Zilf.Interpreter
         {
         }
 
-        protected ControlException(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
+        protected ControlException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

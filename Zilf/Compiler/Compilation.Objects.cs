@@ -117,34 +117,32 @@ namespace Zilf.Compiler
             {
                 CreateVocabWord = (atom, partOfSpeech, src) =>
                 {
-                    IWord word;
-
                     switch (partOfSpeech.StdAtom)
                     {
                         case StdAtom.ADJ:
                         case StdAtom.ADJECTIVE:
-                            word = Context.ZEnvironment.GetVocabAdjective(atom, src);
+                            Context.ZEnvironment.GetVocabAdjective(atom, src);
                             break;
 
                         case StdAtom.NOUN:
                         case StdAtom.OBJECT:
-                            word = Context.ZEnvironment.GetVocabNoun(atom, src);
+                            Context.ZEnvironment.GetVocabNoun(atom, src);
                             break;
 
                         case StdAtom.BUZZ:
-                            word = Context.ZEnvironment.GetVocabBuzzword(atom, src);
+                            Context.ZEnvironment.GetVocabBuzzword(atom, src);
                             break;
 
                         case StdAtom.PREP:
-                            word = Context.ZEnvironment.GetVocabPreposition(atom, src);
+                            Context.ZEnvironment.GetVocabPreposition(atom, src);
                             break;
 
                         case StdAtom.DIR:
-                            word = Context.ZEnvironment.GetVocabDirection(atom, src);
+                            Context.ZEnvironment.GetVocabDirection(atom, src);
                             break;
 
                         case StdAtom.VERB:
-                            word = Context.ZEnvironment.GetVocabVerb(atom, src);
+                            Context.ZEnvironment.GetVocabVerb(atom, src);
                             break;
 
                         default:
@@ -343,7 +341,7 @@ namespace Zilf.Compiler
 
                                     try
                                     {
-                                        var word = Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -361,7 +359,7 @@ namespace Zilf.Compiler
 
                                     try
                                     {
-                                        var word = Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -378,7 +376,7 @@ namespace Zilf.Compiler
 
                                     try
                                     {
-                                        var word = Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -496,11 +494,12 @@ namespace Zilf.Compiler
                 }
 
                 // check for IN/LOC, which can take precedence over PROPSPEC
-                ZilObject value = propBody.First;
+                var value = propBody.First;
+                var valueAtom = value as ZilAtom;
                 if (propName.StdAtom == StdAtom.LOC ||
-                    (propName.StdAtom == StdAtom.IN && ((IStructure)propBody).GetLength(1) == 1) && value is ZilAtom)
+                    (propName.StdAtom == StdAtom.IN && ((IStructure)propBody).GetLength(1) == 1) && valueAtom != null)
                 {
-                    if (!(value is ZilAtom valueAtom))
+                    if (valueAtom == null)
                     {
                         Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_0_Property_Must_Be_1, propName, "an atom"));
                         continue;

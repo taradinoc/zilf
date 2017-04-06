@@ -265,10 +265,7 @@ namespace Zilf.Interpreter.Values
             storage.Grow(end, beginning, defaultValue);
         }
 
-        public bool IsEmpty()
-        {
-            return storage.GetLength(offset) <= 0;
-        }
+        public bool IsEmpty => storage.GetLength(offset) <= 0;
 
         public ZilObject this[int index]
         {
@@ -276,10 +273,7 @@ namespace Zilf.Interpreter.Values
             set { storage.PutItem(offset, index, value); }
         }
 
-        public int GetLength()
-        {
-            return storage.GetLength(offset);
-        }
+        public int GetLength() => storage.GetLength(offset);
 
         public int? GetLength(int limit)
         {

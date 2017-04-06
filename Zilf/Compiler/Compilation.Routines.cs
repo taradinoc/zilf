@@ -68,11 +68,9 @@ namespace Zilf.Compiler
             return origRoutine;
         }
 
-        void BuildRoutine(ZilRoutine routine, IGameBuilder gb,
-            IRoutineBuilder rb, bool entryPoint)
+        void BuildRoutine(ZilRoutine routine, IRoutineBuilder rb, bool entryPoint)
         {
             Contract.Requires(routine != null);
-            Contract.Requires(gb != null);
             Contract.Requires(rb != null);
 
             // give the user a chance to rewrite the routine
