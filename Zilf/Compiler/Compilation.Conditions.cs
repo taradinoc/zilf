@@ -395,7 +395,7 @@ namespace Zilf.Compiler
             }
         }
 
-        IOperand CompileCOND(IRoutineBuilder rb, ZilList clauses, ISourceLine src,
+        IOperand CompileCOND(IRoutineBuilder rb, ZilListBase clauses, ISourceLine src,
             bool wantResult, IVariable resultStorage)
         {
             Contract.Requires(rb != null);
@@ -414,8 +414,8 @@ namespace Zilf.Compiler
 
             while (!clauses.IsEmpty)
             {
-                var clause = clauses.First as ZilList;
-                clauses = clauses.Rest as ZilList;
+                var clause = clauses.First as ZilListBase;
+                clauses = clauses.Rest;
 
                 if (clause is ZilForm)
                 {
@@ -428,7 +428,7 @@ namespace Zilf.Compiler
                     clause = newClause as ZilList;
                 }
 
-                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
+                if (clause == null)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
 
                 ZilObject condition = clause.First;
@@ -455,8 +455,8 @@ namespace Zilf.Compiler
                 }
 
                 // emit code for clause
-                clause = clause.Rest as ZilList;
-                var clauseResult = CompileClauseBody(rb, clause, wantResult, resultStorage);
+                clause = clause.Rest;
+                var clauseResult = CompileClauseBody(rb, (ZilList)clause, wantResult, resultStorage);
                 if (wantResult && clauseResult != resultStorage)
                     rb.EmitStore(resultStorage, clauseResult);
 
@@ -546,7 +546,7 @@ namespace Zilf.Compiler
                 var clause = clauses.First as ZilList;
                 clauses = clauses.Rest;
 
-                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
+                if (clause == null)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
                 ZilObject condition = clause.First;
@@ -630,7 +630,7 @@ namespace Zilf.Compiler
                 var clause = clauses.First as ZilList;
                 clauses = clauses.Rest as ZilList;
 
-                if (clause == null || clause.StdTypeAtom != StdAtom.LIST)
+                if (clause == null)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
                 ZilObject value;

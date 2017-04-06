@@ -43,29 +43,30 @@ namespace Zilf.Interpreter
         }
 
         [ChtypeMethod]
-        public static ObList FromList(Context ctx, ZilList list)
+        public static ObList FromList(Context ctx, ZilListBase list)
         {
             var result = new ObList(ctx.IgnoreCase);
 
             while (!list.IsEmpty)
             {
-                var pair = list.First as ZilList;
+                if (list.First is ZilList pair)
+                {
+                    if (pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
+                    {
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
+                    }
+
+                    if (pair.First is ZilString key && pair.Rest.First is ZilAtom value)
+                    {
+                        result[key.Text] = value;
+                    }
+                    else
+                    {
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
+                    }
+                }
+
                 list = list.Rest;
-
-                if (pair?.StdTypeAtom != StdAtom.LIST)
-                {
-                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "lists");
-                }
-
-                if (pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
-                {
-                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
-                }
-
-                if (!(pair.First is ZilString key && pair.Rest.First is ZilAtom value))
-                    throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
-
-                result[key.Text] = value;
             }
 
             return result;

@@ -26,7 +26,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.DECL, PrimType.LIST)]
-    class ZilDecl : ZilList
+    class ZilDecl : ZilListBase
     {
         public ZilDecl(IEnumerable<ZilObject> sequence)
             : base(sequence)
@@ -34,33 +34,16 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static new ZilDecl FromList(Context ctx, ZilList list)
+        public static ZilDecl FromList(Context ctx, ZilListBase list)
         {
             return new ZilDecl(list);
         }
 
         public override StdAtom StdTypeAtom => StdAtom.DECL;
 
-        public override string ToString()
-        {
-#pragma warning disable RECS0106 // False alarm, ToString() is required here
-            return "#DECL " + base.ToString();
-#pragma warning restore RECS0106
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return "#DECL " + base.ToStringContextImpl(ctx, friendly);
-        }
-
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
-        {
-            return originalType != null ? ctx.ChangeType(this, originalType) : this;
-        }
-
         public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GetAtomDeclPairs()
         {
-            ZilList list = this;
+            ZilListBase list = this;
 
             while (!list.IsEmpty)
             {

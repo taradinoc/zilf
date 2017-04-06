@@ -43,21 +43,12 @@ namespace Zilf.Compiler
 
             if (result != null)
             {
-                switch (result.StdTypeAtom)
+                switch (result)
                 {
-                    case StdAtom.LIST:
-                        var list = (ZilList)result;
-                        ZilList body;
-                        if (((IStructure)list).GetLength(1) <= 1 ||
-                            !(list.First is ZilList args) ||
-                            args.StdTypeAtom != StdAtom.LIST)
-                        {
-                            throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
-                        }
-                        body = list.Rest;
-                        return new ZilRoutine(origRoutine.Name, null, args, body, origRoutine.Flags);
+                    case ZilList list when (list.GetLength(1) == null && list.First is ZilList args):
+                        return new ZilRoutine(origRoutine.Name, null, args, list.Rest, origRoutine.Flags);
 
-                    case StdAtom.FALSE:
+                    case ZilFalse _:
                         break;
 
                     default:
@@ -184,27 +175,7 @@ namespace Zilf.Compiler
 
         void CompileStmt(IRoutineBuilder rb, ZilObject stmt, bool wantResult)
         {
-            if (!(stmt is ZilForm form))
-            {
-                if (wantResult)
-                {
-                    var value = CompileConstant(stmt);
-                    if (value == null)
-                    {
-                        var error = new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
-                        if (stmt.StdTypeAtom == StdAtom.LIST)
-                            error = error.Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND));
-                        throw error;
-                    }
-
-                    rb.Return(value);
-                }
-                //else
-                //{
-                // TODO: warning message when skipping non-forms inside a routine?
-                //}
-            }
-            else
+            if (stmt is ZilForm form)
             {
                 MarkSequencePoint(rb, form);
 
@@ -213,6 +184,23 @@ namespace Zilf.Compiler
                 if (wantResult)
                     rb.Return(result);
             }
+            else if (wantResult)
+            {
+                var value = CompileConstant(stmt);
+                if (value == null)
+                {
+                    var error = new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                    if (stmt is ZilList)
+                        error = error.Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND));
+                    throw error;
+                }
+
+                rb.Return(value);
+            }
+            //else
+            //{
+            // TODO: warning message when skipping non-forms inside a routine?
+            //}
         }
 
         void MarkSequencePoint(IRoutineBuilder rb, ZilObject node)

@@ -175,7 +175,7 @@ namespace Zilf.Compiler
             Contract.Requires(expr != null);
             Contract.Requires(globalAtom != null);
 
-            if (!(expr is ZilList list))
+            if (!(expr is ZilListBase list))
                 return false;
 
             if (list is ZilForm && list.First is ZilAtom atom)

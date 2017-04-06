@@ -460,6 +460,12 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndAssert("<SUBSTRUC \"Hello\" 1 3 \"Leeroy\">",
                 ZilString.FromString("ellroy"));
+
+            // TODO: should work with user-defined types too
+            //var ctx = new Context();
+            //TestHelpers.Evaluate(ctx, "<NEWTYPE ARRAY VECTOR>");
+            //TestHelpers.EvalAndAssert(ctx, "<SUBSTRUC '[1 2 3] 2 1 #ARRAY [4 5 6]>",
+            //    new ZilVector(new ZilFix(3), new ZilFix(5), new ZilFix(6)));
         }
 
         [TestMethod]

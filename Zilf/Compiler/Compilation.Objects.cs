@@ -316,16 +316,17 @@ namespace Zilf.Compiler
                             // name of a custom property builder function
                             var form = new ZilForm(new ZilObject[] { propspec, prop }) { SourceLine = prop.SourceLine };
                             var specOutput = form.Eval(Context);
-                            ZilList propBody;
-                            if (specOutput.StdTypeAtom != StdAtom.LIST ||
-                                (propBody = ((ZilList)specOutput).Rest) == null || propBody.IsEmpty)
+
+                            if (specOutput is ZilList list && list.Rest is ZilList propBody && !propBody.IsEmpty)
+                            {
+                                // replace the property body with the propspec's output
+                                prop.Rest = propBody;
+                            }
+                            else
                             {
                                 Context.HandleError(new CompilerError(model, CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
                                 continue;
                             }
-
-                            // replace the property body with the propspec's output
-                            prop.Rest = propBody;
                         }
                     }
                     else

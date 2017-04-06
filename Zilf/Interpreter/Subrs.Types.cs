@@ -315,14 +315,13 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject CONS(Context ctx, ZilObject first, ZilList rest)
+        public static ZilObject CONS(Context ctx, ZilObject first, ZilListBase rest)
         {
             SubrContracts(ctx);
 
-            if (rest.StdTypeAtom != StdAtom.LIST)
-                rest = new ZilList(rest);
-
-            return new ZilList(first, rest);
+            return new ZilList(
+                first,
+                rest is ZilList restList ? restList : new ZilList(rest));
         }
 
         [FSubr]

@@ -131,28 +131,25 @@ namespace Zilf.ZModel.Values
 
             foreach (var patternObj in spec)
             {
-                if (patternObj.StdTypeAtom != StdAtom.LIST)
+                if (!(patternObj is ZilList list))
                     throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "PROPDEF patterns", "lists");
 
-                var list = (ZilList)patternObj;
                 bool gotEq = false;
                 foreach (var element in list)
                 {
                     if (!gotEq)
                     {
                         // inputs
-                        switch (element.StdTypeAtom)
+                        switch (element)
                         {
-                            case StdAtom.ADECL:
-                                var adecl = (ZilAdecl)element;
+                            case ZilAdecl adecl:
                                 inputs.Add(new InputElement(
                                     InputElementType.Variable,
                                     (ZilAtom)adecl.First,
                                     adecl.Second));
                                 break;
 
-                            case StdAtom.ATOM:
-                                var atom = (ZilAtom)element;
+                            case ZilAtom atom:
                                 if (atom.StdAtom == StdAtom.Eq)
                                 {
                                     gotEq = true;
@@ -166,8 +163,8 @@ namespace Zilf.ZModel.Values
                                 }
                                 break;
 
-                            case StdAtom.STRING:
-                                switch (((ZilString)element).Text)
+                            case ZilString str:
+                                switch (str.Text)
                                 {
                                     case "OPT":
                                     case "OPTIONAL":
@@ -197,13 +194,9 @@ namespace Zilf.ZModel.Values
                         var output = element;
                         var type = output.StdTypeAtom;
 
-                        if (type == StdAtom.LIST)
+                        if (element is ZilList elemList)
                         {
-                            var elemList = (ZilList)element;
-
-                            if (elemList.Rest == null ||
-                                elemList.Rest.Rest == null ||
-                                elemList.Rest.Rest.First != null)
+                            if (elemList.GetLength(2) != 2)
                             {
                                 throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "list", "PROPDEF output pattern", 2);
                             }
@@ -218,22 +211,22 @@ namespace Zilf.ZModel.Values
                             Contract.Assert(output != null);
                         }
 
-                        switch (output.StdTypeAtom)
+                        switch (output)
                         {
-                            case StdAtom.FIX:
-                                outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: (ZilFix)output));
+                            case ZilFix fix:
+                                outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: fix));
                                 break;
 
-                            case StdAtom.FALSE:
+                            case ZilFalse _:
                                 outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: null));
                                 break;
 
-                            case StdAtom.FORM:
-                                outputs.Add(ConvertOutputForm((ZilForm)output, constant));
+                            case ZilForm form:
+                                outputs.Add(ConvertOutputForm(form, constant));
                                 break;
 
-                            case StdAtom.STRING:
-                                switch (((ZilString)output).Text)
+                            case ZilString str:
+                                switch (str.Text)
                                 {
                                     case "MANY":
                                         outputs.Add(new OutputElement(OutputElementType.Many, constant));
@@ -244,16 +237,16 @@ namespace Zilf.ZModel.Values
                                 }
                                 break;
 
-                            case StdAtom.SEMI:
-                                // ignore
-                                break;
-
                             default:
-                                throw new InterpreterError(
-                                    InterpreterMessages._0_In_1_Must_Be_2,
-                                    "elements",
-                                    "PROPDEF output pattern",
-                                    "FIX, FALSE, FORM, STRING, or SEMI");
+                                if (output.StdTypeAtom != StdAtom.SEMI)
+                                {
+                                    throw new InterpreterError(
+                                        InterpreterMessages._0_In_1_Must_Be_2,
+                                        "elements",
+                                        "PROPDEF output pattern",
+                                        "FIX, FALSE, FORM, STRING, or SEMI");
+                                }
+                                break;
                         }
                     }
                 }
@@ -642,7 +635,7 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
-        public static ComplexPropDef FromList(Context ctx, ZilList list)
+        public static ComplexPropDef FromList(Context ctx, ZilListBase list)
         {
             return Parse(list, ctx);
         }

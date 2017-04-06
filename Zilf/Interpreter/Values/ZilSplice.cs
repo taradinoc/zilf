@@ -22,12 +22,12 @@ using Zilf.Language;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SPLICE, PrimType.LIST)]
-    class ZilSplice : ZilList, IMayExpandAfterEvaluation
+    class ZilSplice : ZilListBase, IMayExpandAfterEvaluation
     {
         bool spliceable;
 
         [ChtypeMethod]
-        public ZilSplice(ZilList other)
+        public ZilSplice(ZilListBase other)
             : base(other.First, other.Rest)
         {
         }
@@ -37,26 +37,9 @@ namespace Zilf.Interpreter.Values
             spliceable = true;
         }
 
-        public override string ToString()
-        {
-#pragma warning disable RECS0106 // False alarm, ToString() is required here
-            return "#SPLICE " + base.ToString();
-#pragma warning restore RECS0106
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return "#SPLICE " + base.ToStringContextImpl(ctx, friendly);
-        }
-
         public override StdAtom StdTypeAtom => StdAtom.SPLICE;
 
         public bool ShouldExpandAfterEvaluation => spliceable;
-
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
-        {
-            return this;
-        }
 
         public IEnumerable<ZilObject> ExpandAfterEvaluation(Context ctx, LocalEnvironment env)
         {

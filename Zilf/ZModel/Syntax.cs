@@ -100,20 +100,18 @@ namespace Zilf.ZModel
                 {
                     // left side:
                     //   [[prep] OBJECT [(FIND ...)] [(options...) ...] [[prep] OBJECT [(FIND ...)] [(options...)]]]
-                    if (obj is ZilAtom atom)
+                    switch (obj)
                     {
-                        HandleLeftSideAtom(atom);
-                    }
-                    else
-                    {
-                        if (obj is ZilList list && list.StdTypeAtom == StdAtom.LIST)
-                        {
+                        case ZilAtom atom:
+                            HandleLeftSideAtom(atom);
+                            break;
+
+                        case ZilList list:
                             HandleLeftSideList(list);
-                        }
-                        else
-                        {
+                            break;
+
+                        default:
                             throw new InterpreterError(obj, InterpreterMessages.Unrecognized_0_1, "value in syntax definition", obj);
-                        }
                     }
                 }
                 else
@@ -232,13 +230,16 @@ namespace Zilf.ZModel
             {
                 // right side:
                 //   action [preaction [action-name]]
-                var atom = obj as ZilAtom;
-                if (atom != null)
+                if (obj is ZilAtom atom)
                 {
                     if (atom.StdAtom == StdAtom.Eq)
                         throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "'='");
                 }
-                else if (!(obj is ZilFalse))
+                else if (obj is ZilFalse)
+                {
+                    atom = null;
+                }
+                else
                 {
                     throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "values after '='", "syntax definition", "FALSE or atoms");
                 }

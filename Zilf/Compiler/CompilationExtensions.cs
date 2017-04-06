@@ -61,109 +61,79 @@ namespace Zilf.Compiler
 
         public static bool IsSetToZeroForm(this ZilObject last)
         {
-            if (!(last is ZilForm form))
-                return false;
-
-            if (!(form.First is ZilAtom atom) ||
-                (atom.StdAtom != StdAtom.SET && atom.StdAtom != StdAtom.SETG))
-                return false;
-
-            if (!(form.Rest?.Rest?.First is ZilFix fix) || fix.Value != 0)
-                return false;
-
-            return true;
+            return last is ZilForm form &&
+                form.First is ZilAtom atom &&
+                (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
+                form.Rest?.Rest?.First is ZilFix fix &&
+                fix.Value == 0;
         }
 
         public static bool IsNonVariableForm(this ZilObject zo)
         {
-            if (zo == null)
-                return false;
-
-            if (!(zo is ZilForm form))
-                return false;
-
-            if (!(form.First is ZilAtom first))
-                return true;
-
-            return first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
+            return zo is ZilForm form &&
+                form.First is ZilAtom first &&
+                first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
         }
 
         public static bool IsVariableRef(this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            if (!(expr is ZilForm form))
-                return false;
-
-            if (!(form.First is ZilAtom atom))
-                return false;
-
-            if (!(form.Rest?.First is ZilAtom))
-                return false;
-
-            switch (atom.StdAtom)
+            if (expr is ZilForm form &&
+                form.First is ZilAtom atom &&
+                form.Rest?.First is ZilAtom)
             {
-                case StdAtom.LVAL:
-                case StdAtom.GVAL:
-                case StdAtom.SET:
-                case StdAtom.SETG:
-                    return true;
-
-                default:
-                    return false;
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.LVAL:
+                    case StdAtom.GVAL:
+                    case StdAtom.SET:
+                    case StdAtom.SETG:
+                        return true;
+                }
             }
+
+            return false;
         }
 
         public static bool IsLocalVariableRef(this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            if (!(expr is ZilForm form))
-                return false;
-
-            if (!(form.First is ZilAtom atom))
-                return false;
-
-            if (!(form.Rest?.First is ZilAtom))
-                return false;
-
-            return atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET;
+            return expr is ZilForm form &&
+                form.First is ZilAtom atom &&
+                form.Rest?.First is ZilAtom &&
+                (atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET);
         }
 
         public static bool IsGlobalVariableRef(this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
-            if (!(expr is ZilForm form))
-                return false;
-
-            if (!(form.First is ZilAtom atom))
-                return false;
-
-            if (!(form.Rest?.First is ZilAtom))
-                return false;
-
-            return atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG;
+            return expr is ZilForm form &&
+                form.First is ZilAtom atom &&
+                form.Rest?.First is ZilAtom &&
+                (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG);
         }
 
         public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
         {
-            if (!(expr is ZilList list))
-                return false;
-
-            if (list is ZilForm)
+            if (expr is ZilListBase list)
             {
-                if (list.First is ZilAtom atom &&
-                    (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                    list.Rest?.First == localAtom)
+                if (list is ZilForm)
                 {
-                    return true;
+                    if (list.First is ZilAtom atom &&
+                        (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
+                        list.Rest?.First == localAtom)
+                    {
+                        return true;
+                    }
                 }
-            }
 
-            foreach (ZilObject zo in list)
-                if (ModifiesLocal(zo, localAtom))
-                    return true;
+                foreach (var zo in list)
+                    if (ModifiesLocal(zo, localAtom))
+                        return true;
+            }
 
             return false;
         }

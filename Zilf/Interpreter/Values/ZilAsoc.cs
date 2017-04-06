@@ -49,7 +49,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilAsoc FromList(Context ctx, ZilList list)
+        public static ZilAsoc FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);

@@ -48,7 +48,7 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
-        public static ZilRoutine FromList(Context ctx, ZilList list)
+        public static ZilRoutine FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
 
@@ -58,10 +58,12 @@ namespace Zilf.ZModel.Values
                     "list coerced to ROUTINE",
                     new CountableString("at least 2", true));
 
-            if (!(list.First is ZilList argList) || argList.StdTypeAtom != StdAtom.LIST)
-                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
+            if (list.First is ZilList argList)
+            {
+                return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
+            }
 
-            return new ZilRoutine(null, null, argList, list.Rest, RoutineFlags.None);
+            throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
         }
 
         public ArgSpec ArgSpec
