@@ -169,7 +169,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
+                    return SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToString());
                 }
                 finally
                 {
@@ -185,7 +185,7 @@ namespace Zilf.Interpreter.Values
             {
                 try
                 {
-                    return ZilList.SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
+                    return SequenceToString(storage.GetSequence(offset), "[", "]", zo => zo.ToStringContext(ctx, friendly));
                 }
                 finally
                 {

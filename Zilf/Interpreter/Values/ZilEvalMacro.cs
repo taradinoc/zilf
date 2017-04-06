@@ -35,7 +35,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilEvalMacro FromList(Context ctx, ZilList list)
+        public static ZilEvalMacro FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);

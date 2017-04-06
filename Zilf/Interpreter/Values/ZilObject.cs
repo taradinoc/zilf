@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Language;
 
@@ -369,6 +370,38 @@ namespace Zilf.Interpreter.Values
 
                 return Enumerable.Repeat(zo, 1);
             });
+        }
+
+        public static string SequenceToString(IEnumerable<ZilObject> items,
+            string start, string end, Func<ZilObject, string> convert)
+        {
+            Contract.Requires(items != null);
+            Contract.Requires(start != null);
+            Contract.Requires(end != null);
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
+            var sb = new StringBuilder(2);
+            sb.Append(start);
+
+            if (items is ZilListBase list)
+            {
+                items = list.EnumerateNonRecursive();
+            }
+
+            foreach (ZilObject obj in items)
+            {
+                if (sb.Length > 1)
+                    sb.Append(' ');
+
+                if (obj == null)
+                    sb.Append("...");
+                else
+                    sb.Append(convert(obj));
+            }
+
+            sb.Append(end);
+            return sb.ToString();
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilSegment FromList(Context ctx, ZilList list)
+        public static ZilSegment FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
 

@@ -612,24 +612,10 @@ namespace Zilf.Interpreter
             }
             else if (IsZilObjectType(paramType))
             {
-                var zoType = paramType;
-                Constraint constraint;
+                var constraint = ZilObjectTypeToConstraint(paramType);
 
-                if (paramType == typeof(IStructure))
-                {
-                    constraint = Constraint.Structured;
-                }
-                else if (paramType != typeof(ZilObject))
-                {
-                    var builtinAttr = zoType.GetCustomAttribute<BuiltinTypeAttribute>();
-                    if (builtinAttr == null)
-                        throw new InvalidOperationException($"Type {paramType} is missing a BuiltinTypeAttribute");
-                    constraint = Constraint.OfType(builtinAttr.Name);
-                }
-                else
-                {
-                    constraint = Constraint.AnyObject;
-                }
+                // capture for the closure
+                var zoType = paramType;
 
                 result = new DecodingStepInfo
                 {
@@ -707,26 +693,7 @@ namespace Zilf.Interpreter
                 var eltype = paramType.GetElementType();
                 defaultValue = Array.CreateInstance(eltype, 0);
 
-                Constraint constraint;
-                if (eltype == typeof(IApplicable))
-                {
-                    constraint = Constraint.Applicable;
-                }
-                else if (eltype == typeof(IStructure))
-                {
-                    constraint = Constraint.Structured;
-                }
-                else if (eltype != typeof(ZilObject))
-                {
-                    var builtinAttr = eltype.GetCustomAttribute<BuiltinTypeAttribute>();
-                    if (builtinAttr == null)
-                        throw new InvalidOperationException($"Type {eltype} is missing a BuiltinTypeAttribute");
-                    constraint = Constraint.OfType(builtinAttr.Name);
-                }
-                else
-                {
-                    constraint = Constraint.AnyObject;
-                }
+                var constraint = ZilObjectTypeToConstraint(eltype);
 
                 result = new DecodingStepInfo
                 {
@@ -912,6 +879,37 @@ namespace Zilf.Interpreter
             }
 
             return result;
+        }
+
+        static Constraint ZilObjectTypeToConstraint(Type paramType)
+        {
+            Contract.Requires(paramType != null);
+            Contract.Ensures(Contract.Result<Constraint>() != null);
+
+            if (paramType == typeof(IStructure))
+            {
+                return Constraint.Structured;
+            }
+            else if (paramType != typeof(ZilObject))
+            {
+                if (paramType.GetCustomAttribute<BuiltinTypeAttribute>() is BuiltinTypeAttribute typeAttr)
+                {
+                    return Constraint.OfType(typeAttr.Name);
+                }
+                else if (paramType.GetCustomAttribute<BuiltinPrimTypeAttribute>() is BuiltinPrimTypeAttribute primAttr)
+                {
+                    return Constraint.OfPrimType(primAttr.PrimType);
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"Type {paramType} is missing a {nameof(BuiltinTypeAttribute)} or {nameof(BuiltinPrimTypeAttribute)}");
+                }
+            }
+            else
+            {
+                return Constraint.AnyObject;
+            }
         }
 
         static DecodingStepInfo PrepareOneArrayFromInnerStep(

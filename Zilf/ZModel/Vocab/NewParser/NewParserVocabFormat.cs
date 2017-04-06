@@ -642,12 +642,14 @@ namespace Zilf.ZModel.Vocab.NewParser
                 if (compFlag != null && compFlag.IsTrue)
                 {
                     // prepend .WORD .FLAGS to ,WORD-FLAGS-LIST
-                    var wordFlagsList = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST));
-                    if (wordFlagsList == null)
+                    var wordFlagsList = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
+
+                    if (wordFlagsList is ZilList list)
                     {
-                        wordFlagsList = new ZilList(null, null);
+                        list = new ZilList(word.Inner, new ZilList(flags, list));
+                        ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST), list);
                     }
-                    else if (wordFlagsList.StdTypeAtom != StdAtom.LIST)
+                    else
                     {
                         throw new InterpreterError(
                             InterpreterMessages._0_Value_Of_1_Must_Be_2,
@@ -655,9 +657,6 @@ namespace Zilf.ZModel.Vocab.NewParser
                             "WORD-FLAGS-LIST",
                             "a list");
                     }
-
-                    wordFlagsList = new ZilList(word.Inner, new ZilList(flags, (ZilList)wordFlagsList));
-                    ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST), wordFlagsList);
                 }
             }
 
@@ -761,13 +760,9 @@ namespace Zilf.ZModel.Vocab.NewParser
             // word flag table
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
             {
-                var wordFlagsList = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) as ZilList;
+                var wordFlagsListObj = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
 
-                if (wordFlagsList == null)
-                {
-                    wordFlagsList = new ZilList(null, null);
-                }
-                else if (wordFlagsList.StdTypeAtom != StdAtom.LIST)
+                if (!(wordFlagsListObj is ZilList wordFlagsList))
                 {
                     throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }

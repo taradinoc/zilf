@@ -181,17 +181,21 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject PUTREST(Context ctx, [Decl("LIST")] ZilList list, ZilList newRest)
+        public static ZilObject PUTREST(Context ctx, [Decl("LIST")] ZilList list, ZilListBase newRest)
         {
             SubrContracts(ctx);
 
             if (list.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTREST");
 
-            if (newRest.StdTypeAtom == StdAtom.LIST)
-                list.Rest = newRest;
+            if (newRest is ZilList newRestList)
+            {
+                list.Rest = newRestList;
+            }
             else
+            {
                 list.Rest = new ZilList(newRest);
+            }
 
             return list;
         }
@@ -222,7 +226,7 @@ namespace Zilf.Interpreter
 
             var fromObj = (ZilObject)from;
             var destObj = (ZilObject)dest;
-            var primitive = fromObj.GetPrimitive(ctx);
+            var primitive = (IStructure)fromObj.GetPrimitive(ctx);
 
             if (destObj != null)
             {
@@ -232,11 +236,10 @@ namespace Zilf.Interpreter
 
                 int i;
 
-                switch (destObj.StdTypeAtom)
+                switch (dest)
                 {
-                    case StdAtom.LIST:
-                        var list = (ZilList)dest;
-                        foreach (var item in ((ZilList)primitive).Skip(rest).Take((int)amount))
+                    case ZilList list:
+                        foreach (var item in primitive.Skip(rest).Take((int)amount))
                         {
                             if (list.IsEmpty)
                                 throw new InterpreterError(InterpreterMessages._0_Destination_Too_Short, "SUBSTRUC");
@@ -246,16 +249,16 @@ namespace Zilf.Interpreter
                         }
                         break;
 
-                    case StdAtom.STRING:
+                    case ZilString str:
                         // this is crazy inefficient, but works with ZilString and OffsetString
+                        // TODO: method on ZilString to do this more efficiently?
                         for (i = 0; i < amount; i++)
-                            dest[i] = ((IStructure)primitive)[i + rest];
+                            str[i] = primitive[i + rest];
                         break;
 
-                    case StdAtom.VECTOR:
-                        var vector = (ZilVector)dest;
+                    case ZilVector vector:
                         i = 0;
-                        foreach (var item in ((ZilVector)primitive).Skip(rest).Take((int)amount))
+                        foreach (var item in primitive.Skip(rest).Take((int)amount))
                         {
                             if (i >= vector.GetLength())
                                 throw new InterpreterError(InterpreterMessages._0_Destination_Too_Short, "SUBSTRUC");
@@ -275,7 +278,7 @@ namespace Zilf.Interpreter
             switch (fromObj.PrimType)
             {
                 case PrimType.LIST:
-                    return new ZilList(((ZilList)primitive).Skip(rest).Take((int)amount));
+                    return new ZilList(primitive.Skip(rest).Take((int)amount));
 
                 case PrimType.STRING:
                     return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount));

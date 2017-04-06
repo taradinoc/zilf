@@ -36,7 +36,7 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
-        public static ZilWord FromList(Context ctx, ZilList list)
+        public static ZilWord FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);

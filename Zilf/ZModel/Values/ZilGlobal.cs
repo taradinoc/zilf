@@ -38,7 +38,7 @@ namespace Zilf.ZModel.Values
 
         [ChtypeMethod]
 #pragma warning disable RECS0154 // Parameter is never used
-        public static ZilGlobal FromList(Context ctx, ZilList list)
+        public static ZilGlobal FromList(Context ctx, ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)

@@ -968,7 +968,7 @@ namespace Zilf.Interpreter
                         adaptChtypeCtor = AdaptChtypeCtor<ZilFix>;
                         break;
                     case PrimType.LIST:
-                        chtypeParamTypes[1] = typeof(ZilList);
+                        chtypeParamTypes[1] = typeof(ZilListBase);
                         adaptChtypeMethod = AdaptChtypeMethod<ZilList>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilList>;
                         break;

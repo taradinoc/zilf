@@ -51,14 +51,16 @@ namespace Zilf.Compiler
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
             }
 
-            var activationAtom = args.First as ZilAtom;
-            if (activationAtom != null)
+            if (args.First is ZilAtom activationAtom)
             {
                 args = args.Rest;
             }
+            else
+            {
+                activationAtom = null;
+            }
 
-            if (args == null || args.First == null ||
-                args.First.StdTypeAtom != StdAtom.LIST)
+            if (args == null || args.First == null)
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -178,7 +180,7 @@ namespace Zilf.Compiler
 
         static ZilList TransformProgArgsIfImplementingDeferredReturn(ZilList args)
         {
-            if (args.First is ZilList bindingList && bindingList.StdTypeAtom == StdAtom.LIST)
+            if (args.First is ZilList bindingList)
             {
                 // ends with <LVAL atom>?
                 if (args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr &&
@@ -276,12 +278,12 @@ namespace Zilf.Compiler
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "DO");
             }
 
-            var specLength = ((IStructure)spec).GetLength(4);
+            var specLength = spec.GetLength(4);
             if (specLength < 3 || specLength == null)
             {
                 throw new CompilerError(
@@ -300,7 +302,7 @@ namespace Zilf.Compiler
 
             // look for an end block
             var body = args.Rest;
-            if (body.First is ZilList endStmts && endStmts.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts)
             {
                 body = body.Rest;
             }
@@ -428,7 +430,7 @@ namespace Zilf.Compiler
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-CONTENTS");
             }
@@ -468,7 +470,7 @@ namespace Zilf.Compiler
 
             // look for an end block
             var body = args.Rest;
-            if (body.First is ZilList endStmts && body.First.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts)
             {
                 body = body.Rest;
             }
@@ -569,12 +571,12 @@ namespace Zilf.Compiler
             // resultStorage is unused here for the same reason as in CompilePROG.
 
             // parse binding list
-            if (!(args.First is ZilList spec) || spec.StdTypeAtom != StdAtom.LIST)
+            if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-DIRECTIONS");
             }
 
-            var specLength = ((IStructure)spec).GetLength(3);
+            var specLength = spec.GetLength(3);
             if (specLength != 3)
             {
                 throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, "MAP-DIRECTIONS", 3);
@@ -598,7 +600,7 @@ namespace Zilf.Compiler
 
             // look for an end block
             var body = args.Rest;
-            if (body.First is ZilList endStmts && endStmts.StdTypeAtom == StdAtom.LIST)
+            if (body.First is ZilList endStmts)
             {
                 body = body.Rest;
             }

@@ -2162,9 +2162,9 @@ namespace Zilf.Compiler.Builtins
                 return true;
             }
 
-            if (fieldSpec is ZilList list && list.StdTypeAtom == StdAtom.LIST)
+            if (fieldSpec is ZilList list)
             {
-                if (((IStructure)list).GetLength(2) != 2)
+                if (list.GetLength(2) != 2)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_List_Must_Have_2_Elements, name));
                     return false;

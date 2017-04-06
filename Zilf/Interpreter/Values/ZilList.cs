@@ -24,50 +24,17 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
-    // TODO: make ZilList an abstract base class
     [BuiltinType(StdAtom.LIST, PrimType.LIST)]
-    class ZilList : ZilObject, IEnumerable<ZilObject>, IStructure
+    sealed class ZilList : ZilListBase
     {
-        public ZilObject First;
-        public ZilList Rest;
-
         public ZilList(IEnumerable<ZilObject> sequence)
-        {
-            Contract.Requires(sequence != null);
+            : base(sequence) { }
 
-            using (IEnumerator<ZilObject> tor = sequence.GetEnumerator())
-            {
-                if (tor.MoveNext())
-                {
-                    this.First = tor.Current;
-                    this.Rest = MakeRest(tor);
-                }
-                else
-                {
-                    this.First = null;
-                    this.Rest = null;
-                }
-            }
-        }
-
-        public ZilList(ZilObject current, ZilList rest)
-        {
-            Contract.Requires((current == null && rest == null) || (current != null && rest != null));
-            Contract.Ensures(First == current);
-            Contract.Ensures(Rest == rest);
-
-            this.First = current;
-            this.Rest = rest;
-        }
-
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
-        }
+        public ZilList(ZilObject first, ZilList rest)
+            : base(first, rest) { }
 
         [ChtypeMethod]
-        public static ZilList FromList(Context ctx, ZilList list)
+        public static ZilList FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
@@ -75,96 +42,9 @@ namespace Zilf.Interpreter.Values
             return new ZilList(list.First, list.Rest);
         }
 
-        ZilList MakeRest(IEnumerator<ZilObject> tor)
-        {
-            Contract.Requires(tor != null);
-            Contract.Ensures(Contract.Result<ZilList>() != null);
-
-            if (tor.MoveNext())
-            {
-                ZilObject cur = tor.Current;
-                var rest = MakeRest(tor);
-                return new ZilList(cur, rest);
-            }
-            return new ZilList(null, null);
-        }
-
-        public bool IsEmpty => First == null;
-
-        public static string SequenceToString(IEnumerable<ZilObject> items,
-            string start, string end, Func<ZilObject, string> convert)
-        {
-            Contract.Requires(items != null);
-            Contract.Requires(start != null);
-            Contract.Requires(end != null);
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
-            var sb = new StringBuilder(2);
-            sb.Append(start);
-
-            if (items is ZilList list)
-            {
-                items = list.EnumerateNonRecursive();
-            }
-
-            foreach (ZilObject obj in items)
-            {
-                if (sb.Length > 1)
-                    sb.Append(' ');
-
-                if (obj == null)
-                    sb.Append("...");
-                else
-                    sb.Append(convert(obj));
-            }
-
-            sb.Append(end);
-            return sb.ToString();
-        }
-
-        public override string ToString()
-        {
-            if (Recursion.TryLock(this))
-            {
-                try
-                {
-                    return SequenceToString(this, "(", ")", zo => zo.ToString());
-                }
-                finally
-                {
-                    Recursion.Unlock(this);
-                }
-            }
-            return "(...)";
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            if (Recursion.TryLock(this))
-            {
-                try
-                {
-                    return SequenceToString(this, "(", ")", zo => zo.ToStringContext(ctx, friendly));
-                }
-                finally
-                {
-                    Recursion.Unlock(this);
-                }
-            }
-            return "(...)";
-        }
-
         public override StdAtom StdTypeAtom => StdAtom.LIST;
 
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            if (this.GetType() == typeof(ZilList))
-                return this;
-            return new ZilList(First, Rest);
-        }
+        protected override string OpenBracket => "(";
 
         protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
@@ -172,126 +52,6 @@ namespace Zilf.Interpreter.Values
             if (originalType != null)
                 result = ctx.ChangeType(result, originalType);
             return result;
-        }
-
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            ZilList r = this;
-            while (r.First != null)
-            {
-                yield return r.First;
-                r = r.Rest;
-            }
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-
-        /// <summary>
-        /// Enumerates the items of the list, yielding a final <b>null</b> instead of repeating if the list is recursive.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<ZilObject> EnumerateNonRecursive()
-        {
-            var seen = new HashSet<ZilList>(IdentityEqualityComparer<ZilList>.Instance);
-            var list = this;
-
-            while (!list.IsEmpty)
-            {
-                if (seen.Contains(list))
-                {
-                    yield return null;
-                    yield break;
-                }
-
-                seen.Add(list);
-                yield return list.First;
-                list = list.Rest;
-            }
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-                return true;
-
-            if (!(obj is ZilList other) || other.StdTypeAtom != this.StdTypeAtom)
-                return false;
-
-            if (this.First == null)
-                return other.First == null;
-            if (!this.First.Equals(other.First))
-                return false;
-
-            if (this.Rest == null)
-                return other.Rest == null;
-
-            return this.Rest.Equals(other.Rest);
-        }
-
-        public override int GetHashCode()
-        {
-            var result = (int)StdAtom.LIST;
-            foreach (ZilObject obj in this.EnumerateNonRecursive())
-            {
-                if (obj == null)
-                    break;
-
-                result = result * 31 + obj.GetHashCode();
-            }
-            return result;
-        }
-
-        public ZilObject GetFirst() => First;
-
-        public IStructure GetRest(int skip)
-        {
-            ZilList result = this;
-            while (skip-- > 0 && result != null)
-                result = (ZilList)result.Rest;
-            return result;
-        }
-
-        public IStructure GetBack(int skip) => throw new NotSupportedException();
-
-        public IStructure GetTop() => throw new NotSupportedException();
-
-        public void Grow(int end, int beginning, ZilObject defaultValue) =>
-            throw new NotSupportedException();
-
-        public ZilObject this[int index]
-        {
-            get
-            {
-                var rested = GetRest(index);
-                return rested?.GetFirst();
-            }
-            set
-            {
-                if (GetRest(index) is ZilList rested && !rested.IsEmpty)
-                {
-                    rested.First = value;
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), "writing past end of list");
-                }
-            }
-        }
-
-        public int GetLength() => this.Count();
-
-        public int? GetLength(int limit)
-        {
-            int count = 0;
-
-            foreach (ZilObject obj in this)
-            {
-                count++;
-                if (count > limit)
-                    return null;
-            }
-
-            return count;
         }
     }
 }

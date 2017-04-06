@@ -42,7 +42,7 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
-        public static ZilModelObject FromList(Context ctx, ZilList list)
+        public static ZilModelObject FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
 
@@ -55,7 +55,7 @@ namespace Zilf.ZModel.Values
             if (!(list.First is ZilAtom atom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
-            if (list.Rest.Any(zo => zo.StdTypeAtom != StdAtom.LIST))
+            if (!list.Rest.All(zo => zo is ZilList))
                 throw new InterpreterError(
                     InterpreterMessages._0_In_1_Must_Be_2,
                     "elements after first",

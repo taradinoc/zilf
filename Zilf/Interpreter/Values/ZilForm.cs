@@ -25,21 +25,13 @@ using Zilf.Language;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FORM, PrimType.LIST)]
-    class ZilForm : ZilList
+    sealed class ZilForm : ZilListBase
     {
         public ZilForm(IEnumerable<ZilObject> sequence)
-            : base(sequence)
-        {
-            Contract.Requires(sequence != null);
-        }
+            : base(sequence) { }
 
-        protected ZilForm(ZilObject first, ZilList rest)
-            : base(first, rest)
-        {
-            Contract.Requires((first == null && rest == null) || (first != null && rest != null));
-            Contract.Ensures(First == first);
-            Contract.Ensures(Rest == rest);
-        }
+        public ZilForm(ZilObject first, ZilList rest)
+            : base(first, rest) { }
 
         public override ISourceLine SourceLine
         {
@@ -56,13 +48,16 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static new ZilForm FromList(Context ctx, ZilList list)
+        public static ZilForm FromList(Context ctx, ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
 
             return new ZilForm(list.First, list.Rest);
         }
+
+        protected override string OpenBracket => "<";
+        protected override string CloseBracket => ">";
 
         string ToString(Func<ZilObject, string> convert)
         {
@@ -71,16 +66,18 @@ namespace Zilf.Interpreter.Values
                 try
                 {
                     // check for special forms
-                    if (First is ZilAtom firstAtom && Rest.Rest != null && Rest.Rest.First == null)
+                    if (First is ZilAtom firstAtom && GetLength(2) == 2)
                     {
-                        ZilObject arg = Rest.First;
+                        var arg = Rest.First;
 
                         switch (firstAtom.StdAtom)
                         {
                             case StdAtom.GVAL:
                                 return "," + convert(arg);
+
                             case StdAtom.LVAL:
                                 return "." + convert(arg);
+
                             case StdAtom.QUOTE:
                                 return "'" + convert(arg);
                         }

@@ -266,7 +266,7 @@ namespace Zilf.Interpreter
                 if (!(defaults.CustomCtorSpec.First is ZilAtom ctorName))
                     throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", "'CONSTRUCTOR");
 
-                if (!(defaults.CustomCtorSpec.Rest.First is ZilList argspecList) || argspecList.StdTypeAtom != StdAtom.LIST)
+                if (!(defaults.CustomCtorSpec.Rest.First is ZilList argspecList))
                     throw new InterpreterError(InterpreterMessages._0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List, "DEFSTRUCT");
 
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
@@ -793,7 +793,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    if (!(part is ZilList partList) || partList.StdTypeAtom != StdAtom.LIST)
+                    if (!(part is ZilList partList))
                         throw new InterpreterError(InterpreterMessages._0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists, "DEFSTRUCT");
 
                     if (!(partList.First is ZilForm first) ||
