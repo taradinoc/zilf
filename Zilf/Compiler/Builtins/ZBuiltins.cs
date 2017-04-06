@@ -1881,7 +1881,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(effect != null || volume == null);
             Contract.Requires(volume != null || routine == null);
 
-            c.rb.EmitPlaySound(number, effect, volume, null);
+            c.rb.EmitPlaySound(number, effect, volume, routine);
         }
 
         #endregion
