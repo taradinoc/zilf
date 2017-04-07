@@ -97,7 +97,7 @@ namespace ZilfTests.Interpreter
 
             // construct new object
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT-X 123 'POINT-Y 456>",
-                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, new ZilVector(new ZilFix(123), new ZilFix(456)) }));
+                new ZilStructuredHash(pointAtom, PrimType.VECTOR, new ZilVector(new ZilFix(123), new ZilFix(456))));
             TestHelpers.EvalAndAssert(ctx, "<POINT-Y #POINT [234 567]>",
                 new ZilFix(567));
         }
@@ -114,9 +114,9 @@ namespace ZilfTests.Interpreter
             // put values into existing object, setting any omitted fields to default values (unless the default is NONE!)
             var vector = new ZilVector(new ZilObject[] { new ZilFix(123), new ZilFix(456), new ZilFix(789), new ZilFix(1011) });
             ctx.SetLocalVal(ZilAtom.Parse("MY-VECTOR", ctx),
-                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, vector }));
+                new ZilStructuredHash(pointAtom, PrimType.VECTOR, vector));
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT .MY-VECTOR 'POINT-Y 999 'POINT-X 888>",
-                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, vector }));
+                new ZilStructuredHash(pointAtom, PrimType.VECTOR, vector));
             Assert.AreEqual(new ZilFix(888), vector[0]);
             Assert.AreEqual(new ZilFix(999), vector[1]);
             Assert.AreEqual(new ZilFix(0), vector[2]);
@@ -133,7 +133,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DEFSTRUCT RPOINT VECTOR (RPOINT-X FIX 'OFFSET 2) (RPOINT-Y FIX 'OFFSET 1)>",
                 rpointAtom);
             TestHelpers.EvalAndAssert(ctx, "<MAKE-RPOINT 'RPOINT-X 123 'RPOINT-Y 456>",
-               ZilHash.Parse(ctx, new ZilObject[] { rpointAtom, new ZilVector(new ZilFix(456), new ZilFix(123)) }));
+                new ZilStructuredHash(rpointAtom, PrimType.VECTOR, new ZilVector(new ZilFix(456), new ZilFix(123))));
             TestHelpers.EvalAndAssert(ctx, "<RPOINT-Y #RPOINT [234 567]>",
                 new ZilFix(234));
         }
@@ -220,7 +220,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y FIX)>");
 
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT>",
-                ZilHash.Parse(ctx, new ZilObject[] { pointAtom, new ZilVector(new ZilFix(0), new ZilFix(0)) }));
+                new ZilStructuredHash(pointAtom, PrimType.VECTOR, new ZilVector(new ZilFix(0), new ZilFix(0))));
         }
 
         [TestMethod]
@@ -231,11 +231,10 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT FOO VECTOR (FOO-A ATOM) (FOO-B <OR FIX FALSE>)>");
 
             TestHelpers.EvalAndAssert(ctx, "<MAKE-FOO BAR>",
-                ZilHash.Parse(ctx, new ZilObject[]
-                {
+                new ZilStructuredHash(
                     ZilAtom.Parse("FOO", ctx),
-                    new ZilVector(ZilAtom.Parse("BAR", ctx), ctx.FALSE)
-                }));
+                    PrimType.VECTOR,
+                    new ZilVector(ZilAtom.Parse("BAR", ctx), ctx.FALSE)));
         }
 
         [TestMethod]
@@ -265,9 +264,9 @@ namespace ZilfTests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFSTRUCT POINT VECTOR (POINT-X FIX) (POINT-Y <OR FIX FORM>)>");
 
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT-X <+ 1 2> 'POINT-Y '<+ 3 4>>",
-                ZilHash.Parse(ctx, new ZilObject[]
-                {
+                new ZilStructuredHash(
                     ZilAtom.Parse("POINT", ctx),
+                    PrimType.VECTOR,
                     new ZilVector(
                         new ZilFix(3),
                         new ZilForm(new ZilObject[]
@@ -275,8 +274,7 @@ namespace ZilfTests.Interpreter
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(3),
                             new ZilFix(4)
-                        }))
-                }));
+                        }))));
         }
 
         [TestMethod]

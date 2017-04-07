@@ -217,6 +217,7 @@
     <Compile Include="Interpreter\Subrs.Structures.cs" />
     <Compile Include="Interpreter\Subrs.Types.cs" />
     <Compile Include="Interpreter\Subrs.ZModel.cs" />
+    <Compile Include="Interpreter\Values\ZilHashBase.cs" />
     <Compile Include="Interpreter\Values\ZilListBase.cs" />
     <Compile Include="Interpreter\Values\ZilActivation.cs" />
     <Compile Include="Interpreter\Values\ZilAdecl.cs" />

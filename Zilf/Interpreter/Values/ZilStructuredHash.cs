@@ -15,92 +15,40 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinMeta]
-    class ZilStructuredHash : ZilHash, IStructure
+    sealed class ZilStructuredHash : ZilHashBase<IStructure>, IStructure
     {
-        // TODO: make primvalue IStructure
-        public ZilStructuredHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
-            : base(type, primtype, primvalue)
-        {
-        }
+        public ZilStructuredHash(ZilAtom type, PrimType primType, IStructure primValue)
+            : base(type, primType, primValue) { }
 
-        public override bool Equals(object obj)
-        {
-            return (obj is ZilStructuredHash hash && hash.type == this.type &&
-                    hash.primvalue.Equals(this.primvalue));
-        }
+        public override ZilObject GetPrimitive(Context ctx) => (ZilObject)primValue;
 
-        public override int GetHashCode()
-        {
-            return type.GetHashCode() ^ primvalue.GetHashCode();
-        }
+        public IEnumerator<ZilObject> GetEnumerator() => primValue.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        #region IStructure Members
-
-        public ZilObject GetFirst()
-        {
-            return ((IStructure)primvalue).GetFirst();
-        }
-
-        public IStructure GetRest(int skip)
-        {
-            return ((IStructure)primvalue).GetRest(skip);
-        }
-
-        public IStructure GetBack(int skip)
-        {
-            return ((IStructure)primvalue).GetBack(skip);
-        }
-
-        public IStructure GetTop()
-        {
-            return ((IStructure)primvalue).GetTop();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            ((IStructure)primvalue).Grow(end, beginning, defaultValue);
-        }
-
-        public bool IsEmpty => ((IStructure)primvalue).IsEmpty;
+        public ZilObject GetFirst() => primValue.GetFirst();
+        public IStructure GetRest(int skip) => primValue.GetRest(skip);
+        public IStructure GetBack(int skip) => primValue.GetBack(skip);
+        public IStructure GetTop() => primValue.GetTop();
 
         public ZilObject this[int index]
         {
-            get
-            {
-                return ((IStructure)primvalue)[index];
-            }
-            set
-            {
-                ((IStructure)primvalue)[index] = value;
-            }
+            get => primValue[index];
+            set => primValue[index] = value;
         }
 
-        public int GetLength()
-        {
-            return ((IStructure)primvalue).GetLength();
-        }
+        public bool IsEmpty => primValue.IsEmpty;
 
-        public int? GetLength(int limit)
-        {
-            return ((IStructure)primvalue).GetLength(limit);
-        }
+        public int GetLength() => primValue.GetLength();
+        public int? GetLength(int limit) => primValue.GetLength(limit);
 
-        #endregion
-
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            return ((IStructure)primvalue).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        public void Grow(int end, int beginning, ZilObject defaultValue) =>
+            primValue.Grow(end, beginning, defaultValue);
     }
 }
