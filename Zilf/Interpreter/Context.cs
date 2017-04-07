@@ -1085,9 +1085,8 @@ namespace Zilf.Interpreter
             {
                 case PrimType.LIST:
                 case PrimType.STRING:
-                case PrimType.TABLE:
                 case PrimType.VECTOR:
-                    chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, zo);
+                    chtypeDelegate = (ctx, zo) => new ZilStructuredHash(atom, primType, (IStructure)zo);
                     break;
 
                 default:

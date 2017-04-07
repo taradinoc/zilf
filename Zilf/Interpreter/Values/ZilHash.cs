@@ -15,81 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Diagnostics.Contracts;
-using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
-    // TODO: make ZilHash an abstract base class
     [BuiltinMeta]
-    class ZilHash : ZilObject
+    sealed class ZilHash : ZilHashBase<ZilObject>
     {
-        protected readonly ZilAtom type;
-        protected readonly PrimType primtype;
-        protected readonly ZilObject primvalue;
-
         internal ZilHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
+            : base(type, primtype, primvalue)
         {
-            this.type = type;
-            this.primtype = primtype;
-            this.primvalue = primvalue;
+            Contract.Requires(!(primvalue is IStructure));
         }
 
-        public override bool Equals(object obj)
-        {
-            return (obj is ZilHash hash && hash.type == this.type &&
-                    hash.primvalue.Equals(this.primvalue));
-        }
-
-        public override int GetHashCode() =>
-            type.GetHashCode() ^ primvalue.GetHashCode();
-
-        public ZilAtom Type => type;
-
-        // TODO: eliminate ZilHash.Parse in favor of Context.ChangeType
-        public static ZilObject Parse(Context ctx, ZilObject[] initializer)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(initializer != null);
-
-            if (initializer.Length != 2 || !(initializer[0] is ZilAtom type) || !(initializer[1] is ZilObject value))
-                throw new ArgumentException("Expected 2 objects, the first a ZilAtom");
-
-            return ctx.ChangeType(value, type);
-        }
-
-        public override string ToString() => "#" + type + " " + primvalue;
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            if (Recursion.TryLock(this))
-            {
-                try
-                {
-                    var del = ctx.GetPrintTypeDelegate(type);
-                    if (del != null)
-                    {
-                        return del(this);
-                    }
-
-                    return "#" + type.ToStringContext(ctx, friendly) + " " + primvalue.ToStringContext(ctx, friendly);
-                }
-                finally
-                {
-                    Recursion.Unlock(this);
-                }
-            }
-
-            return "#" + type.Text + "...";
-        }
-
-        public override ZilAtom GetTypeAtom(Context ctx) => type;
-
-        public override StdAtom StdTypeAtom => type.StdAtom;
-
-        public override PrimType PrimType => primtype;
-
-        public override ZilObject GetPrimitive(Context ctx) => primvalue;
+        public override ZilObject GetPrimitive(Context ctx) => primValue;
     }
 }
