@@ -201,6 +201,8 @@ namespace Zilf.Diagnostics
         public const int _0_1_Element1s_Requested_But_Only_2_Available = 315;
         [Message("templates cannot be used here")]
         public const int Templates_Cannot_Be_Used_Here = 316;
+        [Message("{0}: unaligned table read: element at {1} offset {2} is not a {1}")]
+        public const int _0_Unaligned_Table_Read_Element_At_1_Offset_2_Is_Not_A_1 = 317;
 
         // Z-machine Structures - 0400
 

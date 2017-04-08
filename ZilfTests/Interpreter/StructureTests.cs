@@ -409,6 +409,46 @@ namespace ZilfTests.Interpreter
         }
 
         [TestMethod]
+        public void ZREST_Works_On_New_TABLE_Types()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<NEWTYPE FOO TABLE>");
+            var rested = TestHelpers.Evaluate(ctx, "<ZREST <CHTYPE <TABLE 1 2 3> FOO> 2>");
+            Assert.IsInstanceOfType(rested, typeof(ZilTable));
+
+            rested = TestHelpers.Evaluate(ctx, "<ZREST <CHTYPE <ZREST <TABLE 1 2 3> 2> FOO> 2>");
+            Assert.IsInstanceOfType(rested, typeof(ZilTable));
+        }
+
+        [TestMethod]
+        public void Can_Access_Unaligned_Word_After_ZREST()
+        {
+            TestHelpers.EvalAndAssert("<ZGET <ZREST <ITABLE BYTE 1 100 101 102> 1> 0>", new ZilFix(100));
+            TestHelpers.EvalAndAssert("<ZPUT <ZREST <ITABLE BYTE 1 100 101 102> 1> 0 99>", new ZilFix(99));
+        }
+
+        [TestMethod]
+        public void Access_Past_End_Of_Table_Fails()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<ZREST <TABLE 1> 100>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<ZGET <TABLE 1> 100>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<ZPUT <TABLE 1> 100 0>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<GETB <TABLE 1> 100>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<PUTB <TABLE 1> 100 0>");
+        }
+
+        [TestMethod]
+        public void Unaligned_Access_To_Table_Fails()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>("<ZGET <TABLE (BYTE) 1 2 3> 0>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<GETB <TABLE 1 2 3> 0>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<GETB <TABLE 1 2 3> 1>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>("<ZGET <ZREST <TABLE (BYTE) 1 2 3> 1> 0>");
+            TestHelpers.EvalAndCatch<InterpreterError>("<GETB <ZREST <TABLE 1 2 3> 2> 0>");
+        }
+
+        [TestMethod]
         public void SUBSTRUC_With_One_Argument_Returns_A_Primitive_Copy()
         {
             TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3)>",

@@ -716,9 +716,26 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            if (index < 0)
+                throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZGET");
+
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            return table.GetWord(ctx, index) ?? ctx.FALSE;
+            if (index > table.ByteCount - 2)
+                throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "ZGET");
+
+            try
+            {
+                return table.GetWord(ctx, index) ?? ctx.FALSE;
+            }
+            catch (UnalignedTableReadException)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Unaligned_Table_Read_Element_At_1_Offset_2_Is_Not_A_1,
+                    "ZGET",
+                    "word",
+                    index);
+            }
         }
 
         [Subr]
@@ -726,7 +743,13 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            if (index < 0)
+                throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZPUT");
+
             var table = (ZilTable)tableish.GetPrimitive(ctx);
+
+            if (index > table.ByteCount - 2)
+                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "ZPUT");
 
             table.PutWord(ctx, index, newValue);
             return newValue;
@@ -737,9 +760,26 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            if (index < 0)
+                throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "GETB");
+
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            return table.GetByte(ctx, index) ?? ctx.FALSE;
+            if (index >= table.ByteCount)
+                throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "GETB");
+
+            try
+            {
+                return table.GetByte(ctx, index) ?? ctx.FALSE;
+            }
+            catch (UnalignedTableReadException)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Unaligned_Table_Read_Element_At_1_Offset_2_Is_Not_A_1,
+                    "GETB",
+                    "byte",
+                    index);
+            }
         }
 
         [Subr]
@@ -747,22 +787,30 @@ namespace Zilf.Interpreter
         {
             SubrContracts(ctx);
 
+            if (index < 0)
+                throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "PUTB");
+
             var table = (ZilTable)tableish.GetPrimitive(ctx);
+
+            if (index >= table.ByteCount)
+                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTB");
 
             table.PutByte(ctx, index, newValue);
             return newValue;
         }
 
         [Subr]
-        public static ZilObject ZREST(Context ctx, ZilTable table, int bytes)
+        public static ZilObject ZREST(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int bytes)
         {
             SubrContracts(ctx);
 
             if (bytes < 0)
-                throw new InterpreterError(
-                    InterpreterMessages._0_Expected_1,
-                    "ZREST: arg 2",
-                    "non-negative FIX");
+                throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZREST");
+
+            var table = (ZilTable)tableish.GetPrimitive(ctx);
+
+            if (bytes > table.ByteCount)
+                throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "ZREST");
 
             return table.OffsetByBytes(ctx, bytes);
         }
