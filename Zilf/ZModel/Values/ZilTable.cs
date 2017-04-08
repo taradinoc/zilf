@@ -17,6 +17,7 @@
  */
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -33,6 +34,19 @@ namespace Zilf.ZModel.Values
     /// <returns>The converted element.</returns>
     delegate T TableToArrayElementConverter<T>(ZilObject tableElement, bool isWord);
 
+    /// <summary>
+    /// Thrown when attempting to read a byte from a location in a <see cref="ZilTable"/>
+    /// that contains a word, or vice versa.
+    /// </summary>
+    [Serializable]
+    public sealed class UnalignedTableReadException : Exception
+    {
+        public UnalignedTableReadException() { }
+
+        UnalignedTableReadException(SerializationInfo info, StreamingContext context)
+            : base(info, context) { }
+    }
+
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
     abstract class ZilTable : ZilObject, IProvideStructureForDeclCheck
     {
@@ -40,6 +54,7 @@ namespace Zilf.ZModel.Values
 
         public abstract TableFlags Flags { get; }
         public abstract int ElementCount { get; }
+        public abstract int ByteCount { get; }
 
         public abstract ZilObject GetWord(Context ctx, int offset);
         public abstract ZilObject GetByte(Context ctx, int offset);
@@ -118,10 +133,10 @@ namespace Zilf.ZModel.Values
 
             [ChtypeMethod]
             public OriginalTable(OriginalTable other)
-            : this(other.repetitions,
-                   (ZilObject[])other.initializer?.Clone(),
-                   other.flags,
-                   (ZilObject[])other.pattern?.Clone())
+                : this(other.repetitions,
+                       (ZilObject[])other.initializer?.Clone(),
+                       other.flags,
+                       (ZilObject[])other.pattern?.Clone())
             {
                 Contract.Requires(other != null);
 
@@ -142,6 +157,35 @@ namespace Zilf.ZModel.Values
             int ElementCountWithoutLength => initializer == null ? repetitions : repetitions * initializer.Length;
             [Pure]
             public override int ElementCount => ElementCountWithoutLength + (HasLengthPrefix ? 1 : 0);
+
+            public override int ByteCount
+            {
+                get
+                {
+                    int result;
+
+                    if (HasLengthPrefix)
+                    {
+                        result = IsWord(-1) ? 2 : 1;
+                    }
+                    else
+                    {
+                        result = 0;
+                    }
+
+                    // initialize cache if needed
+                    var elemOffsets = GetElementToByteOffsets();
+
+                    if (elemOffsets.Length > 0)
+                    {
+                        var last = elemOffsets.Length - 1;
+                        result += elemOffsets[last];
+                        result += IsWord(last) ? 2 : 1;
+                    }
+
+                    return result;
+                }
+            }
 
             public override TableFlags Flags
             {
@@ -191,20 +235,43 @@ namespace Zilf.ZModel.Values
             {
                 var sb = new StringBuilder();
 
-                sb.Append("#TABLE (");
-                sb.Append(repetitions);
-                sb.Append(" (");
+                var useItable =
+                    repetitions != 1 ||
+                    initializer == null ||
+                    ((flags & (TableFlags.ByteLength | TableFlags.Byte)) == TableFlags.ByteLength) ||
+                    ((flags & (TableFlags.WordLength | TableFlags.Byte)) == (TableFlags.WordLength | TableFlags.Byte));
+
+                if (useItable)
+                {
+                    sb.Append("%<ITABLE ");
+
+                    if ((flags & TableFlags.ByteLength) != 0)
+                    {
+                        sb.Append("BYTE ");
+                    }
+                    else if ((flags & TableFlags.WordLength) != 0)
+                    {
+                        sb.Append("WORD ");
+                    }
+
+                    sb.Append(repetitions);
+                    sb.Append(' ');
+                }
+                else
+                {
+                    sb.Append("%<TABLE ");
+                }
+
+                sb.Append('(');
 
                 int pos = sb.Length;
 
                 if ((flags & TableFlags.Byte) != 0)
                     sb.Append("BYTE ");
-                if ((flags & TableFlags.ByteLength) != 0)
-                    sb.Append("BYTELENGTH ");
+                if (!useItable && HasLengthPrefix)
+                    sb.Append("LENGTH ");
                 if ((flags & TableFlags.Lexv) != 0)
                     sb.Append("LEXV ");
-                if ((flags & TableFlags.WordLength) != 0)
-                    sb.Append("WORDLENGTH ");
                 if ((flags & TableFlags.Pure) != 0)
                     sb.Append("PURE ");
                 if ((flags & TableFlags.TempTable) != 0)
@@ -220,22 +287,18 @@ namespace Zilf.ZModel.Values
                 if (sb.Length > pos)
                     sb.Length--;
 
-                sb.Append(") (");
+                sb.Append(')');
+
                 if (initializer != null)
                 {
-                    bool first = true;
                     foreach (ZilObject obj in initializer)
                     {
-                        if (!first)
-                            sb.Append(' ');
-
-                        first = false;
+                        sb.Append(' ');
                         sb.Append(convert(obj));
                     }
                 }
-                sb.Append(')');
 
-                sb.Append(')');
+                sb.Append('>');
                 return sb.ToString();
             }
 
@@ -350,13 +413,11 @@ namespace Zilf.ZModel.Values
             /// <summary>
             /// Returns the index of the table element located at the given byte offset.
             /// </summary>
-            /// <param name="ctx">The context.</param>
             /// <param name="offset">The byte offset.</param>
             /// <returns>-1 if the length prefix is at the given offset, or a 0-based index if a table element
-            /// is at the given offset, or <b>null</b> if </returns>
-            internal int? ByteOffsetToIndex(Context ctx, int offset)
+            /// is at the given offset, or <b>null</b> if the offset does not point to an element.</returns>
+            internal int? ByteOffsetToIndex(int offset)
             {
-                Contract.Requires(ctx != null);
                 Contract.Requires(offset >= 0);
                 Contract.Ensures(Contract.Result<int?>() == null || (Contract.Result<int?>().Value >= -1 && Contract.Result<int?>().Value < ElementCountWithoutLength));
                 Contract.Ensures(Contract.Result<int?>() >= 0 || HasLengthPrefix);
@@ -380,10 +441,20 @@ namespace Zilf.ZModel.Values
                     offset -= 2;
                 }
 
-                // initialize cache if necessary
+                // binary search to find the element
+                var index = Array.BinarySearch(GetElementToByteOffsets(), offset);
+                return index >= 0 ? index : (int?)null;
+            }
+
+            private int[] GetElementToByteOffsets()
+            {
+                Contract.Ensures(Contract.Result<int[]>() != null);
+                Contract.Ensures(Contract.ValueAtReturn(out elementToByteOffsets) != null);
+
                 if (elementToByteOffsets == null)
                 {
                     elementToByteOffsets = new int[ElementCountWithoutLength];
+
                     for (int i = 0, nextOffset = 0; i < elementToByteOffsets.Length; i++)
                     {
                         elementToByteOffsets[i] = nextOffset;
@@ -395,39 +466,45 @@ namespace Zilf.ZModel.Values
                     }
                 }
 
-                // binary search to find the element
-                var index = Array.BinarySearch(elementToByteOffsets, offset);
-                return index >= 0 ? index : (int?)null;
+                return elementToByteOffsets;
             }
 
             public override ZilObject GetWord(Context ctx, int offset)
             {
-                // convert word offset to byte offset
-                offset *= 2;
+                return GetWordAtByte(ctx, offset * 2);
+            }
 
-                var index = ByteOffsetToIndex(ctx, offset);
-                if (index == null)
-                    throw new ArgumentException(string.Format("No element at offset {0}", offset));
-                if (!IsWord(index.Value))
-                    throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
+            public ZilObject GetWordAtByte(Context ctx, int byteOffset)
+            {
+                // FIXME: workaround for CSC bug
+                // https://developercommunity.visualstudio.com/content/problem/41565/pattern-matching-is-operator-evaluates-nullable-ex.html
+                var temp = ByteOffsetToIndex(byteOffset);
+                if (temp is int index && IsWord(index))
+                {
+                    if (index == -1)
+                        return new ZilFix(ElementCountWithoutLength);
 
-                if (index == -1)
-                    return new ZilFix(ElementCountWithoutLength);
+                    if (initializer == null)
+                        return null;
 
-                if (initializer == null)
-                    return null;
-
-                return initializer[index.Value % initializer.Length];
+                    return initializer[index % initializer.Length];
+                }
+                else
+                {
+                    throw new UnalignedTableReadException();
+                }
             }
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
             {
-                // convert word offset to byte offset
-                offset *= 2;
+                PutWordAtByte(ctx, offset * 2, value);
+            }
 
-                var index = ByteOffsetToIndex(ctx, offset);
+            public void PutWordAtByte(Context ctx, int byteOffset, ZilObject value)
+            {
+                var index = ByteOffsetToIndex(byteOffset);
                 if (index == null)
-                    throw new ArgumentException(string.Format("No element at offset {0}", offset));
+                    throw new ArgumentException(string.Format("No element at offset {0}", byteOffset));
 
                 if (index == -1)
                 {
@@ -438,9 +515,9 @@ namespace Zilf.ZModel.Values
                 if (!IsWord(index.Value))
                 {
                     // we may be able to replace 2 bytes with a word
-                    var index2 = ByteOffsetToIndex(ctx, offset + 1);
+                    var index2 = ByteOffsetToIndex(byteOffset + 1);
                     if (index2 == null || IsWord(index2.Value))
-                        throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", offset));
+                        throw new ArgumentException(string.Format("Element at byte offset {0} is not a word", byteOffset));
 
                     // remove one of the bytes from the initializer...
                     if (initializer == null || repetitions > 1)
@@ -488,19 +565,23 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetByte(Context ctx, int offset)
             {
-                var index = ByteOffsetToIndex(ctx, offset);
-                if (index == null)
-                    throw new ArgumentException(string.Format("No element at offset {0}", offset));
-                if (IsWord(index.Value))
-                    throw new ArgumentException(string.Format("Element at byte offset {0} is not a byte", offset));
+                // FIXME: workaround for CSC bug
+                // https://developercommunity.visualstudio.com/content/problem/41565/pattern-matching-is-operator-evaluates-nullable-ex.html
+                var temp = ByteOffsetToIndex(offset);
+                if (temp is int index && !IsWord(index))
+                {
+                    if (index == -1)
+                        return new ZilFix((byte)ElementCountWithoutLength);
 
-                if (index == -1)
-                    return new ZilFix((byte)ElementCountWithoutLength);
+                    if (initializer == null)
+                        return null;
 
-                if (initializer == null)
-                    return null;
-
-                return initializer[index.Value % initializer.Length];
+                    return initializer[index % initializer.Length];
+                }
+                else
+                {
+                    throw new UnalignedTableReadException();
+                }
             }
 
             public override void PutByte(Context ctx, int offset, ZilObject value)
@@ -508,12 +589,12 @@ namespace Zilf.ZModel.Values
                 if (initializer == null || repetitions > 1)
                     ExpandInitializer(ctx.FALSE);
 
-                var index = ByteOffsetToIndex(ctx, offset);
+                var index = ByteOffsetToIndex(offset);
                 bool second = false;
                 if (index == null)
                 {
                     // might be the second byte of a word
-                    index = ByteOffsetToIndex(ctx, offset - 1);
+                    index = ByteOffsetToIndex(offset - 1);
                     if (index != null && IsWord(index.Value))
                     {
                         second = true;
@@ -621,7 +702,7 @@ namespace Zilf.ZModel.Values
             readonly int byteOffset;
 
             // This may unexpectedly change when items in orig before byteOffset change from bytes to words!
-            int ElementOffset => (int)orig.ByteOffsetToIndex(ctx, byteOffset);
+            int ElementOffset => (int)orig.ByteOffsetToIndex(byteOffset);
 
             public OffsetTable(Context ctx, OriginalTable orig, int byteOffset)
             {
@@ -631,6 +712,7 @@ namespace Zilf.ZModel.Values
             }
 
             public override int ElementCount => orig.ElementCount - ElementOffset;
+            public override int ByteCount => orig.ByteCount - byteOffset;
             public override TableFlags Flags => orig.Flags & ~(TableFlags.ByteLength | TableFlags.WordLength);
 
             public override void CopyTo<T>(T[] array, TableToArrayElementConverter<T> convert, T defaultFiller, Context ctx)
@@ -643,12 +725,15 @@ namespace Zilf.ZModel.Values
 
             protected override string ToString(Func<ZilObject, string> convert)
             {
-                return string.Format("#TABLE ('OFFSET {0} {1})", byteOffset, orig.ToString(convert));
+                // strip initial '%' from original table representation
+                var origStr = orig.ToString(convert).Substring(1);
+
+                return string.Format("%<ZREST {0} {1}>", origStr, byteOffset);
             }
 
             public override ZilObject GetWord(Context ctx, int offset)
             {
-                return orig.GetWord(ctx, offset + this.byteOffset / 2);
+                return orig.GetWordAtByte(ctx, offset * 2 + this.byteOffset);
             }
 
             public override ZilObject GetByte(Context ctx, int offset)
@@ -658,7 +743,7 @@ namespace Zilf.ZModel.Values
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
             {
-                orig.PutWord(ctx, offset + this.byteOffset / 2, value);
+                orig.PutWordAtByte(ctx, offset * 2 + this.byteOffset, value);
             }
 
             public override void PutByte(Context ctx, int offset, ZilObject value)
