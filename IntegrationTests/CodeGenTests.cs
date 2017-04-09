@@ -629,5 +629,13 @@ namespace IntegrationTests
                 .WithGlobal("<CONSTANT MY-TABLE <TABLE 1 2 3 4>>")
                 .GeneratesCodeMatching(@"MY-TABLE\+2");
         }
+
+        [TestMethod]
+        public void VALUE_VARNAME_Does_Not_Use_An_Instruction()
+        {
+            AssertRoutine("", "<VALUE MY-GLOBAL>")
+                .WithGlobal("<GLOBAL MY-GLOBAL 123>")
+                .GeneratesCodeMatching("RETURN MY-GLOBAL");
+        }
     }
 }

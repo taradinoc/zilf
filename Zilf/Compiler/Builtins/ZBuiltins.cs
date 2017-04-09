@@ -1729,8 +1729,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitBinary(BinaryOp.FlushUserStack, count, stack, null);
         }
 
-        // TODO: support the IVariable, SoftGlobal, and IOperand versions side by side? that way we can skip emitting an instruction for <VALUE VARNAME>
-        /*[Builtin("VALUE")]
+        [Builtin("VALUE", Priority = 1)]
         public static IOperand ValueOp_Variable(ValueCall c, [Variable] IVariable var)
         {
             if (var == c.rb.Stack)
@@ -1742,9 +1741,9 @@ namespace Zilf.Compiler.Builtins
             {
                 return var;
             }
-        }*/
+        }
 
-        [Builtin("VALUE")]
+        [Builtin("VALUE", Priority = 2)]
         public static IOperand ValueOp_Operand(ValueCall c, [Variable] IOperand value)
         {
             Contract.Requires(value != null);
