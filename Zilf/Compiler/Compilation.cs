@@ -31,16 +31,16 @@ namespace Zilf.Compiler
         /// <summary>
         /// The ZIL context that resulted from loading the source code.
         /// </summary>
-        public Context Context { get; private set; }
+        public Context Context { get; }
         /// <summary>
         /// The game being built.
         /// </summary>
-        public IGameBuilder Game { get; private set; }
+        public IGameBuilder Game { get; }
         /// <summary>
         /// True if debug information should be generated (i.e. if the user
         /// wants it and the game builder supports it).
         /// </summary>
-        public bool WantDebugInfo { get; private set; }
+        public bool WantDebugInfo { get; }
 
         Compilation(Context ctx, IGameBuilder game, bool wantDebugInfo)
         {
