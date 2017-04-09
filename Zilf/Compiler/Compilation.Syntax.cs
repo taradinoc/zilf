@@ -31,7 +31,7 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        IDictionary<string, ITableBuilder> BuildSyntaxTables()
+        void BuildEarlySyntaxTables()
         {
             var dict = new Dictionary<string, ITableBuilder>();
 
@@ -41,7 +41,8 @@ namespace Zilf.Compiler
             else
                 BuildOldFormatSyntaxTables(dict);
 
-            return dict;
+            foreach (var pair in dict)
+                Constants.Add(Context.RootObList[pair.Key], pair.Value);
         }
 
         void BuildOldFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)

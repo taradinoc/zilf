@@ -1117,9 +1117,7 @@ namespace Zilf.Interpreter
         public static ZilObject LANGUAGE(Context ctx, ZilAtom name, char escapeChar = '%', bool changeChrset = true)
         {
             SubrContracts(ctx);
-
-            var language = ZModel.Language.Get(name.Text);
-            if (language == null)
+            var language = ZModel.Language.Get(name.Text) ??
                 throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "LANGUAGE", "language", name.Text);
 
             // update language, escape char, and possibly charset

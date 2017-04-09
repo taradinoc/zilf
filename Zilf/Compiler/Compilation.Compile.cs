@@ -30,7 +30,6 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.Compiler
 {
-    // TODO: split up this class/file
     partial class Compilation
     {
         public static void Compile(Context ctx, IGameBuilder gb)
@@ -41,271 +40,189 @@ namespace Zilf.Compiler
 
         void Compile()
         {
-            var ctx = Context;
-            var gb = Game;
+            /* Many of these compilation steps invoke the interpreter.
+             * Interpreted code can observe changes in the global state during compilation,
+             * and it may expect parts of that state to be set before it runs.
+             * Thus, the relative order of these steps should be preserved.
+             */
 
-            /* the various structures need to be defined in the right order so
-             * that symbols like P?FOO, V?FOO, etc. are always defined before
-             * they could possibly be used. */
+            PrepareEarlyRoutineBuilders();
+            PreparePropertyBuilders();
+            PrepareHighestFlagBuilders();
+            PrepareObjectBuilders(out ZilModelObject lastObject);
+            PrepareTableBuilders();
 
-            // builders for routines
-            if (ctx.ZEnvironment.EntryRoutineName == null)
-                ctx.ZEnvironment.EntryRoutineName = ctx.GetStdAtom(StdAtom.GO);
+            PrepareSelfInsertingBreaks();
+            PreparePunctuationWords(out Dictionary<string, string> punctWords);
+            PrepareBuzzWords();
+            PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges);
+            DefineVocabWords();
+            PreparePunctuationAliasesAndPlanMerges(punctWords, vocabMerges);
+            PerformVocabMerges(vocabMerges);
+            PrepareLateSyntaxTableBuilders();
+            BuildEarlySyntaxTables();
+            CopyVocabSynonymValues();
 
-            foreach (ZilRoutine routine in ctx.ZEnvironment.Routines)
-                Routines.Add(routine.Name, gb.DefineRoutine(
-                    routine.Name.ToString(),
-                    routine.Name == ctx.ZEnvironment.EntryRoutineName,
-                    (routine.Flags & RoutineFlags.CleanStack) != 0));
+            PrepareFlagAliases();
+            EnforceFlagLimit();
 
-            // builders and constants for some properties
-            foreach (ZilAtom dir in ctx.ZEnvironment.Directions)
-                DefineProperty(dir);
+            PrepareAndCheckGlobalStorage(out string[] reservedGlobals);
+            PrepareConstantBuilders(lastObject);
+            PrepareLongWordTableBuilder(out ITableBuilder longWordTable);
+            PrepareVocabConstant();
+            PrepareHardGlobalBuilders();
+            PrepareReservedGlobalBuilders(reservedGlobals);
+            PreparePropertyDefaults();
+            PrepareLateRoutineBuilders();
 
-            // create a constant for the last explicitly defined direction
-            if (ctx.ZEnvironment.LowDirection != null)
-                Constants.Add(ctx.GetStdAtom(StdAtom.LOW_DIRECTION),
-                    Properties[ctx.ZEnvironment.LowDirection]);
+            EnterZilch();
+            GenerateRoutineCode();
+            ExitZilch();
 
-            // builders and constants for some more properties
-            foreach (KeyValuePair<ZilAtom, ZilObject> pair in ctx.ZEnvironment.PropertyDefaults)
-                DefineProperty(pair.Key);
+            BuildObjects();
 
-            // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
-            ZilAtom getOriginal(ZilAtom flag) =>
-                ctx.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
-            var highestFlags =
-                ctx.ZEnvironment.FlagsOrderedLast
-                    .Concat(
-                        from syn in ctx.ZEnvironment.Syntaxes
-                        from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
-                        where flag != null
-                        select getOriginal(flag))
-                    .Distinct()
-                    .ToList();
+            BuildVocabWords(longWordTable, out Queue<IWord> longWords);
 
-            if (highestFlags.Count >= Game.MaxFlags)
-                ctx.HandleError(new CompilerError(
-                    CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
-                    "flags requiring high numbers",
-                    highestFlags.Count,
-                    Game.MaxFlags));
+            BuildLongWordTable(longWordTable, longWords);
+            BuildLateSyntaxTables();
+            BuildUserDefinedTables();
+            BuildHeaderExtensionTable();
 
-            foreach (var flag in highestFlags)
-                DefineFlag(flag);
+            Game.Finish();
+        }
 
-            // builders for objects
-            ZilModelObject lastObject = null;
+        private void BuildUserDefinedTables()
+        {
+            // build tables
+            foreach (KeyValuePair<ZilTable, ITableBuilder> pair in Tables)
+                BuildTable(pair.Key, pair.Value);
+        }
 
-            foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInDefinitionOrder())
+        private void BuildLongWordTable(ITableBuilder longWordTable, Queue<IWord> longWords)
+        {
+            if (longWords != null)
             {
-                lastObject = obj;
-                Objects.Add(obj.Name, gb.DefineObject(obj.Name.ToString()));
-                // builders for the rest of the properties and flags,
-                // and vocabulary for names
-                PreBuildObject(obj);
+                longWordTable.AddShort((short)longWords.Count);
+                while (longWords.Count > 0)
+                {
+                    var word = longWords.Dequeue();
+                    longWordTable.AddShort(Vocabulary[word]);
+                    longWordTable.AddShort(this.Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
+                }
             }
+        }
 
-            // builders for tables
-            ITableBuilder firstPureTable = null;
-            Func<ZilTable, int> parserTablesFirst = t => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
-            foreach (ZilTable table in ctx.ZEnvironment.Tables.OrderBy(parserTablesFirst))
+        private void BuildVocabWords(ITableBuilder longWordTable, out Queue<IWord> longWords)
+        {
+            // build vocabulary
+            longWords = (longWordTable == null ? null : new Queue<IWord>());
+
+            var helpers = new WriteToBuilderHelpers
             {
-                bool pure = (table.Flags & TableFlags.Pure) != 0;
-                var builder = gb.DefineTable(table.Name, pure);
-                Tables.Add(table, builder);
-
-                if (pure && firstPureTable == null)
-                    firstPureTable = builder;
-            }
-
-            if (firstPureTable != null)
-                Constants.Add(ctx.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
-
-            // self-inserting breaks
-            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks)
-            {
-                gb.SelfInsertingBreaks.Clear();
-                foreach (var c in siBreaks.Text)
-                    gb.SelfInsertingBreaks.Add(c);
-            }
-
-            // builders for vocabulary
-            // vocabulary for punctuation
-            var punctWords = new Dictionary<string, string>
-            {
-                { "PERIOD", "." },
-                { "COMMA", "," },
-                { "QUOTE", "\"" },
-                { "APOSTROPHE", "'" }
+                CompileConstant = CompileConstant,
+                DirIndexToPropertyOperand = di => Properties[Context.ZEnvironment.Directions[di]]
             };
 
-            foreach (var symbol in punctWords.Values)
+            var builtWords = new HashSet<IWordBuilder>();
+            foreach (var pair in Vocabulary)
             {
-                var symbolAtom = ZilAtom.Parse(symbol, ctx);
-                ctx.ZEnvironment.GetVocab(symbolAtom);
-            }
+                IWord word = pair.Key;
+                IWordBuilder wb = pair.Value;
 
-            foreach (var pair in ctx.ZEnvironment.Buzzwords)
-            {
-                ctx.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
-            }
+                if (builtWords.Contains(wb))
+                    continue;
 
-            var vocabMerges = new Dictionary<IWord, IWord>();
-            ctx.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
-            {
-                Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
-                vocabMerges.Add(duplicateWord, mainWord);
-            });
+                builtWords.Add(wb);
 
-            foreach (IWord word in ctx.ZEnvironment.Vocabulary.Values)
-            {
-                DefineWord(word);
-            }
+                this.Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
 
-            foreach (var pair in punctWords)
-            {
-                var nameAtom = ZilAtom.Parse(pair.Key, ctx);
-                var symbolAtom = ZilAtom.Parse(pair.Value, ctx);
-
-                if (ctx.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out var symbolWord) &&
-                    !ctx.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
+                if (longWords != null && Context.ZEnvironment.IsLongWord(word))
                 {
-                    var nameWord = ctx.ZEnvironment.VocabFormat.CreateWord(nameAtom);
-                    ctx.ZEnvironment.VocabFormat.MakeSynonym(nameWord, symbolWord);
-                    vocabMerges.Add(nameWord, symbolWord);
+                    longWords.Enqueue(word);
                 }
             }
+        }
 
-            string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
-
-            foreach (var pair in vocabMerges)
+        private void BuildObjects()
+        {
+            // build objects
+            foreach (ZilModelObject obj in Context.ZEnvironment.ObjectsInInsertionOrder())
             {
-                IWord dupWord = pair.Key, mainWord = pair.Value;
-                Vocabulary[dupWord] = Vocabulary[mainWord];
-
-                foreach (var prefix in wordConstantPrefixes)
+                IObjectBuilder ob = Objects[obj.Name];
+                try
                 {
-                    var mainAtom = ZilAtom.Parse(prefix + mainWord.Atom.Text, ctx);
-
-                    if (Constants.TryGetValue(mainAtom, out var value))
+                    using (DiagnosticContext.Push(obj.SourceLine))
                     {
-                        var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, ctx);
-                        Constants[dupAtom] = value;
+                        BuildObject(obj, ob);
                     }
                 }
-            }
-
-            // constants and builders for late syntax tables
-            foreach (var name in ctx.ZEnvironment.VocabFormat.GetLateSyntaxTableNames())
-            {
-                var tb = Game.DefineTable(name, true);
-                var atom = ctx.RootObList[name];
-                Constants.Add(atom, tb);
-
-                // this hack lets macros use it as a compile-time value, as long as they don't access its contents
-                ctx.SetGlobalVal(atom, atom);
-            }
-
-            // early syntax tables
-            var syntaxTables = BuildSyntaxTables();
-            foreach (var pair in syntaxTables)
-                Constants.Add(ctx.RootObList[pair.Key], pair.Value);
-
-            // now that all the vocabulary is set up, copy values for synonyms
-            foreach (Synonym syn in ctx.ZEnvironment.Synonyms)
-                syn.Apply(ctx);
-
-            // may as well do bit synonyms here too
-            foreach (var pair in ctx.ZEnvironment.BitSynonyms)
-                DefineFlagAlias(pair.Key, pair.Value);
-
-            // enforce limit on number of flags
-            if (UniqueFlags > Game.MaxFlags)
-                Context.HandleError(new CompilerError(
-                    CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
-                    "flags",
-                    UniqueFlags,
-                    Game.MaxFlags));
-
-            // FUNNY-GLOBALS?
-            var reservedGlobals = ctx.ZEnvironment.VocabFormat.GetReservedGlobalNames();
-            if (ctx.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
-            {
-                // this sets StorageType for all variables, and creates the table and global if needed
-                DoFunnyGlobals(reservedGlobals.Length);
-            }
-            else
-            {
-                foreach (var g in ctx.ZEnvironment.Globals)
-                    g.StorageType = GlobalStorageType.Hard;
-
-                if (ctx.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
-                    Context.HandleError(new CompilerError(
-                        CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
-                        "globals",
-                        ctx.ZEnvironment.Globals.Count,
-                        240 - reservedGlobals.Length));
-            }
-
-            // builders and values for constants (which may refer to vocabulary,
-            // routines, tables, objects, properties, or flags)
-            foreach (ZilConstant constant in ctx.ZEnvironment.Constants)
-            {
-                IOperand value;
-                if (constant.Name.StdAtom == StdAtom.LAST_OBJECT && lastObject != null)
+                catch (ZilError ex)
                 {
-                    value = Objects[lastObject.Name];
-                }
-                else
-                {
-                    value = CompileConstant(constant.Value);
-                }
-
-                if (value == null)
-                {
-                    ctx.HandleError(new CompilerError(
-                        constant,
-                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
-                        "constant",
-                        constant.Name,
-                        constant.Value.ToStringContext(ctx, false)));
-                    value = gb.Zero;
-                }
-
-                Constants.Add(constant.Name, gb.DefineConstant(constant.Name.ToString(), value));
-            }
-
-            ITableBuilder longWordTable = null;
-            if (ctx.GetCompilationFlagOption(StdAtom.LONG_WORDS))
-            {
-                longWordTable = Game.DefineTable("LONG-WORD-TABLE", true);
-                Constants.Add(Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
-            }
-
-            Constants.Add(Context.GetStdAtom(StdAtom.VOCAB), Game.VocabularyTable);
-
-            // builders and values for globals (which may refer to constants)
-            foreach (ZilGlobal global in ctx.ZEnvironment.Globals)
-            {
-                if (global.StorageType == GlobalStorageType.Hard)
-                {
-                    var glb = gb.DefineGlobal(global.Name.ToString());
-                    glb.DefaultValue = GetGlobalDefaultValue(global);
-                    Globals.Add(global.Name, glb);
+                    Context.HandleError(ex);
                 }
             }
+        }
 
-            // implicitly defined globals
-            // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
-            foreach (var name in reservedGlobals)
+        private void ExitZilch()
+        {
+            // ...and we're done generating code
+            Context.DefineCompilationFlag(Context.GetStdAtom(StdAtom.IN_ZILCH), Context.FALSE, true);
+        }
+
+        private void GenerateRoutineCode()
+        {
+            // compile routines
+            IRoutineBuilder mainRoutine = null;
+
+            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
             {
-                var glb = Game.DefineGlobal(name);
-                Globals.Add(ctx.RootObList[name], glb);
+                bool entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
+                IRoutineBuilder rb = Routines[routine.Name];
+                try
+                {
+                    using (DiagnosticContext.Push(routine.SourceLine))
+                    {
+                        BuildRoutine(routine, rb, entryPoint);
+                    }
+                }
+                catch (ZilError ex)
+                {
+                    // could be a compiler error, or an interpreter error thrown by macro evaluation
+                    Context.HandleError(ex);
+                }
+                rb.Finish();
+
+                if (entryPoint)
+                    mainRoutine = rb;
             }
 
+            if (mainRoutine == null)
+                throw new CompilerError(CompilerMessages.Missing_GO_Routine);
+        }
+
+        private void EnterZilch()
+        {
+            // let macros know we're generating code now
+            Context.DefineCompilationFlag(Context.GetStdAtom(StdAtom.IN_ZILCH), Context.TRUE, true);
+        }
+
+        private void PrepareLateRoutineBuilders()
+        {
+            // builders for routines (again, in case any were added during compilation, e.g. by a PROPSPEC)
+            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
+            {
+                if (!Routines.ContainsKey(routine.Name))
+                    Routines.Add(routine.Name, Game.DefineRoutine(
+                        routine.Name.ToString(),
+                        routine.Name == Context.ZEnvironment.EntryRoutineName,
+                        (routine.Flags & RoutineFlags.CleanStack) != 0));
+            }
+        }
+
+        private void PreparePropertyDefaults()
+        {
             // default values for properties
-            foreach (KeyValuePair<ZilAtom, ZilObject> pair in ctx.ZEnvironment.PropertyDefaults)
+            foreach (KeyValuePair<ZilAtom, ZilObject> pair in Context.ZEnvironment.PropertyDefaults)
             {
                 try
                 {
@@ -320,124 +237,334 @@ namespace Zilf.Compiler
                                 CompilerMessages.Nonconstant_Initializer_For_0_1_2,
                                 "property default",
                                 pair.Key,
-                                pair.Value.ToStringContext(ctx, false));
+                                pair.Value.ToStringContext(Context, false));
                     }
                 }
                 catch (ZilError ex)
                 {
-                    ctx.HandleError(ex);
+                    Context.HandleError(ex);
                 }
             }
+        }
 
-            // builders for routines (again, in case any were added during compilation, e.g. by a PROPSPEC)
-            foreach (ZilRoutine routine in ctx.ZEnvironment.Routines)
+        private void PrepareReservedGlobalBuilders(string[] reservedGlobals)
+        {
+            // implicitly defined globals
+            // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
+            foreach (var name in reservedGlobals)
             {
-                if (!Routines.ContainsKey(routine.Name))
-                    Routines.Add(routine.Name, gb.DefineRoutine(
-                        routine.Name.ToString(),
-                        routine.Name == ctx.ZEnvironment.EntryRoutineName,
-                        (routine.Flags & RoutineFlags.CleanStack) != 0));
+                var glb = this.Game.DefineGlobal(name);
+                Globals.Add(Context.RootObList[name], glb);
             }
+        }
 
-            // let macros know we're generating code now
-            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.IN_ZILCH), ctx.TRUE, true);
-
-            // compile routines
-            IRoutineBuilder mainRoutine = null;
-
-            foreach (ZilRoutine routine in ctx.ZEnvironment.Routines)
+        private void PrepareHardGlobalBuilders()
+        {
+            // builders and values for globals (which may refer to constants)
+            foreach (ZilGlobal global in Context.ZEnvironment.Globals)
             {
-                bool entryPoint = routine.Name == ctx.ZEnvironment.EntryRoutineName;
-                IRoutineBuilder rb = Routines[routine.Name];
-                try
+                if (global.StorageType == GlobalStorageType.Hard)
                 {
-                    using (DiagnosticContext.Push(routine.SourceLine))
+                    var glb = Game.DefineGlobal(global.Name.ToString());
+                    glb.DefaultValue = GetGlobalDefaultValue(global);
+                    Globals.Add(global.Name, glb);
+                }
+            }
+        }
+
+        private void PrepareVocabConstant()
+        {
+            Constants.Add(this.Context.GetStdAtom(StdAtom.VOCAB), this.Game.VocabularyTable);
+        }
+
+        private void PrepareLongWordTableBuilder(out ITableBuilder longWordTable)
+        {
+            if (Context.GetCompilationFlagOption(StdAtom.LONG_WORDS))
+            {
+                longWordTable = this.Game.DefineTable("LONG-WORD-TABLE", true);
+                Constants.Add(this.Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
+            }
+            else
+            {
+                longWordTable = null;
+            }
+        }
+
+        private void PrepareConstantBuilders(ZilModelObject lastObject)
+        {
+            // builders and values for constants (which may refer to vocabulary,
+            // routines, tables, objects, properties, or flags)
+            foreach (ZilConstant constant in Context.ZEnvironment.Constants)
+            {
+                IOperand value;
+                if (constant.Name.StdAtom == StdAtom.LAST_OBJECT && lastObject != null)
+                {
+                    value = Objects[lastObject.Name];
+                }
+                else
+                {
+                    value = CompileConstant(constant.Value);
+                }
+
+                if (value == null)
+                {
+                    Context.HandleError(new CompilerError(
+                        constant,
+                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                        "constant",
+                        constant.Name,
+                        constant.Value.ToStringContext(Context, false)));
+                    value = Game.Zero;
+                }
+
+                Constants.Add(constant.Name, Game.DefineConstant(constant.Name.ToString(), value));
+            }
+        }
+
+        private void PrepareAndCheckGlobalStorage(out string[] reservedGlobals)
+        {
+            // FUNNY-GLOBALS?
+            reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
+            if (Context.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
+            {
+                // this sets StorageType for all variables, and creates the table and global if needed
+                DoFunnyGlobals(reservedGlobals.Length);
+            }
+            else
+            {
+                foreach (var g in Context.ZEnvironment.Globals)
+                    g.StorageType = GlobalStorageType.Hard;
+
+                if (Context.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
+                    this.Context.HandleError(new CompilerError(
+                        CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
+                        "globals",
+                        Context.ZEnvironment.Globals.Count,
+                        240 - reservedGlobals.Length));
+            }
+        }
+
+        private void EnforceFlagLimit()
+        {
+            // enforce limit on number of flags
+            if (UniqueFlags > this.Game.MaxFlags)
+                this.Context.HandleError(new CompilerError(
+                    CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
+                    "flags",
+                    UniqueFlags,
+                    this.Game.MaxFlags));
+        }
+
+        private void PrepareFlagAliases()
+        {
+            // may as well do bit synonyms here too
+            foreach (var pair in Context.ZEnvironment.BitSynonyms)
+                DefineFlagAlias(pair.Key, pair.Value);
+        }
+
+        private void CopyVocabSynonymValues()
+        {
+            // now that all the vocabulary is set up, copy values for synonyms
+            foreach (Synonym syn in Context.ZEnvironment.Synonyms)
+                syn.Apply(Context);
+        }
+
+        private void PrepareLateSyntaxTableBuilders()
+        {
+            // constants and builders for late syntax tables
+            foreach (var name in Context.ZEnvironment.VocabFormat.GetLateSyntaxTableNames())
+            {
+                var tb = this.Game.DefineTable(name, true);
+                var atom = Context.RootObList[name];
+                Constants.Add(atom, tb);
+
+                // this hack lets macros use it as a compile-time value, as long as they don't access its contents
+                Context.SetGlobalVal(atom, atom);
+            }
+        }
+
+        private void PerformVocabMerges(Dictionary<IWord, IWord> vocabMerges)
+        {
+            string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
+
+            foreach (var pair in vocabMerges)
+            {
+                IWord dupWord = pair.Key, mainWord = pair.Value;
+                Vocabulary[dupWord] = Vocabulary[mainWord];
+
+                foreach (var prefix in wordConstantPrefixes)
+                {
+                    var mainAtom = ZilAtom.Parse(prefix + mainWord.Atom.Text, Context);
+
+                    if (Constants.TryGetValue(mainAtom, out var value))
                     {
-                        BuildRoutine(routine, rb, entryPoint);
+                        var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, Context);
+                        Constants[dupAtom] = value;
                     }
                 }
-                catch (ZilError ex)
-                {
-                    // could be a compiler error, or an interpreter error thrown by macro evaluation
-                    ctx.HandleError(ex);
-                }
-                rb.Finish();
-
-                if (entryPoint)
-                    mainRoutine = rb;
             }
+        }
 
-            if (mainRoutine == null)
-                throw new CompilerError(CompilerMessages.Missing_GO_Routine);
-
-            // ...and we're done generating code
-            ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.IN_ZILCH), ctx.FALSE, true);
-
-            // build objects
-            foreach (ZilModelObject obj in ctx.ZEnvironment.ObjectsInInsertionOrder())
+        private void PreparePunctuationAliasesAndPlanMerges(Dictionary<string, string> punctWords, Dictionary<IWord, IWord> vocabMerges)
+        {
+            foreach (var pair in punctWords)
             {
-                IObjectBuilder ob = Objects[obj.Name];
-                try
+                var nameAtom = ZilAtom.Parse(pair.Key, Context);
+                var symbolAtom = ZilAtom.Parse(pair.Value, Context);
+
+                if (Context.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out var symbolWord) &&
+                    !Context.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
                 {
-                    using (DiagnosticContext.Push(obj.SourceLine))
-                    {
-                        BuildObject(obj, ob);
-                    }
-                }
-                catch (ZilError ex)
-                {
-                    ctx.HandleError(ex);
+                    var nameWord = Context.ZEnvironment.VocabFormat.CreateWord(nameAtom);
+                    Context.ZEnvironment.VocabFormat.MakeSynonym(nameWord, symbolWord);
+                    vocabMerges.Add(nameWord, symbolWord);
                 }
             }
+        }
 
-            // build vocabulary
-            Queue<IWord> longWords = (longWordTable == null ? null : new Queue<IWord>());
-
-            var helpers = new WriteToBuilderHelpers
+        private void DefineVocabWords()
+        {
+            foreach (IWord word in Context.ZEnvironment.Vocabulary.Values)
             {
-                CompileConstant = CompileConstant,
-                DirIndexToPropertyOperand = di => Properties[ctx.ZEnvironment.Directions[di]]
+                DefineWord(word);
+            }
+        }
+
+        private void PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges)
+        {
+            var merges = new Dictionary<IWord, IWord>();
+            Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
+            {
+                this.Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
+                merges.Add(duplicateWord, mainWord);
+            });
+            vocabMerges = merges;
+        }
+
+        private void PrepareBuzzWords()
+        {
+            foreach (var pair in Context.ZEnvironment.Buzzwords)
+            {
+                Context.ZEnvironment.GetVocabBuzzword(pair.Key, pair.Value);
+            }
+        }
+
+        private void PreparePunctuationWords(out Dictionary<string, string> punctWords)
+        {
+            // vocabulary for punctuation
+            punctWords = new Dictionary<string, string>
+            {
+                { "PERIOD", "." },
+                { "COMMA", "," },
+                { "QUOTE", "\"" },
+                { "APOSTROPHE", "'" }
             };
 
-            var builtWords = new HashSet<IWordBuilder>();
-            foreach (var pair in Vocabulary)
+            foreach (var symbol in punctWords.Values)
             {
-                IWord word = pair.Key;
-                IWordBuilder wb = pair.Value;
+                var symbolAtom = ZilAtom.Parse(symbol, Context);
+                Context.ZEnvironment.GetVocab(symbolAtom);
+            }
+        }
 
-                if (builtWords.Contains(wb))
-                    continue;
+        private void PrepareSelfInsertingBreaks()
+        {
+            // self-inserting breaks
+            if (Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks)
+            {
+                Game.SelfInsertingBreaks.Clear();
+                foreach (var c in siBreaks.Text)
+                    Game.SelfInsertingBreaks.Add(c);
+            }
+        }
 
-                builtWords.Add(wb);
+        private void PrepareTableBuilders()
+        {
+            // builders for tables
+            ITableBuilder firstPureTable = null;
+            Func<ZilTable, int> parserTablesFirst = t => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+            foreach (ZilTable table in Context.ZEnvironment.Tables.OrderBy(parserTablesFirst))
+            {
+                bool pure = (table.Flags & TableFlags.Pure) != 0;
+                var builder = Game.DefineTable(table.Name, pure);
+                Tables.Add(table, builder);
 
-                Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
-
-                if (longWords != null && ctx.ZEnvironment.IsLongWord(word))
-                {
-                    longWords.Enqueue(word);
-                }
+                if (pure && firstPureTable == null)
+                    firstPureTable = builder;
             }
 
-            if (longWords != null)
+            if (firstPureTable != null)
+                Constants.Add(Context.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
+        }
+
+        private void PrepareObjectBuilders(out ZilModelObject lastObject)
+        {
+            // builders for objects
+            lastObject = null;
+
+            foreach (ZilModelObject obj in Context.ZEnvironment.ObjectsInDefinitionOrder())
             {
-                longWordTable.AddShort((short)longWords.Count);
-                while (longWords.Count > 0)
-                {
-                    var word = longWords.Dequeue();
-                    longWordTable.AddShort(Vocabulary[word]);
-                    longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
-                }
+                lastObject = obj;
+                Objects.Add(obj.Name, Game.DefineObject(obj.Name.ToString()));
+                // builders for the rest of the properties and flags,
+                // and vocabulary for names
+                PreBuildObject(obj);
             }
+        }
 
-            BuildLateSyntaxTables();
+        private void PrepareHighestFlagBuilders()
+        {
+            // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
+            ZilAtom getOriginal(ZilAtom flag) =>
+                Context.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
+            var highestFlags =
+                Context.ZEnvironment.FlagsOrderedLast
+                    .Concat(
+                        from syn in Context.ZEnvironment.Syntaxes
+                        from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
+                        where flag != null
+                        select getOriginal(flag))
+                    .Distinct()
+                    .ToList();
 
-            // build tables
-            foreach (KeyValuePair<ZilTable, ITableBuilder> pair in Tables)
-                BuildTable(pair.Key, pair.Value);
+            if (highestFlags.Count >= this.Game.MaxFlags)
+                Context.HandleError(new CompilerError(
+                    CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
+                    "flags requiring high numbers",
+                    highestFlags.Count,
+                    this.Game.MaxFlags));
 
-            BuildHeaderExtensionTable();
+            foreach (var flag in highestFlags)
+                DefineFlag(flag);
+        }
 
-            gb.Finish();
+        private void PreparePropertyBuilders()
+        {
+            // builders and constants for some properties
+            foreach (ZilAtom dir in Context.ZEnvironment.Directions)
+                DefineProperty(dir);
+
+            // create a constant for the last explicitly defined direction
+            if (Context.ZEnvironment.LowDirection != null)
+                Constants.Add(Context.GetStdAtom(StdAtom.LOW_DIRECTION),
+                    Properties[Context.ZEnvironment.LowDirection]);
+
+            // builders and constants for some more properties
+            foreach (KeyValuePair<ZilAtom, ZilObject> pair in Context.ZEnvironment.PropertyDefaults)
+                DefineProperty(pair.Key);
+        }
+
+        private void PrepareEarlyRoutineBuilders()
+        {
+            // builders for routines
+            if (Context.ZEnvironment.EntryRoutineName == null)
+                Context.ZEnvironment.EntryRoutineName = Context.GetStdAtom(StdAtom.GO);
+
+            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
+                Routines.Add(routine.Name, Game.DefineRoutine(
+                    routine.Name.ToString(),
+                    routine.Name == Context.ZEnvironment.EntryRoutineName,
+                    (routine.Flags & RoutineFlags.CleanStack) != 0));
         }
     }
 }
