@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Zilf.Emit.Zap
 {
-    class TableBuilder : ITableBuilder
+    class TableBuilder : ConstantOperandBase, ITableBuilder
     {
         readonly string name;
         readonly List<short> numericValues = new List<short>();

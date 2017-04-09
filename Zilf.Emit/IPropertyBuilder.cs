@@ -1,6 +1,6 @@
 namespace Zilf.Emit
 {
-    public interface IPropertyBuilder : IOperand
+    public interface IPropertyBuilder : IConstantOperand
     {
         IOperand DefaultValue { get; set; }
     }

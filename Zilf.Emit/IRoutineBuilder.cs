@@ -4,7 +4,7 @@ using System.Diagnostics.Contracts;
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IRoutineBuilderContracts))]
-    public interface IRoutineBuilder : IOperand
+    public interface IRoutineBuilder : IConstantOperand
     {
         /// <summary>
         /// Gets a value indicating whether code generated for this routine is
@@ -844,5 +844,7 @@ namespace Zilf.Emit
         {
             throw new System.NotImplementedException();
         }
+
+        public abstract IConstantOperand Add(IConstantOperand other);
     }
 }

@@ -110,8 +110,8 @@ namespace Zilf.Compiler
 
                                 if (line.NumObjects > 0)
                                 {
-                                    stbl.AddByte(GetFlag(line.FindFlag1) ?? Game.Zero);
-                                    stbl.AddByte((byte)line.Options1);
+                                    stbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                                    stbl.AddByte(line.Options1);
 
                                     if (line.NumObjects > 1)
                                     {
@@ -125,8 +125,8 @@ namespace Zilf.Compiler
                                             stbl.AddByte(0);
                                         }
 
-                                        stbl.AddByte(GetFlag(line.FindFlag2) ?? Game.Zero);
-                                        stbl.AddByte((byte)line.Options2);
+                                        stbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                                        stbl.AddByte(line.Options2);
                                     }
                                 }
                             }
@@ -135,10 +135,10 @@ namespace Zilf.Compiler
                                 stbl.AddByte((byte)line.NumObjects);
                                 stbl.AddByte(GetPreposition(line.Preposition1) ?? Game.Zero);
                                 stbl.AddByte(GetPreposition(line.Preposition2) ?? Game.Zero);
-                                stbl.AddByte(GetFlag(line.FindFlag1) ?? Game.Zero);
-                                stbl.AddByte(GetFlag(line.FindFlag2) ?? Game.Zero);
-                                stbl.AddByte((byte)line.Options1);
-                                stbl.AddByte((byte)line.Options2);
+                                stbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                                stbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                                stbl.AddByte(line.Options1);
+                                stbl.AddByte(line.Options2);
                                 stbl.AddByte(act.Constant);
                             }
                         }
@@ -157,7 +157,7 @@ namespace Zilf.Compiler
             foreach (Action act in actquery)
             {
                 actionTable.AddShort(act.Routine);
-                preactionTable.AddShort(act.PreRoutine ?? Game.Zero);
+                preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
             }
         }
 
@@ -215,9 +215,9 @@ namespace Zilf.Compiler
                         var act = ValidateAction(actions, line);
                         utbl.AddShort(act.Constant);
 
-                        utbl.AddShort(line.Preposition1 == null ? Game.Zero : Vocabulary[line.Preposition1]);
-                        utbl.AddByte(GetFlag(line.FindFlag1) ?? Game.Zero);
-                        utbl.AddByte((byte)line.Options1);
+                        utbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
+                        utbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                        utbl.AddByte(line.Options1);
                     }
 
                     acttbl.AddShort(utbl);
@@ -238,13 +238,13 @@ namespace Zilf.Compiler
                         var act = ValidateAction(actions, line);
                         btbl.AddShort(act.Constant);
 
-                        btbl.AddShort(line.Preposition1 == null ? Game.Zero : Vocabulary[line.Preposition1]);
-                        btbl.AddByte(GetFlag(line.FindFlag1) ?? Game.Zero);
-                        btbl.AddByte((byte)line.Options1);
+                        btbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
+                        btbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                        btbl.AddByte(line.Options1);
 
-                        btbl.AddShort(line.Preposition2 == null ? Game.Zero : Vocabulary[line.Preposition2]);
-                        btbl.AddByte(GetFlag(line.FindFlag2) ?? Game.Zero);
-                        btbl.AddByte((byte)line.Options2);
+                        btbl.AddShort(line.Preposition2 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition2]);
+                        btbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                        btbl.AddByte(line.Options2);
                     }
 
                     acttbl.AddShort(btbl);
@@ -262,7 +262,7 @@ namespace Zilf.Compiler
             foreach (Action act in actquery)
             {
                 actionTable.AddShort(act.Routine);
-                preactionTable.AddShort(act.PreRoutine ?? Game.Zero);
+                preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
             }
         }
 

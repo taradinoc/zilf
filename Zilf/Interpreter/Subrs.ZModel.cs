@@ -622,8 +622,7 @@ namespace Zilf.Interpreter
                     newValues.Add(val);
             }
 
-            var tab = ZilTable.Create(
-                1, newValues.ToArray(), flags, pattern == null ? null : pattern.ToArray());
+            var tab = ZilTable.Create(1, newValues.ToArray(), flags, pattern?.ToArray());
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if (!tempTable)
                 ctx.ZEnvironment.Tables.Add(tab);

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Zilf.Emit.Zap
 {
-    class ObjectBuilder : IObjectBuilder
+    class ObjectBuilder : ConstantOperandBase, IObjectBuilder
     {
         const string INDENT = "\t";
 

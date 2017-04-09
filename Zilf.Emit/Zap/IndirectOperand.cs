@@ -2,7 +2,7 @@ using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
-    class IndirectOperand : IIndirectOperand
+    class IndirectOperand : ConstantOperandBase, IIndirectOperand
     {
         public IndirectOperand(IVariable variable)
         {

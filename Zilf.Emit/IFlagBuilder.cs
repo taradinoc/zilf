@@ -1,6 +1,6 @@
 namespace Zilf.Emit
 {
-    public interface IFlagBuilder : IOperand
+    public interface IFlagBuilder : IConstantOperand
     {
     }
 }

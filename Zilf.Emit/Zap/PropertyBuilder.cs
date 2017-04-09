@@ -27,5 +27,10 @@ namespace Zilf.Emit.Zap
         {
             return name;
         }
+
+        public IConstantOperand Add(IConstantOperand other)
+        {
+            return new SumOperand(this, other);
+        }
     }
 }

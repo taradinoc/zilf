@@ -621,5 +621,13 @@ namespace IntegrationTests
                 .WhenCalledWith("<>")
                 .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
         }
+
+        [TestMethod]
+        public void ZREST_With_Constant_Table_Uses_Assembler_Math()
+        {
+            AssertRoutine("", "<REST ,MY-TABLE 2>")
+                .WithGlobal("<CONSTANT MY-TABLE <TABLE 1 2 3 4>>")
+                .GeneratesCodeMatching(@"MY-TABLE\+2");
+        }
     }
 }
