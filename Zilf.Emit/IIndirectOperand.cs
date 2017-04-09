@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IIndirectOperandContracts))]
-    public interface IIndirectOperand : IOperand
+    public interface IIndirectOperand : IConstantOperand
     {
         IVariable Variable { get; }
     }
@@ -17,9 +17,7 @@ namespace Zilf.Emit
             Contract.Invariant(Variable != null);
         }
 
-        public IVariable Variable
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract IVariable Variable { get; }
+        public abstract IConstantOperand Add(IConstantOperand other);
     }
 }

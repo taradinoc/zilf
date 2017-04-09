@@ -1,6 +1,6 @@
 ﻿namespace Zilf.Emit.Zap
 {
-    class NumericConstantOperand : INumericOperand
+    class NumericConstantOperand : ConstantOperandBase, INumericOperand
     {
         readonly string literal;
         readonly int value;

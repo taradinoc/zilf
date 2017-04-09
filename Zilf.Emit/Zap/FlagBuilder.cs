@@ -1,6 +1,6 @@
 namespace Zilf.Emit.Zap
 {
-    class FlagBuilder : IFlagBuilder
+    class FlagBuilder : ConstantOperandBase, IFlagBuilder
     {
         readonly string name;
         readonly int number;

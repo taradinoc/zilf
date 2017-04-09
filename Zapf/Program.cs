@@ -840,9 +840,24 @@ General switches:
                     {
                         return new Symbol(null, SymbolType.Unknown, 0);
                     }
-                    if (left.Type == SymbolType.Constant && right.Type == SymbolType.Constant)
+                    if (Addable(left.Type) && Addable(right.Type))
                         return new Symbol(null, SymbolType.Constant, left.Value + right.Value);
-                    throw new NotImplementedException("Unimplemented symbol addition");
+                    throw new NotImplementedException($"Unimplemented symbol addition: {left.Type} + {right.Type}");
+
+                    // we can add numbers and non-packed addresses
+                    bool Addable(SymbolType type)
+                    {
+                        switch (type)
+                        {
+                            case SymbolType.Constant:
+                            case SymbolType.Label:
+                            case SymbolType.Object:
+                                return true;
+
+                            default:
+                                return false;
+                        }
+                    }
 
                 default:
                     throw new NotImplementedException();
@@ -866,17 +881,9 @@ General switches:
                 node = quote.Inner;
             }
 
-            if (node is NumericLiteral)
+            if (node is SymbolExpr symExpr)
             {
-                value = (ushort)int.Parse(((NumericLiteral)node).Text);
-                if (value < 256)
-                    type = OPERAND_BYTE;
-                else
-                    type = OPERAND_WORD;
-            }
-            else if (node is SymbolExpr)
-            {
-                var text = ((SymbolExpr)node).Text;
+                var text = symExpr.Text;
                 if (ctx.LocalSymbols.TryGetValue(text, out var sym))
                 {
                     if (sym.Type == SymbolType.Label)
@@ -926,7 +933,12 @@ General switches:
             }
             else
             {
-                throw new NotImplementedException();
+                var sym = EvalExpr(ctx, node);
+                value = (ushort)sym.Value;
+                if (value < 256)
+                    type = OPERAND_BYTE;
+                else
+                    type = OPERAND_WORD;
             }
 
             if (apos)
@@ -962,8 +974,11 @@ General switches:
                     }
 
                 case AdditionExpr add:
-                    // TODO: should this be || instead of &&, or even always true?
-                    return IsLongConstant(ctx, add.Left) && IsLongConstant(ctx, add.Right);
+                    if (IsLongConstant(ctx, add.Left) || IsLongConstant(ctx, add.Right))
+                        return true;
+                    var left = EvalExpr(ctx, add.Left);
+                    var right = EvalExpr(ctx, add.Right);
+                    return ((uint)(left.Value + right.Value) & 0xffffff00) != 0;
 
                 case StringLiteral _:
                 case QuoteExpr _:

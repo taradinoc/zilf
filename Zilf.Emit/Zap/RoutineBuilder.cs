@@ -8,7 +8,7 @@ using Zilf.Common;
 
 namespace Zilf.Emit.Zap
 {
-    class RoutineBuilder : IRoutineBuilder
+    class RoutineBuilder : ConstantOperandBase, IRoutineBuilder
     {
         internal static readonly Label RTRUE = new Label("TRUE");
         internal static readonly Label RFALSE = new Label("FALSE");
@@ -37,9 +37,7 @@ namespace Zilf.Emit.Zap
             this.entryPoint = entryPoint;
             this.cleanStack = cleanStack;
 
-            peep = new PeepholeBuffer<ZapCode>();
-            peep.Combiner = new PeepholeCombiner(this);
-
+            peep = new PeepholeBuffer<ZapCode>() { Combiner = new PeepholeCombiner(this) };
             this.routineStartLabel = DefineLabel();
         }
 

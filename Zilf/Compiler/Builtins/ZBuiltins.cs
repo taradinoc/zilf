@@ -998,16 +998,35 @@ namespace Zilf.Compiler.Builtins
             c.rb.BranchIfZero(c.rb.Stack, c.label, !c.polarity);
         }
 
-        // TODO: REST with a constant table argument should produce a constant operand (<REST MYTABLE 2> -> "MYTABLE+2")
-        [Builtin("REST", "ZREST", Data = BinaryOp.Add)]
-        [Builtin("BACK", "ZBACK", Data = BinaryOp.Sub)]
-        public static IOperand RestOrBackOp(
-            ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right = null)
+        [Builtin("REST", "ZREST")]
+        public static IOperand RestOp(ValueCall c, IOperand left, IOperand right = null)
         {
             Contract.Requires(left != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            return ArithmeticOp(c, op, left, right ?? c.cc.Game.One);
+            // if left and right are constants, we can add them at assembly time
+            if (left is IConstantOperand lconst)
+            {
+                if (right is IConstantOperand rconst)
+                {
+                    return lconst.Add(rconst);
+                }
+                else if (right == null)
+                {
+                    return lconst.Add(c.cc.Game.One);
+                }
+            }
+
+            return ArithmeticOp(c, BinaryOp.Add, left, right ?? c.cc.Game.One);
+        }
+
+        [Builtin("BACK", "ZBACK")]
+        public static IOperand BackOp(ValueCall c, IOperand left, IOperand right = null)
+        {
+            Contract.Requires(left != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
+
+            return ArithmeticOp(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
         }
 
         [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true)]
@@ -1772,7 +1791,7 @@ namespace Zilf.Compiler.Builtins
             var operand =
                 (what == 1) ? c.cc.Game.One :
                 (what == 0) ? c.cc.Game.Zero :
-                (what == 2) ? c.cc.Game.MakeOperand(2) :
+                (what == 2) ? (IOperand)c.cc.Game.MakeOperand(2) :
                 c.rb.Stack;
 
             c.rb.Return(operand);

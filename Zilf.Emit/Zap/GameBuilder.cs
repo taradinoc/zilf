@@ -12,7 +12,7 @@ namespace Zilf.Emit.Zap
 
         internal static readonly NumericOperand ZERO = new NumericOperand(0);
         internal static readonly NumericOperand ONE = new NumericOperand(1);
-        internal static readonly LiteralOperand VOCAB = new LiteralOperand("VOCAB");
+        internal static readonly ConstantLiteralOperand VOCAB = new ConstantLiteralOperand("VOCAB");
 
         // TODO: share unicode translation table with Zapf
         static readonly Dictionary<char, byte> DefaultUnicodeMapping = MakeDefaultUnicodeMapping();
@@ -111,7 +111,7 @@ namespace Zilf.Emit.Zap
         readonly List<WordBuilder> vocabulary = new List<WordBuilder>(100);
         readonly HashSet<char> siBreaks = new HashSet<char>();
         readonly Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
-        readonly Dictionary<int, IOperand> numberPool = new Dictionary<int, IOperand>(50);
+        readonly Dictionary<int, NumericOperand> numberPool = new Dictionary<int, NumericOperand>(50);
 
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
@@ -132,11 +132,8 @@ namespace Zilf.Emit.Zap
         {
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
-            if (streamFactory == null)
-                throw new ArgumentNullException(nameof(streamFactory));
-
             this.zversion = zversion;
-            this.streamFactory = streamFactory;
+            this.streamFactory = streamFactory ?? throw new ArgumentNullException(nameof(streamFactory));
             GetOptionsTypeForZVersion(zversion, out var requiredOptionsType, out var concreteOptionsType);
 
             if (options != null)
@@ -344,7 +341,7 @@ namespace Zilf.Emit.Zap
             if (value is INumericOperand num)
                 return new NumericConstantOperand(name, num.Value);
             else
-                return new LiteralOperand(name);
+                return new ConstantLiteralOperand(name);
         }
 
         public IGlobalBuilder DefineGlobal(string name)
@@ -509,7 +506,7 @@ namespace Zilf.Emit.Zap
             return sb.ToString();
         }
 
-        public IOperand MakeOperand(int value)
+        public INumericOperand MakeOperand(int value)
         {
             switch (value)
             {
@@ -520,8 +517,7 @@ namespace Zilf.Emit.Zap
                     return ONE;
 
                 default:
-                    IOperand result;
-                    if (numberPool.TryGetValue(value, out result) == false)
+                    if (numberPool.TryGetValue(value, out var result) == false)
                     {
                         result = new NumericOperand(value);
                         numberPool.Add(value, result);
@@ -534,7 +530,7 @@ namespace Zilf.Emit.Zap
         {
             if (stringPool.TryGetValue(value, out var result) == false)
             {
-                result = new LiteralOperand("STR?" + stringPool.Count);
+                result = new ConstantLiteralOperand("STR?" + stringPool.Count);
                 stringPool.Add(value, result);
             }
             return result;
@@ -560,17 +556,17 @@ namespace Zilf.Emit.Zap
             get { return zversion > 3 ? 7 : 3; }
         }
 
-        public IOperand Zero
+        public INumericOperand Zero
         {
             get { return ZERO; }
         }
 
-        public IOperand One
+        public INumericOperand One
         {
             get { return ONE; }
         }
 
-        public IOperand VocabularyTable
+        public IConstantOperand VocabularyTable
         {
             get { return VOCAB; }
         }
@@ -768,7 +764,7 @@ namespace Zilf.Emit.Zap
                                join p in this.props on num equals p.Value.Number into propGroup
                                from prop in propGroup.DefaultIfEmpty()
                                let name = prop.Key
-                               let def = prop.Value == null ? null : prop.Value.DefaultValue
+                               let def = prop.Value?.DefaultValue
                                select new { num, name, def };
 
             foreach (var row in propDefaults)

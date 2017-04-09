@@ -361,8 +361,6 @@ namespace ZilfTests
         {
             public readonly List<byte> ActualBytes = new List<byte>(3);
 
-            #region ITableBuilder Members
-
             public void AddByte(byte value)
             {
                 ActualBytes.Add(value);
@@ -386,7 +384,11 @@ namespace ZilfTests
                 Assert.Fail("IWordBuilder.AddShort shouldn't be called");
             }
 
-            #endregion
+            public Zilf.Emit.IConstantOperand Add(Zilf.Emit.IConstantOperand other)
+            {
+                Assert.Fail("IWordBuilder.Add shouldn't be called");
+                return default(Zilf.Emit.IConstantOperand);
+            }
         }
 
         [TestMethod]

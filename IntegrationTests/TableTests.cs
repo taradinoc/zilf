@@ -217,5 +217,15 @@ namespace IntegrationTests
                     "<=? ,RESTED-OLD-0 200>",
                     "<=? <GET ,TBL 2> 345>");
         }
+
+        [TestMethod]
+        public void ZREST_Works_With_2OP_Instruction()
+        {
+            AssertGlobals(
+                "<CONSTANT PADDING-TBL <ITABLE 500>>",
+                "<CONSTANT TBL <TABLE 100 200 300>>")
+                .Implies(
+                    "<=? <GET <ZREST ,TBL 4> 0> 300>");
+        }
     }
 }

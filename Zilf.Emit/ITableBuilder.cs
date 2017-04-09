@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 namespace Zilf.Emit
 {
     [ContractClass(typeof(ITableBuilderContracts))]
-    public interface ITableBuilder : IOperand
+    public interface ITableBuilder : IConstantOperand
     {
         void AddByte(byte value);
         void AddByte(IOperand value);
@@ -14,6 +14,8 @@ namespace Zilf.Emit
     [ContractClassFor(typeof(ITableBuilder))]
     abstract class ITableBuilderContracts : ITableBuilder
     {
+        public abstract IConstantOperand Add(IConstantOperand other);
+
         public void AddByte(byte value)
         {
             throw new System.NotImplementedException();

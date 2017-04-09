@@ -88,17 +88,17 @@ namespace Zilf.Emit
         /// <summary>
         /// Gets a predefined operand representing the constant 0.
         /// </summary>
-        IOperand Zero { get; }
+        INumericOperand Zero { get; }
         /// <summary>
         /// Gets a predefined operand representing the constant 1.
         /// </summary>
-        IOperand One { get; }
+        INumericOperand One { get; }
         /// <summary>
         /// Gets an operand representing a numeric constant.
         /// </summary>
         /// <param name="value">The numeric constant.</param>
         /// <returns>The operand.</returns>
-        IOperand MakeOperand(int value);
+        INumericOperand MakeOperand(int value);
         /// <summary>
         /// Gets an operand representing a string constant.
         /// </summary>
@@ -150,7 +150,7 @@ namespace Zilf.Emit
         /// <summary>
         /// Gets a predefined operand representing the vocabulary table.
         /// </summary>
-        IOperand VocabularyTable { get; }
+        IConstantOperand VocabularyTable { get; }
 
         /// <summary>
         /// Writes the final output and closes the game builder.
@@ -268,28 +268,28 @@ namespace Zilf.Emit
             }
         }
 
-        public IOperand Zero
+        public INumericOperand Zero
         {
             get
             {
                 Contract.Ensures(Contract.Result<IOperand>() != null);
-                return default(IOperand);
+                return default(INumericOperand);
             }
         }
 
-        public IOperand One
+        public INumericOperand One
         {
             get
             {
                 Contract.Ensures(Contract.Result<IOperand>() != null);
-                return default(IOperand);
+                return default(INumericOperand);
             }
         }
 
-        public IOperand MakeOperand(int value)
+        public INumericOperand MakeOperand(int value)
         {
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-            return default(IOperand);
+            Contract.Ensures(Contract.Result<INumericOperand>() != null);
+            return default(INumericOperand);
         }
 
         public IOperand MakeOperand(string value)
@@ -328,12 +328,12 @@ namespace Zilf.Emit
             }
         }
 
-        public IOperand VocabularyTable
+        public IConstantOperand VocabularyTable
         {
             get
             {
-                Contract.Ensures(Contract.Result<IOperand>() != null);
-                return default(IOperand);
+                Contract.Ensures(Contract.Result<IConstantOperand>() != null);
+                return default(IConstantOperand);
             }
         }
 

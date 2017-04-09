@@ -1,6 +1,6 @@
 namespace Zilf.Emit.Zap
 {
-    class LiteralOperand : IOperand
+    abstract class LiteralOperand : IOperand
     {
         readonly string literal;
 

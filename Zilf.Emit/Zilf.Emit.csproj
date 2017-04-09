@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugLineRef.cs" />
+    <Compile Include="IConstantOperand.cs" />
     <Compile Include="INumericOperand.cs" />
     <Compile Include="IDebugFileBuilder.cs" />
     <Compile Include="IFlagBuilder.cs" />
@@ -103,9 +104,12 @@
     <Compile Include="ITableBuilder.cs" />
     <Compile Include="IVariable.cs" />
     <Compile Include="IWordBuilder.cs" />
+    <Compile Include="Zap\ConstantOperandBase.cs" />
     <Compile Include="Zap\DebugFileBuilder.cs" />
     <Compile Include="Zap\DummyGameOptions.cs" />
+    <Compile Include="Zap\ConstantLiteralOperand.cs" />
     <Compile Include="Zap\NumericConstantOperand.cs" />
+    <Compile Include="Zap\SumOperand.cs" />
     <Compile Include="Zap\ZapCode.cs" />
     <Compile Include="Peephole.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -132,9 +136,7 @@
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Peephole\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">
       <Project>{433B6DA6-FF85-4370-9012-4C6B7177FC0D}</Project>

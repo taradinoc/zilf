@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IObjectBuilderContracts))]
-    public interface IObjectBuilder : IOperand
+    public interface IObjectBuilder : IConstantOperand
     {
         string DescriptiveName { get; set; }
         IObjectBuilder Parent { get; set; }
@@ -48,5 +48,7 @@ namespace Zilf.Emit
         {
             Contract.Requires(flag != null);
         }
+
+        public abstract IConstantOperand Add(IConstantOperand other);
     }
 }
