@@ -2014,7 +2014,7 @@ namespace Zilf.Compiler.Builtins
         #region Routine Opcodes/Builtins
 
         [Builtin("RETURN", HasSideEffect = true)]
-        public static void ReturnOp(VoidCall c, IOperand value = null, Block block = null)
+        public static void ReturnOp(VoidCall c, ZilObject expr = null, Block block = null)
         {
             var origBlock = block;
 
@@ -2023,23 +2023,40 @@ namespace Zilf.Compiler.Builtins
                 block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
             }
 
+            IOperand value;
+
             if (block.ReturnLabel == null)
             {
                 // return from routine
-                c.rb.Return(value ?? c.cc.Game.One);
+                value = expr != null ?
+                    c.cc.CompileAsOperand(c.rb, expr, c.form.SourceLine) :
+                    c.cc.Game.One;
+                c.rb.Return(value);
             }
             else
             {
                 // return from enclosing PROG/REPEAT
                 if ((block.Flags & BlockFlags.WantResult) != 0)
                 {
-                    if (value == null)
-                        c.rb.EmitStore(c.rb.Stack, c.cc.Game.One);
-                    else if (value != c.rb.Stack)
-                        c.rb.EmitStore(c.rb.Stack, value);
+                    var resultStorage = block.ResultStorage ?? c.rb.Stack;
+                    if (expr == null)
+                    {
+                        c.rb.EmitStore(resultStorage, c.cc.Game.One);
+                    }
+                    else
+                    {
+                        value = c.cc.CompileAsOperand(
+                            c.rb,
+                            expr,
+                            c.form.SourceLine,
+                            resultStorage);
+                        if (value != resultStorage)
+                            c.rb.EmitStore(resultStorage, value);
+                    }
                 }
-                else if (value != null)
+                else if (expr != null)
                 {
+                    value = c.cc.CompileAsOperand(c.rb, expr, c.form.SourceLine);
                     if (value == c.rb.Stack)
                         c.rb.EmitPopStack();
 

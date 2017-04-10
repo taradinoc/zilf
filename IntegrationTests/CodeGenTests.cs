@@ -554,8 +554,7 @@ namespace IntegrationTests
         public void POP_In_V6_Stores()
         {
             AssertRoutine("\"AUX\" X",
-                "<SET X <BIND ((F <FOO 0 0>)) <OR <FOO .F .F> 123>>>")
-                .WithGlobal("<ROUTINE FOO (X Y) <>>")
+                "<SET X <POP>>")
                 .InV6()
                 .GeneratesCodeMatching(@"POP >X");
         }

@@ -40,5 +40,11 @@ namespace Zilf.Compiler
         /// The context flags for &lt;RETURN&gt;.
         /// </summary>
         public BlockFlags Flags;
+        /// <summary>
+        /// The location where the result should be stored before branching to
+        /// <see cref="ReturnLabel"/>, if <see cref="BlockFlags.WantResult"/>
+        /// is set in <see cref="Flags"/>.
+        /// </summary>
+        public IVariable ResultStorage;
     }
 }

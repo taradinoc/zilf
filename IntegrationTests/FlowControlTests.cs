@@ -342,6 +342,26 @@ namespace IntegrationTests
                 .GeneratesCodeMatching(@"\A(?:(?!RESULT).)*\Z");
         }
 
+        [TestMethod]
+        public void PROG_Result_Should_Not_Be_Forced_Onto_Stack()
+        {
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <COND (.X 1) (ELSE 2)>>>")
+                .GeneratesCodeMatching("SET 'X,1");
+
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <RETURN <COND (.X 1) (ELSE 2)>>>>")
+                .GeneratesCodeMatching("SET 'X,1");
+
+            AssertRoutine("\"AUX\" X", "<COND (<PROG () .X> T)>")
+                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+        }
+
+        [TestMethod]
+        public void REPEAT_Last_Expression_Should_Not_Clutter_Stack()
+        {
+            AssertRoutine("", "<REPEAT () 123>")
+                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+        }
+
         #endregion
 
         #region VERSION?
