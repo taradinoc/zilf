@@ -29,8 +29,9 @@ namespace Zilf.Compiler
         /// </summary>
         Returned = 1,
         /// <summary>
-        /// Indicates that the return label expects a result on the stack. (Otherwise, the
-        /// result must be discarded before branching.)
+        /// Indicates that the return label expects a result in the location specified by
+        /// <see cref="Block.ResultStorage"/>. (Otherwise, the result must be discarded
+        /// before branching.)
         /// </summary>
         WantResult = 2,
         /// <summary>

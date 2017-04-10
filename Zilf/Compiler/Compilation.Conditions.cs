@@ -490,42 +490,43 @@ namespace Zilf.Compiler
         {
             Contract.Requires(rb != null);
             Contract.Requires(clause != null);
-            Contract.Requires(resultStorage != null || !wantResult);
             Contract.Ensures(Contract.Result<IOperand>() != null || !Contract.OldValue(wantResult));
 
             if (clause.IsEmpty)
                 return Game.One;
 
+            IOperand result = null;
+
             do
             {
                 // only want the result of the last statement (if any)
                 bool wantThisResult = wantResult && clause.Rest.IsEmpty;
+
                 var stmt = clause.First;
                 if (stmt is ZilAdecl adecl)
                     stmt = adecl.First;
-                IOperand result;
+
                 if (stmt is ZilForm form)
                 {
                     MarkSequencePoint(rb, form);
 
-                    result = CompileForm(rb, form, wantThisResult,
+                    result = CompileForm(
+                        rb,
+                        form,
+                        wantThisResult,
                         wantThisResult ? resultStorage : null);
-                    if (wantThisResult && result != resultStorage)
-                        rb.EmitStore(resultStorage, result);
                 }
                 else if (wantThisResult)
                 {
                     result = CompileConstant(stmt);
                     if (result == null)
                         throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
-
-                    rb.EmitStore(resultStorage, result);
                 }
 
                 clause = clause.Rest as ZilList;
             } while (!clause.IsEmpty);
 
-            return resultStorage;
+            return result;
         }
 
         IOperand CompileVERSION_P(IRoutineBuilder rb, ZilList clauses, ISourceLine src,

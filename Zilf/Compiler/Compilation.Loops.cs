@@ -32,19 +32,11 @@ namespace Zilf.Compiler
     partial class Compilation
     {
         IOperand CompilePROG(IRoutineBuilder rb, ZilList args,
-#pragma warning disable RECS0154 // Parameter is never used
             ISourceLine src,
             bool wantResult, IVariable resultStorage, string name, bool repeat, bool catchy)
-#pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
             Contract.Requires(src != null);
-
-            // NOTE: resultStorage is unused here, because PROG's result could come from
-            // a RETURN statement (and REPEAT's result can *only* come from RETURN).
-            // thus we have to return the result on the stack, because RETURN doesn't have
-            // the context needed to put its result in the right place.
-            // TODO: make resultStorage a field in the Block so RETURN has that context.
 
             if (args == null || args.First == null)
             {
@@ -140,11 +132,15 @@ namespace Zilf.Compiler
                 }
             }
 
+            if (wantResult && resultStorage == null)
+                resultStorage = rb.Stack;
+
             var block = new Block
             {
                 Name = activationAtom,
                 AgainLabel = rb.DefineLabel(),
-                ReturnLabel = rb.DefineLabel()
+                ReturnLabel = rb.DefineLabel(),
+                ResultStorage = resultStorage
             };
 
             if (wantResult)
@@ -159,7 +155,56 @@ namespace Zilf.Compiler
             {
                 // generate code for prog body
                 args = args.Rest;
-                var clauseResult = CompileClauseBody(rb, args, wantResult, rb.Stack);
+
+                IOperand result;
+
+                if (wantResult)
+                {
+                    var clauseResult = CompileClauseBody(rb, args, !repeat, resultStorage);
+
+                    /* The resultStorage we pass to CompileClauseBody (like any other method) is just
+                     * a hint, so clauseResult might be different if the result is easily accessible.
+                     * For example:
+                     * 
+                     *     <SET R <PROG () <SET X 123>>>  ;"clauseResult is X"
+                     * 
+                     *     SET 'X,123       ;inner SET
+                     *     SET 'R,X         ;outer SET
+                     * 
+                     * But we can't always use it as-is, because there might be RETURNs inside that store
+                     * a value and branch to the end of the PROG.
+                     * 
+                     * RETURN always stores the value in our desired resultStorage, so we need to move
+                     * the clause body result there too:
+                     * 
+                     *     <SET R <PROG () <COND (.F <RETURN 123>)> 456>>
+                     * 
+                     *     ZERO? F /L1
+                     *     SET 'R,123       ;RETURN
+                     *     JUMP L2
+                     * L1: SET 'R,456       ;move clauseResult to resultStorage
+                     * L2: ...
+                     */
+
+                    if (repeat)
+                    {
+                        result = resultStorage;
+                    }
+                    else if (clauseResult != resultStorage && (block.Flags & BlockFlags.Returned) != 0)
+                    {
+                        rb.EmitStore(resultStorage, clauseResult);
+                        result = resultStorage;
+                    }
+                    else
+                    {
+                        result = clauseResult;
+                    }
+                }
+                else
+                {
+                    CompileClauseBody(rb, args, false, null);
+                    result = null;
+                }
 
                 if (repeat)
                     rb.Branch(block.AgainLabel);
@@ -167,7 +212,7 @@ namespace Zilf.Compiler
                 if ((block.Flags & BlockFlags.Returned) != 0)
                     rb.MarkLabel(block.ReturnLabel);
 
-                return wantResult ? clauseResult : null;
+                return result;
             }
             finally
             {
