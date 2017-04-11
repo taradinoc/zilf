@@ -71,21 +71,22 @@ namespace Zilf.Compiler
                     return Game.Zero;
                 }
 
-                if (expanded is ZilForm expandedForm)
+                switch (expanded)
                 {
-                    form = expandedForm;
-                }
-                else if (expanded is IMayExpandAfterEvaluation expAfter && expAfter.ShouldExpandAfterEvaluation)
-                {
-                    var src = form.SourceLine;
-                    var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment);
-                    form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
-                }
-                else
-                {
-                    if (wantResult)
-                        return CompileAsOperand(rb, expanded, form.SourceLine, resultStorage);
-                    return null;
+                    case ZilForm expandedForm:
+                        form = expandedForm;
+                        break;
+
+                    case IMayExpandAfterEvaluation expAfter when (expAfter.ShouldExpandAfterEvaluation):
+                        var src = form.SourceLine;
+                        var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment);
+                        form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
+                        break;
+
+                    default:
+                        if (wantResult)
+                            return CompileAsOperand(rb, expanded, form.SourceLine, resultStorage);
+                        return null;
                 }
 
                 if (!(form.First is ZilAtom head))
@@ -477,164 +478,157 @@ namespace Zilf.Compiler
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             expr = expr.Expand(Context);
-            StdAtom type = expr.StdTypeAtom;
             IOperand result = resultStorage;
 
-            if (type == StdAtom.FALSE)
+            switch (expr)
             {
-                if (resultStorage == null)
-                {
-                    result = Game.Zero;
-                }
-                else
-                {
-                    rb.EmitStore(resultStorage, Game.Zero);
-                }
-
-                if (polarity == false)
-                    rb.Branch(label);
-
-                return result;
-            }
-            if (type == StdAtom.FIX)
-            {
-                var value = ((ZilFix)expr).Value;
-
-                if (resultStorage == null)
-                {
-                    result = Game.MakeOperand(value);
-                }
-                else
-                {
-                    rb.EmitStore(resultStorage, Game.MakeOperand(value));
-                }
-
-                bool nonzero = value != 0;
-                if (polarity == nonzero)
-                    rb.Branch(label);
-
-                return result;
-            }
-            if (type == StdAtom.ADECL)
-            {
-                // TODO: check DECL
-                return CompileAsOperandWithBranch(rb, ((ZilAdecl)expr).First, resultStorage, label, polarity, tempVarProvider);
-            }
-            if (type != StdAtom.FORM)
-            {
-                var value = CompileConstant(expr);
-                if (value == null)
-                {
-                    Context.HandleError(new CompilerError(expr, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
-                }
-                else
-                {
+                case ZilFalse _:
                     if (resultStorage == null)
                     {
-                        result = value;
+                        result = Game.Zero;
                     }
                     else
                     {
-                        rb.EmitStore(resultStorage, value);
+                        rb.EmitStore(resultStorage, Game.Zero);
                     }
 
-                    if (polarity == true)
+                    if (polarity == false)
                         rb.Branch(label);
-                }
-                return result;
+
+                    return result;
+
+                case ZilFix fix:
+                    if (resultStorage == null)
+                    {
+                        result = Game.MakeOperand(fix.Value);
+                    }
+                    else
+                    {
+                        rb.EmitStore(resultStorage, Game.MakeOperand(fix.Value));
+                    }
+
+                    bool nonzero = fix.Value != 0;
+                    if (polarity == nonzero)
+                        rb.Branch(label);
+
+                    return result;
+
+                case ZilAdecl adecl:
+                    // TODO: check DECL
+                    return CompileAsOperandWithBranch(rb, adecl.First, resultStorage, label, polarity, tempVarProvider);
+
+                case ZilForm form:
+                    if (!(form.First is ZilAtom head))
+                    {
+                        Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
+                        return Game.Zero;
+                    }
+
+                    // check for standard built-ins
+                    // prefer the value+predicate version, then value, predicate, void
+                    var zversion = Context.ZEnvironment.ZVersion;
+                    var argCount = form.Count() - 1;
+                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    {
+                        if (resultStorage == null)
+                            resultStorage = tempVarProvider();
+
+                        ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label, polarity);
+                        return resultStorage;
+                    }
+                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    {
+                        result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
+                        if (resultStorage != null && resultStorage != result)
+                        {
+                            rb.EmitStore(resultStorage, result);
+                            result = resultStorage;
+                        }
+                        else if (resultStorage == null && result == rb.Stack)
+                        {
+                            resultStorage = tempVarProvider();
+                            rb.EmitStore(resultStorage, result);
+                            result = resultStorage;
+                        }
+                        rb.BranchIfZero(result, label, !polarity);
+                        return result;
+                    }
+                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    {
+                        if (resultStorage == null)
+                            resultStorage = tempVarProvider();
+
+                        var label1 = rb.DefineLabel();
+                        var label2 = rb.DefineLabel();
+                        ZBuiltins.CompilePredCall(head.Text, this, rb, form, label1, true);
+                        rb.EmitStore(resultStorage, Game.Zero);
+                        rb.Branch(polarity ? label2 : label);
+                        rb.MarkLabel(label1);
+                        rb.EmitStore(resultStorage, Game.One);
+                        if (polarity)
+                            rb.Branch(label);
+                        rb.MarkLabel(label2);
+                        return resultStorage;
+                    }
+                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    {
+                        ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
+
+                        // void calls return true
+                        if (resultStorage == null)
+                        {
+                            result = Game.One;
+                        }
+                        else
+                        {
+                            rb.EmitStore(resultStorage, Game.One);
+                        }
+
+                        if (polarity == true)
+                            rb.Branch(label);
+
+                        return result;
+                    }
+
+                    // for anything more complicated, treat it as a value
+                    result = CompileAsOperand(rb, form, form.SourceLine, resultStorage);
+                    if (resultStorage != null && resultStorage != result)
+                    {
+                        rb.EmitStore(resultStorage, result);
+                        result = resultStorage;
+                    }
+                    else if (resultStorage == null && result == rb.Stack)
+                    {
+                        resultStorage = tempVarProvider();
+                        rb.EmitStore(resultStorage, result);
+                        result = resultStorage;
+                    }
+
+                    rb.BranchIfZero(result, label, !polarity);
+                    return result;
+
+                default:
+                    var constValue = CompileConstant(expr);
+                    if (constValue == null)
+                    {
+                        Context.HandleError(new CompilerError(expr, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                    }
+                    else
+                    {
+                        if (resultStorage == null)
+                        {
+                            result = constValue;
+                        }
+                        else
+                        {
+                            rb.EmitStore(resultStorage, constValue);
+                        }
+
+                        if (polarity == true)
+                            rb.Branch(label);
+                    }
+                    return result;
             }
-
-            // it's a FORM
-            var form = (ZilForm)expr;
-
-            if (!(form.First is ZilAtom head))
-            {
-                Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
-                return Game.Zero;
-            }
-
-            // check for standard built-ins
-            // prefer the value+predicate version, then value, predicate, void
-            var zversion = Context.ZEnvironment.ZVersion;
-            var argCount = form.Count() - 1;
-            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
-            {
-                if (resultStorage == null)
-                    resultStorage = tempVarProvider();
-
-                ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label, polarity);
-                return resultStorage;
-            }
-            if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
-            {
-                result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
-                if (resultStorage != null && resultStorage != result)
-                {
-                    rb.EmitStore(resultStorage, result);
-                    result = resultStorage;
-                }
-                else if (resultStorage == null && result == rb.Stack)
-                {
-                    resultStorage = tempVarProvider();
-                    rb.EmitStore(resultStorage, result);
-                    result = resultStorage;
-                }
-                rb.BranchIfZero(result, label, !polarity);
-                return result;
-            }
-            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
-            {
-                if (resultStorage == null)
-                    resultStorage = tempVarProvider();
-
-                var label1 = rb.DefineLabel();
-                var label2 = rb.DefineLabel();
-                ZBuiltins.CompilePredCall(head.Text, this, rb, form, label1, true);
-                rb.EmitStore(resultStorage, Game.Zero);
-                rb.Branch(polarity ? label2 : label);
-                rb.MarkLabel(label1);
-                rb.EmitStore(resultStorage, Game.One);
-                if (polarity)
-                    rb.Branch(label);
-                rb.MarkLabel(label2);
-                return resultStorage;
-            }
-            if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
-            {
-                ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
-
-                // void calls return true
-                if (resultStorage == null)
-                {
-                    result = Game.One;
-                }
-                else
-                {
-                    rb.EmitStore(resultStorage, Game.One);
-                }
-
-                if (polarity == true)
-                    rb.Branch(label);
-
-                return result;
-            }
-
-            // for anything more complicated, treat it as a value
-            result = CompileAsOperand(rb, form, form.SourceLine, resultStorage);
-            if (resultStorage != null && resultStorage != result)
-            {
-                rb.EmitStore(resultStorage, result);
-                result = resultStorage;
-            }
-            else if (resultStorage == null && result == rb.Stack)
-            {
-                resultStorage = tempVarProvider();
-                rb.EmitStore(resultStorage, result);
-                result = resultStorage;
-            }
-
-            rb.BranchIfZero(result, label, !polarity);
-            return result;
         }
 
         IOperand CompileTell(IRoutineBuilder rb, ZilForm form)

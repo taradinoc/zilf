@@ -79,30 +79,31 @@ namespace Zilf.Compiler.Builtins
                         continue;
                     }
 
-                    if (pi.ParameterType == typeof(IOperand) || pi.ParameterType == typeof(string) || pi.ParameterType == typeof(ZilObject) ||
-                    pi.ParameterType == typeof(ZilAtom) || pi.ParameterType == typeof(int) || pi.ParameterType == typeof(Block))
+                    if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
                     {
-                        // regular operand: may be optional
-                        max++;
-                        if (!pi.IsOptional)
+                        if (handler.IsVariable)
+                        {
+                            // indirect variable operand: must have [Variable]
+                            if (!pattrs.Any(a => a is VariableAttribute))
+                                throw new ArgumentException("IVariable/SoftGlobal parameter must be marked [Variable]");
+
+                            max++;
                             min++;
-                        continue;
+                            continue;
+                        }
+                        else
+                        {
+                            // regular operand: may be optional
+                            max++;
+                            if (!pi.IsOptional)
+                                min++;
+                            continue;
+                        }
                     }
-
-                    if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
+                    else if (pi.ParameterType.IsArray &&
+                      ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
                     {
-                        // indirect variable operand: must have [Variable]
-                        if (!pattrs.Any(a => a is VariableAttribute))
-                            throw new ArgumentException("IVariable/SoftGlobal parameter must be marked [Variable]");
-
-                        max++;
-                        min++;
-                        continue;
-                    }
-
-                    if (pi.ParameterType == typeof(IOperand[]) || pi.ParameterType == typeof(ZilObject[]))
-                    {
-                        // varargs: must be the last parameter and marked [Params]
+                        // varargs: must be the last parameter and marked [ParamArray]
                         if (i != parameters.Length - 1)
                             throw new ArgumentException("Operand array must be the last parameter");
                         if (!pattrs.Any(a => a is ParamArrayAttribute))
