@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\Action.cs" />
+    <Compile Include="Compiler\Builtins\ParameterTypeHandler.cs" />
     <Compile Include="Compiler\Compilation.Conditions.cs" />
     <Compile Include="Compiler\Compilation.Expressions.cs" />
     <Compile Include="Compiler\Compilation.Globals.cs" />

@@ -35,7 +35,7 @@ namespace Zilf.Compiler.Builtins
     {
         static ILookup<string, BuiltinSpec> builtins =
             (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
-             from BuiltinAttribute a in mi.GetCustomAttributes(typeof(BuiltinAttribute), false)
+             from a in mi.GetCustomAttributes<BuiltinAttribute>()
              from name in a.Names
              select new { Name = name, Attr = a, Method = mi })
             .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
@@ -123,154 +123,25 @@ namespace Zilf.Compiler.Builtins
             {
                 Contract.Assume(j < builtinParamInfos.Length);
 
-                var arg = args[i];
                 var pi = builtinParamInfos[j];
 
-                // TODO: use switch (need a dict to translate System.Type to something switchable?)
-                if (pi.ParameterType == typeof(IVariable) || pi.ParameterType == typeof(SoftGlobal))
-                {
-                    // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
-                    var atom = arg as ZilAtom;
-                    QuirksMode quirks = QuirksMode.None;
-                    if (atom == null)
-                    {
-                        var attr = pi.GetCustomAttributes(typeof(VariableAttribute), false).Cast<VariableAttribute>().Single();
-                        quirks = attr.QuirksMode;
-                        if (quirks != QuirksMode.None && arg is ZilForm form)
-                        {
-                            if (form.First is ZilAtom fatom &&
-                                (((quirks & QuirksMode.Global) != 0 && fatom.StdAtom == StdAtom.GVAL) ||
-                                 ((quirks & QuirksMode.Local) != 0 && fatom.StdAtom == StdAtom.LVAL)) &&
-                                form.Rest.First is ZilAtom &&
-                                form.Rest.Rest.IsEmpty)
-                            {
-                                atom = (ZilAtom)form.Rest.First;
-                            }
-                        }
-                    }
+                Action<string> innerError = msg => error(i, msg);
 
-                    if (atom == null)
-                    {
-                        error(i, "argument must be a variable");
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
-                    }
-                    else if (pi.ParameterType == typeof(IVariable))
-                    {
-                        if (!cc.Locals.ContainsKey(atom) && !cc.Globals.ContainsKey(atom))
-                            error(i, "no such variable: " + atom);
-
-                        var variableRef = GetVariable(cc, arg, quirks);
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef?.Hard));
-                    }
-                    else // if (pi.ParameterType == typeof(SoftGlobal))
-                    {
-                        if (!cc.SoftGlobals.ContainsKey(atom))
-                            error(i, "no such variable: " + atom);
-
-                        var variableRef = GetVariable(cc, arg, quirks);
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, variableRef?.Soft));
-                    }
-                }
-                else if (pi.ParameterType == typeof(string))
+                if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
                 {
-                    // arg must be a string
-                    if (!(arg is ZilString zstr))
-                    {
-                        error(i, "argument must be a literal string");
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
-                    }
-                    else
-                    {
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr.Text, cc.Context)));
-                    }
+                    result.Add(handler.Process(cc, innerError, args[i], pi));
                 }
-                else if (pi.ParameterType == typeof(IOperand))
+                else if (pi.ParameterType.IsArray &&
+                    ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
                 {
-                    // if marked with [Variable], allow a variable reference and forbid a non-variable bare atom
-                    var varAttr = (VariableAttribute)pi.GetCustomAttributes(typeof(VariableAttribute), false).SingleOrDefault();
-                    if (varAttr != null)
-                    {
-                        if (GetVariable(cc, arg, varAttr.QuirksMode) is VariableRef variable)
-                        {
-                            if (!variable.IsHard)
-                            {
-                                error(i, "soft variable may not be used here");
-                                result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
-                            }
-                            else
-                            {
-                                result.Add(new BuiltinArg(BuiltinArgType.Operand, variable.Hard.Indirect));
-                            }
-                        }
-                        else if (arg is ZilAtom)
-                        {
-                            error(i, "bare atom argument must be a variable name");
-                            result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
-                        }
-                        else
-                        {
-                            result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, arg));
-                        }
-                    }
-                    else
-                    {
-                        result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, arg));
-                    }
-                }
-                else if (pi.ParameterType == typeof(IOperand[]))
-                {
-                    // this absorbs the rest of the args
+                    // consume all remaining arguments
                     while (i < args.Length)
                     {
-                        result.Add(new BuiltinArg(BuiltinArgType.NeedsEval, args[i++]));
+                        result.Add(handler.Process(cc, innerError, args[i], pi));
+                        i++;
                     }
+
                     break;
-                }
-                else if (pi.ParameterType == typeof(ZilObject))
-                {
-                    result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
-                }
-                else if (pi.ParameterType == typeof(ZilAtom))
-                {
-                    if (arg.StdTypeAtom != StdAtom.ATOM)
-                        error(i, "argument must be an atom");
-
-                    result.Add(new BuiltinArg(BuiltinArgType.Operand, arg));
-                }
-                else if (pi.ParameterType == typeof(int))
-                {
-                    if (arg.StdTypeAtom != StdAtom.FIX)
-                        error(i, "argument must be a FIX");
-
-                    result.Add(new BuiltinArg(BuiltinArgType.Operand, ((ZilFix)arg).Value));
-                }
-                else if (pi.ParameterType == typeof(ZilObject[]))
-                {
-                    // this absorbs the rest of the args
-                    while (i < args.Length)
-                    {
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, args[i++]));
-                    }
-                    break;
-                }
-                else if (pi.ParameterType == typeof(Block))
-                {
-                    // arg must be an LVAL reference
-                    if (arg.IsLVAL(out var atom))
-                    {
-                        var block = cc.Blocks.FirstOrDefault(b => b.Name == atom);
-                        if (block == null)
-                        {
-                            error(i, "argument must be bound to a block");
-                        }
-
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, block));
-                    }
-                    else
-                    {
-                        error(i, "argument must be a local variable reference");
-                        result.Add(new BuiltinArg(BuiltinArgType.Operand, null));
-                    }
                 }
                 else
                 {
@@ -281,48 +152,6 @@ namespace Zilf.Compiler.Builtins
             }
 
             return result;
-        }
-
-        static VariableRef? GetVariable(Compilation cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
-        {
-            if (!(expr is ZilAtom atom))
-            {
-                if (quirks == QuirksMode.None)
-                    return null;
-
-                if (!(expr is ZilForm form && form.First is ZilAtom head))
-                    return null;
-
-                switch (head.StdAtom)
-                {
-                    case StdAtom.GVAL:
-                        if ((quirks & QuirksMode.Global) == 0)
-                            return null;
-                        break;
-                    case StdAtom.LVAL:
-                        if ((quirks & QuirksMode.Local) == 0)
-                            return null;
-                        break;
-                }
-
-                if (form.Rest?.First is ZilAtom variable)
-                {
-                    atom = variable;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            if (cc.Locals.TryGetValue(atom, out var lb))
-                return new VariableRef(lb);
-            if (cc.Globals.TryGetValue(atom, out var gb))
-                return new VariableRef(gb);
-            if (cc.SoftGlobals.TryGetValue(atom, out var sg))
-                return new VariableRef(sg);
-
-            return null;
         }
 
         static List<object> MakeBuiltinMethodParams(
