@@ -285,7 +285,7 @@ namespace Zilf.Interpreter
 
                 using (ctx.PushFileContext(string.Format("<accessor for field {0} of DEFSTRUCT {1}>", field.Name, name)))
                 {
-                    Program.Evaluate(ctx, accessMacroDef, true);
+                    accessMacroDef.Eval(ctx);
                 }
             }
 
@@ -606,7 +606,6 @@ namespace Zilf.Interpreter
                 definitionOrder++;
             }
 
-            // TODO: use Program.Parse instead of string formatting
             return Program.Parse(
                 ctx,
                 SMacroTemplate,
@@ -623,7 +622,7 @@ namespace Zilf.Interpreter
                 .Single();
         }
 
-        static string MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
+        static ZilObject MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
             DefStructField field)
         {
             Contract.Requires(structName != null);
@@ -664,15 +663,16 @@ namespace Zilf.Interpreter
             else
                 template = SFullCheckTemplate;
 
-            // TODO: use Program.Parse instead of string formatting
-            return string.Format(
+            return Program.Parse(
+                ctx,
                 template,
                 field.Name,
                 structName,
                 field.PutFunc,
                 field.NthFunc,
-                field.Offset,
-                field.Decl.ToStringContext(ctx, false));
+                new ZilFix(field.Offset),
+                field.Decl)
+                .Single();
         }
 
         static DefStructField ParseDefStructField(Context ctx, DefStructDefaults defaults, ref int offset,
