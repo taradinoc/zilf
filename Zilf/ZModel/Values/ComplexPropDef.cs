@@ -59,6 +59,34 @@ namespace Zilf.ZModel.Values
             {
                 return string.Format("Type={0} Variable={1} Decl={2}", Type, Variable, Decl);
             }
+
+            public ZilObject ToZilObject(Context ctx)
+            {
+                switch (Type)
+                {
+                    case InputElementType.Atom:
+                        return Variable;
+
+                    case InputElementType.Many:
+                        return ZilString.FromString("MANY");
+
+                    case InputElementType.Opt:
+                        return ZilString.FromString("OPT");
+
+                    case InputElementType.Variable:
+                        if (Decl != null)
+                        {
+                            return new ZilAdecl(Variable, Decl);
+                        }
+                        else
+                        {
+                            return Variable;
+                        }
+
+                    default:
+                        throw UnhandledCaseException.FromEnum(Type);
+                }
+            }
         }
 
         enum OutputElementType
@@ -97,6 +125,84 @@ namespace Zilf.ZModel.Values
             {
                 return string.Format("Type={0} Constant={1} Variable={2} PartOfSpeech={3} Fix={4}",
                     Type, Constant, Variable, PartOfSpeech, Fix);
+            }
+
+            public ZilObject ToZilObject(Context ctx)
+            {
+                ZilObject result;
+                StdAtom head;
+
+                switch (Type)
+                {
+                    case OutputElementType.Length:
+                        if (Fix != null)
+                            result = Fix;
+                        else
+                            result = ctx.FALSE;
+                        break;
+
+                    case OutputElementType.Many:
+                        result = ZilString.FromString("MANY");
+                        break;
+
+                    case OutputElementType.Adjective:
+                        head = StdAtom.ADJ;
+                        goto TwoElementForm;
+                    case OutputElementType.Byte:
+                        head = StdAtom.BYTE;
+                        goto TwoElementForm;
+                    case OutputElementType.Global:
+                        head = StdAtom.GLOBAL;
+                        goto TwoElementForm;
+                    case OutputElementType.Noun:
+                        head = StdAtom.NOUN;
+                        goto TwoElementForm;
+                    case OutputElementType.Object:
+                        head = StdAtom.OBJECT;
+                        goto TwoElementForm;
+                    case OutputElementType.Room:
+                        head = StdAtom.ROOM;
+                        goto TwoElementForm;
+                    case OutputElementType.String:
+                        head = StdAtom.STRING;
+                        goto TwoElementForm;
+                    case OutputElementType.Word:
+                        head = StdAtom.WORD;
+                        goto TwoElementForm;
+
+                    TwoElementForm:
+                        result = new ZilForm(new[] {
+                            ctx.GetStdAtom(head),
+                            (ZilObject)Fix ?? new ZilForm(new[] {
+                                ctx.GetStdAtom(StdAtom.LVAL),
+                                Variable
+                            })
+                        });
+                        break;
+
+                    case OutputElementType.Voc:
+                        result = new ZilForm(new[] {
+                            ctx.GetStdAtom(StdAtom.VOC),
+                            (ZilObject)Fix ?? new ZilForm(new[] {
+                                ctx.GetStdAtom(StdAtom.LVAL),
+                                Variable
+                            }),
+                            PartOfSpeech
+                        });
+                        break;
+
+                    default:
+                        throw UnhandledCaseException.FromEnum(Type);
+                }
+
+                if (Constant != null)
+                {
+                    return new ZilList(new[] { Constant, result });
+                }
+                else
+                {
+                    return result;
+                }
             }
         }
 
@@ -259,7 +365,6 @@ namespace Zilf.ZModel.Values
                         "PROPDEF pattern",
                         "an atom");
                 }
-                inputs.RemoveAt(0);
 
                 if (outputs.Skip(1).Any(e => e.Type == OutputElementType.Length))
                 {
@@ -579,32 +684,41 @@ namespace Zilf.ZModel.Values
                             break;
 
                         case OutputElementType.Adjective:
-                            sb.AppendFormat("<ADJ {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<ADJ {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Byte:
-                            sb.AppendFormat("<BYTE {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<BYTE {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Global:
-                            sb.AppendFormat("<GLOBAL {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<GLOBAL {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Noun:
-                            sb.AppendFormat("<NOUN {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<NOUN {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Object:
-                            sb.AppendFormat("<OBJECT {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<OBJECT {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Room:
-                            sb.AppendFormat("<ROOM {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<ROOM {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.String:
-                            sb.AppendFormat("<STRING {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<STRING {0}>", ConvertOutput(o));
                             break;
                         case OutputElementType.Voc:
-                            sb.AppendFormat("<VOC {0} {1}>", convert((ZilObject)o.Fix ?? o.Variable), convert(o.PartOfSpeech));
+                            sb.AppendFormat("<VOC {0} {1}>", ConvertOutput(o), convert(o.PartOfSpeech));
                             break;
                         case OutputElementType.Word:
-                            sb.AppendFormat("<WORD {0}>", convert((ZilObject)o.Fix ?? o.Variable));
+                            sb.AppendFormat("<WORD {0}>", ConvertOutput(o));
                             break;
+
+                            // helper
+                            string ConvertOutput(OutputElement oo)
+                            {
+                                if (oo.Fix != null)
+                                    return convert(oo.Fix);
+
+                                return "." + convert(oo.Variable);
+                            }
 
                         default:
                             throw UnhandledCaseException.FromEnum(o.Type);
@@ -630,8 +744,21 @@ namespace Zilf.ZModel.Values
 
         public override ZilObject GetPrimitive(Context ctx)
         {
-            // TODO: implement me
-            throw new NotImplementedException();
+            var result = new List<ZilObject>();
+            var pattern = new List<ZilObject>();
+
+            foreach (var p in patterns)
+            {
+                pattern.Clear();
+
+                pattern.AddRange(p.Inputs.Select(i => i.ToZilObject(ctx)));
+                pattern.Add(ctx.GetStdAtom(StdAtom.Eq));
+                pattern.AddRange(p.Outputs.Select(o => o.ToZilObject(ctx)));
+
+                result.Add(new ZilList(pattern));
+            }
+
+            return new ZilList(result);
         }
 
         [ChtypeMethod]
@@ -659,7 +786,7 @@ namespace Zilf.ZModel.Values
             foreach (var p in patterns)
             {
                 var prop2 = prop.Rest;
-                if (MatchPartialPattern(ctx, ref prop2, p.Inputs, 0, null) && prop2.IsEmpty)
+                if (MatchPartialPattern(ctx, ref prop2, p.Inputs, 1, null) && prop2.IsEmpty)
                     return true;
             }
 
@@ -679,7 +806,7 @@ namespace Zilf.ZModel.Values
                 var propBody = prop.Rest;
                 captures.Clear();
 
-                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
+                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) && propBody.IsEmpty)
                 {
                     PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0, prop.SourceLine);
                     return;
@@ -705,7 +832,7 @@ namespace Zilf.ZModel.Values
                 var propBody = prop.Rest;
                 captures.Clear();
 
-                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 0, captures) && propBody.IsEmpty)
+                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) && propBody.IsEmpty)
                 {
                     // build output
                     WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, propName, prop.SourceLine);
