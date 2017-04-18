@@ -220,6 +220,7 @@
     <Compile Include="Interpreter\Subrs.ZModel.cs" />
     <Compile Include="Interpreter\Values\Tied\TiedLayout.cs" />
     <Compile Include="Interpreter\Values\ZilHashBase.cs" />
+    <Compile Include="Interpreter\Values\ZilListoidBase.cs" />
     <Compile Include="Interpreter\Values\ZilListBase.cs" />
     <Compile Include="Interpreter\Values\ZilActivation.cs" />
     <Compile Include="Interpreter\Values\ZilAdecl.cs" />

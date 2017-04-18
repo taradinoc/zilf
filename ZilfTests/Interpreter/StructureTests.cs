@@ -655,6 +655,25 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void TestPUTREST()
         {
+            var ctx = new Context();
+
+            TestHelpers.EvalAndAssert(ctx, "<PUTREST '(1 2 3) '(A B)>",
+                new ZilList(new ZilObject[] {
+                    new ZilFix(1),
+                    ZilAtom.Parse("A", ctx),
+                    ZilAtom.Parse("B", ctx)
+                }));
+
+            TestHelpers.EvalAndAssert(ctx, "<PUTREST '<1 2 3> '(A B)>",
+                new ZilForm(new ZilObject[] {
+                    new ZilFix(1),
+                    ZilAtom.Parse("A", ctx),
+                    ZilAtom.Parse("B", ctx)
+                }));
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PUTREST <ASSOCIATIONS> '()>",
+                ex => !(ex is ArgumentDecodingError));
+
             TestHelpers.EvalAndCatch<ArgumentTypeError>("<PUTREST [1 2] [FOO]>");
 
             TestHelpers.EvalAndCatch<InterpreterError>("<PUTREST () (5)>");

@@ -10,8 +10,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values.Tied
 {
-    [BuiltinPrimType(PrimType.LIST)]
-    abstract class ZilTiedListBase : ZilObject, IStructure
+    abstract class ZilTiedListBase : ZilListoidBase, IStructure
     {
         protected abstract TiedLayout GetLayout();
 
@@ -29,9 +28,7 @@ namespace Zilf.Interpreter.Values.Tied
                 MyLayout = GetLayout();
         }
 
-        public sealed override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
+        public sealed override ZilObject GetPrimitive(Context ctx)
         {
             return new ZilList(this);
         }
@@ -78,7 +75,7 @@ namespace Zilf.Interpreter.Values.Tied
             }
         }
 
-        public ZilObject this[int index]
+        public sealed override ZilObject this[int index]
         {
             get
             {
@@ -139,11 +136,9 @@ namespace Zilf.Interpreter.Values.Tied
             }
         }
 
-        public bool IsEmpty => GetLength(1) != 0;
+        public sealed override bool IsEmpty => GetLength(1) != 0;
 
-        public IStructure GetBack(int skip) => throw new NotSupportedException();
-
-        public IEnumerator<ZilObject> GetEnumerator()
+        public sealed override IEnumerator<ZilObject> GetEnumerator()
         {
             var layout = MyLayout;
 
@@ -155,20 +150,34 @@ namespace Zilf.Interpreter.Values.Tied
             return query.GetEnumerator();
         }
 
-        public ZilObject GetFirst()
+        public sealed override ZilObject First
         {
-            var layout = MyLayout;
+            get
+            {
+                var layout = MyLayout;
 
-            if (layout.MinLength > 0)
-                return (ZilObject)layout.PropertyInfos[0].GetValue(this);
+                if (layout.MinLength > 0)
+                    return (ZilObject)layout.PropertyInfos[0].GetValue(this);
 
-            if (layout.CatchAllPropertyInfo is PropertyInfo pi)
-                return ((IStructure)pi.GetValue(this)).GetFirst();
+                if (layout.CatchAllPropertyInfo is PropertyInfo pi)
+                    return ((IStructure)pi.GetValue(this)).GetFirst();
 
-            return null;
+                return null;
+            }
+
+            set
+            {
+                this[0] = value;
+            }
         }
 
-        public int GetLength()
+        public sealed override ZilList Rest
+        {
+            get => new ZilList(GetRest(1));
+            set => throw new NotSupportedException();
+        }
+
+        public sealed override int GetLength()
         {
             var result = MyLayout.PropertyInfos.Count;
 
@@ -178,7 +187,7 @@ namespace Zilf.Interpreter.Values.Tied
             return result;
         }
 
-        public int? GetLength(int limit)
+        public sealed override int? GetLength(int limit)
         {
             var result = MyLayout.PropertyInfos.Count;
 
@@ -201,7 +210,7 @@ namespace Zilf.Interpreter.Values.Tied
             return result;
         }
 
-        public IStructure GetRest(int skip)
+        public sealed override IStructure GetRest(int skip)
         {
             if (GetLength(skip) < skip)
                 return null;
@@ -209,19 +218,8 @@ namespace Zilf.Interpreter.Values.Tied
             return new Wrapper(this, skip);
         }
 
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue) =>
-            throw new NotSupportedException();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        //XXX derive from ZilList?
         [BuiltinAlternate(typeof(ZilList))]
-        private class Wrapper : ZilObject, IStructure
+        private sealed class Wrapper : ZilListoidBase
         {
             readonly ZilTiedListBase orig;
             readonly int offset;
@@ -232,7 +230,7 @@ namespace Zilf.Interpreter.Values.Tied
                 this.offset = offset;
             }
 
-            public ZilObject this[int index]
+            public override ZilObject this[int index]
             {
                 get => orig[offset + index];
                 set => orig[offset + index] = value;
@@ -240,46 +238,41 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override StdAtom StdTypeAtom => StdAtom.LIST;
 
-            public override PrimType PrimType => PrimType.LIST;
+            public override bool IsEmpty => GetLength(1) != 0;
 
-            public bool IsEmpty => GetLength(1) != 0;
-
-            public IStructure GetBack(int skip)
-            {
-                if (offset >= skip)
-                    return new Wrapper(orig, offset - skip);
-
-                return null;
-            }
-
-            public IEnumerator<ZilObject> GetEnumerator()
+            public override IEnumerator<ZilObject> GetEnumerator()
             {
                 return orig.Skip(offset).GetEnumerator();
             }
 
-            public ZilObject GetFirst() => orig[offset];
+            public override ZilObject First
+            {
+                get => orig[offset];
+                set => orig[offset] = value;
+            }
 
-            public int GetLength() => orig.GetLength() - offset;
+            public override ZilList Rest
+            {
+                get => new ZilList(GetRest(1));
+                set => throw new NotSupportedException();
+            }
 
-            public int? GetLength(int limit) => orig.GetLength(limit + offset) - offset;
+            public override int GetLength() => orig.GetLength() - offset;
+
+            public override int? GetLength(int limit) => orig.GetLength(limit + offset) - offset;
 
             public override ZilObject GetPrimitive(Context ctx)
             {
                 return new ZilList(this);
             }
 
-            public IStructure GetRest(int skip)
+            public override IStructure GetRest(int skip)
             {
                 if (GetLength(skip) < skip)
                     return null;
 
                 return new Wrapper(orig, offset + skip);
             }
-
-            public IStructure GetTop() => throw new NotSupportedException();
-
-            public void Grow(int end, int beginning, ZilObject defaultValue)
-                => throw new NotSupportedException();
 
             public override string ToString()
             {
@@ -297,11 +290,6 @@ namespace Zilf.Interpreter.Values.Tied
                     "(",
                     ")",
                     zo => zo.ToStringContext(ctx, friendly));
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
             }
         }
     }
