@@ -19,11 +19,13 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
+using System;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
-    class ZilConstant : ZilObject
+    class ZilConstant : ZilTiedListBase
     {
         readonly ZilAtom name;
         readonly ZilObject value;
@@ -51,29 +53,15 @@ namespace Zilf.ZModel.Values
         }
 
         public ZilAtom Name => name;
-
         public ZilObject Value => value;
 
-        public override string ToString()
+        protected override TiedLayout GetLayout()
         {
-            return "#CONSTANT (" + name + " " + value + ")";
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return "#CONSTANT (" + name.ToStringContext(ctx, friendly) +
-            " " + value.ToStringContext(ctx, friendly) + ")";
+            return TiedLayout.Create<ZilConstant>(
+                x => x.Name,
+                x => x.Value);
         }
 
         public override StdAtom StdTypeAtom => StdAtom.CONSTANT;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilList(name,
-                new ZilList(value,
-                    new ZilList(null, null)));
-        }
     }
 }

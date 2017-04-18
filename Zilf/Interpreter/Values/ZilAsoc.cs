@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.Interpreter.Values
 {
@@ -34,7 +35,7 @@ namespace Zilf.Interpreter.Values
     }
 
     [BuiltinType(StdAtom.ASOC, PrimType.LIST)]
-    class ZilAsoc : ZilObject
+    class ZilAsoc : ZilTiedListBase
     {
         readonly AsocResult[] results;
         readonly int index;
@@ -61,6 +62,14 @@ namespace Zilf.Interpreter.Values
         public ZilObject Indicator => results[index].Indicator;
         public ZilObject Value => results[index].Value;
 
+        protected override TiedLayout GetLayout()
+        {
+            return TiedLayout.Create<ZilAsoc>(
+                x => x.Item,
+                x => x.Indicator,
+                x => x.Value);
+        }
+
         public ZilAsoc GetNext()
         {
             if (index + 1 < results.Length)
@@ -70,25 +79,5 @@ namespace Zilf.Interpreter.Values
         }
 
         public override StdAtom StdTypeAtom => StdAtom.ASOC;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilList(new[] { Item, Indicator, Value });
-        }
-
-        public override string ToString()
-        {
-            return $"#ASOC ({Item} {Indicator} {Value})";
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return string.Format("#ASOC ({0} {1} {2})",
-                Item.ToStringContext(ctx, friendly),
-                Indicator.ToStringContext(ctx, friendly),
-                Value.ToStringContext(ctx, friendly));
-        }
     }
 }

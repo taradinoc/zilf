@@ -424,7 +424,7 @@
                  (<TYPE? .F ROUTINE>
                   <FORM ROUTINE .OBJ !<CHTYPE .F LIST>>)
                  (<TYPE? .F OBJECT>
-                  <FORM OBJECT !<CHTYPE .F LIST>>)
+                  <FORM !<CHTYPE .F LIST>>)
                  (<ASSIGNED? .OBJ .ENV>
                   <FORM SET .OBJ <LVAL .OBJ .ENV>>)
                  (ELSE

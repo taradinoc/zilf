@@ -381,7 +381,7 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(convert != null);
             Contract.Ensures(Contract.Result<string>() != null);
 
-            var sb = new StringBuilder(2);
+            var sb = new StringBuilder();
             sb.Append(start);
 
             if (items is ZilListBase list)
@@ -389,10 +389,18 @@ namespace Zilf.Interpreter.Values
                 items = list.EnumerateNonRecursive();
             }
 
+            bool first = true;
+
             foreach (ZilObject obj in items)
             {
-                if (sb.Length > 1)
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
                     sb.Append(' ');
+                }
 
                 if (obj == null)
                     sb.Append("...");

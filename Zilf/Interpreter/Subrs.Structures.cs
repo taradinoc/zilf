@@ -139,9 +139,13 @@ namespace Zilf.Interpreter
             {
                 st[idx - 1] = newValue;
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             {
-                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUT", ex);
+                throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUT");
+            }
+            catch (NotSupportedException)
+            {
+                throw new InterpreterError(InterpreterMessages._0_Element_1_Is_Read_Only, "PUT", idx);
             }
 
             return (ZilObject)st;

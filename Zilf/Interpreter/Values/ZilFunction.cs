@@ -21,12 +21,14 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
+    // TODO: abstract base class for FUNCTION and ROUTINE
     [BuiltinType(StdAtom.FUNCTION, PrimType.LIST)]
-    class ZilFunction : ZilObject, IApplicable, IStructure
+    class ZilFunction : ZilTiedListBase, IApplicable
     {
         ArgSpec argspec;
         readonly ZilObject[] body;
@@ -68,58 +70,17 @@ namespace Zilf.Interpreter.Values
                 .Invoke("FUNCTION", ctx, list.ToArray());
         }
 
-        string ToString(Func<ZilObject, string> convert)
+        protected override TiedLayout GetLayout()
         {
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
-            if (Recursion.TryLock(this))
-            {
-                try
-                {
-                    var sb = new StringBuilder();
-
-                    sb.Append("#FUNCTION (");
-                    sb.Append(argspec.ToString(convert));
-
-                    foreach (ZilObject expr in body)
-                    {
-                        sb.Append(' ');
-                        sb.Append(convert(expr));
-                    }
-
-                    sb.Append(')');
-                    return sb.ToString();
-                }
-                finally
-                {
-                    Recursion.Unlock(this);
-                }
-            }
-            return "#FUNCTION...";
+            return TiedLayout.Create<ZilFunction>(
+                x => x.ArgSpecAsList)
+                .WithCatchAll<ZilFunction>(x => x.BodyAsList);
         }
 
-        public override string ToString()
-        {
-            return ToString(zo => zo.ToString());
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
-        }
+        public ZilList ArgSpecAsList => argspec.ToZilList();
+        public ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.FUNCTION;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            var result = new List<ZilObject>(1 + body.Length);
-            result.Add(argspec.ToZilList());
-            result.AddRange(body);
-            return new ZilList(result);
-        }
 
         public ZilObject Apply(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, true);
 
@@ -178,57 +139,5 @@ namespace Zilf.Interpreter.Values
 
             return result;
         }
-
-        #region IStructure Members
-
-        public ZilObject GetFirst() => argspec.ToZilList();
-
-        public IStructure GetRest(int skip) => new ZilList(body.Skip(skip - 1));
-
-        public IStructure GetBack(int skip) => throw new NotSupportedException();
-
-        public IStructure GetTop() => throw new NotSupportedException();
-
-        public void Grow(int end, int beginning, ZilObject defaultValue) =>
-            throw new NotSupportedException();
-
-        public bool IsEmpty => false;
-
-        public ZilObject this[int index]
-        {
-            get
-            {
-                if (index == 0)
-                    return argspec.ToZilList();
-
-                return body[index - 1];
-            }
-            set
-            {
-                if (index == 0)
-                    argspec = ArgSpec.Parse("PUT", argspec, (IEnumerable<ZilObject>)value);
-                else
-                    body[index - 1] = value;
-            }
-        }
-
-        public int GetLength() => body.Length + 1;
-
-        public int? GetLength(int limit)
-        {
-            var length = GetLength();
-            return length <= limit ? length : (int?)null;
-        }
-
-        #endregion
-
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            yield return argspec.ToZilList();
-            foreach (var zo in body)
-                yield return zo;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
