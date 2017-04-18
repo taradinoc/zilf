@@ -23,12 +23,12 @@ using System.Linq;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinPrimType(PrimType.LIST)]
-    abstract class ZilListBase : ZilObject, IEnumerable<ZilObject>, IStructure
+    abstract class ZilListBase : ZilListoidBase
     {
         private ZilObject first;
         private ZilList rest;
 
-        public ZilObject First
+        public sealed override ZilObject First
         {
             get => first;
 
@@ -44,7 +44,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public ZilList Rest
+        public sealed override ZilList Rest
         {
             get => rest;
 
@@ -110,7 +110,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(null, null);
         }
 
-        public bool IsEmpty => First == null;
+        public sealed override bool IsEmpty => First == null;
 
         protected virtual string OpenBracket => $"#{StdTypeAtom} (";
         protected virtual string CloseBracket => ")";
@@ -147,8 +147,6 @@ namespace Zilf.Interpreter.Values
             return OpenBracket + "..." + CloseBracket;
         }
 
-        public sealed override PrimType PrimType => PrimType.LIST;
-
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
             if (GetType() == typeof(ZilList))
@@ -162,7 +160,7 @@ namespace Zilf.Interpreter.Values
             return originalType != null ? ctx.ChangeType(this, originalType) : this;
         }
 
-        public IEnumerator<ZilObject> GetEnumerator()
+        public sealed override IEnumerator<ZilObject> GetEnumerator()
         {
             var r = this;
 
@@ -172,8 +170,6 @@ namespace Zilf.Interpreter.Values
                 r = r.Rest;
             }
         }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
         /// Enumerates the items of the list, yielding a final <b>null</b> instead of repeating if the list is recursive.
@@ -217,7 +213,7 @@ namespace Zilf.Interpreter.Values
             return Rest.Equals(other.Rest);
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             var result = (int)StdTypeAtom;
             foreach (ZilObject obj in EnumerateNonRecursive())
@@ -230,9 +226,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        public ZilObject GetFirst() => First;
-
-        public IStructure GetRest(int skip)
+        public sealed override IStructure GetRest(int skip)
         {
             var result = this;
             while (skip-- > 0 && result != null)
@@ -240,14 +234,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        public IStructure GetBack(int skip) => throw new NotSupportedException();
-
-        public IStructure GetTop() => throw new NotSupportedException();
-
-        public void Grow(int end, int beginning, ZilObject defaultValue) =>
-            throw new NotSupportedException();
-
-        public ZilObject this[int index]
+        public sealed override ZilObject this[int index]
         {
             get
             {
@@ -267,9 +254,9 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public int GetLength() => this.Count();
+        public sealed override int GetLength() => this.Count();
 
-        public int? GetLength(int limit)
+        public sealed override int? GetLength(int limit)
         {
             int count = 0;
 

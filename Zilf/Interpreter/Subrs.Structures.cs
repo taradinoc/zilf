@@ -185,7 +185,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject PUTREST(Context ctx, [Decl("LIST")] ZilList list, ZilListBase newRest)
+        public static ZilObject PUTREST(Context ctx, ZilListoidBase list, ZilListoidBase newRest)
         {
             SubrContracts(ctx);
 
