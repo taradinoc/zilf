@@ -25,12 +25,13 @@ using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.PROPDEF, PrimType.LIST)]
-    sealed class ComplexPropDef : ZilObject
+    sealed class ComplexPropDef : ZilTiedListBase
     {
         enum InputElementType
         {
@@ -60,7 +61,7 @@ namespace Zilf.ZModel.Values
                 return string.Format("Type={0} Variable={1} Decl={2}", Type, Variable, Decl);
             }
 
-            public ZilObject ToZilObject(Context ctx)
+            public ZilObject ToZilObject()
             {
                 switch (Type)
                 {
@@ -127,7 +128,7 @@ namespace Zilf.ZModel.Values
                     Type, Constant, Variable, PartOfSpeech, Fix);
             }
 
-            public ZilObject ToZilObject(Context ctx)
+            public ZilObject ToZilObject(ComplexPropDef tied)
             {
                 ZilObject result;
                 StdAtom head;
@@ -138,7 +139,7 @@ namespace Zilf.ZModel.Values
                         if (Fix != null)
                             result = Fix;
                         else
-                            result = ctx.FALSE;
+                            result = tied.FALSE;
                         break;
 
                     case OutputElementType.Many:
@@ -172,9 +173,9 @@ namespace Zilf.ZModel.Values
 
                     TwoElementForm:
                         result = new ZilForm(new[] {
-                            ctx.GetStdAtom(head),
+                            tied.GetStdAtom(head),
                             (ZilObject)Fix ?? new ZilForm(new[] {
-                                ctx.GetStdAtom(StdAtom.LVAL),
+                                tied.GetStdAtom(StdAtom.LVAL),
                                 Variable
                             })
                         });
@@ -182,9 +183,9 @@ namespace Zilf.ZModel.Values
 
                     case OutputElementType.Voc:
                         result = new ZilForm(new[] {
-                            ctx.GetStdAtom(StdAtom.VOC),
+                            tied.GetStdAtom(StdAtom.VOC),
                             (ZilObject)Fix ?? new ZilForm(new[] {
-                                ctx.GetStdAtom(StdAtom.LVAL),
+                                tied.GetStdAtom(StdAtom.LVAL),
                                 Variable
                             }),
                             PartOfSpeech
@@ -594,171 +595,34 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        public override string ToString()
-        {
-            return ToStringImpl(zo => zo.ToString());
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return ToStringImpl(zo => zo.ToStringContext(ctx, friendly));
-        }
-
-        string ToStringImpl(Func<ZilObject, string> convert)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append("#PROPDEF (");
-
-            bool first = true;
-
-            foreach (var p in patterns)
-            {
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    sb.Append(' ');
-                }
-
-                sb.Append('(');
-
-                foreach (var i in p.Inputs)
-                {
-                    switch (i.Type)
-                    {
-                        case InputElementType.Atom:
-                            sb.Append(convert(i.Variable));
-                            break;
-
-                        case InputElementType.Many:
-                            sb.Append("\"MANY\"");
-                            break;
-
-                        case InputElementType.Opt:
-                            sb.Append("\"OPT\"");
-                            break;
-
-                        case InputElementType.Variable:
-                            sb.Append(convert(i.Variable));
-                            if (i.Decl != null)
-                            {
-                                sb.Append(':');
-                                sb.Append(convert(i.Decl));
-                            }
-                            break;
-
-                        default:
-                            throw UnhandledCaseException.FromEnum(i.Type);
-                    }
-
-                    sb.Append(' ');
-                }
-
-                sb.Append('=');
-
-                foreach (var o in p.Outputs)
-                {
-                    sb.Append(' ');
-
-                    if (o.Constant != null)
-                    {
-                        sb.Append('(');
-                        sb.Append(convert(o.Constant));
-                        sb.Append(' ');
-                    }
-
-                    switch (o.Type)
-                    {
-                        case OutputElementType.Length:
-                            if (o.Fix != null)
-                                sb.Append(o.Fix.Value);
-                            else
-                                sb.Append("<>");
-                            break;
-
-                        case OutputElementType.Many:
-                            sb.Append("\"MANY\"");
-                            break;
-
-                        case OutputElementType.Adjective:
-                            sb.AppendFormat("<ADJ {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Byte:
-                            sb.AppendFormat("<BYTE {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Global:
-                            sb.AppendFormat("<GLOBAL {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Noun:
-                            sb.AppendFormat("<NOUN {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Object:
-                            sb.AppendFormat("<OBJECT {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Room:
-                            sb.AppendFormat("<ROOM {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.String:
-                            sb.AppendFormat("<STRING {0}>", ConvertOutput(o));
-                            break;
-                        case OutputElementType.Voc:
-                            sb.AppendFormat("<VOC {0} {1}>", ConvertOutput(o), convert(o.PartOfSpeech));
-                            break;
-                        case OutputElementType.Word:
-                            sb.AppendFormat("<WORD {0}>", ConvertOutput(o));
-                            break;
-
-                            // helper
-                            string ConvertOutput(OutputElement oo)
-                            {
-                                if (oo.Fix != null)
-                                    return convert(oo.Fix);
-
-                                return "." + convert(oo.Variable);
-                            }
-
-                        default:
-                            throw UnhandledCaseException.FromEnum(o.Type);
-                    }
-
-                    if (o.Constant != null)
-                    {
-                        sb.Append(')');
-                    }
-                }
-
-                sb.Append(')');
-            }
-
-            sb.Append(')');
-
-            return sb.ToString();
-        }
-
         public override StdAtom StdTypeAtom => StdAtom.PROPDEF;
 
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
+        protected override TiedLayout GetLayout()
         {
-            var result = new List<ZilObject>();
-            var pattern = new List<ZilObject>();
+            return TiedLayout.Create<ComplexPropDef>()
+                .WithCatchAll<ComplexPropDef>(x => x.PatternsList);
+        }
 
-            foreach (var p in patterns)
+        public ZilList PatternsList
+        {
+            get
             {
-                pattern.Clear();
+                var result = new List<ZilObject>();
+                var pattern = new List<ZilObject>();
 
-                pattern.AddRange(p.Inputs.Select(i => i.ToZilObject(ctx)));
-                pattern.Add(ctx.GetStdAtom(StdAtom.Eq));
-                pattern.AddRange(p.Outputs.Select(o => o.ToZilObject(ctx)));
+                foreach (var p in patterns)
+                {
+                    pattern.Clear();
 
-                result.Add(new ZilList(pattern));
+                    pattern.AddRange(p.Inputs.Select(i => i.ToZilObject()));
+                    pattern.Add(GetStdAtom(StdAtom.Eq));
+                    pattern.AddRange(p.Outputs.Select(o => o.ToZilObject(this)));
+
+                    result.Add(new ZilList(pattern));
+                }
+
+                return new ZilList(result);
             }
-
-            return new ZilList(result);
         }
 
         [ChtypeMethod]

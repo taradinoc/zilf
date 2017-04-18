@@ -21,18 +21,19 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.MACRO, PrimType.LIST)]
-    class ZilEvalMacro : ZilObject, IApplicable, IStructure
+    class ZilEvalMacro : ZilTiedListBase, IApplicable
     {
-        ZilObject wrappedValue;
-
         public ZilEvalMacro(ZilObject value)
         {
-            this.wrappedValue = value;
+            this.WrappedValue = value;
         }
+
+        public ZilObject WrappedValue { get; set; }
 
         [ChtypeMethod]
         public static ZilEvalMacro FromList(Context ctx, ZilListBase list)
@@ -57,43 +58,12 @@ namespace Zilf.Interpreter.Values
             return new ZilEvalMacro(list.First);
         }
 
-        string ToString(Func<ZilObject, string> convert)
+        protected override TiedLayout GetLayout()
         {
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
-            if (Recursion.TryLock(this))
-            {
-                try
-                {
-                    return "#MACRO (" + convert(wrappedValue) + ")";
-                }
-                finally
-                {
-                    Recursion.Unlock(this);
-                }
-            }
-            return "#MACRO...";
-        }
-
-        public override string ToString()
-        {
-            return ToString(zo => zo.ToString());
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
+            return TiedLayout.Create<ZilEvalMacro>(x => x.WrappedValue);
         }
 
         public override StdAtom StdTypeAtom => StdAtom.MACRO;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilList(wrappedValue, new ZilList(null, null));
-        }
 
         static ZilObject MakeSpliceExpandable(ZilObject zo)
         {
@@ -119,9 +89,14 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
+            var applicable = WrappedValue.AsApplicable(ctx);
+
+            if (applicable == null)
+                throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
+
             return MakeSpliceExpandable(
                 ctx.ExecuteInMacroEnvironment(
-                    () => wrappedValue.AsApplicable(ctx).Apply(ctx, args)));
+                    () => WrappedValue.AsApplicable(ctx).Apply(ctx, args)));
         }
 
         public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
@@ -132,91 +107,17 @@ namespace Zilf.Interpreter.Values
 
             return MakeSpliceExpandable(
                 ctx.ExecuteInMacroEnvironment(
-                    () => wrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args)));
+                    () => WrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args)));
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ZilEvalMacro other && other.wrappedValue.Equals(this.wrappedValue);
+            return obj is ZilEvalMacro other && other.WrappedValue.Equals(this.WrappedValue);
         }
 
         public override int GetHashCode()
         {
-            return wrappedValue.GetHashCode();
-        }
-
-        #region IStructure Members
-
-        public ZilObject GetFirst()
-        {
-            return wrappedValue;
-        }
-
-        public IStructure GetRest(int skip)
-        {
-            switch (skip)
-            {
-                case 0:
-                    return new ZilList(this);
-
-                case 1:
-                    return new ZilList(null, null);
-
-                default:
-                    return null;
-            }
-        }
-
-        public IStructure GetBack(int skip)
-        {
-            throw new NotSupportedException();
-        }
-
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool IsEmpty => false;
-
-        public ZilObject this[int index]
-        {
-            get
-            {
-                return index == 0 ? wrappedValue : null;
-            }
-            set
-            {
-                if (index == 0)
-                    this.wrappedValue = value;
-            }
-        }
-
-        public int GetLength()
-        {
-            return 1;
-        }
-
-        public int? GetLength(int limit)
-        {
-            return limit >= 1 ? 1 : (int?)null;
-        }
-
-        #endregion
-
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            yield return wrappedValue;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+            return WrappedValue.GetHashCode();
         }
     }
 }

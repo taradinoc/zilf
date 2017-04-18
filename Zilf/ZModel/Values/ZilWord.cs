@@ -15,24 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.WORD, PrimType.LIST)]
-    sealed class ZilWord : ZilObject
+    sealed class ZilWord : ZilTiedListBase
     {
-        readonly ZilObject value;
-
         public ZilWord(ZilObject value)
         {
             Contract.Requires(value != null);
 
-            this.value = value;
+            this.Value = value;
+        }
+
+        public override StdAtom StdTypeAtom => StdAtom.WORD;
+
+        public ZilObject Value { get; }
+
+        protected override TiedLayout GetLayout()
+        {
+            return TiedLayout.Create<ZilWord>(x => x.Value);
         }
 
         [ChtypeMethod]
@@ -46,35 +55,6 @@ namespace Zilf.ZModel.Values
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to WORD", 1);
 
             return new ZilWord(list.First);
-        }
-
-        public ZilObject Value
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ZilObject>() != null);
-
-                return value;
-            }
-        }
-
-        public override string ToString()
-        {
-            return string.Format("#WORD ({0})", value);
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return string.Format("#WORD ({0})", value.ToStringContext(ctx, friendly));
-        }
-
-        public override StdAtom StdTypeAtom => StdAtom.WORD;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilList(value, new ZilList(null, null));
         }
     }
 }

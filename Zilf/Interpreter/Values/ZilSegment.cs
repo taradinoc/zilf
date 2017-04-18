@@ -80,9 +80,9 @@ namespace Zilf.Interpreter.Values
 
         #region IStructure Members
 
-        public ZilObject GetFirst() => ((IStructure)form).GetFirst();
+        public ZilObject GetFirst() => form.GetFirst();
 
-        public IStructure GetRest(int skip) => ((IStructure)form).GetRest(skip);
+        public IStructure GetRest(int skip) => form.GetRest(skip);
 
         public IStructure GetBack(int skip) => throw new NotSupportedException();
 
@@ -99,9 +99,9 @@ namespace Zilf.Interpreter.Values
             set => form[index] = value;
         }
 
-        public int GetLength() => ((IStructure)form).GetLength();
+        public int GetLength() => form.GetLength();
 
-        public int? GetLength(int limit) => ((IStructure)form).GetLength(limit);
+        public int? GetLength(int limit) => form.GetLength(limit);
 
         #endregion
 

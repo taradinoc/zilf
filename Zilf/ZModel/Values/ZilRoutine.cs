@@ -24,11 +24,12 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
-    class ZilRoutine : ZilObject
+    class ZilRoutine : ZilTiedListBase
     {
         readonly ZilAtom name;
         readonly ArgSpec argspec;
@@ -66,74 +67,24 @@ namespace Zilf.ZModel.Values
             throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
         }
 
-        public ArgSpec ArgSpec
+        protected override TiedLayout GetLayout()
         {
-            get { return argspec; }
+            return TiedLayout.Create<ZilRoutine>(
+                x => x.ArgSpecAsList,
+                x => x.BodyAsList);
         }
 
-        public IEnumerable<ZilObject> Body
-        {
-            get { return body; }
-        }
+        public ArgSpec ArgSpec => argspec;
+        public IEnumerable<ZilObject> Body => body;
+        public int BodyLength => body.Length;
+        public ZilAtom Name => name;
+        public ZilAtom ActivationAtom => argspec.ActivationAtom;
+        public RoutineFlags Flags => flags;
 
-        public int BodyLength
-        {
-            get { return body.Length; }
-        }
-
-        public ZilAtom Name
-        {
-            get { return name; }
-        }
-
-        public ZilAtom ActivationAtom
-        {
-            get { return argspec.ActivationAtom; }
-        }
-
-        public RoutineFlags Flags
-        {
-            get { return flags; }
-        }
-
-        string ToString(Func<ZilObject, string> convert)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append("#ROUTINE (");
-            sb.Append(argspec.ToString(convert));
-
-            foreach (ZilObject expr in body)
-            {
-                sb.Append(' ');
-                sb.Append(convert(expr));
-            }
-
-            sb.Append(')');
-            return sb.ToString();
-        }
-
-        public override string ToString()
-        {
-            return ToString(zo => zo.ToString());
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
-        }
+        ZilList ArgSpecAsList => argspec.ToZilList();
+        ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            var result = new List<ZilObject>(1 + body.Length);
-            result.Add(argspec.ToZilList());
-            result.AddRange(body);
-            return new ZilList(result);
-        }
 
         public override bool Equals(object obj)
         {

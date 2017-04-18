@@ -24,11 +24,12 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
-    class ZilModelObject : ZilObject
+    class ZilModelObject : ZilTiedListBase
     {
         readonly ZilAtom name;
         readonly ZilList[] props;
@@ -66,59 +67,21 @@ namespace Zilf.ZModel.Values
             return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);
         }
 
-        public ZilAtom Name
+        public ZilAtom Name => name;
+        public ZilList[] Properties => props;
+        public bool IsRoom => isRoom;
+
+        public ZilAtom ObjectOrRoom => GetStdAtom(isRoom ? StdAtom.ROOM : StdAtom.OBJECT);
+        public ZilList PropertiesList => new ZilList(props);
+
+        protected override TiedLayout GetLayout()
         {
-            get { return name; }
-        }
-
-        public ZilList[] Properties
-        {
-            get { return props; }
-        }
-
-        public bool IsRoom
-        {
-            get { return isRoom; }
-        }
-
-        public override string ToString()
-        {
-            return ToString(zo => zo.ToString());
-        }
-
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
-        }
-
-        string ToString(Func<ZilObject, string> convert)
-        {
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
-            var sb = new StringBuilder("#OBJECT (");
-            sb.Append(convert(name));
-
-            foreach (ZilList p in props)
-            {
-                sb.Append(' ');
-                sb.Append(convert(p));
-            }
-
-            sb.Append(')');
-            return sb.ToString();
+            return TiedLayout.Create<ZilModelObject>(
+                x => x.ObjectOrRoom,
+                x => x.Name)
+                .WithCatchAll<ZilModelObject>(x => x.PropertiesList);
         }
 
         public override StdAtom StdTypeAtom => StdAtom.OBJECT;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            var result = new List<ZilObject>(1 + props.Length);
-            result.Add(name);
-            result.AddRange(props);
-            return new ZilList(result);
-        }
     }
 }

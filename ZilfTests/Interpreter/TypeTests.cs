@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Zilf.Interpreter;
@@ -1197,12 +1198,18 @@ namespace ZilfTests.Interpreter
                 }));
         }
 
+        static IEnumerable<Type> GetConcreteZilObjectTypes()
+        {
+            return from t in typeof(ZilObject).Assembly.GetTypes()
+                   where typeof(ZilObject).IsAssignableFrom(t) && !t.IsAbstract
+                   select t;
+        }
+
         [TestMethod]
         public void All_ZilObject_Classes_Have_A_Builtin_Attribute()
         {
             var typesMissingAttribute =
-                from t in typeof(ZilObject).Assembly.GetTypes()
-                where typeof(ZilObject).IsAssignableFrom(t) && !t.IsAbstract
+                from t in GetConcreteZilObjectTypes()
                 let builtinTypeAttrs = t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
                 let builtinAltAttrs = t.GetCustomAttributes(typeof(BuiltinAlternateAttribute), false)
                 let builtinMetaAttrs = t.GetCustomAttributes(typeof(BuiltinMetaAttribute), false)
@@ -1210,11 +1217,12 @@ namespace ZilfTests.Interpreter
                 select t.Name;
 
             var missingList = string.Join(", ", typesMissingAttribute);
-            Assert.AreEqual("", missingList, "Some ZilObject classes are missing Builtin{Type|Alternate|Meta}Attribute");
+            Assert.AreEqual("", missingList,
+                $"Some {nameof(ZilObject)} classes are missing {nameof(BuiltinTypeAttribute)}/" +
+                $"{nameof(BuiltinAlternateAttribute)}/{nameof(BuiltinMetaAttribute)}");
 
             var alternatesWithBadMainTypes =
-                from t in typeof(ZilObject).Assembly.GetTypes()
-                where typeof(ZilObject).IsAssignableFrom(t) && !t.IsAbstract
+                from t in GetConcreteZilObjectTypes()
                 let builtinAltAttrs = t.GetCustomAttributes(typeof(BuiltinAlternateAttribute), false)
                 where builtinAltAttrs.Length > 0
                 let mainType = ((BuiltinAlternateAttribute)builtinAltAttrs[0]).MainType
@@ -1227,7 +1235,56 @@ namespace ZilfTests.Interpreter
                 alternatesWithBadMainTypes.Select(
                     p => string.Format("{0} (main type {1})", p.AlternateType, p.MainType)));
 
-            Assert.AreEqual("", alternatesBadList, "Some ZilObject classes with BuiltinAlternateAttribute point to main types without BuiltinTypeAttribute");
+            Assert.AreEqual("", alternatesBadList,
+                $"Some {nameof(ZilObject)} classes with {nameof(BuiltinAlternateAttribute)} " +
+                $"point to main types without {nameof(BuiltinTypeAttribute)}");
+        }
+
+        [TestMethod]
+        public void All_ZilObject_Classes_With_Structured_PrimTypes_Implement_IStructure()
+        {
+            //XXX
+            var w = new ZilWord(new ZilFix(123));
+
+            bool IsStructuredPrimType(PrimType pt)
+            {
+                switch (pt)
+                {
+                    case PrimType.LIST:
+                    case PrimType.VECTOR:
+                        return true;
+
+                    //case PrimType.STRING:     // ZilSubr and ZilFSubr shouldn't be structured, come on
+                    default:
+                        return false;
+                }
+            }
+
+            var typesWithPrimTypes =
+                from t in GetConcreteZilObjectTypes()
+                where !typeof(IStructure).IsAssignableFrom(t)
+                let builtinTypeAttrs = t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                where builtinTypeAttrs.Length == 1
+                let attr = (BuiltinTypeAttribute)builtinTypeAttrs[0]
+                select new { attr.PrimType, Type = t };
+
+            var typesMissingIStructure =
+                from t in typesWithPrimTypes
+                where IsStructuredPrimType(t.PrimType) && !typeof(IStructure).IsAssignableFrom(t.Type)
+                select t.Type.Name;
+
+            var missingList = string.Join(", ", typesMissingIStructure);
+            Assert.AreEqual("", missingList,
+                $"Some {nameof(ZilObject)} classes with structured PRIMTYPEs do not implement {nameof(IStructure)}");
+
+            var unexpectedlyStructuredTypes =
+                from t in typesWithPrimTypes
+                where !IsStructuredPrimType(t.PrimType) && typeof(IStructure).IsAssignableFrom(t.Type)
+                select t.Type.Name;
+
+            var unexpectedList = string.Join(", ", unexpectedlyStructuredTypes);
+            Assert.AreEqual("", unexpectedList,
+                $"Some {nameof(ZilObject)} classes with non-structured PRIMTYPEs unexpectedly implement {nameof(IStructure)}");
         }
 
         [TestMethod]

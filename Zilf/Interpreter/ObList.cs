@@ -23,11 +23,12 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System;
+using Zilf.Interpreter.Values.Tied;
 
 namespace Zilf.Interpreter
 {
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
-    class ObList : ZilObject
+    class ObList : ZilTiedListBase
     {
         readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
         readonly bool ignoreCase;
@@ -72,43 +73,30 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        public override string ToString()
+        protected override TiedLayout GetLayout()
         {
-            var sb = new StringBuilder("#OBLIST (");
+            return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.PairsList);
+        }
 
-            bool any = false;
-            foreach (var pair in dict)
+        public ZilList PairsList
+        {
+            get
             {
-                sb.Append('(');
-                sb.Append(ZilString.Quote(pair.Key));
-                sb.Append(' ');
-                sb.Append(pair.Value.ToString());
-                sb.Append(") ");
-                any = true;
+                var result = new List<ZilObject>(dict.Count);
+
+                foreach (var pair in dict)
+                {
+                    result.Add(
+                        new ZilList(ZilString.FromString(pair.Key),
+                            new ZilList(pair.Value,
+                                new ZilList(null, null))));
+                }
+
+                return new ZilList(result);
             }
-
-            if (any)
-                sb.Remove(sb.Length - 1, 1);
-
-            sb.Append(')');
-            return sb.ToString();
         }
 
         public override StdAtom StdTypeAtom => StdAtom.OBLIST;
-
-        public override PrimType PrimType => PrimType.LIST;
-
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            var result = new List<ZilObject>(dict.Count);
-
-            foreach (var pair in dict)
-                result.Add(new ZilList(ZilString.FromString(pair.Key),
-                    new ZilList(pair.Value,
-                        new ZilList(null, null))));
-
-            return new ZilList(result);
-        }
 
         public bool Contains(string pname)
         {
