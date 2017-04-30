@@ -295,7 +295,10 @@ namespace Zilf.Language
                                     throw new ExpectedButFound("object after ':'", "<EOF>");
 
                                 case ParserOutputType.Object:
-                                    return ParserOutput.FromObject(new ZilAdecl(po.Object, po2.Object));
+                                    var adecl = new ZilAdecl(po.Object, po2.Object);
+                                    return po.Type == ParserOutputType.Comment
+                                        ? ParserOutput.FromComment(adecl)
+                                        : ParserOutput.FromObject(adecl);
 
                                 case ParserOutputType.SyntaxError:
                                     return po2;
