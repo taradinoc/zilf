@@ -354,6 +354,12 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             Assert.AreEqual(new ZilAdecl(site.ParseAtom("A"), site.ParseAtom("B")), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
+
+            result = parser.Parse(";A:B").ToArray();
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual(ParserOutputType.Comment, result[0].Type);
+            Assert.AreEqual(new ZilAdecl(site.ParseAtom("A"), site.ParseAtom("B")), result[0].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }
 
         [TestMethod]
