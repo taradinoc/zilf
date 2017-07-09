@@ -137,7 +137,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         public IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word)
         {
             var opw = (OldParserWord)word;
-            var rawWord = opw.Atom.ToString();
+            var rawWord = opw.Atom.Text;
 
             // adjective numbers only exist in V3
             if (ctx.ZEnvironment.ZVersion == 3 &&
@@ -262,7 +262,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                         let word = pair.Key
                         where IsPreposition(word) && (compactVocab || !IsSynonym(word))
                         let builder = pair.Value
-                        let prAtom = ZilAtom.Parse("PR?" + word.Atom, ctx)
+                        let prAtom = ZilAtom.Parse("PR?" + word.Atom.Text, ctx)
                         let prConstant = helpers.CompileConstant(prAtom)
                         let prepValue = GetPrepositionValue(word)
                         group new { builder, prConstant } by prepValue into g

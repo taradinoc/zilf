@@ -306,7 +306,7 @@ namespace Zilf.ZModel
 
                 if (actionName == null)
                 {
-                    var sb = new StringBuilder(action.ToString());
+                    var sb = new StringBuilder(action.Text);
                     if (sb.Length > 2 && sb[0] == 'V' && sb[1] == '-')
                     {
                         sb[1] = '?';
@@ -320,7 +320,7 @@ namespace Zilf.ZModel
                 }
                 else
                 {
-                    var actionNameStr = actionName.ToString();
+                    var actionNameStr = actionName.Text;
                     if (!actionNameStr.StartsWith("V?", StringComparison.Ordinal))
                     {
                         actionName = ZilAtom.Parse("V?" + actionNameStr, ctx);

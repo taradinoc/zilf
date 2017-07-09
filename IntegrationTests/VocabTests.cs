@@ -249,7 +249,7 @@ namespace IntegrationTests
 
         #region New Parser
 
-        const string SNewParserBootstrap = @"
+        internal const string SNewParserBootstrap = @"
 <SETG NEW-PARSER? T>
 
 <SETG CLASSIFICATIONS '(ADJ 1 BUZZ 2 DIR 4 NOUN 8 PREP 16 VERB 32 PARTICLE 64)>

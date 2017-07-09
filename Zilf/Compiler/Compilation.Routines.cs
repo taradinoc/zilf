@@ -85,7 +85,7 @@ namespace Zilf.Compiler
                     case ArgItem.ArgType.Required:
                         try
                         {
-                            lb = rb.DefineRequiredParameter(arg.Atom.ToString());
+                            lb = rb.DefineRequiredParameter(arg.Atom.Text);
                         }
                         catch (InvalidOperationException)
                         {
@@ -98,10 +98,10 @@ namespace Zilf.Compiler
                         }
                         break;
                     case ArgItem.ArgType.Optional:
-                        lb = rb.DefineOptionalParameter(arg.Atom.ToString());
+                        lb = rb.DefineOptionalParameter(arg.Atom.Text);
                         break;
                     case ArgItem.ArgType.Auxiliary:
-                        lb = rb.DefineLocal(arg.Atom.ToString());
+                        lb = rb.DefineLocal(arg.Atom.Text);
                         break;
                     default:
                         throw UnhandledCaseException.FromEnum(arg.Type);

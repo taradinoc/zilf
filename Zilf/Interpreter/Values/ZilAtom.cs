@@ -79,17 +79,6 @@ namespace Zilf.Interpreter.Values
             get { return stdAtom; }
         }
 
-        static string Unquote(string text)
-        {
-            var sb = new StringBuilder(text);
-
-            for (int i = 0; i < sb.Length; i++)
-                if (sb[i] == '\\')
-                    sb.Remove(i, 1);
-
-            return sb.ToString();
-        }
-
         /// <summary>
         /// Parses an atom name, including !- separators, and returns the atom
         /// object. Creates the atom or oblist(s) if necessary.
@@ -97,6 +86,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="text">The atom name.</param>
         /// <param name="ctx">The current context.</param>
         /// <returns>The parsed atom.</returns>
+        /// <remarks>This method does not strip backslashes from <see cref="text"/>.</remarks>
         public static ZilAtom Parse(string text, Context ctx)
         {
             Contract.Requires(text != null);
@@ -104,8 +94,6 @@ namespace Zilf.Interpreter.Values
 
             ZilAtom result;
             var idx = text.IndexOf("!-", System.StringComparison.Ordinal);
-
-            text = Unquote(text);
 
             if (idx == -1)
             {

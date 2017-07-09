@@ -53,11 +53,11 @@ namespace Zilf.Compiler
             if (!Properties.ContainsKey(prop))
             {
                 // create property builder
-                var pb = Game.DefineProperty(prop.ToString());
+                var pb = Game.DefineProperty(prop.Text);
                 Properties.Add(prop, pb);
 
                 // create constant
-                string propConstName = "P?" + prop;
+                string propConstName = "P?" + prop.Text;
                 var propAtom = ZilAtom.Parse(propConstName, Context);
                 Constants.Add(propAtom, pb);
             }
@@ -70,7 +70,7 @@ namespace Zilf.Compiler
             if (!Flags.ContainsKey(flag))
             {
                 // create flag builder
-                var fb = Game.DefineFlag(flag.ToString());
+                var fb = Game.DefineFlag(flag.Text);
                 Flags.Add(flag, fb);
                 UniqueFlags++;
 
@@ -287,7 +287,7 @@ namespace Zilf.Compiler
                             }
                             Properties.Add(atom, origPb);
 
-                            var pAtom = ZilAtom.Parse("P?" + atom, Context);
+                            var pAtom = ZilAtom.Parse("P?" + atom.Text, Context);
                             Constants.Add(pAtom, origPb);
 
                             var origSpec = Context.GetProp(origAtom, Context.GetStdAtom(StdAtom.PROPSPEC));
@@ -430,7 +430,7 @@ namespace Zilf.Compiler
                     var word = Context.ZEnvironment.GetVocabAdjective(atom, src);
                     if (Context.ZEnvironment.ZVersion == 3)
                     {
-                        return Constants[ZilAtom.Parse("A?" + word.Atom, Context)];
+                        return Constants[ZilAtom.Parse("A?" + word.Atom.Text, Context)];
                     }
                     return Vocabulary[word];
                 },
@@ -616,7 +616,7 @@ namespace Zilf.Compiler
                                 IWordBuilder wb = Vocabulary[word];
                                 if (Context.ZEnvironment.ZVersion == 3)
                                 {
-                                    tb.AddByte(Constants[ZilAtom.Parse("A?" + word.Atom, Context)]);
+                                    tb.AddByte(Constants[ZilAtom.Parse("A?" + word.Atom.Text, Context)]);
                                     length++;
                                 }
                                 else
