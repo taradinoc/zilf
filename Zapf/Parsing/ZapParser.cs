@@ -206,6 +206,7 @@ namespace Zapf.Parsing
                     {
                         c = NextChar();
                     } while (c != null && c != '\n');
+                    line++;
                     result.Type = (c == null) ? TokenType.EndOfFile : TokenType.EndOfLine;
                     break;
 
