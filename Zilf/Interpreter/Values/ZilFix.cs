@@ -61,10 +61,19 @@ namespace Zilf.Interpreter.Values
 
         #region IApplicable Members
 
-        public ZilObject Apply(Context ctx, ZilObject[] args) =>
-            ApplyNoEval(ctx, EvalSequence(ctx, args).ToArray());
+        public ZilResult Apply(Context ctx, ZilObject[] args)
+        {
+            if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
+            {
+                return ApplyNoEval(ctx, args);
+            }
+            else
+            {
+                return zr;
+            }
+        }
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
         {
             try
             {

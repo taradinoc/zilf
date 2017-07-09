@@ -175,7 +175,6 @@
     <Compile Include="Diagnostics\IDiagnosticFormatter.cs" />
     <Compile Include="Diagnostics\InterpreterMessages.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Interpreter\AgainException.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
     <Compile Include="Interpreter\ArgDecoder.Constraint.cs" />
     <Compile Include="Interpreter\ArgDecoder.cs" />
@@ -188,7 +187,6 @@
     <Compile Include="Interpreter\BuiltinPrimTypeAttribute.cs" />
     <Compile Include="Interpreter\CallFrame.cs" />
     <Compile Include="Interpreter\ChtypeMethodAttribute.cs" />
-    <Compile Include="Interpreter\ControlException.cs" />
     <Compile Include="Interpreter\FileContext.cs" />
     <Compile Include="Interpreter\FileFlags.cs" />
     <Compile Include="Interpreter\Frame.cs" />
@@ -202,7 +200,6 @@
     <Compile Include="Interpreter\NativeFrame.cs" />
     <Compile Include="Interpreter\PrimType.cs" />
     <Compile Include="Interpreter\Recursion.cs" />
-    <Compile Include="Interpreter\ReturnException.cs" />
     <Compile Include="Interpreter\RoutineFlags.cs" />
     <Compile Include="Interpreter\RunMode.cs" />
     <Compile Include="Interpreter\Subrs.Atoms.cs" />
@@ -251,6 +248,7 @@
     <Compile Include="Interpreter\Values\Tied\ZilTiedListBase.cs" />
     <Compile Include="Interpreter\Values\ZilVector.cs" />
     <Compile Include="Interpreter\WeakCountingSet.cs" />
+    <Compile Include="Interpreter\ZilResult.cs" />
     <Compile Include="Language\AtomAttribute.cs" />
     <Compile Include="Language\CompilerError.cs" />
     <Compile Include="Language\FileSourceLine.cs" />

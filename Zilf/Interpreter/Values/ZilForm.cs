@@ -108,7 +108,7 @@ namespace Zilf.Interpreter.Values
 
         static ZilObject[] EmptyObjArray = new ZilObject[0];
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             if (environment != null)
             {
@@ -126,7 +126,13 @@ namespace Zilf.Interpreter.Values
                     throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0, fa.ToStringContext(ctx, false));
             }
             else
-                target = First.Eval(ctx);
+            {
+                var result = First.Eval(ctx);
+                if (result.ShouldPass())
+                    return result;
+
+                target = (ZilObject)result;
+            }
 
             if (target.IsApplicable(ctx))
             {
@@ -139,7 +145,7 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
         }
 
-        public override ZilObject Expand(Context ctx)
+        public override ZilResult Expand(Context ctx)
         {
             ZilObject target;
 
@@ -161,8 +167,10 @@ namespace Zilf.Interpreter.Values
                 {
                     var result = ((ZilEvalMacro)target).Expand(ctx,
                         Rest == null ? EmptyObjArray : Rest.ToArray());
+                    if (result.ShouldPass())
+                        return result;
 
-                    if (!(result is ZilForm resultForm) || resultForm == this)
+                    if (!((ZilObject)result is ZilForm resultForm) || resultForm == this)
                         return result;
 
                     // set the source info on the expansion to match the macro invocation

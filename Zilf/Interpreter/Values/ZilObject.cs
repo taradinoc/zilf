@@ -151,7 +151,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="environment">The environment in which to evaluate the object,
         /// or <b>null</b> to use the current environment.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
-        public ZilObject Eval(Context ctx, LocalEnvironment environment = null)
+        public ZilResult Eval(Context ctx, LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -182,7 +182,7 @@ namespace Zilf.Interpreter.Values
         /// use the knowledge of the original type to return a different result; for example,
         /// <see cref="ZilList.EvalImpl(Context, LocalEnvironment, ZilAtom)"/> returns a list
         /// CHTYPEd to the original type.</remarks>
-        internal ZilObject EvalAsOtherType(Context ctx, ZilAtom originalType)
+        internal ZilResult EvalAsOtherType(Context ctx, ZilAtom originalType)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(originalType != null);
@@ -211,7 +211,7 @@ namespace Zilf.Interpreter.Values
         /// type as a parameter. EvalImpl may use this to produce an object of the appropriate type;
         /// for example, see <see cref="ZilList.EvalImpl"/>.</para>
         /// </remarks>
-        protected virtual ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected virtual ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             return this;
         }
@@ -222,7 +222,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <returns>The result of expanding this object, or the same object if this is
         /// not a macro invocation.</returns>
-        public virtual ZilObject Expand(Context ctx)
+        public virtual ZilResult Expand(Context ctx)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -266,7 +266,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="prog">The expressions to evaluate.</param>
         /// <returns>The value of the last expression evaluated.</returns>
-        public static ZilObject EvalProgram(Context ctx, ZilObject[] prog)
+        public static ZilResult EvalProgram(Context ctx, ZilObject[] prog)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prog != null);
@@ -274,15 +274,19 @@ namespace Zilf.Interpreter.Values
             Contract.Requires(Contract.ForAll(prog, p => p != null));
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            ZilObject result = null;
+            ZilResult result = null;
 
             for (int i = 0; i < prog.Length; i++)
+            {
                 result = prog[i].Eval(ctx);
+                if (result.ShouldPass())
+                    break;
+            }
 
             return result;
         }
 
-        public static IEnumerable<ZilObject> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
+        public static IEnumerable<ZilResult> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
             LocalEnvironment environment)
         {
             Contract.Requires(ctx != null);
@@ -293,8 +297,10 @@ namespace Zilf.Interpreter.Values
                 return expandBefore.ExpandBeforeEvaluation(ctx, environment);
 
             var result = obj.Eval(ctx, environment);
+            if (result.ShouldPass())
+                return Enumerable.Repeat(result, 1);
 
-            if (result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
+            if ((ZilObject)result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
                 return expandAfter.ExpandAfterEvaluation(ctx, environment);
 
             return Enumerable.Repeat(result, 1);
@@ -309,7 +315,7 @@ namespace Zilf.Interpreter.Values
         /// or <b>null</b> to use the current environment.</param>
         /// <returns>A sequence of evaluation results.</returns>
         /// <remarks>The values obtained by expanding segment references are not evaluated in turn.</remarks>
-        public static IEnumerable<ZilObject> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence,
+        public static IEnumerable<ZilResult> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence,
             LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
@@ -319,18 +325,18 @@ namespace Zilf.Interpreter.Values
             return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo, environment));
         }
 
-        public static IEnumerable<ZilObject> EvalWithSplice(Context ctx, ZilObject obj)
+        public static IEnumerable<ZilResult> EvalWithSplice(Context ctx, ZilObject obj)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(obj != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
 
             if (obj is IMayExpandBeforeEvaluation)
-                return Enumerable.Repeat(obj, 1);
+                return Enumerable.Repeat((ZilResult)obj, 1);
 
             var result = obj.Eval(ctx);
 
-            if (result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
+            if ((ZilObject)result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
                 return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
 
             return Enumerable.Repeat(result, 1);
@@ -342,7 +348,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <returns>A sequence of evaluation results.</returns>
-        public static IEnumerable<ZilObject> EvalSequenceLeavingSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        public static IEnumerable<ZilResult> EvalSequenceLeavingSegments(Context ctx, IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
@@ -357,7 +363,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence of expressions.</param>
         /// <returns>A sequence of resulting expressions.</returns>
-        public static IEnumerable<ZilObject> ExpandSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        public static IEnumerable<ZilResult> ExpandSegments(Context ctx, IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
@@ -368,7 +374,7 @@ namespace Zilf.Interpreter.Values
                 if (zo is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                     return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
 
-                return Enumerable.Repeat(zo, 1);
+                return Enumerable.Repeat((ZilResult)zo, 1);
             });
         }
 

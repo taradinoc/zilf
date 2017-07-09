@@ -58,12 +58,19 @@ namespace Zilf.Interpreter
                 this.del = del;
             }
 
-            public ZilObject Apply(Context ctx, ZilObject[] args)
+            public ZilResult Apply(Context ctx, ZilObject[] args)
             {
-                return del(zo, ZilObject.EvalSequence(ctx, args).ToArray());
+                if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
+                {
+                    return del(zo, args);
+                }
+                else
+                {
+                    return zr;
+                }
             }
 
-            public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+            public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
             {
                 return del(zo, args);
             }

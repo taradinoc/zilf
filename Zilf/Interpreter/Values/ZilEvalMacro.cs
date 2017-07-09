@@ -71,19 +71,33 @@ namespace Zilf.Interpreter.Values
             return zo;
         }
 
-        public ZilObject Apply(Context ctx, ZilObject[] args)
+        public ZilResult Apply(Context ctx, ZilObject[] args)
         {
             var expanded = Expand(ctx, args);
-            return MakeSpliceExpandable(expanded.Eval(ctx));
+            if (expanded.ShouldPass())
+                return expanded;
+
+            var result = ((ZilObject)expanded).Eval(ctx);
+            if (result.ShouldPass())
+                return result;
+
+            return MakeSpliceExpandable((ZilObject)result);
         }
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
         {
             var expanded = ExpandNoEval(ctx, args);
-            return MakeSpliceExpandable(expanded.Eval(ctx));
+            if (expanded.ShouldPass())
+                return expanded;
+
+            var result = ((ZilObject)expanded).Eval(ctx);
+            if (result.ShouldPass())
+                return result;
+
+            return MakeSpliceExpandable((ZilObject)result);
         }
 
-        public ZilObject Expand(Context ctx, ZilObject[] args)
+        public ZilResult Expand(Context ctx, ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
@@ -94,20 +108,33 @@ namespace Zilf.Interpreter.Values
             if (applicable == null)
                 throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
 
-            return MakeSpliceExpandable(
-                ctx.ExecuteInMacroEnvironment(
-                    () => WrappedValue.AsApplicable(ctx).Apply(ctx, args)));
+            var result = ctx.ExecuteInMacroEnvironment(
+                () => WrappedValue.AsApplicable(ctx).Apply(ctx, args));
+
+            if (result.ShouldPass())
+                return result;
+
+            return MakeSpliceExpandable((ZilObject)result);
         }
 
-        public ZilObject ExpandNoEval(Context ctx, ZilObject[] args)
+        public ZilResult ExpandNoEval(Context ctx, ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
 
-            return MakeSpliceExpandable(
-                ctx.ExecuteInMacroEnvironment(
-                    () => WrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args)));
+            var applicable = WrappedValue.AsApplicable(ctx);
+
+            if (applicable == null)
+                throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
+
+            var result = ctx.ExecuteInMacroEnvironment(
+                () => WrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args));
+
+            if (result.ShouldPass())
+                return result;
+
+            return MakeSpliceExpandable((ZilObject)result);
         }
 
         public override bool Equals(object obj)

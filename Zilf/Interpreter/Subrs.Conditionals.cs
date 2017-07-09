@@ -25,22 +25,28 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [FSubr]
-        public static ZilObject COND(Context ctx, [Required] CondClause[] clauses)
+        public static ZilResult COND(Context ctx, [Required] CondClause[] clauses)
         {
             SubrContracts(ctx);
 
-            ZilObject result = null;
+            ZilResult result = null;
 
             foreach (var clause in clauses)
             {
                 result = clause.Condition.Eval(ctx);
+                if (result.ShouldPass())
+                    break;
 
-                if (result.IsTrue)
+                if (((ZilObject)result).IsTrue)
                 {
                     foreach (var inner in clause.Body)
+                    {
                         result = inner.Eval(ctx);
+                        if (result.ShouldPass())
+                            break;
+                    }
 
-                    return result;
+                    break;
                 }
             }
 
@@ -55,37 +61,46 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject OR(Context ctx, ZilObject[] args)
+        public static ZilResult OR(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
-            ZilObject result = ctx.FALSE;
+            ZilObject resultObj = ctx.FALSE;
 
             foreach (ZilObject arg in args)
             {
-                result = arg.Eval(ctx);
-                if (result.IsTrue)
+                var result = arg.Eval(ctx);
+                if (result.ShouldPass())
                     return result;
+
+                resultObj = (ZilObject)result;
+
+                if (resultObj.IsTrue)
+                    return resultObj;
             }
 
-            return result;
+            return resultObj;
         }
 
         [FSubr]
-        public static ZilObject AND(Context ctx, ZilObject[] args)
+        public static ZilResult AND(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
-            ZilObject result = ctx.TRUE;
+            ZilObject resultObj = ctx.TRUE;
 
             foreach (ZilObject arg in args)
             {
-                result = arg.Eval(ctx);
-                if (!result.IsTrue)
+                var result = arg.Eval(ctx);
+                if (result.ShouldPass())
                     return result;
+
+                resultObj = (ZilObject)result;
+                if (!resultObj.IsTrue)
+                    return resultObj;
             }
 
-            return result;
+            return resultObj;
         }
     }
 }

@@ -37,8 +37,8 @@ namespace Zilf.Interpreter
     delegate bool FileExistsDelegate(string filename);
 
     delegate string PrintTypeDelegate(ZilObject zo);
-    delegate ZilObject EvalTypeDelegate(ZilObject zo);
-    delegate ZilObject ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
+    delegate ZilResult EvalTypeDelegate(ZilObject zo);
+    delegate ZilResult ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
@@ -1698,7 +1698,7 @@ B * <PRINTB .X>
             if (hook != null && hook.IsApplicable(this))
             {
                 var applicable = hook.AsApplicable(this);
-                return applicable.ApplyNoEval(this, args);
+                return (ZilObject)applicable.ApplyNoEval(this, args);
             }
 
             return null;
@@ -1712,7 +1712,7 @@ B * <PRINTB .X>
 
         ZilAtom IParserSite.GetTypeAtom(ZilObject zo) => zo.GetTypeAtom(this);
 
-        ZilObject IParserSite.Evaluate(ZilObject zo) => zo.Eval(this);
+        ZilObject IParserSite.Evaluate(ZilObject zo) => (ZilObject)zo.Eval(this);
 
         #endregion
     }

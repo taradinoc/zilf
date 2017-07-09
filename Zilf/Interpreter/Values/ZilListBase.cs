@@ -155,7 +155,7 @@ namespace Zilf.Interpreter.Values
             return new ZilList(First, Rest);
         }
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             return originalType != null ? ctx.ChangeType(this, originalType) : this;
         }

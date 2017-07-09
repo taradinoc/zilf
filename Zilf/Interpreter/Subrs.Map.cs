@@ -15,9 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
+using Zilf.Common;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -26,7 +28,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilObject MAPF(Context ctx,
+        public static ZilResult MAPF(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, IStructure[] structs)
         {
@@ -36,7 +38,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MAPR(Context ctx,
+        public static ZilResult MAPR(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, IStructure[] structs)
         {
@@ -45,81 +47,7 @@ namespace Zilf.Interpreter
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
-        class MapRetException : ControlException
-        {
-            readonly ZilObject[] values;
-
-            public MapRetException(ZilObject[] values)
-                : base("MAPRET")
-            {
-                Contract.Requires(values != null);
-                this.values = values;
-            }
-
-            [ContractInvariantMethod]
-            void ObjectInvariant()
-            {
-                Contract.Invariant(values != null);
-            }
-
-            protected MapRetException(string name, ZilObject[] values)
-                : base(name)
-            {
-                Contract.Requires(values != null);
-                this.values = values;
-            }
-
-            protected MapRetException(SerializationInfo si, StreamingContext sc)
-                : base(si, sc)
-            {
-            }
-
-            public ZilObject[] Values
-            {
-                get
-                {
-                    Contract.Ensures(Contract.Result<ZilObject[]>() != null);
-                    return values;
-                }
-            }
-        }
-
-        class MapStopException : MapRetException
-        {
-            public MapStopException(ZilObject[] values)
-                : base("MAPSTOP", values)
-            {
-                Contract.Requires(values != null);
-            }
-
-            protected MapStopException(SerializationInfo si, StreamingContext sc)
-                : base(si, sc)
-            {
-            }
-        }
-
-        class MapLeaveException : ControlException
-        {
-            readonly ZilObject value;
-
-            public MapLeaveException(ZilObject value)
-                : base("MAPLEAVE")
-            {
-                this.value = value;
-            }
-
-            protected MapLeaveException(SerializationInfo si, StreamingContext sc)
-                : base(si, sc)
-            {
-            }
-
-            public ZilObject Value
-            {
-                get { return value; }
-            }
-        }
-
-        static ZilObject PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
+        static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
         {
             SubrContracts(ctx);
 
@@ -131,8 +59,9 @@ namespace Zilf.Interpreter
             ZilObject[] loopArgs = new ZilObject[numStructs];
 
             var results = new List<ZilObject>();
+            bool running = true;
 
-            while (true)
+            while (running)
             {
                 // prepare loop args
                 int i;
@@ -155,25 +84,38 @@ namespace Zilf.Interpreter
                     break;
 
                 // apply loop function
-                try
+                var result = loopf.ApplyNoEval(ctx, loopArgs);
+
+                if (result.IsMapControl(out var outcome, out var value))
                 {
-                    results.Add(loopf.ApplyNoEval(ctx, loopArgs));
+                    switch (outcome)
+                    {
+                        case ZilResult.Outcome.MapStop:
+                            // add values to results and exit loop
+                            results.AddRange((IEnumerable<ZilObject>)value);
+                            running = false;
+                            continue;
+
+                        case ZilResult.Outcome.MapRet:
+                            // add values to results and continue
+                            results.AddRange((IEnumerable<ZilObject>)value);
+                            continue;
+
+                        case ZilResult.Outcome.MapLeave:
+                            // discard results, skip finalf, and return this value from the map
+                            return value;
+
+                        default:
+                            throw new UnhandledCaseException(outcome.ToString());
+                    }
                 }
-                catch (MapStopException ex)
+                else if (result.ShouldPass())
                 {
-                    // add values to results and exit loop
-                    results.AddRange(ex.Values);
-                    break;
+                    return result;
                 }
-                catch (MapRetException ex)
+                else
                 {
-                    // add values to results and continue
-                    results.AddRange(ex.Values);
-                }
-                catch (MapLeaveException ex)
-                {
-                    // discard results, skip finalf, and return this value from the map
-                    return ex.Value;
+                    results.Add((ZilObject)result);
                 }
             }
 
@@ -188,27 +130,27 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject MAPRET(Context ctx, ZilObject[] args)
+        public static ZilResult MAPRET(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
-            throw new MapRetException(args);
+            return ZilResult.MapRet(args);
         }
 
         [Subr]
-        public static ZilObject MAPSTOP(Context ctx, ZilObject[] args)
+        public static ZilResult MAPSTOP(Context ctx, ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
-            throw new MapStopException(args);
+            return ZilResult.MapStop(args);
         }
 
         [Subr]
-        public static ZilObject MAPLEAVE(Context ctx, ZilObject value = null)
+        public static ZilResult MAPLEAVE(Context ctx, ZilObject value = null)
         {
             SubrContracts(ctx);
 
-            throw new MapLeaveException(value ?? ctx.TRUE);
+            return ZilResult.MapLeave(value ?? ctx.TRUE);
         }
     }
 }

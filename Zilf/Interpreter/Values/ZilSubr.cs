@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Collections.Generic;
 
 namespace Zilf.Interpreter.Values
 {
@@ -74,17 +75,26 @@ namespace Zilf.Interpreter.Values
             return ZilString.FromString(name);
         }
 
-        public virtual ZilObject Apply(Context ctx, ZilObject[] args)
+        public virtual ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            var result = handler(name, ctx, EvalSequence(ctx, args).ToArray());
-            Contract.Assume(result != null);
+            var argList = new List<ZilObject>(args.Length);
+            foreach (var r in EvalSequence(ctx, args))
+            {
+                if (r.ShouldPass())
+                    return r;
+
+                argList.Add((ZilObject)r);
+            }
+
+            var result = handler(name, ctx, argList.ToArray());
+            Contract.Assume(!result.IsNull);
             return result;
         }
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
         {
             var result = handler(name, ctx, args);
-            Contract.Assume(result != null);
+            Contract.Assume(!result.IsNull);
             return result;
         }
 

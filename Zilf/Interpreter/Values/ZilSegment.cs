@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Linq;
 
 namespace Zilf.Interpreter.Values
 {
@@ -70,7 +71,7 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject GetPrimitive(Context ctx) => new ZilList(form);
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
             throw new InterpreterError(InterpreterMessages.A_SEGMENT_Can_Only_Be_Evaluated_Inside_A_Structure);
 
         public override bool Equals(object obj) =>
@@ -109,10 +110,15 @@ namespace Zilf.Interpreter.Values
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public IEnumerable<ZilObject> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env)
+        public IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env)
         {
-            if (Form.Eval(ctx, env) is IEnumerable<ZilObject> result)
-                return result;
+            var result = Form.Eval(ctx, env);
+
+            if (result.ShouldPass())
+                return Enumerable.Repeat(result, 1);
+
+            if ((ZilObject)result is IEnumerable<ZilObject> sequence)
+                return sequence.AsResultSequence();
 
             throw new InterpreterError(
                 InterpreterMessages._0_1_Must_Return_2,

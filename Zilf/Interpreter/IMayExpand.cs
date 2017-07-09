@@ -24,12 +24,12 @@ namespace Zilf.Interpreter
     interface IMayExpandBeforeEvaluation
     {
         bool ShouldExpandBeforeEvaluation { get; }
-        IEnumerable<ZilObject> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env);
+        IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env);
     }
 
     interface IMayExpandAfterEvaluation
     {
         bool ShouldExpandAfterEvaluation { get; }
-        IEnumerable<ZilObject> ExpandAfterEvaluation(Context ctx, LocalEnvironment env);
+        IEnumerable<ZilResult> ExpandAfterEvaluation(Context ctx, LocalEnvironment env);
     }
 }

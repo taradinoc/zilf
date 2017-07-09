@@ -46,12 +46,13 @@ namespace Zilf.Interpreter.Values
 
         protected override string OpenBracket => "(";
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilObject result = new ZilList(EvalSequence(ctx, this, environment)) { SourceLine = this.SourceLine };
-            if (originalType != null)
-                result = ctx.ChangeType(result, originalType);
-            return result;
+            ZilResult result = EvalSequence(ctx, this, environment).ToZilListResult(this.SourceLine);
+            if (result.ShouldPass())
+                return result;
+
+            return originalType != null ? ctx.ChangeType((ZilObject)result, originalType) : result;
         }
     }
 }

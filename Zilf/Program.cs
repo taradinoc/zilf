@@ -181,10 +181,6 @@ namespace Zilf
                                 {
                                     ctx.HandleError(ex);
                                 }
-                                catch (ControlException ex)
-                                {
-                                    ctx.HandleError(new InterpreterError(InterpreterMessages.Misplaced_0, ex.Message));
-                                }
                             }
 
                             sb.Length = 0;
@@ -537,21 +533,12 @@ Compiler switches:
 
                                 first = false;
                             }
-                            result = node.Eval(ctx);
+                            result = (ZilObject)node.Eval(ctx);
                         }
                     }
                     catch (InterpreterError ex) when (wantExceptions == false)
                     {
                         ctx.HandleError(ex);
-                    }
-                    catch (ControlException ex)
-                    {
-                        var newEx = new InterpreterError(node.SourceLine, InterpreterMessages.Misplaced_0, ex.Message);
-
-                        if (wantExceptions)
-                            throw newEx;
-
-                        ctx.HandleError(newEx);
                     }
                 }
 
@@ -560,11 +547,6 @@ Compiler switches:
             catch (InterpreterError ex) when (wantExceptions == false)
             {
                 ctx.HandleError(ex);
-                return null;
-            }
-            catch (ControlException ex) when (wantExceptions == false)
-            {
-                ctx.HandleError(new InterpreterError(InterpreterMessages.Misplaced_0, ex.Message));
                 return null;
             }
         }

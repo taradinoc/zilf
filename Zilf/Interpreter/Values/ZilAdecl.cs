@@ -91,10 +91,13 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(First, Second);
         }
 
-        protected override ZilObject EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             var result = First.Eval(ctx, environment);
-            ctx.MaybeCheckDecl(this, result, Second, "result of evaluating {0}", First);
+            if (!result.ShouldPass())
+            {
+                ctx.MaybeCheckDecl(this, (ZilObject)result, Second, "result of evaluating {0}", First);
+            }
             return result;
         }
 

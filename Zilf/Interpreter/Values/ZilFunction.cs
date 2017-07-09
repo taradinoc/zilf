@@ -82,31 +82,33 @@ namespace Zilf.Interpreter.Values
 
         public override StdAtom StdTypeAtom => StdAtom.FUNCTION;
 
-        public ZilObject Apply(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, true);
+        public ZilResult Apply(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, true);
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, false);
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, false);
 
-        ZilObject ApplyImpl(Context ctx, ZilObject[] args, bool eval)
+        ZilResult ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
             using (var application = argspec.BeginApply(ctx, args, eval))
             {
+                if (application.EarlyResult != null)
+                    return application.EarlyResult.Value;
+
                 var activation = application.Activation;
                 do
                 {
-                    try
+                    var result = ZilObject.EvalProgram(ctx, body);
+                    if (result.IsReturn(activation, out var value))
                     {
-                        var result = ZilObject.EvalProgram(ctx, body);
-                        argspec.ValidateResult(ctx, result);
-                        return result;
+                        argspec.ValidateResult(ctx, value);
+                        return value;
                     }
-                    catch (ReturnException ex) when (activation != null && ex.Activation == activation)
-                    {
-                        argspec.ValidateResult(ctx, ex.Value);
-                        return ex.Value;
-                    }
-                    catch (AgainException ex) when (activation != null && ex.Activation == activation)
+                    else if (result.IsAgain(activation))
                     {
                         // repeat
+                    }
+                    else
+                    {
+                        return result;
                     }
                 } while (true);
             }
