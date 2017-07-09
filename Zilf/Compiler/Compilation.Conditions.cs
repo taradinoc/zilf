@@ -38,7 +38,7 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Requires(label != null);
 
-            expr = expr.Expand(Context);
+            expr = (ZilObject)expr.Expand(Context);
             StdAtom type = expr.StdTypeAtom;
 
             switch (type)
@@ -420,7 +420,7 @@ namespace Zilf.Compiler
                 if (clause is ZilForm)
                 {
                     // a macro call returning a list or false
-                    var newClause = clause.Expand(Context);
+                    var newClause = (ZilObject)clause.Expand(Context);
 
                     if (newClause is ZilFalse)
                         continue;
@@ -647,7 +647,7 @@ namespace Zilf.Compiler
                 else if (clause.First is ZilForm form)
                 {
                     form = Subrs.SubstituteIfflagForm(Context, form);
-                    match = form.Eval(Context).IsTrue;
+                    match = ((ZilObject)form.Eval(Context)).IsTrue;
                 }
                 else
                 {

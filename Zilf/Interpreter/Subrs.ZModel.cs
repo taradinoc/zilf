@@ -186,13 +186,16 @@ namespace Zilf.Interpreter
 
         [FSubr]
         [FSubr("MSETG")]
-        public static ZilObject CONSTANT(Context ctx,
+        public static ZilResult CONSTANT(Context ctx,
             AtomParams.AdeclOrAtom name, ZilObject value)
         {
             SubrContracts(ctx);
 
             var atom = name.Atom;
-            value = value.Eval(ctx);
+            var zr = value.Eval(ctx);
+            if (zr.ShouldPass())
+                return zr;
+            value = (ZilObject)zr;
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var previous = ctx.GetZVal(oldAtom);
@@ -218,7 +221,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject GLOBAL(
+        public static ZilResult GLOBAL(
             Context ctx,
             AtomParams.AdeclOrAtom name,
             ZilObject defaultValue,
@@ -234,7 +237,12 @@ namespace Zilf.Interpreter
             // TODO: use decl and size?
 
             var atom = name.Atom;
-            defaultValue = defaultValue.Eval(ctx);
+
+            var zr = defaultValue.Eval(ctx);
+            if (zr.ShouldPass())
+                return zr;
+
+            defaultValue = (ZilObject)zr;
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             var oldVal = ctx.GetZVal(oldAtom);
@@ -284,7 +292,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("DEFINE-GLOBALS")]
-        public static ZilObject DEFINE_GLOBALS(
+        public static ZilResult DEFINE_GLOBALS(
             Context ctx,
 #pragma warning disable RECS0154 // Parameter is never used
             ZilAtom groupName,
@@ -299,7 +307,19 @@ namespace Zilf.Interpreter
 
                 // create global and macros
                 var globalAtom = ZilAtom.Parse("G?" + name, ctx);
-                var g = new ZilGlobal(globalAtom, spec.Initializer?.Eval(ctx) ?? ctx.FALSE);
+                ZilObject initializer;
+                if (spec.Initializer != null)
+                {
+                    var zr = spec.Initializer.Eval(ctx);
+                    if (zr.ShouldPass())
+                        return zr;
+                    initializer = (ZilObject)zr;
+                }
+                else
+                {
+                    initializer = null;
+                }
+                var g = new ZilGlobal(globalAtom, initializer ?? ctx.FALSE);
                 if (spec.Size?.StdAtom == StdAtom.BYTE)
                 {
                     g.IsWord = false;
@@ -368,14 +388,18 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilObject PROPDEF(Context ctx, ZilAtom atom, ZilObject defaultValue, ZilObject[] spec)
+        public static ZilResult PROPDEF(Context ctx, ZilAtom atom, ZilObject defaultValue, ZilObject[] spec)
         {
             SubrContracts(ctx);
 
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
                 ctx.HandleWarning(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
 
-            ctx.ZEnvironment.PropertyDefaults[atom] = defaultValue.Eval(ctx);
+            var zr = defaultValue.Eval(ctx);
+            if (zr.ShouldPass())
+                return zr;
+
+            ctx.ZEnvironment.PropertyDefaults[atom] = (ZilObject)zr;
 
             // complex property patterns
             if (spec.Length > 0)
@@ -902,7 +926,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("VERSION?")]
-        public static ZilObject VERSION_P(Context ctx, 
+        public static ZilResult VERSION_P(Context ctx, 
             CondClause[] clauses)
         {
             SubrContracts(ctx);
@@ -915,9 +939,15 @@ namespace Zilf.Interpreter
                 if (clause.Condition == tAtom || clause.Condition == elseAtom ||
                     ParseZVersion("VERSION?", clause.Condition) == ctx.ZEnvironment.ZVersion)
                 {
-                    var result = clause.Condition;
+                    ZilResult result = clause.Condition;
+
                     foreach (var expr in clause.Body)
+                    {
                         result = expr.Eval(ctx);
+                        if (result.ShouldPass())
+                            break;
+                    }
+
                     return result;
                 }
             }

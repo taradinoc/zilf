@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.Serialization;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -345,8 +346,25 @@ namespace Zilf.Interpreter
             public int RecordSize;
         }
 
+        [Serializable]
+        class SortAbortedException : Exception
+        {
+            public ZilResult ZilResult { get; }
+
+            public SortAbortedException(ZilResult zilResult)
+            {
+                ZilResult = zilResult;
+            }
+
+            protected SortAbortedException(
+                SerializationInfo info,
+                StreamingContext context) : base(info, context)
+            {
+            }
+        }
+
         [Subr]
-        public static ZilObject SORT(Context ctx,
+        public static ZilResult SORT(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject predicate,
             ZilVector vector, int recordSize = 1, int keyOffset = 0,
             AdditionalSortParam[] additionalSorts = null)
@@ -394,14 +412,22 @@ namespace Zilf.Interpreter
                     args[0] = a;
                     args[1] = b;
 
-                    if (applicable.ApplyNoEval(ctx, args).IsTrue)
+                    var zr = applicable.ApplyNoEval(ctx, args);
+                    if (zr.ShouldPass())
+                        throw new SortAbortedException(zr);
+
+                    if (((ZilObject)zr).IsTrue)
                         return 1;
 
                     // less?
                     args[0] = b;
                     args[1] = a;
 
-                    if (applicable.ApplyNoEval(ctx, args).IsTrue)
+                    zr = applicable.ApplyNoEval(ctx, args);
+                    if (zr.ShouldPass())
+                        throw new SortAbortedException(zr);
+
+                    if (((ZilObject)zr).IsTrue)
                         return -1;
 
                     // equal
@@ -438,20 +464,27 @@ namespace Zilf.Interpreter
                 };
             }
 
-            // sort
-            var sortedIndexes =
-                Enumerable.Range(0, numRecords)
-                .OrderBy(keySelector, Comparer<ZilObject>.Create(comparison))
-                .ToArray();
+            try
+            {
+                // sort
+                var sortedIndexes =
+                    Enumerable.Range(0, numRecords)
+                        .OrderBy(keySelector, Comparer<ZilObject>.Create(comparison))
+                        .ToArray();
 
-            // write output
-            RearrangeVector(vector, recordSize, sortedIndexes);
-            
-            if (additionalSorts != null)
-                foreach (var asp in additionalSorts)
-                    RearrangeVector(asp.Vector, asp.RecordSize, sortedIndexes);
+                // write output
+                RearrangeVector(vector, recordSize, sortedIndexes);
 
-            return vector;
+                if (additionalSorts != null)
+                    foreach (var asp in additionalSorts)
+                        RearrangeVector(asp.Vector, asp.RecordSize, sortedIndexes);
+
+                return vector;
+            }
+            catch (SortAbortedException ex)
+            {
+                return ex.ZilResult;
+            }
         }
 
         static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)

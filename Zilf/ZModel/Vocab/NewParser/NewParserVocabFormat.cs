@@ -86,7 +86,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ZilFix.Zero
             });
 
-            if (!(form.Eval(ctx) is ZilHash vword) || vword.StdTypeAtom != StdAtom.VWORD)
+            if (!((ZilObject)form.Eval(ctx) is ZilHash vword) || vword.StdTypeAtom != StdAtom.VWORD)
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,
@@ -275,7 +275,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             if (!nw.HasClass(verbClass))
             {
                 var form = new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.MAKE_VERB_DATA) });
-                var verbData = form.Eval(ctx);
+                var verbData = (ZilObject)form.Eval(ctx);
 
                 nw.VerbStuff = verbData;
                 ctx.PutProp(verbData, ctx.GetStdAtom(StdAtom.VERB_STUFF_ID), nw.Inner);
@@ -599,7 +599,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     flags
                 });
 
-                var vword = form.Eval(ctx);
+                var vword = (ZilObject)form.Eval(ctx);
 
                 if (vword.StdTypeAtom != StdAtom.VWORD)
                     throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "NEW-ADD-WORD", "MAKE-VWORD", "a VWORD");
@@ -728,7 +728,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                         type
                     });
 
-                    classification = form.Eval(ctx) as ZilFix;
+                    classification = (ZilObject)form.Eval(ctx) as ZilFix;
 
                     if (classification == null)
                         throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "NEW-ADD-WORD", "GET-CLASSIFICATION", "a FIX");

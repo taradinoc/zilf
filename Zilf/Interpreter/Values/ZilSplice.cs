@@ -41,10 +41,10 @@ namespace Zilf.Interpreter.Values
 
         public bool ShouldExpandAfterEvaluation => spliceable;
 
-        public IEnumerable<ZilObject> ExpandAfterEvaluation(Context ctx, LocalEnvironment env)
+        public IEnumerable<ZilResult> ExpandAfterEvaluation(Context ctx, LocalEnvironment env)
         {
             spliceable = false;
-            return this;
+            return this.AsResultSequence();
         }
     }
 }

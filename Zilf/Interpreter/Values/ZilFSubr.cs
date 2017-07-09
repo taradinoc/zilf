@@ -62,7 +62,7 @@ namespace Zilf.Interpreter.Values
 
         public override StdAtom StdTypeAtom => StdAtom.FSUBR;
 
-        public override ZilObject Apply(Context ctx, ZilObject[] args)
+        public override ZilResult Apply(Context ctx, ZilObject[] args)
         {
             return ApplyNoEval(ctx, args);
         }

@@ -100,7 +100,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject EVAL(Context ctx, ZilObject value, LocalEnvironment env)
+        public static ZilResult EVAL(Context ctx, ZilObject value, LocalEnvironment env)
         {
             SubrContracts(ctx);
 
@@ -109,7 +109,7 @@ namespace Zilf.Interpreter
 
 #pragma warning disable RECS0154 // Parameter is never used
         [Subr("EVAL-IN-SEGMENT")]
-        public static ZilObject EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
+        public static ZilResult EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
             ZilObject value, ZilObject dummy2 = null)
 #pragma warning restore RECS0154 // Parameter is never used
         {
@@ -119,20 +119,22 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject EXPAND(Context ctx, ZilObject value)
+        public static ZilResult EXPAND(Context ctx, ZilObject value)
         {
             SubrContracts(ctx);
 
             var result = value.Expand(ctx);
+            if (result.ShouldPass())
+                return result;
 
-            if (result == value)
+            if ((ZilObject)result == value)
                 result = value.Eval(ctx);
 
             return result;
         }
 
         [Subr]
-        public static ZilObject APPLY(Context ctx, IApplicable ap, ZilObject[] args)
+        public static ZilResult APPLY(Context ctx, IApplicable ap, ZilObject[] args)
         {
             SubrContracts(ctx);
 

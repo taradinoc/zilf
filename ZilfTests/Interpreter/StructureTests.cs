@@ -595,11 +595,18 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> .V 0 1>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> .V -2 1>");
 
-            // custom predicates, and confirmation that .V is sorted in place
+            // custom predicates, confirmation that .V is sorted in place, and early exit
             TestHelpers.Evaluate(ctx, "<SORT ,L? .V 2>");
             TestHelpers.EvalAndAssert(ctx, ".V",
                 new ZilVector(new ZilFix(4), go, new ZilFix(3), ready,
                               new ZilFix(2), show, new ZilFix(1), money));
+            TestHelpers.EvalAndAssert(
+                ctx,
+                "<PROG OUTER () <SORT <FUNCTION (A B) <RETURN 999 .OUTER>> .V 2>>",
+                new ZilFix(999));
+            TestHelpers.EvalAndAssert(ctx, ".V",
+                new ZilVector(new ZilFix(4), go, new ZilFix(3), ready,
+                    new ZilFix(2), show, new ZilFix(1), money));
 
             // multiple structures
             TestHelpers.EvalAndAssert(ctx, "<SORT <> '[2 1 4 3 6 5 8 7] 1 0 .V>",

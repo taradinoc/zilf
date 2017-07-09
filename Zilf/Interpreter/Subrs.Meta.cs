@@ -110,7 +110,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("REPLACE-DEFINITION")]
-        public static ZilObject REPLACE_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
+        public static ZilResult REPLACE_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -143,7 +143,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("DEFAULT-DEFINITION")]
-        public static ZilObject DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
+        public static ZilResult DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             SubrContracts(ctx);
 
@@ -211,7 +211,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("IFFLAG")]
-        public static ZilObject IFFLAG(Context ctx, [Required] CondClause[] args)
+        public static ZilResult IFFLAG(Context ctx, [Required] CondClause[] args)
         {
             SubrContracts(ctx);
 
@@ -231,7 +231,10 @@ namespace Zilf.Interpreter
                 else if (clause.Condition is ZilForm form)
                 {
                     form = SubstituteIfflagForm(ctx, form);
-                    match = form.Eval(ctx).IsTrue;
+                    var zr = form.Eval(ctx);
+                    if (zr.ShouldPass())
+                        return zr;
+                    match = ((ZilObject)zr).IsTrue;
                 }
                 else
                 {
@@ -240,9 +243,15 @@ namespace Zilf.Interpreter
 
                 if (match)
                 {
-                    var result = clause.Condition;
+                    ZilResult result = clause.Condition;
+
                     foreach (var expr in clause.Body)
+                    {
                         result = expr.Eval(ctx);
+                        if (result.ShouldPass())
+                            break;
+                    }
+
                     return result;
                 }
             }

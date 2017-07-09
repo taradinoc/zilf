@@ -216,12 +216,19 @@ namespace Zilf.Interpreter.Values
             return GetEnumerator();
         }
 
-        public ZilObject Apply(Context ctx, ZilObject[] args)
+        public ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            return ApplyNoEval(ctx, EvalSequence(ctx, args).ToArray());
+            if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
+            {
+                return ApplyNoEval(ctx, args);
+            }
+            else
+            {
+                return zr;
+            }
         }
 
-        public ZilObject ApplyNoEval(Context ctx, ZilObject[] args)
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
         {
             try
             {

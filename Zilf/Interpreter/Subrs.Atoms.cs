@@ -359,7 +359,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr("GET-DECL")]
-        public static ZilObject GET_DECL(Context ctx, ZilObject item)
+        public static ZilResult GET_DECL(Context ctx, ZilObject item)
         {
             SubrContracts(ctx);
 
@@ -438,7 +438,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject defaultValue = null)
+        public static ZilResult GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject defaultValue = null)
         {
             SubrContracts(ctx);
 

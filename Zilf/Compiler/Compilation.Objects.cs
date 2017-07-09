@@ -315,7 +315,7 @@ namespace Zilf.Compiler
                         {
                             // name of a custom property builder function
                             var form = new ZilForm(new ZilObject[] { propspec, prop }) { SourceLine = prop.SourceLine };
-                            var specOutput = form.Eval(Context);
+                            var specOutput = (ZilObject)form.Eval(Context);
 
                             if (specOutput is ZilList list && list.Rest is ZilList propBody && !propBody.IsEmpty)
                             {

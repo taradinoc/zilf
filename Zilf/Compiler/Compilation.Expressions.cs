@@ -62,7 +62,7 @@ namespace Zilf.Compiler
                 {
                     using (DiagnosticContext.Push(form.SourceLine))
                     {
-                        expanded = form.Expand(Context);
+                        expanded = (ZilObject)form.Expand(Context);
                     }
                 }
                 catch (InterpreterError ex)
@@ -79,7 +79,7 @@ namespace Zilf.Compiler
 
                     case IMayExpandAfterEvaluation expAfter when (expAfter.ShouldExpandAfterEvaluation):
                         var src = form.SourceLine;
-                        var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment);
+                        var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment).ToZilObjectArray();
                         form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
                         break;
 
@@ -477,7 +477,7 @@ namespace Zilf.Compiler
             Contract.Requires(resultStorage != null || tempVarProvider != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            expr = expr.Expand(Context);
+            expr = (ZilObject)expr.Expand(Context);
             IOperand result = resultStorage;
 
             switch (expr)

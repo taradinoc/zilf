@@ -1425,8 +1425,9 @@ namespace Zilf.Interpreter
             if (ctx == null)
                 throw new ArgumentNullException(nameof(ctx));
 
-            if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType))
-                throw new ArgumentException("Method return type is not assignable to ZilObject");
+            if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType) &&
+                !typeof(ZilResult).IsAssignableFrom(methodInfo.ReturnType))
+                throw new ArgumentException("Method return type is not assignable to ZilObject or ZilResult");
 
             var parameters = methodInfo.GetParameters();
 
@@ -1471,7 +1472,11 @@ namespace Zilf.Interpreter
             {
                 try
                 {
-                    return (ZilObject)methodInfo.Invoke(null, decoder.Decode(name, c, args));
+                    var result = methodInfo.Invoke(null, decoder.Decode(name, c, args));
+                    if (result is ZilResult zr)
+                        return zr;
+                    else
+                        return (ZilObject)result;
                 }
                 catch (TargetInvocationException ex)
                 {

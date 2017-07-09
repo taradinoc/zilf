@@ -261,7 +261,7 @@ namespace Zilf.Interpreter
         }
         
         [Subr]
-        public static ZilObject ILIST(Context ctx, int count, ZilObject init = null)
+        public static ZilResult ILIST(Context ctx, int count, ZilObject init = null)
         {
             SubrContracts(ctx);
 
@@ -275,7 +275,12 @@ namespace Zilf.Interpreter
             for (int i = 0; i < count; i++)
             {
                 if (init != null)
-                    contents.Add(init.Eval(ctx));
+                {
+                    var zr = init.Eval(ctx);
+                    if (zr.ShouldPass())
+                        return zr;
+                    contents.Add((ZilObject)zr);
+                }
                 else
                     contents.Add(ctx.FALSE);
             }
@@ -284,7 +289,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject IVECTOR(Context ctx, int count, ZilObject init=null )
+        public static ZilResult IVECTOR(Context ctx, int count, ZilObject init=null )
         {
             SubrContracts(ctx);
 
@@ -298,7 +303,12 @@ namespace Zilf.Interpreter
             for (int i = 0; i < count; i++)
             {
                 if (init != null)
-                    contents.Add(init.Eval(ctx));
+                {
+                    var zr = init.Eval(ctx);
+                    if (zr.ShouldPass())
+                        return zr;
+                    contents.Add((ZilObject)zr);
+                }
                 else
                     contents.Add(ctx.FALSE);
             }
@@ -350,7 +360,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject ISTRING(Context ctx, int count, ZilObject init = null)
+        public static ZilResult ISTRING(Context ctx, int count, ZilObject init = null)
         {
             SubrContracts(ctx);
 
@@ -365,7 +375,11 @@ namespace Zilf.Interpreter
             {
                 if (init != null)
                 {
-                    if (!(init.Eval(ctx) is ZilChar ch))
+                    var initResult = init.Eval(ctx);
+                    if (initResult.ShouldPass())
+                        return initResult;
+
+                    if (!((ZilObject)initResult is ZilChar ch))
                         throw new InterpreterError(InterpreterMessages._0_Iterated_Values_Must_Be_CHARACTERs, "ISTRING");
                     contents.Add(ch.Char);
                 }

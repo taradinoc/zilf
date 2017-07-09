@@ -448,6 +448,7 @@ namespace Zilf.Interpreter
         public sealed class Application : IDisposable
         {
             public Context Context { get; }
+            public ZilResult? EarlyResult { get; }
             public ZilActivation Activation { get; }
             public LocalEnvironment Environment { get; }
             public bool WasTopLevel { get; }
@@ -460,12 +461,19 @@ namespace Zilf.Interpreter
                 WasTopLevel = wasTopLevel;
             }
 
+            public Application(Context ctx, ZilResult earlyResult, bool wasTopLevel)
+            {
+                Context = ctx;
+                EarlyResult = earlyResult;
+                WasTopLevel = wasTopLevel;
+            }
+
             void IDisposable.Dispose()
             {
                 GC.SuppressFinalize(this);
 
                 Activation?.Dispose();
-                ((IDisposable)Environment).Dispose();
+                ((IDisposable)Environment)?.Dispose();
                 Context.AtTopLevel = WasTopLevel;
             }
 
@@ -480,7 +488,8 @@ namespace Zilf.Interpreter
             readonly Context ctx;
             readonly LocalEnvironment env;
             readonly Action throwWrongCount;
-            IEnumerator<ZilObject> enumerator, expansion;
+            IEnumerator<ZilObject> enumerator;
+            IEnumerator<ZilResult> expansion;
 
             public ArgEvaluator(Context ctx, LocalEnvironment env, IEnumerable<ZilObject> rawArgs, Action throwWrongCount)
             {
@@ -503,11 +512,12 @@ namespace Zilf.Interpreter
                 }
                 finally
                 {
-                    enumerator = expansion = null;
+                    enumerator = null;
+                    expansion = null;
                 }
             }
 
-            public ZilObject GetOne(bool eval, out IProvideSourceLine src)
+            public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
                 Contract.Ensures(Contract.Result<ZilObject>() != null);
                 Contract.Ensures(Contract.ValueAtReturn(out src) != null);
@@ -520,10 +530,10 @@ namespace Zilf.Interpreter
                     throw new InvalidOperationException();
                 }
 
-                return result;
+                return result.Value;
             }
 
-            public ZilObject GetOneOptional(bool eval, out IProvideSourceLine src)
+            public ZilResult? GetOneOptional(bool eval, out IProvideSourceLine src)
             {
                 Contract.Ensures(Contract.ValueAtReturn(out src) != null || Contract.Result<ZilObject>() == null);
 
@@ -545,7 +555,14 @@ namespace Zilf.Interpreter
                                 throw new InvalidOperationException();
                             }
 
-                            src = expansion.Current;
+                            var zr = expansion.Current;
+                            if (zr.ShouldPass())
+                            {
+                                src = null;
+                                return zr;
+                            }
+
+                            src = (ZilObject)expansion.Current as IProvideSourceLine;
                             return expansion.Current;
                         }
 
@@ -578,12 +595,12 @@ namespace Zilf.Interpreter
                 }
             }
 
-            public IEnumerable<ZilObject> GetRest(bool eval)
+            public IEnumerable<ZilResult> GetRest(bool eval)
             {
-                ZilObject zo;
+                ZilResult? zr;
 
-                while ((zo = GetOneOptional(eval, out _)) != null)
-                    yield return zo;
+                while ((zr = GetOneOptional(eval, out _)) != null)
+                    yield return zr.Value;
             }
         }
 
@@ -637,43 +654,58 @@ namespace Zilf.Interpreter
 
                     for (int i = 0; i < optArgsStart; i++)
                     {
-                        var value = evaluator.GetOne(eval && !argQuoted[i], out src);
-                        ctx.MaybeCheckDecl(src, value, argDecls[i], "argument {0}", argAtoms[i]);
-                        innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
+                        var zr = evaluator.GetOne(eval && !argQuoted[i], out src);
+                        if (zr.ShouldPass())
+                            return new Application(ctx, zr, wasTopLevel);
+                        ctx.MaybeCheckDecl(src, (ZilObject)zr, argDecls[i], "argument {0}", argAtoms[i]);
+                        innerEnv.Rebind(argAtoms[i], (ZilObject)zr, argDecls[i]);
                     }
 
                     for (int i = optArgsStart; i < auxArgsStart; i++)
                     {
-                        var value = evaluator.GetOneOptional(eval && !argQuoted[i], out src);
-                        if (value != null)
+                        var zr = evaluator.GetOneOptional(eval && !argQuoted[i], out src);
+                        if (zr != null)
                         {
-                            ctx.MaybeCheckDecl(src, value, argDecls[i], "argument {0}", argAtoms[i]);
-                            innerEnv.Rebind(argAtoms[i], value, argDecls[i]);
+                            if (zr.Value.ShouldPass())
+                                return new Application(ctx, zr.Value, wasTopLevel);
+
+                            ctx.MaybeCheckDecl(src, (ZilObject)zr.Value, argDecls[i], "argument {0}", argAtoms[i]);
+                            innerEnv.Rebind(argAtoms[i], (ZilObject)zr.Value, argDecls[i]);
                         }
                         else
                         {
                             var init = argDefaults[i]?.Eval(ctx);
                             if (init != null)
                             {
-                                ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                                if (init.Value.ShouldPass())
+                                    return new Application(ctx, init.Value, wasTopLevel);
+
+                                ctx.MaybeCheckDecl(argDefaults[i], (ZilObject)init.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
                             }
-                            innerEnv.Rebind(argAtoms[i], init, argDecls[i]);
+                            innerEnv.Rebind(argAtoms[i], init == null ? null : (ZilObject)init.Value, argDecls[i]);
                         }
                     }
 
                     for (int i = auxArgsStart; i < argAtoms.Length; i++)
                     {
-                        var init = argDefaults[i]?.Eval(ctx);
-                        if (init != null)
+                        var zr = argDefaults[i]?.Eval(ctx);
+                        if (zr != null)
                         {
-                            ctx.MaybeCheckDecl(argDefaults[i], init, argDecls[i], "default for argument {0}", argAtoms[i]);
+                            if (zr.Value.ShouldPass())
+                                return new Application(ctx, zr.Value, wasTopLevel);
+
+                            ctx.MaybeCheckDecl(argDefaults[i], (ZilObject)zr.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
                         }
-                        innerEnv.Rebind(argAtoms[i], argDefaults[i]?.Eval(ctx), argDecls[i]);
+                        innerEnv.Rebind(argAtoms[i], zr == null ? null : (ZilObject)zr.Value, argDecls[i]);
                     }
 
                     if (varargsAtom != null)
                     {
-                        var value = new ZilList(evaluator.GetRest(eval && !varargsQuoted));
+                        var result = evaluator.GetRest(eval && !varargsQuoted).ToZilListResult(null);
+                        if (result.ShouldPass())
+                            return new Application(ctx, result, wasTopLevel);
+
+                        var value = (ZilObject)result;
                         ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
                         innerEnv.Rebind(varargsAtom, value, varargsDecl);
                     }

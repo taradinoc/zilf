@@ -22,7 +22,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    delegate ZilObject SubrDelegate(string name, Context ctx, ZilObject[] args);
+    delegate ZilResult SubrDelegate(string name, Context ctx, ZilObject[] args);
 
     static partial class Subrs
     {
