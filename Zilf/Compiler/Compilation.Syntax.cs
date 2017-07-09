@@ -187,7 +187,7 @@ namespace Zilf.Compiler
             foreach (var verb in query)
             {
                 // syntax table
-                var name = "ACT?" + verb.Word.Atom;
+                var name = "ACT?" + verb.Word.Atom.Text;
                 var acttbl = Game.DefineTable(name, true);
                 tables.Add(name, acttbl);
 
@@ -298,10 +298,10 @@ namespace Zilf.Compiler
                         ZilAtom actionName = line.ActionName;
                         int index = Context.ZEnvironment.NextAction++;
                         var number = Game.MakeOperand(index);
-                        var constant = Game.DefineConstant(actionName.ToString(), number);
+                        var constant = Game.DefineConstant(actionName.Text, number);
                         Constants.Add(actionName, constant);
                         if (WantDebugInfo)
-                            Game.DebugFile.MarkAction(constant, line.Action.ToString());
+                            Game.DebugFile.MarkAction(constant, line.Action.Text);
 
                         act = new Action(index, constant, routine, preRoutine, line.Action, line.Preaction);
                         actions.Add(actionName, act);

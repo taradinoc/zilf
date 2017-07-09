@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -330,7 +331,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             nsyn.Classification = 0;
             nsyn.Flags = 0;
-            nsyn.SemanticStuff = ZilAtom.Parse("W?" + original.Atom, ctx);
+            nsyn.SemanticStuff = ZilAtom.Parse("W?" + original.Atom.Text, ctx);
         }
 
         public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
@@ -432,26 +433,19 @@ namespace Zilf.ZModel.Vocab.NewParser
             if (nw.HasClass(verbClass))
             {
                 var verbStuff = nw.VerbStuff;
+                ZilObject verbStuffId;
 
-                if (IsVerbPointer(verbStuff))
-                {
-                    var verbStuffId = verbStuff.GetPrimitive(ctx);
-                    if (verbStuffId.StdTypeAtom == StdAtom.VWORD)
-                        verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
-
-                    Contract.Assert(verbStuffId != null);
-                    var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
-                    wb.AddShort(helpers.CompileConstant(actTableAtom));
-                    verbed = true;
-                }
-                else if (TryGetVerbStuffId(verbStuff, out var verbStuffId))
+                if ((IsVerbPointer(verbStuff) && (verbStuffId = verbStuff.GetPrimitive(ctx)) != null) ||
+                    TryGetVerbStuffId(verbStuff, out verbStuffId))
                 {
                     if (verbStuffId.StdTypeAtom == StdAtom.VWORD)
                         verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
 
                     Contract.Assert(verbStuffId != null);
                     var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
-                    wb.AddShort(helpers.CompileConstant(actTableAtom));
+                    var actConstant = helpers.CompileConstant(actTableAtom);
+                    Debug.Assert(actConstant != null);
+                    wb.AddShort(actConstant);
                     verbed = true;
                 }
             }

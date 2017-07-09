@@ -213,7 +213,7 @@ namespace Zilf.Compiler
             {
                 if (!Routines.ContainsKey(routine.Name))
                     Routines.Add(routine.Name, Game.DefineRoutine(
-                        routine.Name.ToString(),
+                        routine.Name.Text,
                         routine.Name == Context.ZEnvironment.EntryRoutineName,
                         (routine.Flags & RoutineFlags.CleanStack) != 0));
             }
@@ -265,7 +265,7 @@ namespace Zilf.Compiler
             {
                 if (global.StorageType == GlobalStorageType.Hard)
                 {
-                    var glb = Game.DefineGlobal(global.Name.ToString());
+                    var glb = Game.DefineGlobal(global.Name.Text);
                     glb.DefaultValue = GetGlobalDefaultValue(global);
                     Globals.Add(global.Name, glb);
                 }
@@ -317,7 +317,7 @@ namespace Zilf.Compiler
                     value = Game.Zero;
                 }
 
-                Constants.Add(constant.Name, Game.DefineConstant(constant.Name.ToString(), value));
+                Constants.Add(constant.Name, Game.DefineConstant(constant.Name.Text, value));
             }
         }
 
@@ -505,7 +505,7 @@ namespace Zilf.Compiler
             foreach (ZilModelObject obj in Context.ZEnvironment.ObjectsInDefinitionOrder())
             {
                 lastObject = obj;
-                Objects.Add(obj.Name, Game.DefineObject(obj.Name.ToString()));
+                Objects.Add(obj.Name, Game.DefineObject(obj.Name.Text));
                 // builders for the rest of the properties and flags,
                 // and vocabulary for names
                 PreBuildObject(obj);
@@ -562,7 +562,7 @@ namespace Zilf.Compiler
 
             foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
                 Routines.Add(routine.Name, Game.DefineRoutine(
-                    routine.Name.ToString(),
+                    routine.Name.Text,
                     routine.Name == Context.ZEnvironment.EntryRoutineName,
                     (routine.Flags & RoutineFlags.CleanStack) != 0));
         }

@@ -306,7 +306,7 @@ namespace Zilf.Interpreter
                 var name = spec.Name.Atom;
 
                 // create global and macros
-                var globalAtom = ZilAtom.Parse("G?" + name, ctx);
+                var globalAtom = ZilAtom.Parse("G?" + name.Text, ctx);
                 ZilObject initializer;
                 if (spec.Initializer != null)
                 {

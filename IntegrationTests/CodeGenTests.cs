@@ -636,5 +636,33 @@ namespace IntegrationTests
                 .WithGlobal("<GLOBAL MY-GLOBAL 123>")
                 .GeneratesCodeMatching("RETURN MY-GLOBAL");
         }
+
+        [TestMethod]
+        public void Words_Containing_Hash_Sign_Compile_Correctly_With_New_Parser()
+        {
+            AssertRoutine("", @"<PRINTB ,W?\#FOO>")
+                .WithGlobal(VocabTests.SNewParserBootstrap)
+                .WithGlobal(@"<SYNTAX \#FOO = V-FOO>")
+                .WithGlobal("<ROUTINE V-FOO () <>>")
+                .Outputs("#foo");
+        }
+
+        [TestMethod]
+        public void Words_Containing_Hash_Sign_Compile_Correctly_With_Old_Parser()
+        {
+            AssertRoutine("", @"<PRINTB ,W?\#FOO>")
+                .WithGlobal(@"<SYNTAX \#FOO = V-FOO>")
+                .WithGlobal("<ROUTINE V-FOO () <>>")
+                .Outputs("#foo");
+        }
+
+        [TestMethod]
+        public void Properties_Containing_Backslash_Compile_Correctly()
+        {
+            AssertRoutine("", @"<PRINTN <GETP ,OBJ ,P?FOO\\BAR>>")
+                .WithGlobal(@"<OBJECT OBJ (FOO\\BAR 123)>")
+                .Outputs("123");
+        }
+
     }
 }

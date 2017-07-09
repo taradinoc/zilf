@@ -287,7 +287,7 @@ namespace Zilf.Compiler
                     return null;
 
                 case StdAtom.VOC:
-                    atom = ZilAtom.Parse("W?" + (ZilAtom)expr.GetPrimitive(Context), Context);
+                    atom = ZilAtom.Parse("W?" + ((ZilAtom)expr.GetPrimitive(Context)).Text, Context);
                     if (Constants.TryGetValue(atom, out operand))
                         return operand;
                     return null;
