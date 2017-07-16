@@ -489,6 +489,7 @@ namespace Zilf.Interpreter
 
         #region Z-Code: Tables
 
+        /// <exception cref="InterpreterError">The syntax is invalid, or <paramref name="count"/> is less than 1.</exception>
         [NotNull]
         [Subr]
         public static ZilObject ITABLE([NotNull] Context ctx,
@@ -812,6 +813,7 @@ namespace Zilf.Interpreter
             return PerformTable(ctx, flagList, values, true, true);
         }
 
+        /// <exception cref="InterpreterError"><paramref name="index"/> is out of range, or the element at <paramref name="index"/> is not a word.</exception>
         [NotNull]
         [Subr]
         public static ZilObject ZGET([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
@@ -826,7 +828,7 @@ namespace Zilf.Interpreter
 
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (index > table.ByteCount - 2)
+            if (index * 2 > table.ByteCount - 2)
                 throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "ZGET");
 
             try
@@ -843,6 +845,7 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <exception cref="InterpreterError"><paramref name="index"/> is out of range.</exception>
         [NotNull]
         [Subr]
         public static ZilObject ZPUT([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
@@ -859,7 +862,7 @@ namespace Zilf.Interpreter
 
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (index > table.ByteCount - 2)
+            if (index * 2 > table.ByteCount - 2)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "ZPUT");
 
             table.PutWord(ctx, index, newValue);
