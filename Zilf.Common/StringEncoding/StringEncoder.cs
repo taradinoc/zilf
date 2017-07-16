@@ -38,8 +38,8 @@ namespace Zilf.Common.StringEncoding
 
             public AbbrevEntry(string text, byte number)
             {
-                this.Pattern = new Horspool(text);
-                this.Number = number;
+                Pattern = new Horspool(text);
+                Number = number;
             }
         }
 
@@ -62,8 +62,8 @@ namespace Zilf.Common.StringEncoding
         };
         readonly byte[][] charset;
 
-        List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
-        static AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
+        readonly List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
+        static readonly AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
         bool frozen;
 
         static readonly Dictionary<char, byte> unicodeTranslations;
@@ -156,6 +156,7 @@ namespace Zilf.Common.StringEncoding
 
         public bool Frozen => frozen;
 
+        /// <exception cref="InvalidOperationException">Too late to add abbreviations, or too many abbreviations.</exception>
         public void AddAbbreviation(string str)
         {
             if (frozen)
@@ -173,9 +174,6 @@ namespace Zilf.Common.StringEncoding
 
         public byte[] Encode(string str, StringEncoderMode mode) =>
             Encode(str, null, mode);
-
-        public byte[] Encode(string str, int? size) =>
-            Encode(str, size, StringEncoderMode.Normal);
 
         public byte[] Encode(string str, int? size, StringEncoderMode mode) =>
             Encode(str, size, mode, out _);
@@ -208,7 +206,6 @@ namespace Zilf.Common.StringEncoding
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
-                int idx;
                 if (c == ' ')
                 {
                     temp.Add(0);
@@ -231,6 +228,7 @@ namespace Zilf.Common.StringEncoding
                         b = (byte)c;
                     }
 
+                    int idx;
                     if ((idx = Array.IndexOf(charset[0], b)) >= 0)
                     {
                         temp.Add((byte)(idx + 6));
@@ -291,6 +289,7 @@ namespace Zilf.Common.StringEncoding
             return result;
         }
 
+        /// <exception cref="InvalidOperationException">Too late to change charset.</exception>
         public void SetCharset(int charsetNum, IEnumerable<byte> characters)
         {
             if (frozen)

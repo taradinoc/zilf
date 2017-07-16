@@ -31,6 +31,6 @@ namespace Zilf.ZModel
         /// <summary>
         /// The global is stored in a table.
         /// </summary>
-        Soft,
+        Soft
     }
 }

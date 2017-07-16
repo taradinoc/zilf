@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-
-using ZilfErrorMessages;
 using System.Text.RegularExpressions;
 
 namespace ZilfErrorMessages
@@ -49,16 +45,11 @@ namespace ZilfErrorMessages
         public static readonly Regex FormatTokenRegex = new Regex(
             @"\{(?<number>\d+)(?<suffix>:[^}]*)?\}");
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        {
-            get
-            {
-                return ImmutableArray.Create(
-                    Rule_DuplicateMessageCode,
-                    Rule_DuplicateMessageFormat,
-                    Rule_PrefixedMessageFormat);
-            }
-        }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
+            ImmutableArray.Create(
+                Rule_DuplicateMessageCode,
+                Rule_DuplicateMessageFormat,
+                Rule_PrefixedMessageFormat);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -111,8 +102,6 @@ namespace ZilfErrorMessages
 
                                     if (match.Success)
                                     {
-                                        var prefix = match.Groups["prefix"].Value;
-
                                         var diagnostic = Diagnostic.Create(
                                             Rule_PrefixedMessageFormat,
                                             formatExpr.GetLocation(),

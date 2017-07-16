@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
 
 namespace Zilf.ZModel
 {
@@ -38,7 +41,7 @@ namespace Zilf.ZModel
             public bool Matched { get; set; }
             public ZilForm Output { get; set; }
 
-            public IList<ZilObject> Captures { get; private set; }
+            public IList<ZilObject> Captures { get; }
 
             public MatchResult()
             {
@@ -46,23 +49,24 @@ namespace Zilf.ZModel
             }
         }
 
+        [ContractClass(typeof(TokenContract))]
         abstract class Token
         {
-            public abstract bool Match(Context ctx, ZilObject input, MatchResult result);
+            public abstract bool Match([NotNull] Context ctx, [NotNull] ZilObject input, [NotNull] MatchResult result);
         }
 
         class AtomToken : Token
         {
-            public IList<ZilAtom> Atoms { get; private set; }
+            public IList<ZilAtom> Atoms { get; }
 
             public AtomToken()
             {
-                this.Atoms = new List<ZilAtom>();
+                Atoms = new List<ZilAtom>();
             }
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                foreach (var atom in this.Atoms)
+                foreach (var atom in Atoms)
                     if (input == atom)
                         return true;
 
@@ -81,35 +85,30 @@ namespace Zilf.ZModel
 
         class DeclToken : Token
         {
+            // ReSharper disable once MemberCanBePrivate.Local
             public ZilObject Pattern { get; set; }
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                if (Decl.Check(ctx, input, Pattern))
-                {
-                    result.Captures.Add(input);
-                    return true;
-                }
+                if (!Decl.Check(ctx, input, Pattern))
+                    return false;
 
-                return false;
+                result.Captures.Add(input);
+                return true;
             }
         }
 
         class GvalToken : Token
         {
+            [CanBeNull]
+            // ReSharper disable once MemberCanBePrivate.Local
             public ZilAtom Atom { get; set; }
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                if (input is ZilForm form)
-                {
-                    if (form.First is ZilAtom head && head.StdAtom == StdAtom.GVAL)
-                    {
-                        return form.Rest.First == this.Atom;
-                    }
-                }
-
-                return false;
+                return input is ZilForm form
+                    && form.IsGVAL(out var inputAtom)
+                    && inputAtom == Atom;
             }
         }
 
@@ -122,16 +121,15 @@ namespace Zilf.ZModel
             this.outputForm = outputForm;
         }
 
-        public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec)
+        /// <exception cref="InterpreterError">The pattern syntax is invalid.</exception>
+        public static IEnumerable<TellPattern> Parse([NotNull] IEnumerable<ZilObject> spec)
         {
+            Contract.Requires(spec != null);
             var tokensSoFar = new List<Token>();
             int capturesSoFar = 0;
 
             foreach (var zo in spec)
             {
-                ZilList list;
-                ZilForm form;
-                ZilAdecl adecl;
                 AtomToken atomToken;
 
                 var type = zo.StdTypeAtom;
@@ -141,8 +139,8 @@ namespace Zilf.ZModel
                         // one or more atoms to introduce the token
                         atomToken = new AtomToken();
 
-                        list = (ZilList)zo;
-                        if (list.First == null || !list.All(e => e is ZilAtom))
+                        var list = (ZilList)zo;
+                        if (list.IsEmpty || !list.All(e => e is ZilAtom))
                         {
                             throw new InterpreterError(
                                 zo.SourceLine,
@@ -152,8 +150,8 @@ namespace Zilf.ZModel
                                 "lists of atoms");
                         }
 
-                        foreach (ZilAtom atom in list)
-                            atomToken.Atoms.Add(atom);
+                        foreach (var o in list.Cast<ZilAtom>())
+                            atomToken.Atoms.Add(o);
 
                         if (tokensSoFar.Count != 0)
                             throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
@@ -182,7 +180,7 @@ namespace Zilf.ZModel
 
                     case StdAtom.ADECL:
                         // *:DECL to capture any value that matches the decl
-                        adecl = (ZilAdecl)zo;
+                        var adecl = (ZilAdecl)zo;
                         if (!(adecl.First is ZilAtom adeclAtom) || adeclAtom.StdAtom != StdAtom.Times)
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
@@ -194,7 +192,7 @@ namespace Zilf.ZModel
 
                     case StdAtom.FORM:
                         // <GVAL atom> to match an exact GVAL, or any other FORM to specify the pattern's output
-                        form = (ZilForm)zo;
+                        var form = (ZilForm)zo;
                         if (form.IsGVAL(out var gvAtom))
                         {
                             tokensSoFar.Add(new GvalToken { Atom = gvAtom });
@@ -248,12 +246,10 @@ namespace Zilf.ZModel
             }
         }
 
-        public int Length
-        {
-            get { return tokens.Length; }
-        }
+        public int Length => tokens.Length;
 
-        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx, ISourceLine src)
+        [NotNull]
+        public ITellPatternMatchResult Match([NotNull] IList<ZilObject> input, int startIndex, [NotNull] Context ctx, [NotNull] ISourceLine src)
         {
             Contract.Requires(input != null);
             Contract.Requires(startIndex >= 0 && startIndex < input.Count);
@@ -261,7 +257,7 @@ namespace Zilf.ZModel
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<ITellPatternMatchResult>() != null);
 
-            var result = new MatchResult() { Matched = false };
+            var result = new MatchResult { Matched = false };
 
             if (input.Count - startIndex < tokens.Length)
             {
@@ -279,7 +275,7 @@ namespace Zilf.ZModel
             result.Matched = true;
             var outputElements = new List<ZilObject>();
             int nextCapture = 0;
-            foreach (var element in this.outputForm)
+            foreach (var element in outputForm)
             {
                 if (element is ZilForm form)
                 {
@@ -297,7 +293,7 @@ namespace Zilf.ZModel
             return result;
         }
 
-        static bool IsSimpleOutputElement(ZilObject obj)
+        static bool IsSimpleOutputElement([NotNull] ZilObject obj)
         {
             Contract.Requires(obj != null);
 
@@ -308,6 +304,18 @@ namespace Zilf.ZModel
                 return true;
 
             return false;
+        }
+
+        [ContractClassFor(typeof(Token))]
+        abstract class TokenContract : Token
+        {
+            public override bool Match(Context ctx, ZilObject input, MatchResult result)
+            {
+                Contract.Requires(ctx != null);
+                Contract.Requires(input != null);
+                Contract.Requires(result != null);
+                throw new NotImplementedException();
+            }
         }
     }
 }

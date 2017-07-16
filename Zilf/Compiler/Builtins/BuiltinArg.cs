@@ -25,8 +25,8 @@ namespace Zilf.Compiler.Builtins
 
         public BuiltinArg(BuiltinArgType type, object value)
         {
-            this.Type = type;
-            this.Value = value;
+            Type = type;
+            Value = value;
         }
     }
 }

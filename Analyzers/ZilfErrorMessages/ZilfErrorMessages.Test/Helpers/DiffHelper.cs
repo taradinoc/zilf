@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 using System.IO;
 
+// ReSharper disable once CheckNamespace
 namespace TestHelper
 {
     // adapted from https://gist.github.com/Haacked/1610603
@@ -53,27 +54,25 @@ namespace TestHelper
 
         static string ToSafeString(this char c)
         {
-            if (Char.IsControl(c) || Char.IsWhiteSpace(c))
+            switch (c)
             {
-                switch (c)
-                {
-                    case '\r':
-                        return @"\r";
-                    case '\n':
-                        return @"\n";
-                    case '\t':
-                        return @"\t";
-                    case '\a':
-                        return @"\a";
-                    case '\v':
-                        return @"\v";
-                    case '\f':
-                        return @"\f";
-                    default:
-                        return String.Format("\\u{0:X};", (int)c);
-                }
+                case '\r':
+                    return @"\r";
+                case '\n':
+                    return @"\n";
+                case '\t':
+                    return @"\t";
+                case '\a':
+                    return @"\a";
+                case '\v':
+                    return @"\v";
+                case '\f':
+                    return @"\f";
+                default:
+                    return char.IsControl(c) || char.IsWhiteSpace(c)
+                        ? $"\\u{(int)c:X};"
+                        : c.ToString(CultureInfo.InvariantCulture);
             }
-            return c.ToString(CultureInfo.InvariantCulture);
         }
     }
 

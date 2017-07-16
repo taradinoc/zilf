@@ -17,11 +17,7 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -38,9 +34,9 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(mainClass != null && typeof(ZilObject).IsAssignableFrom(mainClass));
 
-            this.MainType = mainClass;
+            MainType = mainClass;
         }
 
-        public Type MainType { get; private set; }
+        public Type MainType { get; }
     }
 }

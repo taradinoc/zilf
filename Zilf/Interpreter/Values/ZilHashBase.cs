@@ -15,8 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Diagnostics.Contracts;
+
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
@@ -37,8 +36,8 @@ namespace Zilf.Interpreter.Values
 
         public override bool Equals(object obj)
         {
-            return (obj is ZilHashBase<TPrim> hash && hash.type == this.type &&
-                    hash.primValue.Equals(this.primValue));
+            return (obj is ZilHashBase<TPrim> hash && hash.type == type &&
+                    hash.primValue.Equals(primValue));
         }
 
         public override int GetHashCode() =>

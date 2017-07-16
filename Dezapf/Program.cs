@@ -24,20 +24,18 @@ using Zapf;
 
 namespace Dezapf
 {
-    class Program
+    static class Program
     {
-        const string INDENT = "            ";    // 12 spaces
-
         public static void Main(string[] args)
         {
             using (Stream stream = new FileStream(args[0], FileMode.Open, FileAccess.Read))
             {
-                int fileLength = (int)stream.Length;
-                BinaryReader rdr = new BinaryReader(stream);
+                var fileLength = (int)stream.Length;
+                var rdr = new BinaryReader(stream);
 
-                Context ctx = new Context();
+                var ctx = new Context();
                 var ranges = new RangeList<Chunk>();
-                Header hdr = new Header(rdr);
+                var hdr = new Header(rdr);
 
                 ctx.Header = hdr;
                 ctx.OutputStyle = new ZapRoundTripStyle();
@@ -48,23 +46,23 @@ namespace Dezapf
                 var todo = new Stack<int>();
                 var pendingFuncs = new Queue<int>();
                 var pastFuncs = new HashSet<int>();
-                int maxGlobal = 0;
+                var maxGlobal = 0;
                 todo.Push(hdr.Start);
 
                 while (todo.Count > 0)
                 {
-                    int pc = todo.Pop();
+                    var pc = todo.Pop();
 
-                    if (ranges.TryGetValue(pc, out var chunk) == false)
+                    if (ranges.TryGetValue(pc, out _) == false)
                     {
                         stream.Seek(pc, SeekOrigin.Begin);
-                        Instruction inst = Instruction.Decode(ctx, rdr, pc);
+                        var inst = Instruction.Decode(ctx, rdr, pc);
 
                         if (inst != null)
                         {
                             ranges.AddRange(pc, inst.Length, inst);
 
-                            for (int i = 0; i < inst.OperandTypes.Length; i++)
+                            for (var i = 0; i < inst.OperandTypes.Length; i++)
                                 if (inst.OperandTypes[i] == OperandType.Variable && inst.Operands[i] >= 16)
                                     maxGlobal = Math.Max(maxGlobal, inst.Operands[i]);
 
@@ -74,7 +72,7 @@ namespace Dezapf
                                 todo.Push(pc + inst.Length + inst.BranchOffset - 2);
                             }
 
-                            ZOpAttribute attr = ctx.GetOpcodeInfo(inst.Op);
+                            var attr = ctx.GetOpcodeInfo(inst.Op);
 
                             if ((attr.Flags & ZOpFlags.Terminates) == 0)
                                 todo.Push(pc + inst.Length);
@@ -109,7 +107,7 @@ namespace Dezapf
 
                     while (todo.Count == 0 && pendingFuncs.Count > 0)
                     {
-                        int funcAddr = pendingFuncs.Dequeue();
+                        var funcAddr = pendingFuncs.Dequeue();
                         if (!pastFuncs.Contains(funcAddr))
                         {
                             pastFuncs.Add(funcAddr);
@@ -127,14 +125,14 @@ namespace Dezapf
                 }
 
                 // combine instructions into routines
-                foreach (int address in pastFuncs)
+                foreach (var address in pastFuncs)
                     ComposeFunc(ctx, stream, rdr, ranges, address);
 
                 // mark global variables
                 maxGlobal -= 15;
                 if (maxGlobal > 0)
                 {
-                    GlobalsChunk globalsChunk = GlobalsChunk.FromStream(stream, hdr.Globals, maxGlobal * 2);
+                    var globalsChunk = GlobalsChunk.FromStream(stream, hdr.Globals, maxGlobal * 2);
                     ranges.AddRange(hdr.Globals, maxGlobal * 2, globalsChunk);
                 }
 
@@ -146,12 +144,12 @@ namespace Dezapf
                     ranges.AddRange(hdr.Impure, 1, DataChunk.FromStream(stream, hdr.Impure, 1));
 
                 // fill in gaps with data chunks
-                Queue<DataChunk> gapChunks = new Queue<DataChunk>();
+                var gapChunks = new Queue<DataChunk>();
                 foreach (var gap in ranges.FindGaps(0, fileLength))
                     gapChunks.Enqueue(DataChunk.FromStream(stream, gap.Start, gap.Length));
                 while (gapChunks.Count > 0)
                 {
-                    DataChunk chunk = gapChunks.Dequeue();
+                    var chunk = gapChunks.Dequeue();
 
                     // skip padding chunks filled with zeroes
                     if (ranges.TryGetValue(chunk.PC + chunk.Length, out var nextChunk) &&
@@ -212,20 +210,19 @@ namespace Dezapf
             stream.Seek(address, SeekOrigin.Begin);
 
             int locals = rdr.ReadByte();
-            int codeStart = address + 1;
+            var codeStart = address + 1;
 
-            ushort[] localDefaults = new ushort[locals];
+            var localDefaults = new ushort[locals];
             if (ctx.ZVersion < 5)
             {
                 codeStart += locals * 2;
-                for (int i = 0; i < locals; i++)
+                for (var i = 0; i < locals; i++)
                     localDefaults[i] = rdr.ReadZWord();
             }
 
-            MeasureExtents(ctx, ranges, address, out int minExtent, out int maxExtent);
+            MeasureExtents(ctx, ranges, address, out _, out int maxExtent);
 
-            FunctChunk funct = new FunctChunk(address, codeStart - address);
-            funct.Locals = localDefaults;
+            var funct = new FunctChunk(address, codeStart - address) { Locals = localDefaults };
             ranges.AddRange(address, codeStart - address, funct);
             ranges.Coalesce(address, maxExtent,
                 (int s1, int l1, Chunk v1, int s2, int l2, Chunk v2, out Chunk nv) =>
@@ -236,11 +233,9 @@ namespace Dezapf
                         nv = fc;
                         return true;
                     }
-                    else
-                    {
-                        nv = null;
-                        return false;
-                    }
+
+                    nv = null;
+                    return false;
                 });
         }
 
@@ -260,8 +255,8 @@ namespace Dezapf
         static void MeasureExtents(Context ctx, RangeList<Chunk> ranges,
             int startAddress, out int minExtent, out int maxExtent)
         {
-            HashSet<int> visited = new HashSet<int>();
-            Stack<int> todo = new Stack<int>();
+            var visited = new HashSet<int>();
+            var todo = new Stack<int>();
             todo.Push(startAddress);
 
             minExtent = startAddress;
@@ -269,7 +264,7 @@ namespace Dezapf
 
             while (todo.Count > 0)
             {
-                int addr = todo.Pop();
+                var addr = todo.Pop();
 
                 if (visited.Contains(addr))
                     continue;
@@ -290,7 +285,7 @@ namespace Dezapf
                         todo.Push(inst.PC + inst.Length + inst.BranchOffset - 2);
                     }
 
-                    ZOpAttribute attr = ctx.GetOpcodeInfo(inst.Op);
+                    var attr = ctx.GetOpcodeInfo(inst.Op);
 
                     if ((attr.Flags & ZOpFlags.Terminates) == 0)
                         todo.Push(inst.PC + inst.Length);

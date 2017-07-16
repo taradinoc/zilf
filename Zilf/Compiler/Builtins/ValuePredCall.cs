@@ -15,24 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
+using System.Diagnostics;
 
 namespace Zilf.Compiler.Builtins
 {
+#pragma warning disable IDE1006 // Naming Styles
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     struct ValuePredCall
     {
-        public Compilation cc { get; private set; }
-        public IRoutineBuilder rb { get; private set; }
-        public ZilForm form { get; private set; }
+        [NotNull]
+        public Compilation cc { get; }
+        [NotNull]
+        public IRoutineBuilder rb { get; }
+        [NotNull]
+        public ZilForm form { get; }
 
-        public IVariable resultStorage { get; private set; }
-        public ILabel label { get; private set; }
-        public bool polarity { get; private set; }
+        [NotNull]
+        public IVariable resultStorage { get; }
+        [NotNull]
+        public ILabel label { get; }
+        public bool polarity { get; }
 
-        public ValuePredCall(Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage, ILabel label, bool polarity)
+        public ValuePredCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
+            [NotNull] IVariable resultStorage, [NotNull] ILabel label, bool polarity)
             : this()
         {
             Contract.Requires(cc != null);
@@ -49,8 +61,9 @@ namespace Zilf.Compiler.Builtins
             this.polarity = polarity;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(cc != null);
@@ -60,4 +73,5 @@ namespace Zilf.Compiler.Builtins
             Contract.Invariant(label != null);
         }
     }
+#pragma warning restore IDE1006 // Naming Styles
 }

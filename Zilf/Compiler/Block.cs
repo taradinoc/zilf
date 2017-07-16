@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler

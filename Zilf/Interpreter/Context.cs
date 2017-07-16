@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,9 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using JetBrains.Annotations;
+
+using PureAttribute = System.Diagnostics.Contracts.PureAttribute;
 
 namespace Zilf.Interpreter
 {
@@ -67,20 +71,27 @@ namespace Zilf.Interpreter
         readonly IDiagnosticFormatter diagnosticFormatter = new DefaultDiagnosticFormatter();
 
         readonly bool ignoreCase;
+        [NotNull]
         readonly List<string> includePaths;
 
+        [NotNull]
         readonly ObList rootObList, packageObList, compilationFlagsObList, hooksObList;
         readonly Stack<ZilObject> previousObPaths;
+        [NotNull]
         LocalEnvironment localEnvironment;
         readonly Dictionary<ZilAtom, Binding> globalValues;
+        [NotNull]
         readonly AssociationTable associations;
+        [NotNull]
         readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         readonly Dictionary<string, SubrDelegate> subrDelegates;
+        [NotNull]
         readonly ZEnvironment zenv;
 
         /// <summary>
         /// Gets a value representing truth (the atom T).
         /// </summary>
+        [NotNull]
         public ZilObject TRUE { get; }
         /// <summary>
         /// Gets a value representing falsehood (a FALSE object with an empty list).
@@ -93,7 +104,6 @@ namespace Zilf.Interpreter
         public Frame TopFrame { get; private set; }
 
         ZilAtom[] stdAtoms;
-        readonly ZilAtom enclosingProgActivationAtom;
 
         public Context()
             : this(false)
@@ -134,7 +144,7 @@ namespace Zilf.Interpreter
             FALSE = new ZilFalse(new ZilList(null, null));
 
             var interruptsObList = MakeObList(GetStdAtom(StdAtom.INTERRUPTS));
-            enclosingProgActivationAtom = interruptsObList["LPROG "];
+            EnclosingProgActivationAtom = interruptsObList["LPROG "];
 
             InitConstants();
 
@@ -164,6 +174,7 @@ namespace Zilf.Interpreter
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(errorCount >= 0);
@@ -171,43 +182,34 @@ namespace Zilf.Interpreter
             Contract.Invariant(includePaths != null);
             Contract.Invariant(rootObList != null);
             Contract.Invariant(packageObList != null);
+            Contract.Invariant(compilationFlagsObList != null);
+            Contract.Invariant(hooksObList != null);
             Contract.Invariant(localEnvironment != null);
             Contract.Invariant(associations != null);
             Contract.Invariant(typeMap != null);
             Contract.Invariant(zenv != null);
 
             Contract.Invariant(TRUE != null);
-            Contract.Invariant(FALSE != null);
 
             Contract.Invariant(RootObList != null);
             Contract.Invariant(PackageObList != null);
             Contract.Invariant(IncludePaths != null);
-
         }
 
-        public ObList RootObList
-        {
-            get { return rootObList; }
-        }
+        [NotNull]
+        public ObList RootObList => rootObList;
 
-        public ObList PackageObList
-        {
-            get { return packageObList; }
-        }
+        [NotNull]
+        public ObList PackageObList => packageObList;
 
         public bool CheckDecls { get; set; }
 
         public RunMode RunMode { get; set; }
 
-        public bool IgnoreCase
-        {
-            get { return ignoreCase; }
-        }
+        public bool IgnoreCase => ignoreCase;
 
-        public List<string> IncludePaths
-        {
-            get { return includePaths; }
-        }
+        [NotNull]
+        public List<string> IncludePaths => includePaths;
 
         public bool Quiet { get; set; }
 
@@ -215,22 +217,12 @@ namespace Zilf.Interpreter
 
         public bool WantDebugInfo { get; set; }
 
-        public bool Compiling
-        {
-            get { return RunMode == RunMode.Compiler; }
-        }
-
         public int ErrorCount
         {
             get
             {
                 Contract.Ensures(Contract.Result<int>() >= 0);
                 return errorCount;
-            }
-            set
-            {
-                Contract.Requires(value >= 0);
-                errorCount = value;
             }
         }
 
@@ -241,13 +233,9 @@ namespace Zilf.Interpreter
                 Contract.Ensures(Contract.Result<int>() >= 0);
                 return warningCount;
             }
-            set
-            {
-                Contract.Requires(value >= 0);
-                warningCount = value;
-            }
         }
 
+        [NotNull]
         public ZEnvironment ZEnvironment
         {
             get
@@ -264,16 +252,17 @@ namespace Zilf.Interpreter
         // TODO: merge AtTopLevel into Frame
         public bool AtTopLevel { get; set; }
 
-        public Func<string, FileAccess, Stream> StreamOpener { get; set; }
+        [CanBeNull]
+        public Func<string, FileAccess, Stream> StreamOpener => null;
 
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
 
-        public Stream OpenFile(string filename, bool writing)
+        public Stream OpenFile([NotNull] string filename, bool writing)
         {
             Contract.Requires(filename != null);
 
-            var intercept = this.InterceptOpenFile;
+            var intercept = InterceptOpenFile;
             if (intercept != null)
                 return intercept(filename, writing);
 
@@ -283,11 +272,11 @@ namespace Zilf.Interpreter
                 writing ? FileAccess.ReadWrite : FileAccess.Read);
         }
 
-        public bool FileExists(string filename)
+        public bool FileExists([NotNull] string filename)
         {
             Contract.Requires(filename != null);
 
-            var intercept = this.InterceptFileExists;
+            var intercept = InterceptFileExists;
             if (intercept != null)
                 return intercept(filename);
 
@@ -326,8 +315,11 @@ namespace Zilf.Interpreter
             Contract.Assume(stdAtoms.Length > 0);
         }
 
-        public ObList MakeObList(ZilAtom name)
+        [NotNull]
+        public ObList MakeObList([NotNull] ZilAtom name)
         {
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ObList>() != null);
             var result = new ObList(ignoreCase);
 
             var oblistAtom = GetStdAtom(StdAtom.OBLIST);
@@ -386,8 +378,11 @@ namespace Zilf.Interpreter
             }
         }
 
-        public SubrDelegate GetSubrDelegate(string name)
+        [CanBeNull]
+        [Pure]
+        public SubrDelegate GetSubrDelegate([NotNull] string name)
         {
+            Contract.Requires(name != null);
             subrDelegates.TryGetValue(name, out var result);
             return result;
         }
@@ -443,14 +438,26 @@ namespace Zilf.Interpreter
             {
                 var atom = GetStdAtom(i.N);
                 if (GetZVal(atom) == null)
-                    AddZConstant(atom, new ZilFix(i.V));
+                {
+                    try
+                    {
+                        AddZConstant(atom, new ZilFix(i.V));
+                    }
+                    catch (DeclCheckError)
+                    {
+                        Debug.Assert(false, "default constant value doesn't match decl");
+                    }
+                }
             }
         }
 
-        public ZilConstant AddZConstant(ZilAtom atom, ZilObject value)
+        /// <exception cref="DeclCheckError">value does not match the DECL for atom.</exception>
+        [NotNull]
+        public ZilConstant AddZConstant([NotNull] ZilAtom atom, [NotNull] ZilObject value)
         {
             Contract.Requires(atom != null);
             Contract.Requires(value != null);
+            Contract.Ensures(Contract.Result<ZilConstant>() != null);
             Contract.Ensures(globalValues.Count >= Contract.OldValue(globalValues.Count));
             Contract.Ensures(zenv.Constants.Count >= Contract.OldValue(zenv.Constants.Count));
 
@@ -471,6 +478,7 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="id">The identifier of the standard atom.</param>
         /// <returns>The atom.</returns>
+        [NotNull]
         public ZilAtom GetStdAtom(StdAtom id)
         {
             Contract.Ensures(Contract.Result<ZilAtom>() != null);
@@ -485,7 +493,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <returns>The associated value, or null if no value is associated with the pair.</returns>
         [Pure]
-        public ZilObject GetProp(ZilObject first, ZilObject second)
+        public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
             Contract.Requires(first != null);
             Contract.Requires(second != null);
@@ -500,7 +508,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <param name="value">The value to be associated with the pair, or
         /// null to clear the association.</param>
-        public void PutProp(ZilObject first, ZilObject second, ZilObject value)
+        public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, ZilObject value)
         {
             Contract.Requires(first != null);
             Contract.Requires(second != null);
@@ -512,6 +520,7 @@ namespace Zilf.Interpreter
         /// Gets an array of <see cref="AsocResult"/> listing all active associations.
         /// </summary>
         /// <returns>The array.</returns>
+        [NotNull]
         public AsocResult[] GetAllAssociations()
         {
             Contract.Ensures(Contract.Result<AsocResult[]>() != null);
@@ -524,9 +533,11 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <returns>The local value, or null if no local value is assigned.</returns>
+        [CanBeNull]
         [Pure]
-        public ZilObject GetLocalVal(ZilAtom atom)
+        public ZilObject GetLocalVal([NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
             return localEnvironment.GetLocalVal(atom);
         }
 
@@ -535,7 +546,8 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new local value, or null to clear the local value.</param>
-        public void SetLocalVal(ZilAtom atom, ZilObject value)
+        /// <exception cref="DeclCheckError">value does not match the existing DECL for atom.</exception>
+        public void SetLocalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(GetLocalVal(atom) == value);
@@ -543,6 +555,7 @@ namespace Zilf.Interpreter
             localEnvironment.SetLocalVal(atom, value);
         }
 
+        [NotNull]
         public LocalEnvironment PushEnvironment()
         {
             Contract.Ensures(Contract.Result<LocalEnvironment>() != null);
@@ -554,10 +567,8 @@ namespace Zilf.Interpreter
 
         public void PopEnvironment()
         {
-            if (localEnvironment.Parent == null)
-                throw new InvalidOperationException("no parent environment to restore");
-
-            localEnvironment = localEnvironment.Parent;
+            localEnvironment = localEnvironment.Parent ??
+                               throw new InvalidOperationException("no parent environment to restore");
         }
 
         public T ExecuteInEnvironment<T>(LocalEnvironment tempEnvironment, Func<T> func)
@@ -608,12 +619,11 @@ namespace Zilf.Interpreter
             }
         }
 
-        public LocalEnvironment LocalEnvironment
-        {
-            get { return localEnvironment; }
-        }
+        [NotNull]
+        public LocalEnvironment LocalEnvironment => localEnvironment;
 
-        public Frame PushFrame(ZilForm callingForm)
+        [NotNull]
+        public Frame PushFrame([NotNull] ZilForm callingForm)
         {
             Contract.Requires(callingForm != null);
             Contract.Ensures(Contract.Result<Frame>() != null);
@@ -623,7 +633,8 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        public Frame PushFrame(ISourceLine sourceLine, string description = null)
+        [NotNull]
+        public Frame PushFrame([NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
         {
             Contract.Requires(sourceLine != null);
             Contract.Ensures(Contract.Result<Frame>() != null);
@@ -633,15 +644,18 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <exception cref="InvalidOperationException">This frame is not on top of the stack.</exception>
         public void PopFrame()
         {
+            // ReSharper disable once JoinNullCheckWithUsage (workaround for Exceptional)
             if (TopFrame.Parent == null)
                 throw new InvalidOperationException("no parent frame to restore");
 
             TopFrame = TopFrame.Parent;
         }
 
-        public FileContext PushFileContext(string path)
+        [NotNull]
+        public FileContext PushFileContext([NotNull] string path)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(path));
             Contract.Ensures(Contract.Result<FileContext>() != null);
@@ -651,8 +665,10 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <exception cref="InvalidOperationException">This file is not on top of the stack.</exception>
         public void PopFileContext()
         {
+            // ReSharper disable once JoinNullCheckWithUsage (workaround for Exceptional)
             if (CurrentFile.Parent == null)
                 throw new InvalidOperationException("no parent file to restore");
 
@@ -667,21 +683,17 @@ namespace Zilf.Interpreter
         [Pure]
         public ZilObject GetGlobalVal(ZilAtom atom)
         {
-            Contract.Requires(atom != null);
-
-            if (globalValues.TryGetValue(atom, out var binding))
-                return binding.Value;
-
-            return null;
+            return globalValues.TryGetValue(atom, out var binding) ? binding.Value : null;
         }
 
         /// <summary>
         /// Gets the global binding for an atom, optionally creating one if necessary.
         /// </summary>
         /// <param name="atom">The atom.</param>
-        /// <param name="create"><b>true</b> to create the binding if it doesn't already exist.</param>
-        /// <returns>The binding, or <b>null</b> if it doesn't exist and <paramref name="create"/> is <b>false</b>.</returns>
-        public Binding GetGlobalBinding(ZilAtom atom, bool create)
+        /// <param name="create"><see langword="true"/> to create the binding if it doesn't already exist.</param>
+        /// <returns>The binding, or <see langword="null"/> if it doesn't exist and <paramref name="create"/> is <see langword="false"/>.</returns>
+        [ContractAnnotation("create: true => notnull")]
+        public Binding GetGlobalBinding([NotNull] ZilAtom atom, bool create)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(Contract.Result<Binding>() != null || create == false);
@@ -702,9 +714,8 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new global value, or null to clear the global value.</param>
-        /// <exception cref="DeclCheckError"><paramref name="value"/> does not match the DECL
-        /// for <paramref name="atom"/>.</exception>
-        public void SetGlobalVal(ZilAtom atom, ZilObject value)
+        /// <exception cref="DeclCheckError"><paramref name="value"/> does not match the DECL for <paramref name="atom"/>.</exception>
+        public void SetGlobalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(GetGlobalVal(atom) == value);
@@ -729,13 +740,17 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="src">The source node.</param>
         /// <param name="value">The value to check.</param>
-        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <b>null</b>.</param>
+        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <see langword="null"/>.</param>
         /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
         /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
-        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <b>true</b>, <paramref name="pattern"/> is non-null,
-        /// and <paramref name="value"/> failed the check.</exception>
-        public void MaybeCheckDecl(IProvideSourceLine src, ZilObject value, ZilObject pattern, string usageFormat, object arg0)
+        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <see langword="true"/>, <paramref name="pattern"/> is non-null, and <paramref name="value"/> failed the check.</exception>
+        [StringFormatMethod("usageFormat")]
+        public void MaybeCheckDecl(IProvideSourceLine src, [NotNull] ZilObject value, [CanBeNull] ZilObject pattern,
+            [NotNull] string usageFormat, [NotNull] object arg0)
         {
+            Contract.Requires(value != null);
+            Contract.Requires(usageFormat != null);
+            Contract.Requires(arg0 != null);
             if (pattern != null && CheckDecls && !Decl.Check(this, value, pattern))
                 throw new DeclCheckError(src, this, value, pattern, usageFormat, arg0);
         }
@@ -744,13 +759,17 @@ namespace Zilf.Interpreter
         /// Optionally checks a value against a DECL, throwing if it fails.
         /// </summary>
         /// <param name="value">The value to check.</param>
-        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <b>null</b>.</param>
+        /// <param name="pattern">The DECL to check <paramref name="value"/> against, or <see langword="null"/>.</param>
         /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
         /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
-        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <b>true</b>, <paramref name="pattern"/> is non-null,
-        /// and <paramref name="value"/> failed the check.</exception>
-        public void MaybeCheckDecl(ZilObject value, ZilObject pattern, string usageFormat, object arg0)
+        /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <see langword="true"/>, <paramref name="pattern"/> is non-null, and <paramref name="value"/> failed the check.</exception>
+        [StringFormatMethod("usageFormat")]
+        public void MaybeCheckDecl([NotNull] ZilObject value, [CanBeNull] ZilObject pattern, [NotNull] string usageFormat,
+            [NotNull] object arg0)
         {
+            Contract.Requires(value != null);
+            Contract.Requires(usageFormat != null);
+            Contract.Requires(arg0 != null);
             if (pattern != null && CheckDecls && !Decl.Check(this, value, pattern))
                 throw new DeclCheckError(this, value, pattern, usageFormat, arg0);
         }
@@ -762,7 +781,7 @@ namespace Zilf.Interpreter
         /// <returns>The value, or null if no value is assigned.</returns>
         /// <remarks>This is equivalent to &lt;GETPROP atom ZVAL&gt;.</remarks>
         [Pure]
-        public ZilObject GetZVal(ZilAtom atom)
+        public ZilObject GetZVal([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
@@ -775,7 +794,7 @@ namespace Zilf.Interpreter
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new value, or null to clear the value.</param>
         /// <remarks>This is equivalent to &lt;PUTPROP atom ZVAL value&gt;.</remarks>
-        public void SetZVal(ZilAtom atom, ZilObject value)
+        public void SetZVal([NotNull] ZilAtom atom, ZilObject value)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(GetZVal(atom) == value);
@@ -787,7 +806,7 @@ namespace Zilf.Interpreter
         /// Gets a boolean value indicating whether a global option is enabled.
         /// </summary>
         /// <param name="stdAtom">The StdAtom identifying the option.</param>
-        /// <returns><b>true</b> if the GVAL of the specified atom is assigned and true; otherwise <b>false</b>.</returns>
+        /// <returns><see langword="true"/> if the GVAL of the specified atom is assigned and true; otherwise <see langword="false"/>.</returns>
         [Pure]
         public bool GetGlobalOption(StdAtom stdAtom)
         {
@@ -804,7 +823,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        public void Redefine(ZilAtom atom)
+        public void Redefine([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
@@ -830,7 +849,7 @@ namespace Zilf.Interpreter
         }
 
         [Obsolete("Use the overload that takes a " + nameof(ZilError) + " instead.")]
-        public void HandleWarning(ISourceLine node, string message)
+        public void HandleWarning([CanBeNull] ISourceLine node, [NotNull] string message)
         {
             Contract.Requires(message != null);
             Contract.Ensures(warningCount > 0);
@@ -842,7 +861,7 @@ namespace Zilf.Interpreter
                 message);
         }
 
-        public void HandleWarning(ZilError ex)
+        public void HandleWarning([NotNull] ZilError ex)
         {
             Contract.Requires(ex != null);
             Contract.Ensures(warningCount > 0);
@@ -850,7 +869,7 @@ namespace Zilf.Interpreter
             HandleDiagnostic(ex.Diagnostic);
         }
 
-        public void HandleError(ZilError ex)
+        public void HandleError([NotNull] ZilError ex)
         {
             Contract.Requires(ex != null);
             Contract.Ensures(errorCount > 0);
@@ -858,7 +877,7 @@ namespace Zilf.Interpreter
             HandleDiagnostic(ex.Diagnostic);
         }
 
-        public void HandleDiagnostic(Diagnostic diag)
+        public void HandleDiagnostic([NotNull] Diagnostic diag)
         {
             Contract.Requires(diag != null);
             Contract.Ensures(errorCount >= Contract.OldValue(errorCount));
@@ -878,9 +897,12 @@ namespace Zilf.Interpreter
             Console.Error.WriteLine(diagnosticFormatter.Format(diag));
         }
 
-        public string FindIncludeFile(string name)
+        /// <exception cref="FileNotFoundException">The file wasn't found in any include path.</exception>
+        [NotNull]
+        public string FindIncludeFile([NotNull] string name)
         {
             Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<string>() != null);
 
             foreach (var path in includePaths)
             {
@@ -905,12 +927,12 @@ namespace Zilf.Interpreter
         /// Adapts a MethodInfo, describing a function that takes a context and a
         /// specific ZilObject type and returns a ZilObject, to ChtypeDelegate.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="mi"></param>
-        /// <returns></returns>
-        static ChtypeDelegate AdaptChtypeMethod<T>(MethodInfo mi)
+        [NotNull]
+        static ChtypeDelegate AdaptChtypeMethod<T>([NotNull] MethodInfo mi)
             where T : ZilObject
         {
+            Contract.Requires(mi != null);
+            Contract.Ensures(Contract.Result<ChtypeDelegate>() != null);
             var rawDel = Delegate.CreateDelegate(typeof(Func<Context, T, ZilObject>), mi);
             var del = (Func<Context, T, ZilObject>)rawDel;
             return (ctx, zo) => del(ctx, (T)zo);
@@ -923,7 +945,8 @@ namespace Zilf.Interpreter
         /// <typeparam name="T"></typeparam>
         /// <param name="ci"></param>
         /// <returns></returns>
-        static ChtypeDelegate AdaptChtypeCtor<T>(ConstructorInfo ci)
+        [NotNull]
+        static ChtypeDelegate AdaptChtypeCtor<T>([NotNull] ConstructorInfo ci)
             where T : ZilObject
         {
             Contract.Requires(ci != null);
@@ -1004,12 +1027,9 @@ namespace Zilf.Interpreter
                     // adapt the static method
                     if (!chtypeMethod.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes))
                         throw new InvalidOperationException(
-                            string.Format(
-                                "Wrong parameters for static ChtypeMethod {0} on type {1}\nExpected: ({2})\nActual: ({3})",
-                                chtypeMethod.Name,
-                                r.Type.Name,
-                                string.Join(", ", chtypeParamTypes.Select(t => t.Name)),
-                                string.Join(", ", chtypeMethod.GetParameters().Select(pi => pi.ParameterType.Name))));
+                            $"Wrong parameters for static ChtypeMethod {chtypeMethod.Name} on type {r.Type.Name}\n" +
+                            $"Expected: ({string.Join(", ", chtypeParamTypes.Select(t => t.Name))})\n" +
+                            $"Actual: ({string.Join(", ", chtypeMethod.GetParameters().Select(pi => pi.ParameterType.Name))})");
 
                     chtypeDelegate = adaptChtypeMethod(chtypeMethod);
                 }
@@ -1026,16 +1046,13 @@ namespace Zilf.Interpreter
                         // adapt the constructor
                         if (!chtypeCtor.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes.Skip(1)))
                             throw new InvalidOperationException(
-                                string.Format(
-                                    "Wrong parameters for ChtypeMethod constructor on type {0}",
-                                    r.Type.Name));
+                                $"Wrong parameters for ChtypeMethod constructor on type {r.Type.Name}");
 
                         chtypeDelegate = adaptChtypeCtor(chtypeCtor);
                     }
                     else
                     {
-                        throw new InvalidOperationException(
-                            string.Format("No ChtypeMethod found on type {0}", r.Type.Name));
+                        throw new InvalidOperationException($"No ChtypeMethod found on type {r.Type.Name}");
                     }
                 }
 
@@ -1073,7 +1090,7 @@ namespace Zilf.Interpreter
             InitPropDefs();
         }
 
-        public void RegisterType(ZilAtom atom, PrimType primType)
+        public void RegisterType([NotNull] ZilAtom atom, PrimType primType)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(typeMap.Count == Contract.OldValue(typeMap.Count) + 1);
@@ -1104,19 +1121,18 @@ namespace Zilf.Interpreter
         }
 
         [Pure]
-        public bool IsRegisteredType(ZilAtom atom)
+        public bool IsRegisteredType([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
             return typeMap.ContainsKey(atom);
         }
 
-        public IEnumerable<ZilAtom> RegisteredTypes
-        {
-            get { return typeMap.Keys; }
-        }
+        [ItemNotNull]
+        [NotNull]
+        public IEnumerable<ZilAtom> RegisteredTypes => typeMap.Keys;
 
         [Pure]
-        public bool IsStructuredType(ZilAtom atom)
+        public bool IsStructuredType([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
@@ -1130,7 +1146,7 @@ namespace Zilf.Interpreter
         }
 
         [Pure]
-        public bool IsApplicableType(ZilAtom atom)
+        public bool IsApplicableType([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
@@ -1152,7 +1168,7 @@ namespace Zilf.Interpreter
         /// <param name="type">The name of a built-in type or a NEWTYPE.</param>
         /// <returns>The <see cref="PrimType"/> of the given type.</returns>
         [Pure]
-        public PrimType GetTypePrim(ZilAtom type)
+        public PrimType GetTypePrim([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             return typeMap[type].PrimType;
@@ -1166,7 +1182,7 @@ namespace Zilf.Interpreter
             BadHandlerType,
         }
 
-        public SetTypeHandlerResult SetPrintType(ZilAtom type, ZilObject handler)
+        public SetTypeHandlerResult SetPrintType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1178,10 +1194,7 @@ namespace Zilf.Interpreter
                 e => e.PrintTypeDelegate,
                 (e, h) => e.PrintType = h,
                 (e, d) => e.PrintTypeDelegate = d,
-                (ctx, t, otherType) => zo =>
-                {
-                    return ctx.ChangeType(zo, otherType).ToStringContext(ctx, false, true);
-                },
+                (ctx, t, otherType) => zo => ctx.ChangeType(zo, otherType).ToStringContext(ctx, false, true),
                 (ctx, t, applicable) => zo =>
                 {
                     var stringChannel = new ZilStringChannel(FileAccess.Write);
@@ -1190,13 +1203,13 @@ namespace Zilf.Interpreter
                     using (ctx.PushFrame(SourceLines.Unknown, $"<PRINTTYPE for {t}>"))
                     {
                         innerEnv.Rebind(outchanAtom, stringChannel);
-                        applicable.ApplyNoEval(ctx, new ZilObject[] { zo });
+                        applicable.ApplyNoEval(ctx, new[] { zo });
                         return stringChannel.String;
                     }
                 });
         }
 
-        public SetTypeHandlerResult SetEvalType(ZilAtom type, ZilObject handler)
+        public SetTypeHandlerResult SetEvalType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1208,10 +1221,7 @@ namespace Zilf.Interpreter
                 e => e.EvalTypeDelegate,
                 (e, h) => e.EvalType = h,
                 (e, d) => e.EvalTypeDelegate = d,
-                (ctx, t, otherType) => zo =>
-                {
-                    return ctx.ChangeType(zo, otherType).EvalAsOtherType(ctx, t);
-                },
+                (ctx, t, otherType) => zo => ctx.ChangeType(zo, otherType).EvalAsOtherType(ctx, t),
                 (ctx, t, applicable) => zo =>
                 {
                     using (ctx.PushFrame(SourceLines.Unknown, $"<EVALTYPE for {t}>"))
@@ -1221,7 +1231,7 @@ namespace Zilf.Interpreter
                 });
         }
 
-        public SetTypeHandlerResult SetApplyType(ZilAtom type, ZilObject handler)
+        public SetTypeHandlerResult SetApplyType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1252,7 +1262,7 @@ namespace Zilf.Interpreter
                 });
         }
 
-        SetTypeHandlerResult SetTypeHandler<TDelegate>(ZilAtom type, ZilObject handler,
+        SetTypeHandlerResult SetTypeHandler<TDelegate>([NotNull] ZilAtom type, [NotNull] ZilObject handler,
             StdAtom clearIndicator,
             Func<TypeMapEntry, ZilObject> getHandler,
             Func<TypeMapEntry, TDelegate> getDelegate,
@@ -1319,7 +1329,7 @@ namespace Zilf.Interpreter
             return SetTypeHandlerResult.BadHandlerType;
         }
 
-        public ZilObject GetPrintType(ZilAtom type)
+        public ZilObject GetPrintType([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1328,7 +1338,7 @@ namespace Zilf.Interpreter
             return entry.PrintType;
         }
 
-        public PrintTypeDelegate GetPrintTypeDelegate(ZilAtom type)
+        public PrintTypeDelegate GetPrintTypeDelegate([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1337,7 +1347,7 @@ namespace Zilf.Interpreter
             return entry.PrintTypeDelegate;
         }
 
-        public ZilObject GetEvalType(ZilAtom type)
+        public ZilObject GetEvalType([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1346,7 +1356,7 @@ namespace Zilf.Interpreter
             return entry.EvalType;
         }
 
-        public EvalTypeDelegate GetEvalTypeDelegate(ZilAtom type)
+        public EvalTypeDelegate GetEvalTypeDelegate([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1355,7 +1365,7 @@ namespace Zilf.Interpreter
             return entry.EvalTypeDelegate;
         }
 
-        public ZilObject GetApplyType(ZilAtom type)
+        public ZilObject GetApplyType([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1364,7 +1374,7 @@ namespace Zilf.Interpreter
             return entry.ApplyType;
         }
 
-        public ApplyTypeDelegate GetApplyTypeDelegate(ZilAtom type)
+        public ApplyTypeDelegate GetApplyTypeDelegate([NotNull] ZilAtom type)
         {
             Contract.Requires(type != null);
             Contract.Requires(IsRegisteredType(type));
@@ -1373,12 +1383,9 @@ namespace Zilf.Interpreter
             return entry.ApplyTypeDelegate;
         }
 
+        /// <exception cref="InterpreterError">The type of <paramref name="value"/> is incompatible with <paramref name="newType"/>.</exception>
         public ZilObject ChangeType(ZilObject value, ZilAtom newType)
         {
-            Contract.Requires(value != null);
-            Contract.Requires(newType != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-
             // DECL checking happens before anything else, so even chtype to the current type might fail!
             var decl = GetProp(newType, GetStdAtom(StdAtom.DECL));
             MaybeCheckDecl(value, decl, "CHTYPE to {0}", newType);
@@ -1397,7 +1404,7 @@ namespace Zilf.Interpreter
                 if (value.PrimType != PrimType.ATOM)
                     throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
 
-                return new ZilForm(new ZilObject[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
+                return new ZilForm(new[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
             }
 
             // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
@@ -1459,7 +1466,7 @@ B * <PRINTB .X>
             }
         }
 
-        public void DefineCompilationFlag(ZilAtom name, ZilObject value, bool redefine = false)
+        public void DefineCompilationFlag([NotNull] ZilAtom name, [NotNull] ZilObject value, bool redefine = false)
         {
             Contract.Requires(name != null);
             Contract.Requires(value != null);
@@ -1490,21 +1497,26 @@ B * <PRINTB .X>
             return value != null && value.IsTrue;
         }
 
+        [CanBeNull]
         [Pure]
-        public ZilObject GetCompilationFlagValue(ZilAtom atom)
+        public ZilObject GetCompilationFlagValue([NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
             return GetCompilationFlagValue(atom.Text);
         }
 
+        [CanBeNull]
         [Pure]
-        public ZilObject GetCompilationFlagValue(string name)
+        public ZilObject GetCompilationFlagValue([NotNull] string name)
         {
+            Contract.Requires(name != null);
             var atom = compilationFlagsObList[name];
             return GetGlobalVal(atom);
         }
 
-        void SetCompilationFlagValue(ZilAtom name, ZilObject value)
+        void SetCompilationFlagValue([NotNull] ZilAtom name, [CanBeNull] ZilObject value)
         {
+            Contract.Requires(name != null);
             name = compilationFlagsObList[name.Text];
             SetGlobalVal(name, value);
         }
@@ -1513,7 +1525,7 @@ B * <PRINTB .X>
         /// Initializes (or re-initializes) the default PROPDEFs.
         /// </summary>
         /// <remarks>
-        /// The PROPDEFs are version-specific, so this should be called again after changing <see cref="ZEnvironment.ZVersion"/>;
+        /// The PROPDEFs are version-specific, so this should be called again after changing <see cref="ZModel.ZEnvironment"/>;
         /// </remarks>
         public void InitPropDefs()
         {
@@ -1581,7 +1593,7 @@ B * <PRINTB .X>
             InitPropDef(StdAtom.DIRECTIONS, zenv.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Etc);
         }
 
-        void InitPropDef(StdAtom propName, string def)
+        void InitPropDef(StdAtom propName, [NotNull] string def)
         {
             Contract.Requires(def != null);
 
@@ -1590,16 +1602,17 @@ B * <PRINTB .X>
             try
             {
                 vector = (ZilVector)Program.Evaluate(this, def, true);
+                Debug.Assert(vector != null, "empty initial PROPDEF");
             }
             finally
             {
                 Program.Evaluate(this, "<ENDBLOCK>");
             }
-            var pattern = ComplexPropDef.Parse(vector, this);
+            var pattern = ComplexPropDef.Parse(vector);
             SetPropDef(GetStdAtom(propName), pattern);
         }
 
-        public void SetPropDef(ZilAtom propName, ComplexPropDef pattern)
+        public void SetPropDef([NotNull] ZilAtom propName, [NotNull] ComplexPropDef pattern)
         {
             Contract.Requires(propName != null);
             Contract.Requires(pattern != null);
@@ -1611,13 +1624,18 @@ B * <PRINTB .X>
             PutProp(propName, GetStdAtom(StdAtom.PROPSPEC), pattern);
         }
 
-        public Stream OpenChannelStream(string path, FileAccess fileAccess)
+        [NotNull]
+        public Stream OpenChannelStream([NotNull] string path, FileAccess fileAccess)
         {
             Contract.Requires(path != null);
             Contract.Ensures(Contract.Result<Stream>() != null);
 
             if (TopFrame.SourceLine is FileSourceLine fileSourceLine)
-                path = Path.Combine(Path.GetDirectoryName(fileSourceLine.FileName), path);
+            {
+                var dir = Path.GetDirectoryName(fileSourceLine.FileName);
+                Debug.Assert(dir != null);
+                path = Path.Combine(dir, path);
+            }
 
             if (StreamOpener != null)
                 return StreamOpener(path, fileAccess);
@@ -1645,32 +1663,27 @@ B * <PRINTB .X>
         /// Pushes a new LVAL for the atom OBLIST, to be used for looking up atoms.
         /// </summary>
         /// <param name="newObPath">A list to serve as the new LVAL of OBLIST.</param>
-        public void PushObPath(ZilList newObPath)
+        public void PushObPath([NotNull] ZilList newObPath)
         {
             Contract.Requires(newObPath != null);
 
             var atom = GetStdAtom(StdAtom.OBLIST);
-            var old = GetLocalVal(atom);
-
-            if (old == null)
-            {
-                old = new ZilList(null, null);
-            }
+            var old = GetLocalVal(atom) ?? new ZilList(null, null);
 
             previousObPaths.Push(old);
             SetLocalVal(atom, newObPath);
         }
 
+        // ReSharper disable ExceptionNotThrown
         /// <summary>
         /// Restores the previous LVAL of the atom OBLIST that existed before a corresponding
         /// call to <see cref="PushObPath"/>.
         /// </summary>
-        /// <returns>The current LVAL of OBLIST, or <b>null</b> if it's currently unassigned.</returns>
+        /// <returns>The current LVAL of OBLIST, or <see langword="null"/> if it's currently unassigned.</returns>
         /// <exception cref="InvalidOperationException">There was no previous LVAL of OBLIST.</exception>
+        [CanBeNull]
         public ZilObject PopObPath()
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom);
 
@@ -1680,24 +1693,27 @@ B * <PRINTB .X>
             SetLocalVal(atom, popped);
             return old;
         }
+        // ReSharper restore ExceptionNotThrown
 
+        [CanBeNull]
         public ZilActivation GetEnclosingProgActivation()
         {
-            return GetLocalVal(enclosingProgActivationAtom) as ZilActivation;
+            return GetLocalVal(EnclosingProgActivationAtom) as ZilActivation;
         }
 
-        public ZilAtom EnclosingProgActivationAtom
-        {
-            get { return enclosingProgActivationAtom; }
-        }
+        [NotNull]
+        public ZilAtom EnclosingProgActivationAtom { get; }
 
-        public ZilObject RunHook(string name, params ZilObject[] args)
+        [CanBeNull]
+        public ZilObject RunHook([NotNull] string name, [ItemNotNull] [NotNull] params ZilObject[] args)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(args != null);
             var hook = GetGlobalVal(hooksObList[name]);
 
-            if (hook != null && hook.IsApplicable(this))
+            // ReSharper disable once PatternAlwaysOfType
+            if (hook != null && hook.AsApplicable(this) is IApplicable applicable)
             {
-                var applicable = hook.AsApplicable(this);
                 return (ZilObject)applicable.ApplyNoEval(this, args);
             }
 

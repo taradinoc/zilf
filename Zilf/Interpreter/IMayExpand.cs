@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {

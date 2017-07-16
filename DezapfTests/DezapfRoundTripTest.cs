@@ -16,9 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.IO;
-using System.Text;
 
 namespace DezapfTests
 {
@@ -28,31 +25,6 @@ namespace DezapfTests
     [TestClass]
     public class DezapfRoundTripTest
     {
-        public DezapfRoundTripTest()
-        {
-            //
-            // TODO: Add constructor logic here
-            //
-        }
-
-        TestContext testContextInstance;
-
-        /// <summary>
-        ///Gets or sets the test context which provides
-        ///information about and functionality for the current test run.
-        ///</summary>
-        public TestContext TestContext
-        {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
-        }
-
         #region Additional test attributes
         //
         // You can use the following additional attributes as you write your tests:
@@ -75,6 +47,7 @@ namespace DezapfTests
         //
         #endregion
 
+/*
         static int RunZapf(string code, out byte[] zcode)
         {
             string inputFile = Path.GetTempFileName();
@@ -82,7 +55,7 @@ namespace DezapfTests
             try
             {
                 File.WriteAllText(inputFile, code);
-                int rc = Zapf.Program.Main(new string[] { inputFile, outputFile });
+                int rc = Zapf.Program.Main(new[] { inputFile, outputFile });
                 if (rc == 0)
                     zcode = File.ReadAllBytes(outputFile);
                 else
@@ -95,7 +68,9 @@ namespace DezapfTests
                 File.Delete(outputFile);
             }
         }
+*/
 
+/*
         static int RunDezapf(byte[] zcode, out string code)
         {
             string inputFile = Path.GetTempFileName();
@@ -106,7 +81,7 @@ namespace DezapfTests
                 MemoryStream mstr = new MemoryStream();
                 StreamWriter wtr = new StreamWriter(mstr);
                 Console.SetOut(wtr);
-                Dezapf.Program.Main(new string[] { inputFile });
+                Dezapf.Program.Main(new[] { inputFile });
                 wtr.Flush();
                 code = Encoding.Default.GetString(mstr.ToArray());
                 return 0; //XXX
@@ -117,6 +92,7 @@ namespace DezapfTests
                 Console.SetOut(oldOut);
             }
         }
+*/
 
         /*[TestMethod]
         public void RoundTripTest_name_z3()
@@ -130,10 +106,12 @@ namespace DezapfTests
             TestRoundTrip(Resources.hello_z3);
         }*/
 
+        [TestMethod]
         void TestRoundTrip(byte[] zcode)
         {
             Assert.Inconclusive("DeZapf is not ready for end-to-end testing");
 
+/*
             int rc;
 
             rc = RunDezapf(zcode, out var code);
@@ -143,6 +121,7 @@ namespace DezapfTests
             Assert.AreEqual(0, rc, "Zapf signaled error");
 
             CollectionAssert.AreEqual(zcode, actual);
+*/
         }
     }
 }

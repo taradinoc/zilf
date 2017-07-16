@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using JetBrains.Annotations;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
@@ -20,82 +22,50 @@ namespace Zilf.Emit.Zap
 
             public PropertyEntry(PropertyBuilder prop, IOperand value, byte kind)
             {
-                this.Property = prop;
-                this.Value = value;
-                this.Kind = kind;
+                Property = prop;
+                Value = value;
+                Kind = kind;
             }
         }
 
-        private readonly GameBuilder game;
-        readonly int number;
-        readonly string name;
         readonly List<PropertyEntry> props = new List<PropertyEntry>();
         readonly List<FlagBuilder> flags = new List<FlagBuilder>();
 
-        string descriptiveName = "";
-        IObjectBuilder parent, child, sibling;
-
-        public ObjectBuilder(GameBuilder game, int number, string name)
+        public ObjectBuilder(string name)
         {
-            this.game = game;
-            this.number = number;
-            this.name = name;
+            SymbolicName = name;
         }
 
-        public string SymbolicName
-        {
-            get { return name; }
-        }
+        public string SymbolicName { get; }
 
-        public int Number
-        {
-            get { return number; }
-        }
+        [NotNull]
+        public string DescriptiveName { get; set; } = "";
 
-        public string DescriptiveName
-        {
-            get { return descriptiveName; }
-            set { descriptiveName = value; }
-        }
+        [CanBeNull]
+        public IObjectBuilder Parent { get; set; }
 
-        public IObjectBuilder Parent
-        {
-            get { return parent; }
-            set { parent = value; }
-        }
+        [CanBeNull]
+        public IObjectBuilder Child { get; set; }
 
-        public IObjectBuilder Child
-        {
-            get { return child; }
-            set { child = value; }
-        }
+        [CanBeNull]
+        public IObjectBuilder Sibling { get; set; }
 
-        public IObjectBuilder Sibling
-        {
-            get { return sibling; }
-            set { sibling = value; }
-        }
+        [NotNull]
+        public string Flags1 => GetFlagsString(0);
 
-        public string Flags1
-        {
-            get { return GetFlagsString(0); }
-        }
+        [NotNull]
+        public string Flags2 => GetFlagsString(16);
 
-        public string Flags2
-        {
-            get { return GetFlagsString(16); }
-        }
+        [NotNull]
+        public string Flags3 => GetFlagsString(32);
 
-        public string Flags3
-        {
-            get { return GetFlagsString(32); }
-        }
-
+        [NotNull]
         string GetFlagsString(int start)
         {
+            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
 
-            foreach (FlagBuilder flag in flags)
+            foreach (var flag in flags)
             {
                 int num = flag.Number;
                 if (num >= start && num < start + 16)
@@ -104,14 +74,11 @@ namespace Zilf.Emit.Zap
                         sb.Append('+');
 
                     sb.Append("FX?");
-                    sb.Append(flag.ToString());
+                    sb.Append(flag);
                 }
             }
 
-            if (sb.Length == 0)
-                return "0";
-
-            return sb.ToString();
+            return sb.Length == 0 ? "0" : sb.ToString();
         }
 
         public void AddByteProperty(IPropertyBuilder prop, IOperand value)
@@ -128,7 +95,7 @@ namespace Zilf.Emit.Zap
 
         public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
         {
-            var data = new TableBuilder(string.Format("?{0}?CP?{1}", this, prop));
+            var data = new TableBuilder($"?{this}?CP?{prop}");
             var pe = new PropertyEntry((PropertyBuilder)prop, data, PropertyEntry.TABLE);
             props.Add(pe);
             return data;
@@ -143,28 +110,27 @@ namespace Zilf.Emit.Zap
 
         internal void WriteProperties(TextWriter writer)
         {
-            writer.WriteLine(INDENT + ".STRL \"{0}\"", GameBuilder.SanitizeString(descriptiveName));
+            writer.WriteLine(INDENT + ".STRL \"{0}\"", GameBuilder.SanitizeString(DescriptiveName));
 
             props.Sort((a, b) => b.Property.Number.CompareTo(a.Property.Number));
 
-            for (int i = 0; i < props.Count; i++)
+            foreach (var pe in props)
             {
-                PropertyEntry pe = props[i];
-                if (pe.Kind == PropertyEntry.BYTE)
+                switch (pe.Kind)
                 {
-                    writer.WriteLine(INDENT + ".PROP 1,{0}", pe.Property);
-                    writer.WriteLine(INDENT + ".BYTE {0}", pe.Value);
-                }
-                else if (pe.Kind == PropertyEntry.WORD)
-                {
-                    writer.WriteLine(INDENT + ".PROP 2,{0}", pe.Property);
-                    writer.WriteLine(INDENT + ".WORD {0}", pe.Value);
-                }
-                else // TABLE
-                {
-                    var tb = (TableBuilder)pe.Value;
-                    writer.WriteLine(INDENT + ".PROP {0},{1}", tb.Size, pe.Property);
-                    tb.WriteTo(writer);
+                    case PropertyEntry.BYTE:
+                        writer.WriteLine(INDENT + ".PROP 1,{0}", pe.Property);
+                        writer.WriteLine(INDENT + ".BYTE {0}", pe.Value);
+                        break;
+                    case PropertyEntry.WORD:
+                        writer.WriteLine(INDENT + ".PROP 2,{0}", pe.Property);
+                        writer.WriteLine(INDENT + ".WORD {0}", pe.Value);
+                        break;
+                    default:
+                        var tb = (TableBuilder)pe.Value;
+                        writer.WriteLine(INDENT + ".PROP {0},{1}", tb.Size, pe.Property);
+                        tb.WriteTo(writer);
+                        break;
                 }
             }
 
@@ -173,7 +139,7 @@ namespace Zilf.Emit.Zap
 
         public override string ToString()
         {
-            return name;
+            return SymbolicName;
         }
     }
 }

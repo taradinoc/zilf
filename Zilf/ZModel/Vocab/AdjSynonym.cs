@@ -15,14 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter;
 
 namespace Zilf.ZModel.Vocab
 {
     class AdjSynonym : Synonym
     {
-        public AdjSynonym(IWord original, IWord synonym)
+        public AdjSynonym([NotNull] IWord original, [NotNull] IWord synonym)
             : base(original, synonym)
         {
             Contract.Requires(original != null);

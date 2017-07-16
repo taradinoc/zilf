@@ -16,17 +16,12 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.ZModel.Values;
-using Zilf.Diagnostics;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
@@ -43,7 +38,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             this.vword = vword;
         }
 
-        public static NewParserWord FromVword(Context ctx, ZilHash vword)
+        [NotNull]
+        public static NewParserWord FromVword([NotNull] Context ctx, [NotNull] ZilHash vword)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(vword != null);
@@ -103,7 +99,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             try
             {
                 ctx.CheckDecls = false;
-                var form = new ZilForm(new ZilObject[]
+                var form = new ZilForm(new[]
                 {
                     ctx.GetStdAtom(accessor),
                     vword,

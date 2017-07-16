@@ -17,22 +17,28 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FORM, PrimType.LIST)]
     sealed class ZilForm : ZilListBase
     {
-        public ZilForm(IEnumerable<ZilObject> sequence)
-            : base(sequence) { }
+        public ZilForm([NotNull] IEnumerable<ZilObject> sequence)
+            : base(sequence)
+        {
+            Contract.Requires(sequence != null);
+        }
 
         public ZilForm(ZilObject first, ZilList rest)
             : base(first, rest) { }
 
+        [NotNull]
         public override ISourceLine SourceLine
         {
             get
@@ -41,26 +47,28 @@ namespace Zilf.Interpreter.Values
 
                 return base.SourceLine ?? SourceLines.Unknown;
             }
-            set
-            {
-                base.SourceLine = value;
-            }
+            set => base.SourceLine = value;
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilForm FromList(Context ctx, ZilListBase list)
+        public static ZilForm FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilForm>() != null);
 
             return new ZilForm(list.First, list.Rest);
         }
 
         protected override string OpenBracket => "<";
+
         protected override string CloseBracket => ">";
 
+        [NotNull]
         string ToString(Func<ZilObject, string> convert)
         {
+            Contract.Ensures(Contract.Result<string>() != null);
             if (Recursion.TryLock(this))
             {
                 try
@@ -68,6 +76,8 @@ namespace Zilf.Interpreter.Values
                     // check for special forms
                     if (First is ZilAtom firstAtom && GetLength(2) == 2)
                     {
+                        Debug.Assert(Rest != null);
+
                         var arg = Rest.First;
 
                         switch (firstAtom.StdAtom)
@@ -106,17 +116,19 @@ namespace Zilf.Interpreter.Values
 
         public override StdAtom StdTypeAtom => StdAtom.FORM;
 
-        static ZilObject[] EmptyObjArray = new ZilObject[0];
-
+        /// <exception cref="InvalidOperationException">The form is empty.</exception>
+        /// <exception cref="InterpreterError">The form's first element is an atom that has no local or global value, or a non-applicable type.</exception>
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
             if (environment != null)
             {
-                return ctx.ExecuteInEnvironment(environment, () => this.Eval(ctx));
+                return ctx.ExecuteInEnvironment(environment, () => Eval(ctx));
             }
 
             if (First == null)
                 throw new InvalidOperationException("Can't evaluate null");
+
+            Debug.Assert(Rest != null);
 
             ZilObject target;
             if (First is ZilAtom fa)
@@ -134,12 +146,13 @@ namespace Zilf.Interpreter.Values
                 target = (ZilObject)result;
             }
 
-            if (target.IsApplicable(ctx))
+            var applicable = target.AsApplicable(ctx);
+            if (applicable != null)
             {
                 using (var frame = ctx.PushFrame(this))
-                using (DiagnosticContext.Push(this.SourceLine, frame))
+                using (DiagnosticContext.Push(SourceLine, frame))
                 {
-                    return target.AsApplicable(ctx).Apply(ctx, Rest.ToArray());
+                    return applicable.Apply(ctx, Rest.ToArray());
                 }
             }
             throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
@@ -149,11 +162,12 @@ namespace Zilf.Interpreter.Values
         {
             ZilObject target;
 
+            if (First == null || Rest == null)
+                return this;
+
             if (First is ZilAtom fa)
             {
-                target = ctx.GetGlobalVal(fa);
-                if (target == null)
-                    target = ctx.GetLocalVal(fa);
+                target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
             }
             else
             {
@@ -163,18 +177,17 @@ namespace Zilf.Interpreter.Values
             if (target != null && target.StdTypeAtom == StdAtom.MACRO)
             {
                 using (var frame = ctx.PushFrame(this))
-                using (DiagnosticContext.Push(this.SourceLine, frame))
+                using (DiagnosticContext.Push(SourceLine, frame))
                 {
-                    var result = ((ZilEvalMacro)target).Expand(ctx,
-                        Rest == null ? EmptyObjArray : Rest.ToArray());
+                    var result = ((ZilEvalMacro)target).Expand(ctx, Rest.ToArray());
                     if (result.ShouldPass())
                         return result;
 
-                    if (!((ZilObject)result is ZilForm resultForm) || resultForm == this)
+                    if (!((ZilObject)result is ZilForm resultForm) || ReferenceEquals(resultForm, this))
                         return result;
 
                     // set the source info on the expansion to match the macro invocation
-                    resultForm = DeepRewriteSourceInfo(resultForm, this.SourceLine);
+                    resultForm = DeepRewriteSourceInfo(resultForm, SourceLine);
                     return resultForm.Expand(ctx);
                 }
             }
@@ -185,6 +198,8 @@ namespace Zilf.Interpreter.Values
 
                 if (Rest.First != null)
                 {
+                    Debug.Assert(Rest.Rest != null);
+
                     if (Rest.Rest.First == null)
                     {
                         // <1 FOO> => <GET FOO 1>
@@ -207,14 +222,20 @@ namespace Zilf.Interpreter.Values
             return this;
         }
 
-        static ZilForm DeepRewriteSourceInfo(ZilForm other, ISourceLine src)
+        [NotNull]
+        static ZilForm DeepRewriteSourceInfo([NotNull] ZilForm other, [NotNull] ISourceLine src)
         {
+            Contract.Requires(other != null);
+            Contract.Requires(src != null);
+            Contract.Ensures(Contract.Result<ZilForm>() != null);
             return new ZilForm(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
         }
 
         static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
-            IEnumerable<ZilObject> contents, ISourceLine src)
+            [ItemNotNull] [NotNull] IEnumerable<ZilObject> contents, [NotNull] ISourceLine src)
         {
+            Contract.Requires(contents != null);
+            Contract.Requires(src != null);
             foreach (var item in contents)
             {
                 if (item is ZilForm form)
@@ -228,30 +249,24 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public override bool IsLVAL(out ZilAtom atom)
+        [ContractAnnotation("=> true, atom: notnull; => false, atom: null")]
+        public override bool IsLVAL(out ZilAtom atom) => IsTwoElementFormWithStdAtom(StdAtom.LVAL, out atom);
+
+        [ContractAnnotation("=> true, atom: notnull; => false, atom: null")]
+        public override bool IsGVAL(out ZilAtom atom) => IsTwoElementFormWithStdAtom(StdAtom.GVAL, out atom);
+
+        bool IsTwoElementFormWithStdAtom(StdAtom stdAtom, [CanBeNull] out ZilAtom atom)
         {
             if (First is ZilAtom head &&
-                head.StdAtom == StdAtom.LVAL &&
-                Rest.Rest?.IsEmpty == true
-                && Rest.First is ZilAtom name)
+                head.StdAtom == stdAtom)
             {
-                atom = name;
-                return true;
-            }
-
-            atom = null;
-            return false;
-        }
-
-        public override bool IsGVAL(out ZilAtom atom)
-        {
-            if (First is ZilAtom head &&
-                head.StdAtom == StdAtom.GVAL &&
-                Rest.Rest?.IsEmpty == true
-                && Rest.First is ZilAtom name)
-            {
-                atom = name;
-                return true;
+                Debug.Assert(Rest != null);
+                if (Rest.Rest?.IsEmpty == true
+                    && Rest.First is ZilAtom name)
+                {
+                    atom = name;
+                    return true;
+                }
             }
 
             atom = null;

@@ -17,20 +17,27 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
+using JetBrains.Annotations;
+using System.Diagnostics.Contracts;
 
 namespace Zapf
 {
-    public interface ISourceLine
+    [ContractClass(typeof(SourceLineContract))]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    interface ISourceLine
     {
+        [CanBeNull]
         string SourceFile { get; }
         int LineNum { get; }
     }
 
-    public interface IErrorSink
+    interface IErrorSink
     {
-        void HandleFatalError(FatalError fer);
         void HandleSeriousError(SeriousError ser);
+        void HandleWarning(Warning warning);
     }
 
     /// <summary>
@@ -43,34 +50,30 @@ namespace Zapf
     }
 
     [Serializable]
-    public class AssemblerError : Exception
+    abstract class AssemblerError : Exception
     {
-        readonly ISourceLine node;
-
-        public AssemblerError(ISourceLine node, string message)
+        protected AssemblerError(ISourceLine node, string message)
             : base(message)
         {
-            this.node = node;
+            Node = node;
         }
 
-        protected AssemblerError(SerializationInfo info, StreamingContext context)
+        protected AssemblerError([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            this.node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
+            Contract.Requires(info != null);
+            Node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
         }
 
-        public ISourceLine Node
-        {
-            get { return node; }
-        }
+        public ISourceLine Node { get; }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
 
-            if (node != null)
+            if (Node != null)
             {
-                info.AddValue("node", this.node);
+                info.AddValue("node", Node);
             }
         }
     }
@@ -79,7 +82,7 @@ namespace Zapf
     /// Thrown when an unrecoverable error occurs.
     /// </summary>
     [Serializable]
-    public class FatalError : AssemblerError
+    class FatalError : AssemblerError
     {
         public FatalError(ISourceLine node, string message)
             : base(node, message)
@@ -91,7 +94,7 @@ namespace Zapf
     /// Thrown when a serious (but not totally unrecoverable) error occurs.
     /// </summary>
     [Serializable]
-    public class SeriousError : AssemblerError
+    class SeriousError : AssemblerError
     {
         public SeriousError(ISourceLine node, string message)
             : base(node, message)
@@ -99,89 +102,164 @@ namespace Zapf
         }
     }
 
+    /// <summary>
+    /// Not thrown, but passed around to report warnings.
+    /// </summary>
+    [Serializable]
+    class Warning : AssemblerError
+    {
+        public Warning(ISourceLine node, string message)
+            : base(node, message)
+        {
+        }
+    }
+
     static class Errors
     {
-        public static void Warn(ISourceLine node, string message)
+        public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string message)
         {
-            if (node != null)
-                Console.Error.Write("line {0}", node.LineNum);
-
-            Console.Error.WriteLine("warning: {0}", message);
+            Contract.Requires(sink != null);
+            Contract.Requires(message != null);
+            sink.HandleWarning(new Warning(node, message));
         }
 
-        public static void Warn(ISourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
-            Warn(node, string.Format(format, args));
+            Contract.Requires(sink != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+            Warn(sink, node, string.Format(format, args));
         }
 
-        public static void Serious(IErrorSink sink, string message)
+        public static void Serious([NotNull] IErrorSink sink, [NotNull] string message)
         {
+            Contract.Requires(sink != null);
+            Contract.Requires(message != null);
             Serious(sink, null, message);
         }
 
-        public static void Serious(IErrorSink sink, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void Serious([NotNull] IErrorSink sink, [NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(sink != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             Serious(sink, string.Format(format, args));
         }
 
-        public static void Serious(IErrorSink sink, ISourceLine node, string message)
+        public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string message)
         {
+            Contract.Requires(sink != null);
+            Contract.Requires(message != null);
             sink.HandleSeriousError(new SeriousError(node, message));
         }
 
-        public static void Serious(IErrorSink sink, ISourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string format,
+            [NotNull] params object[] args)
         {
+            Contract.Requires(sink != null);
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             Serious(sink, node, string.Format(format, args));
         }
 
-        public static SeriousError MakeSerious(ISourceLine node, string message)
+        [NotNull]
+        public static SeriousError MakeSerious(ISourceLine node, [NotNull] string message)
         {
+            Contract.Requires(message != null);
+            Contract.Ensures(Contract.Result<SeriousError>() != null);
             return new SeriousError(node, message);
         }
 
-        public static SeriousError MakeSerious(ISourceLine node, string format, params object[] args)
+        [NotNull]
+        [StringFormatMethod("format")]
+        public static SeriousError MakeSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<SeriousError>() != null);
             return MakeSerious(node, string.Format(format, args));
         }
 
-        public static void ThrowSerious(string message)
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        public static void ThrowSerious([NotNull] string message)
         {
+            Contract.Requires(message != null);
             ThrowSerious(null, message);
         }
 
-        public static void ThrowSerious(string format, params object[] args)
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        [StringFormatMethod("format")]
+        public static void ThrowSerious([NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             ThrowSerious(null, format, args);
         }
 
-        public static void ThrowSerious(ISourceLine node, string message)
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        public static void ThrowSerious(ISourceLine node, [NotNull] string message)
         {
+            Contract.Requires(message != null);
             throw MakeSerious(node, message);
         }
 
-        public static void ThrowSerious(ISourceLine node, string format, params object[] args)
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        [StringFormatMethod("format")]
+        public static void ThrowSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             throw MakeSerious(node, format, args);
         }
 
-        public static void ThrowFatal(string message)
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        public static void ThrowFatal([NotNull] string message)
         {
-            ThrowFatal((ISourceLine)null, message);
+            Contract.Requires(message != null);
+            ThrowFatal(null, message);
         }
 
-        public static void ThrowFatal(string format, params object[] args)
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        [StringFormatMethod("format")]
+        public static void ThrowFatal([NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             ThrowFatal(null, format, args);
         }
 
-        public static void ThrowFatal(ISourceLine node, string message)
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        public static void ThrowFatal(ISourceLine node, [NotNull] string message)
         {
+            Contract.Requires(message != null);
             throw new FatalError(node, message);
         }
 
-        public static void ThrowFatal(ISourceLine node, string format, params object[] args)
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [ContractAnnotation("=> halt")]
+        [StringFormatMethod("format")]
+        public static void ThrowFatal(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
             ThrowFatal(node, string.Format(format, args));
         }
+    }
+
+    [ContractClassFor(typeof(ISourceLine))]
+    abstract class SourceLineContract : ISourceLine
+    {
+        public abstract string SourceFile { get; }
+        public abstract int LineNum { get; }
     }
 }

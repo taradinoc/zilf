@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using System.IO;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
     class TableBuilder : ConstantOperandBase, ITableBuilder
     {
-        readonly string name;
         readonly List<short> numericValues = new List<short>();
         readonly List<IOperand> operandValues = new List<IOperand>();
         readonly List<byte> types = new List<byte>();
-        int size = 0;
+        int size;
 
         const byte T_NUM_BYTE = 0;
         const byte T_NUM_WORD = 1;
@@ -18,15 +18,13 @@ namespace Zilf.Emit.Zap
 
         protected const string INDENT = "\t";
 
-        public TableBuilder(string name)
+        public TableBuilder([NotNull] string name)
         {
-            this.name = name;
+            Name = name;
         }
 
-        public string Name
-        {
-            get { return name; }
-        }
+        [NotNull]
+        public string Name { get; }
 
         public int Size
         {
@@ -63,7 +61,7 @@ namespace Zilf.Emit.Zap
 
         public override string ToString()
         {
-            return name;
+            return Name;
         }
 
         public void WriteTo(TextWriter writer)

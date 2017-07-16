@@ -15,35 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
+
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
-using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
+using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
     class ZilModelObject : ZilTiedListBase
     {
-        readonly ZilAtom name;
-        readonly ZilList[] props;
-        readonly bool isRoom;
-
-        public ZilModelObject(ZilAtom name, ZilList[] props, bool isRoom)
+        public ZilModelObject([NotNull] ZilAtom name, [NotNull] ZilList[] props, bool isRoom)
         {
-            this.name = name;
-            this.props = props;
-            this.isRoom = isRoom;
+            Name = name;
+            Properties = props;
+            IsRoom = isRoom;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
+        [NotNull]
         [ChtypeMethod]
-        public static ZilModelObject FromList(Context ctx, ZilListBase list)
+        public static ZilModelObject FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
 
@@ -56,6 +54,8 @@ namespace Zilf.ZModel.Values
             if (!(list.First is ZilAtom atom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
+            Debug.Assert(list.Rest != null);
+
             if (!list.Rest.All(zo => zo is ZilList))
                 throw new InterpreterError(
                     InterpreterMessages._0_In_1_Must_Be_2,
@@ -67,13 +67,20 @@ namespace Zilf.ZModel.Values
             return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);
         }
 
-        public ZilAtom Name => name;
-        public ZilList[] Properties => props;
-        public bool IsRoom => isRoom;
+        [NotNull]
+        public ZilAtom Name { get; }
 
-        public ZilAtom ObjectOrRoom => GetStdAtom(isRoom ? StdAtom.ROOM : StdAtom.OBJECT);
-        public ZilList PropertiesList => new ZilList(props);
+        [NotNull]
+        public ZilList[] Properties { get; }
 
+        public bool IsRoom { get; }
+
+        public ZilAtom ObjectOrRoom => GetStdAtom(IsRoom ? StdAtom.ROOM : StdAtom.OBJECT);
+
+        [NotNull]
+        public ZilList PropertiesList => new ZilList(Properties);
+
+        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ZilModelObject>(

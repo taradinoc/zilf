@@ -15,24 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Diagnostics.Contracts;
-using System.Reflection;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FSUBR, PrimType.STRING)]
     class ZilFSubr : ZilSubr, IApplicable
     {
-        public ZilFSubr(string name, SubrDelegate handler)
+        public ZilFSubr([NotNull] string name, [NotNull] SubrDelegate handler)
             : base(name, handler)
         {
         }
 
         [ChtypeMethod]
-        public static new ZilFSubr FromString(Context ctx, ZilString str)
+        [NotNull]
+        public static new ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
@@ -41,7 +42,8 @@ namespace Zilf.Interpreter.Values
             return FromString(ctx, str.ToStringContext(ctx, true));
         }
 
-        public static new ZilFSubr FromString(Context ctx, string name)
+        [NotNull]
+        public static new ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);

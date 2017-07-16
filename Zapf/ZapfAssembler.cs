@@ -17,42 +17,46 @@
  */
 
 using System;
+using System.Diagnostics.Contracts;
 using System.IO;
+using JetBrains.Annotations;
 
 namespace Zapf
 {
-    public class OpeningFileEventArgs : EventArgs
+    class OpeningFileEventArgs : EventArgs
     {
         public OpeningFileEventArgs(string filename, bool writing)
         {
-            this.FileName = filename;
-            this.Writing = writing;
+            FileName = filename;
+            Writing = writing;
         }
 
-        public string FileName { get; private set; }
-        public bool Writing { get; private set; }
+        public string FileName { get; }
+        public bool Writing { get; }
         public Stream Stream { get; set; }
     }
 
-    public class CheckingFilePresenceEventArgs : EventArgs
+    class CheckingFilePresenceEventArgs : EventArgs
     {
         public CheckingFilePresenceEventArgs(string filename)
         {
-            this.FileName = filename;
+            FileName = filename;
         }
 
-        public string FileName { get; private set; }
+        public string FileName { get; }
         public bool? Exists { get; set; }
     }
 
-    public sealed class ZapfAssembler
+    sealed class ZapfAssembler
     {
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
 
+        [NotNull]
         Stream OpenFile(string path, bool writing)
         {
-            var handler = this.OpeningFile;
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            var handler = OpeningFile;
             if (handler != null)
             {
                 var args = new OpeningFileEventArgs(path, writing);
@@ -71,7 +75,7 @@ namespace Zapf
 
         bool CheckFileExists(string path)
         {
-            var handler = this.CheckingFilePresence;
+            var handler = CheckingFilePresence;
             if (handler != null)
             {
                 var args = new CheckingFilePresenceEventArgs(path);
@@ -87,6 +91,11 @@ namespace Zapf
 
         public bool Assemble(string inputFileName, string outputFileName)
         {
+            return Assemble(inputFileName, outputFileName, out _, out _);
+        }
+
+        public bool Assemble(string inputFileName, string outputFileName, out int errorCount, out int warningCount)
+        {
             // initialize context
             var ctx = new Context()
             {
@@ -94,8 +103,8 @@ namespace Zapf
                 InFile = inputFileName,
                 OutFile = outputFileName,
                 DebugFile = Path.ChangeExtension(outputFileName, ".dbg"),
-                InterceptOpenFile = this.OpenFile,
-                InterceptFileExists = this.CheckFileExists
+                InterceptOpenFile = OpenFile,
+                InterceptFileExists = CheckFileExists
             };
 
             //XXX redirect log messages
@@ -134,6 +143,9 @@ namespace Zapf
             }
             finally
             {
+                errorCount = ctx.ErrorCount;
+                warningCount = ctx.WarningCount;
+
                 ctx.CloseOutput();
                 ctx.CloseDebugFile();
             }

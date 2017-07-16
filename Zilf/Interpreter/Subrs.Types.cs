@@ -17,29 +17,39 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Common;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     static partial class Subrs
     {
+        [NotNull]
         [Subr]
-        public static ZilObject TYPE(Context ctx, ZilObject value)
+        public static ZilObject TYPE([NotNull] Context ctx, [NotNull] ZilObject value)
         {
+            Contract.Requires(value != null);
             SubrContracts(ctx);
 
             return value.GetTypeAtom(ctx);
         }
 
+        [NotNull]
         [Subr("TYPE?")]
-        public static ZilObject TYPE_P(Context ctx, ZilObject value, [Required] ZilAtom[] types)
+        public static ZilObject TYPE_P([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] [Required] ZilAtom[] types)
         {
+            Contract.Requires(value != null);
+            Contract.Requires(types != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var type = value.GetTypeAtom(ctx);
@@ -67,17 +77,26 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject PRIMTYPE(Context ctx, ZilObject value)
+        public static ZilObject PRIMTYPE([NotNull] Context ctx, [NotNull] ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.GetStdAtom(PrimTypeToType(value.PrimType));
         }
 
+        /// <exception cref="InterpreterError"><paramref name="type"/> is not a registered type.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject TYPEPRIM(Context ctx, ZilAtom type)
+        public static ZilObject TYPEPRIM([NotNull] Context ctx, [NotNull] ZilAtom type)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(type != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (!ctx.IsRegisteredType(type))
@@ -86,17 +105,29 @@ namespace Zilf.Interpreter
             return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject CHTYPE(Context ctx, ZilObject value, ZilAtom atom)
+        public static ZilObject CHTYPE([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.ChangeType(value, atom);
         }
 
+        /// <exception cref="InterpreterError"><paramref name="name"/> is already a registered type, or <paramref name="primtypeAtom"/> is not.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject NEWTYPE(Context ctx, ZilAtom name, ZilAtom primtypeAtom, ZilObject decl = null)
+        public static ZilObject NEWTYPE([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] ZilAtom primtypeAtom,
+            [CanBeNull] ZilObject decl = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(primtypeAtom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (ctx.IsRegisteredType(name))
@@ -113,26 +144,37 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject ALLTYPES(Context ctx)
+        public static ZilObject ALLTYPES([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return new ZilVector(ctx.RegisteredTypes.ToArray());
+            return new ZilVector(ctx.RegisteredTypes.ToArray<ZilObject>());
         }
 
+        [NotNull]
         [Subr("VALID-TYPE?")]
-        public static ZilObject VALID_TYPE_P(Context ctx, ZilAtom atom)
+        public static ZilObject VALID_TYPE_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.IsRegisteredType(atom) ? atom : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject PRINTTYPE(Context ctx, ZilAtom atom,
-            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject PRINTTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
+            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformTypeHandler(ctx, atom, handler,
@@ -141,10 +183,14 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetPrintType(a, h));
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject EVALTYPE(Context ctx, ZilAtom atom,
-            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject EVALTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
+            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformTypeHandler(ctx, atom, handler,
@@ -153,10 +199,14 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetEvalType(a, h));
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject APPLYTYPE(Context ctx, ZilAtom atom,
-            [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject APPLYTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
+            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformTypeHandler(ctx, atom, handler,
@@ -165,11 +215,15 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetApplyType(a, h));
         }
 
-        static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject handler,
+        [NotNull]
+        static ZilObject PerformTypeHandler([NotNull] Context ctx, [NotNull] ZilAtom atom, [CanBeNull] ZilObject handler,
             string name,
             Func<Context, ZilAtom, ZilObject> getter,
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             if (!ctx.IsRegisteredType(atom))
                 throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "type", atom.ToStringContext(ctx, false));
 
@@ -200,68 +254,87 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         [Subr("MAKE-GVAL")]
-        public static ZilObject MAKE_GVAL(Context ctx, ZilObject arg)
+        public static ZilObject MAKE_GVAL([NotNull] Context ctx, ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.GVAL), arg }) { SourceLine = SourceLines.MakeGval };
+            return new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), arg }) { SourceLine = SourceLines.MakeGval };
         }
 
+        [NotNull]
         [Subr("APPLICABLE?")]
-        public static ZilObject APPLICABLE_P(Context ctx, ZilObject arg)
+        public static ZilObject APPLICABLE_P([NotNull] Context ctx, ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return arg.IsApplicable(ctx) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr("STRUCTURED?")]
-        public static ZilObject STRUCTURED_P(Context ctx, ZilObject arg)
+        public static ZilObject STRUCTURED_P([NotNull] Context ctx, ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return (arg is IStructure) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr("LEGAL?")]
-        public static ZilObject LEGAL_P(Context ctx, ZilObject arg)
+        public static ZilObject LEGAL_P([NotNull] Context ctx, ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             // non-evanescent values are always legal
             return (arg as IEvanescent)?.IsLegal == false ? ctx.FALSE : ctx.TRUE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject FORM(Context ctx, [Required] ZilObject[] args)
+        public static ZilObject FORM([NotNull] Context ctx, [NotNull] [Required] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
 
-            var result = new ZilForm(args);
-            result.SourceLine = ctx.TopFrame.SourceLine;
-            return result;
+            return new ZilForm(args) { SourceLine = ctx.TopFrame.SourceLine };
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject LIST(Context ctx, ZilObject[] args)
+        public static ZilObject LIST(Context ctx, [NotNull] ZilObject[] args)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
 
             return new ZilList(args);
         }
 
+        [NotNull]
         [Subr]
         [Subr("TUPLE")]
-        public static ZilObject VECTOR(Context ctx, ZilObject[] args)
+        public static ZilObject VECTOR(Context ctx, [NotNull] ZilObject[] args)
         {
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
 
             return new ZilVector(args);
         }
-        
+
+        /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult ILIST(Context ctx, int count, ZilObject init = null)
+        public static ZilResult ILIST(Context ctx, int count, [CanBeNull] ZilObject init = null)
         {
             SubrContracts(ctx);
 
@@ -288,8 +361,9 @@ namespace Zilf.Interpreter
             return new ZilList(contents);
         }
 
+        /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult IVECTOR(Context ctx, int count, ZilObject init=null )
+        public static ZilResult IVECTOR(Context ctx, int count, [CanBeNull] ZilObject init = null)
         {
             SubrContracts(ctx);
 
@@ -307,6 +381,7 @@ namespace Zilf.Interpreter
                     var zr = init.Eval(ctx);
                     if (zr.ShouldPass())
                         return zr;
+
                     contents.Add((ZilObject)zr);
                 }
                 else
@@ -316,17 +391,23 @@ namespace Zilf.Interpreter
             return new ZilVector(contents.ToArray());
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject BYTE(Context ctx, ZilObject arg)
+        public static ZilObject BYTE([NotNull] Context ctx, [NotNull] ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(arg != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.ChangeType(arg, ctx.GetStdAtom(StdAtom.BYTE));
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject CONS(Context ctx, ZilObject first, ZilListBase rest)
+        public static ZilObject CONS(Context ctx, ZilObject first, [NotNull] ZilListBase rest)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return new ZilList(
@@ -334,19 +415,23 @@ namespace Zilf.Interpreter
                 rest is ZilList restList ? restList : new ZilList(rest));
         }
 
+        [NotNull]
         [FSubr]
-        public static ZilObject FUNCTION(Context ctx, [Optional] ZilAtom activationAtom,
-            ZilList argList, [Optional] ZilDecl decl, [Required] ZilObject[] body)
+        public static ZilObject FUNCTION(Context ctx, [CanBeNull] [Optional] ZilAtom activationAtom,
+            ZilList argList, [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return new ZilFunction("FUNCTION", null, activationAtom, argList, decl, body);
         }
 
+        [NotNull]
         [Subr]
         public static ZilObject STRING(Context ctx,
-            [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
+            [NotNull] [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
         {
+            Contract.Requires(args != null);
             SubrContracts(ctx, args);
 
             var sb = new StringBuilder();
@@ -359,8 +444,9 @@ namespace Zilf.Interpreter
             return ZilString.FromString(sb.ToString());
         }
 
+        /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult ISTRING(Context ctx, int count, ZilObject init = null)
+        public static ZilResult ISTRING(Context ctx, int count, [CanBeNull] ZilObject init = null)
         {
             SubrContracts(ctx);
 
@@ -390,9 +476,11 @@ namespace Zilf.Interpreter
             return ZilString.FromString(new string(contents.ToArray()));
         }
 
+        [NotNull]
         [Subr]
         public static ZilObject ASCII(Context ctx, [Decl("<OR CHARACTER FIX>")] ZilObject arg)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (arg is ZilChar ch)

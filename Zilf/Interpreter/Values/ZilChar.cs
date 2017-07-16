@@ -17,6 +17,7 @@
  */
 using System.Diagnostics.Contracts;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -35,8 +36,9 @@ namespace Zilf.Interpreter.Values
             this.value = value;
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilChar FromFix(Context ctx, ZilFix fix)
+        public static ZilChar FromFix([NotNull] Context ctx, [NotNull] ZilFix fix)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(fix != null);
@@ -66,11 +68,12 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.FIX;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => new ZilFix(value);
 
         public override bool Equals(object obj)
         {
-            return obj is ZilChar other && other.value == this.value;
+            return obj is ZilChar other && other.value == value;
         }
 
         public override int GetHashCode() => value;

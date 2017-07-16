@@ -15,15 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -40,7 +37,7 @@ namespace Zilf.Interpreter.Values
         readonly AsocResult[] results;
         readonly int index;
 
-        public ZilAsoc(AsocResult[] results, int index)
+        public ZilAsoc([NotNull] AsocResult[] results, int index)
         {
             Contract.Requires(results != null);
             Contract.Requires(index >= 0 && index < results.Length);
@@ -49,8 +46,9 @@ namespace Zilf.Interpreter.Values
             this.index = index;
         }
 
+        /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilAsoc FromList(Context ctx, ZilListBase list)
+        public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
@@ -62,14 +60,17 @@ namespace Zilf.Interpreter.Values
         public ZilObject Indicator => results[index].Indicator;
         public ZilObject Value => results[index].Value;
 
+        [NotNull]
         protected override TiedLayout GetLayout()
         {
+            Contract.Ensures(Contract.Result<TiedLayout>() != null);
             return TiedLayout.Create<ZilAsoc>(
                 x => x.Item,
                 x => x.Indicator,
                 x => x.Value);
         }
 
+        [CanBeNull]
         public ZilAsoc GetNext()
         {
             if (index + 1 < results.Length)

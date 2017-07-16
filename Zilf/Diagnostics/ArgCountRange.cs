@@ -25,8 +25,8 @@ namespace Zilf.Diagnostics
 
         public ArgCountRange(int min, int? max)
         {
-            this.MinArgs = min;
-            this.MaxArgs = max;
+            MinArgs = min;
+            MaxArgs = max;
         }
     }
 }

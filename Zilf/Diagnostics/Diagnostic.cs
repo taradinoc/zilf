@@ -17,9 +17,11 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
@@ -32,41 +34,44 @@ namespace Zilf.Diagnostics
 
     public sealed class Diagnostic
     {
-        public ISourceLine Location { get; private set; }
-        public Severity Severity { get; private set; }
-        public string CodePrefix { get; private set; }
-        public int Code { get; private set; }
-        public string StackTrace { get; private set; }
-        public Diagnostic[] SubDiagnostics { get; private set; }
+        public ISourceLine Location { get; }
+        public Severity Severity { get; }
+        public string CodePrefix { get; }
+        public int Code { get; }
+        public string StackTrace { get; }
+        public Diagnostic[] SubDiagnostics { get; }
 
-        string MessageFormat { get; set; }
-        object[] MessageArgs { get; set; }
+        string MessageFormat { get; }
+        object[] MessageArgs { get; }
 
         static readonly object[] NoArguments = new object[0];
         static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
 
-        public Diagnostic(ISourceLine location, Severity severity,
-            string codePrefix, int code,
-            string messageFormat, object[] messageArgs,
-            string stackTrace, Diagnostic[] subDiagnostics)
+        public Diagnostic([NotNull] ISourceLine location, Severity severity,
+            [NotNull] string codePrefix, int code,
+            [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
+            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] Diagnostic[] subDiagnostics)
         {
             Contract.Requires(location != null);
             Contract.Requires(codePrefix != null);
             Contract.Requires(code >= 0);
             Contract.Requires(messageFormat != null);
 
-            this.Location = location;
-            this.Severity = severity;
-            this.CodePrefix = codePrefix;
-            this.Code = code;
-            this.MessageFormat = messageFormat;
-            this.MessageArgs = messageArgs ?? NoArguments;
-            this.StackTrace = stackTrace;
-            this.SubDiagnostics = subDiagnostics ?? NoDiagnostics;
+            Location = location;
+            Severity = severity;
+            CodePrefix = codePrefix;
+            Code = code;
+            MessageFormat = messageFormat;
+            MessageArgs = messageArgs ?? NoArguments;
+            StackTrace = stackTrace;
+            SubDiagnostics = subDiagnostics ?? NoDiagnostics;
         }
 
-        public Diagnostic WithSubDiagnostics(params Diagnostic[] newSubDiagnostics)
+        [NotNull]
+        public Diagnostic WithSubDiagnostics([ItemNotNull] [NotNull] params Diagnostic[] newSubDiagnostics)
         {
+            Contract.Requires(newSubDiagnostics != null);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
             return new Diagnostic(
                 Location,
                 Severity,
@@ -78,12 +83,14 @@ namespace Zilf.Diagnostics
                 newSubDiagnostics);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        [NotNull]
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public string GetFormattedMessage() =>
             string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs);
 
         public override string ToString()
         {
+            // ReSharper disable once UseStringInterpolation
             return string.Format(
                 "{0}: {1} {2}{3:0000}: {4}",
                 Location.SourceInfo,
@@ -101,6 +108,7 @@ namespace Zilf.Diagnostics
             {
             }
 
+            [CanBeNull]
             public object GetFormat(Type formatType)
             {
                 if (formatType == typeof(ICustomFormatter))
@@ -109,9 +117,11 @@ namespace Zilf.Diagnostics
                 return null;
             }
 
-            static char[] Delimiter = { '|' };
+            [NotNull]
+            static readonly char[] Delimiter = { '|' };
 
-            public string Format(string format, object arg, IFormatProvider formatProvider)
+            /// <exception cref="ArgumentException">The "s" format was used with a <see cref="string"/> instead of a <see cref="CountableString"/>.</exception>
+            public string Format([CanBeNull] string format, [CanBeNull] object arg, [CanBeNull] IFormatProvider formatProvider)
             {
                 if (format != null && (format == "s" || format.StartsWith("s|", StringComparison.Ordinal)))
                 {
@@ -145,8 +155,10 @@ namespace Zilf.Diagnostics
                 return HandleOther(format, arg);
             }
 
-            static string HandleOther(string format, object arg)
+            [NotNull]
+            static string HandleOther([CanBeNull] string format, [CanBeNull] object arg)
             {
+                Contract.Ensures(Contract.Result<string>() != null);
                 if (arg is IFormattable formattable)
                     return formattable.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
 
@@ -158,11 +170,13 @@ namespace Zilf.Diagnostics
     [ContractClass(typeof(IDiagnosticFactoryContracts))]
     public interface IDiagnosticFactory
     {
-        Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
+        [NotNull]
+        Diagnostic GetDiagnostic([NotNull] ISourceLine location, int code, object[] messageArgs,
             string stackTrace, Diagnostic[] subDiagnostics);
     }
 
     [ContractClassFor(typeof(IDiagnosticFactory))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IDiagnosticFactoryContracts : IDiagnosticFactory
     {
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
@@ -178,8 +192,9 @@ namespace Zilf.Diagnostics
 
     public static class DiagnosticFactoryExtensions
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
-        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs)
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
+        [NotNull]
+        public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs)
         {
             Contract.Requires(fac != null);
             Contract.Requires(location != null);
@@ -188,8 +203,9 @@ namespace Zilf.Diagnostics
             return fac.GetDiagnostic(location, code, messageArgs, null, null);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
-        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs, string stackTrace)
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
+        [NotNull]
+        public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs, string stackTrace)
         {
             Contract.Requires(fac != null);
             Contract.Requires(location != null);
@@ -205,7 +221,7 @@ namespace Zilf.Diagnostics
         readonly string prefix;
         readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
+        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static readonly DiagnosticFactory<TMessageSet> Instance = new DiagnosticFactory<TMessageSet>();
 
         protected DiagnosticFactory()
@@ -248,24 +264,24 @@ namespace Zilf.Diagnostics
     [AttributeUsage(AttributeTargets.Class)]
     public class MessageSetAttribute : Attribute
     {
-        public string Prefix { get; private set; }
+        public string Prefix { get; }
 
         public MessageSetAttribute(string prefix)
         {
-            this.Prefix = prefix;
+            Prefix = prefix;
         }
     }
 
     [AttributeUsage(AttributeTargets.Field)]
     public class MessageAttribute : Attribute
     {
-        public string Format { get; private set; }
+        public string Format { get; }
         public Severity Severity { get; set; }
 
         public MessageAttribute(string format)
         {
-            this.Format = format;
-            this.Severity = Severity.Error;
+            Format = format;
+            Severity = Severity.Error;
         }
     }
 }

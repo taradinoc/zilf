@@ -16,13 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -30,7 +27,6 @@ namespace Zilf.Interpreter.Values
     class ZilActivation : ZilObject, IDisposable, IEvanescent
     {
         readonly ZilAtom name;
-        bool legal = true;
 
         public ZilActivation(ZilAtom name)
         {
@@ -39,11 +35,13 @@ namespace Zilf.Interpreter.Values
 
         public void Dispose()
         {
-            legal = false;
+            IsLegal = false;
         }
 
+        /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilActivation FromAtom(Context ctx, ZilAtom name)
+        [ContractAnnotation("=> halt")]
+        public static ZilActivation FromAtom([NotNull] Context ctx, [NotNull] ZilAtom name)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);
@@ -55,7 +53,7 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.ATOM;
 
-        public bool IsLegal => legal;
+        public bool IsLegal { get; private set; } = true;
 
         public override ZilObject GetPrimitive(Context ctx)
         {
@@ -64,12 +62,12 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return string.Format("#ACTIVATION {0}", name);
+            return $"#ACTIVATION {name}";
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            return string.Format("#ACTIVATION {0}", name.ToStringContext(ctx, friendly));
+            return $"#ACTIVATION {name.ToStringContext(ctx, friendly)}";
         }
     }
 }

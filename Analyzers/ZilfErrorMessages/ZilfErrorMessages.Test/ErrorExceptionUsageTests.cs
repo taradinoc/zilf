@@ -2,10 +2,8 @@
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Threading.Tasks;
 using TestHelper;
-using ZilfErrorMessages;
 
 namespace ZilfErrorMessages.Test
 {

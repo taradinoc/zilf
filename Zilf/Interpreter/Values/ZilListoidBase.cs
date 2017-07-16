@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
+using System.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -26,9 +26,10 @@ namespace Zilf.Interpreter.Values
     abstract class ZilListoidBase : ZilObject, IStructure
     {
         public abstract ZilObject First { get; set; }
-        public abstract ZilList Rest { get; set; }
+        public abstract ZilList Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));

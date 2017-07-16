@@ -27,9 +27,7 @@ namespace Dezapf
     class Context
     {
         int zversion;
-        Header header;
 
-        readonly RangeList<Chunk> chunks = new RangeList<Chunk>();
         readonly Dictionary<ushort, ZOpAttribute> opcodes = new Dictionary<ushort, ZOpAttribute>();
 
         public Context()
@@ -42,14 +40,12 @@ namespace Dezapf
 
         public int ZVersion
         {
-            get
-            {
-                return zversion;
-            }
-            set
+            get => zversion;
+
+            private set
             {
                 if (value < 3 || value > 8)
-                    throw new ArgumentOutOfRangeException("Only versions 3-8 are supported");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Only versions 3-8 are supported");
 
                 zversion = value;
                 LoadOpcodes();
@@ -100,21 +96,10 @@ namespace Dezapf
 
         public Header Header
         {
-            get
-            {
-                return header;
-            }
-            set
-            {
-                ZVersion = value.ZVersion;
-                header = value;
-            }
+            set => ZVersion = value.ZVersion;
         }
 
-        public RangeList<Chunk> Chunks
-        {
-            get { return chunks; }
-        }
+        public RangeList<Chunk> Chunks { get; } = new RangeList<Chunk>();
 
         public int UnpackAddress(int packed, int hdrOffset)
         {
@@ -142,11 +127,11 @@ namespace Dezapf
             else if (zversion == 8)
                 effectiveVersion = 5;
 
-            foreach (FieldInfo fi in typeof(Zapf.Opcodes).GetFields(BindingFlags.Static | BindingFlags.Public))
+            foreach (var fi in typeof(Opcodes).GetFields(BindingFlags.Static | BindingFlags.Public))
             {
-                if (fi.FieldType == typeof(Zapf.Opcodes))
+                if (fi.FieldType == typeof(Opcodes))
                 {
-                    ushort num = (ushort)(Zapf.Opcodes)fi.GetValue(null);
+                    ushort num = (ushort)(Opcodes)fi.GetValue(null);
                     foreach (ZOpAttribute attr in fi.GetCustomAttributes(typeof(ZOpAttribute), false))
                         if (effectiveVersion >= attr.MinVer && effectiveVersion <= attr.MaxVer)
                             opcodes.Add(num, attr);
@@ -184,14 +169,14 @@ namespace Dezapf
             int mode = 0;       // 0/1/2 = alphabets, 3 = ASCII state 1, 4 = ASCII state 2
             int pendingAscii = 0;
 
-            //XXX handle custom alphabets
+            // TODO: handle custom alphabets
             char[] alphabet0 = defaultAlphabet0;
             char[] alphabet1 = defaultAlphabet1;
             char[] alphabet2 = defaultAlphabet2;
 
-            for (int i = 0; i < encodedText.Length; i++)
+            foreach (ushort encodedWord in encodedText)
             {
-                ushort w = encodedText[i];
+                ushort w = encodedWord;
 
                 for (int j = 0; j < 3; j++)
                 {

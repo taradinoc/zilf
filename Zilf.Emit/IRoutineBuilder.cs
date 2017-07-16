@@ -1,9 +1,13 @@
 using System;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IRoutineBuilderContracts))]
+    [PublicAPI]
     public interface IRoutineBuilder : IConstantOperand
     {
         /// <summary>
@@ -13,80 +17,108 @@ namespace Zilf.Emit
         /// <see cref="IGameBuilder.DefineRoutine"/>
         bool CleanStack { get; }
 
+        [NotNull]
         ILabel RTrue { get; }
+
+        [NotNull]
         ILabel RFalse { get; }
+
+        [NotNull]
         IVariable Stack { get; }
 
         /// <exception cref="ArgumentException">
-        /// A local variable already exists by that name.
+        /// A local variable already exists by that paramName.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The routine is the entry point and thus not allowed to have local variables.
         /// </exception>
-        ILocalBuilder DefineRequiredParameter(string name);
-        /// <exception cref="ArgumentException">
-        /// A local variable already exists by that name.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The routine is the entry point and thus not allowed to have local variables.
-        /// </exception>
-        ILocalBuilder DefineOptionalParameter(string name);
-        /// <exception cref="ArgumentException">
-        /// A local variable already exists by that name.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The routine is the entry point and thus not allowed to have local variables.
-        /// </exception>
-        ILocalBuilder DefineLocal(string name);
+        [NotNull]
+        ILocalBuilder DefineRequiredParameter([NotNull] string name);
 
+        /// <exception cref="ArgumentException">
+        /// A local variable already exists by that paramName.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The routine is the entry point and thus not allowed to have local variables.
+        /// </exception>
+        [NotNull]
+        ILocalBuilder DefineOptionalParameter([NotNull] string paramName);
+
+        /// <exception cref="ArgumentException">
+        /// A local variable already exists by that localName.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The routine is the entry point and thus not allowed to have local variables.
+        /// </exception>
+        [NotNull]
+        ILocalBuilder DefineLocal([NotNull] string localName);
+
+        [NotNull]
         ILabel RoutineStart { get; }
+
+        [NotNull]
         ILabel DefineLabel();
-        void MarkLabel(ILabel label);
+
+        void MarkLabel([NotNull] ILabel label);
 
         /// <summary>
         /// Gets a value indicating whether <see cref="Condition.ArgProvided"/> is supported.
         /// </summary>
         bool HasArgCount { get; }
 
-        void Branch(ILabel label);
-        void Branch(Condition cond, IOperand left, IOperand right, ILabel label, bool polarity);
-        void BranchIfZero(IOperand operand, ILabel label, bool polarity);
-        void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity);
-        void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, ILabel label, bool polarity);
-        void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3, ILabel label, bool polarity);
+        void Branch([NotNull] ILabel label);
+        void Branch(Condition cond, [CanBeNull] IOperand left, [CanBeNull] IOperand right, [NotNull] ILabel label, bool polarity);
+        void BranchIfZero([NotNull] IOperand operand, [NotNull] ILabel label, bool polarity);
+        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] ILabel label, bool polarity);
 
-        void Return(IOperand result);
+        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] IOperand option2,
+            [NotNull] ILabel label, bool polarity);
+
+        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] IOperand option2,
+            [NotNull] IOperand option3, [NotNull] ILabel label, bool polarity);
+
+        void Return([NotNull] IOperand result);
         void EmitRestart();
         void EmitQuit();
 
         /// <summary>
-        /// Gets a value indicating whether the forms of <see cref="EmitSave"/> and <see cref="EmitRestore"/>
+        /// Gets a value indicating whether the forms of <see cref="EmitSave(ILabel,bool)"/> and <see cref="EmitRestore(ILabel,bool)"/>
         /// that take label and polarity parameters are supported.
         /// </summary>
         bool HasBranchSave { get; }
-        void EmitSave(ILabel label, bool polarity);
-        void EmitRestore(ILabel label, bool polarity);
+
+        void EmitSave([NotNull] ILabel label, bool polarity);
+        void EmitRestore([NotNull] ILabel label, bool polarity);
 
         /// <summary>
-        /// Gets a value indicating whether the forms of <see cref="EmitSave"/> and <see cref="EmitRestore"/>
+        /// Gets a value indicating whether the forms of <see cref="EmitSave(IVariable)"/> and <see cref="EmitRestore(IVariable)"/>
         /// that take a result parameter are supported.
         /// </summary>
         bool HasStoreSave { get; }
-        void EmitSave(IVariable result);
-        void EmitRestore(IVariable result);
+
+        void EmitSave([NotNull] IVariable result);
+        void EmitRestore([NotNull] IVariable result);
 
         /// <summary>
-        /// Gets a value indicating whether the forms of <see cref="EmitSave"/> and <see cref="EmitRestore"/>
+        /// Gets a value indicating whether the forms of <see cref="EmitSave(IOperand,IOperand,IOperand,IVariable)"/> and <see cref="EmitRestore(IOperand,IOperand,IOperand,IVariable)"/>
         /// that take table, size, name, and result parameters are supported.
         /// </summary>
         bool HasExtendedSave { get; }
-        void EmitSave(IOperand table, IOperand size, IOperand name, IVariable result);
-        void EmitRestore(IOperand table, IOperand size, IOperand name, IVariable result);
+
+        void EmitSave([NotNull] IOperand table, [NotNull] IOperand size, [NotNull] IOperand name,
+            [NotNull] IVariable result);
+
+        void EmitRestore([NotNull] IOperand table, [NotNull] IOperand size, [NotNull] IOperand name,
+            [NotNull] IVariable result);
 
         // form may be null
-        void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result, ILabel label, bool polarity);
-        void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity);
-        void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity);
+        void EmitScanTable([NotNull] IOperand value, [NotNull] IOperand table, [NotNull] IOperand length, [CanBeNull] IOperand form,
+            [NotNull] IVariable result, [NotNull] ILabel label, bool polarity);
+
+        void EmitGetChild([NotNull] IOperand value, [NotNull] IVariable result, [NotNull] ILabel label, bool polarity);
+
+        void EmitGetSibling([NotNull] IOperand value, [NotNull] IVariable result, [NotNull] ILabel label,
+            bool polarity);
 
         /// <summary>
         /// Gets a value indicating whether the nullary operations <see cref="NullaryOp.SaveUndo"/> and
@@ -94,36 +126,49 @@ namespace Zilf.Emit
         /// </summary>
         bool HasUndo { get; }
 
-        void EmitNullary(NullaryOp op, IVariable result);
-        void EmitUnary(UnaryOp op, IOperand value, IVariable result);
-        void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable result);
-        void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable result);
+        void EmitNullary(NullaryOp op, [CanBeNull] IVariable result);
+        void EmitUnary(UnaryOp op, [NotNull] IOperand value, [CanBeNull] IVariable result);
+        void EmitBinary(BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right, [CanBeNull] IVariable result);
 
-        void EmitPrint(string text, bool crlfRtrue);
-        void EmitPrint(PrintOp op, IOperand value);
+        void EmitTernary(TernaryOp op, [NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right,
+            [CanBeNull] IVariable result);
+
+        void EmitPrint([NotNull] string text, bool crlfRtrue);
+
+        void EmitPrint(PrintOp op, [NotNull] IOperand value);
+
         // height and skip may be null
-        void EmitPrintTable(IOperand table, IOperand width, IOperand height, IOperand skip);
+        void EmitPrintTable([NotNull] IOperand table, [NotNull] IOperand width, [CanBeNull] IOperand height, [CanBeNull] IOperand skip);
+
         void EmitPrintNewLine();
+
         // V3: interval, routine, and result must be null
         // V4: interval and routine may be null, result must be null
         // V5+: lexbuf, interval, and routine may be null
-        void EmitRead(IOperand chrbuf, IOperand lexbuf, IOperand interval, IOperand routine, IVariable result);
+        void EmitRead([NotNull] IOperand chrbuf, [CanBeNull] IOperand lexbuf, [CanBeNull] IOperand interval, [CanBeNull] IOperand routine,
+            [CanBeNull] IVariable result);
+
         // interval and routine may be null
-        void EmitReadChar(IOperand interval, IOperand routine, IVariable result);
+        void EmitReadChar([CanBeNull] IOperand interval, [CanBeNull] IOperand routine, [NotNull] IVariable result);
+
         // V3: routine must be null
         // effect, volume, and routine may always be null
-        void EmitPlaySound(IOperand number, IOperand effect, IOperand volume, IOperand routine);
+        void EmitPlaySound([NotNull] IOperand number, [CanBeNull] IOperand effect, [CanBeNull] IOperand volume, [CanBeNull] IOperand routine);
 
         // TODO: make EmitQuaternary for EncodeText, PlaySound, Read, and Tokenize?
-        void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest);
-        void EmitTokenize(IOperand text, IOperand parse, IOperand dictionary, IOperand flag);
+        void EmitEncodeText([NotNull] IOperand src, [NotNull] IOperand length, [NotNull] IOperand srcOffset,
+            [NotNull] IOperand dest);
+
+        void EmitTokenize([NotNull] IOperand text, [NotNull] IOperand parse, [CanBeNull] IOperand dictionary, [CanBeNull] IOperand flag);
 
         // result may be null
-        void EmitCall(IOperand routine, IOperand[] args, IVariable result);
+        void EmitCall([NotNull] IOperand routine, [NotNull] IOperand[] args, [CanBeNull] IVariable result);
 
-        void EmitStore(IVariable dest, IOperand src);
+        void EmitStore([NotNull] IVariable dest, [NotNull] IOperand src);
         void EmitPopStack();
-        void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity);
+
+        void EmitPushUserStack([NotNull] IOperand value, [NotNull] IOperand stack, [NotNull] ILabel label,
+            bool polarity);
 
         void Finish();
     }
@@ -134,32 +179,39 @@ namespace Zilf.Emit
         /// Branch if left &lt; right.
         /// </summary>
         Less,
+
         /// <summary>
         /// Branch if left &gt; right.
         /// </summary>
         Greater,
+
         /// <summary>
         /// Branch if left object is inside right object.
         /// </summary>
         Inside,
+
         /// <summary>
         /// Branch if left & right == right.
         /// </summary>
         TestBits,
+
         /// <summary>
         /// Branch if left object has right attribute set.
         /// </summary>
         TestAttr,
+
         /// <summary>
         /// Increment left (which must be <see cref="IVariable"/> and branch if
         /// new value &gt; right.
         /// </summary>
         IncCheck,
+
         /// <summary>
         /// Decrement left (which must be <see cref="IVariable"/> and branch if
         /// new value &lt; right.
         /// </summary>
         DecCheck,
+
         /// <summary>
         /// Write height/width of picture left into array right and branch if the
         /// picture number is valid. (Or if left is 0, write number of available
@@ -177,6 +229,7 @@ namespace Zilf.Emit
         /// Branch if the story file's checksum is correct.
         /// </summary>
         Verify,
+
         /// <summary>
         /// Branch if the story file is genuine.
         /// </summary>
@@ -195,14 +248,17 @@ namespace Zilf.Emit
         /// Stores the byte given by right at the address left + center.
         /// </summary>
         PutByte,
+
         /// <summary>
         /// Stores the word given by right at the address left + (2 * center).
         /// </summary>
         PutWord,
+
         /// <summary>
         /// Changes the property center of object left to the value given by right.
         /// </summary>
         PutProperty,
+
         /// <summary>
         /// Copies the number of bytes given by right from the address given by left
         /// to the address given by center, or if center is zero, zeroes the bytes
@@ -215,41 +271,50 @@ namespace Zilf.Emit
         /// corrupting the source array.
         /// </remarks>
         CopyTable,
+
         /// <summary>
         /// Changes the property center of window left to the value given by right.
         /// </summary>
         PutWindowProperty,
+
         /// <summary>
         /// Draws picture number left at Y-position center, X-position right (or
         /// the cursor's Y or X position if either are zero).
         /// </summary>
         DrawPicture,
+
         /// <summary>
         /// Sets or changes the style attributes of window left, according to the
         /// attributes given by center and the operation given by right.
         /// </summary>
         WindowStyle,
+
         /// <summary>
         /// Moves window left to Y-position center, X-position right.
         /// </summary>
         MoveWindow,
+
         /// <summary>
         /// Changes the size of window left to height center, width right.
         /// </summary>
         WindowSize,
+
         /// <summary>
         /// Sets the margins for the window given by right: the new left margin is
         /// given by left, and the new right margin is given by center.
         /// </summary>
         SetMargins,
+
         /// <summary>
         /// Sets the cursor position in window right to Y-position left, X-position center.
         /// </summary>
         SetCursor,
+
         /// <summary>
         /// Changes the output stream setting (with two parameters, for V6 only).
         /// </summary>
         DirectOutput,
+
         /// <summary>
         /// Erases picture number left at Y-position center, X-position right.
         /// </summary>
@@ -262,101 +327,125 @@ namespace Zilf.Emit
         /// Adds left to right.
         /// </summary>
         Add,
+
         /// <summary>
         /// Subtracts right from left.
         /// </summary>
         Sub,
+
         /// <summary>
         /// Multiplies left by right.
         /// </summary>
         Mul,
+
         /// <summary>
         /// Divides left by right and returns the integer quotient.
         /// </summary>
         Div,
+
         /// <summary>
         /// Divides left by right and returns the remainder.
         /// </summary>
         Mod,
+
         /// <summary>
         /// Combines left and right with bitwise-AND.
         /// </summary>
         And,
+
         /// <summary>
         /// Combines left and right with bitwise-OR.
         /// </summary>
         Or,
+
         /// <summary>
         /// Shifts left by right bits (lshift if right is positive, rshift if negative),
         /// extending the sign for rshifts.
         /// </summary>
         ArtShift,
+
         /// <summary>
         /// Shifts left by right bits (lshift if right is positive, rshift if negative),
         /// zeroing the sign for rshifts.
         /// </summary>
         LogShift,
+
         /// <summary>
         /// Reads the byte at the address left + right.
         /// </summary>
         GetByte,
+
         /// <summary>
         /// Reads the word at the address left + (2 * right).
         /// </summary>
         GetWord,
+
         /// <summary>
         /// Reads the property right from object left.
         /// </summary>
         GetProperty,
+
         /// <summary>
         /// Returns the address of property right in the property table belonging to object left.
         /// </summary>
         GetPropAddress,
+
         /// <summary>
         /// Returns the number of the next property held by object left after
         /// property right.
         /// </summary>
         GetNextProp,
+
         /// <summary>
         /// Moves object left into object right.
         /// </summary>
         MoveObject,
+
         /// <summary>
         /// Stores the value right into the variable at indirect location left.
         /// </summary>
         StoreIndirect,
+
         /// <summary>
         /// Sets flag right on object left.
         /// </summary>
         SetFlag,
+
         /// <summary>
         /// Clears flag right on object left.
         /// </summary>
         ClearFlag,
+
         /// <summary>
         /// Changes the output stream setting (with a parameter, i.e. the table address for stream 3).
         /// </summary>
         DirectOutput,
+
         /// <summary>
         /// Moves the cursor to row left, column right.
         /// </summary>
         SetCursor,
+
         /// <summary>
         /// Sets the foreground and background color.
         /// </summary>
         SetColor,
+
         /// <summary>
         /// Returns from the routine that produced a catch token.
         /// </summary>
         Throw,
+
         /// <summary>
         /// Throws away left items from the top of user stack right.
         /// </summary>
         FlushUserStack,
+
         /// <summary>
         /// Reads the property right from window left.
         /// </summary>
         GetWindowProperty,
+
         /// <summary>
         /// Scrolls window left by the number of pixels given by right.
         /// </summary>
@@ -369,102 +458,127 @@ namespace Zilf.Emit
         /// Returns the negative of the value.
         /// </summary>
         Neg,
+
         /// <summary>
         /// Returns the one's complement (bitwise-NOT) of the value.
         /// </summary>
         Not,
+
         /// <summary>
         /// Returns the child of the object.
         /// </summary>
         GetChild,
+
         /// <summary>
         /// Returns the sibling of the object.
         /// </summary>
         GetSibling,
+
         /// <summary>
         /// Returns the parent of the object.
         /// </summary>
         GetParent,
+
         /// <summary>
         /// Returns the size of the property at the given address.
         /// </summary>
         GetPropSize,
+
         /// <summary>
         /// Returns the value of the variable at the given indirect location.
         /// </summary>
         LoadIndirect,
+
         /// <summary>
         /// Returns a random number between 1 and the value (inclusive).
         /// </summary>
         Random,
+
         /// <summary>
         /// Unlinks the object from its parent and siblings.
         /// </summary>
         RemoveObject,
+
         /// <summary>
         /// Changes the input stream setting.
         /// </summary>
         DirectInput,
+
         /// <summary>
         /// Changes the output stream setting.
         /// </summary>
         DirectOutput,
+
         /// <summary>
         /// Changes the output text style setting.
         /// </summary>
         OutputStyle,
+
         /// <summary>
         /// Changes the output buffering setting.
         /// </summary>
         OutputBuffer,
+
         /// <summary>
         /// Changes the height of the upper window.
         /// </summary>
         SplitWindow,
+
         /// <summary>
         /// Changes the active display window.
         /// </summary>
         SelectWindow,
+
         /// <summary>
         /// Clears a display window.
         /// </summary>
         ClearWindow,
+
         /// <summary>
         /// Writes the cursor position into an array.
         /// </summary>
         GetCursor,
+
         /// <summary>
         /// Erases a line of the screen.
         /// </summary>
         EraseLine,
+
         /// <summary>
         /// Selects a new font and returns the previous one.
         /// </summary>
         SetFont,
+
         /// <summary>
         /// Checks whether a Unicode character can be input or output.
         /// </summary>
         CheckUnicode,
+
         /// <summary>
         /// Returns a value popped from the given user stack.
         /// </summary>
         PopUserStack,
+
         /// <summary>
         /// Throws away the given number of values from the top of the main stack.
         /// </summary>
         FlushStack,
+
         /// <summary>
         /// Caches the pictures listed in the given table.
         /// </summary>
         PictureTable,
+
         /// <summary>
         /// Constrains the mouse pointer to the bounds of the given window.
         /// </summary>
         MouseWindow,
+
         /// <summary>
         /// Writes the mouse coordinates, button state, and menu state into the given table.
         /// </summary>
         ReadMouse,
+
         /// <summary>
         /// Prints formatted text from the given table.
         /// </summary>
@@ -477,14 +591,17 @@ namespace Zilf.Emit
         /// Updates the interpreter-drawn status line.
         /// </summary>
         ShowStatus,
+
         /// <summary>
         /// Saves the game state internally.
         /// </summary>
         SaveUndo,
+
         /// <summary>
         /// Restores the game state from an internal save.
         /// </summary>
         RestoreUndo,
+
         /// <summary>
         /// Obtains a catch token.
         /// </summary>
@@ -497,22 +614,27 @@ namespace Zilf.Emit
         /// Prints a number.
         /// </summary>
         Number,
+
         /// <summary>
         /// Prints a character given its ASCII code.
         /// </summary>
         Character,
+
         /// <summary>
         /// Prints the encoded string at a byte address.
         /// </summary>
         Address,
+
         /// <summary>
         /// Prints the encoded string at a packed address.
         /// </summary>
         PackedAddr,
+
         /// <summary>
         /// Prints the <see cref="IObjectBuilder.DescriptiveName"/> of an object.
         /// </summary>
         Object,
+
         /// <summary>
         /// Prints a character given its Unicode codepoint.
         /// </summary>
@@ -520,37 +642,27 @@ namespace Zilf.Emit
     }
 
     [ContractClassFor(typeof(IRoutineBuilder))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IRoutineBuilderContracts : IRoutineBuilder
     {
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(RTrue != null);
             Contract.Invariant(RFalse != null);
             Contract.Invariant(Stack != null);
-            Contract.Invariant(RTrue != RFalse && RTrue != Stack && RFalse != Stack);
+            Contract.Invariant(RTrue != RFalse);
             Contract.Invariant(RoutineStart != null);
         }
 
-        public bool CleanStack
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool CleanStack { get; }
 
-        public ILabel RTrue
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract ILabel RTrue { get; }
 
-        public ILabel RFalse
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract ILabel RFalse { get; }
 
-        public IVariable Stack
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract IVariable Stack { get; }
 
         public ILocalBuilder DefineRequiredParameter(string name)
         {
@@ -559,24 +671,21 @@ namespace Zilf.Emit
             return default(ILocalBuilder);
         }
 
-        public ILocalBuilder DefineOptionalParameter(string name)
+        public ILocalBuilder DefineOptionalParameter(string paramName)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(!string.IsNullOrWhiteSpace(paramName));
             Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
             return default(ILocalBuilder);
         }
 
-        public ILocalBuilder DefineLocal(string name)
+        public ILocalBuilder DefineLocal(string localName)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Requires(!string.IsNullOrWhiteSpace(localName));
             Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
             return default(ILocalBuilder);
         }
 
-        public ILabel RoutineStart
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract ILabel RoutineStart { get; }
 
         public ILabel DefineLabel()
         {
@@ -589,10 +698,7 @@ namespace Zilf.Emit
             Contract.Requires(label != null);
         }
 
-        public bool HasArgCount
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool HasArgCount { get; }
 
         public void Branch(ILabel label)
         {
@@ -602,7 +708,8 @@ namespace Zilf.Emit
         public void Branch(Condition cond, IOperand left, IOperand right, ILabel label, bool polarity)
         {
             Contract.Requires(left != null || (cond == Condition.Verify || cond == Condition.Original));
-            Contract.Requires(right != null || (cond == Condition.Verify || cond == Condition.Original || cond == Condition.ArgProvided));
+            Contract.Requires(right != null || (cond == Condition.Verify || cond == Condition.Original ||
+                                                cond == Condition.ArgProvided));
             Contract.Requires(label != null);
         }
 
@@ -627,7 +734,8 @@ namespace Zilf.Emit
             Contract.Requires(label != null);
         }
 
-        public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3, ILabel label, bool polarity)
+        public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3, ILabel label,
+            bool polarity)
         {
             Contract.Requires(value != null);
             Contract.Requires(option1 != null);
@@ -641,20 +749,11 @@ namespace Zilf.Emit
             Contract.Requires(result != null);
         }
 
-        public void EmitRestart()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract void EmitRestart();
 
-        public void EmitQuit()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract void EmitQuit();
 
-        public bool HasBranchSave
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool HasBranchSave { get; }
 
         public void EmitSave(ILabel label, bool polarity)
         {
@@ -668,10 +767,7 @@ namespace Zilf.Emit
             Contract.Requires(label != null);
         }
 
-        public bool HasStoreSave
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool HasStoreSave { get; }
 
         public void EmitSave(IVariable result)
         {
@@ -685,10 +781,7 @@ namespace Zilf.Emit
             Contract.Requires(result != null);
         }
 
-        public bool HasExtendedSave
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool HasExtendedSave { get; }
 
         public void EmitSave(IOperand table, IOperand size, IOperand name, IVariable result)
         {
@@ -708,7 +801,8 @@ namespace Zilf.Emit
             Contract.Requires(result != null);
         }
 
-        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result, ILabel label, bool polarity)
+        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand form, IVariable result,
+            ILabel label, bool polarity)
         {
             Contract.Requires(value != null);
             Contract.Requires(table != null);
@@ -731,10 +825,7 @@ namespace Zilf.Emit
             Contract.Requires(label != null);
         }
 
-        public bool HasUndo
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public abstract bool HasUndo { get; }
 
         public void EmitNullary(NullaryOp op, IVariable result)
         {
@@ -776,10 +867,7 @@ namespace Zilf.Emit
             Contract.Requires(height != null || skip == null);
         }
 
-        public void EmitPrintNewLine()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract void EmitPrintNewLine();
 
         public void EmitRead(IOperand chrbuf, IOperand lexbuf, IOperand interval, IOperand routine, IVariable result)
         {
@@ -828,10 +916,7 @@ namespace Zilf.Emit
             Contract.Requires(src != null);
         }
 
-        public void EmitPopStack()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract void EmitPopStack();
 
         public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
         {
@@ -840,10 +925,7 @@ namespace Zilf.Emit
             Contract.Requires(label != null);
         }
 
-        public void Finish()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract void Finish();
 
         public abstract IConstantOperand Add(IConstantOperand other);
     }

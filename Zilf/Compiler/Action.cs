@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler
@@ -31,12 +30,12 @@ namespace Zilf.Compiler
         public Action(int index, IOperand constant, IRoutineBuilder routine, IRoutineBuilder preRoutine,
             ZilAtom routineName, ZilAtom preRoutineName)
         {
-            this.Index = index;
-            this.Constant = constant;
-            this.Routine = routine;
-            this.RoutineName = routineName;
-            this.PreRoutine = preRoutine;
-            this.PreRoutineName = preRoutineName;
+            Index = index;
+            Constant = constant;
+            Routine = routine;
+            RoutineName = routineName;
+            PreRoutine = preRoutine;
+            PreRoutineName = preRoutineName;
         }
     }
 }

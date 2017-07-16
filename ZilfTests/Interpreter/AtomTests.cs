@@ -20,6 +20,7 @@ using System;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+// ReSharper disable ExceptionNotDocumentedOptional
 
 namespace ZilfTests.Interpreter
 {
@@ -532,15 +533,21 @@ namespace ZilfTests.Interpreter
 
             var offset = 0;
 
-            foreach (var zo in (ZilList)ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)))
+            var oblistPath = (ZilList)ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
+            Assert.IsNotNull(oblistPath);
+
+            foreach (var zo in oblistPath)
             {
                 if (!(zo is ObList oblist))
                     continue;
 
                 var atomList = (ZilList)oblist.GetPrimitive(ctx);
 
-                if (oblist != ctx.RootObList && !atomList.IsEmpty)
-                    Assert.Fail("Expected non-root oblist at offset {0} to be empty, but found: {1}", offset, oblist.ToString());
+                Assert.IsTrue(
+                    oblist == ctx.RootObList || atomList.IsEmpty,
+                    "Expected non-root oblist at offset {0} to be empty, but found: {1}",
+                    offset,
+                    oblist);
 
                 offset++;
             }
@@ -550,9 +557,8 @@ namespace ZilfTests.Interpreter
         public void Test_ObList_Trailers()
         {
             var ctx = new Context();
-            ZilObject zo;
 
-            zo = TestHelpers.Evaluate(ctx, "FOO");
+            var zo = TestHelpers.Evaluate(ctx, "FOO");
             Assert.AreEqual("FOO", zo.ToStringContext(ctx, false));
 
             zo = TestHelpers.Evaluate(ctx, "FOO!-BAR!-");

@@ -16,11 +16,16 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
+
 namespace Zilf.Language
 {
     /// <summary>
     /// Contains values for atoms used internally.
     /// </summary>
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    [UsedImplicitly(ImplicitUseTargetFlags.Members)]
     enum StdAtom
     {
         None,

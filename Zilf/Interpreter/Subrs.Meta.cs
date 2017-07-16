@@ -16,18 +16,25 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
-using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        public static ZilObject PerformLoadFile(Context ctx, string file, string name)
+        /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
+        [NotNull]
+        public static ZilObject PerformLoadFile([NotNull] Context ctx, [NotNull] string file, [NotNull] string name)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(file != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             try
             {
                 var newFile = ctx.FindIncludeFile(file);
@@ -51,11 +58,17 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
+        [NotNull]
         [Subr("INSERT-FILE")]
         [Subr("FLOAD")]
         [Subr("XFLOAD")]
-        public static ZilObject INSERT_FILE(Context ctx, string file, ZilObject[] args)
+        public static ZilObject INSERT_FILE([NotNull] Context ctx, [NotNull] string file, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(file != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
          
             // we ignore arguments after the first
@@ -63,9 +76,14 @@ namespace Zilf.Interpreter
             return PerformLoadFile(ctx, file, "INSERT-FILE");
         }
 
+        /// <exception cref="InterpreterError">Unrecognized flag.</exception>
+        [NotNull]
         [Subr("FILE-FLAGS")]
-        public static ZilObject FILE_FLAGS(Context ctx, ZilAtom[] flags)
+        public static ZilObject FILE_FLAGS([NotNull] Context ctx, [NotNull] ZilAtom[] flags)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(flags != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var newFlags = FileFlags.None;
@@ -95,9 +113,14 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <exception cref="InterpreterError">The section has already been referenced.</exception>
+        [NotNull]
         [Subr("DELAY-DEFINITION")]
-        public static ZilObject DELAY_DEFINITION(Context ctx, ZilAtom name)
+        public static ZilObject DELAY_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx); 
             
             name = ctx.ZEnvironment.InternGlobalName(name);
@@ -109,9 +132,13 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        /// <exception cref="InterpreterError">The section has already been inserted, or a replacement has already been defined, or it is in a bad state.</exception>
         [FSubr("REPLACE-DEFINITION")]
-        public static ZilResult REPLACE_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
+        public static ZilResult REPLACE_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] [Required] ZilObject[] body)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(body != null);
             SubrContracts(ctx);
 
             name = ctx.ZEnvironment.InternGlobalName(name);
@@ -142,9 +169,11 @@ namespace Zilf.Interpreter
             throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "REPLACE-DEFINITION", state);
         }
 
+        /// <exception cref="InterpreterError">The section has already been defined or is in a bad state.</exception>
         [FSubr("DEFAULT-DEFINITION")]
-        public static ZilResult DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
+        public static ZilResult DEFAULT_DEFINITION([NotNull] Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
+            Contract.Requires(ctx != null);
             SubrContracts(ctx);
 
             name = ctx.ZEnvironment.InternGlobalName(name);
@@ -178,10 +207,13 @@ namespace Zilf.Interpreter
             throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
         }
 
+        [NotNull]
         [Subr("COMPILATION-FLAG")]
-        public static ZilObject COMPILATION_FLAG(Context ctx,
-            AtomParams.StringOrAtom name, ZilObject value = null)
+        public static ZilObject COMPILATION_FLAG([NotNull] Context ctx,
+            AtomParams.StringOrAtom name, [CanBeNull] ZilObject value = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var atom = name.GetAtom(ctx);
@@ -189,21 +221,28 @@ namespace Zilf.Interpreter
             return atom;
         }
 
+        [NotNull]
         [Subr("COMPILATION-FLAG-DEFAULT")]
-        public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx,
-            AtomParams.StringOrAtom name, ZilObject value)
+        public static ZilObject COMPILATION_FLAG_DEFAULT([NotNull] Context ctx,
+            AtomParams.StringOrAtom name, [NotNull] ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var atom = name.GetAtom(ctx);
-            ctx.DefineCompilationFlag(atom, value, false);
+            ctx.DefineCompilationFlag(atom, value);
             return atom;
         }
 
+        [NotNull]
         [Subr("COMPILATION-FLAG-VALUE")]
-        public static ZilObject COMPILATION_FLAG_VALUE(Context ctx,
+        public static ZilObject COMPILATION_FLAG_VALUE([NotNull] Context ctx,
             AtomParams.StringOrAtom name)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var atom = name.GetAtom(ctx);
@@ -211,8 +250,10 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("IFFLAG")]
-        public static ZilResult IFFLAG(Context ctx, [Required] CondClause[] args)
+        public static ZilResult IFFLAG([NotNull] Context ctx, [NotNull] [Required] CondClause[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
             SubrContracts(ctx);
 
             foreach (var clause in args)
@@ -268,8 +309,12 @@ namespace Zilf.Interpreter
         /// <param name="form">The original form.</param>
         /// <returns>A new form, containing elements from the original and/or
         /// the values of compilation flags.</returns>
-        internal static ZilForm SubstituteIfflagForm(Context ctx, ZilForm form)
+        [NotNull]
+        internal static ZilForm SubstituteIfflagForm([NotNull] Context ctx, [NotNull] ZilForm form)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(form != null);
+            Contract.Ensures(Contract.Result<ZilForm>() != null);
             var body = form.Select(zo =>
             {
                 ZilObject value;
@@ -287,9 +332,11 @@ namespace Zilf.Interpreter
             return new ZilForm(body) { SourceLine = form.SourceLine };
         }
 
+        [NotNull]
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             // TODO: measure actual CPU time
@@ -297,8 +344,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr("QUIT")]
-        public static ZilObject QUIT(Context ctx, ZilObject exitCode = null)
+        public static ZilObject QUIT([NotNull] Context ctx, ZilObject exitCode = null)
         {
+            Contract.Requires(ctx != null);
             SubrContracts(ctx);
 
             int code;
@@ -323,16 +371,20 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        [NotNull]
         [Subr]
         [Subr("STACK")]
         [Subr("SNAME")]
-        public static ZilObject ID(Context ctx, ZilObject arg)
+        public static ZilObject ID([NotNull] Context ctx, ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return arg;
         }
 
+        [NotNull]
         [Subr("GC-MON")]
         [Subr("BLOAT")]
         [Subr("ZSTR-ON")]
@@ -348,26 +400,36 @@ namespace Zilf.Interpreter
         [Subr("NEVER-ZAP-TO-SOURCE-DIRECTORY?")]
         [Subr("ASK-FOR-PICTURE-FILE?")]
         [Subr("PICFILE")]
-        public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
+        public static ZilObject SubrIgnored([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
             
             // nada
             return ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject GC(Context ctx, ZilObject[] args)
+        public static ZilObject GC([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
 
             System.GC.Collect();
             return ctx.TRUE;
         }
 
+        /// <exception cref="InterpreterError">Always thrown.</exception>
         [Subr]
-        public static ZilObject ERROR(Context ctx, ZilObject[] args)
+        public static ZilObject ERROR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
             SubrContracts(ctx, args);
 
             throw new InterpreterError(

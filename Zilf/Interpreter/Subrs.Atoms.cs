@@ -16,43 +16,56 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 
 namespace Zilf.Interpreter
 {
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     static partial class Subrs
     {
+        [NotNull]
         [Subr]
         [Subr("PNAME")]
-        public static ZilObject SPNAME(Context ctx, ZilAtom atom)
+        public static ZilObject SPNAME(Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
             SubrContracts(ctx);
             return ZilString.FromString(atom.Text);
         }
 
         [Subr]
-        public static ZilObject PARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
-            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
+        public static ZilObject PARSE([NotNull] Context ctx, [NotNull] string text, [Decl("'10")] int radix = 10,
+            [CanBeNull] [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(text != null);
             SubrContracts(ctx);
             return PerformParse(ctx, text, radix, lookupObList, "PARSE", true);
         }
 
         [Subr]
-        public static ZilObject LPARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
-            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
+        public static ZilObject LPARSE([NotNull] Context ctx, [NotNull] string text, [Decl("'10")] int radix = 10,
+            [CanBeNull] [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(text != null);
             SubrContracts(ctx);
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
-        static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
-            string name, bool singleResult)
+        static ZilObject PerformParse([NotNull] [ProvidesContext] Context ctx, [NotNull] string text, int radix, ZilObject lookupObList,
+            [NotNull] string name, bool singleResult)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(text != null);
+            Contract.Requires(name != null);
+
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
             Contract.Assert(radix == 10);
 
@@ -82,9 +95,12 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject UNPARSE(Context ctx, ZilObject arg)
+        public static ZilObject UNPARSE([NotNull] Context ctx, [NotNull] ZilObject arg)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(arg != null);
             SubrContracts(ctx);
 
             // in MDL, this takes an optional second argument (radix), but we don't bother
@@ -93,17 +109,20 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject LOOKUP(Context ctx, string str, ObList oblist)
+        public static ZilObject LOOKUP(Context ctx, string str, [NotNull] ObList oblist)
         {
+            Contract.Requires(oblist != null);
             SubrContracts(ctx);
             return oblist.Contains(str) ? oblist[str] : ctx.FALSE;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="stringOrAtom"/>, or <paramref name="stringOrAtom"/> is an atom that is already on a different OBLIST.</exception>
         [Subr]
         public static ZilObject INSERT(Context ctx,
             [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
-            ObList oblist)
+            [NotNull] ObList oblist)
         {
+            Contract.Requires(oblist != null);
             SubrContracts(ctx);
 
             if (stringOrAtom is string str)
@@ -136,10 +155,13 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         [Subr]
         public static ZilObject REMOVE(Context ctx,
-            [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList), DefaultParamDesc = "atom")] object atomOrNameAndObList)
+            [NotNull] [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList), DefaultParamDesc = "atom")] object atomOrNameAndObList)
         {
+            Contract.Requires(atomOrNameAndObList != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (atomOrNameAndObList is ZilAtom atom)
@@ -166,14 +188,16 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="str"/>.</exception>
         [Subr]
-        public static ZilObject LINK(Context ctx, ZilObject value, string str, ObList oblist)
+        public static ZilObject LINK([NotNull] Context ctx, ZilObject value, string str, [NotNull] ObList oblist)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(oblist != null);
             SubrContracts(ctx);
 
             if (oblist.Contains(str))
-                if (oblist.Contains(str))
-                    throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "LINK", str);
+                throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "LINK", str);
 
             var link = new ZilLink(str, oblist);
             oblist[str] = link;
@@ -182,66 +206,88 @@ namespace Zilf.Interpreter
             return value;
         }
 
+        [NotNull]
         [Subr]
         public static ZilObject ATOM(Context ctx, string pname)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return new ZilAtom(pname, null, StdAtom.NONE);
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject ROOT(Context ctx)
+        public static ZilObject ROOT([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.RootObList;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject MOBLIST(Context ctx, ZilAtom name)
+        public static ZilObject MOBLIST([NotNull] Context ctx, [NotNull] ZilAtom name)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(name);
         }
 
+        [NotNull]
         [Subr("OBLIST?")]
-        public static ZilObject OBLIST_P(Context ctx, ZilAtom atom)
+        public static ZilObject OBLIST_P(Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return atom.ObList ?? ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject BLOCK(Context ctx, ZilList list)
+        public static ZilObject BLOCK([NotNull] Context ctx, [NotNull] ZilList list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             ctx.PushObPath(list);
             return list;
         }
 
+        /// <exception cref="InterpreterError">ENDBLOCK is not allowed here.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject ENDBLOCK(Context ctx)
+        public static ZilObject ENDBLOCK([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             try
             {
-                return ctx.PopObPath();
+                return ctx.PopObPath() ?? ctx.FALSE;
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InterpreterError(InterpreterMessages.Misplaced_0, "ENDBLOCK");
+                throw new InterpreterError(InterpreterMessages.Misplaced_0, "ENDBLOCK", ex);
             }
         }
 
         [Subr]
         [MdlZilRedirect(typeof(Subrs), nameof(GLOBAL), TopLevelOnly = true)]
-        public static ZilObject SETG(Context ctx, ZilAtom atom, ZilObject value)
+        public static ZilObject SETG([NotNull] Context ctx, [NotNull] ZilAtom atom, ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
             SubrContracts(ctx);
 
             ctx.SetGlobalVal(atom, value);
@@ -249,8 +295,10 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject SETG20(Context ctx, ZilAtom atom, ZilObject value)
+        public static ZilObject SETG20([NotNull] Context ctx, [NotNull] ZilAtom atom, ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
             SubrContracts(ctx);
 
             ctx.SetGlobalVal(atom, value);
@@ -258,17 +306,24 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject SET(Context ctx, ZilAtom atom, ZilObject value, LocalEnvironment env)
+        public static ZilObject SET(Context ctx, [NotNull] ZilAtom atom, ZilObject value, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
             SubrContracts(ctx);
 
             env.SetLocalVal(atom, value);
             return value;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="atom"/> has no global value.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject GVAL(Context ctx, ZilAtom atom)
+        public static ZilObject GVAL([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var result = ctx.GetGlobalVal(atom);
@@ -282,26 +337,38 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        [NotNull]
         [Subr("GASSIGNED?")]
-        public static ZilObject GASSIGNED_P(Context ctx, ZilAtom atom)
+        public static ZilObject GASSIGNED_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.GetGlobalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject GUNASSIGN(Context ctx, ZilAtom atom)
+        public static ZilObject GUNASSIGN([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             ctx.SetGlobalVal(atom, null);
             return atom;
         }
 
+        [NotNull]
         [Subr("GBOUND?")]
-        public static ZilObject GBOUND_P(Context ctx, ZilAtom atom)
+        public static ZilObject GBOUND_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ctx.GetGlobalBinding(atom, false) != null ? ctx.TRUE : ctx.FALSE;
@@ -323,9 +390,13 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         [FSubr]
-        public static ZilObject GDECL(Context ctx, DeclParams.AtomsDeclSequence[] pairs)
+        public static ZilObject GDECL([NotNull] Context ctx, [NotNull] DeclParams.AtomsDeclSequence[] pairs)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(pairs != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             foreach (var pair in pairs)
@@ -340,17 +411,25 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        [NotNull]
         [Subr("DECL?")]
-        public static ZilObject DECL_P(Context ctx, ZilObject value, ZilObject pattern)
+        public static ZilObject DECL_P([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return Decl.Check(ctx, value, pattern) ? ctx.TRUE : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr("DECL-CHECK")]
-        public static ZilObject DECL_CHECK(Context ctx, bool enable)
+        public static ZilObject DECL_CHECK([NotNull] Context ctx, bool enable)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var wasEnabled = ctx.CheckDecls;
@@ -359,8 +438,9 @@ namespace Zilf.Interpreter
         }
 
         [Subr("GET-DECL")]
-        public static ZilResult GET_DECL(Context ctx, ZilObject item)
+        public static ZilResult GET_DECL(Context ctx, [NotNull] ZilObject item)
         {
+            Contract.Requires(item != null);
             SubrContracts(ctx);
 
             if (item is ZilOffset offset)
@@ -369,9 +449,12 @@ namespace Zilf.Interpreter
             return GETPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL));
         }
 
+        [NotNull]
         [Subr("PUT-DECL")]
-        public static ZilObject PUT_DECL(Context ctx, ZilObject item, ZilObject pattern)
+        public static ZilObject PUT_DECL(Context ctx, [NotNull] ZilObject item, ZilObject pattern)
         {
+            Contract.Requires(item != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (item is ZilOffset offset)
@@ -380,9 +463,14 @@ namespace Zilf.Interpreter
             return PUTPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL), pattern);
         }
 
+        /// <exception cref="InterpreterError"><paramref name="atom"/> has no local value in <paramref name="env"/>.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject LVAL(Context ctx, ZilAtom atom, LocalEnvironment env)
+        public static ZilObject LVAL(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var result = env.GetLocalVal(atom);
@@ -396,34 +484,59 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <exception cref="ArgumentNullException"><paramref name="env"/> is <see langword="null"/></exception>
+        [NotNull]
         [Subr]
-        public static ZilObject UNASSIGN(Context ctx, ZilAtom atom, LocalEnvironment env)
+        public static ZilObject UNASSIGN(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
+
+            if (atom == null)
+                throw new ArgumentNullException(nameof(atom));
+            if (env == null)
+                throw new ArgumentNullException(nameof(env));
 
             env.SetLocalVal(atom, null);
             return atom;
         }
 
+        [NotNull]
         [Subr("ASSIGNED?")]
-        public static ZilObject ASSIGNED_P(Context ctx, ZilAtom atom, LocalEnvironment env)
+        public static ZilObject ASSIGNED_P([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return env.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
+        [NotNull]
         [Subr("BOUND?")]
-        public static ZilObject BOUND_P(Context ctx, ZilAtom atom, LocalEnvironment env)
+        public static ZilObject BOUND_P([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return env.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="atom"/> has no local or global value in <paramref name="env"/>.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject VALUE(Context ctx, ZilAtom atom, LocalEnvironment env)
+        public static ZilObject VALUE(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(atom != null);
+            Contract.Requires(env != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var result = env.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
@@ -438,8 +551,12 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult GETPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject defaultValue = null)
+        public static ZilResult GETPROP([NotNull] Context ctx, [NotNull] ZilObject item, [NotNull] ZilObject indicator,
+            [CanBeNull] ZilObject defaultValue = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(item != null);
+            Contract.Requires(indicator != null);
             SubrContracts(ctx);
 
             var result = ctx.GetProp(item, indicator);
@@ -455,9 +572,15 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject PUTPROP(Context ctx, ZilObject item, ZilObject indicator, ZilObject value = null)
+        public static ZilObject PUTPROP([NotNull] Context ctx, [NotNull] ZilObject item, [NotNull] ZilObject indicator,
+            [CanBeNull] ZilObject value = null)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(item != null);
+            Contract.Requires(indicator != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (value == null)
@@ -473,9 +596,12 @@ namespace Zilf.Interpreter
             return item;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject ASSOCIATIONS(Context ctx)
+        public static ZilObject ASSOCIATIONS([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             var results = ctx.GetAllAssociations();
@@ -487,33 +613,39 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject NEXT(Context ctx, ZilAsoc asoc)
+        public static ZilObject NEXT(Context ctx, [NotNull] ZilAsoc asoc)
         {
+            Contract.Requires(asoc != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return asoc.GetNext() ?? ctx.FALSE;
         }
 
         [Subr]
-        public static ZilObject ITEM(Context ctx, ZilAsoc asoc)
+        public static ZilObject ITEM(Context ctx, [NotNull] ZilAsoc asoc)
         {
+            Contract.Requires(asoc != null);
             SubrContracts(ctx);
 
             return asoc.Item;
         }
 
         [Subr]
-        public static ZilObject INDICATOR(Context ctx, ZilAsoc asoc)
+        public static ZilObject INDICATOR(Context ctx, [NotNull] ZilAsoc asoc)
         {
+            Contract.Requires(asoc != null);
             SubrContracts(ctx);
 
             return asoc.Indicator;
         }
 
         [Subr]
-        public static ZilObject AVALUE(Context ctx, ZilAsoc asoc)
+        public static ZilObject AVALUE(Context ctx, [NotNull] ZilAsoc asoc)
         {
+            Contract.Requires(asoc != null);
             SubrContracts(ctx);
 
             return asoc.Value;

@@ -15,14 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
-using System.Linq;
 
 namespace Zilf.ZModel.Vocab
 {
@@ -62,7 +63,7 @@ namespace Zilf.ZModel.Vocab
 
         static ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
 
-        public static byte Parse(ZilList list, Context ctx)
+        public static byte Parse([CanBeNull] ZilList list, [NotNull] Context ctx)
         {
             byte result = 0;
             var sflagsVector = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_SFLAGS)) as ZilVector;
@@ -191,7 +192,7 @@ namespace Zilf.ZModel.Vocab
             return result;
         }
 
-        static byte GetSflagValue(Context ctx, StdAtom stdAtom)
+        static byte GetSflagValue([NotNull] Context ctx, StdAtom stdAtom)
         {
             var atom = ctx.GetStdAtom(stdAtom);
             var gval = ctx.GetGlobalVal(atom);
@@ -215,7 +216,7 @@ namespace Zilf.ZModel.Vocab
             return (byte)fix.Value;
         }
 
-        static void MakeAdditiveFlag(Context ctx, CacheEntry entry, string name, StdAtom valueAtom)
+        static void MakeAdditiveFlag(Context ctx, [NotNull] CacheEntry entry, [NotNull] string name, StdAtom valueAtom)
         {
             entry.Dict.Add(name, GetSflagValue(ctx, valueAtom));
             entry.Additive.Add(name);

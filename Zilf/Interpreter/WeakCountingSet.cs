@@ -19,6 +19,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -33,7 +34,7 @@ namespace Zilf.Interpreter
 
         readonly Dictionary<int, List<Cell>> buckets = new Dictionary<int, List<Cell>>();
 
-        public void Add(T value)
+        public void Add([NotNull] T value)
         {
             Contract.Requires(value != null);
 
@@ -59,7 +60,7 @@ namespace Zilf.Interpreter
             bucket.Add(new Cell { Ref = new WeakReference<T>(value), Count = 1 });
         }
 
-        public void Remove(T value)
+        public void Remove([NotNull] T value)
         {
             Contract.Requires(value != null);
 

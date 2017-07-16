@@ -16,10 +16,12 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
     /// <summary>
     /// Provides a method to apply a <see cref="ZilObject"/>, such as a SUBR or FUNCTION,
     /// to a set of arguments.
@@ -34,7 +36,7 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The unevaluated arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult Apply(Context ctx, ZilObject[] args);
+        ZilResult Apply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args);
 
         /// <summary>
         /// Applies the object to the given arguments, without evaluating or expanding them.
@@ -42,6 +44,7 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult ApplyNoEval(Context ctx, ZilObject[] args);
+        ZilResult ApplyNoEval([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args);
     }
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
 }

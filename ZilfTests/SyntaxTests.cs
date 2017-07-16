@@ -15,25 +15,42 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System.Diagnostics;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
+using System.Diagnostics.Contracts;
+// ReSharper disable ExceptionNotDocumentedOptional
 
 namespace ZilfTests
 {
     [TestClass]
     public class SyntaxTests
     {
+        [NotNull]
+        static Syntax ParseSyntax([NotNull] Context ctx, [NotNull] string definition)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(definition));
+            Contract.Ensures(Contract.Result<Syntax>() != null);
+
+            var defn = (ZilList)Program.Evaluate(ctx, definition, true);
+            Debug.Assert(defn != null);
+
+            var syntax = Syntax.Parse(null, defn, ctx);
+            return syntax;
+        }
+
         [TestMethod]
         public void TestVerb()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(ABIDE = V-ABIDE)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(ABIDE = V-ABIDE)");
 
             Assert.AreEqual("ABIDE", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -55,9 +72,7 @@ namespace ZilfTests
         public void TestVerbObject()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(ABIDE OBJECT = V-ABIDE)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(ABIDE OBJECT = V-ABIDE)");
 
             Assert.AreEqual("ABIDE", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -79,9 +94,7 @@ namespace ZilfTests
         public void TestVerbPrepObject()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(ABIDE BY OBJECT = V-ABIDE)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(ABIDE BY OBJECT = V-ABIDE)");
 
             Assert.AreEqual("ABIDE", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -104,9 +117,7 @@ namespace ZilfTests
         public void TestVerbObjectPrepObject()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(TREAT OBJECT LIKE OBJECT = V-TREEHORN)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(TREAT OBJECT LIKE OBJECT = V-TREEHORN)");
 
             Assert.AreEqual("TREAT", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -129,9 +140,7 @@ namespace ZilfTests
         public void TestVerbPrepObjectPrepObject()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(THROW OUT OBJECT FOR OBJECT = V-SWISS-WATCH)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(THROW OUT OBJECT FOR OBJECT = V-SWISS-WATCH)");
 
             Assert.AreEqual("THROW", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -155,9 +164,7 @@ namespace ZilfTests
         public void TestVerbPrepObjectPrepObjectFindbit()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(THROW OUT OBJECT FOR OBJECT (FIND PHONEBOOKBIT) = V-SWISS-WATCH)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(THROW OUT OBJECT FOR OBJECT (FIND PHONEBOOKBIT) = V-SWISS-WATCH)");
 
             Assert.AreEqual("THROW", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -181,9 +188,7 @@ namespace ZilfTests
         public void TestVerbPrepObjectFindbit()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK AROUND OBJECT (FIND DUMMYBIT) = V-LOOK-AROUND)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(LOOK AROUND OBJECT (FIND DUMMYBIT) = V-LOOK-AROUND)");
 
             Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -209,9 +214,7 @@ namespace ZilfTests
             // TODO: add an assert to confirm the warning
 
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK AROUND (FIND DUMMYBIT) = V-LOOK-AROUND)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(LOOK AROUND (FIND DUMMYBIT) = V-LOOK-AROUND)");
 
             Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -233,9 +236,7 @@ namespace ZilfTests
         public void TestCustomActionName()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK BEHIND OBJECT = V-SEARCH <> LOOK-BEHIND)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(LOOK BEHIND OBJECT = V-SEARCH <> LOOK-BEHIND)");
 
             Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));
@@ -258,9 +259,7 @@ namespace ZilfTests
         public void TestSynonyms()
         {
             var ctx = new Context();
-            var defn = (ZilList)Program.Evaluate(ctx, "(LOOK (STARE GAZE) AT OBJECT = V-EXAMINE)", true);
-
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = ParseSyntax(ctx, "(LOOK (STARE GAZE) AT OBJECT = V-EXAMINE)");
 
             Assert.AreEqual("LOOK", syntax.Verb.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsVerb(syntax.Verb));

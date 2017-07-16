@@ -15,18 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System.Diagnostics.Contracts;
-using System.Linq;
+
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
         [FSubr]
-        public static ZilResult COND(Context ctx, [Required] CondClause[] clauses)
+        public static ZilResult COND(Context ctx, [NotNull] [Required] CondClause[] clauses)
         {
+            Contract.Requires(clauses != null);
             SubrContracts(ctx);
 
             ZilResult result = null;
@@ -61,8 +63,10 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilResult OR(Context ctx, ZilObject[] args)
+        public static ZilResult OR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
             SubrContracts(ctx, args);
 
             ZilObject resultObj = ctx.FALSE;
@@ -83,8 +87,10 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilResult AND(Context ctx, ZilObject[] args)
+        public static ZilResult AND([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
             SubrContracts(ctx, args);
 
             ZilObject resultObj = ctx.TRUE;

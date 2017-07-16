@@ -17,9 +17,9 @@
  */
 using System;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -36,7 +36,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public ZilFix(ZilFix other)
+        public ZilFix([NotNull] ZilFix other)
             : this(other.value)
         {
             Contract.Requires(other != null);
@@ -50,11 +50,12 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.FIX;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => this;
 
         public override bool Equals(object obj)
         {
-            return obj is ZilFix other && other.value == this.value;
+            return obj is ZilFix other && other.value == value;
         }
 
         public override int GetHashCode() => value.GetHashCode();
@@ -63,7 +64,7 @@ namespace Zilf.Interpreter.Values
 
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
+            if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
             {
                 return ApplyNoEval(ctx, args);
             }
@@ -80,10 +81,10 @@ namespace Zilf.Interpreter.Values
                 switch (args.Length)
                 {
                     case 1:
-                        return Subrs.NTH(ctx, (IStructure)args[0], this.value);
+                        return Subrs.NTH(ctx, (IStructure)args[0], value);
 
                     case 2:
-                        return Subrs.PUT(ctx, (IStructure)args[0], this.value, args[1]);
+                        return Subrs.PUT(ctx, (IStructure)args[0], value, args[1]);
 
                     default:
                         throw new InterpreterError(

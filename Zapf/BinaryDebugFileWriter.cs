@@ -32,17 +32,14 @@ namespace Zapf
 
         public BinaryDebugFileWriter(Stream debugStream)
         {
-            this.stream = debugStream;
+            stream = debugStream;
 
             WriteDebugWord(0xDEBF);     // magic number
             WriteDebugWord(0);          // file format
             WriteDebugWord(2001);       // creator version
         }
 
-        public bool InRoutine
-        {
-            get { return routinePoints >= 0; }
-        }
+        public bool InRoutine => routinePoints >= 0;
 
         public void Close()
         {
@@ -118,6 +115,7 @@ namespace Zapf
             WriteDebugString(name);
         }
 
+        /// <exception cref="InvalidOperationException">The writer is not currently in a routine.</exception>
         public void WriteLine(LineRef loc, int address)
         {
             if (!InRoutine)

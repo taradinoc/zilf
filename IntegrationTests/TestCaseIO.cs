@@ -15,11 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Text;
+using JBA::JetBrains.Annotations;
 using ZLR.VM;
+using System.Diagnostics.Contracts;
 
 namespace IntegrationTests
 {
@@ -27,8 +31,10 @@ namespace IntegrationTests
     {
         protected readonly StringBuilder outputBuffer = new StringBuilder();
 
+        [NotNull]
         public string CollectOutput()
         {
+            Contract.Ensures(Contract.Result<string>() != null);
             string result = outputBuffer.ToString();
             outputBuffer.Length = 0;
             return result;
@@ -44,7 +50,7 @@ namespace IntegrationTests
 
         public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
         {
-            this.inputStream = prevInputStream;
+            inputStream = prevInputStream;
             this.wantStatusLine = wantStatusLine;
         }
 
@@ -76,8 +82,9 @@ namespace IntegrationTests
             outputBuffer.Append(str);
         }
 
-        void IZMachineIO.PutTextRectangle(string[] lines)
+        void IZMachineIO.PutTextRectangle([ItemNotNull] [NotNull] string[] lines)
         {
+            Contract.Requires(lines != null);
             foreach (string line in lines)
                 outputBuffer.AppendLine(line);
         }
@@ -98,22 +105,24 @@ namespace IntegrationTests
             // nada
         }
 
+        [NotNull]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
+            Contract.Ensures(Contract.Result<Stream>() != null);
             saveStream = new MemoryStream();
             return saveStream;
         }
 
+        [CanBeNull]
         Stream IZMachineIO.OpenRestoreFile()
         {
-            if (saveStream != null)
-                return new MemoryStream(saveStream.ToArray());
-
-            return null;
+            return saveStream != null ? new MemoryStream(saveStream.ToArray()) : null;
         }
 
-        Stream IZMachineIO.OpenAuxiliaryFile(string name, int size, bool writing)
+        [CanBeNull]
+        Stream IZMachineIO.OpenAuxiliaryFile([NotNull] string name, int size, bool writing)
         {
+            Contract.Requires(name != null);
             return null;
         }
 
@@ -172,10 +181,7 @@ namespace IntegrationTests
             return 0;
         }
 
-        bool IZMachineIO.GraphicsFontAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.GraphicsFontAvailable => false;
 
         bool IZMachineIO.ForceFixedPitch
         {
@@ -183,25 +189,13 @@ namespace IntegrationTests
             set { /* nada */ }
         }
 
-        bool IZMachineIO.BoldAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.BoldAvailable => false;
 
-        bool IZMachineIO.ItalicAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.ItalicAvailable => false;
 
-        bool IZMachineIO.FixedPitchAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.FixedPitchAvailable => false;
 
-        bool IZMachineIO.VariablePitchAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.VariablePitchAvailable => false;
 
         bool IZMachineIO.ScrollFromBottom
         {
@@ -209,40 +203,19 @@ namespace IntegrationTests
             set { /* nada */ }
         }
 
-        bool IZMachineIO.TimedInputAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.TimedInputAvailable => false;
 
-        byte IZMachineIO.WidthChars
-        {
-            get { return 80; }
-        }
+        byte IZMachineIO.WidthChars => 80;
 
-        short IZMachineIO.WidthUnits
-        {
-            get { return 80; }
-        }
+        short IZMachineIO.WidthUnits => 80;
 
-        byte IZMachineIO.HeightChars
-        {
-            get { return 25; }
-        }
+        byte IZMachineIO.HeightChars => 25;
 
-        short IZMachineIO.HeightUnits
-        {
-            get { return 25; }
-        }
+        short IZMachineIO.HeightUnits => 25;
 
-        byte IZMachineIO.FontHeight
-        {
-            get { return 1; }
-        }
+        byte IZMachineIO.FontHeight => 1;
 
-        byte IZMachineIO.FontWidth
-        {
-            get { return 1; }
-        }
+        byte IZMachineIO.FontWidth => 1;
 
         event EventHandler IZMachineIO.SizeChanged
         {
@@ -250,20 +223,11 @@ namespace IntegrationTests
             remove { /* nada */ }
         }
 
-        bool IZMachineIO.ColorsAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.ColorsAvailable => false;
 
-        byte IZMachineIO.DefaultForeground
-        {
-            get { return 9; }
-        }
+        byte IZMachineIO.DefaultForeground => 9;
 
-        byte IZMachineIO.DefaultBackground
-        {
-            get { return 2; }
-        }
+        byte IZMachineIO.DefaultBackground => 2;
 
         void IZMachineIO.PlaySoundSample(ushort num, SoundAction action, byte volume, byte repeats,
             SoundFinishedCallback callback)
@@ -276,10 +240,7 @@ namespace IntegrationTests
             // nada
         }
 
-        bool IZMachineIO.SoundSamplesAvailable
-        {
-            get { return false; }
-        }
+        bool IZMachineIO.SoundSamplesAvailable => false;
 
         bool IZMachineIO.Buffering
         {

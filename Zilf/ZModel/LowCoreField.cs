@@ -15,8 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel
@@ -26,7 +29,7 @@ namespace Zilf.ZModel
         public int Offset { get; }
         public LowCoreFlags Flags { get; }
         public int MinVersion { get; }
-        public int? MaxVersion { get; }
+        public int? MaxVersion => null;
 
         LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
         {
@@ -34,12 +37,13 @@ namespace Zilf.ZModel
             Contract.Requires(minVersion >= 1);
             Contract.Requires(maxVersion == null || maxVersion >= minVersion);
 
-            this.Offset = offset;
-            this.Flags = flags;
-            this.MinVersion = minVersion;
+            Offset = offset;
+            Flags = flags;
+            MinVersion = minVersion;
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(Offset >= 0);
@@ -106,7 +110,8 @@ namespace Zilf.ZModel
         };
 #pragma warning restore RECS0070 // Redundant explicit argument name specification
 
-        public static LowCoreField Get(ZilAtom atom)
+        [CanBeNull]
+        public static LowCoreField Get([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 

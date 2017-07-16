@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
-using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -26,10 +26,11 @@ namespace Zilf.Interpreter
     /// <remarks>
     /// <para>If applied to a constructor, it must take a single value of the primitive type.</para>
     /// <para>If applied to a static method, it must take two parameters, <see cref="Context"/>
-    /// and the primitive type, and return a type assignable to <see cref="ZilObject"/>.</para>
+    /// and the primitive type, and return a type assignable to <see cref="Values.ZilObject"/>.</para>
     /// </remarks>
     /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]
+    [MeansImplicitUse]
     sealed class ChtypeMethodAttribute : Attribute
     {
     }

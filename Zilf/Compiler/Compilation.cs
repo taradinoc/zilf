@@ -17,12 +17,14 @@
  */
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using System.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -31,10 +33,13 @@ namespace Zilf.Compiler
         /// <summary>
         /// The ZIL context that resulted from loading the source code.
         /// </summary>
+        [ProvidesContext]
+        [NotNull]
         public Context Context { get; }
         /// <summary>
         /// The game being built.
         /// </summary>
+        [NotNull]
         public IGameBuilder Game { get; }
         /// <summary>
         /// True if debug information should be generated (i.e. if the user
@@ -42,7 +47,7 @@ namespace Zilf.Compiler
         /// </summary>
         public bool WantDebugInfo { get; }
 
-        Compilation(Context ctx, IGameBuilder game, bool wantDebugInfo)
+        Compilation([NotNull] Context ctx, [NotNull] IGameBuilder game, bool wantDebugInfo)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(game != null);
@@ -65,6 +70,7 @@ namespace Zilf.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(Context != null);

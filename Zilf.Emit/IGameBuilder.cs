@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
@@ -10,11 +12,13 @@ namespace Zilf.Emit
         /// <summary>
         /// Gets a target-specific options object.
         /// </summary>
+        [NotNull]
         IGameOptions Options { get; }
 
         /// <summary>
         /// Gets the debug file builder, if one exists.
         /// </summary>
+        [CanBeNull]
         IDebugFileBuilder DebugFile { get; }
 
         /// <summary>
@@ -23,7 +27,8 @@ namespace Zilf.Emit
         /// <param name="name">The name of the variable.</param>
         /// <returns>A helper object which may be used to set the variable's default value
         /// or refer to the variable as an operand.</returns>
-        IGlobalBuilder DefineGlobal(string name);
+        [NotNull]
+        IGlobalBuilder DefineGlobal([NotNull] string name);
         /// <summary>
         /// Defines a new table.
         /// </summary>
@@ -31,7 +36,8 @@ namespace Zilf.Emit
         /// <param name="pure">true if the table should be stored in read-only memory.</param>
         /// <returns>A helper object which may be used to add values to the table or refer
         /// to the table as an operand.</returns>
-        ITableBuilder DefineTable(string name, bool pure);
+        [NotNull]
+        ITableBuilder DefineTable([CanBeNull] string name, bool pure);
         /// <summary>
         /// Defines a new routine.
         /// </summary>
@@ -42,28 +48,32 @@ namespace Zilf.Emit
         /// sacrifice space to ensure the stack is kept clean.</param>
         /// <returns>A helper object which may be used to add code to the routine or
         /// refer to the routine as an operand.</returns>
-        IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack);
+        [NotNull]
+        IRoutineBuilder DefineRoutine([NotNull] string name, bool entryPoint, bool cleanStack);
         /// <summary>
         /// Defines a new object.
         /// </summary>
         /// <param name="name">The name of the object.</param>
         /// <returns>A helper object which may be used to add properties to the object
         /// or refer to the object as an operand.</returns>
-        IObjectBuilder DefineObject(string name);
+        [NotNull]
+        IObjectBuilder DefineObject([NotNull] string name);
         /// <summary>
         /// Defines a new object property.
         /// </summary>
         /// <param name="name">The name of the property.</param>
         /// <returns>A helper object which may be used to set the property's default
         /// value or refer to the property as an operand.</returns>
-        IPropertyBuilder DefineProperty(string name);
+        [NotNull]
+        IPropertyBuilder DefineProperty([NotNull] string name);
         /// <summary>
         /// Defines a new object flag.
         /// </summary>
         /// <param name="name">The name of the flag.</param>
         /// <returns>A helper object which may be used to refer to the flag as an
         /// operand.</returns>
-        IFlagBuilder DefineFlag(string name);
+        [NotNull]
+        IFlagBuilder DefineFlag([NotNull] string name);
         
         /// <summary>
         /// Gets the maximum allowable length of a property, in bytes.
@@ -88,23 +98,27 @@ namespace Zilf.Emit
         /// <summary>
         /// Gets a predefined operand representing the constant 0.
         /// </summary>
+        [NotNull]
         INumericOperand Zero { get; }
         /// <summary>
         /// Gets a predefined operand representing the constant 1.
         /// </summary>
+        [NotNull]
         INumericOperand One { get; }
         /// <summary>
         /// Gets an operand representing a numeric constant.
         /// </summary>
         /// <param name="value">The numeric constant.</param>
         /// <returns>The operand.</returns>
+        [NotNull]
         INumericOperand MakeOperand(int value);
         /// <summary>
         /// Gets an operand representing a string constant.
         /// </summary>
         /// <param name="value">The string constant.</param>
         /// <returns>The operand.</returns>
-        IOperand MakeOperand(string value);
+        [NotNull]
+        IOperand MakeOperand([NotNull] string value);
         /// <summary>
         /// Defines a new constant to represent an existing operand, or redefines
         /// an existing constant.
@@ -120,7 +134,8 @@ namespace Zilf.Emit
         /// <para>The effect of redefining an existing constant when the constant
         /// has already been emitted in routine code is undefined.</para>
         /// </remarks>
-        IOperand DefineConstant(string name, IOperand value);
+        [NotNull]
+        IOperand DefineConstant([NotNull] string name, [NotNull] IOperand value);
 
         /// <summary>
         /// Defines a new vocabulary word.
@@ -132,12 +147,13 @@ namespace Zilf.Emit
         /// If extra data is used, the extra data of all vocabulary words must
         /// be the same size.
         /// </remarks>
-        IWordBuilder DefineVocabularyWord(string word);
+        [NotNull]
+        IWordBuilder DefineVocabularyWord([NotNull] string word);
         /// <summary>
         /// Deletes a previously defined vocabulary word.
         /// </summary>
         /// <param name="word">The vocabulary word.</param>
-        void RemoveVocabularyWord(string word);
+        void RemoveVocabularyWord([NotNull] string word);
         /// <summary>
         /// Gets the collection of self-inserting word break characters.
         /// </summary>
@@ -146,10 +162,12 @@ namespace Zilf.Emit
         /// and READ instructions, such that if '.' is in the set, "Mrs. Smith"
         /// will be lexed as three words: {"mrs", ".", "smith"}.
         /// </remarks>
+        [NotNull]
         ICollection<char> SelfInsertingBreaks { get; }
         /// <summary>
         /// Gets a predefined operand representing the vocabulary table.
         /// </summary>
+        [NotNull]
         IConstantOperand VocabularyTable { get; }
 
         /// <summary>
@@ -159,6 +177,7 @@ namespace Zilf.Emit
     }
 
     [ContractClassFor(typeof(IGameBuilder))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IGameBuilderContracts : IGameBuilder
     {
         [ContractInvariantMethod]
@@ -185,14 +204,7 @@ namespace Zilf.Emit
             }
         }
 
-        public IDebugFileBuilder DebugFile
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IDebugFileBuilder>() != null);
-                return default(IDebugFileBuilder);
-            }
-        }
+        public IDebugFileBuilder DebugFile => null;
 
         public IGlobalBuilder DefineGlobal(string name)
         {
@@ -217,18 +229,21 @@ namespace Zilf.Emit
         public IObjectBuilder DefineObject(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<IObjectBuilder>() != null);
             return default(IObjectBuilder);
         }
 
         public IPropertyBuilder DefineProperty(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<IPropertyBuilder>() != null);
             return default(IPropertyBuilder);
         }
 
         public IFlagBuilder DefineFlag(string name)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+            Contract.Ensures(Contract.Result<IFlagBuilder>() != null);
             return default(IFlagBuilder);
         }
 

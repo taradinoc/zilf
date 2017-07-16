@@ -15,21 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
+using System.Diagnostics;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        [NotNull]
         [Subr]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
-        public static ZilObject PACKAGE(Context ctx, string pname)
+        public static ZilObject PACKAGE([NotNull] Context ctx, string pname)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             // external oblist
@@ -52,11 +58,14 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
+        [NotNull]
         [Subr]
         [Subr("ZSECTION")]
         [Subr("ZZSECTION")]
-        public static ZilObject DEFINITIONS(Context ctx, string pname)
+        public static ZilObject DEFINITIONS([NotNull] Context ctx, string pname)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             // external oblist
@@ -74,19 +83,27 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
+        [NotNull]
         [Subr]
         [Subr("END-DEFINITIONS")]
         [Subr("ENDSECTION")]
-        public static ZilObject ENDPACKAGE(Context ctx)
+        public static ZilObject ENDPACKAGE([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return ENDBLOCK(ctx);
         }
 
+        /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject ENTRY(Context ctx, ZilAtom[] args)
+        public static ZilObject ENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
@@ -99,6 +116,10 @@ namespace Zilf.Interpreter
                     "OBLIST",
                     "a list starting with 2 OBLISTs");
             }
+
+            Debug.Assert(currentObPath.First != null);
+            Debug.Assert(currentObPath.Rest != null);
+            Debug.Assert(currentObPath.Rest.First is ObList);
 
             var internalObList = (ObList)currentObPath.First;
             var externalObList = (ObList)currentObPath.Rest.First;
@@ -108,10 +129,14 @@ namespace Zilf.Interpreter
             if (ctx.GetProp(internalObList, packageAtom) != null || ctx.GetProp(externalObList, packageAtom) != packageAtom)
                 throw new InterpreterError(InterpreterMessages._0_Must_Be_Called_From_Within_A_PACKAGE, "ENTRY");
 
-            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != externalObList);
-            if (onWrongOblist.Any())
+            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != externalObList).ToList();
+            if (onWrongOblist.Count > 0)
             {
-                throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2, "ENTRY", ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false), string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
+                throw new InterpreterError(
+                    InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2,
+                    "ENTRY",
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
+                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
             foreach (var atom in args)
@@ -120,9 +145,14 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
+        [NotNull]
         [Subr]
-        public static ZilObject RENTRY(Context ctx, ZilAtom[] args)
+        public static ZilObject RENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
@@ -135,6 +165,10 @@ namespace Zilf.Interpreter
                     "OBLIST",
                     "a list starting with 2 OBLISTs");
             }
+
+            Debug.Assert(currentObPath.First != null);
+            Debug.Assert(currentObPath.Rest != null);
+            Debug.Assert(currentObPath.Rest.First is ObList);
 
             var internalObList = (ObList)currentObPath.First;
             var externalObList = (ObList)currentObPath.Rest.First;
@@ -146,8 +180,8 @@ namespace Zilf.Interpreter
             if (internalPackageProp != ctx.GetStdAtom(StdAtom.DEFINITIONS) && externalPackageProp != packageAtom)
                 throw new InterpreterError(InterpreterMessages._0_Must_Be_Called_From_Within_A_PACKAGE_Or_DEFINITIONS, "RENTRY");
 
-            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList);
-            if (onWrongOblist.Any())
+            var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList).ToList();
+            if (onWrongOblist.Count > 0)
             {
                 throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2, "RENTRY", ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false), string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
@@ -158,25 +192,36 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject USE(Context ctx, string[] args)
+        public static ZilObject USE([NotNull] Context ctx, [NotNull] string[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject INCLUDE(Context ctx, string[] args)
+        public static ZilObject INCLUDE([NotNull] Context ctx, [NotNull] string[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
+        [NotNull]
         [Subr("USE-WHEN")]
-        public static ZilObject USE_WHEN(Context ctx, ZilObject condition, string[] args)
+        public static ZilObject USE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
+            Contract.Requires(condition != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (condition.IsTrue)
@@ -186,9 +231,12 @@ namespace Zilf.Interpreter
             return condition;
         }
 
+        [NotNull]
         [Subr("INCLUDE-WHEN")]
-        public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject condition, string[] args)
+        public static ZilObject INCLUDE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
+            Contract.Requires(condition != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (condition.IsTrue)
@@ -198,8 +246,12 @@ namespace Zilf.Interpreter
             return condition;
         }
 
-        static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
+        [NotNull]
+        static ZilObject PerformUse([NotNull] Context ctx, [NotNull] string[] args, string name, StdAtom requiredPackageType)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList obpath))
@@ -248,9 +300,12 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        [NotNull]
         [Subr("COMPILING?")]
-        public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)
+        public static ZilObject COMPILING_P([NotNull] Context ctx, ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx, args);
 
             // always true

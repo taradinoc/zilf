@@ -47,8 +47,9 @@ namespace ZilfTests.Interpreter
 
                 var firstValue = Program.Evaluate(ctx, "'" + first, true);
                 var secondValue = Program.Evaluate(ctx, "'" + second, true);
-                var combined = Program.Evaluate(ctx, string.Format("<QUOTE {0}:{1}>", first, second), true);
+                var combined = Program.Evaluate(ctx, $"<QUOTE {first}:{second}>", true);
 
+                Assert.IsNotNull(combined);
                 Assert.IsInstanceOfType(combined, typeof(ZilAdecl));
 
                 var adecl = (ZilAdecl)combined;

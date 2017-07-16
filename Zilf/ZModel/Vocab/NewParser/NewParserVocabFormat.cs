@@ -20,16 +20,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Zilf.Common;
+using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.ZModel.Values;
-using Zilf.Diagnostics;
-using Zilf.Common;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
@@ -40,8 +37,10 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         byte nextAdjective = 255;
 
-        public NewParserVocabFormat(Context ctx)
+        /// <exception cref="InterpreterError">At least one value was duplicated between ADJ, BUZZ, DIR, NOUN, PREP, and VERB.</exception>
+        public NewParserVocabFormat([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
             this.ctx = ctx;
 
             adjClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TADJ)).Value;
@@ -53,7 +52,6 @@ namespace Zilf.ZModel.Vocab.NewParser
             verbClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TVERB)).Value;
 
             if (AnyDuplicates(adjClass, buzzClass, dirClass, objectClass, prepClass, verbClass))
-                //throw new InterpreterError(InterpreterMessages.GETCLASSIFICATION_Must_Return_Different_Values_For_ADJ_BUZZ_DIR_NOUN_PREP_And_VERB);
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,
@@ -61,7 +59,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     "different values for ADJ, BUZZ, DIR, NOUN, PREP, and VERB");
         }
 
-        static bool AnyDuplicates<T>(params T[] args)
+        static bool AnyDuplicates<T>([NotNull] params T[] args)
         {
             var seen = new HashSet<T>();
 
@@ -77,6 +75,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return new[] { "ACTIONS", "PREACTIONS" };
         }
 
+        /// <exception cref="InterpreterError">MAKE-VWORD did not return a VWORD.</exception>
         public IWord CreateWord(ZilAtom atom)
         {
             var form = new ZilForm(new ZilObject[]
@@ -97,6 +96,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             return new NewParserWord(ctx, atom, vword);
         }
 
+        /// <exception cref="InvalidOperationException">Wrong Z-machine version, or <paramref name="word"/> is not an adjective.</exception>
+        /// <exception cref="ArgumentException">The word's AdjId has the wrong type.</exception>
         public byte GetAdjectiveValue(IWord word)
         {
             var nw = (NewParserWord)word;
@@ -105,7 +106,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 throw new InvalidOperationException("No adjective numbers in V4+");
 
             if (!nw.HasClass(adjClass))
-                throw new InvalidOperationException(string.Format("Not an adjective (class={0}, adjClass={1})", nw.Classification, adjClass));
+                throw new InvalidOperationException($"Not an adjective (class={nw.Classification}, adjClass={adjClass})");
 
             var adjId = nw.AdjId;
             if (adjId is ZilFix fix)
@@ -114,16 +115,19 @@ namespace Zilf.ZModel.Vocab.NewParser
             throw new ArgumentException("Unexpected AdjId value: " + adjId.ToStringContext(ctx, false), nameof(word));
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public byte GetDirectionValue(IWord word)
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public byte GetPrepositionValue(IWord word)
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public byte GetVerbValue(IWord word)
         {
             throw new NotSupportedException();
@@ -143,6 +147,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return ((NewParserWord)word).HasClass(adjClass);
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public bool IsBuzzword(IWord word)
         {
             throw new NotSupportedException();
@@ -163,11 +168,13 @@ namespace Zilf.ZModel.Vocab.NewParser
             return ((NewParserWord)word).HasClass(prepClass);
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public bool IsVerb(IWord word)
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="InvalidOperationException">Too many adjectives.</exception>
         public void MakeAdjective(IWord word, ISourceLine location)
         {
             var nw = (NewParserWord)word;
@@ -209,6 +216,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
+        /// <exception cref="ArgumentException"><paramref name="word"/> is not a direction.</exception>
         public void MakeDirection(IWord word, ISourceLine location)
         {
             var nw = (NewParserWord)word;
@@ -289,6 +297,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
+        /// <exception cref="InterpreterError"><paramref name="src"/> and <paramref name="dest"/> have incompatible classifications or semantic values.</exception>
         public void MergeWords(IWord dest, IWord src)
         {
             var ndest = (NewParserWord)dest;
@@ -296,7 +305,8 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if ((ndest.Classification & 0x8000) != (nsrc.Classification & 0x8000))
             {
-                throw new InterpreterError(InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3, ndest.Atom, ndest.Classification, nsrc.Atom, nsrc.Classification);
+                throw new InterpreterError(InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3,
+                    ndest.Atom, ndest.Classification, nsrc.Atom, nsrc.Classification);
             }
 
             if (ctx.ZEnvironment.ZVersion >= 4 &&
@@ -319,6 +329,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ndest.SemanticStuff = nsrc.SemanticStuff;
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public bool IsSynonym(IWord word)
         {
             throw new NotSupportedException();
@@ -327,13 +338,13 @@ namespace Zilf.ZModel.Vocab.NewParser
         public void MakeSynonym(IWord synonym, IWord original)
         {
             var nsyn = (NewParserWord)synonym;
-            var norig = (NewParserWord)original;
 
             nsyn.Classification = 0;
             nsyn.Flags = 0;
             nsyn.SemanticStuff = ZilAtom.Parse("W?" + original.Atom.Text, ctx);
         }
 
+        /// <exception cref="InterpreterError"><paramref name="original"/> is not classified as <paramref name="partOfSpeech"/>, or <paramref name="original"/> and <paramref name="synonym"/> have incompatible classifications.</exception>
         public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
         {
             var nsyn = (NewParserWord)synonym;
@@ -491,7 +502,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        bool TryGetVerbStuffId(ZilObject verbStuff, out ZilObject verbStuffId)
+        [ContractAnnotation("=> false, verbStuffId: null; => true, verbStuffId: notnull")]
+        bool TryGetVerbStuffId([CanBeNull] ZilObject verbStuff, [CanBeNull] out ZilObject verbStuffId)
         {
             Contract.Ensures(!Contract.Result<bool>() || Contract.ValueAtReturn(out verbStuffId) != null);
 
@@ -505,12 +517,13 @@ namespace Zilf.ZModel.Vocab.NewParser
             return verbStuffId != null;
         }
 
-        bool IsVerbPointer(ZilObject verbStuff)
+        static bool IsVerbPointer([CanBeNull] ZilObject verbStuff)
         {
             return verbStuff != null && verbStuff.StdTypeAtom == StdAtom.VERB_POINTER;
         }
 
-        void ConditionalAddShort(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        void ConditionalAddShort([NotNull] IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
+            [CanBeNull] ZilObject value)
         {
             if (value == null)
             {
@@ -535,7 +548,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        void ConditionalAddByte(IWordBuilder wb, string word, Func<ZilObject, IOperand> compileConstant, ZilObject value)
+        void ConditionalAddByte([NotNull] IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
+            [CanBeNull] ZilObject value)
         {
             if (value == null)
             {
@@ -560,7 +574,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        internal ZilObject NewAddWord(ZilAtom name, ZilAtom type, ZilObject value, ZilFix flags)
+        internal ZilObject NewAddWord([NotNull] ZilAtom name, ZilAtom type, [CanBeNull] ZilObject value, [NotNull] ZilFix flags)
         {
             Contract.Requires(name != null);
             Contract.Requires(flags != null);
@@ -679,12 +693,14 @@ namespace Zilf.ZModel.Vocab.NewParser
             return word.Atom;
         }
 
-        static ZilFix TranslateType(Context ctx, ZilAtom type)
+        [NotNull]
+        static ZilFix TranslateType([NotNull] Context ctx, [NotNull] ZilAtom type)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(type != null);
             Contract.Ensures(Contract.Result<ZilFix>() != null);
 
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type.StdAtom)
             {
                 case StdAtom.TADJ:
@@ -740,6 +756,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return new string[0];
         }
 
+        /// <exception cref="CompilerError">Malformed WORD-FLAGS-LIST.</exception>
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
         {
             var actionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
@@ -771,23 +788,28 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 while (!wordFlagsList.IsEmpty)
                 {
+                    Debug.Assert(wordFlagsList.First != null);
+                    Debug.Assert(wordFlagsList.Rest != null);
+
                     if (wordFlagsList.Rest.IsEmpty)
                         throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
 
                     var vword = wordFlagsList.First;
                     var flags = wordFlagsList.Rest.First;
                     wordFlagsList = wordFlagsList.Rest.Rest;
+                    Debug.Assert(wordFlagsList != null);
 
-                    if (seen.Add(vword))
-                    {
-                        var nw = NewParserWord.FromVword(ctx, (ZilHash)vword);
-                        var atom = nw.Atom;
-                        var word = ctx.ZEnvironment.Vocabulary[atom];
-                        var zword = helpers.Vocabulary[word];
+                    if (!seen.Add(vword))
+                        continue;
 
-                        filtered.Add(zword);
-                        filtered.Add(helpers.CompileConstant(flags));
-                    }
+                    var nw = NewParserWord.FromVword(ctx, (ZilHash)vword);
+                    var atom = nw.Atom;
+                    var word = ctx.ZEnvironment.Vocabulary[atom];
+                    var zword = helpers.Vocabulary[word];
+
+                    filtered.Add(zword);
+                    Debug.Assert(flags != null);
+                    filtered.Add(helpers.CompileConstant(flags));
                 }
 
                 wordFlagTable.AddShort((short)filtered.Count);

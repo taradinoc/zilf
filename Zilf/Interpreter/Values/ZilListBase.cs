@@ -17,17 +17,22 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
+
+using PureAttribute = System.Diagnostics.Contracts.PureAttribute;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinPrimType(PrimType.LIST)]
     abstract class ZilListBase : ZilListoidBase
     {
-        private ZilObject first;
-        private ZilList rest;
+        ZilObject first;
+        ZilList rest;
 
+        [CanBeNull]
         public sealed override ZilObject First
         {
             get => first;
@@ -44,6 +49,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
+        [CanBeNull]
         public sealed override ZilList Rest
         {
             get => rest;
@@ -60,11 +66,11 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public ZilListBase(IEnumerable<ZilObject> sequence)
+        protected ZilListBase([NotNull] IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(sequence != null);
 
-            using (IEnumerator<ZilObject> tor = sequence.GetEnumerator())
+            using (var tor = sequence.GetEnumerator())
             {
                 if (tor.MoveNext())
                 {
@@ -79,32 +85,34 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public ZilListBase(ZilObject first, ZilList rest)
+        protected ZilListBase(ZilObject first, ZilList rest)
         {
             Contract.Requires((first == null && rest == null) || (first != null && rest != null));
             Contract.Ensures(First == first);
-            Contract.Ensures(Rest == rest);
+            Contract.Ensures(ReferenceEquals(Rest, rest));
 
             this.first = first;
             this.rest = rest;
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
         }
 
-        protected ZilList MakeRest(IEnumerator<ZilObject> tor)
+        [NotNull]
+        protected ZilList MakeRest([NotNull] IEnumerator<ZilObject> tor)
         {
             Contract.Requires(tor != null);
             Contract.Ensures(Contract.Result<ZilList>() != null);
 
             if (tor.MoveNext())
             {
-                ZilObject cur = tor.Current;
-                var rest = MakeRest(tor);
-                return new ZilList(cur, rest);
+                var cur = tor.Current;
+                var newRest = MakeRest(tor);
+                return new ZilList(cur, newRest);
             }
 
             return new ZilList(null, null);
@@ -112,7 +120,10 @@ namespace Zilf.Interpreter.Values
 
         public sealed override bool IsEmpty => First == null;
 
+        [NotNull]
         protected virtual string OpenBracket => $"#{StdTypeAtom} (";
+
+        [NotNull]
         protected virtual string CloseBracket => ")";
 
         public override string ToString()
@@ -147,12 +158,10 @@ namespace Zilf.Interpreter.Values
             return OpenBracket + "..." + CloseBracket;
         }
 
+        [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
-            if (GetType() == typeof(ZilList))
-                return this;
-
-            return new ZilList(First, Rest);
+            return GetType() == typeof(ZilList) ? this : new ZilList(First, Rest);
         }
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
@@ -168,13 +177,16 @@ namespace Zilf.Interpreter.Values
             {
                 yield return r.First;
                 r = r.Rest;
+                Debug.Assert(r != null);
             }
         }
 
         /// <summary>
-        /// Enumerates the items of the list, yielding a final <b>null</b> instead of repeating if the list is recursive.
+        /// Enumerates the items of the list, yielding a final <see langword="null"/> instead of repeating if the list is recursive.
         /// </summary>
         /// <returns></returns>
+        [ItemCanBeNull]
+        [Pure]
         public IEnumerable<ZilObject> EnumerateNonRecursive()
         {
             var seen = new HashSet<ZilListBase>(IdentityEqualityComparer<ZilListBase>.Instance);
@@ -191,6 +203,7 @@ namespace Zilf.Interpreter.Values
                 seen.Add(list);
                 yield return list.First;
                 list = list.Rest;
+                Debug.Assert(list != null);
             }
         }
 
@@ -199,7 +212,7 @@ namespace Zilf.Interpreter.Values
             if (obj == this)
                 return true;
 
-            if (!(obj is ZilListBase other) || other.StdTypeAtom != this.StdTypeAtom)
+            if (!(obj is ZilListBase other) || other.StdTypeAtom != StdTypeAtom)
                 return false;
 
             if (First == null)
@@ -234,6 +247,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
+        [CanBeNull]
         public sealed override ZilObject this[int index]
         {
             get
@@ -260,7 +274,7 @@ namespace Zilf.Interpreter.Values
         {
             int count = 0;
 
-            foreach (ZilObject obj in this)
+            foreach (var _ in this)
             {
                 count++;
                 if (count > limit)

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -74,12 +75,12 @@ namespace Zilf.Interpreter
             return new ZilResult(Outcome.Value, value, null);
         }
 
-        public static ZilResult MapRet(ZilObject[] values)
+        public static ZilResult MapRet([NotNull] ZilObject[] values)
         {
             return new ZilResult(Outcome.MapRet, new ZilVector(values), null);
         }
 
-        public static ZilResult MapStop(ZilObject[] values)
+        public static ZilResult MapStop([NotNull] ZilObject[] values)
         {
             return new ZilResult(Outcome.MapStop, new ZilVector(values), null);
         }
@@ -118,7 +119,7 @@ namespace Zilf.Interpreter
             return ShouldPass(null, ref dummy);
         }
 
-        public bool ShouldPass(ZilActivation currentActivation, ref ZilResult resultToPass)
+        public bool ShouldPass([CanBeNull] ZilActivation currentActivation, ref ZilResult resultToPass)
         {
             switch (outcome)
             {
@@ -166,7 +167,7 @@ namespace Zilf.Interpreter
 
     static class ZilResultSequenceExtensions
     {
-        public static IEnumerable<ZilResult> Trim(this IEnumerable<ZilResult> inputs)
+        public static IEnumerable<ZilResult> Trim([NotNull] this IEnumerable<ZilResult> inputs)
         {
             foreach (var i in inputs)
             {
@@ -177,7 +178,8 @@ namespace Zilf.Interpreter
             }
         }
 
-        public static IEnumerable<ZilResult> AsResultSequence(this IEnumerable<ZilObject> inputs)
+        [NotNull]
+        public static IEnumerable<ZilResult> AsResultSequence([NotNull] this IEnumerable<ZilObject> inputs)
         {
             return inputs.Select<ZilObject, ZilResult>(i => i);
         }
@@ -200,12 +202,14 @@ namespace Zilf.Interpreter
             return new ZilList(array.Select(i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
-        public static ZilObject[] ToZilObjectArray(this IEnumerable<ZilResult> inputs)
+        [NotNull]
+        public static ZilObject[] ToZilObjectArray([NotNull] this IEnumerable<ZilResult> inputs)
         {
             return inputs.Select(i => (ZilObject)i).ToArray();
         }
 
-        public static bool TryToZilObjectArray(this IEnumerable<ZilResult> inputs, out ZilObject[] array, out ZilResult result)
+        [ContractAnnotation("=> false, array: null; => true, array: notnull")]
+        public static bool TryToZilObjectArray([NotNull] this IEnumerable<ZilResult> inputs, [CanBeNull] out ZilObject[] array, out ZilResult result)
         {
             List<ZilObject> list;
             if (inputs is ICollection<ZilResult> coll)

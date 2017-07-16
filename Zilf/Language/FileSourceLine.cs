@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -24,7 +25,7 @@ namespace Zilf.Language
         readonly string filename;
         readonly int line;
 
-        public FileSourceLine(string filename, int line)
+        public FileSourceLine([NotNull] string filename, int line)
         {
             Contract.Requires(filename != null);
 
@@ -32,6 +33,7 @@ namespace Zilf.Language
             this.line = line;
         }
 
+        [NotNull]
         public string SourceInfo
         {
             get { return string.Format("{0}:{1}", filename, line); }

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Language;
 
@@ -33,7 +34,8 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         public virtual ISourceLine SourceLine { get; set; }
 
-        public static IEnumerable<ZilObject> ExpandTemplateToken(ZilObject selector, ZilObject[] templateParams)
+        [NotNull]
+        public static IEnumerable<ZilObject> ExpandTemplateToken([NotNull] ZilObject selector, [NotNull] ZilObject[] templateParams)
         {
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
@@ -78,7 +80,8 @@ namespace Zilf.Interpreter.Values
         /// and use the built-in formatting.</param>
         /// <returns>A string representation of the object.</returns>
         /// <remarks>If a PRINTTYPE is used, <paramref name="friendly"/> has no effect.</remarks>
-        public string ToStringContext(Context ctx, bool friendly, bool ignorePrintType = false)
+        [NotNull]
+        public string ToStringContext([NotNull] Context ctx, bool friendly, bool ignorePrintType = false)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -103,7 +106,8 @@ namespace Zilf.Interpreter.Values
         /// <returns>A string representation of the object.</returns>
         /// <remarks>This method is not affected by PRINTTYPE, which is handled
         /// by <see cref="ToStringContext(Context, bool, bool)"/>.</remarks>
-        protected virtual string ToStringContextImpl(Context ctx, bool friendly)
+        [NotNull]
+        protected virtual string ToStringContextImpl([NotNull] Context ctx, bool friendly)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -116,8 +120,9 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>The type atom.</returns>
-        [Pure]
-        public virtual ZilAtom GetTypeAtom(Context ctx)
+        [NotNull]
+        [System.Diagnostics.Contracts.Pure]
+        public virtual ZilAtom GetTypeAtom([NotNull] Context ctx)
         {
             var stdAtom = StdTypeAtom;
             Contract.Assert(stdAtom != StdAtom.None);
@@ -128,13 +133,13 @@ namespace Zilf.Interpreter.Values
         /// Gets a <see cref="StdAtom"/> representing the object's type, or
         /// <see cref="StdAtom.None"/> if the object belongs to a user-defined type.
         /// </summary>
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         public abstract StdAtom StdTypeAtom { get; }
 
         /// <summary>
         /// Gets a value indicating the type of this object's primitive form.
         /// </summary>
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         public abstract PrimType PrimType { get; }
 
         /// <summary>
@@ -149,12 +154,11 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="environment">The environment in which to evaluate the object,
-        /// or <b>null</b> to use the current environment.</param>
+        /// or <see langword="null"/> to use the current environment.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
-        public ZilResult Eval(Context ctx, LocalEnvironment environment = null)
+        public ZilResult Eval([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             var del = ctx.GetEvalTypeDelegate(GetTypeAtom(ctx));
 
@@ -182,13 +186,12 @@ namespace Zilf.Interpreter.Values
         /// use the knowledge of the original type to return a different result; for example,
         /// <see cref="ZilList.EvalImpl(Context, LocalEnvironment, ZilAtom)"/> returns a list
         /// CHTYPEd to the original type.</remarks>
-        internal ZilResult EvalAsOtherType(Context ctx, ZilAtom originalType)
+        internal ZilResult EvalAsOtherType([NotNull] Context ctx, [NotNull] ZilAtom originalType)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(originalType != null);
             Contract.Requires(ctx.IsRegisteredType(originalType));
-            Contract.Requires(ctx.GetTypePrim(originalType) == this.PrimType);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            Contract.Requires(ctx.GetTypePrim(originalType) == PrimType);
 
             return EvalImpl(ctx, null, originalType);
         }
@@ -198,9 +201,9 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="environment">The environment in which to evaluate the object,
-        /// or <b>null</b> to use the current environment.</param>
+        /// or <see langword="null"/> to use the current environment.</param>
         /// <param name="originalType">The type atom of the original object being evaluated, if
-        /// EVALTYPE processing has caused it to be changed to the current type, or <b>null</b> in
+        /// EVALTYPE processing has caused it to be changed to the current type, or <see langword="null"/> in
         /// the usual case.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
         /// <remarks>
@@ -211,8 +214,10 @@ namespace Zilf.Interpreter.Values
         /// type as a parameter. EvalImpl may use this to produce an object of the appropriate type;
         /// for example, see <see cref="ZilList.EvalImpl"/>.</para>
         /// </remarks>
-        protected virtual ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected virtual ZilResult EvalImpl([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment,
+            [CanBeNull] ZilAtom originalType)
         {
+            Contract.Requires(ctx != null);
             return this;
         }
 
@@ -222,10 +227,9 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <returns>The result of expanding this object, or the same object if this is
         /// not a macro invocation.</returns>
-        public virtual ZilResult Expand(Context ctx)
+        public virtual ZilResult Expand([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             return this;
         }
@@ -233,17 +237,14 @@ namespace Zilf.Interpreter.Values
         /// <summary>
         /// Gets a value indicating whether this object is "true", i.e. non-FALSE.
         /// </summary>
-        public virtual bool IsTrue
-        {
-            get { return true; }
-        }
+        public virtual bool IsTrue => true;
 
         /// <summary>
         /// Gets a value indicating whether this object is a local variable reference (.FOO).
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is an LVAL.</returns>
-        public virtual bool IsLVAL(out ZilAtom atom)
+        public virtual bool IsLVAL([CanBeNull] out ZilAtom atom)
         {
             atom = null;
             return false;
@@ -254,7 +255,7 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is a GVAL.</returns>
-        public virtual bool IsGVAL(out ZilAtom atom)
+        public virtual bool IsGVAL([CanBeNull] out ZilAtom atom)
         {
             atom = null;
             return false;
@@ -266,19 +267,18 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="prog">The expressions to evaluate.</param>
         /// <returns>The value of the last expression evaluated.</returns>
-        public static ZilResult EvalProgram(Context ctx, ZilObject[] prog)
+        public static ZilResult EvalProgram([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] prog)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prog != null);
             Contract.Requires(prog.Length > 0);
             Contract.Requires(Contract.ForAll(prog, p => p != null));
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             ZilResult result = null;
 
-            for (int i = 0; i < prog.Length; i++)
+            foreach (var zo in prog)
             {
-                result = prog[i].Eval(ctx);
+                result = zo.Eval(ctx);
                 if (result.ShouldPass())
                     break;
             }
@@ -286,12 +286,13 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        public static IEnumerable<ZilResult> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
-            LocalEnvironment environment)
+        [NotNull]
+        public static IEnumerable<ZilResult> ExpandOrEvalWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj,
+            [CanBeNull] LocalEnvironment environment)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, environment);
@@ -312,24 +313,26 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <param name="environment">The environment in which to evaluate the expressions,
-        /// or <b>null</b> to use the current environment.</param>
+        /// or <see langword="null"/> to use the current environment.</param>
         /// <returns>A sequence of evaluation results.</returns>
         /// <remarks>The values obtained by expanding segment references are not evaluated in turn.</remarks>
-        public static IEnumerable<ZilResult> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence,
-            LocalEnvironment environment = null)
+        [NotNull]
+        public static IEnumerable<ZilResult> EvalSequence([NotNull] Context ctx, [ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence,
+            [CanBeNull] LocalEnvironment environment = null)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo, environment));
         }
 
-        public static IEnumerable<ZilResult> EvalWithSplice(Context ctx, ZilObject obj)
+        [NotNull]
+        public static IEnumerable<ZilResult> EvalWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             if (obj is IMayExpandBeforeEvaluation)
                 return Enumerable.Repeat((ZilResult)obj, 1);
@@ -348,7 +351,8 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>
         /// <returns>A sequence of evaluation results.</returns>
-        public static IEnumerable<ZilResult> EvalSequenceLeavingSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        [NotNull]
+        public static IEnumerable<ZilResult> EvalSequenceLeavingSegments([NotNull] Context ctx, [NotNull] IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
@@ -363,7 +367,8 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence of expressions.</param>
         /// <returns>A sequence of resulting expressions.</returns>
-        public static IEnumerable<ZilResult> ExpandSegments(Context ctx, IEnumerable<ZilObject> sequence)
+        [NotNull]
+        public static IEnumerable<ZilResult> ExpandSegments([NotNull] Context ctx, [NotNull] IEnumerable<ZilObject> sequence)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sequence != null);
@@ -378,8 +383,9 @@ namespace Zilf.Interpreter.Values
             });
         }
 
-        public static string SequenceToString(IEnumerable<ZilObject> items,
-            string start, string end, Func<ZilObject, string> convert)
+        [NotNull]
+        public static string SequenceToString([NotNull] IEnumerable<ZilObject> items,
+            [NotNull] string start, [NotNull] string end, [NotNull] Func<ZilObject, string> convert)
         {
             Contract.Requires(items != null);
             Contract.Requires(start != null);
@@ -397,7 +403,7 @@ namespace Zilf.Interpreter.Values
 
             bool first = true;
 
-            foreach (ZilObject obj in items)
+            foreach (var zo in items)
             {
                 if (first)
                 {
@@ -408,10 +414,7 @@ namespace Zilf.Interpreter.Values
                     sb.Append(' ');
                 }
 
-                if (obj == null)
-                    sb.Append("...");
-                else
-                    sb.Append(convert(obj));
+                sb.Append(zo == null ? "..." : convert(zo));
             }
 
             sb.Append(end);

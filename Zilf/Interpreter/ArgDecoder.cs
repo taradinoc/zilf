@@ -17,6 +17,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
@@ -29,15 +30,13 @@ using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
+    [Serializable]
     abstract class ArgumentDecodingError : InterpreterError
     {
-        [Obsolete("Use a constructor that takes a Diagnostic.")]
-        protected ArgumentDecodingError(string message)
-            : base(message) { }
-
         protected ArgumentDecodingError(Diagnostic diagnostic)
             : base(diagnostic) { }
 
@@ -47,14 +46,19 @@ namespace Zilf.Interpreter
         }
     }
 
+    [ContractClass(typeof(CallSiteContract))]
     abstract class CallSite
     {
-        protected CallSite(string name)
+        protected CallSite([NotNull] string name)
         {
-            this.Name = name;
+            Contract.Requires(name != null);
+            Name = name;
         }
 
+        [NotNull]
         protected string Name { get; }
+
+        [NotNull]
         public abstract string ChildName { get; }
 
         public sealed override string ToString()
@@ -62,17 +66,20 @@ namespace Zilf.Interpreter
             return Name;
         }
 
+        [NotNull]
         public string DescribeArgument(int childIndex)
         {
+            Contract.Ensures(Contract.Result<string>() != null);
             return $"{Name}: {ChildName} {childIndex + 1}";
         }
     }
 
     sealed class FunctionCallSite : CallSite
     {
-        public FunctionCallSite(string name)
+        public FunctionCallSite([NotNull] string name)
             : base(name)
         {
+            Contract.Requires(name != null);
         }
 
         public override string ChildName => "arg";
@@ -80,14 +87,16 @@ namespace Zilf.Interpreter
 
     sealed class StructuredArgumentCallSite : CallSite
     {
-        public StructuredArgumentCallSite(CallSite parent, int argIndex)
+        public StructuredArgumentCallSite([NotNull] CallSite parent, int argIndex)
             : base(parent.DescribeArgument(argIndex))
         {
+            Contract.Requires(parent != null);
         }
 
         public override string ChildName => "element";
     }
 
+    [Serializable]
     sealed class ArgumentCountError : ArgumentDecodingError
     {
         ArgumentCountError(Diagnostic diagnostic)
@@ -100,8 +109,11 @@ namespace Zilf.Interpreter
         {
         }
 
-        public static ArgumentCountError WrongCount(CallSite site, int lowerBound, int? upperBound, bool morePrefix = false)
+        [NotNull]
+        public static ArgumentCountError WrongCount([NotNull] CallSite site, int lowerBound, int? upperBound, bool morePrefix = false)
         {
+            Contract.Requires(site != null);
+            Contract.Ensures(Contract.Result<ArgumentCountError>() != null);
             const int PlainMessageCode = InterpreterMessages._0_Requires_1_21s;
             const int MessageCodeWithMore = InterpreterMessages._0_Requires_1_Additional_21s;
 
@@ -117,8 +129,11 @@ namespace Zilf.Interpreter
             return new ArgumentCountError(diag);
         }
 
-        public static ArgumentCountError TooMany(CallSite site, int firstUnexpectedIndex, int? suspiciousTypeIndex)
+        [NotNull]
+        public static ArgumentCountError TooMany([NotNull] CallSite site, int firstUnexpectedIndex, int? suspiciousTypeIndex)
         {
+            Contract.Requires(site != null);
+            Contract.Ensures(Contract.Result<ArgumentCountError>() != null);
             Diagnostic info;
             var sourceLine = DiagnosticContext.Current.SourceLine;
 
@@ -145,14 +160,17 @@ namespace Zilf.Interpreter
         }
     }
 
+    [Serializable]
     sealed class ArgumentTypeError : ArgumentDecodingError
     {
-        public ArgumentTypeError(CallSite site, int index, string constraintDesc)
+        public ArgumentTypeError([NotNull] CallSite site, int index, [NotNull] string constraintDesc)
             : base(MakeDiagnostic(
                 null,
                 InterpreterMessages._0_Expected_1,
                 new object[] { site.DescribeArgument(index), constraintDesc }))
         {
+            Contract.Requires(site != null);
+            Contract.Requires(constraintDesc != null);
         }
 
         ArgumentTypeError(SerializationInfo si, StreamingContext sc)
@@ -164,11 +182,13 @@ namespace Zilf.Interpreter
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class DeclAttribute : Attribute
     {
-        public DeclAttribute(string pattern)
+        public DeclAttribute([NotNull] string pattern)
         {
-            this.Pattern = pattern;
+            Contract.Requires(pattern != null);
+            Pattern = pattern;
         }
 
+        [NotNull]
         public string Pattern { get; }
     }
 
@@ -178,11 +198,14 @@ namespace Zilf.Interpreter
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
+    [MeansImplicitUse(
+        ImplicitUseKindFlags.Assign | ImplicitUseKindFlags.Access | ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature,
+        ImplicitUseTargetFlags.WithMembers)]
     sealed class ZilStructuredParamAttribute : Attribute
     {
         public ZilStructuredParamAttribute(StdAtom typeAtom)
         {
-            this.TypeAtom = typeAtom;
+            TypeAtom = typeAtom;
         }
 
         public StdAtom TypeAtom { get; }
@@ -197,16 +220,21 @@ namespace Zilf.Interpreter
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class EitherAttribute : Attribute
     {
-        public EitherAttribute(params Type[] types)
+        public EitherAttribute([NotNull] [ItemNotNull] params Type[] types)
         {
-            this.Types = types;
+            Contract.Requires(types != null);
+            Types = types;
         }
 
+        [NotNull]
         public Type[] Types { get; }
         public string DefaultParamDesc { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
+    [MeansImplicitUse(
+        ImplicitUseKindFlags.Assign | ImplicitUseKindFlags.Access | ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature,
+        ImplicitUseTargetFlags.WithMembers)]
     sealed class ZilSequenceParamAttribute : Attribute
     {
     }
@@ -216,11 +244,13 @@ namespace Zilf.Interpreter
         AttributeTargets.Parameter | AttributeTargets.Field)]
     sealed class ParamDescAttribute : Attribute
     {
-        public ParamDescAttribute(string name)
+        public ParamDescAttribute([NotNull] string name)
         {
-            this.Description = name;
+            Contract.Requires(name != null);
+            Description = name;
         }
 
+        [NotNull]
         public string Description { get; }
     }
 
@@ -241,7 +271,7 @@ namespace Zilf.Interpreter
         /// that was not processed. This may point past the end of <paramref name="arguments"/>
         /// if the step consumed all input arguments, or it may be equal to <paramref name="index"/>
         /// if the step consumed none.</returns>
-        delegate int DecodingStep(ZilObject[] arguments, int index, DecodingStepCallbacks cb);
+        delegate int DecodingStep([ItemNotNull] [NotNull] ZilObject[] arguments, int index, DecodingStepCallbacks cb);
 
         delegate void ErrorCallback(int? index = null);
 
@@ -276,8 +306,10 @@ namespace Zilf.Interpreter
 
         public string Description { get; }
 
-        ArgDecoder(Context ctx, ParameterInfo[] parameters)
+        ArgDecoder([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ParameterInfo[] parameters)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(parameters != null);
             StepInfos = new DecodingStepInfo[parameters.Length - 1];
             LowerBound = 0;
             UpperBound = 0;
@@ -309,12 +341,14 @@ namespace Zilf.Interpreter
                 sb.Append(stepInfo.Description);
             }
 
-            this.Description = sb.ToString();
+            Description = sb.ToString();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
-        DecodingStepInfo PrepareOne(Context ctx, ParameterInfo pi)
+        DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] ParameterInfo pi)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(pi != null);
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>();
 
             bool isOptional;
@@ -347,8 +381,10 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        static DecodingStepInfo PrepareOne(Context ctx, FieldInfo fi)
+        static DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] FieldInfo fi)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(fi != null);
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>();
 
             bool isOptional;
@@ -378,13 +414,17 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        static string OverrideParamDesc(FieldInfo fi, bool isOptional)
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] FieldInfo fi, bool isOptional)
         {
+            Contract.Requires(fi != null);
             return MaybeWithBrackets(OverrideParamDesc(fi), isOptional);
         }
 
-        static string OverrideParamDesc(FieldInfo fi)
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] FieldInfo fi)
         {
+            Contract.Requires(fi != null);
             var attr = fi.GetCustomAttribute<ParamDescAttribute>();
 
             if (attr != null)
@@ -402,13 +442,17 @@ namespace Zilf.Interpreter
             return OverrideParamDesc(fi.FieldType);
         }
 
-        static string OverrideParamDesc(ParameterInfo pi, bool isOptional)
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] ParameterInfo pi, bool isOptional)
         {
+            Contract.Requires(pi != null);
             return MaybeWithBrackets(OverrideParamDesc(pi), isOptional);
         }
 
-        static string OverrideParamDesc(ParameterInfo pi)
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] ParameterInfo pi)
         {
+            Contract.Requires(pi != null);
             var attr = pi.GetCustomAttribute<ParamDescAttribute>();
 
             if (attr != null)
@@ -426,8 +470,10 @@ namespace Zilf.Interpreter
             return OverrideParamDesc(pi.ParameterType);
         }
 
-        static string OverrideParamDesc(Type t)
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] Type t)
         {
+            Contract.Requires(t != null);
             var typeAttr = t.GetCustomAttribute<ParamDescAttribute>();
 
             if (typeAttr != null)
@@ -435,39 +481,42 @@ namespace Zilf.Interpreter
                 return typeAttr.Description;
             }
 
-            if (t.IsValueType && !t.IsPrimitive)
-            {
-                var fields = GetStructFieldsInOrder(t);
-                if (fields.Length == 2)
-                {
-                    if (fields[0].GetCustomAttribute<DeclAttribute>()?.Pattern == "'QUOTE")
-                    {
-                        var decl = fields[1].GetCustomAttribute<DeclAttribute>();
-                        if (decl != null)
-                        {
-                            var result = OverrideParamDesc(decl, "'");
-                            if (result != null)
-                            {
-                                return result;
-                            }
-                        }
+            if (!t.IsValueType || t.IsPrimitive)
+                return null;
 
-                        var second = OverrideParamDesc(fields[1]);
-                        if (second != null)
-                        {
-                            return "'" + second;
-                        }
-                    }
+            var fields = GetStructFieldsInOrder(t);
+            if (fields.Length != 2)
+                return null;
+
+            if (fields[0].GetCustomAttribute<DeclAttribute>()?.Pattern != "'QUOTE")
+                return null;
+
+            var decl = fields[1].GetCustomAttribute<DeclAttribute>();
+            if (decl != null)
+            {
+                var result = OverrideParamDesc(decl, "'");
+                if (result != null)
+                {
+                    return result;
                 }
+            }
+
+            var second = OverrideParamDesc(fields[1]);
+            if (second != null)
+            {
+                return "'" + second;
             }
 
             return null;
         }
 
-        static Regex orDeclRegex = new Regex(@"^<OR (?:'([^ >]+)\s*)+>$");
+        static readonly Regex orDeclRegex = new Regex(@"^<OR (?:'([^ >]+)\s*)+>$");
 
-        static string OverrideParamDesc(DeclAttribute decl, string prefix = "")
+        [CanBeNull]
+        static string OverrideParamDesc([NotNull] DeclAttribute decl, [NotNull] string prefix = "")
         {
+            Contract.Requires(decl != null);
+            Contract.Requires(prefix != null);
             if (decl.Pattern.StartsWith("'", StringComparison.Ordinal))
             {
                 return decl.Pattern.Substring(1);
@@ -486,38 +535,57 @@ namespace Zilf.Interpreter
             return null;
         }
 
-        static string WithEllipsis(string s)
+        [NotNull]
+        static string WithEllipsis([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             return s + " ...";
         }
 
-        static string WithBrackets(string s)
+        [NotNull]
+        static string WithBrackets([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             return "[" + s + "]";
         }
 
-        static string MaybeWithBrackets(string s, bool isOptional)
+        [CanBeNull]
+        static string MaybeWithBrackets([CanBeNull] string s, bool isOptional)
         {
             return s != null && isOptional ? WithBrackets(s) : s;
         }
 
-        static string WithCurlies(string s)
+        [NotNull]
+        static string WithCurlies([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             return "{" + s + "}";
         }
 
-        static string WithParens(string s)
+        [NotNull]
+        static string WithParens([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             return "(" + s + ")";
         }
 
-        static string WithAngles(string s)
+        [NotNull]
+        static string WithAngles([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             return "<" + s + ">";
         }
 
-        static string Hyphenate(string s)
+        [NotNull]
+        static string Hyphenate([NotNull] string s)
         {
+            Contract.Requires(s != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder(s.Length);
             sb.Append(char.ToLowerInvariant(s[0]));
 
@@ -540,12 +608,16 @@ namespace Zilf.Interpreter
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
-        static DecodingStepInfo PrepareOne(Context ctx, Type paramType, string name, object[] customAttributes,
+        static DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] Type paramType,
+            [NotNull] string name, [ItemNotNull] [NotNull] object[] customAttributes,
             bool isOptional, object defaultValueWhenOptional)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(paramType != null);
+            Contract.Requires(name != null);
+            Contract.Requires(customAttributes != null);
             DecodingStepInfo result;
             object defaultValue = null;
-            ZilSequenceParamAttribute sequenceAttr;
             EitherAttribute eitherAttr;
 
             var isRequired = customAttributes.OfType<RequiredAttribute>().Any();
@@ -578,12 +650,12 @@ namespace Zilf.Interpreter
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
             else if (paramType.IsValueType &&
-                (sequenceAttr = paramType.GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
+                paramType.GetCustomAttribute<ZilSequenceParamAttribute>() != null)
             {
                 result = PrepareOneSequence(ctx, paramType);
             }
             else if (paramType.IsArray &&
-                (sequenceAttr = paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>()) != null)
+                paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>() != null)
             {
                 var elemType = paramType.GetElementType();
                 var innerStepInfo = PrepareOneSequence(ctx, elemType);
@@ -881,41 +953,38 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        static Constraint ZilObjectTypeToConstraint(Type paramType)
+        [NotNull]
+        static Constraint ZilObjectTypeToConstraint([NotNull] Type paramType)
         {
             Contract.Requires(paramType != null);
             Contract.Ensures(Contract.Result<Constraint>() != null);
 
             if (paramType == typeof(IStructure))
-            {
                 return Constraint.Structured;
-            }
-            else if (paramType != typeof(ZilObject))
-            {
-                if (paramType.GetCustomAttribute<BuiltinTypeAttribute>() is BuiltinTypeAttribute typeAttr)
-                {
-                    return Constraint.OfType(typeAttr.Name);
-                }
-                else if (paramType.GetCustomAttribute<BuiltinPrimTypeAttribute>() is BuiltinPrimTypeAttribute primAttr)
-                {
-                    return Constraint.OfPrimType(primAttr.PrimType);
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        $"Type {paramType} is missing a {nameof(BuiltinTypeAttribute)} or {nameof(BuiltinPrimTypeAttribute)}");
-                }
-            }
-            else
-            {
+
+            if (paramType == typeof(ZilObject))
                 return Constraint.AnyObject;
-            }
+
+            // ReSharper disable PatternAlwaysOfType
+            if (paramType.GetCustomAttribute<BuiltinTypeAttribute>() is BuiltinTypeAttribute typeAttr)
+                return Constraint.OfType(typeAttr.Name);
+
+            if (paramType.GetCustomAttribute<BuiltinPrimTypeAttribute>() is BuiltinPrimTypeAttribute primAttr)
+                return Constraint.OfPrimType(primAttr.PrimType);
+            // ReSharper restore PatternAlwaysOfType
+
+            throw new InvalidOperationException(
+                $"Type {paramType} is missing a {nameof(BuiltinTypeAttribute)} or {nameof(BuiltinPrimTypeAttribute)}");
         }
 
         static DecodingStepInfo PrepareOneArrayFromInnerStep(
-            Type elemType, DecodingStepInfo innerStepInfo, bool isRequired,
-            out object defaultValue)
+            [NotNull] Type elemType, DecodingStepInfo innerStepInfo, bool isRequired,
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+            [NotNull] out object defaultValue)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Requires(elemType != null);
+            Contract.Ensures(Contract.ValueAtReturn(out defaultValue) != null);
             var result = new DecodingStepInfo
             {
                 Constraint = innerStepInfo.Constraint,
@@ -964,9 +1033,11 @@ namespace Zilf.Interpreter
         }
 
         static DecodingStepInfo PrepareOneConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, string name, out object defaultValue)
+            StdAtom? typeAtom, [NotNull] Func<TZil, TValue> convert, [NotNull] string name, [CanBeNull] out object defaultValue)
             where TZil : ZilObject
         {
+            Contract.Requires(convert != null);
+            Contract.Requires(name != null);
             var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             defaultValue = default(TValue);
@@ -998,11 +1069,14 @@ namespace Zilf.Interpreter
         }
 
         static DecodingStepInfo PrepareOneNullableConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, Type paramType,
-            string name, out object defaultValue)
+            StdAtom? typeAtom, [NotNull] Func<TZil, TValue> convert, [NotNull] Type paramType,
+            [NotNull] string name, [CanBeNull] out object defaultValue)
             where TZil : ZilObject
             where TValue : struct
         {
+            Contract.Requires(convert != null);
+            Contract.Requires(paramType != null);
+            Contract.Requires(name != null);
             var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             if (paramType == typeof(TValue))
@@ -1046,10 +1120,15 @@ namespace Zilf.Interpreter
         }
 
         static DecodingStepInfo PrepareOneArrayConversion<TZil, TValue>(
-            StdAtom? typeAtom, Func<TZil, TValue> convert, bool isRequired,
-            string name, out object defaultValue)
+            StdAtom? typeAtom, [NotNull] Func<TZil, TValue> convert, bool isRequired,
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+            [NotNull] string name, [NotNull] out object defaultValue)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
             where TZil : ZilObject
         {
+            Contract.Requires(convert != null);
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.ValueAtReturn(out defaultValue) != null);
             var constraint = (typeAtom != null) ? Constraint.OfType(typeAtom.Value) : Constraint.AnyObject;
 
             defaultValue = new int[0];
@@ -1092,7 +1171,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        static DecodingStepInfo PrepareOneStructured(Context ctx, Type structType)
+        static DecodingStepInfo PrepareOneStructured(Context ctx, [NotNull] Type structType)
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1161,18 +1240,18 @@ namespace Zilf.Interpreter
 
                     var outerReady = c.Ready;
                     c.Site = innerSite;
-                    c.Error = j =>
-                    {
-                        throw new ArgumentTypeError(c.Site, j ?? elemIndex, stepInfos[stepIndex].Constraint.ToString());
-                    };
-                    c.Missing = () =>
-                    {
-                        throw ArgumentCountError.WrongCount(c.Site, remainingLowerBound, remainingUpperBound, true);
-                    };
-                    c.Ready = obj => fields[stepIndex].SetValue(output, obj);
 
                     for (; stepIndex < stepInfos.Length; stepIndex++)
                     {
+                        var enclosedElemIndex = elemIndex;
+                        var enclosedStepIndex = stepIndex;
+                        var enclosedRemainingLowerBound = remainingLowerBound;
+                        var enclosedRemainingUpperBound = remainingUpperBound;
+
+                        c.Error = j => throw new ArgumentTypeError(c.Site, j ?? enclosedElemIndex, stepInfos[enclosedStepIndex].Constraint.ToString());
+                        c.Missing = () => throw ArgumentCountError.WrongCount(c.Site, enclosedRemainingLowerBound, enclosedRemainingUpperBound, true);
+                        c.Ready = obj => fields[enclosedStepIndex].SetValue(output, obj);
+
                         var step = stepInfos[stepIndex].Step;
                         var next = step(elements, elemIndex, c);
                         Contract.Assert(next >= elemIndex);
@@ -1195,8 +1274,11 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, Type structType,
-            out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+        [NotNull]
+        static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, [NotNull] Type structType,
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+            [ItemNotNull] [NotNull] out FieldInfo[] fields, out int lowerBound, out int? upperBound)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
             Contract.Requires(structType != null);
             Contract.Requires(structType.IsValueType);
@@ -1231,16 +1313,22 @@ namespace Zilf.Interpreter
             return stepInfos;
         }
 
-        static FieldInfo[] GetStructFieldsInOrder(Type structType)
+        [ItemNotNull]
+        [NotNull]
+        static FieldInfo[] GetStructFieldsInOrder([NotNull] Type structType)
         {
+            Contract.Requires(structType != null);
+            Contract.Ensures(Contract.Result<FieldInfo[]>() != null);
             return structType.GetFields()
                 .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
                 .ToArray();
         }
 
         // TODO: cache the result?
-        static DecodingStepInfo PrepareOneEither(Context ctx, string name, Type[] inputTypes)
+        static DecodingStepInfo PrepareOneEither([NotNull] Context ctx, [NotNull] string name, [ItemNotNull] [NotNull] Type[] inputTypes)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
             Contract.Requires(inputTypes != null);
             Contract.Requires(inputTypes.Length > 0);
 
@@ -1288,6 +1376,8 @@ namespace Zilf.Interpreter
                     break;
             }
 
+            Debug.Assert(lowerBound != null);
+
             var result = new DecodingStepInfo
             {
                 LowerBound = (int)lowerBound,
@@ -1302,11 +1392,6 @@ namespace Zilf.Interpreter
                     ArgumentDecodingError exception = null;
                     int choiceIndex = 0;
 
-                    c.Error = j =>
-                    {
-                        throw new ArgumentTypeError(c.Site, j ?? i, choiceConstraints[choiceIndex].ToString());
-                    };
-
                     for (; choiceIndex < choices.Length; choiceIndex++)
                     {
                         if (i < a.Length && !choiceConstraints[choiceIndex].Allows(c.Context, a[i]))
@@ -1318,12 +1403,13 @@ namespace Zilf.Interpreter
                         var step = choices[choiceIndex];
                         try
                         {
+                            var enclosedChoiceIndex = choiceIndex;
+                            c.Error = j => throw new ArgumentTypeError(c.Site, j ?? i, choiceConstraints[enclosedChoiceIndex].ToString());
                             return step(a, i, c);
                         }
                         catch (ArgumentDecodingError ex)
                         {
                             exception = ex;
-                            continue;
                         }
                     }
 
@@ -1346,7 +1432,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        static DecodingStepInfo PrepareOneSequence(Context ctx, Type seqType)
+        static DecodingStepInfo PrepareOneSequence(Context ctx, [NotNull] Type seqType)
         {
             Contract.Requires(seqType != null);
             Contract.Requires(seqType.IsValueType);
@@ -1376,14 +1462,14 @@ namespace Zilf.Interpreter
                     var stepIndex = 0;
 
                     var outerReady = c.Ready;
-                    c.Ready = obj => fields[stepIndex].SetValue(output, obj);
-                    c.Error = j =>
-                    {
-                        throw new ArgumentTypeError(c.Site, j ?? i, stepInfos[stepIndex].Constraint.ToString());
-                    };
 
                     for (; stepIndex < stepInfos.Length; stepIndex++)
                     {
+                        var enclosedStepIndex = stepIndex;
+                        var enclosedI = i;
+                        c.Ready = obj => fields[enclosedStepIndex].SetValue(output, obj);
+                        c.Error = j => throw new ArgumentTypeError(c.Site, j ?? enclosedI, stepInfos[enclosedStepIndex].Constraint.ToString());
+
                         var step = stepInfos[stepIndex].Step;
                         var next = step(a, i, c);
                         Contract.Assert(next >= i);
@@ -1418,12 +1504,20 @@ namespace Zilf.Interpreter
             return typeof(ZilObject).IsAssignableFrom(t) || t == typeof(IStructure);
         }
 
-        public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, Context ctx)
+        /// <exception cref="ArgumentException">
+        /// Method return type is not assignable to <see cref="ZilObject"/> or <see cref="ZilResult"/>;
+        /// or first parameter type is not <see cref="Context"/>
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="methodInfo"/> is <see langword="null"/></exception>
+        [NotNull]
+        public static ArgDecoder FromMethodInfo([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx)
         {
+            Contract.Requires(methodInfo != null);
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ArgDecoder>() != null);
+
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
-            if (ctx == null)
-                throw new ArgumentNullException(nameof(ctx));
 
             if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType) &&
                 !typeof(ZilResult).IsAssignableFrom(methodInfo.ReturnType))
@@ -1437,21 +1531,31 @@ namespace Zilf.Interpreter
             return new ArgDecoder(ctx, parameters);
         }
 
-        public static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
-            out string paramDescription)
+        [NotNull]
+        public static SubrDelegate WrapMethodAsSubrDelegate([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx,
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+            [NotNull] out string paramDescription)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Requires(methodInfo != null);
             Contract.Requires(methodInfo.IsStatic);
+            Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<SubrDelegate>() != null);
+            Contract.Ensures(Contract.ValueAtReturn(out paramDescription) != null);
 
             return WrapMethodAsSubrDelegate(methodInfo, ctx, out paramDescription, null);
         }
 
-        static SubrDelegate WrapMethodAsSubrDelegate(MethodInfo methodInfo, Context ctx,
+        [NotNull]
+        static SubrDelegate WrapMethodAsSubrDelegate([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx,
             out string paramDescription,
-            Dictionary<MethodInfo, SubrDelegate> alreadyDone)
+            [CanBeNull] Dictionary<MethodInfo, SubrDelegate> alreadyDone)
         {
+            Contract.Requires(methodInfo != null);
             Contract.Requires(methodInfo.IsStatic);
+            Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<SubrDelegate>() != null);
+            Contract.Ensures(Contract.ValueAtReturn(out paramDescription) != null);
 
             var parameters = methodInfo.GetParameters();
 
@@ -1465,7 +1569,7 @@ namespace Zilf.Interpreter
                     typeof(SubrDelegate), methodInfo);
             }
 
-            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            var decoder = FromMethodInfo(methodInfo, ctx);
             paramDescription = decoder.Description;
 
             SubrDelegate del = (name, c, args) =>
@@ -1475,13 +1579,13 @@ namespace Zilf.Interpreter
                     var result = methodInfo.Invoke(null, decoder.Decode(name, c, args));
                     if (result is ZilResult zr)
                         return zr;
-                    else
-                        return (ZilObject)result;
+
+                    return (ZilObject)result;
                 }
                 catch (TargetInvocationException ex)
                 {
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                    throw new UnreachableCodeException();
+                    throw new UnreachableCodeException(ex);
                 }
             };
 
@@ -1523,8 +1627,16 @@ namespace Zilf.Interpreter
             return del;
         }
 
-        public object[] Decode(string name, Context ctx, ZilObject[] args)
+        /// <exception cref="ArgumentCountError">The wrong number of arguments were provided.</exception>
+        /// <exception cref="ArgumentTypeError">A provided argument was of the wrong type.</exception>
+        [ItemNotNull]
+        [NotNull]
+        public object[] Decode([NotNull] string name, [NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<object[]>() != null);
             var site = new FunctionCallSite(name);
 
             if (args.Length < LowerBound || args.Length > UpperBound)
@@ -1544,12 +1656,6 @@ namespace Zilf.Interpreter
             {
                 Context = ctx,
                 Site = site,
-
-                Missing = () =>
-                {
-                    throw ArgumentCountError.WrongCount(site, remainingLowerBound, remainingUpperBound, true);
-                },
-                Ready = o => result.Add(o)
             };
 
             for (var stepIndex = 0; stepIndex < StepInfos.Length; stepIndex++)
@@ -1560,8 +1666,16 @@ namespace Zilf.Interpreter
                     constraint = constraint.Or(ctx, savedConstraint);
                     savedConstraint = null;
                 }
-                callbacks.Error = i => { throw new ArgumentTypeError(
-                    site, i ?? argIndex, constraint.ToString()); };
+
+                var enclosedRemainingLowerBound = remainingLowerBound;
+                var enclosedRemainingUpperBound = remainingUpperBound;
+                var enclosedArgIndex = argIndex;
+
+                callbacks.Missing =
+                    () => throw ArgumentCountError.WrongCount(site, enclosedRemainingLowerBound, enclosedRemainingUpperBound, true);
+                callbacks.Ready = o => result.Add(o);
+                callbacks.Error = i => throw new ArgumentTypeError(
+                    site, i ?? enclosedArgIndex, constraint.ToString());
 
                 var step = StepInfos[stepIndex].Step;
                 var next = step(args, argIndex, callbacks);
@@ -1634,6 +1748,25 @@ namespace Zilf.Interpreter
             }
 
             return result.ToArray();
+        }
+    }
+
+    [ContractClassFor(typeof(CallSite))]
+    internal abstract class CallSiteContract : CallSite
+    {
+        protected CallSiteContract([NotNull] string name)
+            : base(name)
+        {
+            Contract.Requires(name != null);
+        }
+
+        public override string ChildName
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<string>() != null);
+                throw new NotImplementedException();
+            }
         }
     }
 }

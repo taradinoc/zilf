@@ -1,5 +1,6 @@
-﻿using System;
+﻿extern alias JBA;
 using System.Diagnostics.Contracts;
+using JBA::JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace IntegrationTests
@@ -7,18 +8,23 @@ namespace IntegrationTests
     [TestClass]
     public class MetaTests
     {
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
+            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
 
             return new RoutineAssertionHelper(argSpec, body);
         }
 
-        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        [NotNull]
+        static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
-            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(globals != null);
+            Contract.Requires(globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+            Contract.Ensures(Contract.Result<GlobalsAssertionHelper>() != null);
 
             return new GlobalsAssertionHelper(globals);
         }

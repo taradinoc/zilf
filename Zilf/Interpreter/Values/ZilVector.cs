@@ -21,17 +21,19 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
-using Zilf.Diagnostics;
+using System.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.VECTOR, PrimType.VECTOR)]
-    sealed class ZilVector : ZilObject, IEnumerable<ZilObject>, IStructure
+    sealed class ZilVector : ZilObject, IStructure
     {
         #region Storage
 
         class VectorStorage
         {
+            [NotNull]
             ZilObject[] items;
 
             public VectorStorage()
@@ -41,7 +43,7 @@ namespace Zilf.Interpreter.Values
 
             public int BaseOffset { get; private set; }
 
-            public VectorStorage(ZilObject[] items)
+            public VectorStorage([NotNull] ZilObject[] items)
             {
                 Contract.Requires(items != null);
 
@@ -49,6 +51,7 @@ namespace Zilf.Interpreter.Values
             }
 
             [ContractInvariantMethod]
+            [Conditional("CONTRACTS_FULL")]
             void ObjectInvariant()
             {
                 Contract.Invariant(items != null);
@@ -56,6 +59,7 @@ namespace Zilf.Interpreter.Values
                 Contract.Invariant(BaseOffset <= items.Length);
             }
 
+            [NotNull]
             public IEnumerable<ZilObject> GetSequence(int offset)
             {
                 return items.Skip(offset - BaseOffset);
@@ -78,15 +82,16 @@ namespace Zilf.Interpreter.Values
                 }
             }
 
+            /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
             public void PutItem(int offset, int index, ZilObject value)
             {
                 try
                 {
                     items[index + offset + BaseOffset] = value;
                 }
-                catch (IndexOutOfRangeException)
+                catch (IndexOutOfRangeException ex)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    throw new ArgumentOutOfRangeException(nameof(index), ex);
                 }
             }
 
@@ -128,13 +133,13 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public ZilVector(ZilVector other)
+        public ZilVector([NotNull] ZilVector other)
             : this(other.storage, other.offset)
         {
             Contract.Requires(other != null);
         }
 
-        ZilVector(VectorStorage storage, int offset)
+        ZilVector([NotNull] VectorStorage storage, int offset)
         {
             Contract.Requires(storage != null);
 
@@ -142,7 +147,7 @@ namespace Zilf.Interpreter.Values
             this.offset = offset;
         }
 
-        public ZilVector(params ZilObject[] items)
+        public ZilVector([NotNull] params ZilObject[] items)
         {
             Contract.Requires(items != null);
 
@@ -199,6 +204,7 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.VECTOR;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
             return this;
@@ -206,7 +212,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilResult result = EvalSequence(ctx, this, environment).ToZilVectorResult(this.SourceLine);
+            ZilResult result = EvalSequence(ctx, this, environment).ToZilVectorResult(SourceLine);
             if (result.ShouldPass())
                 return result;
 
@@ -238,40 +244,43 @@ namespace Zilf.Interpreter.Values
             return storage.GetItem(offset, 0);
         }
 
+        [NotNull]
         public IStructure GetRest(int skip)
         {
-            return new ZilVector(this.storage, this.offset + skip);
+            return new ZilVector(storage, offset + skip);
         }
 
         public IStructure GetBack(int skip)
         {
-            if (this.offset + storage.BaseOffset >= skip)
+            if (offset + storage.BaseOffset >= skip)
             {
-                return new ZilVector(this.storage, this.offset - skip);
+                return new ZilVector(storage, offset - skip);
             }
             return null;
         }
 
         public IStructure GetTop()
         {
-            if (this.offset == -storage.BaseOffset)
+            if (offset == -storage.BaseOffset)
             {
                 return this;
             }
             return new ZilVector(storage, -storage.BaseOffset);
         }
 
-        public void Grow(int end, int beginning, ZilObject defaultValue)
+        public void Grow(int end, int beginning, [NotNull] ZilObject defaultValue)
         {
+            Contract.Requires(defaultValue != null);
             storage.Grow(end, beginning, defaultValue);
         }
 
         public bool IsEmpty => storage.GetLength(offset) <= 0;
 
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
         public ZilObject this[int index]
         {
-            get { return storage.GetItem(offset, index); }
-            set { storage.PutItem(offset, index, value); }
+            get => storage.GetItem(offset, index);
+            set => storage.PutItem(offset, index, value);
         }
 
         public int GetLength() => storage.GetLength(offset);

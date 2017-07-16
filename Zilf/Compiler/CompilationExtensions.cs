@@ -18,12 +18,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -43,7 +45,7 @@ namespace Zilf.Compiler
             }
         }
 
-        public static void WalkRoutineForms(this ZilRoutine routine, Action<ZilForm> action)
+        public static void WalkRoutineForms([NotNull] this ZilRoutine routine, [NotNull] Action<ZilForm> action)
         {
             Contract.Requires(routine != null);
             Contract.Requires(action != null);
@@ -75,7 +77,7 @@ namespace Zilf.Compiler
                 first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
         }
 
-        public static bool IsVariableRef(this ZilObject expr)
+        public static bool IsVariableRef([NotNull] this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
@@ -96,7 +98,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        public static bool IsLocalVariableRef(this ZilObject expr)
+        public static bool IsLocalVariableRef([NotNull] this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
@@ -106,7 +108,7 @@ namespace Zilf.Compiler
                 (atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET);
         }
 
-        public static bool IsGlobalVariableRef(this ZilObject expr)
+        public static bool IsGlobalVariableRef([NotNull] this ZilObject expr)
         {
             Contract.Requires(expr != null);
 
@@ -142,6 +144,8 @@ namespace Zilf.Compiler
         {
             if (zo is ZilForm form && form.First is ZilAtom head)
             {
+                Debug.Assert(form.Rest != null);
+
                 switch (head.StdAtom)
                 {
                     case StdAtom.AND:

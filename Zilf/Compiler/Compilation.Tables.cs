@@ -16,13 +16,14 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using Zilf.Diagnostics;
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -33,14 +34,14 @@ namespace Zilf.Compiler
             var size = Context.ZEnvironment.HeaderExtensionWords;
             if (size > 0)
             {
-                if (Game.Options is Zilf.Emit.Zap.GameOptions.V5Plus v5options)
+                if (Game.Options is Emit.Zap.GameOptions.V5Plus v5Options)
                 {
                     var extab = Game.DefineTable("EXTAB", false);
                     extab.AddShort((short)size);
                     for (int i = 0; i < size; i++)
                         extab.AddShort(Game.Zero);
 
-                    v5options.HeaderExtensionTable = extab;
+                    v5Options.HeaderExtensionTable = extab;
                 }
                 else
                 {
@@ -51,17 +52,19 @@ namespace Zilf.Compiler
 
         struct TableElementOperand
         {
+            [NotNull]
             public readonly IOperand Operand;
             public readonly bool? IsWord;
 
-            public TableElementOperand(IOperand operand, bool? isWord)
+            public TableElementOperand([NotNull] IOperand operand, bool? isWord)
             {
-                this.Operand = operand;
-                this.IsWord = isWord;
+                Contract.Requires(operand != null);
+                Operand = operand;
+                IsWord = isWord;
             }
         }
 
-        void BuildTable(ZilTable zt, ITableBuilder tb)
+        void BuildTable([NotNull] ZilTable zt, [NotNull] ITableBuilder tb)
         {
             Contract.Requires(zt != null);
             Contract.Requires(tb != null);
@@ -82,8 +85,9 @@ namespace Zilf.Compiler
             }
             else
             {
-                TableElementOperand?[] values = new TableElementOperand?[zt.ElementCount];
-                TableToArrayElementConverter<TableElementOperand?> convertElement = (zo, isWord) =>
+                var values = new TableElementOperand?[zt.ElementCount];
+
+                TableElementOperand? ConvertElement(ZilObject zo, bool isWord)
                 {
                     // it's usually a constant value
                     var constVal = CompileConstant(zo);
@@ -91,17 +95,16 @@ namespace Zilf.Compiler
                         return new TableElementOperand(constVal, isWord);
 
                     // but we'll also allow a global name if the global contains a table
-                    if (zo is ZilAtom atom &&
-                        Globals.TryGetValue(atom, out var global) &&
-                        global.DefaultValue is ITableBuilder)
+                    if (zo is ZilAtom atom && Globals.TryGetValue(atom, out var global) && global.DefaultValue is ITableBuilder)
                     {
                         return new TableElementOperand(global.DefaultValue, isWord);
                     }
 
                     return null;
-                };
+                }
+
                 var defaultFiller = new TableElementOperand(Game.Zero, null);
-                zt.CopyTo(values, convertElement, defaultFiller, Context);
+                zt.CopyTo(values, ConvertElement, defaultFiller, Context);
 
                 for (int i = 0; i < values.Length; i++)
                 {
@@ -123,6 +126,8 @@ namespace Zilf.Compiler
 
                 for (int i = 0; i < values.Length; i++)
                 {
+                    Debug.Assert(values[i] != null);
+
                     if (values[i].Value.IsWord ?? defaultWord)
                     {
                         tb.AddShort(values[i].Value.Operand);
@@ -135,14 +140,13 @@ namespace Zilf.Compiler
             }
         }
 
-        IOperand CompileImpromptuTable(ZilForm form)
+        [NotNull]
+        IOperand CompileImpromptuTable([NotNull] ZilObject tableExpr)
         {
-            Contract.Requires(form != null);
+            Contract.Requires(tableExpr != null);
+            Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            var type = ((ZilAtom)form.First).StdAtom;
-            var args = form.Rest;
-
-            var table = (ZilTable)form.Eval(Context);
+            var table = (ZilTable)tableExpr.Eval(Context);
 
             var tableBuilder = Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
             Tables.Add(table, tableBuilder);

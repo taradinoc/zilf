@@ -30,10 +30,10 @@ namespace Zilf.Interpreter
 
         public ArgItem(ZilAtom atom, bool quoted, ZilObject defaultValue, ArgType type)
         {
-            this.Atom = atom;
-            this.Quoted = quoted;
-            this.DefaultValue = defaultValue;
-            this.Type = type;
+            Atom = atom;
+            Quoted = quoted;
+            DefaultValue = defaultValue;
+            Type = type;
         }
     }
 }

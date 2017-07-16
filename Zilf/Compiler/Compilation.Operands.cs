@@ -17,23 +17,29 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
+        /// <exception cref="CompilerError">Local variables are not allowed here, or an error occurred while compiling a subexpression.</exception>
+        [NotNull]
+        public IOperands CompileOperands([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] params ZilObject[] exprs)
         {
             Contract.Requires(rb != null);
             Contract.Requires(src != null);
             Contract.Requires(exprs != null);
+            Contract.Ensures(Contract.Result<IOperands>() != null);
 
             int length = exprs.Length;
-            IOperand[] values = new IOperand[length];
+            var values = new IOperand[length];
             bool[] temps = new bool[length];
             var tempAtom = ZilAtom.Parse("?TMP", Context);
 
@@ -118,7 +124,8 @@ namespace Zilf.Compiler
             return new Operands(this, values, temps, tempAtom);
         }
 
-        static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
+        [System.Diagnostics.Contracts.Pure]
+        static bool LocalIsLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
             Contract.Requires(exprs != null);
             Contract.Requires(exprs.Length > 0);
@@ -129,10 +136,12 @@ namespace Zilf.Compiler
                 throw new ArgumentException("not a FORM");
 
             if (!(form.First is ZilAtom atom) ||
-                (atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET))
+                atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET)
             {
                 throw new ArgumentException("not an LVAL/SET FORM");
             }
+
+            Debug.Assert(form.Rest != null);
 
             if (!(form.Rest.First is ZilAtom localAtom))
                 throw new ArgumentException("LVAL/SET not followed by an atom");
@@ -144,7 +153,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        bool GlobalCouldBeLaterModified(ZilObject[] exprs, int localIdx)
+        bool GlobalCouldBeLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
             Contract.Requires(exprs != null);
             Contract.Requires(exprs.Length > 0);
@@ -160,6 +169,8 @@ namespace Zilf.Compiler
                 throw new ArgumentException("not a GVAL/SETG FORM");
             }
 
+            Debug.Assert(form.Rest != null);
+
             if (!(form.Rest.First is ZilAtom globalAtom))
                 throw new ArgumentException("GVAL/SETG not followed by an atom");
 
@@ -170,7 +181,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        bool CouldModifyGlobal(ZilObject expr, ZilAtom globalAtom)
+        bool CouldModifyGlobal([NotNull] ZilObject expr, [NotNull] ZilAtom globalAtom)
         {
             Contract.Requires(expr != null);
             Contract.Requires(globalAtom != null);
@@ -181,8 +192,7 @@ namespace Zilf.Compiler
             if (list is ZilForm && list.First is ZilAtom atom)
             {
                 if ((atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                    list.Rest != null &&
-                    list.Rest.First == globalAtom)
+                    list.Rest?.First == globalAtom)
                 {
                     return true;
                 }
@@ -193,11 +203,7 @@ namespace Zilf.Compiler
                 }
             }
 
-            foreach (ZilObject zo in list)
-                if (CouldModifyGlobal(zo, globalAtom))
-                    return true;
-
-            return false;
+            return list.Any(zo => CouldModifyGlobal(zo, globalAtom));
         }
 
         public interface IOperands : IDisposable
@@ -214,7 +220,7 @@ namespace Zilf.Compiler
             readonly bool[] temps;
             readonly ZilAtom tempAtom;
 
-            public Operands(Compilation compilation, IOperand[] values, bool[] temps, ZilAtom tempAtom)
+            public Operands([NotNull] Compilation compilation, [NotNull] IOperand[] values, [NotNull] bool[] temps, [NotNull] ZilAtom tempAtom)
             {
                 Contract.Requires(compilation != null);
                 Contract.Requires(values != null);
@@ -233,14 +239,14 @@ namespace Zilf.Compiler
 
             public void Dispose()
             {
-                for (int i = 0; i < temps.Length; i++)
-                    if (temps[i])
+                foreach (bool isTemp in temps)
+                    if (isTemp)
                         compilation.PopInnerLocal(tempAtom);
             }
 
             public int Count
             {
-                [Pure]
+                [System.Diagnostics.Contracts.Pure]
                 get
                 {
                     Contract.Ensures(Contract.Result<int>() >= 0);
@@ -259,6 +265,7 @@ namespace Zilf.Compiler
                 }
             }
 
+            [NotNull]
             public IOperand[] AsArray()
             {
                 Contract.Ensures(Contract.Result<IOperand[]>() != null);

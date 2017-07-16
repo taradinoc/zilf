@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zapf.Parsing
 {
@@ -40,7 +41,7 @@ namespace Zapf.Parsing
     {
         protected NamedDirective(string name)
         {
-            this.Name = name;
+            Name = name;
         }
 
         public string Name { get; }
@@ -50,7 +51,7 @@ namespace Zapf.Parsing
     {
         protected TextDirective(string text)
         {
-            this.Text = text;
+            Text = text;
         }
 
         public string Text { get; }
@@ -60,8 +61,8 @@ namespace Zapf.Parsing
     {
         protected NameAndTextDirective(string name, string text)
         {
-            this.Name = name;
-            this.Text = text;
+            Name = name;
+            Text = text;
         }
 
         public string Name { get; }
@@ -80,20 +81,20 @@ namespace Zapf.Parsing
     {
         public InsertDirective(string filename)
         {
-            this.InsertFileName = filename;
+            InsertFileName = filename;
         }
 
-        public string InsertFileName { get; set; }
+        public string InsertFileName { get; }
     }
 
     sealed class NewDirective : Directive
     {
         public NewDirective(AsmExpr version)
         {
-            this.Version = version;
+            Version = version;
         }
 
-        public AsmExpr Version { get; set; }
+        public AsmExpr Version { get; }
     }
 
     sealed class TimeDirective : Directive
@@ -108,32 +109,32 @@ namespace Zapf.Parsing
     {
         public LangDirective(AsmExpr langId, AsmExpr escapeChar)
         {
-            this.LanguageId = langId;
-            this.EscapeChar = escapeChar;
+            LanguageId = langId;
+            EscapeChar = escapeChar;
         }
 
-        public AsmExpr LanguageId { get; set; }
-        public AsmExpr EscapeChar { get; set; }
+        public AsmExpr LanguageId { get; }
+        public AsmExpr EscapeChar { get; }
     }
 
     sealed class ChrsetDirective : Directive
     {
         public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
         {
-            this.CharsetNum = alphabetNum;
-            this.Characters = new List<AsmExpr>(characters);
+            CharsetNum = alphabetNum;
+            Characters = new List<AsmExpr>(characters);
         }
 
-        public AsmExpr CharsetNum { get; set; }
-        public IList<AsmExpr> Characters { get; private set; }
+        public AsmExpr CharsetNum { get; }
+        public IList<AsmExpr> Characters { get; }
     }
 
     struct FunctLocal
     {
         public FunctLocal(string name, AsmExpr defaultValue)
         {
-            this.Name = name;
-            this.DefaultValue = defaultValue;
+            Name = name;
+            DefaultValue = defaultValue;
         }
 
         public readonly string Name;
@@ -145,20 +146,20 @@ namespace Zapf.Parsing
         public FunctDirective(string name)
             : base(name)
         {
-            this.Locals = new List<FunctLocal>();
+            Locals = new List<FunctLocal>();
         }
 
-        public IList<FunctLocal> Locals { get; private set; }
+        public IList<FunctLocal> Locals { get; }
     }
 
     sealed class TableDirective : Directive
     {
         public TableDirective(AsmExpr size)
         {
-            this.Size = size;
+            Size = size;
         }
 
-        public AsmExpr Size { get; private set; }
+        public AsmExpr Size { get; }
     }
 
     sealed class EndtDirective : Directive
@@ -169,12 +170,12 @@ namespace Zapf.Parsing
     {
         public VocbegDirective(AsmExpr recordSize, AsmExpr keySize)
         {
-            this.RecordSize = recordSize;
-            this.KeySize = keySize;
+            RecordSize = recordSize;
+            KeySize = keySize;
         }
 
-        public AsmExpr RecordSize { get; private set; }
-        public AsmExpr KeySize { get; private set; }
+        public AsmExpr RecordSize { get; }
+        public AsmExpr KeySize { get; }
     }
 
     sealed class VocendDirective : Directive
@@ -201,10 +202,10 @@ namespace Zapf.Parsing
 
         public Instruction(string name)
         {
-            this.Name = name;
+            Name = name;
         }
 
-        public string Name { get; set; }
+        public string Name { get; }
 
         public IList<AsmExpr> Operands { get; } = new List<AsmExpr>();
 
@@ -218,10 +219,10 @@ namespace Zapf.Parsing
     {
         public BareSymbolLine(string text)
         {
-            this.Text = text;
+            Text = text;
         }
 
-        public string Text { get; set; }
+        public string Text { get; }
 
         public int OperandCount { get; set; }
         public bool HasStore { get; set; }
@@ -234,20 +235,20 @@ namespace Zapf.Parsing
     {
         public LocalLabel(string name)
         {
-            this.Name = name;
+            Name = name;
         }
 
-        public string Name { get; set; }
+        public string Name { get; }
     }
 
     sealed class GlobalLabel : AsmLine
     {
         public GlobalLabel(string name)
         {
-            this.Name = name;
+            Name = name;
         }
 
-        public string Name { get; set; }
+        public string Name { get; }
     }
 
     sealed class FstrDirective : NameAndTextDirective
@@ -291,10 +292,10 @@ namespace Zapf.Parsing
         public GvarDirective(string name, AsmExpr initialValue)
             : base(name)
         {
-            this.InitialValue = initialValue;
+            InitialValue = initialValue;
         }
 
-        public AsmExpr InitialValue { get; set; }
+        public AsmExpr InitialValue { get; }
     }
 
     sealed class ObjectDirective : NamedDirective
@@ -315,24 +316,24 @@ namespace Zapf.Parsing
     {
         public PropDirective(AsmExpr size, AsmExpr prop)
         {
-            this.Size = size;
-            this.Prop = prop;
+            Size = size;
+            Prop = prop;
         }
 
-        public AsmExpr Size { get; set; }
-        public AsmExpr Prop { get; set; }
+        public AsmExpr Size { get; }
+        public AsmExpr Prop { get; }
     }
 
     sealed class EqualsDirective : Directive
     {
         public EqualsDirective(string left, AsmExpr right)
         {
-            this.Left = left;
-            this.Right = right;
+            Left = left;
+            Right = right;
         }
 
-        public string Left { get; set; }
-        public AsmExpr Right { get; set; }
+        public string Left { get; }
+        public AsmExpr Right { get; }
     }
 
     abstract class DebugDirective : AsmLine
@@ -343,8 +344,8 @@ namespace Zapf.Parsing
     {
         protected NumberAndNameDebugDirective(AsmExpr number, string name)
         {
-            this.Number = number;
-            this.Name = name;
+            Number = number;
+            Name = name;
         }
 
         public AsmExpr Number { get; }
@@ -369,23 +370,30 @@ namespace Zapf.Parsing
             : base(number, name) { }
     }
 
+    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugClassDirective : DebugDirective
     {
-        public string Name { get; set; }
+        public DebugClassDirective(string name, AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn, AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
+        {
+            Name = name;
+            StartFile = startFile;
+            StartLine = startLine;
+            StartColumn = startColumn;
+            EndFile = endFile;
+            EndLine = endLine;
+            EndColumn = endColumn;
+        }
 
-        public AsmExpr StartFile { get; set; }
-
-        public AsmExpr StartLine { get; set; }
-
-        public AsmExpr StartColumn { get; set; }
-
-        public AsmExpr EndFile { get; set; }
-
-        public AsmExpr EndLine { get; set; }
-
-        public AsmExpr EndColumn { get; set; }
+        public string Name { get; }
+        public AsmExpr StartFile { get; }
+        public AsmExpr StartLine { get; }
+        public AsmExpr StartColumn { get; }
+        public AsmExpr EndFile { get; }
+        public AsmExpr EndLine { get; }
+        public AsmExpr EndColumn { get; }
     }
 
+    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugFakeActionDirective : NumberAndNameDebugDirective
     {
         public DebugFakeActionDirective(AsmExpr number, string name)
@@ -396,14 +404,14 @@ namespace Zapf.Parsing
     {
         public DebugFileDirective(AsmExpr number, string includeName, string actualName)
         {
-            this.Number = number;
-            this.IncludeName = includeName;
-            this.ActualName = actualName;
+            Number = number;
+            IncludeName = includeName;
+            ActualName = actualName;
         }
 
-        public AsmExpr Number { get; set; }
-        public string IncludeName { get; set; }
-        public string ActualName { get; set; }
+        public AsmExpr Number { get; }
+        public string IncludeName { get; }
+        public string ActualName { get; }
     }
 
     sealed class DebugGlobalDirective : NumberAndNameDebugDirective
@@ -416,9 +424,9 @@ namespace Zapf.Parsing
     {
         protected LineDebugDirective(AsmExpr file, AsmExpr line, AsmExpr column)
         {
-            this.TheFile = file;
-            this.TheLine = line;
-            this.TheColumn = column;
+            TheFile = file;
+            TheLine = line;
+            TheColumn = column;
         }
 
         public AsmExpr TheFile { get; }
@@ -432,11 +440,17 @@ namespace Zapf.Parsing
             : base(file, line, column) { }
     }
 
+    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugMapDirective : DebugDirective
     {
-        public string Key { get; set; }
+        public DebugMapDirective(string key, AsmExpr value)
+        {
+            Key = key;
+            Value = value;
+        }
 
-        public AsmExpr Value { get; set; }
+        public string Key { get; }
+        public AsmExpr Value { get; }
     }
 
     sealed class DebugObjectDirective : DebugDirective
@@ -445,24 +459,24 @@ namespace Zapf.Parsing
             AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
             AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
         {
-            this.Number = number;
-            this.Name = name;
-            this.StartFile = startFile;
-            this.StartLine = startLine;
-            this.StartColumn = startColumn;
-            this.EndFile = endFile;
-            this.EndLine = endLine;
-            this.EndColumn = endColumn;
+            Number = number;
+            Name = name;
+            StartFile = startFile;
+            StartLine = startLine;
+            StartColumn = startColumn;
+            EndFile = endFile;
+            EndLine = endLine;
+            EndColumn = endColumn;
         }
 
-        public AsmExpr Number { get; set; }
-        public string Name { get; set; }
-        public AsmExpr StartFile { get; set; }
-        public AsmExpr StartLine { get; set; }
-        public AsmExpr StartColumn { get; set; }
-        public AsmExpr EndFile { get; set; }
-        public AsmExpr EndLine { get; set; }
-        public AsmExpr EndColumn { get; set; }
+        public AsmExpr Number { get; }
+        public string Name { get; }
+        public AsmExpr StartFile { get; }
+        public AsmExpr StartLine { get; }
+        public AsmExpr StartColumn { get; }
+        public AsmExpr EndFile { get; }
+        public AsmExpr EndLine { get; }
+        public AsmExpr EndColumn { get; }
     }
 
     sealed class DebugPropDirective : NumberAndNameDebugDirective
@@ -477,12 +491,12 @@ namespace Zapf.Parsing
             string name, IEnumerable<string> locals)
             : base(file, line, column)
         {
-            this.Name = name;
-            this.Locals = new List<string>(locals);
+            Name = name;
+            Locals = new List<string>(locals);
         }
 
-        public string Name { get; set; }
-        public IList<string> Locals { get; private set; }
+        public string Name { get; }
+        public IList<string> Locals { get; }
     }
 
     sealed class DebugRoutineEndDirective : LineDebugDirective
@@ -493,15 +507,15 @@ namespace Zapf.Parsing
 
     abstract class AsmExpr : ISourceLine
     {
-        public string SourceFile { get; set; }
-        public int LineNum { get; set; }
+        public string SourceFile => null;
+        public int LineNum => 0;
     }
 
     abstract class TextAsmExpr : AsmExpr
     {
         protected TextAsmExpr(string text)
         {
-            this.Text = text;
+            Text = text;
         }
 
         public string Text { get; }
@@ -529,21 +543,21 @@ namespace Zapf.Parsing
     {
         public AdditionExpr(AsmExpr left, AsmExpr right)
         {
-            this.Left = left;
-            this.Right = right;
+            Left = left;
+            Right = right;
         }
 
-        public AsmExpr Left { get; set; }
-        public AsmExpr Right { get; set; }
+        public AsmExpr Left { get; }
+        public AsmExpr Right { get; }
     }
 
     sealed class QuoteExpr : AsmExpr
     {
         public QuoteExpr(AsmExpr inner)
         {
-            this.Inner = inner;
+            Inner = inner;
         }
 
-        public AsmExpr Inner { get; set; }
+        public AsmExpr Inner { get; }
     }
 }

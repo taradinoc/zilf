@@ -21,6 +21,7 @@ using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,8 +33,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.CHANNEL, PrimType.VECTOR)]
     abstract class ZilChannel : ZilObject
     {
+        /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilChannel FromVector(Context ctx, ZilVector vector)
+        public static ZilChannel FromVector([NotNull] Context ctx, [NotNull] ZilVector vector)
         {
             Contract.Requires(vector != null);
             Contract.Requires(ctx != null);
@@ -46,7 +48,7 @@ namespace Zilf.Interpreter.Values
         public override PrimType PrimType => PrimType.VECTOR;
 
         public abstract void Reset(Context ctx);
-        public abstract void Close(Context ctx);
+        public abstract void Close();
         public abstract long? GetFileLength();
         public abstract char? ReadChar();
         public abstract bool WriteChar(char c);
@@ -69,19 +71,16 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return string.Format(
-                "#CHANNEL [{0} {1}]",
-                fileAccess == FileAccess.Read ? "READ" : "NONE",
-                ZilString.Quote(path));
+            return $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "NONE")} {ZilString.Quote(path)}]";
         }
 
-        public override ZilObject GetPrimitive(Context ctx)
+        [NotNull]
+        public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            return new ZilVector(new ZilObject[]
-            {
-                ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
-                ZilString.FromString(path)
-            });
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
+                ZilString.FromString(path));
         }
 
         public override void Reset(Context ctx)
@@ -90,7 +89,7 @@ namespace Zilf.Interpreter.Values
                 stream = ctx.OpenChannelStream(path, fileAccess);
         }
 
-        public override void Close(Context ctx)
+        public override void Close()
         {
             if (stream != null)
             {
@@ -153,32 +152,28 @@ namespace Zilf.Interpreter.Values
     {
         readonly StringBuilder sb = new StringBuilder();
 
+        /// <exception cref="ArgumentException"><paramref name="fileAccess"/> is not <see cref="FileAccess.Write"/>.</exception>
         public ZilStringChannel(FileAccess fileAccess)
         {
             if (fileAccess != FileAccess.Write)
                 throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
         }
 
-        public string String
-        {
-            get { return sb.ToString(); }
-        }
+        [NotNull]
+        public string String => sb.ToString();
 
         public override string ToString()
         {
-            return string.Format(
-                "#CHANNEL [PRINT STRING {0}]",
-                ZilString.Quote(sb.ToString()));
+            return $"#CHANNEL [PRINT STRING {ZilString.Quote(sb.ToString())}]";
         }
 
-        public override ZilObject GetPrimitive(Context ctx)
+        [NotNull]
+        public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            return new ZilVector(new ZilObject[]
-            {
-                ctx.GetStdAtom(StdAtom.PRINT),
-                ctx.GetStdAtom(StdAtom.STRING),
-                ZilString.FromString(sb.ToString())
-            });
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.STRING),
+                ZilString.FromString(sb.ToString()));
         }
 
         public override void Reset(Context ctx)
@@ -186,7 +181,7 @@ namespace Zilf.Interpreter.Values
             // nada
         }
 
-        public override void Close(Context ctx)
+        public override void Close()
         {
             // nada
         }
@@ -213,8 +208,9 @@ namespace Zilf.Interpreter.Values
             return 1;
         }
 
-        public override int WriteString(string s)
+        public override int WriteString([NotNull] string s)
         {
+            Contract.Requires(s != null);
             sb.Append(s);
             return s.Length;
         }
@@ -223,6 +219,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilConsoleChannel : ZilChannel, IChannelWithHPos
     {
+        /// <exception cref="ArgumentException"><paramref name="fileAccess"/> is not <see cref="FileAccess.Write"/>.</exception>
         public ZilConsoleChannel(FileAccess fileAccess)
         {
             if (fileAccess != FileAccess.Write)
@@ -231,16 +228,15 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return string.Format("#CHANNEL [PRINT CONSOLE]");
+            return "#CHANNEL [PRINT CONSOLE]";
         }
 
-        public override ZilObject GetPrimitive(Context ctx)
+        [NotNull]
+        public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            return new ZilVector(new ZilObject[]
-            {
-                ctx.GetStdAtom(StdAtom.PRINT),
-                ctx.GetStdAtom(StdAtom.CONSOLE)
-            });
+            Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.CONSOLE));
         }
 
         public override void Reset(Context ctx)
@@ -248,7 +244,7 @@ namespace Zilf.Interpreter.Values
             // nada
         }
 
-        public override void Close(Context ctx)
+        public override void Close()
         {
             // nada
         }
@@ -275,15 +271,13 @@ namespace Zilf.Interpreter.Values
             return Environment.NewLine.Length;
         }
 
-        public override int WriteString(string s)
+        public override int WriteString([NotNull] string s)
         {
+            Contract.Requires(s != null);
             Console.Write(s);
             return s.Length;
         }
 
-        public int HPos
-        {
-            get { return Console.CursorLeft; }
-        }
+        public int HPos => Console.CursorLeft;
     }
 }

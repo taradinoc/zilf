@@ -16,22 +16,23 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
 namespace Zilf.Compiler.Builtins
 {
-    delegate BuiltinArg ArgumentValidatorDelegate(Compilation cc, Action<string> error,
-        ZilObject arg, ParameterInfo pi);
-
+    [ContractClass(typeof(ParameterTypeHandlerContract))]
     abstract class ParameterTypeHandler
     {
-        public abstract BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi);
+        public abstract BuiltinArg Process([NotNull] Compilation cc, [NotNull] [InstantHandle] Action<string> error,
+            [NotNull] ZilObject arg, [NotNull] ParameterInfo pi);
         public virtual bool IsVariable => false;
 
         public static readonly IReadOnlyDictionary<Type, ParameterTypeHandler> Handlers =
@@ -214,8 +215,10 @@ namespace Zilf.Compiler.Builtins
                         if (form.First is ZilAtom fatom &&
                             (((quirks & QuirksMode.Global) != 0 && fatom.StdAtom == StdAtom.GVAL) ||
                              ((quirks & QuirksMode.Local) != 0 && fatom.StdAtom == StdAtom.LVAL)) &&
+                            // ReSharper disable PossibleNullReferenceException
                             form.Rest.First is ZilAtom &&
                             form.Rest.Rest.IsEmpty)
+                            // ReSharper restore PossibleNullReferenceException
                         {
                             atom = (ZilAtom)form.Rest.First;
                         }
@@ -244,6 +247,19 @@ namespace Zilf.Compiler.Builtins
                     return new BuiltinArg(BuiltinArgType.Operand, variableRef?.Soft);
                 }
             }
+        }
+    }
+
+    [ContractClassFor(typeof(ParameterTypeHandler))]
+    abstract class ParameterTypeHandlerContract : ParameterTypeHandler
+    {
+        public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
+        {
+            Contract.Requires(cc != null);
+            Contract.Requires(error != null);
+            Contract.Requires(arg != null);
+            Contract.Requires(pi != null);
+            throw new NotImplementedException();
         }
     }
 }

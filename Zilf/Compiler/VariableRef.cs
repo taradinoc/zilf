@@ -26,14 +26,14 @@ namespace Zilf.Compiler
 
         public VariableRef(IVariable hard)
         {
-            this.Hard = hard;
-            this.Soft = null;
+            Hard = hard;
+            Soft = null;
         }
 
         public VariableRef(SoftGlobal soft)
         {
-            this.Soft = soft;
-            this.Hard = null;
+            Soft = soft;
+            Hard = null;
         }
 
         public bool IsHard

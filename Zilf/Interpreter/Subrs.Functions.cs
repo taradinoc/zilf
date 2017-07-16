@@ -15,44 +15,60 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        [NotNull]
         [FSubr]
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
-        public static ZilObject DEFINE(Context ctx, ZilAtom name,
-            [Optional] ZilAtom activationAtom, ZilList argList,
-            [Optional] ZilDecl decl, [Required] ZilObject[] body)
+        public static ZilObject DEFINE([NotNull] Context ctx, [NotNull] ZilAtom name,
+            [CanBeNull] [Optional] ZilAtom activationAtom, [ItemNotNull] [NotNull] ZilList argList,
+            [CanBeNull] [Optional] ZilDecl decl, [ItemNotNull] [NotNull] [Required] ZilObject[] body)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(argList != null);
+            Contract.Requires(body != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE");
         }
 
+        [NotNull]
         [FSubr]
-        public static ZilObject DEFINE20(Context ctx, ZilAtom name,
-            [Optional] ZilAtom activationAtom, ZilList argList,
-            [Optional] ZilDecl decl, [Required] ZilObject[] body)
+        public static ZilObject DEFINE20([NotNull] Context ctx, [NotNull] ZilAtom name,
+            [CanBeNull] [Optional] ZilAtom activationAtom, [NotNull] [ItemNotNull] ZilList argList,
+            [CanBeNull] [Optional] ZilDecl decl, [ItemCanBeNull] [NotNull] [Required] ZilObject[] body)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(argList != null);
+            Contract.Requires(body != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
-        static ZilObject PerformDefine(Context ctx, ZilAtom name, ZilAtom activationAtom,
-            ZilList argList, ZilDecl decl, ZilObject[] body, string subrName)
+        [NotNull]
+        static ZilObject PerformDefine([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilAtom name,
+            [CanBeNull] ZilAtom activationAtom,
+            ZilList argList, ZilDecl decl, [NotNull] ZilObject[] body, [NotNull] string subrName)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
             Contract.Requires(subrName != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
@@ -68,11 +84,17 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        /// <exception cref="InterpreterError">A global named <paramref name="name"/> is already defined.</exception>
+        [NotNull]
         [FSubr]
-        public static ZilObject DEFMAC(Context ctx, ZilAtom name,
-            [Optional] ZilAtom activationAtom, ZilList argList,
-            [Optional] ZilDecl decl, [Required] ZilObject[] body)
+        public static ZilObject DEFMAC([NotNull] Context ctx, [NotNull] ZilAtom name,
+            [CanBeNull] [Optional] ZilAtom activationAtom, [ItemNotNull] [NotNull] ZilList argList,
+            [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(name != null);
+            Contract.Requires(argList != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
@@ -85,8 +107,7 @@ namespace Zilf.Interpreter
                 argList,
                 decl,
                 body);
-            var macro = new ZilEvalMacro(func);
-            macro.SourceLine = ctx.TopFrame.SourceLine;
+            var macro = new ZilEvalMacro(func) { SourceLine = ctx.TopFrame.SourceLine };
             ctx.SetGlobalVal(name, macro);
             return name;
         }
@@ -100,8 +121,11 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult EVAL(Context ctx, ZilObject value, LocalEnvironment env)
+        public static ZilResult EVAL([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] LocalEnvironment env)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(env != null);
             SubrContracts(ctx);
 
             return value.Eval(ctx, env);
@@ -109,18 +133,22 @@ namespace Zilf.Interpreter
 
 #pragma warning disable RECS0154 // Parameter is never used
         [Subr("EVAL-IN-SEGMENT")]
-        public static ZilResult EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
-            ZilObject value, ZilObject dummy2 = null)
+        public static ZilResult EVAL_IN_SEGMENT([NotNull] Context ctx, ZilObject dummy1,
+            [NotNull] ZilObject value, [CanBeNull] ZilObject dummy2 = null)
 #pragma warning restore RECS0154 // Parameter is never used
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
             SubrContracts(ctx);
 
             return value.Eval(ctx);
         }
 
         [Subr]
-        public static ZilResult EXPAND(Context ctx, ZilObject value)
+        public static ZilResult EXPAND([NotNull] Context ctx, [NotNull] ZilObject value)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
             SubrContracts(ctx);
 
             var result = value.Expand(ctx);
@@ -134,8 +162,10 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult APPLY(Context ctx, IApplicable ap, ZilObject[] args)
+        public static ZilResult APPLY([NotNull] Context ctx, [NotNull] IApplicable ap, [NotNull] ZilObject[] args)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(ap != null);
             SubrContracts(ctx);
 
             return ap.ApplyNoEval(ctx, args);

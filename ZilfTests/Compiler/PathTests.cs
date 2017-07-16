@@ -15,15 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zilf.Compiler;
-using System.IO;
+
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.IO;
 using System.Text;
+using JetBrains.Annotations;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Compiler;
 
-namespace ZilfTests
+namespace ZilfTests.Compiler
 {
     [TestClass]
     public class PathTests
@@ -33,18 +35,18 @@ namespace ZilfTests
             readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
             readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
 
-            public ICollection OutputFilePaths
-            {
-                get { return outputs.Keys; }
-            }
+            [NotNull]
+            public ICollection OutputFilePaths => outputs.Keys;
 
-            public void SetInputFile(string path, string content)
+            public void SetInputFile([NotNull] string path, string content)
             {
+                Contract.Requires(path != null);
                 inputs[path] = content;
             }
 
-            public void Compile(string mainZilFile)
+            public void Compile([NotNull] string mainZilFile)
             {
+                Contract.Requires(mainZilFile != null);
                 var compiler = new FrontEnd();
 
                 compiler.CheckingFilePresence += (sender, e) =>

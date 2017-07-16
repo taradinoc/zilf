@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
@@ -27,7 +28,7 @@ namespace Zilf.Interpreter.Values
         bool spliceable;
 
         [ChtypeMethod]
-        public ZilSplice(ZilListBase other)
+        public ZilSplice([NotNull] ZilListBase other)
             : base(other.First, other.Rest)
         {
         }

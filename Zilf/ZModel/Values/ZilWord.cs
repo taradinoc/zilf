@@ -15,37 +15,40 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
-using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
+using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.WORD, PrimType.LIST)]
     sealed class ZilWord : ZilTiedListBase
     {
-        public ZilWord(ZilObject value)
+        public ZilWord([NotNull] ZilObject value)
         {
             Contract.Requires(value != null);
 
-            this.Value = value;
+            Value = value;
         }
 
         public override StdAtom StdTypeAtom => StdAtom.WORD;
 
         public ZilObject Value { get; }
 
+        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ZilWord>(x => x.Value);
         }
 
         [ChtypeMethod]
-        public static ZilWord FromList(Context ctx, ZilListBase list)
+        [NotNull]
+        public static ZilWord FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);

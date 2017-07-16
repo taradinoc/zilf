@@ -1,29 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using JetBrains.Annotations;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
     class SumOperand : IConstantOperand
     {
-        public SumOperand(IConstantOperand left, IConstantOperand right)
+        public SumOperand([NotNull] IConstantOperand left, [NotNull] IConstantOperand right)
         {
-            this.Left = left;
-            this.Right = right;
+            Contract.Requires(left != null);
+            Contract.Requires(right != null);
+
+            Left = left;
+            Right = right;
         }
 
+        [NotNull]
         public IConstantOperand Left { get; }
+
+        [NotNull]
         public IConstantOperand Right { get; }
 
         public override string ToString()
         {
-            return Left.ToString() + "+" + Right.ToString();
+            return $"{Left}+{Right}";
         }
 
-        public IConstantOperand Add(IConstantOperand other)
+        [NotNull]
+        public IConstantOperand Add([NotNull] IConstantOperand other)
         {
+            Contract.Requires(other != null);
             return new SumOperand(this, other);
         }
     }

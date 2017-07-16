@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics.Contracts;
 using System.Text;
 using System.Text.RegularExpressions;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
@@ -27,14 +29,14 @@ namespace IntegrationTests
         where TThis : AbstractAssertionHelper<TThis>
     {
         protected string versionDirective = "<VERSION ZIP>";
-        protected StringBuilder miscGlobals = new StringBuilder();
-        protected StringBuilder input = new StringBuilder();
+        protected readonly StringBuilder miscGlobals = new StringBuilder();
+        protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
 
         protected AbstractAssertionHelper()
         {
-            Contract.Assume(this.GetType() == typeof(TThis));
+            Contract.Assume(GetType() == typeof(TThis));
         }
 
         public TThis InV3()
@@ -150,11 +152,10 @@ namespace IntegrationTests
 
         public void DoesNotThrow()
         {
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE GO ({1})\r\n\t{2}\r\n\t<QUIT>>",
-                GlobalCode(),
-                argSpec,
-                body);
+            var testCode = $"{GlobalCode()}\r\n" +
+                           $"<ROUTINE GO ({argSpec})\r\n" +
+                           $"\t{body}\r\n" +
+                           "\t<QUIT>>";
 
             ZlrHelperRunResult result;
 
@@ -166,7 +167,10 @@ namespace IntegrationTests
             {
                 Assert.Fail("Expected no exception, but caught {0}", ex);
 
-                // can't get here, but the compiler doesn't know that
+                // can't get here, but the compiler doesn't know that...
+                // ReSharper knows, but we still can't remove the return
+
+                // ReSharper disable once HeuristicUnreachableCode
                 return;
             }
 
@@ -182,57 +186,57 @@ namespace IntegrationTests
     {
         protected abstract string Expression();
 
-        public void GivesNumber(string expectedValue)
+        public void GivesNumber([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
 
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE GO () <PRINTN {1}>>",
-                GlobalCode(),
-                Expression());
+            var testCode = $"{GlobalCode()}\r\n" +
+                           $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
-        public void Outputs(string expectedValue)
+        public void Outputs([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
 
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE GO () {1}>",
-                GlobalCode(),
-                Expression());
+            var testCode = $"{GlobalCode()}\r\n" +
+                           $"<ROUTINE GO () {Expression()}>";
 
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
         }
 
-        public void Implies(params string[] conditions)
+        public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
-            Contract.Requires(conditions != null && conditions.Length > 0);
+            Contract.Requires(conditions != null);
+            Contract.Requires(conditions.Length > 0);
             Contract.Requires(Contract.ForAll(conditions, c => !string.IsNullOrWhiteSpace(c)));
 
             var sb = new StringBuilder();
             foreach (var c in conditions)
             {
-                sb.AppendFormat("<COND ({0}) (T <INC FAILS> <PRINTI \"FAIL: {1}|\">)>\r\n",
+                sb.AppendFormat(
+                    "<COND ({0}) (T <INC FAILS> <PRINTI \"FAIL: {1}|\">)>\r\n",
                     c,
                     c.Replace("\\", "\\\\").Replace("\"", "\\\""));
             }
 
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {1} .FAILS>\r\n<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>",
-                GlobalCode(),
-                sb);
+            var testCode =
+                $"{GlobalCode()}\r\n" +
+                $"<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {sb} .FAILS>\r\n" +
+                "<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>";
 
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
         public void DoesNotCompile()
         {
-            var testCode = string.Format(
-                "{0}\r\n<GLOBAL DUMMY?VAR <>>\r\n<ROUTINE GO ()\r\n\t<SETG DUMMY?VAR {1}>\r\n\t<QUIT>>",
-                GlobalCode(),
-                Expression());
+            var testCode =
+                $"{GlobalCode()}\r\n" +
+                "<GLOBAL DUMMY?VAR <>>\r\n" +
+                "<ROUTINE GO ()\r\n" +
+                $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
+                "\t<QUIT>>";
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
@@ -244,35 +248,38 @@ namespace IntegrationTests
 
         public void Compiles()
         {
-            var testCode = string.Format(
-                "{0}\r\n<GLOBAL DUMMY?VAR <>>\r\n<ROUTINE GO ()\r\n\t<SETG DUMMY?VAR {1}>\r\n\t<QUIT>>",
-                GlobalCode(),
-                Expression());
+            var testCode =
+                $"{GlobalCode()}\r\n" +
+                "<GLOBAL DUMMY?VAR <>>\r\n" +
+                "<ROUTINE GO ()\r\n" +
+                $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
+                "\t<QUIT>>";
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
-            if (expectWarnings != null)
+
+            switch (expectWarnings)
             {
-                if (expectWarnings.Value)
-                {
+                case true:
                     Assert.AreNotEqual(0, result.WarningCount, "Expected at least one warning.");
-                }
-                else
-                {
+                    break;
+
+                case false:
                     Assert.AreEqual(0, result.WarningCount, "Expected no warnings.");
-                }
+                    break;
             }
         }
 
-        public void GeneratesCodeMatching(string pattern)
+        [AssertionMethod]
+        public void GeneratesCodeMatching([NotNull] string pattern)
         {
             Contract.Requires(pattern != null);
 
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE GO ()\r\n\t{1}\r\n\t<QUIT>>",
-                GlobalCode(),
-                Expression());
+            var testCode = $"{GlobalCode()}\r\n" +
+                           "<ROUTINE GO ()\r\n" +
+                           $"\t{Expression()}\r\n" +
+                           "\t<QUIT>>";
 
             var helper = new ZlrHelper(testCode, null);
             Assert.IsTrue(helper.Compile(), "Failed to compile");
@@ -292,7 +299,7 @@ namespace IntegrationTests
     {
         readonly string expression;
 
-        public ExprAssertionHelper(string expression)
+        public ExprAssertionHelper([NotNull] string expression)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
@@ -312,7 +319,7 @@ namespace IntegrationTests
 
         const string RoutineName = "TEST?ROUTINE";
 
-        public RoutineAssertionHelper(string argSpec, string body)
+        public RoutineAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -321,21 +328,21 @@ namespace IntegrationTests
             this.body = body;
         }
 
-        public RoutineAssertionHelper WhenCalledWith(string arguments)
+        public RoutineAssertionHelper WhenCalledWith([NotNull] string testArguments)
         {
-            this.arguments = arguments;
+            Contract.Requires(testArguments != null);
+            arguments = testArguments;
             return this;
         }
 
         protected override string GlobalCode()
         {
-            return string.Format("{0}<ROUTINE {1} ({2}) {3}>",
-                base.GlobalCode(), RoutineName, argSpec, body);
+            return $"{base.GlobalCode()}<ROUTINE {RoutineName} ({argSpec}) {body}>";
         }
 
         protected override string Expression()
         {
-            return string.Format("<{0} {1}>", RoutineName, arguments);
+            return $"<{RoutineName} {arguments}>";
         }
     }
 

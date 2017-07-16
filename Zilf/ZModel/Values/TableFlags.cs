@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 
 namespace Zilf.ZModel.Values
@@ -50,6 +51,6 @@ namespace Zilf.ZModel.Values
         /// <summary>
         /// The table is lower in memory than other pure tables.
         /// </summary>
-        ParserTable = 64,
+        ParserTable = 64
     }
 }

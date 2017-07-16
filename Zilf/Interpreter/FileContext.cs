@@ -18,6 +18,7 @@
 using System;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -30,7 +31,7 @@ namespace Zilf.Interpreter
         public FileFlags Flags { get; set; }
         public ZilList DefStructDefaults { get; set; }
 
-        public FileContext(Context ctx, string path)
+        public FileContext([NotNull] Context ctx, [NotNull] string path)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(path));
@@ -40,6 +41,7 @@ namespace Zilf.Interpreter
             Path = path;
         }
 
+        /// <exception cref="InvalidOperationException">This file was not on top of the stack.</exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "FileContext")]
         public void Dispose()
         {

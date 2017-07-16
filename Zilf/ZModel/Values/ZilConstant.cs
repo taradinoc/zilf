@@ -15,33 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
-using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
-using System;
+using Zilf.Language;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
     class ZilConstant : ZilTiedListBase
     {
-        readonly ZilAtom name;
-        readonly ZilObject value;
-
         public ZilConstant(ZilAtom name, ZilObject value)
         {
-            this.name = name;
-            this.value = value;
+            Name = name;
+            Value = value;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
+        [NotNull]
         [ChtypeMethod]
 #pragma warning disable RECS0154 // Parameter is never used
-        public static ZilConstant FromList(Context ctx, ZilListBase list)
+        public static ZilConstant FromList(Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
-            if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilConstant>() != null);
+            if (list.IsEmpty || list.Rest?.IsEmpty != false || list.Rest.Rest?.IsEmpty != true)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to CONSTANT", 2);
 
             if (!(list.First is ZilAtom name))
@@ -52,8 +55,9 @@ namespace Zilf.ZModel.Values
             return new ZilConstant(name, value);
         }
 
-        public ZilAtom Name => name;
-        public ZilObject Value => value;
+        public ZilAtom Name { get; }
+
+        public ZilObject Value { get; }
 
         protected override TiedLayout GetLayout()
         {

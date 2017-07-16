@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -33,27 +34,17 @@ namespace Zilf.Interpreter
         readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
 
         /// <summary>
-        /// Creates a new environment with no bindings.
-        /// </summary>
-        public LocalEnvironment(Context ctx)
-            : this(ctx, null)
-        {
-        }
-
-        /// <summary>
         /// Creates a new environment, optionally inheriting bindings from a parent environment.
         /// </summary>
         /// <param name="ctx">The context.</param>
-        /// <param name="parent">The parent environment, or <b>null</b> to not inherit any bindings.</param>
+        /// <param name="parent">The parent environment, or <see langword="null"/> to not inherit any bindings.</param>
         /// <remarks>Changes made to bindings in the parent environment will be visible in the new environment,
         /// unless overridden by bindings created in the new environment with <see cref="Rebind"/>.</remarks>
-        public LocalEnvironment(Context ctx, LocalEnvironment parent)
+        public LocalEnvironment([NotNull] Context ctx, [CanBeNull] LocalEnvironment parent = null)
         {
-            if (ctx == null)
-                throw new ArgumentNullException(nameof(ctx));
-
-            this.ctx = ctx;
-            this.Parent = parent;
+            Contract.Requires(ctx != null);
+            this.ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
+            Parent = parent;
         }
 
         /// <summary>
@@ -72,24 +63,24 @@ namespace Zilf.Interpreter
         }
 
         /// <summary>
-        /// Gets the parent environment, or <b>null</b> if the environment was created without inheritance.
+        /// Gets the parent environment, or <see langword="null"/> if the environment was created without inheritance.
         /// </summary>
         public LocalEnvironment Parent { get; }
 
-        Binding MaybeGetBinding(ZilAtom atom)
+        [CanBeNull]
+        [System.Diagnostics.Contracts.Pure]
+        Binding MaybeGetBinding([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 
             if (bindings.ContainsKey(atom))
                 return bindings[atom];
 
-            if (Parent != null)
-                return Parent.MaybeGetBinding(atom);
-
-            return null;
+            return Parent?.MaybeGetBinding(atom);
         }
 
-        Binding GetOrCreateBinding(ZilAtom atom)
+        [NotNull]
+        Binding GetOrCreateBinding([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(Contract.Result<Binding>() != null);
@@ -109,10 +100,12 @@ namespace Zilf.Interpreter
         /// Indicates whether an atom is bound in this or any parent environment.
         /// </summary>
         /// <param name="atom">The atom.</param>
-        /// <returns><b>true</b> if the atom is bound in this environment or any parent environment,
-        /// or <b>false</b> if the atom is unbound.</returns>
-        public bool IsLocalBound(ZilAtom atom)
+        /// <returns><see langword="true"/> if the atom is bound in this environment or any parent environment,
+        /// or <see langword="false"/> if the atom is unbound.</returns>
+        [System.Diagnostics.Contracts.Pure]
+        public bool IsLocalBound([NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
             return MaybeGetBinding(atom) != null;
         }
 
@@ -121,9 +114,11 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <returns>The value assigned to the atom in this environment, or the nearest parent environment
-        /// in which it was bound, or <b>null</b> if the atom is unbound or unassigned.</returns>
-        public ZilObject GetLocalVal(ZilAtom atom)
+        /// in which it was bound, or <see langword="null"/> if the atom is unbound or unassigned.</returns>
+        [CanBeNull]
+        public ZilObject GetLocalVal([NotNull] ZilAtom atom)
         {
+            Contract.Requires(atom != null);
             return MaybeGetBinding(atom)?.Value;
         }
 
@@ -131,16 +126,19 @@ namespace Zilf.Interpreter
         /// Sets the local value of an atom visible in this environment.
         /// </summary>
         /// <param name="atom">The atom.</param>
-        /// <param name="value">The new value, or <b>null</b> to unassign the value.</param>
+        /// <param name="value">The new value, or <see langword="null"/> to unassign the value.</param>
         /// <remarks>If the atom is bound, the value will be assigned using that binding, which may
         /// exist in a parent environment. If the atom is unbound, a new binding will be created
         /// in this environment.</remarks>
-        /// <exception cref="Zilf.Language.DeclCheckError"><paramref name="value"/> does not
-        /// match the existing DECL for <paramref name="atom"/>.</exception>
-        public void SetLocalVal(ZilAtom atom, ZilObject value)
+        /// <exception cref="Zilf.Language.DeclCheckError"><paramref name="value"/> does not match the existing DECL for <paramref name="atom"/>.</exception>
+        public void SetLocalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
+            Contract.Requires(atom != null);
             var binding = GetOrCreateBinding(atom);
-            ctx.MaybeCheckDecl(value, binding.Decl, "LVAL of {0}", atom);
+
+            if (value != null)
+                ctx.MaybeCheckDecl(value, binding.Decl, "LVAL of {0}", atom);
+
             binding.Value = value;
         }
 
@@ -149,8 +147,8 @@ namespace Zilf.Interpreter
         /// it's already bound.
         /// </summary>
         /// <param name="atom">The atom.</param>
-        /// <param name="value">The new value, or <b>null</b> to unassign the value.</param>
-        /// <param name="decl">The new DECL, or <b>null</b> to leave it unchanged.</param>
+        /// <param name="value">The new value, or <see langword="null"/> to unassign the value.</param>
+        /// <param name="decl">The new DECL, or <see langword="null"/> to leave it unchanged.</param>
         /// <remarks>
         /// <para>If the atom is bound in a parent environment, this will create a new binding
         /// that shadows the inherited one; the parent's binding will not be changed.
@@ -158,8 +156,9 @@ namespace Zilf.Interpreter
         /// previously assigned value will be overwritten.</para>
         /// <para>This method does not check <paramref name="value"/> against any DECL.</para>
         /// </remarks>
-        public void Rebind(ZilAtom atom, ZilObject value = null, ZilObject decl = null)
+        public void Rebind([NotNull] ZilAtom atom, [CanBeNull] ZilObject value = null, [CanBeNull] ZilObject decl = null)
         {
+            Contract.Requires(atom != null);
             if (bindings.TryGetValue(atom, out var binding))
             {
                 binding.Value = value;

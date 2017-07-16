@@ -15,16 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Vocab;
-using Zilf.Diagnostics;
-using System;
 
 namespace Zilf.ZModel
 {
@@ -39,36 +41,38 @@ namespace Zilf.ZModel
 
         static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
-        public Syntax(ISourceLine src, IWord verb, int numObjects, IWord prep1, IWord prep2,
+        public Syntax(ISourceLine src, [NotNull] IWord verb, int numObjects, IWord prep1, IWord prep2,
             byte options1, byte options2, ZilAtom findFlag1, ZilAtom findFlag2,
-            ZilAtom action, ZilAtom preaction, ZilAtom actionName,
-            IEnumerable<ZilAtom> synonyms = null)
+            [NotNull] ZilAtom action, ZilAtom preaction, ZilAtom actionName,
+            [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
         {
             Contract.Requires(verb != null);
             Contract.Requires(numObjects >= 0 & numObjects <= 2);
             Contract.Requires(action != null);
 
-            this.SourceLine = src;
+            SourceLine = src;
 
-            this.Verb = verb;
-            this.NumObjects = numObjects;
-            this.Preposition1 = prep1;
-            this.Preposition2 = prep2;
-            this.Options1 = options1;
-            this.Options2 = options2;
-            this.FindFlag1 = findFlag1;
-            this.FindFlag2 = findFlag2;
-            this.Action = action;
-            this.Preaction = preaction;
-            this.ActionName = actionName;
+            Verb = verb;
+            NumObjects = numObjects;
+            Preposition1 = prep1;
+            Preposition2 = prep2;
+            Options1 = options1;
+            Options2 = options2;
+            FindFlag1 = findFlag1;
+            FindFlag2 = findFlag2;
+            Action = action;
+            Preaction = preaction;
+            ActionName = actionName;
 
             if (synonyms == null)
-                this.Synonyms = EmptySynonyms;
+                Synonyms = EmptySynonyms;
             else
-                this.Synonyms = new List<ZilAtom>(synonyms).AsReadOnly();
+                Synonyms = new List<ZilAtom>(synonyms).AsReadOnly();
         }
 
-        public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
+        /// <exception cref="InterpreterError">The syntax definition is invalid.</exception>
+        [NotNull]
+        public static Syntax Parse(ISourceLine src, [NotNull] IEnumerable<ZilObject> definition, [NotNull] Context ctx)
         {
             // TODO: refactor this method or convert to a builder class
             Contract.Requires(definition != null);
@@ -168,17 +172,11 @@ namespace Zilf.ZModel
                         {
                             if (numObjects == 1)
                             {
-                                if (bits1 != null)
-                                    bits1 = new ZilList(Enumerable.Concat(bits1, list));
-                                else
-                                    bits1 = list;
+                                bits1 = bits1 != null ? new ZilList(bits1.Concat(list)) : list;
                             }
                             else
                             {
-                                if (bits2 != null)
-                                    bits2 = new ZilList(Enumerable.Concat(bits2, list));
-                                else
-                                    bits2 = list;
+                                bits2 = bits2 != null ? new ZilList(bits2.Concat(list)) : list;
                             }
                         }
                     }
@@ -283,8 +281,8 @@ namespace Zilf.ZModel
                 }
 
                 var verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
-                IWord word1 = (prep1 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
-                IWord word2 = (prep2 == null) ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
+                var word1 = prep1 == null ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
+                var word2 = prep2 == null ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
                 var flags1 = ScopeFlags.Parse(bits1, ctx);
                 var flags2 = ScopeFlags.Parse(bits2, ctx);
                 var findFlag1 = ParseFindFlag(find1);
@@ -335,22 +333,21 @@ namespace Zilf.ZModel
             }
         }
 
-        static ZilAtom ParseFindFlag(ZilList list)
+        [CanBeNull]
+        [ContractAnnotation("null => null; notnull => notnull")]
+        static ZilAtom ParseFindFlag([CanBeNull] ZilList list)
         {
             if (list == null)
                 return null;
 
-            if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty ||
-                !(list.Rest.First is ZilAtom atom))
-            {
-                throw new InterpreterError(
-                    InterpreterMessages._0_Expected_1_After_2,
-                    "SYNTAX",
-                    "a single atom",
-                    "FIND");
-            }
+            if (list.Rest?.First is ZilAtom atom && list.Rest.Rest?.IsEmpty == true)
+                return atom;
 
-            return atom;
+            throw new InterpreterError(
+                InterpreterMessages._0_Expected_1_After_2,
+                "SYNTAX",
+                "a single atom",
+                "FIND");
         }
 
         public override string ToString()
@@ -401,6 +398,6 @@ namespace Zilf.ZModel
             return sb.ToString();
         }
 
-        public ISourceLine SourceLine { get; set; }
+        public ISourceLine SourceLine { get; }
     }
 }

@@ -15,12 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Diagnostics;
 using System.Runtime.Serialization;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -30,10 +34,12 @@ namespace Zilf.Language
     [ContractClass(typeof(IProvideStructureForDeclCheckContract))]
     interface IProvideStructureForDeclCheck
     {
-        IStructure GetStructureForDeclCheck(Context ctx);
+        [NotNull]
+        IStructure GetStructureForDeclCheck([NotNull] Context ctx);
     }
 
     [ContractClassFor(typeof(IProvideStructureForDeclCheck))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IProvideStructureForDeclCheckContract : IProvideStructureForDeclCheck
     {
         public IStructure GetStructureForDeclCheck(Context ctx)
@@ -47,62 +53,68 @@ namespace Zilf.Language
     /// <summary>
     /// Raised when a user-defined DECL check fails.
     /// </summary>
+    [Serializable]
     class DeclCheckError : InterpreterError
     {
         const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
 
-        /// <summary>
-        /// Gets the value that didn't pass the DECL.
-        /// </summary>
-        public ZilObject Value { get; private set; }
-        /// <summary>
-        /// Gets the DECL that prevented the value from being used.
-        /// </summary>
-        public ZilObject Pattern { get; private set; }
-        /// <summary>
-        /// Gets a string describing what the value was going to be used for.
-        /// </summary>
-        public string Usage { get; private set; }
-
-        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern, string usage)
+        public DeclCheckError([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
+            [NotNull] string usage)
             : base(DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            this.Value = value;
-            this.Pattern = pattern;
-            this.Usage = usage;
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
+            Contract.Requires(usage != null);
         }
 
-        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
-            string usage)
+        public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
+            [NotNull] ZilObject pattern, string usage)
             : base(src, DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            this.Value = value;
-            this.Pattern = pattern;
-            this.Usage = usage;
+            Contract.Requires(src != null);
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
         }
 
-        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern,
-            string usageFormat, object arg0)
+        [StringFormatMethod("usageFormat")]
+        public DeclCheckError([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
+            [NotNull] string usageFormat, [NotNull] object arg0)
             : this(ctx, value, pattern, string.Format(usageFormat, arg0))
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
+            Contract.Requires(usageFormat != null);
+            Contract.Requires(arg0 != null);
         }
 
-        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value, ZilObject pattern,
-            string usageFormat, object arg0)
+        [StringFormatMethod("usageFormat")]
+        public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
+            [NotNull] ZilObject pattern, [NotNull] string usageFormat, [NotNull] object arg0)
             : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
         {
+            Contract.Requires(src != null);
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+            Contract.Requires(pattern != null);
+            Contract.Requires(usageFormat != null);
+            Contract.Requires(arg0 != null);
         }
 
-        protected DeclCheckError(SerializationInfo si, StreamingContext sc)
+        protected DeclCheckError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
+            Contract.Requires(si != null);
         }
     }
 
-    class Decl
+    static class Decl
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        public static bool Check(Context ctx, ZilObject value, ZilObject pattern)
+        /// <exception cref="InterpreterError">The syntax is incorrect.</exception>
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(value != null);
@@ -173,6 +185,8 @@ namespace Zilf.Language
                     atom = first as ZilAtom;
                     if (atom != null)
                     {
+                        Debug.Assert(form.Rest != null);
+
                         switch (atom.StdAtom)
                         {
                             case StdAtom.OR:
@@ -182,16 +196,16 @@ namespace Zilf.Language
                                 return false;
 
                             case StdAtom.QUOTE:
-                                return form.Rest.First.Equals(value);
+                                return Equals(form.Rest.First, value);
 
-                            case StdAtom.PRIMTYPE:
-                                return value.PrimType == ctx.GetTypePrim((ZilAtom)form.Rest.First);
+                            case StdAtom.PRIMTYPE when form.Rest.First is ZilAtom primType:
+                                return value.PrimType == ctx.GetTypePrim(primType);
                         }
                     }
 
                     // structure form: first pattern element is a DECL matched against the whole structure
                     // (usually a type atom), remaining elements are matched against the structure elements
-                    if (!Check(ctx, value, first))
+                    if (first == null || !Check(ctx, value, first))
                         return false;
 
                     if (value is IStructure valueAsStructure)
@@ -217,10 +231,19 @@ namespace Zilf.Language
             }
         }
 
-        static bool CheckElements(Context ctx, IStructure structure, ZilForm pattern, bool segment)
+        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(structure != null);
+            Contract.Requires(pattern != null);
+
+            Debug.Assert(pattern.First != null);
+            Debug.Assert(pattern.Rest != null);
+
             foreach (var subpattern in pattern.Rest)
             {
+                ZilObject first;
+
                 if (subpattern is ZilVector vector)
                 {
                     var len = vector.GetLength();
@@ -234,7 +257,10 @@ namespace Zilf.Language
                                 i = 1;
                                 while (!structure.IsEmpty)
                                 {
-                                    if (!Check(ctx, structure.GetFirst(), vector[i]))
+                                    first = structure.GetFirst();
+                                    Debug.Assert(first != null);
+
+                                    if (!Check(ctx, first, vector[i]))
                                         return false;
 
                                     i++;
@@ -242,6 +268,7 @@ namespace Zilf.Language
                                         i = 1;
 
                                     structure = structure.GetRest(1);
+                                    Debug.Assert(structure != null);
                                 }
 
                                 // !<FOO [REST A B C]> must repeat A B C a whole number of times
@@ -258,10 +285,17 @@ namespace Zilf.Language
                                 // greedily match OPT elements until the structure ends or a match fails
                                 for (i = 1; i < len; i++)
                                 {
-                                    if (structure.IsEmpty || !Check(ctx, structure.GetFirst(), vector[i]))
+                                    if (structure.IsEmpty)
+                                        break;
+
+                                    first = structure.GetFirst();
+                                    Debug.Assert(first != null);
+
+                                    if (!Check(ctx, first, vector[i]))
                                         break;
 
                                     structure = structure.GetRest(1);
+                                    Debug.Assert(structure != null);
                                 }
 
                                 // move on to the next subpattern, if any
@@ -279,10 +313,14 @@ namespace Zilf.Language
                                 if (structure.IsEmpty)
                                     return false;
 
-                                if (!Check(ctx, structure.GetFirst(), vector[j]))
+                                first = structure.GetFirst();
+                                Debug.Assert(first != null);
+
+                                if (!Check(ctx, first, vector[j]))
                                     return false;
 
                                 structure = structure.GetRest(1);
+                                Debug.Assert(structure != null);
                             }
                         }
 
@@ -299,18 +337,17 @@ namespace Zilf.Language
                 if (structure.IsEmpty)
                     return false;
 
-                if (!Check(ctx, structure.GetFirst(), subpattern))
+                first = structure.GetFirst();
+                Debug.Assert(first != null);
+
+                if (!Check(ctx, first, subpattern))
                     return false;
 
                 structure = structure.GetRest(1);
+                Debug.Assert(structure != null);
             }
 
-            if (segment && !structure.IsEmpty)
-            {
-                return false;
-            }
-
-            return true;
+            return !segment || structure.IsEmpty;
         }
     }
 }

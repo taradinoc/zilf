@@ -20,6 +20,8 @@ using System;
 using System.IO;
 using System.Text;
 using Zapf;
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedParameter.Global
 
 namespace Dezapf
 {
@@ -81,9 +83,9 @@ namespace Dezapf
             return sb.ToString();
         }
 
-        protected string FormatFlags2(Context ctx, ushort flags2)
+        protected static string FormatFlags2(ushort flags2)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if ((flags2 & 1) != 0)
                 sb.Append("+Transcripting");
@@ -152,7 +154,7 @@ namespace Dezapf
                 writer.WriteLine(INDENT + "; Object table: {0}", hdr.Objects);
                 writer.WriteLine(INDENT + "; Global table: {0}", hdr.Globals);
                 writer.WriteLine(INDENT + "; Dynamic size: {0}", hdr.Impure);
-                writer.WriteLine(INDENT + "; Flags 2: {0} ({1})", hdr.Flags2, FormatFlags2(ctx, hdr.Flags2));
+                writer.WriteLine(INDENT + "; Flags 2: {0} ({1})", hdr.Flags2, FormatFlags2(hdr.Flags2));
 
                 writer.Write(INDENT + "; Serial: ");
                 foreach (byte b in hdr.Serial)
@@ -352,10 +354,8 @@ namespace Dezapf
         {
             if (num == 0)
                 return "STACK";
-            else if (num < 16)
-                return string.Format("L{0:00}", num);
-            else
-                return string.Format("G{0:00}", num);
+
+            return string.Format(num < 16 ? "L{0:00}" : "G{0:00}", num);
         }
 
         public override void FormatData(TextWriter writer, Context ctx, DataChunk data)
@@ -364,8 +364,9 @@ namespace Dezapf
 
             writer.Write(INDENT);
 
-            byte[] bytes = data.Bytes;
-            for (int i = 0; i < data.Bytes.Length; i++)
+            var bytes = data.Bytes;
+
+            for (int i = 0; i < bytes.Length; i++)
             {
                 if (i % PERLINE == 0)
                 {
@@ -381,7 +382,7 @@ namespace Dezapf
                     writer.Write(',');
                 }
 
-                writer.Write(data.Bytes[i]);
+                writer.Write(bytes[i]);
             }
 
             writer.WriteLine();
@@ -474,7 +475,7 @@ namespace Dezapf
             writer.WriteLine("! Object table: {0}", hdr.Objects);
             writer.WriteLine("! Global table: {0}", hdr.Globals);
             writer.WriteLine("! Dynamic size: {0}", hdr.Impure);
-            writer.WriteLine("! Flags 2: {0} ({1})", hdr.Flags2, FormatFlags2(ctx, hdr.Flags2));
+            writer.WriteLine("! Flags 2: {0} ({1})", hdr.Flags2, FormatFlags2(hdr.Flags2));
             writer.WriteLine("! Abbrevs table: {0}", hdr.Words);
             writer.WriteLine("! Length: {0} ({1}x{2})", hdr.Length * ctx.SizeFactor,
                 hdr.Length, ctx.SizeFactor);
@@ -643,10 +644,8 @@ namespace Dezapf
         {
             if (num == 0)
                 return "sp";
-            else if (num < 16)
-                return string.Format("L{0:00}", num);
-            else
-                return string.Format("G{0:00}", num);
+
+            return string.Format(num < 16 ? "L{0:00}" : "G{0:00}", num);
         }
 
         public override void FormatData(TextWriter writer, Context ctx, DataChunk data)

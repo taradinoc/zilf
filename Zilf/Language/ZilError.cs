@@ -21,6 +21,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -30,9 +31,10 @@ namespace Zilf.Language
         protected ZilError(string message) : base(message) { }
         protected ZilError(string message, Exception innerException) : base(message, innerException) { }
 
-        protected ZilError(SerializationInfo info, StreamingContext context)
+        protected ZilError([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            Contract.Requires(info != null);
         }
 
         public Diagnostic Diagnostic { get; protected set; }
@@ -41,7 +43,7 @@ namespace Zilf.Language
 
     static class ZilErrorExtensions
     {
-        public static T Combine<T>(this T mainError, T subError)
+        public static T Combine<T>([NotNull] this T mainError, [NotNull] T subError)
             where T : ZilError
         {
             Contract.Assert(mainError != null);
@@ -52,51 +54,50 @@ namespace Zilf.Language
         }
     }
 
+    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
     abstract class ZilError<TMessageSet> : ZilError
         where TMessageSet : class
     {
-        protected ZilError(string message)
+        protected ZilError([NotNull] string message)
             : base(message)
         {
+            Contract.Requires(message != null);
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        protected ZilError(string message, Exception innerException)
+        protected ZilError([NotNull] string message, Exception innerException)
             : base(message, innerException)
         {
+            Contract.Requires(message != null);
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        protected ZilError(ISourceLine src, string message)
+        protected ZilError([CanBeNull] ISourceLine src, [NotNull] string message)
             : base(message)
         {
+            Contract.Requires(message != null);
             SourceLine = src ?? DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
 
-        protected ZilError(Diagnostic diag)
+        protected ZilError([NotNull] Diagnostic diag)
             : base(diag.ToString())
         {
+            Contract.Requires(diag != null);
             Diagnostic = diag;
             SourceLine = diag.Location;
         }
 
-        protected ZilError(SerializationInfo si, StreamingContext sc)
+        protected ZilError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
+            Contract.Requires(si != null);
         }
 
-        public string SourcePrefix
-        {
-            get
-            {
-                if (SourceLine == null || SourceLine.SourceInfo == null)
-                    return "";
-                return SourceLine.SourceInfo + ": ";
-            }
-        }
+        [NotNull]
+        public string SourcePrefix => SourceLine?.SourceInfo == null ? "" : SourceLine.SourceInfo + ": ";
 
 #pragma warning disable RECS0108 // Warns about static fields in generic types
         protected static readonly IDiagnosticFactory DiagnosticFactory = DiagnosticFactory<TMessageSet>.Instance;
@@ -104,7 +105,8 @@ namespace Zilf.Language
 
         protected const int LegacyErrorCode = 0;
 
-        protected static Diagnostic MakeDiagnostic(ISourceLine sourceLine, int code, object[] messageArgs = null)
+        [NotNull]
+        protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
         {
             Contract.Requires(code >= 0);
             Contract.Ensures(Contract.Result<Diagnostic>() != null);
@@ -116,20 +118,23 @@ namespace Zilf.Language
                 MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        protected static Diagnostic MakeLegacyDiagnostic(ISourceLine sourceLine, string message)
+        [NotNull]
+        protected static Diagnostic MakeLegacyDiagnostic([NotNull] ISourceLine sourceLine, [NotNull] string message)
         {
             Contract.Requires(message != null);
             Contract.Requires(sourceLine != null);
             Contract.Ensures(Contract.Result<Diagnostic>() != null);
 
             return DiagnosticFactory.GetDiagnostic(
-                sourceLine ?? DiagnosticContext.Current.SourceLine,
+                sourceLine,
                 LegacyErrorCode,
-                new[] { message },
+                new object[] { message },
                 MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        static string MakeStackTrace(Frame errorFrame)
+        [CanBeNull]
+        [ContractAnnotation("notnull => notnull; null => null")]
+        static string MakeStackTrace([CanBeNull] Frame errorFrame)
         {
             if (errorFrame == null)
                 return null;
@@ -142,15 +147,9 @@ namespace Zilf.Language
                 if (sb.Length > 0)
                     sb.AppendLine();
 
-                string caller;
-                if (frame.Description != null)
-                {
-                    caller = $"in {frame.Description} called ";
-                }
-                else
-                {
-                    caller = "";
-                }
+                var caller = frame.Description != null
+                    ? $"in {frame.Description} called "
+                    : "";
 
                 sb.AppendFormat("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
             }

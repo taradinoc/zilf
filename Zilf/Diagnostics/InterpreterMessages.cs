@@ -15,15 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Diagnostics
 {
     [MessageSet("MDL")]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public abstract class InterpreterMessages
     {
         InterpreterMessages()
@@ -59,8 +56,10 @@ namespace Zilf.Diagnostics
         public const int FIXFALSE_In_PROPDEF_Output_Pattern_Must_Be_At_The_Beginning = 105;
         [Message("lists and atoms in TELL token specs must come at the beginning")]
         public const int Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning = 106;
+/*
         [Message("malformed GVAL in TELL token spec")]
         public const int Malformed_GVAL_In_TELL_Token_Spec = 107;
+*/
         [Message("missing {0} in {1}")]
         public const int Missing_0_In_1 = 108;
         [Message("recognized versions are ZIP, EZIP, XZIP, YZIP, and numbers 3-8", Severity = Severity.Info)]

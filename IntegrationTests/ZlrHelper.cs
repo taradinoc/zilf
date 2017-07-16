@@ -15,6 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+extern alias JBA;
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -26,6 +30,7 @@ using Zapf;
 using Zilf.Compiler;
 using Zilf.Interpreter.Values;
 using ZLR.VM;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
@@ -33,20 +38,23 @@ namespace IntegrationTests
     {
         CompilationFailed,
         AssemblyFailed,
-        ExecutionFailed,
+/*
+        ExecutionFailed,        // execution failure means an exception in ZLR, and it bubbles up through the test
+*/
         Finished,
     }
 
     struct ZlrHelperRunResult
     {
         public ZlrTestStatus Status;
+        // ReSharper disable once NotAccessedField.Global
         public string Output;
         public int WarningCount;
     }
 
     class ZlrHelper
     {
-        public static void RunAndAssert(string code, string input, string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
+        public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
             Contract.Requires(code != null);
             Contract.Requires(expectedOutput != null);
@@ -64,17 +72,17 @@ namespace IntegrationTests
                 compileOutput = string.Empty;
             }
             Assert.IsTrue(compiled, "Failed to compile");
+            Assert.IsTrue(helper.Assemble(), "Failed to assemble");
             if (expectWarnings != null)
             {
                 Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0,
                     (bool)expectWarnings ? "Expected warnings" : "Expected no warnings");
             }
-            Assert.IsTrue(helper.Assemble(), "Failed to assemble");
             string actualOutput = compileOutput + helper.Execute();
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run(string code, string input, bool compileOnly = false)
+        public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false)
         {
             Contract.Requires(code != null);
 
@@ -102,11 +110,6 @@ namespace IntegrationTests
             }
 
             string actualOutput = helper.Execute();
-            if (actualOutput == null)
-            {
-                result.Status = ZlrTestStatus.ExecutionFailed;
-                return result;
-            }
 
             result.Status = ZlrTestStatus.Finished;
             result.Output = actualOutput;
@@ -117,17 +120,16 @@ namespace IntegrationTests
         const string SMainZapFileName = "Output.zap";
         const string SStoryFileNameTemplate = "Output.z#";
 
-        string code;
-        string input;
+        readonly string code;
+        readonly string input;
 
         Dictionary<string, MemoryStream> zilfOutputFiles;
-        List<string> zilfLogMessages;
 
         MemoryStream zapfOutputFile;
 
         public int WarningCount { get; private set; }
 
-        public ZlrHelper(string code, string input)
+        public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
             Contract.Requires(code != null);
 
@@ -138,7 +140,7 @@ namespace IntegrationTests
         void PrintZilCode()
         {
             Console.Error.WriteLine("=== {0} ===", SZilFileName);
-            Console.Error.WriteLine(this.code);
+            Console.Error.WriteLine(code);
             Console.Error.WriteLine();
         }
 
@@ -148,8 +150,9 @@ namespace IntegrationTests
             PrintZapCode("Output_data.zap");
         }
 
-        void PrintZapCode(string filename)
+        void PrintZapCode([NotNull] string filename)
         {
+            Contract.Requires(filename != null);
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
             Console.Error.WriteLine("=== {0} ===", filename);
@@ -162,7 +165,7 @@ namespace IntegrationTests
             return Compile(null);
         }
 
-        bool Compile(Action<FrontEnd> initializeFrontEnd)
+        bool Compile([CanBeNull] Action<FrontEnd> initializeFrontEnd)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -174,8 +177,7 @@ namespace IntegrationTests
             codeStream.Seek(0, SeekOrigin.Begin);
 
             // initialize ZilfCompiler
-            this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
-            this.zilfLogMessages = new List<string>();
+            zilfOutputFiles = new Dictionary<string, MemoryStream>();
 
             var frontEnd = new FrontEnd();
             frontEnd.OpeningFile += (sender, e) =>
@@ -200,29 +202,27 @@ namespace IntegrationTests
                 e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
             };
 
-            if (initializeFrontEnd != null)
-                initializeFrontEnd(frontEnd);
+            initializeFrontEnd?.Invoke(frontEnd);
 
             //XXX need to intercept <INSERT_FILE> too
 
             // run compilation
             PrintZilCode();
             var result = frontEnd.Compile(SZilFileName, SMainZapFileName);
-            this.WarningCount = result.WarningCount;
+            WarningCount = result.WarningCount;
             if (result.Success)
             {
                 PrintZapCode();
                 return true;
             }
-            else
-            {
-                Console.Error.WriteLine();
-                return false;
-            }
+
+            Console.Error.WriteLine();
+            return false;
         }
 
-        public bool Compile(out string compileOutput)
+        public bool Compile([NotNull] out string compileOutput)
         {
+            Contract.Requires(compileOutput != null);
             var channel = new ZilStringChannel(FileAccess.Write);
 
             var compiled = Compile(fe =>
@@ -237,8 +237,10 @@ namespace IntegrationTests
             return compiled;
         }
 
+        [NotNull]
         public string GetZapCode()
         {
+            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
 
             foreach (var stream in zilfOutputFiles.OrderBy(p => p.Key).Select(p => p.Value))
@@ -279,26 +281,24 @@ namespace IntegrationTests
             };
 
             // run assembly
-            return assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
+            var success = assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate, out _, out int warningCount);
+            WarningCount += warningCount;
+            return success;
         }
 
-        public string Execute()
+        [NotNull]
+        string Execute()
         {
-            MemoryStream inputStream;
-            if (input != null)
-            {
-                inputStream = new MemoryStream(Encoding.UTF8.GetBytes(input));
-            }
-            else
-            {
-                inputStream = new MemoryStream();
-            }
+            Contract.Ensures(Contract.Result<string>() != null);
+            var inputStream = input != null ? new MemoryStream(Encoding.UTF8.GetBytes(input)) : new MemoryStream();
 
             var io = new ReplayIO(inputStream);
             var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
-            var zmachine = new ZMachine(gameStream, io);
-            zmachine.PredictableRandom = true;
-            zmachine.ReadingCommandsFromFile = true;
+            var zmachine = new ZMachine(gameStream, io)
+            {
+                PredictableRandom = true,
+                ReadingCommandsFromFile = true
+            };
 
             zmachine.Run();
 
@@ -311,25 +311,34 @@ namespace IntegrationTests
     {
         const string SStoryFileNameTemplate = "Output.z#";
 
-        string codeFile, zapFileName;
-        string[] includeDirs;
-        string inputFile;
+        [NotNull]
+        readonly string codeFile;
+
+        [NotNull]
+        readonly string zapFileName;
+
+        [NotNull]
+        [ItemNotNull]
+        readonly string[] includeDirs;
+
+        [CanBeNull]
+        readonly string inputFile;
 
         Dictionary<string, MemoryStream> zilfOutputFiles;
-        List<string> zilfLogMessages;
 
         MemoryStream zapfOutputFile;
 
-        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper([NotNull] string codeFile, [ItemNotNull] [NotNull] string[] includeDirs, string inputFile)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(codeFile));
-            Contract.Requires(includeDirs != null && Contract.ForAll(includeDirs, d => !string.IsNullOrWhiteSpace(d)));
+            Contract.Requires(includeDirs != null);
+            Contract.Requires(Contract.ForAll(includeDirs, d => !string.IsNullOrWhiteSpace(d)));
 
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;
             this.inputFile = inputFile;
 
-            this.zapFileName = Path.ChangeExtension(Path.GetFileName(codeFile), ".zap");
+            zapFileName = Path.ChangeExtension(Path.GetFileName(codeFile), ".zap");
         }
 
         public bool WantStatusLine { get; set; }
@@ -341,8 +350,7 @@ namespace IntegrationTests
             try
             {
                 // initialize ZilfCompiler
-                this.zilfOutputFiles = new Dictionary<string, MemoryStream>();
-                this.zilfLogMessages = new List<string>();
+                zilfOutputFiles = new Dictionary<string, MemoryStream>();
 
                 var compiler = new FrontEnd();
                 compiler.OpeningFile += (sender, e) =>
@@ -476,6 +484,7 @@ namespace IntegrationTests
             }
         }
 
+        /// <exception cref="Exception">Oh shit!</exception>
         public string Execute()
         {
             Stream inputStream;
@@ -490,14 +499,16 @@ namespace IntegrationTests
 
             try
             {
-                var io = new ReplayIO(inputStream, this.WantStatusLine);
+                var io = new ReplayIO(inputStream, WantStatusLine);
 
                 try
                 {
                     var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
-                    var zmachine = new ZMachine(gameStream, io);
-                    zmachine.PredictableRandom = true;
-                    zmachine.ReadingCommandsFromFile = true;
+                    var zmachine = new ZMachine(gameStream, io)
+                    {
+                        PredictableRandom = true,
+                        ReadingCommandsFromFile = true
+                    };
 
                     zmachine.Run();
                 }
@@ -514,6 +525,16 @@ namespace IntegrationTests
             {
                 inputStream.Dispose();
             }
+        }
+
+        [ContractInvariantMethod]
+        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
+        [Conditional("CONTRACTS_FULL")]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(codeFile != null);
+            Contract.Invariant(zapFileName != null);
+            Contract.Invariant(includeDirs != null);
         }
     }
 }

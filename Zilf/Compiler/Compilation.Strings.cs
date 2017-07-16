@@ -21,12 +21,13 @@ using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        public static string TranslateString(string str, Context ctx)
+        public static string TranslateString(string str, [NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
 
@@ -37,6 +38,7 @@ namespace Zilf.Compiler
                 ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P));
         }
 
+        [NotNull]
         public static string TranslateString(string str, char crlfChar, bool preserveSpaces)
         {
             // strip CR/LF and ensure 1 space afterward, translate crlfChar to LF,

@@ -27,7 +27,9 @@ namespace Dezapf
         Word = 0,
         Byte = 1,
         Variable = 2,
+/*
         Omitted = 3,
+*/
     }
 
     enum BranchType : byte
@@ -42,29 +44,21 @@ namespace Dezapf
     class Instruction : Chunk
     {
         ushort op;
-        private ushort[] operands;
+        ushort[] operands;
         OperandType[] operandTypes;
         BranchType branchType;
         short branchOffset;
         byte? storeTarget;
         ushort[] encodedText;
 
-        public ushort Op { get { return op; } }
-        public ushort[] Operands { get { return (ushort[])operands.Clone(); } }
-        public OperandType[] OperandTypes { get { return (OperandType[])operandTypes.Clone(); } }
-        public BranchType BranchType { get { return branchType; } }
-        public short BranchOffset { get { return branchOffset; } }
-        public byte? StoreTarget { get { return storeTarget; } }
-        public ushort[] EncodedText
-        {
-            get
-            {
-                if (encodedText == null)
-                    return null;
+        public ushort Op => op;
+        public ushort[] Operands => (ushort[])operands.Clone();
+        public OperandType[] OperandTypes => (OperandType[])operandTypes.Clone();
+        public BranchType BranchType => branchType;
+        public short BranchOffset => branchOffset;
+        public byte? StoreTarget => storeTarget;
 
-                return (ushort[])encodedText.Clone();
-            }
-        }
+        public ushort[] EncodedText => (ushort[])encodedText?.Clone();
 
         Instruction(int pc, int length)
             : base(pc, length)
@@ -109,7 +103,7 @@ namespace Dezapf
                 if (op < 176)
                 {
                     // 1OP
-                    otypes = new OperandType[] { (OperandType)((op >> 4) & 3) };
+                    otypes = new[] { (OperandType)((op >> 4) & 3) };
                     op &= 0xcf;     // clear operand type bits
                 }
                 else
@@ -223,14 +217,16 @@ namespace Dezapf
             }
 
             // done
-            Instruction result = new Instruction(pc, length);
-            result.branchOffset = branchOffset;
-            result.branchType = branchType;
-            result.encodedText = encodedText;
-            result.op = op;
-            result.operandTypes = otypes;
-            result.operands = operands;
-            result.storeTarget = storeTarget;
+            var result = new Instruction(pc, length)
+            {
+                branchOffset = branchOffset,
+                branchType = branchType,
+                encodedText = encodedText,
+                op = op,
+                operandTypes = otypes,
+                operands = operands,
+                storeTarget = storeTarget
+            };
             return result;
         }
 

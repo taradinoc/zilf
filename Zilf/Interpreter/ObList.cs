@@ -17,13 +17,13 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System;
 using Zilf.Interpreter.Values.Tied;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -43,22 +43,32 @@ namespace Zilf.Interpreter
             this.ignoreCase = ignoreCase;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
+        [NotNull]
         [ChtypeMethod]
-        public static ObList FromList(Context ctx, ZilListBase list)
+        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListBase list)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ObList>() != null);
             var result = new ObList(ctx.IgnoreCase);
 
             while (!list.IsEmpty)
             {
+                Debug.Assert(list.First != null);
+                Debug.Assert(list.Rest != null);
+
                 if (list.First is ZilList pair)
                 {
-                    if (pair.IsEmpty || pair.Rest.IsEmpty || !pair.Rest.Rest.IsEmpty)
+                    if (pair.First is ZilString key && pair.Rest?.First is ZilAtom value)
                     {
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
-                    }
+                        Debug.Assert(pair.Rest.Rest != null);
 
-                    if (pair.First is ZilString key && pair.Rest.First is ZilAtom value)
-                    {
+                        if (!pair.Rest.Rest.IsEmpty)
+                        {
+                            throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
+                        }
+
                         result[key.Text] = value;
                     }
                     else
@@ -73,11 +83,13 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.PairsList);
         }
 
+        [NotNull]
         public ZilList PairsList
         {
             get
@@ -124,7 +136,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        internal void Add(ZilAtom newAtom)
+        internal void Add([NotNull] ZilAtom newAtom)
         {
             Contract.Requires(newAtom != null);
             Contract.Requires(newAtom.ObList == this);
@@ -136,7 +148,7 @@ namespace Zilf.Interpreter
             dict[key] = newAtom;
         }
 
-        internal void Remove(ZilAtom atom)
+        internal void Remove([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
             Contract.Requires(atom.ObList != this);

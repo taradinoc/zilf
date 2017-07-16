@@ -4,6 +4,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using Zilf.Common;
 
 namespace Zilf.Emit.Zap
@@ -22,7 +23,6 @@ namespace Zilf.Emit.Zap
         internal DebugLineRef defnStart, defnEnd;
 
         readonly PeepholeBuffer<ZapCode> peep;
-        readonly ILabel routineStartLabel;
         int nextLabelNum;
         string pendingDebugText;
 
@@ -38,7 +38,7 @@ namespace Zilf.Emit.Zap
             this.cleanStack = cleanStack;
 
             peep = new PeepholeBuffer<ZapCode>() { Combiner = new PeepholeCombiner(this) };
-            this.routineStartLabel = DefineLabel();
+            RoutineStart = DefineLabel();
         }
 
         public override string ToString()
@@ -46,81 +46,69 @@ namespace Zilf.Emit.Zap
             return name;
         }
 
-        public bool CleanStack
-        {
-            get { return cleanStack; }
-        }
-
-        public ILabel RTrue
-        {
-            get { return RTRUE; }
-        }
-
-        public ILabel RFalse
-        {
-            get { return RFALSE; }
-        }
-
-        public IVariable Stack
-        {
-            get { return STACK; }
-        }
+        public bool CleanStack => cleanStack;
+        public ILabel RTrue => RTRUE;
+        public ILabel RFalse => RFALSE;
+        public IVariable Stack => STACK;
 
         bool LocalExists(string localName)
         {
             return requiredParams.Concat(optionalParams).Concat(locals).Any(lb => lb.Name == localName);
         }
 
-        public ILocalBuilder DefineRequiredParameter(string name)
+        /// <exception cref="InvalidOperationException">This is an entry point routine.</exception>
+        /// <exception cref="ArgumentException">A local variable named <paramref name="paramName"/> is already defined.</exception>
+        public ILocalBuilder DefineRequiredParameter(string paramName)
         {
-            name = GameBuilder.SanitizeSymbol(name);
+            paramName = GameBuilder.SanitizeSymbol(paramName);
 
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
-            if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
+            if (LocalExists(paramName))
+                throw new ArgumentException("Local variable already exists: " + paramName, nameof(paramName));
 
-            var local = new LocalBuilder(name);
+            var local = new LocalBuilder(paramName);
             requiredParams.Add(local);
             return local;
         }
 
-        public ILocalBuilder DefineOptionalParameter(string name)
+        /// <exception cref="InvalidOperationException">This is an entry point routine.</exception>
+        /// <exception cref="ArgumentException">A local variable named <paramref name="paramName"/> is already defined.</exception>
+        public ILocalBuilder DefineOptionalParameter(string paramName)
         {
-            name = GameBuilder.SanitizeSymbol(name);
+            paramName = GameBuilder.SanitizeSymbol(paramName);
 
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have parameters");
-            if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
+            if (LocalExists(paramName))
+                throw new ArgumentException("Local variable already exists: " + paramName, nameof(paramName));
 
-            var local = new LocalBuilder(name);
+            var local = new LocalBuilder(paramName);
             optionalParams.Add(local);
             return local;
         }
 
-        public ILocalBuilder DefineLocal(string name)
+        /// <exception cref="InvalidOperationException">This is an entry point routine.</exception>
+        /// <exception cref="ArgumentException">A local variable named <paramref name="localName"/> is already defined.</exception>
+        public ILocalBuilder DefineLocal(string localName)
         {
-            name = GameBuilder.SanitizeSymbol(name);
+            localName = GameBuilder.SanitizeSymbol(localName);
 
             if (entryPoint)
                 throw new InvalidOperationException("Entry point may not have local variables");
-            if (LocalExists(name))
-                throw new ArgumentException("Local variable already exists: " + name, nameof(name));
+            if (LocalExists(localName))
+                throw new ArgumentException("Local variable already exists: " + localName, nameof(localName));
 
-            var local = new LocalBuilder(name);
+            var local = new LocalBuilder(localName);
             locals.Add(local);
             return local;
         }
 
-        public ILabel RoutineStart
-        {
-            get { return routineStartLabel; }
-        }
+        public ILabel RoutineStart { get; }
 
         public ILabel DefineLabel()
         {
-            return new Label("?L" + (nextLabelNum++).ToString());
+            return new Label("?L" + nextLabelNum++);
         }
 
         public void MarkLabel(ILabel label)
@@ -141,11 +129,8 @@ namespace Zilf.Emit.Zap
         public void MarkSequencePoint(DebugLineRef lineRef)
         {
             if (game.debug != null)
-                pendingDebugText = string.Format(
-                    ".DEBUG-LINE {0},{1},{2}",
-                    game.debug.GetFileNumber(lineRef.File),
-                    lineRef.Line,
-                    lineRef.Column);
+                pendingDebugText =
+                    $".DEBUG-LINE {game.debug.GetFileNumber(lineRef.File)},{lineRef.Line},{lineRef.Column}";
         }
 
         public void Branch(ILabel label)
@@ -153,11 +138,10 @@ namespace Zilf.Emit.Zap
             AddLine("JUMP", label, PeepholeLineType.BranchAlways);
         }
 
-        public bool HasArgCount
-        {
-            get { return game.zversion >= 5; }
-        }
+        public bool HasArgCount => game.zversion >= 5;
 
+        /// <exception cref="ArgumentException">This condition requires a variable, but <paramref name="left"/> is not a variable.</exception>
+        /// <exception cref="ArgumentException">The wrong number of operands were provided.</exception>
         public void Branch(Condition cond, IOperand left, IOperand right, ILabel label, bool polarity)
         {
             string opcode;
@@ -235,11 +219,11 @@ namespace Zilf.Emit.Zap
 
             Contract.Assert(leftVar || !unary);
             AddLine(
-                nullary ?
-                    opcode :
-                    unary ?
-                        string.Format("{0} '{1}", opcode, left) :       // see assert above
-                        string.Format("{0} {1}{2},{3}", opcode, leftVar ? "'" : "", left, right),
+                nullary
+                    ? opcode
+                    : unary
+                        ? $"{opcode} '{left}"        // see assert above
+                        : $"{opcode} {(leftVar ? "'" : "")}{left},{right}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -255,7 +239,7 @@ namespace Zilf.Emit.Zap
         public void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity)
         {
             AddLine(
-                string.Format("EQUAL? {0},{1}", value, option1),
+                $"EQUAL? {value},{option1}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -263,7 +247,7 @@ namespace Zilf.Emit.Zap
         public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, ILabel label, bool polarity)
         {
             AddLine(
-                string.Format("EQUAL? {0},{1},{2}", value, option1, option2),
+                $"EQUAL? {value},{option1},{option2}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -271,7 +255,7 @@ namespace Zilf.Emit.Zap
         public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3, ILabel label, bool polarity)
         {
             AddLine(
-                string.Format("EQUAL? {0},{1},{2},{3}", value, option1, option2, option3),
+                $"EQUAL? {value},{option1},{option2},{option3}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -288,10 +272,7 @@ namespace Zilf.Emit.Zap
                 AddLine("RETURN " + result, null, PeepholeLineType.Terminator);
         }
 
-        public bool HasUndo
-        {
-            get { return game.zversion >= 5; }
-        }
+        public bool HasUndo => game.zversion >= 5;
 
         public void EmitNullary(NullaryOp op, IVariable result)
         {
@@ -316,12 +297,20 @@ namespace Zilf.Emit.Zap
             }
 
             AddLine(
-                string.Format("{0}{1}{2}",
-                    opcode,
-                    result == null ? "" : " >",
-                    (object)result ?? ""),
+                $"{opcode}{OptResult(result)}",
                 null,
                 PeepholeLineType.Plain);
+        }
+
+        [NotNull]
+        static string OptResult([CanBeNull] IVariable result)
+        {
+            Contract.Ensures(Contract.Result<string>() != null);
+
+            if (result == null)
+                return string.Empty;
+
+            return " >" + result;
         }
 
         public void EmitUnary(UnaryOp op, IOperand value, IVariable result)
@@ -329,10 +318,7 @@ namespace Zilf.Emit.Zap
             if (op == UnaryOp.Neg)
             {
                 AddLine(
-                    string.Format("SUB 0,{0}{1}{2}",
-                        value,
-                        result == null ? "" : " >",
-                        (object)result ?? ""),
+                    $"SUB 0,{value}{OptResult(result)}",
                     null,
                     PeepholeLineType.Plain);
                 return;
@@ -429,11 +415,7 @@ namespace Zilf.Emit.Zap
                 var label = DefineLabel();
 
                 AddLine(
-                    string.Format("{0} {1}{2}{3}",
-                        opcode,
-                        value,
-                        result == null ? "" : " >",
-                        (object)result ?? ""),
+                    $"{opcode} {value}{OptResult(result)}",
                     label,
                     PeepholeLineType.BranchPositive);
 
@@ -442,11 +424,7 @@ namespace Zilf.Emit.Zap
             else
             {
                 AddLine(
-                    string.Format("{0} {1}{2}{3}",
-                        opcode,
-                        value,
-                        result == null ? "" : " >",
-                        (object)result ?? ""),
+                    $"{opcode} {value}{OptResult(result)}",
                     null,
                     PeepholeLineType.Plain);
             }
@@ -456,17 +434,19 @@ namespace Zilf.Emit.Zap
         {
             // optimize special cases
             if (op == BinaryOp.Add &&
-                ((left == game.One && right == result) || (right == game.One && left == result)))
+                (left == game.One && right == result || right == game.One && left == result))
             {
                 AddLine("INC '" + result, null, PeepholeLineType.Plain);
                 return;
             }
-            else if (op == BinaryOp.Sub && left == result && right == game.One)
+
+            if (op == BinaryOp.Sub && left == result && right == game.One)
             {
                 AddLine("DEC '" + result, null, PeepholeLineType.Plain);
                 return;
             }
-            else if (op == BinaryOp.StoreIndirect && right == Stack && game.zversion != 6)
+
+            if (op == BinaryOp.StoreIndirect && right == Stack && game.zversion != 6)
             {
                 AddLine("POP " + left, null, PeepholeLineType.Plain);
                 return;
@@ -556,12 +536,7 @@ namespace Zilf.Emit.Zap
             }
 
             AddLine(
-                string.Format("{0} {1},{2}{3}{4}",
-                    opcode,
-                    left,
-                    right,
-                    result == null ? "" : " >",
-                    (object)result ?? ""),
+                $"{opcode} {left},{right}{OptResult(result)}",
                 null,
                 PeepholeLineType.Plain);
         }
@@ -616,13 +591,7 @@ namespace Zilf.Emit.Zap
             }
 
             AddLine(
-                string.Format("{0} {1},{2},{3}{4}{5}",
-                    opcode,
-                    left,
-                    center,
-                    right,
-                    result == null ? "" : " >",
-                    (object)result ?? ""),
+                $"{opcode} {left},{center},{right}{OptResult(result)}",
                 null,
                 PeepholeLineType.Plain);
         }
@@ -630,11 +599,7 @@ namespace Zilf.Emit.Zap
         public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest)
         {
             AddLine(
-                string.Format("ZWSTR {0},{1},{2},{3}",
-                    src,
-                    length,
-                    srcOffset,
-                    dest),
+                $"ZWSTR {src},{length},{srcOffset},{dest}",
                 null,
                 PeepholeLineType.Plain);
         }
@@ -671,10 +636,7 @@ namespace Zilf.Emit.Zap
             AddLine("QUIT", null, PeepholeLineType.Terminator);
         }
 
-        public bool HasBranchSave
-        {
-            get { return game.zversion < 4; }
-        }
+        public bool HasBranchSave => game.zversion < 4;
 
         public void EmitSave(ILabel label, bool polarity)
         {
@@ -688,10 +650,7 @@ namespace Zilf.Emit.Zap
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
 
-        public bool HasStoreSave
-        {
-            get { return game.zversion >= 4; }
-        }
+        public bool HasStoreSave => game.zversion >= 4;
 
         public void EmitSave(IVariable result)
         {
@@ -703,27 +662,21 @@ namespace Zilf.Emit.Zap
             AddLine("RESTORE >" + result, null, PeepholeLineType.Plain);
         }
 
-        public bool HasExtendedSave
-        {
-            get { return game.zversion >= 5; }
-        }
-
-        public void EmitSave(IOperand table, IOperand size, IOperand name,
+        public bool HasExtendedSave => game.zversion >= 5;
+        public void EmitSave(IOperand table, IOperand size, IOperand filename,
             IVariable result)
         {
             AddLine(
-                string.Format("SAVE {0},{1},{2} >{3}",
-                    table, size, name, result),
+                $"SAVE {table},{size},{filename} >{result}",
                 null,
                 PeepholeLineType.Plain);
         }
 
-        public void EmitRestore(IOperand table, IOperand size, IOperand name,
+        public void EmitRestore(IOperand table, IOperand size, IOperand filename,
             IVariable result)
         {
             AddLine(
-                string.Format("RESTORE {0},{1},{2} >{3}",
-                    table, size, name, result),
+                $"RESTORE {table},{size},{filename} >{result}",
                 null,
                 PeepholeLineType.Plain);
         }
@@ -752,7 +705,7 @@ namespace Zilf.Emit.Zap
         public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
         {
             AddLine(
-                string.Format("FIRST? {0} >{1}", value, result),
+                $"FIRST? {value} >{result}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -760,7 +713,7 @@ namespace Zilf.Emit.Zap
         public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity)
         {
             AddLine(
-                string.Format("NEXT? {0} >{1}", value, result),
+                $"NEXT? {value} >{result}",
                 label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
@@ -772,9 +725,10 @@ namespace Zilf.Emit.Zap
 
         public void EmitPrint(string text, bool crlfRtrue)
         {
+            var opcode = crlfRtrue ? "PRINTR" : "PRINTI";
+
             AddLine(
-                string.Format("{0} \"{1}\"", crlfRtrue ? "PRINTR" : "PRINTI",
-                    GameBuilder.SanitizeString(text)),
+                $"{opcode} \"{GameBuilder.SanitizeString(text)}\"",
                 null,
                 crlfRtrue ? PeepholeLineType.HeavyTerminator : PeepholeLineType.Plain);
         }
@@ -807,7 +761,7 @@ namespace Zilf.Emit.Zap
                     throw UnhandledCaseException.FromEnum(op, "print operation");
             }
 
-            AddLine(opcode + " " + value, null, PeepholeLineType.Plain);
+            AddLine($"{opcode} {value}", null, PeepholeLineType.Plain);
         }
 
         public void EmitPrintTable(IOperand table, IOperand width, IOperand height, IOperand skip)
@@ -913,6 +867,7 @@ namespace Zilf.Emit.Zap
             AddLine(sb.ToString(), null, PeepholeLineType.Plain);
         }
 
+        /// <exception cref="ArgumentException">Too many arguments were supplied for the Z-machine version.</exception>
         public void EmitCall(IOperand routine, IOperand[] args, IVariable result)
         {
             /* V1-3: CALL (0-3, store)
@@ -921,10 +876,7 @@ namespace Zilf.Emit.Zap
 
             if (args.Length > game.MaxCallArguments)
                 throw new ArgumentException(
-                    string.Format(
-                        "Too many arguments in routine call: {0} supplied, {1} allowed",
-                        args.Length,
-                        game.MaxCallArguments));
+                    $"Too many arguments in routine call: {args.Length} supplied, {game.MaxCallArguments} allowed");
 
             var sb = new StringBuilder();
 
@@ -933,7 +885,7 @@ namespace Zilf.Emit.Zap
                 // V1-3: use only CALL opcode (3 args max), pop result if not needed
                 sb.Append("CALL ");
                 sb.Append(routine);
-                foreach (IOperand arg in args)
+                foreach (var arg in args)
                 {
                     sb.Append(',');
                     sb.Append(arg);
@@ -974,7 +926,7 @@ namespace Zilf.Emit.Zap
                 sb.Append(opcode);
                 sb.Append(' ');
                 sb.Append(routine);
-                foreach (IOperand arg in args)
+                foreach (var arg in args)
                 {
                     sb.Append(',');
                     sb.Append(arg);
@@ -1038,7 +990,7 @@ namespace Zilf.Emit.Zap
                 sb.Append(opcode);
                 sb.Append(' ');
                 sb.Append(routine);
-                foreach (IOperand arg in args)
+                foreach (var arg in args)
                 {
                     sb.Append(',');
                     sb.Append(arg);
@@ -1060,18 +1012,18 @@ namespace Zilf.Emit.Zap
             {
                 if (dest == STACK)
                 {
-                    AddLine("PUSH " + src, null, PeepholeLineType.Plain);
+                    AddLine($"PUSH {src}", null, PeepholeLineType.Plain);
                 }
                 else if (src == STACK)
                 {
-                    if (game.zversion == 6)
-                        AddLine("POP >" + dest, null, PeepholeLineType.Plain);
-                    else
-                        AddLine("POP '" + dest, null, PeepholeLineType.Plain);
+                    AddLine(
+                        game.zversion == 6 ? $"POP >{dest}" : $"POP \'{dest}",
+                        null,
+                        PeepholeLineType.Plain);
                 }
                 else
                 {
-                    AddLine(string.Format("SET '{0},{1}", dest, src), null, PeepholeLineType.Plain);
+                    AddLine($"SET '{dest},{src}", null, PeepholeLineType.Plain);
                 }
             }
         }
@@ -1097,7 +1049,8 @@ namespace Zilf.Emit.Zap
 
         public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
         {
-            AddLine($"XPUSH {value},{stack}", label,
+            AddLine($"XPUSH {value},{stack}",
+                label,
                 polarity ? PeepholeLineType.BranchPositive : PeepholeLineType.BranchNegative);
         }
 
@@ -1120,7 +1073,7 @@ namespace Zilf.Emit.Zap
                 sb.Append(",\"");
                 sb.Append(name);
                 sb.Append('"');
-                foreach (LocalBuilder lb in requiredParams.Concat(optionalParams).Concat(locals))
+                foreach (var lb in requiredParams.Concat(optionalParams).Concat(locals))
                 {
                     sb.Append(",\"");
                     sb.Append(lb.Name);
@@ -1133,13 +1086,13 @@ namespace Zilf.Emit.Zap
             sb.Append(".FUNCT ");
             sb.Append(name);
 
-            foreach (LocalBuilder lb in requiredParams)
+            foreach (var lb in requiredParams)
             {
                 sb.Append(',');
                 sb.Append(lb.Name);
             }
 
-            foreach (LocalBuilder lb in Enumerable.Concat(optionalParams, locals))
+            foreach (var lb in optionalParams.Concat(locals))
             {
                 sb.Append(',');
                 sb.Append(lb.Name);
@@ -1160,35 +1113,37 @@ namespace Zilf.Emit.Zap
 
             // write preamble
             var preamble = new PeepholeBuffer<ZapCode>();
-            preamble.MarkLabel(routineStartLabel);
+            preamble.MarkLabel(RoutineStart);
 
             // write values for optional params and locals for V5+
             if (game.zversion >= 5)
             {
-                foreach (LocalBuilder lb in optionalParams)
+                foreach (var lb in optionalParams)
                 {
                     if (lb.DefaultValue != null)
                     {
                         var nextLabel = DefineLabel();
 
                         preamble.AddLine(
-                            new ZapCode { Text = string.Format("ASSIGNED? '{0}", lb) },
+                            new ZapCode { Text = $"ASSIGNED? '{lb}" },
                             nextLabel,
                             PeepholeLineType.BranchPositive);
                         preamble.AddLine(
-                            new ZapCode { Text = string.Format("SET '{0},{1}", lb, lb.DefaultValue) },
+                            new ZapCode { Text = $"SET '{lb},{lb.DefaultValue}" },
                             null,
                             PeepholeLineType.Plain);
                         preamble.MarkLabel(nextLabel);
                     }
                 }
 
-                foreach (LocalBuilder lb in locals)
+                foreach (var lb in locals)
+                {
                     if (lb.DefaultValue != null)
                         preamble.AddLine(
-                            new ZapCode { Text = string.Format("SET '{0},{1}", lb, lb.DefaultValue) },
+                            new ZapCode { Text = $"SET '{lb},{lb.DefaultValue}" },
                             null,
                             PeepholeLineType.Plain);
+                }
             }
 
             peep.InsertBufferFirst(preamble);
@@ -1215,10 +1170,8 @@ namespace Zilf.Emit.Zap
 
                 if (code.Text == "CRLF+RTRUE")
                 {
-                    game.WriteOutput(string.Format("{0}{1}{2}CRLF",
-                        (object)label ?? "",
-                        label == null ? "" : ":",
-                        INDENT));
+                    var labelPrefix = label == null ? "" : label + ":";
+                    game.WriteOutput($"{labelPrefix}{INDENT}CRLF");
 
                     game.WriteOutput(INDENT + "RTRUE");
                     return;
@@ -1253,11 +1206,9 @@ namespace Zilf.Emit.Zap
             });
 
             if (game.debug != null)
-                game.WriteOutput(string.Format(
-                    INDENT + ".DEBUG-ROUTINE-END {0},{1},{2}",
-                    game.debug.GetFileNumber(defnEnd.File),
-                    defnEnd.Line,
-                    defnEnd.Column));
+                game.WriteOutput(
+                    INDENT +
+                    $".DEBUG-ROUTINE-END {game.debug.GetFileNumber(defnEnd.File)},{defnEnd.Line},{defnEnd.Column}");
         }
 
         class PeepholeCombiner : IPeepholeCombiner<ZapCode>
@@ -1269,14 +1220,17 @@ namespace Zilf.Emit.Zap
                 this.routineBuilder = routineBuilder;
             }
 
-            void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
+            void BeginMatch([NotNull] IEnumerable<CombinableLine<ZapCode>> lines)
             {
+                Contract.Requires(lines != null);
                 enumerator = lines.GetEnumerator();
                 matches = new List<CombinableLine<ZapCode>>();
             }
 
-            bool Match(params Predicate<CombinableLine<ZapCode>>[] criteria)
+            bool Match([ItemNotNull] [NotNull] params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
+                Contract.Requires(criteria != null);
+
                 while (matches.Count < criteria.Length)
                 {
                     if (enumerator.MoveNext() == false)
@@ -1284,14 +1238,8 @@ namespace Zilf.Emit.Zap
 
                     matches.Add(enumerator.Current);
                 }
-
-                for (int i = 0; i < criteria.Length; i++)
-                {
-                    if (criteria[i](matches[i]) == false)
-                        return false;
-                }
-
-                return true;
+                
+                return criteria.Zip(matches, (c, m) => c(m)).All(ok => ok);
             }
 
             void EndMatch()
@@ -1305,11 +1253,11 @@ namespace Zilf.Emit.Zap
             IEnumerator<CombinableLine<ZapCode>> enumerator;
             List<CombinableLine<ZapCode>> matches;
 
-            CombinerResult<ZapCode> Combine1to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            CombinerResult<ZapCode> Combine1To1(string newText, PeepholeLineType? type = null, [CanBeNull] ILabel target = null)
             {
                 return new CombinerResult<ZapCode>(
                     1,
-                    new CombinableLine<ZapCode>[] {
+                    new[] {
                         new CombinableLine<ZapCode>(
                             matches[0].Label,
                             new ZapCode {
@@ -1321,11 +1269,11 @@ namespace Zilf.Emit.Zap
                     });
             }
 
-            CombinerResult<ZapCode> Combine2to1(string newText, PeepholeLineType? type = null, ILabel target = null)
+            CombinerResult<ZapCode> Combine2To1(string newText, PeepholeLineType? type = null, [CanBeNull] ILabel target = null)
             {
                 return new CombinerResult<ZapCode>(
                     2,
-                    new CombinableLine<ZapCode>[] {
+                    new[] {
                         new CombinableLine<ZapCode>(
                             matches[0].Label,
                             new ZapCode {
@@ -1337,14 +1285,14 @@ namespace Zilf.Emit.Zap
                     });
             }
 
-            CombinerResult<ZapCode> Combine2to2(
+            CombinerResult<ZapCode> Combine2To2(
                 string newText1, string newText2,
                 PeepholeLineType? type1 = null, PeepholeLineType? type2 = null,
-                ILabel target1 = null, ILabel target2 = null)
+                [CanBeNull] ILabel target1 = null, [CanBeNull] ILabel target2 = null)
             {
                 return new CombinerResult<ZapCode>(
                     2,
-                    new CombinableLine<ZapCode>[] {
+                    new[] {
                         new CombinableLine<ZapCode>(
                             matches[0].Label,
                             new ZapCode {
@@ -1364,37 +1312,33 @@ namespace Zilf.Emit.Zap
                     });
             }
 
-            CombinerResult<ZapCode> Combine3to1(string newText, PeepholeLineType? type = null, ILabel target = null)
-            {
-                return new CombinerResult<ZapCode>(
-                    3,
-                    new CombinableLine<ZapCode>[] {
-                        new CombinableLine<ZapCode>(
-                            matches[0].Label,
-                            new ZapCode {
-                                Text = newText,
-                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText ?? matches[2].Code.DebugText
-                            },
-                            target ?? matches[2].Target,
-                            type ?? matches[2].Type)
-                    });
-            }
-
             static CombinerResult<ZapCode> Consume(int numberOfLines)
             {
                 return new CombinerResult<ZapCode>(numberOfLines, Enumerable.Empty<CombinableLine<ZapCode>>());
             }
 
-            static readonly Regex equalZeroRegex = new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
-            static readonly Regex bandConstantToStackRegex = new Regex(@"^BAND (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
-            static readonly Regex bandConstantWithStackRegex = new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
-            static readonly Regex borConstantToStackRegex = new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
-            static readonly Regex borConstantWithStackRegex = new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
-            static readonly Regex popToVariableRegex = new Regex(@"^POP ['>]");
+            static readonly Regex equalZeroRegex =
+                new Regex(@"^EQUAL\? (?:(?<var>[^,]+),0|0,(?<var>[^,]+))$");
 
+            static readonly Regex bandConstantToStackRegex =
+                new Regex(@"^BAND (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+
+            static readonly Regex bandConstantWithStackRegex =
+                new Regex(@"^BAND (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+
+            static readonly Regex borConstantToStackRegex =
+                new Regex(@"^BOR (?:(?<var>[^,]+),(?<const>-?\d+)|(?<const>-?\d+),(?<var>[^,]+)) >STACK$");
+
+            static readonly Regex borConstantWithStackRegex =
+                new Regex(@"^BOR (?:STACK,(?<const>-?\d+)|(?<const>-?\d+),STACK) >(?<dest>.*)$");
+
+            static readonly Regex popToVariableRegex =
+                new Regex(@"^POP ['>]");
+
+            /// <inheritdoc />
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                System.Text.RegularExpressions.Match rm = null, rm2 = null;
+                Match rm = null, rm2 = null;
 
                 BeginMatch(lines);
                 try
@@ -1403,13 +1347,13 @@ namespace Zilf.Emit.Zap
                     {
                         // EQUAL? x,0 | EQUAL? 0,x => ZERO? x
                         Contract.Assume(rm != null);
-                        return Combine1to1("ZERO? " + rm.Groups["var"]);
+                        return Combine1To1("ZERO? " + rm.Groups["var"]);
                     }
 
                     if (Match(a => a.Code.Text == "JUMP" && (a.Target == RTRUE || a.Target == RFALSE)))
                     {
                         // JUMP to TRUE/FALSE => RTRUE/RFALSE
-                        return Combine1to1(matches[0].Target == RTRUE ? "RTRUE" : "RFALSE");
+                        return Combine1To1(matches[0].Target == RTRUE ? "RTRUE" : "RFALSE");
                     }
 
                     if (Match(a => a.Code.Text.StartsWith("PUSH ", StringComparison.Ordinal), b => b.Code.Text == "RSTACK"))
@@ -1418,11 +1362,11 @@ namespace Zilf.Emit.Zap
                         switch (matches[0].Code.Text)
                         {
                             case "PUSH 0":
-                                return Combine2to1("RFALSE", PeepholeLineType.BranchAlways, RoutineBuilder.RFALSE);
+                                return Combine2To1("RFALSE", PeepholeLineType.BranchAlways, RFALSE);
                             case "PUSH 1":
-                                return Combine2to1("RTRUE", PeepholeLineType.BranchAlways, RoutineBuilder.RTRUE);
+                                return Combine2To1("RTRUE", PeepholeLineType.BranchAlways, RTRUE);
                             default:
-                                return Combine2to1("RETURN " + matches[0].Code.Text.Substring(5));
+                                return Combine2To1("RETURN " + matches[0].Code.Text.Substring(5));
                         }
                     }
 
@@ -1431,7 +1375,7 @@ namespace Zilf.Emit.Zap
                         // >STACK + POP 'dest => >dest
                         var a = matches[0].Code.Text;
                         var b = matches[1].Code.Text;
-                        return Combine2to1(a.Substring(0, a.Length - 5) + b.Substring(5));
+                        return Combine2To1(a.Substring(0, a.Length - 5) + b.Substring(5));
                     }
 
                     if (Match(a => a.Code.Text.StartsWith("PUSH ", StringComparison.Ordinal), b => popToVariableRegex.IsMatch(b.Code.Text)))
@@ -1439,7 +1383,7 @@ namespace Zilf.Emit.Zap
                         // PUSH + POP 'dest => SET 'dest
                         var a = matches[0].Code.Text;
                         var b = matches[1].Code.Text;
-                        return Combine2to1("SET '" + b.Substring(5) + "," + a.Substring(5));
+                        return Combine2To1("SET '" + b.Substring(5) + "," + a.Substring(5));
                     }
 
                     if (Match(a => a.Code.Text.StartsWith("INC '", StringComparison.Ordinal), b => b.Code.Text.StartsWith("GRTR? ", StringComparison.Ordinal)))
@@ -1449,7 +1393,7 @@ namespace Zilf.Emit.Zap
                             matches[1].Code.Text.StartsWith("GRTR? " + str, StringComparison.Ordinal))
                         {
                             // INC 'v + GRTR? v => IGRTR? 'v
-                            return Combine2to1("IGRTR? '" + matches[1].Code.Text.Substring(6));
+                            return Combine2To1("IGRTR? '" + matches[1].Code.Text.Substring(6));
                         }
                     }
 
@@ -1460,34 +1404,29 @@ namespace Zilf.Emit.Zap
                             matches[1].Code.Text.StartsWith("LESS? " + str, StringComparison.Ordinal))
                         {
                             // DEC 'v + LESS? v => DLESS? 'v
-                            return Combine2to1("DLESS? '" + matches[1].Code.Text.Substring(6));
+                            return Combine2To1("DLESS? '" + matches[1].Code.Text.Substring(6));
                         }
                     }
 
-                    if (Match(a => (a.Code.Text.StartsWith("EQUAL? ", StringComparison.Ordinal) || a.Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal)) && a.Type == PeepholeLineType.BranchPositive,
-                        b => (b.Code.Text.StartsWith("EQUAL? ", StringComparison.Ordinal) || b.Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal)) && b.Type == PeepholeLineType.BranchPositive))
+                    if (Match(
+                        a => (a.Code.Text.StartsWith("EQUAL? ", StringComparison.Ordinal) ||
+                              a.Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal)) &&
+                             a.Type == PeepholeLineType.BranchPositive,
+                        b => (b.Code.Text.StartsWith("EQUAL? ", StringComparison.Ordinal) ||
+                              b.Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal)) &&
+                             b.Type == PeepholeLineType.BranchPositive))
                     {
                         if (matches[0].Target == matches[1].Target)
                         {
-                            string[] aparts, bparts;
-
-                            if (matches[0].Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal))
+                            string[] GetParts(string text)
                             {
-                                aparts = new[] { matches[0].Code.Text.Substring(6), "0" };
-                            }
-                            else
-                            {
-                                aparts = matches[0].Code.Text.Substring(7).Split(',');
+                                return text.StartsWith("ZERO? ", StringComparison.Ordinal)
+                                    ? new[] { text.Substring(6), "0" }
+                                    : text.Substring(7).Split(',');
                             }
 
-                            if (matches[1].Code.Text.StartsWith("ZERO? ", StringComparison.Ordinal))
-                            {
-                                bparts = new[] { matches[1].Code.Text.Substring(6), "0" };
-                            }
-                            else
-                            {
-                                bparts = matches[1].Code.Text.Substring(7).Split(',');
-                            }
+                            var aparts = GetParts(matches[0].Code.Text);
+                            var bparts = GetParts(matches[1].Code.Text);
 
                             if (aparts[0] == bparts[0] && aparts.Length < 4)
                             {
@@ -1498,22 +1437,17 @@ namespace Zilf.Emit.Zap
                                     // EQUAL? v,a,b /L + EQUAL? v,c /L => EQUAL? v,a,b,c /L
                                     sb.Append("EQUAL? ");
                                     sb.Append(aparts[0]);
-                                    for (int i = 1; i < aparts.Length; i++)
+                                    foreach (var part in aparts.Skip(1).Concat(bparts.Skip(1)))
                                     {
                                         sb.Append(',');
-                                        sb.Append(aparts[i]);
+                                        sb.Append(part);
                                     }
-                                    for (int i = 1; i < bparts.Length; i++)
-                                    {
-                                        sb.Append(',');
-                                        sb.Append(bparts[i]);
-                                    }
-                                    return Combine2to1(sb.ToString());
+                                    return Combine2To1(sb.ToString());
                                 }
                                 else
                                 {
                                     // EQUAL? v,a,b /L + EQUAL? v,c,d /L => EQUAL? v,a,b,c /L + EQUAL? v,d /L
-                                    var allRhs = aparts.Skip(1).Concat(bparts.Skip(1));
+                                    var allRhs = aparts.Skip(1).Concat(bparts.Skip(1)).ToArray();
 
                                     sb.Append("EQUAL? ");
                                     sb.Append(aparts[0]);
@@ -1534,7 +1468,7 @@ namespace Zilf.Emit.Zap
                                     }
                                     var second = sb.ToString();
 
-                                    return Combine2to2(first, second);
+                                    return Combine2To2(first, second);
                                 }
                             }
                         }
@@ -1544,13 +1478,13 @@ namespace Zilf.Emit.Zap
                     {
                         // combine CRLF + RTRUE into a single terminator
                         // this can be pulled through a branch and thus allows more PRINTR transformations
-                        return Combine2to1("CRLF+RTRUE", PeepholeLineType.Terminator);
+                        return Combine2To1("CRLF+RTRUE", PeepholeLineType.Terminator);
                     }
 
                     if (Match(a => a.Code.Text.StartsWith("PRINTI ", StringComparison.Ordinal), b => b.Code.Text == "CRLF+RTRUE"))
                     {
                         // PRINTI + (CRLF + RTRUE) => PRINTR
-                        return Combine2to1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
+                        return Combine2To1("PRINTR " + matches[0].Code.Text.Substring(7), PeepholeLineType.HeavyTerminator);
                     }
 
                     // BAND v,c >STACK + ZERO? STACK /L =>
@@ -1567,21 +1501,18 @@ namespace Zilf.Emit.Zap
                         {
                             if (rm.Groups["var"].Value != "STACK")
                             {
-                                if (matches[1].Type == PeepholeLineType.BranchPositive)
-                                    return Combine2to1("JUMP", PeepholeLineType.BranchAlways, matches[1].Target);
-                                else
-                                    return Consume(2);
+                                return matches[1].Type == PeepholeLineType.BranchPositive
+                                    ? Combine2To1("JUMP", PeepholeLineType.BranchAlways, matches[1].Target)
+                                    : Consume(2);
                             }
                         }
                         else if ((constantValue & (constantValue - 1)) == 0)
                         {
-                            PeepholeLineType oppositeType;
-                            if (matches[1].Type == PeepholeLineType.BranchPositive)
-                                oppositeType = PeepholeLineType.BranchNegative;
-                            else
-                                oppositeType = PeepholeLineType.BranchPositive;
+                            var oppositeType = matches[1].Type == PeepholeLineType.BranchPositive
+                                ? PeepholeLineType.BranchNegative
+                                : PeepholeLineType.BranchPositive;
 
-                            return Combine2to1("BTST " + variable + "," + constantValue, oppositeType);
+                            return Combine2To1("BTST " + variable + "," + constantValue, oppositeType);
                         }
                     }
 
@@ -1596,7 +1527,7 @@ namespace Zilf.Emit.Zap
                         var constant1 = int.Parse(rm.Groups["const"].Value);
                         var constant2 = int.Parse(rm2.Groups["const"].Value);
                         var combined = constant1 & constant2;
-                        return Combine2to1("BAND " + variable + "," + combined + " >" + dest);
+                        return Combine2To1("BAND " + variable + "," + combined + " >" + dest);
                     }
 
                     // BOR v,c1 >STACK + BOR STACK,c2 >dest => BOR v,(c1|c2) >dest
@@ -1610,7 +1541,7 @@ namespace Zilf.Emit.Zap
                         var constant1 = int.Parse(rm.Groups["const"].Value);
                         var constant2 = int.Parse(rm2.Groups["const"].Value);
                         var combined = constant1 | constant2;
-                        return Combine2to1("BOR " + variable + "," + combined + " >" + dest);
+                        return Combine2To1("BOR " + variable + "," + combined + " >" + dest);
                     }
 
                     // no matches

@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 
 namespace Zilf.ZModel.Vocab
@@ -38,6 +39,6 @@ namespace Zilf.ZModel.Vocab
         Direction = 16,
         Adjective = 32,
         Verb = 64,
-        Object = 128,
+        Object = 128
     }
 }

@@ -1,5 +1,8 @@
+using JetBrains.Annotations;
+
 namespace Zilf.Emit.Zap
 {
+    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
     public class GameOptions : IGameOptions
     {
         GameOptions()

@@ -15,45 +15,48 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
-using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
+using Zilf.Language;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
     class ZilRoutine : ZilTiedListBase
     {
-        readonly ZilAtom name;
-        readonly ArgSpec argspec;
+        [NotNull]
         readonly ZilObject[] body;
-        readonly RoutineFlags flags;
 
-        public ZilRoutine(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
+        public ZilRoutine([CanBeNull] ZilAtom name, ZilAtom activationAtom, [NotNull] IEnumerable<ZilObject> argspec, [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
         {
-            Contract.Requires(name != null);
             Contract.Requires(argspec != null);
             Contract.Requires(body != null);
 
-            this.name = name;
-            this.argspec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
+            Name = name;
+            ArgSpec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
             this.body = body.ToArray();
-            this.flags = flags;
+            Flags = flags;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
+        [NotNull]
         [ChtypeMethod]
-        public static ZilRoutine FromList(Context ctx, ZilListBase list)
+        public static ZilRoutine FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
 
-            if (list.IsEmpty || list.Rest.IsEmpty)
+            if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s,
                     "list coerced to ROUTINE",
@@ -67,21 +70,33 @@ namespace Zilf.ZModel.Values
             throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
         }
 
+        [NotNull]
         protected override TiedLayout GetLayout()
         {
+            Contract.Ensures(Contract.Result<TiedLayout>() != null);
             return TiedLayout.Create<ZilRoutine>(
                 x => x.ArgSpecAsList,
                 x => x.BodyAsList);
         }
 
-        public ArgSpec ArgSpec => argspec;
+        [NotNull]
+        public ArgSpec ArgSpec { get; }
+
+        [NotNull]
         public IEnumerable<ZilObject> Body => body;
         public int BodyLength => body.Length;
-        public ZilAtom Name => name;
-        public ZilAtom ActivationAtom => argspec.ActivationAtom;
-        public RoutineFlags Flags => flags;
 
-        ZilList ArgSpecAsList => argspec.ToZilList();
+        [CanBeNull]
+        public ZilAtom Name { get; }
+
+        [CanBeNull]
+        public ZilAtom ActivationAtom => ArgSpec.ActivationAtom;
+        public RoutineFlags Flags { get; }
+
+        [NotNull]
+        ZilList ArgSpecAsList => ArgSpec.ToZilList();
+
+        [NotNull]
         ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
@@ -91,14 +106,14 @@ namespace Zilf.ZModel.Values
             if (!(obj is ZilRoutine other))
                 return false;
 
-            if (!other.argspec.Equals(this.argspec))
+            if (!other.ArgSpec.Equals(ArgSpec))
                 return false;
 
-            if (other.body.Length != this.body.Length)
+            if (other.body.Length != body.Length)
                 return false;
 
             for (int i = 0; i < body.Length; i++)
-                if (!other.body[i].Equals(this.body[i]))
+                if (!other.body[i].Equals(body[i]))
                     return false;
 
             return true;
@@ -106,12 +121,20 @@ namespace Zilf.ZModel.Values
 
         public override int GetHashCode()
         {
-            var result = argspec.GetHashCode();
+            var result = ArgSpec.GetHashCode();
 
-            foreach (ZilObject obj in body)
+            foreach (var obj in body)
                 result ^= obj.GetHashCode();
 
             return result;
+        }
+
+        [ContractInvariantMethod]
+        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
+        [Conditional("CONTRACTS_FULL")]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(body != null);
         }
     }
 }

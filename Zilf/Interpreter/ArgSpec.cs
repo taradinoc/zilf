@@ -23,6 +23,9 @@ using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
+using System.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
@@ -73,18 +76,10 @@ namespace Zilf.Interpreter
             this.argDefaults = argDefaults;
         }
 
-        public static ArgSpec Parse(string caller, ArgSpec prev, IEnumerable<ZilObject> argspec)
-        {
-            Contract.Requires(caller != null);
-            Contract.Requires(prev != null);
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-            Contract.Ensures(Contract.Result<ArgSpec>() != null);
-
-            return Parse(caller, prev.name, null, argspec);
-        }
-
+        /// <exception cref="InterpreterError">The argument specification is invalid.</exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        public static ArgSpec Parse(string caller, ZilAtom targetName, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
+        [NotNull]
+        public static ArgSpec Parse([NotNull] string caller, ZilAtom targetName, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
         {
             Contract.Requires(caller != null);
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
@@ -112,7 +107,7 @@ namespace Zilf.Interpreter
             int oneOffMode = OO_None;
             ZilObject oneOffTag = null;
 
-            foreach (ZilObject arg in argspec)
+            foreach (var arg in argspec)
             {
                 // check for arg clause separators: "OPT", "AUX", etc.
                 if (arg is ZilString sep)
@@ -328,6 +323,7 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(argAtoms != null && Contract.ForAll(argAtoms, a => a != null));
@@ -342,15 +338,9 @@ namespace Zilf.Interpreter
             Contract.Invariant(MaxArgCount == null || MaxArgCount >= MinArgCount);
         }
 
-        public int MinArgCount
-        {
-            get { return optArgsStart; }
-        }
+        public int MinArgCount => optArgsStart;
 
-        public int? MaxArgCount
-        {
-            get { return (varargsAtom != null) ? null : (int?)auxArgsStart; }
-        }
+        public int? MaxArgCount => varargsAtom != null ? null : (int?)auxArgsStart;
 
         public IEnumerator<ArgItem> GetEnumerator()
         {
@@ -372,13 +362,16 @@ namespace Zilf.Interpreter
             return GetEnumerator();
         }
 
-        public string ToString(Func<ZilObject, string> convert)
+        [NotNull]
+        public string ToString([NotNull] Func<ZilObject, string> convert)
         {
+            Contract.Requires(convert != null);
+            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
             sb.Append('(');
 
             bool first = true;
-            foreach (var item in this.AsZilListBody())
+            foreach (var item in AsZilListBody())
             {
                 if (!first)
                     sb.Append(' ');
@@ -394,7 +387,7 @@ namespace Zilf.Interpreter
 
         public override string ToString()
         {
-            return this.ToString(zo => zo.ToString());
+            return ToString(zo => zo.ToString());
         }
 
         public override bool Equals(object obj)
@@ -402,21 +395,21 @@ namespace Zilf.Interpreter
             if (!(obj is ArgSpec other))
                 return false;
 
-            int numArgs = this.argAtoms.Length;
+            int numArgs = argAtoms.Length;
             if (other.argAtoms.Length != numArgs ||
-                other.optArgsStart != this.optArgsStart ||
-                other.auxArgsStart != this.auxArgsStart ||
-                other.varargsAtom != this.varargsAtom ||
-                other.varargsQuoted != this.varargsQuoted)
+                other.optArgsStart != optArgsStart ||
+                other.auxArgsStart != auxArgsStart ||
+                other.varargsAtom != varargsAtom ||
+                other.varargsQuoted != varargsQuoted)
                 return false;
 
             for (int i = 0; i < numArgs; i++)
             {
-                if (other.argAtoms[i] != this.argAtoms[i])
+                if (other.argAtoms[i] != argAtoms[i])
                     return false;
-                if (other.argQuoted[i] != this.argQuoted[i])
+                if (other.argQuoted[i] != argQuoted[i])
                     return false;
-                if (!object.Equals(other.argDefaults[i], this.argDefaults[i]))
+                if (!Equals(other.argDefaults[i], argDefaults[i]))
                     return false;
             }
 
@@ -491,10 +484,13 @@ namespace Zilf.Interpreter
             IEnumerator<ZilObject> enumerator;
             IEnumerator<ZilResult> expansion;
 
-            public ArgEvaluator(Context ctx, LocalEnvironment env, IEnumerable<ZilObject> rawArgs, Action throwWrongCount)
+            public ArgEvaluator([NotNull] Context ctx, [NotNull] LocalEnvironment env, [NotNull] IEnumerable<ZilObject> rawArgs,
+                [NotNull] Action throwWrongCount)
             {
                 Contract.Requires(ctx != null);
+                Contract.Requires(env != null);
                 Contract.Requires(rawArgs != null);
+                Contract.Requires(throwWrongCount != null);
 
                 this.ctx = ctx;
                 this.env = env;
@@ -517,22 +513,29 @@ namespace Zilf.Interpreter
                 }
             }
 
+            /// <exception cref="InterpreterError">The wrong number of arguments were provided.</exception>
+            [ContractAnnotation("=> halt")]
+            void DoThrowWrongCount()
+            {
+                throwWrongCount();
+            }
+
+            /// <exception cref="InterpreterError">Too few arguments were provided.</exception>
+            [ContractAnnotation("=> src: notnull")]
             public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
-                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 Contract.Ensures(Contract.ValueAtReturn(out src) != null);
 
                 var result = GetOneOptional(eval, out src);
 
-                if (result == null)
-                {
-                    throwWrongCount();
-                    throw new InvalidOperationException();
-                }
+                if (result != null)
+                    return result.Value;
 
-                return result.Value;
+                DoThrowWrongCount();
+                throw new UnreachableCodeException();
             }
 
+            /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
             public ZilResult? GetOneOptional(bool eval, out IProvideSourceLine src)
             {
                 Contract.Ensures(Contract.ValueAtReturn(out src) != null || Contract.Result<ZilObject>() == null);
@@ -551,8 +554,7 @@ namespace Zilf.Interpreter
                         {
                             if (!eval)
                             {
-                                throwWrongCount();
-                                throw new InvalidOperationException();
+                                DoThrowWrongCount();
                             }
 
                             var zr = expansion.Current;
@@ -562,7 +564,7 @@ namespace Zilf.Interpreter
                                 return zr;
                             }
 
-                            src = (ZilObject)expansion.Current as IProvideSourceLine;
+                            src = (ZilObject)expansion.Current;
                             return expansion.Current;
                         }
 
@@ -595,6 +597,7 @@ namespace Zilf.Interpreter
                 }
             }
 
+            /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
             public IEnumerable<ZilResult> GetRest(bool eval)
             {
                 ZilResult? zr;
@@ -609,7 +612,7 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="ctx">The context.</param>
         /// <param name="args">The unevaluated arguments provided at the call site.</param>
-        /// <param name="eval"><b>true</b> if any provided arguments corresponding to unquoted argument atoms should be evaluated.</param>
+        /// <param name="eval"><see langword="true"/> if any provided arguments corresponding to unquoted argument atoms should be evaluated.</param>
         /// <returns>An object containing the new activation and other data needed to restore state, which must be disposed to
         /// restore the state.</returns>
         /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
@@ -618,12 +621,15 @@ namespace Zilf.Interpreter
         /// In the case of an exception, the new local environment will not be pushed.</para>
         /// <para>Make sure to call <see cref="IDisposable.Dispose"/> on the returned object!</para>
         /// </remarks>
+        [NotNull]
+        [MustUseReturnValue]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public Application BeginApply(Context ctx, ZilObject[] args, bool eval)
+        public Application BeginApply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
             Contract.Requires(Contract.ForAll(args, a => a != null));
+            Contract.Ensures(Contract.Result<Application>() != null);
 
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
@@ -631,17 +637,12 @@ namespace Zilf.Interpreter
             var wasTopLevel = ctx.AtTopLevel;
             ctx.AtTopLevel = false;
 
-            Action throwWrongCount = () =>
-            {
-                throw ArgumentCountError.WrongCount(
-                    new FunctionCallSite(name?.ToString() ?? "user-defined function"),
-                    optArgsStart,
-                    auxArgsStart);
-            };
+            void ThrowWrongCount() => throw ArgumentCountError.WrongCount(
+                new FunctionCallSite(name?.ToString() ?? "user-defined function"), optArgsStart, auxArgsStart);
 
             try
             {
-                using (var evaluator = new ArgEvaluator(ctx, outerEnv, args, throwWrongCount))
+                using (var evaluator = new ArgEvaluator(ctx, outerEnv, args, ThrowWrongCount))
                 {
                     if (environmentAtom != null)
                     {
@@ -725,29 +726,44 @@ namespace Zilf.Interpreter
                 /* make an unassigned binding so RETURN and AGAIN won't use the
                  * activation of a PROG outside the newly entered function unless
                  * explicitly told to */
-                innerEnv.Rebind(ctx.EnclosingProgActivationAtom, null);
+                innerEnv.Rebind(ctx.EnclosingProgActivationAtom);
 
                 return new Application(ctx, activation, innerEnv, wasTopLevel);
+            }
+            catch (InterpreterError)
+            {
+                // this is a separate block to satisfy Exceptional...
+
+                // pop the environment so the caller doesn't have to
+                ctx.PopEnvironment();
+                ctx.AtTopLevel = wasTopLevel;
+                throw;
             }
             catch
             {
                 // pop the environment so the caller doesn't have to
                 ctx.PopEnvironment();
                 ctx.AtTopLevel = wasTopLevel;
+                // ReSharper disable once ExceptionNotDocumented
                 throw;
             }
         }
 
-        public void ValidateResult(Context ctx, ZilObject result)
+        /// <exception cref="DeclCheckError"><paramref name="result"/> did not match the required pattern, and
+        /// <paramref name="ctx"/>.<see cref="Context.CheckDecls"/> is <see langword="true"/>.</exception>
+        public void ValidateResult([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject result)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(result != null);
             ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", name);
         }
 
+        [NotNull]
         public ZilList ToZilList()
         {
             Contract.Ensures(Contract.Result<ZilList>() != null);
 
-            return new ZilList(this.AsZilListBody());
+            return new ZilList(AsZilListBody());
         }
 
         public IEnumerable<ZilObject> AsZilListBody()
@@ -789,7 +805,7 @@ namespace Zilf.Interpreter
 
                 if (argQuoted[i])
                 {
-                    arg = new ZilForm(new ZilObject[] { quoteAtom, arg });
+                    arg = new ZilForm(new[] { quoteAtom, arg });
                 }
 
                 if (argDecls[i] != null)
@@ -833,9 +849,6 @@ namespace Zilf.Interpreter
             }
         }
 
-        public ZilAtom ActivationAtom
-        {
-            get { return activationAtom; }
-        }
+        public ZilAtom ActivationAtom => activationAtom;
     }
 }

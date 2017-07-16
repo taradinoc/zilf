@@ -51,6 +51,6 @@ namespace Zilf.ZModel
         /// <summary>
         /// Like <see cref="Defined"/>, but with all non-rooms having lower numbers than rooms.
         /// </summary>
-        RoomsLast,
+        RoomsLast
     }
 }
