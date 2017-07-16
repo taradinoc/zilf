@@ -17,13 +17,17 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 
 namespace Zapf
 {
     [Flags]
     public enum ZOpFlags
     {
+/*
         None = 0,
+*/
         /// <summary>
         /// The instruction stores a result.
         /// </summary>
@@ -67,47 +71,30 @@ namespace Zapf
     }
 
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    [MeansImplicitUse]
     public class ZOpAttribute : Attribute
     {
-        readonly string classicName, informName;
-        readonly int minVer, maxVer;
-        readonly ZOpFlags flags;
-
         public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)
         {
-            this.classicName = classicName;
-            this.informName = informName;
-            this.minVer = minVer;
-            this.maxVer = maxVer;
-            this.flags = flags;
+            ClassicName = classicName;
+            InformName = informName;
+            MinVer = minVer;
+            MaxVer = maxVer;
+            Flags = flags;
         }
 
-        public string ClassicName
-        {
-            get { return classicName; }
-        }
+        public string ClassicName { get; }
 
-        public string InformName
-        {
-            get { return informName; }
-        }
+        public string InformName { get; }
 
-        public int MinVer
-        {
-            get { return minVer; }
-        }
+        public int MinVer { get; }
 
-        public int MaxVer
-        {
-            get { return maxVer; }
-        }
+        public int MaxVer { get; }
 
-        public ZOpFlags Flags
-        {
-            get { return flags; }
-        }
+        public ZOpFlags Flags { get; }
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum Opcodes : ushort
     {
         [ZOp("ADD", "add", 1, 6, ZOpFlags.Store)]

@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
+using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -35,12 +37,14 @@ namespace Zilf.ZModel.Values
     {
         enum InputElementType
         {
+/*
             Invalid = 0,
+*/
 
             Opt,
             Many,
             Variable,
-            Atom,
+            Atom
         }
 
         struct InputElement
@@ -51,14 +55,14 @@ namespace Zilf.ZModel.Values
 
             public InputElement(InputElementType type, ZilAtom variable, ZilObject decl)
             {
-                this.Type = type;
-                this.Variable = variable;
-                this.Decl = decl;
+                Type = type;
+                Variable = variable;
+                Decl = decl;
             }
 
             public override string ToString()
             {
-                return string.Format("Type={0} Variable={1} Decl={2}", Type, Variable, Decl);
+                return $"Type={Type} Variable={Variable} Decl={Decl}";
             }
 
             public ZilObject ToZilObject()
@@ -92,7 +96,9 @@ namespace Zilf.ZModel.Values
 
         enum OutputElementType
         {
+/*
             Invalid = 0,
+*/
 
             Length,
             Many,
@@ -104,7 +110,7 @@ namespace Zilf.ZModel.Values
             Noun,
             Adjective,
             Voc,
-            String,
+            String
         }
 
         struct OutputElement
@@ -113,33 +119,33 @@ namespace Zilf.ZModel.Values
             public readonly ZilAtom Constant, Variable, PartOfSpeech;
             public readonly ZilFix Fix;
 
-            public OutputElement(OutputElementType type, ZilAtom constant, ZilAtom variable = null, ZilAtom partOfSpeech = null, ZilFix fix = null)
+            public OutputElement(OutputElementType type, ZilAtom constant, [CanBeNull] ZilAtom variable = null,
+                [CanBeNull] ZilAtom partOfSpeech = null, [CanBeNull] ZilFix fix = null)
             {
-                this.Type = type;
-                this.Constant = constant;
-                this.Variable = variable;
-                this.PartOfSpeech = partOfSpeech;
-                this.Fix = fix;
+                Type = type;
+                Constant = constant;
+                Variable = variable;
+                PartOfSpeech = partOfSpeech;
+                Fix = fix;
             }
 
             public override string ToString()
             {
-                return string.Format("Type={0} Constant={1} Variable={2} PartOfSpeech={3} Fix={4}",
-                    Type, Constant, Variable, PartOfSpeech, Fix);
+                return $"Type={Type} Constant={Constant} Variable={Variable} PartOfSpeech={PartOfSpeech} Fix={Fix}";
             }
 
-            public ZilObject ToZilObject(ComplexPropDef tied)
+            [NotNull]
+            public ZilObject ToZilObject([NotNull] ComplexPropDef tied)
             {
+                Contract.Requires(tied != null);
+                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 ZilObject result;
                 StdAtom head;
 
                 switch (Type)
                 {
                     case OutputElementType.Length:
-                        if (Fix != null)
-                            result = Fix;
-                        else
-                            result = tied.FALSE;
+                        result = Fix ?? tied.FALSE;
                         break;
 
                     case OutputElementType.Many:
@@ -169,7 +175,6 @@ namespace Zilf.ZModel.Values
                         goto TwoElementForm;
                     case OutputElementType.Word:
                         head = StdAtom.WORD;
-                        goto TwoElementForm;
 
                     TwoElementForm:
                         result = new ZilForm(new[] {
@@ -200,10 +205,8 @@ namespace Zilf.ZModel.Values
                 {
                     return new ZilList(new[] { Constant, result });
                 }
-                else
-                {
-                    return result;
-                }
+
+                return result;
             }
         }
 
@@ -214,22 +217,24 @@ namespace Zilf.ZModel.Values
 
             public Pattern(InputElement[] inputs, OutputElement[] outputs)
             {
-                this.Inputs = inputs;
-                this.Outputs = outputs;
+                Inputs = inputs;
+                Outputs = outputs;
             }
         }
 
         readonly List<Pattern> patterns;
 
-        ComplexPropDef(IEnumerable<Pattern> patterns)
+        ComplexPropDef([NotNull] IEnumerable<Pattern> patterns)
         {
+            Contract.Requires(patterns != null);
             this.patterns = new List<Pattern>(patterns);
         }
 
-        public static ComplexPropDef Parse(IEnumerable<ZilObject> spec, Context ctx)
+        /// <exception cref="InterpreterError">The PROPDEF pattern syntax is invalid.</exception>
+        [NotNull]
+        public static ComplexPropDef Parse([NotNull] IEnumerable<ZilObject> spec)
         {
             Contract.Requires(spec != null);
-            Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ComplexPropDef>() != null);
 
             var inputs = new List<InputElement>();
@@ -299,7 +304,6 @@ namespace Zilf.ZModel.Values
                         // outputs
                         ZilAtom constant = null;
                         var output = element;
-                        var type = output.StdTypeAtom;
 
                         if (element is ZilList elemList)
                         {
@@ -314,6 +318,7 @@ namespace Zilf.ZModel.Values
                                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, "1", "list", "PROPDEF output pattern", "an atom");
                             }
 
+                            Debug.Assert(elemList.Rest != null);
                             output = elemList.Rest.First;
                             Contract.Assert(output != null);
                         }
@@ -325,7 +330,7 @@ namespace Zilf.ZModel.Values
                                 break;
 
                             case ZilFalse _:
-                                outputs.Add(new OutputElement(OutputElementType.Length, constant, fix: null));
+                                outputs.Add(new OutputElement(OutputElementType.Length, constant));
                                 break;
 
                             case ZilForm form:
@@ -397,7 +402,7 @@ namespace Zilf.ZModel.Values
             return new ComplexPropDef(patterns);
         }
 
-        static OutputElement ConvertOutputForm(ZilForm form, ZilAtom constant)
+        static OutputElement ConvertOutputForm([NotNull] ZilForm form, ZilAtom constant)
         {
             Contract.Requires(form != null);
 
@@ -465,11 +470,13 @@ namespace Zilf.ZModel.Values
                 throw new InterpreterError(form, InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1, head, length);
             }
 
+            Debug.Assert(form.Rest?.Rest != null);
+
             ZilAtom outVariable;
             ZilFix outFix;
             switch (form.Rest.First)
             {
-                case var zo when (zo.IsLVAL(out var atom)):
+                case var zo when zo.IsLVAL(out var atom):
                     outVariable = atom;
                     outFix = null;
                     break;
@@ -505,6 +512,7 @@ namespace Zilf.ZModel.Values
             return new OutputElement(type, constant, outVariable, partOfSpeech, outFix);
         }
 
+        /// <exception cref="InterpreterError">A constant was defined at conflicting positions across definitions.</exception>
         public IEnumerable<KeyValuePair<ZilAtom, int>> GetConstants(Context ctx)
         {
             var used = new Dictionary<ZilAtom, int>();
@@ -603,6 +611,7 @@ namespace Zilf.ZModel.Values
                 .WithCatchAll<ComplexPropDef>(x => x.PatternsList);
         }
 
+        [NotNull]
         public ZilList PatternsList
         {
             get
@@ -625,10 +634,14 @@ namespace Zilf.ZModel.Values
             }
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ComplexPropDef FromList(Context ctx, ZilListBase list)
+        public static ComplexPropDef FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            return Parse(list, ctx);
+            Contract.Requires(ctx != null);
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ComplexPropDef>() != null);
+            return Parse(list);
         }
 
         public struct ElementPreBuilders
@@ -657,7 +670,8 @@ namespace Zilf.ZModel.Values
             return false;
         }
 
-        public void PreBuildProperty(Context ctx, ZilList prop, ElementPreBuilders preBuilders)
+        /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
+        public void PreBuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, ElementPreBuilders preBuilders)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prop != null);
@@ -680,7 +694,8 @@ namespace Zilf.ZModel.Values
             throw new InterpreterError(InterpreterMessages.Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns, prop.First);
         }
 
-        public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
+        /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
+        public void BuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, [NotNull] ITableBuilder tb, ElementConverters converters)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prop != null);
@@ -709,8 +724,8 @@ namespace Zilf.ZModel.Values
 
         // may change prop even for an unsuccessful match
         // may not match the entire property (check prop.IsEmpty on return)
-        bool MatchPartialPattern(Context ctx, ref ZilList prop, InputElement[] inputs, int startIndex,
-            Dictionary<ZilAtom, Queue<ZilObject>> captures)
+        bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilList prop, [NotNull] InputElement[] inputs, int startIndex,
+            [CanBeNull] Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(prop != null);
@@ -724,15 +739,20 @@ namespace Zilf.ZModel.Values
                 switch (input.Type)
                 {
                     case InputElementType.Atom:
-                        if (prop.First != input.Variable)
-                            return false;
+                        if (prop.First == input.Variable)
+                        {
+                            Debug.Assert(prop.Rest != null);
+                            prop = prop.Rest;
+                            break;
+                        }
 
-                        prop = prop.Rest;
-                        break;
+                        return false;
 
                     case InputElementType.Variable:
-                        if (!CheckInputDecl(ctx, prop.First, input.Decl))
+                        if (prop.First == null || !CheckInputDecl(ctx, prop.First, input.Decl))
                             return false;
+
+                        Debug.Assert(prop.Rest != null);
 
                         if (captures != null)
                         {
@@ -750,12 +770,7 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case InputElementType.Opt:
-                        if (!prop.IsEmpty)
-                        {
-                            if (!MatchPartialPattern(ctx, ref prop, inputs, i + 1, captures))
-                                return false;
-                        }
-                        return true;
+                        return prop.IsEmpty || MatchPartialPattern(ctx, ref prop, inputs, i + 1, captures);
 
                     case InputElementType.Many:
                         while (!prop.IsEmpty)
@@ -770,8 +785,12 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        bool CheckInputDecl(Context ctx, ZilObject value, ZilObject decl)
+        [ContractAnnotation("decl: null => false")]
+        static bool CheckInputDecl([NotNull] Context ctx, [NotNull] ZilObject value, [CanBeNull] ZilObject decl)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(value != null);
+
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
                 value = constant.Value;
@@ -798,8 +817,8 @@ namespace Zilf.ZModel.Values
             return false;
         }
 
-        bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
-            ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex, ISourceLine src)
+        static bool PartialPreBuild([NotNull] Context ctx, [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures,
+            ElementPreBuilders preBuilders, [NotNull] OutputElement[] outputs, int startIndex, ISourceLine src)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(captures != null);
@@ -870,8 +889,8 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
-            Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex,
+        static bool WritePartialOutput([NotNull] Context ctx, [NotNull] ITableBuilder tb, ElementConverters converters,
+            [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures, [NotNull] OutputElement[] outputs, int startIndex,
             ZilAtom propName, ISourceLine src)
         {
             Contract.Requires(ctx != null);
@@ -880,8 +899,6 @@ namespace Zilf.ZModel.Values
             Contract.Requires(outputs != null);
             Contract.Requires(startIndex >= 0);
             Contract.Requires(startIndex <= outputs.Length);
-
-            ZilFix length;
 
             for (int i = startIndex; i < outputs.Length; i++)
             {
@@ -948,7 +965,6 @@ namespace Zilf.ZModel.Values
                 {
                     case OutputElementType.Length:
                         // TODO: verify length
-                        length = output.Fix;
                         break;
 
                     case OutputElementType.Byte:

@@ -75,19 +75,10 @@
     <Content Include="AuthoringTests.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Dezapf\Dezapf.csproj">
-      <Project>{EF94747E-F175-4AF5-8882-2FA99EB1505A}</Project>
-      <Name>Dezapf</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Zapf\Zapf.csproj">
-      <Project>{C4379053-B0C7-4826-AC41-CEA59A743B15}</Project>
-      <Name>Zapf</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

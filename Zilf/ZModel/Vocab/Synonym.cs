@@ -15,33 +15,40 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter;
 
 namespace Zilf.ZModel.Vocab
 {
+    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature, ImplicitUseTargetFlags.Itself)]
     class Synonym
     {
+        [NotNull]
         public readonly IWord OriginalWord;
+        [NotNull]
         public readonly IWord SynonymWord;
 
-        public Synonym(IWord original, IWord synonym)
+        public Synonym([NotNull] IWord original, [NotNull] IWord synonym)
         {
             Contract.Requires(original != null);
             Contract.Requires(synonym != null);
 
-            this.OriginalWord = original;
-            this.SynonymWord = synonym;
+            OriginalWord = original;
+            SynonymWord = synonym;
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(OriginalWord != null);
             Contract.Invariant(SynonymWord != null);
         }
 
-        public virtual void Apply(Context ctx)
+        public virtual void Apply([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
 

@@ -15,13 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using System.Reflection;
 using Zilf.Language;
-using System.Runtime.InteropServices;
 
 // CS0649: Field '___' is never assigned to, and will always have its default value null
 #pragma warning disable CS0649
@@ -41,8 +46,9 @@ namespace ZilfTests.Interpreter
             ctx = new Context();
         }
 
-        static MethodInfo GetMethod(string name)
+        static MethodInfo GetMethod([NotNull] string name)
         {
+            Contract.Requires(name != null);
             return typeof(ArgDecoderTests).GetMethod(
                 name,
                 BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
@@ -52,7 +58,8 @@ namespace ZilfTests.Interpreter
         [ExpectedException(typeof(ArgumentNullException))]
         public void FromMethodInfo_Requires_NonNull_Argument()
         {
-            var decoder = ArgDecoder.FromMethodInfo(null, ctx);
+            // ReSharper disable once AssignNullToNotNullAttribute
+            ArgDecoder.FromMethodInfo(null, ctx);
         }
 
         [TestMethod]
@@ -61,10 +68,11 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_WrongReturn));
 
-            var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
+            ArgDecoder.FromMethodInfo(methodInfo, ctx);
         }
 
-        private static void Dummy_WrongReturn(Context ctx)
+        [UsedImplicitly]
+        static void Dummy_WrongReturn(Context ctx)
         {
             // nada
         }
@@ -81,6 +89,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_ContextOnly(Context ctx)
         {
             return null;
@@ -100,7 +110,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
-
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_ZilObjectArg(Context ctx, ZilObject arg1)
         {
             return null;
@@ -140,7 +151,9 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
         }
 
-        private static ZilObject Dummy_ZilObjectArrayArg(Context ctx, ZilObject[] args)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_ZilObjectArrayArg(Context ctx, ZilObject[] args)
         {
             return null;
         }
@@ -154,9 +167,11 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_RequiredZilObjectArrayArg(Context ctx, [Required] ZilObject[] args)
         {
             return null;
@@ -185,7 +200,7 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(123) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -197,9 +212,11 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(123), new ZilFix(456), new ZilFix(789) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntArgs(Context ctx, int foo, int bar)
         {
             return null;
@@ -214,7 +231,7 @@ namespace ZilfTests.Interpreter
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = { ctx, new int[] { 123, 456 } };
+            object[] expected = { ctx, new[] { 123, 456 } };
 
             Assert.AreEqual(2, actual.Length);
             Assert.AreEqual(expected[0], actual[0]);
@@ -222,6 +239,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual((int[])expected[1], (int[])actual[1]);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntArrayArg(Context ctx, int[] foo)
         {
             return null;
@@ -241,6 +260,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_StringArgs(Context ctx, string foo, string bar)
         {
             return null;
@@ -255,7 +276,7 @@ namespace ZilfTests.Interpreter
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = { ctx, new string[] { "hello" } };
+            object[] expected = { ctx, new[] { "hello" } };
 
             Assert.AreEqual(2, actual.Length);
             Assert.AreEqual(expected[0], actual[0]);
@@ -263,6 +284,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual((string[])expected[1], (string[])actual[1]);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_StringArrayArg(Context ctx, string[] foo)
         {
             return null;
@@ -273,8 +296,10 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_FormArg));
 
-            ZilObject[] args = {
-                new ZilForm(new ZilObject[] {
+            ZilObject[] args =
+            {
+                new ZilForm(new ZilObject[]
+                {
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
                     new ZilFix(2)
@@ -288,7 +313,9 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
-        private static ZilObject Dummy_FormArg(Context ctx, ZilForm form)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_FormArg(Context ctx, ZilForm form)
         {
             return null;
         }
@@ -320,7 +347,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -331,6 +358,8 @@ namespace ZilfTests.Interpreter
             Assert.Fail($"Expected {nameof(ArgumentTypeError)}");
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_OptionalIntArg(Context ctx, int? foo = 69105)
         {
             return null;
@@ -373,7 +402,7 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(42) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -389,7 +418,7 @@ namespace ZilfTests.Interpreter
             try
             {
                 var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentCountError ex)
             {
@@ -403,7 +432,10 @@ namespace ZilfTests.Interpreter
             Assert.Fail($"Expected {typeof(ArgumentCountError)}");
         }
 
-        static ZilObject Dummy_OptionalIntThenStringArg(Context ctx, [Optional, DefaultParameterValue(69105)] int? foo, string bar)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_OptionalIntThenStringArg(Context ctx, [Optional, DefaultParameterValue(69105)] int? foo,
+            string bar)
         {
             return null;
         }
@@ -417,7 +449,7 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(1), new ZilFix(2) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -446,7 +478,7 @@ namespace ZilfTests.Interpreter
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -457,6 +489,8 @@ namespace ZilfTests.Interpreter
             Assert.Fail($"Expected {typeof(ArgumentTypeError)}");
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_DeclArg(Context ctx, [Decl("'ZILF")] ZilAtom foo)
         {
             return null;
@@ -476,7 +510,9 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
-        private static ZilObject Dummy_MultiOptionalDeclArgs(Context ctx, [Decl("'1")] int one = 1, [Decl("'2")] int two = 2)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_MultiOptionalDeclArgs(Context ctx, [Decl("'1")] int one = 1, [Decl("'2")] int two = 2)
         {
             return null;
         }
@@ -486,7 +522,8 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_DeclVarArgs));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilFix(1),
                 ZilAtom.Parse("MONEY", ctx),
                 new ZilFix(2),
@@ -508,7 +545,8 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_DeclVarArgs));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilFix(1),
                 new ZilFix(2),
                 ZilAtom.Parse("MONEY", ctx),
@@ -516,9 +554,11 @@ namespace ZilfTests.Interpreter
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_DeclVarArgs(Context ctx, [Decl("<LIST [REST FIX ATOM]>")] ZilObject[] args)
         {
             return null;
@@ -529,11 +569,14 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_ApplicableArg));
 
-            ZilObject[] args = { new ZilFix(1), new ZilSubr("+", ctx.GetSubrDelegate("+")) };
+            var plusSubr = ctx.GetSubrDelegate("+");
+            Debug.Assert(plusSubr != null);
+
+            ZilObject[] args = { new ZilFix(1), new ZilSubr("+", plusSubr) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = { ctx, new ZilFix(1), new ZilSubr("+", ctx.GetSubrDelegate("+")) };
+            object[] expected = { ctx, new ZilFix(1), new ZilSubr("+", plusSubr) };
 
             CollectionAssert.AreEqual(expected, actual);
         }
@@ -560,7 +603,9 @@ namespace ZilfTests.Interpreter
             Assert.IsInstanceOfType(actual[2], typeof(IApplicable));
         }
 
-        private static ZilObject Dummy_ApplicableArg(Context ctx, IApplicable ap1, IApplicable ap2)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_ApplicableArg(Context ctx, IApplicable ap1, IApplicable ap2)
         {
             return null;
         }
@@ -587,6 +632,8 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(2, ((IApplicable[])actual[1]).Length);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_ApplicableArrayArg(Context ctx, IApplicable[] aps)
         {
             return null;
@@ -601,9 +648,11 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(123) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_AtomArg(Context ctx, ZilAtom foo)
         {
             return null;
@@ -618,9 +667,11 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { new ZilFix(123) };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_AtomArrayArg(Context ctx, ZilAtom[] foo)
         {
             return null;
@@ -643,11 +694,16 @@ namespace ZilfTests.Interpreter
         }
 
         [Subrs.MdlZilRedirect(typeof(ArgDecoderTests), nameof(Dummy_MdlZilRedirect_To))]
-        static ZilObject Dummy_MdlZilRedirect_From(Context ctx)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_MdlZilRedirect_From([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
             return ctx.FALSE;
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_MdlZilRedirect_To(Context ctx, int num)
         {
             return new ZilFix(num * 2);
@@ -660,7 +716,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                Zilf.Program.Evaluate(ctx, "<PNAME 1>", true);
+                Program.Evaluate(ctx, "<PNAME 1>", true);
             }
             catch (ArgumentTypeError ex)
             {
@@ -676,8 +732,10 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
 
-            ZilObject[] args = {
-                new ZilList(new ZilObject[] {
+            ZilObject[] args =
+            {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(123), ZilString.FromString("hi")
                 })
             };
@@ -695,12 +753,13 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilList(new ZilObject[] { new ZilFix(123) })
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -709,8 +768,10 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
 
-            ZilObject[] args = {
-                new ZilList(new ZilObject[] {
+            ZilObject[] args =
+            {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(123),
                     ZilString.FromString("hi"),
                     ZilString.FromString("oops")
@@ -718,7 +779,7 @@ namespace ZilfTests.Interpreter
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -728,7 +789,8 @@ namespace ZilfTests.Interpreter
 
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(new ZilFix(123), ZilString.FromString("hi"))
             };
 
@@ -736,7 +798,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -754,17 +816,16 @@ namespace ZilfTests.Interpreter
 
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
 
-            ZilObject[] args = {
-                new ZilList(new ZilObject[] {
-                    new ZilFix(123), ctx.FALSE
-                })
+            ZilObject[] args =
+            {
+                new ZilList(new[] { new ZilFix(123), ctx.FALSE })
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -782,6 +843,8 @@ namespace ZilfTests.Interpreter
             public string arg2;
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntStringStructArg(Context ctx, IntStringStruct foo)
         {
             return null;
@@ -792,23 +855,29 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArrayArg));
 
-            ZilObject[] args = {
-                new ZilList(new ZilObject[] {
+            ZilObject[] args =
+            {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(1), ZilString.FromString("money")
                 }),
-                new ZilList(new ZilObject[] {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(2), ZilString.FromString("show")
                 }),
-                new ZilList(new ZilObject[] {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(3), ZilString.FromString("ready")
                 })
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = {
+            object[] expected =
+            {
                 ctx,
-                new IntStringStruct[] {
+                new[]
+                {
                     new IntStringStruct { arg1 = 1, arg2 = "money" },
                     new IntStringStruct { arg1 = 2, arg2 = "show" },
                     new IntStringStruct { arg1 = 3, arg2 = "ready" }
@@ -821,6 +890,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual((IntStringStruct[])expected[1], (IntStringStruct[])actual[1]);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntStringStructArrayArg(Context ctx, IntStringStruct[] foo)
         {
             return null;
@@ -831,7 +902,8 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(
                     new ZilFix(123),
                     new ZilList(new ZilObject[]
@@ -844,7 +916,8 @@ namespace ZilfTests.Interpreter
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = {
+            object[] expected =
+            {
                 ctx,
                 new OuterStruct
                 {
@@ -867,7 +940,8 @@ namespace ZilfTests.Interpreter
 
             var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(
                     new ZilFix(123),
                     new ZilVector(
@@ -881,7 +955,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -899,10 +973,12 @@ namespace ZilfTests.Interpreter
 
             var methodInfo = GetMethod(nameof(Dummy_OuterStructArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(
                     new ZilFix(123),
-                    new ZilList(new ZilObject[] {
+                    new ZilList(new ZilObject[]
+                    {
                         ZilString.FromString("foo"),
                         ZilString.FromString("bar")
                     })
@@ -913,7 +989,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -931,7 +1007,9 @@ namespace ZilfTests.Interpreter
             public IntStringStruct arg2;
         }
 
-        private static ZilObject Dummy_OuterStructArg(Context ctx, OuterStruct foo)
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_OuterStructArg(Context ctx, OuterStruct foo)
         {
             return null;
         }
@@ -941,7 +1019,8 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalStructArrayArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(
                     ZilString.FromString("o'clock"),
                     new ZilFix(4),
@@ -950,9 +1029,11 @@ namespace ZilfTests.Interpreter
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = {
+            object[] expected =
+            {
                 ctx,
-                new OptionalStruct {
+                new OptionalStruct
+                {
                     arg1 = 1,
                     arg2 = 2,
                     arg3 = 3,
@@ -972,7 +1053,8 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalStructArrayArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilVector(
                     new ZilFix(100),
                     new ZilFix(200),
@@ -980,7 +1062,7 @@ namespace ZilfTests.Interpreter
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [ZilStructuredParam(StdAtom.VECTOR)]
@@ -988,8 +1070,10 @@ namespace ZilfTests.Interpreter
         {
             [ZilOptional(Default = 1)]
             public int arg1;
+
             [ZilOptional(Default = 2)]
             public int arg2;
+
             [ZilOptional(Default = 3)]
             public int arg3;
 
@@ -997,6 +1081,7 @@ namespace ZilfTests.Interpreter
 
             [ZilOptional(Default = 111)]
             public int arg5;
+
             [ZilOptional(Default = "blah")]
             public string arg6;
 
@@ -1004,6 +1089,8 @@ namespace ZilfTests.Interpreter
             public string arg7;
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_OptionalStructArrayArg(Context ctx, OptionalStruct foo)
         {
             return null;
@@ -1042,13 +1129,15 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntOrStringOrIntStringArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilList(new ZilObject[] { new ZilFix(23), ZilString.FromString("skidoo") })
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = {
+            object[] expected =
+            {
                 ctx,
                 new IntStringStruct { arg1 = 23, arg2 = "skidoo" }
             };
@@ -1056,6 +1145,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntOrStringOrIntStringArg(Context ctx,
             [Either(typeof(int), typeof(string), typeof(IntStringStruct))] object foo)
         {
@@ -1085,7 +1176,7 @@ namespace ZilfTests.Interpreter
             ZilObject[] args = { ctx.FALSE };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            var actual = decoder.Decode("dummy", ctx, args);
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -1102,8 +1193,10 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual(expected, actual);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_OptionalIntOrStringThenAtomArg(Context ctx,
-            [Optional, Either(typeof(int), typeof(string))] object foo,
+            [CanBeNull] [Optional, Either(typeof(int), typeof(string))] object foo,
             ZilAtom bar)
         {
             return null;
@@ -1122,7 +1215,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -1140,7 +1233,9 @@ namespace ZilfTests.Interpreter
             public object arg;
         }
 
-        private static ZilObject Dummy_EitherIntOrStringOrAtomArg(Context ctx,
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_EitherIntOrStringOrAtomArg(Context ctx,
             [Either(typeof(int), typeof(StringOrAtom))] object foo)
         {
             return null;
@@ -1159,7 +1254,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentCountError ex)
             {
@@ -1183,7 +1278,7 @@ namespace ZilfTests.Interpreter
 
             try
             {
-                var actual = decoder.Decode("dummy", ctx, args);
+                decoder.Decode("dummy", ctx, args);
             }
             catch (ArgumentTypeError ex)
             {
@@ -1201,7 +1296,9 @@ namespace ZilfTests.Interpreter
             public object arg;
         }
 
-        private static ZilObject Dummy_EitherIntOrWrappedStringOrAtomArg(Context ctx,
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
+        static ZilObject Dummy_EitherIntOrWrappedStringOrAtomArg(Context ctx,
             [Either(typeof(int), typeof(WrappedStringOrAtom))] object foo)
         {
             return null;
@@ -1228,6 +1325,8 @@ namespace ZilfTests.Interpreter
             public string arg2;
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntStringSequenceArg(Context ctx, IntStringSequence foo)
         {
             return null;
@@ -1238,16 +1337,19 @@ namespace ZilfTests.Interpreter
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringSequenceArrayArg));
 
-            ZilObject[] args = {
+            ZilObject[] args =
+            {
                 new ZilFix(1), ZilString.FromString("money"),
                 new ZilFix(2), ZilString.FromString("show")
             };
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
             var actual = decoder.Decode("dummy", ctx, args);
-            object[] expected = {
+            object[] expected =
+            {
                 ctx,
-                new[] {
+                new[]
+                {
                     new IntStringSequence { arg1 = 1, arg2 = "money" },
                     new IntStringSequence { arg1 = 2, arg2 = "show" }
                 }
@@ -1259,6 +1361,8 @@ namespace ZilfTests.Interpreter
             CollectionAssert.AreEqual((IntStringSequence[])expected[1], (IntStringSequence[])actual[1]);
         }
 
+        [UsedImplicitly]
+        [ContractAnnotation("=> null")]
         static ZilObject Dummy_IntStringSequenceArrayArg(Context ctx, IntStringSequence[] foo)
         {
             return null;
@@ -1268,7 +1372,8 @@ namespace ZilfTests.Interpreter
         public void Test_PROG_ArgumentDecodingError_Messages()
         {
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (1) FOO>",
-                ex => ex.Message.EndsWith("PROG: arg 1: element 1: expected ADECL, ATOM, or LIST", StringComparison.Ordinal));
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1: expected ADECL, ATOM, or LIST",
+                    StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A B>",
                 ex => ex.Message.EndsWith("PROG: arg 2: expected LIST", StringComparison.Ordinal));
@@ -1277,16 +1382,20 @@ namespace ZilfTests.Interpreter
                 ex => ex.Message.EndsWith("PROG: arg 1: expected ATOM or LIST", StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (()) F>",
-                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements",
+                    StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A)) F>",
-                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements",
+                    StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((A B C)) F>",
-                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements", StringComparison.Ordinal));
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1 requires exactly 2 elements",
+                    StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ((1 A)) F>",
-                ex => ex.Message.EndsWith("PROG: arg 1: element 1: element 1: expected ADECL or ATOM", StringComparison.Ordinal));
+                ex => ex.Message.EndsWith("PROG: arg 1: element 1: element 1: expected ADECL or ATOM",
+                    StringComparison.Ordinal));
 
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG () #DECL ()>",
                 ex => ex.Message.EndsWith("PROG requires 1 or more additional args", StringComparison.Ordinal));

@@ -20,22 +20,12 @@ namespace Zilf.Emit.Zap
             return result;
         }
 
-        public IEnumerable<string> StoredLines
-        {
-            get { return storedLines; }
-        }
-
-        public IDictionary<string, int> Files
-        {
-            get { return files; }
-        }
+        public IEnumerable<string> StoredLines => storedLines;
+        public IDictionary<string, int> Files => files;
 
         public void MarkAction(IOperand action, string name)
         {
-            storedLines.Add(string.Format(
-                ".DEBUG-ACTION {0},\"{1}\"",
-                action,
-                name));
+            storedLines.Add($".DEBUG-ACTION {action},\"{name}\"");
         }
 
         public void MarkObject(IObjectBuilder obj, DebugLineRef start, DebugLineRef end)

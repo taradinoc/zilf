@@ -21,47 +21,66 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
+using JetBrains.Annotations;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        IOperand GetGlobalDefaultValue(ZilGlobal global)
+        [CanBeNull]
+        IOperand GetGlobalDefaultValue([NotNull] ZilGlobal global)
         {
             Contract.Requires(global != null);
 
+            if (global.Value == null)
+                return null;
+
             IOperand result = null;
 
-            if (global.Value != null)
+            try
             {
-                try
+                using (DiagnosticContext.Push(global.SourceLine))
                 {
-                    using (DiagnosticContext.Push(global.SourceLine))
+                    result = CompileConstant(global.Value);
+                    if (result == null)
                     {
-                        result = CompileConstant(global.Value);
-                        if (result == null)
-                            Context.HandleError(new CompilerError(
-                                global,
-                                CompilerMessages.Nonconstant_Initializer_For_0_1_2,
-                                "global",
-                                global.Name,
-                                global.Value.ToStringContext(Context, false)));
+                        Context.HandleError(new CompilerError(
+                            global,
+                            CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                            "global",
+                            global.Name,
+                            global.Value.ToStringContext(Context, false)));
                     }
                 }
-                catch (ZilError ex)
-                {
-                    Context.HandleError(ex);
-                }
+            }
+            catch (ZilError ex)
+            {
+                Context.HandleError(ex);
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Analyzes the set of defined global variables and, if there are too many to fit in Z-machine variables ("hard globals"),
+        /// does the necessary planning and allocation to move some of them into a table ("soft globals").
+        /// </summary>
+        /// <remarks>
+        /// <para>This method sets <see cref="ZilGlobal.StorageType"/> for all globals,
+        /// whether or not it ends up moving any of them.</para>
+        /// <para>If it does decide to move some globals, it allocates the <see cref="SoftGlobalsTable"/> (<c>T?GLOBAL-VARS-TABLE</c>),
+        /// assigns offsets within the table, and fills the table with the initial values.</para>
+        /// </remarks>
+        /// <param name="reservedGlobals">The number of hard globals that are reserved for other purposes (i.e. parser tables).
+        /// Subtracting <paramref name="reservedGlobals"/> from 240 gives the number of hard globals that are actually available
+        /// for storing <see cref="ZEnvironment.Globals"/>.</param>
+        /// <exception cref="CompilerError"></exception>
         void DoFunnyGlobals(int reservedGlobals)
         {
             Contract.Requires(reservedGlobals >= 0);
@@ -223,7 +242,10 @@ namespace Zilf.Compiler
             }
         }
 
-        public IOperand CompileConstant(ZilObject expr)
+        // this method has a high complexity score because it has a big switch statement
+        [SuppressMessage("ReSharper", "CyclomaticComplexity")]
+        [CanBeNull]
+        public IOperand CompileConstant([NotNull] ZilObject expr)
         {
             Contract.Requires(expr != null);
 
@@ -276,14 +298,23 @@ namespace Zilf.Compiler
 
                 case StdAtom.FORM:
                     var form = (ZilForm)expr;
-                    if (!form.IsEmpty &&
-                        form.First == Context.GetStdAtom(StdAtom.GVAL) &&
-                        !form.Rest.IsEmpty &&
-                        form.Rest.First.StdTypeAtom == StdAtom.ATOM &&
+                    if (form.First != Context.GetStdAtom(StdAtom.GVAL))
+                        return null;
+
+                    Debug.Assert(form.Rest != null);
+
+                    if (form.Rest.IsEmpty)
+                        return null;
+
+                    Debug.Assert(form.Rest.First != null);
+                    Debug.Assert(form.Rest.Rest != null);
+
+                    if (form.Rest.First.StdTypeAtom == StdAtom.ATOM &&
                         form.Rest.Rest.IsEmpty)
                     {
                         return CompileConstant(form.Rest.First);
                     }
+
                     return null;
 
                 case StdAtom.VOC:

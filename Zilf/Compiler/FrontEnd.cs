@@ -18,11 +18,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using Zilf.Emit.Zap;
 using Zilf.Interpreter;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -30,12 +32,12 @@ namespace Zilf.Compiler
     {
         public OpeningFileEventArgs(string fileName, bool writing)
         {
-            this.FileName = fileName;
-            this.Writing = writing;
+            FileName = fileName;
+            Writing = writing;
         }
 
-        public string FileName { get; private set; }
-        public bool Writing { get; private set; }
+        public string FileName { get; }
+        public bool Writing { get; }
         public Stream Stream { get; set; }
     }
 
@@ -43,10 +45,10 @@ namespace Zilf.Compiler
     {
         public CheckingFilePresenceEventArgs(string fileName)
         {
-            this.FileName = fileName;
+            FileName = fileName;
         }
 
-        public string FileName { get; private set; }
+        public string FileName { get; }
         public bool? Exists { get; set; }
     }
 
@@ -54,10 +56,10 @@ namespace Zilf.Compiler
     {
         public ContextEventArgs(Context ctx)
         {
-            this.Context = ctx;
+            Context = ctx;
         }
 
-        public Context Context { get; private set; }
+        public Context Context { get; }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
@@ -72,18 +74,20 @@ namespace Zilf.Compiler
     {
         public FrontEnd()
         {
-            this.IncludePaths = new List<string>();
+            IncludePaths = new List<string>();
         }
         
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
         internal event EventHandler<ContextEventArgs> InitializeContext;
 
-        public IList<string> IncludePaths { get; private set; }
+        public IList<string> IncludePaths { get; }
 
+        [NotNull]
         Stream OpenFile(string path, bool writing)
         {
-            var handler = this.OpeningFile;
+            Contract.Ensures(Contract.Result<Stream>() != null);
+            var handler = OpeningFile;
             if (handler != null)
             {
                 var args = new OpeningFileEventArgs(path, writing);
@@ -102,7 +106,7 @@ namespace Zilf.Compiler
 
         bool CheckFileExists(string path)
         {
-            var handler = this.CheckingFilePresence;
+            var handler = CheckingFilePresence;
             if (handler != null)
             {
                 var args = new CheckingFilePresenceEventArgs(path);
@@ -118,23 +122,40 @@ namespace Zilf.Compiler
 
         class ZapStreamFactory : IZapStreamFactory
         {
+            [NotNull]
             readonly FrontEnd owner;
-            readonly string mainFile, fwordsFile, dataFile, stringFile;
+
+            [NotNull]
+            readonly string mainFile;
+
+            [NotNull]
+            readonly string fwordsFile;
+
+            [NotNull]
+            readonly string dataFile;
+
+            [NotNull]
+            readonly string stringFile;
 
             const string FrequentWordsSuffix = "_freq";
             const string DataSuffix = "_data";
             const string StringSuffix = "_str";
 
-            public ZapStreamFactory(FrontEnd owner, string mainFile)
+            /// <exception cref="ArgumentException">mainFile is not a file name.</exception>
+            public ZapStreamFactory([NotNull] FrontEnd owner, [NotNull] string mainFile)
             {
+                Contract.Requires(owner != null);
+                Contract.Requires(mainFile != null);
                 this.owner = owner;
                 this.mainFile = mainFile;
 
                 var dir = Path.GetDirectoryName(mainFile);
+                if (dir == null)
+                    throw new ArgumentException("Must be a file name.", nameof(mainFile));
+
                 var baseName = Path.GetFileNameWithoutExtension(mainFile);
                 var ext = Path.GetExtension(mainFile);
 
-                mainFile = Path.Combine(dir, baseName + ext);
                 fwordsFile = Path.Combine(dir, baseName + FrequentWordsSuffix + ext);
                 dataFile = Path.Combine(dir, baseName + DataSuffix + ext);
                 stringFile = Path.Combine(dir, baseName + StringSuffix + ext);
@@ -142,105 +163,133 @@ namespace Zilf.Compiler
 
             #region IZapStreamFactory Members
 
+            [NotNull]
             public Stream CreateMainStream()
             {
+                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(mainFile, true);
             }
 
+            [NotNull]
             public Stream CreateFrequentWordsStream()
             {
+                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(fwordsFile, true);
             }
 
+            [NotNull]
             public Stream CreateDataStream()
             {
+                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(dataFile, true);
             }
 
+            [NotNull]
             public Stream CreateStringStream()
             {
+                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(stringFile, true);
             }
 
+            [NotNull]
             public string GetMainFileName(bool withExt)
             {
+                Contract.Ensures(Contract.Result<string>() != null);
                 var result = mainFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
                 return result;
             }
 
+            [NotNull]
             public string GetDataFileName(bool withExt)
             {
+                Contract.Ensures(Contract.Result<string>() != null);
                 var result = dataFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
                 return result;
             }
 
+            [NotNull]
             public string GetFrequentWordsFileName(bool withExt)
             {
+                Contract.Ensures(Contract.Result<string>() != null);
                 var result = fwordsFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
                 return result;
             }
 
+            [NotNull]
             public string GetStringFileName(bool withExt)
             {
+                Contract.Ensures(Contract.Result<string>() != null);
                 var result = stringFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
                 return result;
             }
 
-            public bool FrequentWordsFileExists
-            {
-                get { return owner.CheckFileExists(fwordsFile) || owner.CheckFileExists(Path.ChangeExtension(fwordsFile, ".xzap")); }
-            }
+            public bool FrequentWordsFileExists => owner.CheckFileExists(fwordsFile) ||
+                                                   owner.CheckFileExists(Path.ChangeExtension(fwordsFile, ".xzap"));
 
             #endregion
         }
 
+        [NotNull]
         Context NewContext()
         {
+            Contract.Ensures(Contract.Result<Context>() != null);
             var result = new Context();
 
-            var handler = InitializeContext;
-            if (handler != null)
-                handler(this, new ContextEventArgs(result));
+            InitializeContext?.Invoke(this, new ContextEventArgs(result));
 
             return result;
         }
 
-        public FrontEndResult Interpret(string inputFileName)
+        internal FrontEndResult Interpret([NotNull] Context ctx, [NotNull] string inputFileName)
         {
-            return Interpret(NewContext(), inputFileName);
+            Contract.Requires(ctx != null);
+            Contract.Requires(inputFileName != null);
+            var f = InterpretOrCompile(ctx, inputFileName, null, true, false);
+            return f;
         }
 
-        internal FrontEndResult Interpret(Context ctx, string inputFileName)
+        public FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName)
         {
-            return InterpretOrCompile(ctx, inputFileName, null, false, false);
-        }
-
-        public FrontEndResult Compile(string inputFileName, string outputFileName)
-        {
+            Contract.Requires(inputFileName != null);
+            Contract.Requires(outputFileName != null);
             return Compile(inputFileName, outputFileName, false);
         }
 
-        public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo)
+        FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo)
         {
+            Contract.Requires(inputFileName != null);
+            Contract.Requires(outputFileName != null);
             return Compile(NewContext(), inputFileName, outputFileName, wantDebugInfo);
         }
 
-        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo = false)
+        internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(inputFileName != null);
+            Contract.Requires(outputFileName != null);
             return InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
         }
 
-        FrontEndResult InterpretOrCompile(Context ctx, string inputFileName, string outputFileName, bool wantCompile, bool wantDebugInfo)
+        // FIXME: not supported by R#, sadly...
+        [ContractAnnotation("wantCompile: true => outputFileName: notnull")]
+        [ContractAnnotation("wantCompile: false => outputFileName: null")]
+        FrontEndResult InterpretOrCompile([NotNull] [ProvidesContext] Context ctx, [NotNull] string inputFileName,
+            string outputFileName, bool wantCompile, bool wantDebugInfo)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(inputFileName != null);
+            Contract.Requires(!wantCompile || outputFileName != null);
             var result = new FrontEndResult();
+
+            Debug.Assert(!wantCompile || outputFileName != null);
 
             // open input file
             using (var inputStream = OpenFile(inputFileName, false))
@@ -248,10 +297,10 @@ namespace Zilf.Compiler
                 // evaluate source text
                 using (ctx.PushFileContext(inputFileName))
                 {
-                    ctx.InterceptOpenFile = this.OpenFile;
-                    ctx.InterceptFileExists = this.CheckFileExists;
-                    ctx.IncludePaths.AddRange(this.IncludePaths);
-                    Zilf.Program.Evaluate(ctx, inputStream);
+                    ctx.InterceptOpenFile = OpenFile;
+                    ctx.InterceptFileExists = CheckFileExists;
+                    ctx.IncludePaths.AddRange(IncludePaths);
+                    Program.Evaluate(ctx, inputStream);
 
                     // compile, if there were no evaluation errors
                     if (wantCompile && ctx.ErrorCount == 0)
@@ -284,32 +333,43 @@ namespace Zilf.Compiler
             }
         }
 
-        internal static GameOptions MakeGameOptions(Context ctx)
+        [NotNull]
+        static GameOptions MakeGameOptions([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
+            Contract.Ensures(Contract.Result<GameOptions>() != null);
 
             var zenv = ctx.ZEnvironment;
 
             switch (zenv.ZVersion)
             {
                 case 3:
-                    return new Zilf.Emit.Zap.GameOptions.V3
+                    return new GameOptions.V3
                     {
                         TimeStatusLine = zenv.TimeStatusLine,
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
+                                       ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
                     };
 
                 case 4:
-                    return new Zilf.Emit.Zap.GameOptions.V4
+                    return new GameOptions.V4
                     {
-                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
+                        SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
+                                       ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
                     };
 
                 case 5:
-                case 6:
                 case 7:
                 case 8:
-                    var defaultLang = ZModel.Language.Get("DEFAULT");
+                    GameOptions.V5Plus v5Plus = new GameOptions.V5();
+                    goto V5Plus;
+
+                case 6:
+                    v5Plus = new GameOptions.V6 { Menus = ctx.GetGlobalOption(StdAtom.USE_MENUS_P) };
+
+                V5Plus:
+                    var defaultLang = ZModel.Language.Default;
+                    
                     var doCharset =
                         zenv.Charset0 != defaultLang.Charset0 ||
                         zenv.Charset1 != defaultLang.Charset1 ||
@@ -317,33 +377,30 @@ namespace Zilf.Compiler
 
                     var doLang = zenv.LanguageEscapeChar != null;
 
-                    GameOptions.V5Plus v5plus;
-                    if (zenv.ZVersion == 6)
-                    {
-                        var v6 = new GameOptions.V6();
-                        v5plus = v6;
+                    v5Plus.DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P);
+                    v5Plus.Undo = ctx.GetGlobalOption(StdAtom.USE_UNDO_P);
+                    v5Plus.Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P);
+                    v5Plus.Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P);
+                    v5Plus.SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
+                                            ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P);
 
-                        v6.Menus = ctx.GetGlobalOption(StdAtom.USE_MENUS_P);
-                    }
-                    else
+                    if (doCharset)
                     {
-                        v5plus = new GameOptions.V5();
+                        v5Plus.Charset0 = zenv.Charset0;
+                        v5Plus.Charset1 = zenv.Charset1;
+                        v5Plus.Charset2 = zenv.Charset2;
                     }
 
-                    v5plus.DisplayOps = ctx.GetGlobalOption(StdAtom.DISPLAY_OPS_P);
-                    v5plus.Undo = ctx.GetGlobalOption(StdAtom.USE_UNDO_P);
-                    v5plus.Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P);
-                    v5plus.Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P);
-                    v5plus.SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) || ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P);
-                    v5plus.Charset0 = doCharset ? zenv.Charset0 : null;
-                    v5plus.Charset1 = doCharset ? zenv.Charset1 : null;
-                    v5plus.Charset2 = doCharset ? zenv.Charset2 : null;
-                    v5plus.LanguageId = doLang ? zenv.Language.Id : 0;
-                    v5plus.LanguageEscapeChar = doLang ? zenv.LanguageEscapeChar : null;
-                    return v5plus;
+                    if (doLang)
+                    {
+                        v5Plus.LanguageId = zenv.Language.Id;
+                        v5Plus.LanguageEscapeChar = zenv.LanguageEscapeChar;
+                    }
+
+                    return v5Plus;
 
                 default:
-                    return null;
+                    throw new ArgumentException("Unsupported Z-machine version", nameof(ctx));
             }
         }
     }

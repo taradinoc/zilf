@@ -18,12 +18,13 @@
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
     class SyntaxError : InterpreterError
     {
-        public SyntaxError(string filename, int line, string message)
+        public SyntaxError([NotNull] string filename, int line, [NotNull] string message)
             : base(new FileSourceLine(filename, line), InterpreterMessages.Syntax_Error_0, message)
         {
             Contract.Requires(filename != null);

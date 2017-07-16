@@ -15,29 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using Zilf.Interpreter.Values;
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Interpreter
 {
     /// <summary>
     /// Indicates the primitive type of a ZilObject.
     /// </summary>
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     enum PrimType
     {
         /// <summary>
-        /// The primitive type is <see cref="ZilAtom"/>.
+        /// The primitive type is <see cref="Values.ZilAtom"/>.
         /// </summary>
         ATOM,
         /// <summary>
-        /// The primitive type is <see cref="ZilFix"/>.
+        /// The primitive type is <see cref="Values.ZilFix"/>.
         /// </summary>
         FIX,
         /// <summary>
-        /// The primitive type is <see cref="ZilString"/>.
+        /// The primitive type is <see cref="Values.ZilString"/>.
         /// </summary>
         STRING,
         /// <summary>
-        /// The primitive type is <see cref="ZilList"/>.
+        /// The primitive type is <see cref="Values.ZilList"/>.
         /// </summary>
         LIST,
         /// <summary>
@@ -45,7 +47,7 @@ namespace Zilf.Interpreter
         /// </summary>
         TABLE,
         /// <summary>
-        /// The primitive type is <see cref="ZilVector"/>.
+        /// The primitive type is <see cref="Values.ZilVector"/>.
         /// </summary>
         VECTOR,
     }

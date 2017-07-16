@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
+using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
@@ -28,7 +29,7 @@ namespace Zilf.Diagnostics
         public readonly string Text;
         public readonly bool Plural;
 
-        public CountableString(string text, bool plural)
+        public CountableString([NotNull] string text, bool plural)
         {
             Contract.Requires(text != null);
 
@@ -44,17 +45,19 @@ namespace Zilf.Diagnostics
 
     static class ArgCountHelpers
     {
-        public static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
-            Func<T, T, bool> match, Func<T, T, T> combine)
+        public static IEnumerable<T> Collapse<T>([NotNull] IEnumerable<T> sequence,
+            [NotNull] Func<T, T, bool> match, [NotNull] Func<T, T, T> combine)
         {
             Contract.Requires(sequence != null);
             Contract.Requires(match != null);
             Contract.Requires(combine != null);
             //Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            var tor = sequence.GetEnumerator();
-            if (tor.MoveNext())
+            using (var tor = sequence.GetEnumerator())
             {
+                if (!tor.MoveNext())
+                    yield break;
+
                 var last = tor.Current;
 
                 while (tor.MoveNext())
@@ -67,6 +70,7 @@ namespace Zilf.Diagnostics
                     else
                     {
                         yield return last;
+
                         last = current;
                     }
                 }
@@ -75,7 +79,8 @@ namespace Zilf.Diagnostics
             }
         }
 
-        static string EnglishJoin(IEnumerable<string> sequence, string conjunction)
+        [NotNull]
+        static string EnglishJoin([NotNull] IEnumerable<string> sequence, [NotNull] string conjunction)
         {
             Contract.Requires(sequence != null);
             Contract.Requires(conjunction != null);
@@ -98,7 +103,8 @@ namespace Zilf.Diagnostics
             }
         }
 
-        public static string FormatArgCount(IEnumerable<ArgCountRange> ranges)
+        [NotNull]
+        public static string FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges)
         {
             Contract.Requires(ranges != null);
             Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
@@ -107,8 +113,10 @@ namespace Zilf.Diagnostics
             return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }
 
-        public static void FormatArgCount(IEnumerable<ArgCountRange> ranges, out CountableString result)
+        /// <exception cref="ArgumentException">No ranges provided</exception>
+        public static void FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges, out CountableString result)
         {
+            Contract.Requires(ranges != null);
             var allCounts = new List<int>();
             bool uncapped = false;
             foreach (var r in ranges)
@@ -126,7 +134,7 @@ namespace Zilf.Diagnostics
             }
 
             if (allCounts.Count == 0)
-                throw new ArgumentException("No ranges provided");
+                throw new ArgumentException("No ranges provided", nameof(ranges));
 
             allCounts.Sort();
 

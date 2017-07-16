@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections;
+
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
 using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -30,28 +30,42 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FUNCTION, PrimType.LIST)]
     class ZilFunction : ZilTiedListBase, IApplicable
     {
-        ArgSpec argspec;
+        [NotNull]
+        readonly ArgSpec argspec;
+
+        [NotNull]
         readonly ZilObject[] body;
 
-        public ZilFunction(ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
+        /// <exception cref="InterpreterError"><paramref name="argspec"/> is invalid.</exception>
+        public ZilFunction([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
+            [NotNull] [ItemNotNull] IEnumerable<ZilObject> argspec, ZilDecl decl,
+            [ItemNotNull] [NotNull] IEnumerable<ZilObject> body)
             : this("<internal>", name, activationAtom, argspec, decl, body)
         {
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-            Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
+            Contract.Requires(argspec != null);
+            Contract.Requires(Contract.ForAll(argspec, a => a != null));
+            Contract.Requires(body != null);
+            Contract.Requires(Contract.ForAll(body, b => b != null));
         }
 
         // TODO: convert to static method; caller parameter doesn't belong here
-        public ZilFunction(string caller, ZilAtom name, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl decl, IEnumerable<ZilObject> body)
+        /// <exception cref="InterpreterError"><paramref name="argspec"/> is invalid.</exception>
+        public ZilFunction([NotNull] string caller, [CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
+            [NotNull] [ItemNotNull] IEnumerable<ZilObject> argspec, ZilDecl decl,
+            [ItemNotNull] [NotNull] IEnumerable<ZilObject> body)
         {
             Contract.Requires(caller != null);
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-            Contract.Requires(body != null && Contract.ForAll(body, b => b != null));
+            Contract.Requires(argspec != null);
+            Contract.Requires(Contract.ForAll(argspec, a => a != null));
+            Contract.Requires(body != null);
+            Contract.Requires(Contract.ForAll(body, b => b != null));
 
             this.argspec = ArgSpec.Parse(caller, name, activationAtom, argspec, decl);
             this.body = body.ToArray();
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(argspec != null);
@@ -60,14 +74,16 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilFunction FromList(Context ctx, ZilListBase list)
+        [NotNull]
+        public static ZilFunction FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
             Contract.Ensures(Contract.Result<ZilFunction>() != null);
 
-            return (ZilFunction)ctx.GetSubrDelegate("FUNCTION")
-                .Invoke("FUNCTION", ctx, list.ToArray());
+            var functionSubr = ctx.GetSubrDelegate("FUNCTION");
+            Debug.Assert(functionSubr != null);
+            return (ZilFunction)functionSubr.Invoke("FUNCTION", ctx, list.ToArray());
         }
 
         protected override TiedLayout GetLayout()
@@ -77,7 +93,10 @@ namespace Zilf.Interpreter.Values
                 .WithCatchAll<ZilFunction>(x => x.BodyAsList);
         }
 
+        [NotNull]
         public ZilList ArgSpecAsList => argspec.ToZilList();
+
+        [NotNull]
         public ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.FUNCTION;
@@ -86,8 +105,10 @@ namespace Zilf.Interpreter.Values
 
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, false);
 
-        ZilResult ApplyImpl(Context ctx, ZilObject[] args, bool eval)
+        ZilResult ApplyImpl([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(args != null);
             using (var application = argspec.BeginApply(ctx, args, eval))
             {
                 if (application.EarlyResult != null)
@@ -96,20 +117,20 @@ namespace Zilf.Interpreter.Values
                 var activation = application.Activation;
                 do
                 {
-                    var result = ZilObject.EvalProgram(ctx, body);
+                    var result = EvalProgram(ctx, body);
                     if (result.IsReturn(activation, out var value))
                     {
                         argspec.ValidateResult(ctx, value);
                         return value;
                     }
-                    else if (result.IsAgain(activation))
+
+                    if (result.IsAgain(activation))
                     {
                         // repeat
+                        continue;
                     }
-                    else
-                    {
-                        return result;
-                    }
+
+                    return result;
                 } while (true);
             }
         }
@@ -119,14 +140,14 @@ namespace Zilf.Interpreter.Values
             if (!(obj is ZilFunction other))
                 return false;
 
-            if (!other.argspec.Equals(this.argspec))
+            if (!other.argspec.Equals(argspec))
                 return false;
 
-            if (other.body.Length != this.body.Length)
+            if (other.body.Length != body.Length)
                 return false;
 
             for (int i = 0; i < body.Length; i++)
-                if (!other.body[i].Equals(this.body[i]))
+                if (!other.body[i].Equals(body[i]))
                     return false;
 
             return true;

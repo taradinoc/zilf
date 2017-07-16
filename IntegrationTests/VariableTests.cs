@@ -15,30 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Text;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
     [TestClass]
     public class VariableTests
     {
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
+            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
 
             return new RoutineAssertionHelper(argSpec, body);
-        }
-
-        private static GlobalsAssertionHelper AssertGlobals(params string[] globals)
-        {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-
-            return new GlobalsAssertionHelper(globals);
         }
 
         [TestMethod]
@@ -127,9 +123,7 @@ namespace IntegrationTests
         {
             const int NumGlobals = 500;
 
-            var myGlobals = new List<string>();
-
-            myGlobals.Add("<FUNNY-GLOBALS?>");
+            var myGlobals = new List<string> { "<FUNNY-GLOBALS?>" };
 
             for (int i = 1; i <= NumGlobals; i++)
                 myGlobals.Add(string.Format("<GLOBAL MY-GLOBAL-{0} {0}>", i));
@@ -149,9 +143,7 @@ namespace IntegrationTests
         {
             const int NumGlobals = 500;
 
-            var myGlobals = new List<string>();
-
-            myGlobals.Add("<FUNNY-GLOBALS?>");
+            var myGlobals = new List<string> { "<FUNNY-GLOBALS?>" };
 
             for (int i = 1; i <= NumGlobals; i++)
                 myGlobals.Add(string.Format("<GLOBAL MY-GLOBAL-{0} {0}>", i));
@@ -169,9 +161,7 @@ namespace IntegrationTests
         {
             const int NumGlobals = 500;
 
-            var myGlobals = new List<string>();
-
-            myGlobals.Add("<FUNNY-GLOBALS?>");
+            var myGlobals = new List<string> { "<FUNNY-GLOBALS?>" };
 
             for (int i = 1; i <= NumGlobals; i++)
                 myGlobals.Add(string.Format("<GLOBAL MY-GLOBAL-{0} {0}>", i));

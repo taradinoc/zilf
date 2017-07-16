@@ -16,12 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,7 +30,7 @@ namespace Zilf.Interpreter.Values
         readonly WeakReference<LocalEnvironment> env;
 
         [ChtypeMethod]
-        public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom)
+        public static ZilEnvironment FromAtom([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(atom != null);
@@ -49,7 +47,7 @@ namespace Zilf.Interpreter.Values
         public override bool Equals(object obj)
         {
             if (obj is ZilEnvironment other &&
-                this.env.TryGetTarget(out var thisTarget) &&
+                env.TryGetTarget(out var thisTarget) &&
                 other.env.TryGetTarget(out var otherTarget))
             {
                 return thisTarget == otherTarget;
@@ -82,6 +80,7 @@ namespace Zilf.Interpreter.Values
             return name;
         }
 
+        [NotNull]
         public LocalEnvironment LocalEnvironment =>
             env.TryGetTarget(out var result)
             ? result

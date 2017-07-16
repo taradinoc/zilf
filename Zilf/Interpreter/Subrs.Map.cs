@@ -15,13 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
+using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
@@ -30,8 +30,9 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilResult MAPF(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
-            IApplicable loopf, IStructure[] structs)
+            IApplicable loopf, [ItemNotNull] [NotNull] IStructure[] structs)
         {
+            Contract.Requires(structs != null);
             SubrContracts(ctx);
 
             return PerformMap(ctx, finalf, loopf, structs, true);
@@ -40,18 +41,21 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilResult MAPR(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
-            IApplicable loopf, IStructure[] structs)
+            IApplicable loopf, [NotNull] [ItemNotNull] IStructure[] structs)
         {
+            Contract.Requires(structs != null);
             SubrContracts(ctx);
 
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
-        static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
+        static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
         {
+            Contract.Requires(structs != null);
             SubrContracts(ctx);
 
-            string name = first ? "MAPF" : "MAPR";
+            if (structs == null)
+                throw new ArgumentNullException(nameof(structs));
 
             var finalf_app = finalf.AsApplicable(ctx);
 
@@ -146,7 +150,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult MAPLEAVE(Context ctx, ZilObject value = null)
+        public static ZilResult MAPLEAVE(Context ctx, [CanBeNull] ZilObject value = null)
         {
             SubrContracts(ctx);
 

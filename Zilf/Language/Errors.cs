@@ -19,6 +19,7 @@
 using System;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -26,7 +27,7 @@ namespace Zilf.Language
     {
         // TerpWarning: emit an interpreter warning message but don't stop execution
         [Obsolete("Use diagnostic codes instead.")]
-        public static void TerpWarning(Context ctx, ISourceLine node, string message)
+        public static void TerpWarning([NotNull] Context ctx, ISourceLine node, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(message != null);
@@ -35,7 +36,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void TerpWarning(Context ctx, ISourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void TerpWarning([NotNull] Context ctx, ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(format != null);
@@ -46,7 +48,7 @@ namespace Zilf.Language
 
         // CompWarning: emit a compiler warning message but don't stop compilation
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, ISourceLine node, string message)
+        public static void CompWarning([NotNull] Context ctx, ISourceLine node, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(message!= null);
@@ -55,7 +57,7 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, IProvideSourceLine node, string message)
+        public static void CompWarning([NotNull] Context ctx, [NotNull] IProvideSourceLine node, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(node != null);
@@ -65,7 +67,7 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, string message)
+        public static void CompWarning([NotNull] Context ctx, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(message != null);
@@ -74,7 +76,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, ISourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompWarning([NotNull] Context ctx, ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(format != null);
@@ -84,7 +87,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, IProvideSourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompWarning([NotNull] Context ctx, [NotNull] IProvideSourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(node != null);
@@ -95,7 +99,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompWarning(Context ctx, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompWarning([NotNull] Context ctx, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(format != null);
@@ -106,7 +111,7 @@ namespace Zilf.Language
 
         // CompError: emit a compiler error message but don't stop compilation
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, ISourceLine node, string message)
+        public static void CompError([NotNull] Context ctx, ISourceLine node, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(message != null);
@@ -115,7 +120,7 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, IProvideSourceLine node, string message)
+        public static void CompError([NotNull] Context ctx, [NotNull] IProvideSourceLine node, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(node != null);
@@ -125,7 +130,7 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, string message)
+        public static void CompError([NotNull] Context ctx, [NotNull] string message)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(message != null);
@@ -134,7 +139,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, ISourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompError([NotNull] Context ctx, ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(format != null);
@@ -144,7 +150,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, IProvideSourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompError([NotNull] Context ctx, [NotNull] IProvideSourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(node != null);
@@ -155,7 +162,8 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use diagnostic codes instead.")]
-        public static void CompError(Context ctx, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public static void CompError([NotNull] Context ctx, [NotNull] string format, [NotNull] params object[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(format != null);

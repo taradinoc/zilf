@@ -15,22 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
+
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
     [ContractClass(typeof(IDiagnosticFormatterContracts))]
     public interface IDiagnosticFormatter
     {
-        string Format(Diagnostic diagnostic);
+        [NotNull]
+        string Format([NotNull] Diagnostic diagnostic);
     }
 
     [ContractClassFor(typeof(IDiagnosticFormatter))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IDiagnosticFormatterContracts : IDiagnosticFormatter
     {
         public string Format(Diagnostic diagnostic)

@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -30,13 +29,16 @@ namespace Zilf.Interpreter.Values
     {
         public ZilEvalMacro(ZilObject value)
         {
-            this.WrappedValue = value;
+            WrappedValue = value;
         }
 
+        [UsedImplicitly]
         public ZilObject WrappedValue { get; set; }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [ChtypeMethod]
-        public static ZilEvalMacro FromList(Context ctx, ZilListBase list)
+        [NotNull]
+        public static ZilEvalMacro FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
@@ -97,11 +99,11 @@ namespace Zilf.Interpreter.Values
             return MakeSpliceExpandable((ZilObject)result);
         }
 
-        public ZilResult Expand(Context ctx, ZilObject[] args)
+        /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
+        public ZilResult Expand([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             var applicable = WrappedValue.AsApplicable(ctx);
 
@@ -109,19 +111,16 @@ namespace Zilf.Interpreter.Values
                 throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
 
             var result = ctx.ExecuteInMacroEnvironment(
-                () => WrappedValue.AsApplicable(ctx).Apply(ctx, args));
+                () => applicable.Apply(ctx, args));
 
-            if (result.ShouldPass())
-                return result;
-
-            return MakeSpliceExpandable((ZilObject)result);
+            return result.ShouldPass() ? result : MakeSpliceExpandable((ZilObject)result);
         }
 
-        public ZilResult ExpandNoEval(Context ctx, ZilObject[] args)
+        /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
+        public ZilResult ExpandNoEval([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             var applicable = WrappedValue.AsApplicable(ctx);
 
@@ -129,17 +128,14 @@ namespace Zilf.Interpreter.Values
                 throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
 
             var result = ctx.ExecuteInMacroEnvironment(
-                () => WrappedValue.AsApplicable(ctx).ApplyNoEval(ctx, args));
+                () => applicable.ApplyNoEval(ctx, args));
 
-            if (result.ShouldPass())
-                return result;
-
-            return MakeSpliceExpandable((ZilObject)result);
+            return result.ShouldPass() ? result : MakeSpliceExpandable((ZilObject)result);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ZilEvalMacro other && other.WrappedValue.Equals(this.WrappedValue);
+            return obj is ZilEvalMacro other && other.WrappedValue.Equals(WrappedValue);
         }
 
         public override int GetHashCode()

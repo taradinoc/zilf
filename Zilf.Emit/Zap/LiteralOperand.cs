@@ -4,7 +4,7 @@ namespace Zilf.Emit.Zap
     {
         readonly string literal;
 
-        public LiteralOperand(string literal)
+        protected LiteralOperand(string literal)
         {
             this.literal = literal;
         }

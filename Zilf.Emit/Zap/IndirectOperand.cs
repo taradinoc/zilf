@@ -1,4 +1,6 @@
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
@@ -6,20 +8,22 @@ namespace Zilf.Emit.Zap
     {
         public IndirectOperand(IVariable variable)
         {
-            this.Variable = variable;
+            Variable = variable;
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(Variable != null);
         }
 
-        public IVariable Variable { get; private set; }
+        [NotNull]
+        public IVariable Variable { get; }
 
         public override string ToString()
         {
-            return "'" + Variable.ToString();
+            return "'" + Variable;
         }
     }
 }

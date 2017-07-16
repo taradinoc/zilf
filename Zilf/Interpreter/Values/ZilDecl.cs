@@ -15,32 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.DECL, PrimType.LIST)]
     class ZilDecl : ZilListBase
     {
-        public ZilDecl(IEnumerable<ZilObject> sequence)
+        public ZilDecl([ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
+            Contract.Requires(sequence != null);
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilDecl FromList(Context ctx, ZilListBase list)
+        public static ZilDecl FromList(Context ctx, [NotNull] ZilListBase list)
         {
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilDecl>() != null);
             return new ZilDecl(list);
         }
 
         public override StdAtom StdTypeAtom => StdAtom.DECL;
 
+        /// <exception cref="InterpreterError">The DECL syntax is invalid.</exception>
         public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GetAtomDeclPairs()
         {
             ZilListBase list = this;
@@ -49,13 +55,19 @@ namespace Zilf.Interpreter.Values
             {
                 if (!(list.First is ZilList atoms) ||
                     !atoms.All(a => a is ZilAtom) ||
+                    // ReSharper disable once PatternAlwaysOfType
                     !(list.Rest?.First is ZilObject decl))
                 {
                     break;
                 }
 
-                foreach (ZilAtom atom in atoms)
+                Debug.Assert(list.Rest.Rest != null);
+
+                foreach (var zo in atoms)
+                {
+                    var atom = (ZilAtom)zo;
                     yield return new KeyValuePair<ZilAtom, ZilObject>(atom, decl);
+                }
 
                 list = list.Rest.Rest;
             }

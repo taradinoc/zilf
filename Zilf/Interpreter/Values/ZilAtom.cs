@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
 
@@ -27,19 +28,17 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ATOM, PrimType.ATOM)]
     class ZilAtom : ZilObject
     {
-        readonly string text;
         ObList list;
-        readonly StdAtom stdAtom;
 
         public ZilAtom(string text, ObList list, StdAtom stdAtom)
         {
-            this.text = text;
+            Text = text;
             this.list = list;
-            this.stdAtom = stdAtom;
+            StdAtom = stdAtom;
         }
 
         [ChtypeMethod]
-        public static ZilAtom FromAtom(Context ctx, ZilAtom other)
+        public static ZilAtom FromAtom([NotNull] Context ctx, ZilAtom other)
         {
             Contract.Requires(ctx != null);
 
@@ -47,37 +46,28 @@ namespace Zilf.Interpreter.Values
             return other;
         }
 
-        public string Text
-        {
-            get { return text; }
-        }
+        public string Text { get; }
 
+        [CanBeNull]
         public ObList ObList
         {
-            get
-            {
-                return list;
-            }
+            get => list;
+
             set
             {
-                if (value != list)
-                {
-                    var oldValue = list;
-                    list = value;
+                if (value == list)
+                    return;
 
-                    if (oldValue != null)
-                        oldValue.Remove(this);
+                var oldValue = list;
+                list = value;
 
-                    if (value != null)
-                        value.Add(this);
-                }
+                oldValue?.Remove(this);
+
+                value?.Add(this);
             }
         }
 
-        public StdAtom StdAtom
-        {
-            get { return stdAtom; }
-        }
+        public StdAtom StdAtom { get; }
 
         /// <summary>
         /// Parses an atom name, including !- separators, and returns the atom
@@ -87,7 +77,8 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <returns>The parsed atom.</returns>
         /// <remarks>This method does not strip backslashes from <see cref="text"/>.</remarks>
-        public static ZilAtom Parse(string text, Context ctx)
+        /// <exception cref="InterpreterError">No OBLIST path.</exception>
+        public static ZilAtom Parse([NotNull] string text, [NotNull] Context ctx)
         {
             Contract.Requires(text != null);
             Contract.Requires(ctx != null);
@@ -99,39 +90,40 @@ namespace Zilf.Interpreter.Values
             {
                 // look for it in <1 .OBLIST>, <2 .OBLIST>...
                 var pathspec = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
-                if (pathspec is IEnumerable<ZilObject> zos)
+                if (!(pathspec is IEnumerable<ZilObject> zos))
+                    throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
+
+                ObList insertList = null;
+                var gotDefault = false;
+
+                foreach (var obj in zos)
                 {
-                    ObList insertList = null;
-                    bool gotDefault = false;
-
-                    foreach (ZilObject obj in zos)
+                    switch (obj)
                     {
-                        switch (obj)
-                        {
-                            case ObList oblist:
-                                if (oblist.Contains(text))
-                                    return oblist[text];
+                        case ObList oblist:
+                            if (oblist.Contains(text))
+                                return oblist[text];
 
-                                if (insertList == null || gotDefault)
-                                {
-                                    insertList = oblist;
-                                    gotDefault = false;
-                                }
-                                break;
+                            if (insertList == null || gotDefault)
+                            {
+                                insertList = oblist;
+                                gotDefault = false;
+                            }
+                            break;
 
-                            case ZilAtom atom when (atom.stdAtom == StdAtom.DEFAULT):
-                                gotDefault = true;
-                                break;
-                        }
+                        case ZilAtom atom when atom.StdAtom == StdAtom.DEFAULT:
+                            gotDefault = true;
+                            break;
                     }
-
-                    // not found, insert
-                    result = new ZilAtom(text, insertList, StdAtom.None);
-                    insertList[text] = result;
-                    return result;
                 }
 
-                throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
+                if (insertList == null)
+                    throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
+
+                // not found, insert
+                result = new ZilAtom(text, insertList, StdAtom.None);
+                insertList[text] = result;
+                return result;
             }
 
             // look for it in the specified oblist
@@ -143,12 +135,7 @@ namespace Zilf.Interpreter.Values
             else
             {
                 var olname = Parse(text.Substring(idx + 2), ctx);
-                list = ctx.GetProp(olname, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList;
-                if (list == null)
-                {
-                    // create new oblist
-                    list = ctx.MakeObList(olname);
-                }
+                list = ctx.GetProp(olname, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(olname);
             }
 
             var pname = text.Substring(0, idx);
@@ -161,24 +148,29 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        bool NeedsObListTrailer(IEnumerable<ZilObject> obListPath)
+        bool NeedsObListTrailer([ItemNotNull] [NotNull] [InstantHandle] IEnumerable<ZilObject> obListPath)
         {
             // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
             // thus, the trailer is only needed if (1) looking up that name returns a different atom first
             // or (2) no atom by that name can be found in the path.
 
+            Contract.Requires(obListPath != null);
+            // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
+            // thus, the trailer is only needed if (1) looking up that name returns a different atom first
+            // or (2) no atom by that name can be found in the path.
+
             foreach (var oblist in obListPath.OfType<ObList>())
-                if (oblist.Contains(this.text))
-                    return oblist[this.text] != this;
+                if (oblist.Contains(Text))
+                    return oblist[Text] != this;
 
             return true;
         }
 
         public override string ToString()
         {
-            var sb = new StringBuilder(text.Length);
+            var sb = new StringBuilder(Text.Length);
 
-            foreach (char c in text)
+            foreach (char c in Text)
             {
                 switch (c) {
                     case '<':
@@ -212,17 +204,17 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
+        protected override string ToStringContextImpl([ProvidesContext] Context ctx, bool friendly)
         {
             if (friendly)
                 return ToString();
 
             var sb = new StringBuilder(ToString());
             var oblistAtom = ctx.GetStdAtom(StdAtom.OBLIST);
-            var oblistPath = ctx.GetLocalVal(oblistAtom) as IEnumerable<ZilObject>;
+            var oblistPath = ctx.GetLocalVal(oblistAtom) as IStructure;
 
             var name = this;
-            var oblist = this.ObList;
+            var oblist = ObList;
 
             if (oblist == null)
             {
@@ -243,7 +235,7 @@ namespace Zilf.Interpreter.Values
                         break;
 
                     sb.Append("!-");
-                    sb.Append(name.ToString());
+                    sb.Append(name);
 
                     oblist = name.ObList;
                 }
@@ -256,8 +248,10 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.ATOM;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return this;
         }
     }

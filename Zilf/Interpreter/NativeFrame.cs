@@ -15,14 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -30,7 +26,7 @@ namespace Zilf.Interpreter
     {
         public override string Description { get; }
 
-        public NativeFrame(Context ctx, ISourceLine sourceLine, string description = null)
+        public NativeFrame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
             : base(ctx, sourceLine)
         {
             Contract.Requires(ctx != null);

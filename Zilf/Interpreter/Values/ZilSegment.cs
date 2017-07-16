@@ -22,32 +22,37 @@ using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Linq;
+using JetBrains.Annotations;
+using System.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]
     class ZilSegment : ZilObject, IStructure, IMayExpandBeforeEvaluation
     {
+        [NotNull]
         readonly ZilForm form;
 
-        public ZilSegment(ZilObject obj)
+        public ZilSegment([NotNull] ZilObject obj)
         {
             Contract.Requires(obj != null);
 
-            if (obj is ZilForm form)
-                this.form = form;
+            if (obj is ZilForm objForm)
+                form = objForm;
             else
                 throw new ArgumentException("Segment must be based on a FORM");
         }
 
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(form != null);
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilSegment FromList(Context ctx, ZilListBase list)
+        public static ZilSegment FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
 
@@ -59,6 +64,7 @@ namespace Zilf.Interpreter.Values
             return new ZilSegment(form);
         }
 
+        [NotNull]
         public ZilForm Form => form;
 
         public override string ToString() => "!" + form;
@@ -69,13 +75,14 @@ namespace Zilf.Interpreter.Values
 
         public bool ShouldExpandBeforeEvaluation => true;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => new ZilList(form);
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
             throw new InterpreterError(InterpreterMessages.A_SEGMENT_Can_Only_Be_Evaluated_Inside_A_Structure);
 
         public override bool Equals(object obj) =>
-            obj is ZilSegment other && other.form.Equals(this.form);
+            obj is ZilSegment other && other.form.Equals(form);
 
         public override int GetHashCode() => form.GetHashCode();
 
@@ -94,6 +101,7 @@ namespace Zilf.Interpreter.Values
 
         public bool IsEmpty => form.IsEmpty;
 
+        [CanBeNull]
         public ZilObject this[int index]
         {
             get => form[index];
@@ -110,7 +118,7 @@ namespace Zilf.Interpreter.Values
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env)
+        public IEnumerable<ZilResult> ExpandBeforeEvaluation([NotNull] Context ctx, LocalEnvironment env)
         {
             var result = Form.Eval(ctx, env);
 

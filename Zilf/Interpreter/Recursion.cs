@@ -15,12 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -39,7 +36,7 @@ namespace Zilf.Interpreter
             return true;
         }
 
-        public static void Unlock(object obj)
+        public static void Unlock([NotNull] object obj)
         {
             table.Remove(obj);
         }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
 using System.Threading;
@@ -11,10 +9,6 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Rename;
-using Microsoft.CodeAnalysis.Text;
-using System.Text;
-using Microsoft.CodeAnalysis.Formatting;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.FindSymbols;
 
 namespace ZilfErrorMessages
@@ -22,12 +16,10 @@ namespace ZilfErrorMessages
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MessageConstantCodeFixProvider)), Shared]
     public class MessageConstantCodeFixProvider : CodeFixProvider
     {
-        const string title = "Move prefix to call sites";
+        const string Title = "Move prefix to call sites";
 
-        public sealed override ImmutableArray<string> FixableDiagnosticIds
-        {
-            get { return ImmutableArray.Create(MessageConstantAnalyzer.DiagnosticId_PrefixedMessageFormat); }
-        }
+        public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
+            MessageConstantAnalyzer.DiagnosticId_PrefixedMessageFormat);
 
         public sealed override FixAllProvider GetFixAllProvider()
         {
@@ -55,9 +47,9 @@ namespace ZilfErrorMessages
             // Register a code action that will invoke the fix.
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title: title,
+                    title: Title,
                     createChangedSolution: c => MoveMessagePrefixToCallSitesAsync(context.Document, fieldDecl, c),
-                    equivalenceKey: title),
+                    equivalenceKey: Title),
                 diagnostic);
         }
 
@@ -91,20 +83,25 @@ namespace ZilfErrorMessages
                     fieldDecl.WithAdditionalAnnotations(fieldDeclAnnotation)));
             var solution = document.Project.Solution;
 
-            Func<SyntaxNode, FieldDeclarationSyntax> findFieldDecl = node =>
-                node.DescendantNodes().OfType<FieldDeclarationSyntax>()
+            FieldDeclarationSyntax FindFieldDecl(SyntaxNode node) =>
+                node.DescendantNodes()
+                    .OfType<FieldDeclarationSyntax>()
                     .Single(n => n.HasAnnotation(fieldDeclAnnotation));
-            Func<SyntaxNode, ExpressionSyntax> findFormatExpr = node =>
-                findFieldDecl(node).DescendantNodes().OfType<AttributeSyntax>()
+
+            ExpressionSyntax FindFormatExpr(SyntaxNode node) =>
+                FindFieldDecl(node)
+                    .DescendantNodes()
+                    .OfType<AttributeSyntax>()
                     .First(a => a.Name.ToString() == "Message" || a.Name.ToString() == "MessageAttribute")
-                    .DescendantNodes().OfType<AttributeArgumentSyntax>()
+                    .DescendantNodes()
+                    .OfType<AttributeArgumentSyntax>()
                     .First()
                     .Expression;
 
             // get format string and split it into prefix + rest
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             root = await document.GetSyntaxRootAsync(cancellationToken);
-            var formatStr = (string)semanticModel.GetConstantValue(findFormatExpr(root), cancellationToken).Value;
+            var formatStr = (string)semanticModel.GetConstantValue(FindFormatExpr(root), cancellationToken).Value;
             var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(formatStr);
             var prefix = match.Groups["prefix"].Value;
             var rest = match.Groups["rest"].Value;
@@ -117,10 +114,11 @@ namespace ZilfErrorMessages
                 SyntaxFactory.Literal(newFormatStr));
 
             var pendingReplacements = ImmutableList.Create(
-                new PendingReplacement(document, findFormatExpr(root), newFormatExpr));
+                new PendingReplacement(document, FindFormatExpr(root), newFormatExpr));
 
-            Func<Task> applyPendingReplacementsAsync = async delegate
+            async Task ApplyPendingReplacementsAsync()
             {
+                // ReSharper disable AccessToModifiedClosure
                 var replacementsByDocument = pendingReplacements.GroupBy(pr => pr.Document);
                 pendingReplacements = pendingReplacements.Clear();
 
@@ -133,22 +131,21 @@ namespace ZilfErrorMessages
 
                     solution = solution.WithDocumentSyntaxRoot(group.Key.Id, newSyntaxRoot);
                 }
-            };
+                // ReSharper restore AccessToModifiedClosure
+            }
 
             var fieldSymbol = semanticModel.GetDeclaredSymbol(
-                findFieldDecl(await document.GetSyntaxRootAsync(cancellationToken)).Declaration.Variables[0],
+                FindFieldDecl(await document.GetSyntaxRootAsync(cancellationToken)).Declaration.Variables[0],
                 cancellationToken);
 
             if (fieldSymbol != null)
             {
-                Compilation newCompilation;
-
                 // rename constant if the name matches the old message format
                 if (fieldSymbol.Name == ErrorExceptionUsageCodeFixProvider.GetConstantNameFromMessageFormat(formatStr))
                 {
-                    await applyPendingReplacementsAsync();
+                    await ApplyPendingReplacementsAsync();
 
-                    newCompilation = await solution.GetDocument(messageDocId).Project.GetCompilationAsync(cancellationToken);
+                    var newCompilation = await solution.GetDocument(messageDocId).Project.GetCompilationAsync(cancellationToken);
                     fieldSymbol = SymbolFinder.FindSimilarSymbols(fieldSymbol, newCompilation, cancellationToken).First();
 
                     var newName = ErrorExceptionUsageCodeFixProvider.GetConstantNameFromMessageFormat(newFormatStr);
@@ -157,7 +154,7 @@ namespace ZilfErrorMessages
 
                     var newDocument = solution.GetDocument(messageDocId);
                     var newRoot = await newDocument.GetSyntaxRootAsync(cancellationToken);
-                    var newFieldDecl = findFieldDecl(newRoot);
+                    var newFieldDecl = FindFieldDecl(newRoot);
                     var newSemanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
                     fieldSymbol = newSemanticModel.GetDeclaredSymbol(newFieldDecl.Declaration.Variables[0]);
                 }
@@ -182,7 +179,7 @@ namespace ZilfErrorMessages
             }
 
             // apply pending replacements
-            await applyPendingReplacementsAsync();
+            await ApplyPendingReplacementsAsync();
 
             return solution;
         }

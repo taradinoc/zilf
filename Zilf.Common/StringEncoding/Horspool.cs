@@ -42,17 +42,10 @@ namespace Zilf.Common.StringEncoding
                 badCharSkip[needle[i]] = last - i;
         }
 
-        public string Text
-        {
-            get { return needle; }
-        }
+        public string Text => needle;
 
-        public int FindIn(string haystack)
-        {
-            return FindIn(haystack, 0);
-        }
-
-        public int FindIn(string haystack, int startIndex)
+/*
+        public int FindIn(string haystack, int startIndex = 0)
         {
             int hlen = haystack.Length - startIndex;
             int hstart = startIndex;
@@ -72,13 +65,9 @@ namespace Zilf.Common.StringEncoding
 
             return -1;
         }
+*/
 
-        public int FindIn(StringBuilder haystack)
-        {
-            return FindIn(haystack, 0);
-        }
-
-        public int FindIn(StringBuilder haystack, int startIndex)
+        public int FindIn(StringBuilder haystack, int startIndex = 0)
         {
             int hlen = haystack.Length - startIndex;
             int hstart = startIndex;
@@ -102,39 +91,35 @@ namespace Zilf.Common.StringEncoding
         class CharMap
         {
             readonly int[] small = new int[256];
-            readonly int defaultValue;
             Dictionary<char, int> big;
 
             public CharMap(int defaultValue)
             {
-                this.defaultValue = defaultValue;
+                DefaultValue = defaultValue;
 
                 for (int i = 0; i < 256; i++)
                     small[i] = defaultValue;
             }
 
-            public int DefaultValue
-            {
-                get { return defaultValue; }
-            }
+            int DefaultValue { get; }
 
             public int this[char c]
             {
                 get
                 {
                     if (c < (char)256)
-                        return small[(int)c];
+                        return small[c];
 
                     if (big == null || big.TryGetValue(c, out int result) == false)
-                        return defaultValue;
-                    else
-                        return result;
+                        return DefaultValue;
+
+                    return result;
                 }
                 set
                 {
                     if (c < (char)256)
                     {
-                        small[(int)c] = value;
+                        small[c] = value;
                     }
                     else
                     {

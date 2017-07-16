@@ -16,9 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -27,13 +28,16 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        public static void Compile(Context ctx, IGameBuilder gb)
+        public static void Compile([NotNull] Context ctx, [NotNull] IGameBuilder gb)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(gb != null);
             var compilation = new Compilation(ctx, gb, gb.DebugFile != null && ctx.WantDebugInfo);
             compilation.Compile();
         }
@@ -91,50 +95,53 @@ namespace Zilf.Compiler
             Game.Finish();
         }
 
-        private void BuildUserDefinedTables()
+        void BuildUserDefinedTables()
         {
             // build tables
-            foreach (KeyValuePair<ZilTable, ITableBuilder> pair in Tables)
+            foreach (var pair in Tables)
                 BuildTable(pair.Key, pair.Value);
         }
 
-        private void BuildLongWordTable(ITableBuilder longWordTable, Queue<IWord> longWords)
+        [ContractAnnotation("longWords: notnull => longWordTable: notnull")]
+        void BuildLongWordTable([CanBeNull] ITableBuilder longWordTable, [CanBeNull] Queue<IWord> longWords)
         {
-            if (longWords != null)
+            if (longWords == null)
+                return;
+
+            Debug.Assert(longWordTable != null);
+
+            longWordTable.AddShort((short)longWords.Count);
+            while (longWords.Count > 0)
             {
-                longWordTable.AddShort((short)longWords.Count);
-                while (longWords.Count > 0)
-                {
-                    var word = longWords.Dequeue();
-                    longWordTable.AddShort(Vocabulary[word]);
-                    longWordTable.AddShort(this.Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
-                }
+                var word = longWords.Dequeue();
+                longWordTable.AddShort(Vocabulary[word]);
+                longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
             }
         }
 
-        private void BuildVocabWords(ITableBuilder longWordTable, out Queue<IWord> longWords)
+        void BuildVocabWords([CanBeNull] ITableBuilder longWordTable, [CanBeNull] out Queue<IWord> longWords)
         {
             // build vocabulary
-            longWords = (longWordTable == null ? null : new Queue<IWord>());
+            longWords = longWordTable == null ? null : new Queue<IWord>();
 
             var helpers = new WriteToBuilderHelpers
             {
-                CompileConstant = CompileConstant,
-                DirIndexToPropertyOperand = di => Properties[Context.ZEnvironment.Directions[di]]
+                CompileConstantDelegate = CompileConstant,
+                DirIndexToPropertyOperandDelegate = di => Properties[Context.ZEnvironment.Directions[di]]
             };
 
             var builtWords = new HashSet<IWordBuilder>();
             foreach (var pair in Vocabulary)
             {
-                IWord word = pair.Key;
-                IWordBuilder wb = pair.Value;
+                var word = pair.Key;
+                var wb = pair.Value;
 
                 if (builtWords.Contains(wb))
                     continue;
 
                 builtWords.Add(wb);
 
-                this.Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
+                Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
 
                 if (longWords != null && Context.ZEnvironment.IsLongWord(word))
                 {
@@ -143,12 +150,12 @@ namespace Zilf.Compiler
             }
         }
 
-        private void BuildObjects()
+        void BuildObjects()
         {
             // build objects
-            foreach (ZilModelObject obj in Context.ZEnvironment.ObjectsInInsertionOrder())
+            foreach (var obj in Context.ZEnvironment.ObjectsInInsertionOrder())
             {
-                IObjectBuilder ob = Objects[obj.Name];
+                var ob = Objects[obj.Name];
                 try
                 {
                     using (DiagnosticContext.Push(obj.SourceLine))
@@ -163,26 +170,28 @@ namespace Zilf.Compiler
             }
         }
 
-        private void ExitZilch()
+        void ExitZilch()
         {
             // ...and we're done generating code
             Context.DefineCompilationFlag(Context.GetStdAtom(StdAtom.IN_ZILCH), Context.FALSE, true);
         }
 
-        private void GenerateRoutineCode()
+        void GenerateRoutineCode()
         {
             // compile routines
             IRoutineBuilder mainRoutine = null;
 
-            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
+            foreach (var routine in Context.ZEnvironment.Routines)
             {
-                bool entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
-                IRoutineBuilder rb = Routines[routine.Name];
+                var entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
+                Debug.Assert(routine.Name != null);
+                Debug.Assert(Routines.ContainsKey(routine.Name));
+                var rb = Routines[routine.Name];
                 try
                 {
                     using (DiagnosticContext.Push(routine.SourceLine))
                     {
-                        BuildRoutine(routine, rb, entryPoint);
+                        BuildRoutine(routine, rb, entryPoint, Context.TraceRoutines);
                     }
                 }
                 catch (ZilError ex)
@@ -200,17 +209,18 @@ namespace Zilf.Compiler
                 throw new CompilerError(CompilerMessages.Missing_GO_Routine);
         }
 
-        private void EnterZilch()
+        void EnterZilch()
         {
             // let macros know we're generating code now
             Context.DefineCompilationFlag(Context.GetStdAtom(StdAtom.IN_ZILCH), Context.TRUE, true);
         }
 
-        private void PrepareLateRoutineBuilders()
+        void PrepareLateRoutineBuilders()
         {
             // builders for routines (again, in case any were added during compilation, e.g. by a PROPSPEC)
-            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
+            foreach (var routine in Context.ZEnvironment.Routines)
             {
+                Debug.Assert(routine.Name != null);
                 if (!Routines.ContainsKey(routine.Name))
                     Routines.Add(routine.Name, Game.DefineRoutine(
                         routine.Name.Text,
@@ -219,10 +229,10 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PreparePropertyDefaults()
+        void PreparePropertyDefaults()
         {
             // default values for properties
-            foreach (KeyValuePair<ZilAtom, ZilObject> pair in Context.ZEnvironment.PropertyDefaults)
+            foreach (var pair in Context.ZEnvironment.PropertyDefaults)
             {
                 try
                 {
@@ -230,7 +240,7 @@ namespace Zilf.Compiler
                         pair.Value.SourceLine ??
                         new StringSourceLine("property default for '" + pair.Key + "'")))
                     {
-                        IPropertyBuilder pb = Properties[pair.Key];
+                        var pb = Properties[pair.Key];
                         pb.DefaultValue = CompileConstant(pair.Value);
                         if (pb.DefaultValue == null)
                             throw new CompilerError(
@@ -247,21 +257,23 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareReservedGlobalBuilders(string[] reservedGlobals)
+        void PrepareReservedGlobalBuilders([ItemNotNull] [NotNull] string[] reservedGlobals)
         {
+            Contract.Requires(reservedGlobals != null);
+
             // implicitly defined globals
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
             foreach (var name in reservedGlobals)
             {
-                var glb = this.Game.DefineGlobal(name);
+                var glb = Game.DefineGlobal(name);
                 Globals.Add(Context.RootObList[name], glb);
             }
         }
 
-        private void PrepareHardGlobalBuilders()
+        void PrepareHardGlobalBuilders()
         {
             // builders and values for globals (which may refer to constants)
-            foreach (ZilGlobal global in Context.ZEnvironment.Globals)
+            foreach (var global in Context.ZEnvironment.Globals)
             {
                 if (global.StorageType == GlobalStorageType.Hard)
                 {
@@ -272,17 +284,17 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareVocabConstant()
+        void PrepareVocabConstant()
         {
-            Constants.Add(this.Context.GetStdAtom(StdAtom.VOCAB), this.Game.VocabularyTable);
+            Constants.Add(Context.GetStdAtom(StdAtom.VOCAB), Game.VocabularyTable);
         }
 
-        private void PrepareLongWordTableBuilder(out ITableBuilder longWordTable)
+        void PrepareLongWordTableBuilder([CanBeNull] out ITableBuilder longWordTable)
         {
             if (Context.GetCompilationFlagOption(StdAtom.LONG_WORDS))
             {
-                longWordTable = this.Game.DefineTable("LONG-WORD-TABLE", true);
-                Constants.Add(this.Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
+                longWordTable = Game.DefineTable("LONG-WORD-TABLE", true);
+                Constants.Add(Context.GetStdAtom(StdAtom.LONG_WORD_TABLE), longWordTable);
             }
             else
             {
@@ -290,11 +302,11 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareConstantBuilders(ZilModelObject lastObject)
+        void PrepareConstantBuilders([CanBeNull] ZilModelObject lastObject)
         {
             // builders and values for constants (which may refer to vocabulary,
             // routines, tables, objects, properties, or flags)
-            foreach (ZilConstant constant in Context.ZEnvironment.Constants)
+            foreach (var constant in Context.ZEnvironment.Constants)
             {
                 IOperand value;
                 if (constant.Name.StdAtom == StdAtom.LAST_OBJECT && lastObject != null)
@@ -321,8 +333,12 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareAndCheckGlobalStorage(out string[] reservedGlobals)
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        void PrepareAndCheckGlobalStorage([ItemNotNull] [NotNull] out string[] reservedGlobals)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Ensures(Contract.ValueAtReturn(out reservedGlobals) != null);
+
             // FUNNY-GLOBALS?
             reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
             if (Context.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
@@ -336,7 +352,7 @@ namespace Zilf.Compiler
                     g.StorageType = GlobalStorageType.Hard;
 
                 if (Context.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
-                    this.Context.HandleError(new CompilerError(
+                    Context.HandleError(new CompilerError(
                         CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                         "globals",
                         Context.ZEnvironment.Globals.Count,
@@ -344,37 +360,37 @@ namespace Zilf.Compiler
             }
         }
 
-        private void EnforceFlagLimit()
+        void EnforceFlagLimit()
         {
             // enforce limit on number of flags
-            if (UniqueFlags > this.Game.MaxFlags)
-                this.Context.HandleError(new CompilerError(
+            if (UniqueFlags > Game.MaxFlags)
+                Context.HandleError(new CompilerError(
                     CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                     "flags",
                     UniqueFlags,
-                    this.Game.MaxFlags));
+                    Game.MaxFlags));
         }
 
-        private void PrepareFlagAliases()
+        void PrepareFlagAliases()
         {
             // may as well do bit synonyms here too
             foreach (var pair in Context.ZEnvironment.BitSynonyms)
                 DefineFlagAlias(pair.Key, pair.Value);
         }
 
-        private void CopyVocabSynonymValues()
+        void CopyVocabSynonymValues()
         {
             // now that all the vocabulary is set up, copy values for synonyms
-            foreach (Synonym syn in Context.ZEnvironment.Synonyms)
+            foreach (var syn in Context.ZEnvironment.Synonyms)
                 syn.Apply(Context);
         }
 
-        private void PrepareLateSyntaxTableBuilders()
+        void PrepareLateSyntaxTableBuilders()
         {
             // constants and builders for late syntax tables
             foreach (var name in Context.ZEnvironment.VocabFormat.GetLateSyntaxTableNames())
             {
-                var tb = this.Game.DefineTable(name, true);
+                var tb = Game.DefineTable(name, true);
                 var atom = Context.RootObList[name];
                 Constants.Add(atom, tb);
 
@@ -383,8 +399,9 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PerformVocabMerges(Dictionary<IWord, IWord> vocabMerges)
+        void PerformVocabMerges([NotNull] Dictionary<IWord, IWord> vocabMerges)
         {
+            Contract.Requires(vocabMerges != null);
             string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
 
             foreach (var pair in vocabMerges)
@@ -405,8 +422,12 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PreparePunctuationAliasesAndPlanMerges(Dictionary<string, string> punctWords, Dictionary<IWord, IWord> vocabMerges)
+        void PreparePunctuationAliasesAndPlanMerges([NotNull] Dictionary<string, string> punctWords,
+            [NotNull] Dictionary<IWord, IWord> vocabMerges)
         {
+            Contract.Requires(punctWords != null);
+            Contract.Requires(vocabMerges != null);
+
             foreach (var pair in punctWords)
             {
                 var nameAtom = ZilAtom.Parse(pair.Key, Context);
@@ -422,26 +443,29 @@ namespace Zilf.Compiler
             }
         }
 
-        private void DefineVocabWords()
+        void DefineVocabWords()
         {
-            foreach (IWord word in Context.ZEnvironment.Vocabulary.Values)
+            foreach (var word in Context.ZEnvironment.Vocabulary.Values)
             {
                 DefineWord(word);
             }
         }
 
-        private void PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges)
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        void PlanVocabMerges([NotNull] out Dictionary<IWord, IWord> vocabMerges)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Ensures(Contract.ValueAtReturn(out vocabMerges) != null);
             var merges = new Dictionary<IWord, IWord>();
             Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
             {
-                this.Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
+                Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
                 merges.Add(duplicateWord, mainWord);
             });
             vocabMerges = merges;
         }
 
-        private void PrepareBuzzWords()
+        void PrepareBuzzWords()
         {
             foreach (var pair in Context.ZEnvironment.Buzzwords)
             {
@@ -449,8 +473,12 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PreparePunctuationWords(out Dictionary<string, string> punctWords)
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        void PreparePunctuationWords([NotNull] out Dictionary<string, string> punctWords)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Ensures(Contract.ValueAtReturn(out punctWords) != null);
+
             // vocabulary for punctuation
             punctWords = new Dictionary<string, string>
             {
@@ -467,7 +495,7 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareSelfInsertingBreaks()
+        void PrepareSelfInsertingBreaks()
         {
             // self-inserting breaks
             if (Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks)
@@ -478,14 +506,14 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareTableBuilders()
+        void PrepareTableBuilders()
         {
             // builders for tables
             ITableBuilder firstPureTable = null;
-            Func<ZilTable, int> parserTablesFirst = t => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
-            foreach (ZilTable table in Context.ZEnvironment.Tables.OrderBy(parserTablesFirst))
+            int ParserTablesFirst(ZilTable t) => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+            foreach (var table in Context.ZEnvironment.Tables.OrderBy(ParserTablesFirst))
             {
-                bool pure = (table.Flags & TableFlags.Pure) != 0;
+                var pure = (table.Flags & TableFlags.Pure) != 0;
                 var builder = Game.DefineTable(table.Name, pure);
                 Tables.Add(table, builder);
 
@@ -497,12 +525,12 @@ namespace Zilf.Compiler
                 Constants.Add(Context.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
         }
 
-        private void PrepareObjectBuilders(out ZilModelObject lastObject)
+        void PrepareObjectBuilders([CanBeNull] out ZilModelObject lastObject)
         {
             // builders for objects
             lastObject = null;
 
-            foreach (ZilModelObject obj in Context.ZEnvironment.ObjectsInDefinitionOrder())
+            foreach (var obj in Context.ZEnvironment.ObjectsInDefinitionOrder())
             {
                 lastObject = obj;
                 Objects.Add(obj.Name, Game.DefineObject(obj.Name.Text));
@@ -512,10 +540,10 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PrepareHighestFlagBuilders()
+        void PrepareHighestFlagBuilders()
         {
             // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
-            ZilAtom getOriginal(ZilAtom flag) =>
+            ZilAtom GetOriginal(ZilAtom flag) =>
                 Context.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
             var highestFlags =
                 Context.ZEnvironment.FlagsOrderedLast
@@ -523,25 +551,25 @@ namespace Zilf.Compiler
                         from syn in Context.ZEnvironment.Syntaxes
                         from flag in new[] { syn.FindFlag1, syn.FindFlag2 }
                         where flag != null
-                        select getOriginal(flag))
+                        select GetOriginal(flag))
                     .Distinct()
                     .ToList();
 
-            if (highestFlags.Count >= this.Game.MaxFlags)
+            if (highestFlags.Count >= Game.MaxFlags)
                 Context.HandleError(new CompilerError(
                     CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                     "flags requiring high numbers",
                     highestFlags.Count,
-                    this.Game.MaxFlags));
+                    Game.MaxFlags));
 
             foreach (var flag in highestFlags)
                 DefineFlag(flag);
         }
 
-        private void PreparePropertyBuilders()
+        void PreparePropertyBuilders()
         {
             // builders and constants for some properties
-            foreach (ZilAtom dir in Context.ZEnvironment.Directions)
+            foreach (var dir in Context.ZEnvironment.Directions)
                 DefineProperty(dir);
 
             // create a constant for the last explicitly defined direction
@@ -550,21 +578,25 @@ namespace Zilf.Compiler
                     Properties[Context.ZEnvironment.LowDirection]);
 
             // builders and constants for some more properties
-            foreach (KeyValuePair<ZilAtom, ZilObject> pair in Context.ZEnvironment.PropertyDefaults)
+            foreach (var pair in Context.ZEnvironment.PropertyDefaults)
                 DefineProperty(pair.Key);
         }
 
-        private void PrepareEarlyRoutineBuilders()
+        void PrepareEarlyRoutineBuilders()
         {
             // builders for routines
             if (Context.ZEnvironment.EntryRoutineName == null)
                 Context.ZEnvironment.EntryRoutineName = Context.GetStdAtom(StdAtom.GO);
 
-            foreach (ZilRoutine routine in Context.ZEnvironment.Routines)
+            foreach (var routine in Context.ZEnvironment.Routines)
+            {
+                Debug.Assert(routine.Name != null);
+
                 Routines.Add(routine.Name, Game.DefineRoutine(
                     routine.Name.Text,
                     routine.Name == Context.ZEnvironment.EntryRoutineName,
                     (routine.Flags & RoutineFlags.CleanStack) != 0));
+            }
         }
     }
 }

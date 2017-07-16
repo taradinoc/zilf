@@ -19,9 +19,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,8 +32,9 @@ namespace Zilf.Interpreter.Values
         public ZilObject StructurePattern { get; }
         public ZilObject ValuePattern { get; }
 
+        /// <exception cref="InterpreterError"><paramref name="vector"/> has the wrong number or types of elements.</exception>
         [ChtypeMethod]
-        public ZilOffset(ZilVector vector)
+        public ZilOffset([NotNull] ZilVector vector)
         {
             Contract.Requires(vector != null);
 
@@ -48,19 +49,21 @@ namespace Zilf.Interpreter.Values
             ValuePattern = vector[2];
         }
 
-        public ZilOffset(int index, ZilObject structurePattern, ZilObject valuePattern)
+        public ZilOffset(int index, [NotNull] ZilObject structurePattern, [NotNull] ZilObject valuePattern)
         {
-            this.Index = index;
-            this.StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
-            this.ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
+            Contract.Requires(structurePattern != null);
+            Contract.Requires(valuePattern != null);
+            Index = index;
+            StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
+            ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
         }
 
         public override bool Equals(object obj)
         {
             return obj is ZilOffset other &&
                 other.Index == Index &&
-                this.StructurePattern.Equals(other.StructurePattern) &&
-                this.ValuePattern.Equals(other.ValuePattern);
+                StructurePattern.Equals(other.StructurePattern) &&
+                ValuePattern.Equals(other.ValuePattern);
         }
 
         public override int GetHashCode()
@@ -120,15 +123,19 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.VECTOR;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(new ZilFix(Index), StructurePattern, ValuePattern);
         }
 
         #region IStructure Members
 
+        [NotNull]
         public ZilObject GetFirst()
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilFix(Index);
         }
 
@@ -150,16 +157,19 @@ namespace Zilf.Interpreter.Values
             }
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public IStructure GetBack(int skip)
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public IStructure GetTop()
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public void Grow(int end, int beginning, ZilObject defaultValue)
         {
             throw new NotSupportedException();
@@ -167,6 +177,7 @@ namespace Zilf.Interpreter.Values
 
         public bool IsEmpty => false;
 
+        /// <exception cref="InterpreterError" accessor="set">Always thrown.</exception>
         public ZilObject this[int index]
         {
             get
@@ -218,33 +229,30 @@ namespace Zilf.Interpreter.Values
 
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-            {
+            if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
                 return ApplyNoEval(ctx, args);
-            }
-            else
-            {
-                return zr;
-            }
+
+            return zr;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="args"/> has the wrong number or types of elements.</exception>
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
         {
             try
             {
                 if (args.Length == 1)
                 {
-                    ctx.MaybeCheckDecl(args[0], this.StructurePattern, "argument {0}", 1);
-                    var result = Subrs.NTH(ctx, (IStructure)args[0], this.Index);
-                    ctx.MaybeCheckDecl(result, this.ValuePattern, "element {0}", this.Index);
+                    ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
+                    var result = Subrs.NTH(ctx, (IStructure)args[0], Index);
+                    ctx.MaybeCheckDecl(result, ValuePattern, "element {0}", Index);
                     return result;
                 }
 
                 if (args.Length == 2)
                 {
-                    ctx.MaybeCheckDecl(args[0], this.StructurePattern, "argument {0}", 1);
-                    ctx.MaybeCheckDecl(args[1], this.ValuePattern, "argument {0}", 2);
-                    return Subrs.PUT(ctx, (IStructure)args[0], this.Index, args[1]);
+                    ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
+                    ctx.MaybeCheckDecl(args[1], ValuePattern, "argument {0}", 2);
+                    return Subrs.PUT(ctx, (IStructure)args[0], Index, args[1]);
                 }
 
                 throw new InterpreterError(

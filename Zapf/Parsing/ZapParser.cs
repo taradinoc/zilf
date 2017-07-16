@@ -18,12 +18,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Zapf.Parsing
 {
@@ -98,8 +97,8 @@ namespace Zapf.Parsing
         {
             public BasicSourceLine(int lineNum, string sourceFile)
             {
-                this.LineNum = lineNum;
-                this.SourceFile = sourceFile;
+                LineNum = lineNum;
+                SourceFile = sourceFile;
             }
 
             public int LineNum { get; }
@@ -108,21 +107,18 @@ namespace Zapf.Parsing
 
         ISourceLine CurrentSourceLine => new BasicSourceLine(line, filename);
 
-        public Tokenizer(Stream stream, string filename)
+        public Tokenizer([NotNull] Stream stream, [NotNull] string filename)
         {
             Contract.Requires(stream != null);
             Contract.Requires(filename != null);
 
-            this.rdr = new StreamReader(stream);
+            rdr = new StreamReader(stream);
             this.filename = filename;
         }
 
         char? PeekChar()
         {
-            if (heldChar == null)
-                heldChar = NextChar();
-
-            return heldChar;
+            return heldChar ?? (heldChar = NextChar());
         }
 
         char? NextChar()
@@ -138,6 +134,7 @@ namespace Zapf.Parsing
             return c < 0 ? null : (char?)c;
         }
 
+        /// <exception cref="SeriousError">Syntax error.</exception>
         public Token PeekToken()
         {
             if (heldToken == null)
@@ -146,6 +143,7 @@ namespace Zapf.Parsing
             return (Token)heldToken;
         }
 
+        /// <exception cref="SeriousError">Syntax error.</exception>
         public Token NextToken()
         {
             if (heldToken != null)
@@ -157,8 +155,8 @@ namespace Zapf.Parsing
 
             Token result = new Token
             {
-                Filename = this.filename,
-                Line = this.line
+                Filename = filename,
+                Line = line
             };
 
             var c = PeekChar();
@@ -207,11 +205,12 @@ namespace Zapf.Parsing
                         c = NextChar();
                     } while (c != null && c != '\n');
                     line++;
-                    result.Type = (c == null) ? TokenType.EndOfFile : TokenType.EndOfLine;
+                    result.Type = c == null ? TokenType.EndOfFile : TokenType.EndOfLine;
                     break;
 
                 default:
                     TokenType type;
+                    Debug.Assert(c != null);
                     if (CharTokens.TryGetValue((char)c, out type))
                     {
                         NextChar();
@@ -270,7 +269,7 @@ namespace Zapf.Parsing
 
             while (true)
             {
-                char? c = NextChar();
+                var c = NextChar();
 
                 switch (c)
                 {
@@ -299,6 +298,7 @@ namespace Zapf.Parsing
                         goto default;
 
                     default:
+                        Debug.Assert(c != null);
                         sb.Append((char)c);
                         break;
                 }
@@ -334,8 +334,7 @@ namespace Zapf.Parsing
         {
             try
             {
-                if (rdr != null)
-                    rdr.Dispose();
+                rdr?.Dispose();
             }
             finally
             {
@@ -351,7 +350,7 @@ namespace Zapf.Parsing
         Tokenizer toks;
         int errorCount;
 
-        public ZapParser(IErrorSink sink, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
+        public ZapParser(IErrorSink sink, [NotNull] IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
         {
             Contract.Requires(opcodeDict != null);
 
@@ -404,8 +403,7 @@ namespace Zapf.Parsing
         {
             try
             {
-                if (toks != null)
-                    toks.Dispose();
+                toks?.Dispose();
             }
             finally
             {
@@ -413,7 +411,8 @@ namespace Zapf.Parsing
             }
         }
 
-        public ParseResult Parse(Stream stream, string filename)
+        /// <exception cref="SeriousError">Syntax error.</exception>
+        public ParseResult Parse([NotNull] Stream stream, [NotNull] string filename)
         {
             Contract.Requires(stream != null);
             Contract.Requires(filename != null);
@@ -738,18 +737,7 @@ namespace Zapf.Parsing
 
         AsmExpr TryParseExpr()
         {
-            if (CanStartExpr(toks.PeekToken().Type))
-                return ParseExpr();
-
-            return null;
-        }
-
-        AsmExpr TryParseExpr(Token head)
-        {
-            if (CanStartExpr(head.Type))
-                return ParseExpr(head);
-
-            return null;
+            return CanStartExpr(toks.PeekToken().Type) ? ParseExpr() : null;
         }
 
         AsmLine TryParseDirective(Token head)
@@ -967,15 +955,7 @@ namespace Zapf.Parsing
             while (TryMatchComma())
             {
                 var localName = MatchSymbol();
-                AsmExpr localDefault;
-                if (TryMatchEquals())
-                {
-                    localDefault = ParseExpr();
-                }
-                else
-                {
-                    localDefault = null;
-                }
+                var localDefault = TryMatchEquals() ? ParseExpr() : null;
                 result.Locals.Add(new FunctLocal(localName, localDefault));
             }
             MatchEndOfDirective();

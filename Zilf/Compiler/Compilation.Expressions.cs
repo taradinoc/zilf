@@ -17,8 +17,10 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -43,7 +45,8 @@ namespace Zilf.Compiler
         /// <returns><paramref name="resultStorage"/> if the suggested location was used
         /// for the result, or another operand if the suggested location was not used,
         /// or null if a result was not produced.</returns>
-        internal IOperand CompileForm(IRoutineBuilder rb, ZilForm form, bool wantResult,
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        internal IOperand CompileForm([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, bool wantResult,
             IVariable resultStorage)
         {
             // TODO: split up this method
@@ -51,8 +54,6 @@ namespace Zilf.Compiler
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
-
-            IOperand operand;
 
             using (DiagnosticContext.Push(form.SourceLine))
             {
@@ -97,6 +98,7 @@ namespace Zilf.Compiler
 
                 // built-in statements handled by ZBuiltins
                 var zversion = Context.ZEnvironment.ZVersion;
+                Debug.Assert(form.Rest != null);
                 var argCount = form.Rest.Count();
 
                 if (wantResult)
@@ -172,6 +174,7 @@ namespace Zilf.Compiler
                 IObjectBuilder objbld;
                 IRoutineBuilder routine;
                 IVariable result;
+                IOperand operand;
                 switch (head.StdAtom)
                 {
                     case StdAtom.GVAL:
@@ -354,10 +357,10 @@ namespace Zilf.Compiler
                         // check argument count
                         var args = form.Skip(1).ToArray();
                         if (args.Length < rtn.ArgSpec.MinArgCount ||
-                            (rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount))
+                            rtn.ArgSpec.MaxArgCount != null && args.Length > rtn.ArgSpec.MaxArgCount)
                         {
                             Context.HandleError(CompilerError.WrongArgCount(
-                                rtn.Name.ToString(),
+                                rtn.Name?.ToString() ?? "<unnamed routine>",
                                 new ArgCountRange(rtn.ArgSpec.MinArgCount, rtn.ArgSpec.MaxArgCount)));
                             return wantResult ? Game.Zero : null;
                         }
@@ -372,20 +375,19 @@ namespace Zilf.Compiler
 
                     case ZilFalse _:
                         // this always returns 0. we can eliminate the call if none of the arguments have side effects.
-                        var argsWithSideEffects = form.Skip(1).Where(zo => HasSideEffects(zo)).ToArray();
+                        var argsWithSideEffects = form.Skip(1).Where(HasSideEffects).ToArray();
 
-                        if (argsWithSideEffects.Length > 0)
+                        if (argsWithSideEffects.Length <= 0)
+                            return Game.Zero;
+
+                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                        using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
                         {
-                            result = wantResult ? (resultStorage ?? rb.Stack) : null;
-                            using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
-                            {
-                                var operands = argOperands.AsArray();
-                                if (operands.Any(o => o == rb.Stack))
-                                    rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
-                            }
-                            return result;
+                            var operands = argOperands.AsArray();
+                            if (operands.Any(o => o == rb.Stack))
+                                rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
                         }
-                        return Game.Zero;
+                        return result;
 
                     default:
                         // unrecognized
@@ -399,7 +401,10 @@ namespace Zilf.Compiler
             }
         }
 
-        public IOperand CompileAsOperand(IRoutineBuilder rb, ZilObject expr, ISourceLine src, IVariable suggestion = null)
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [NotNull]
+        public IOperand CompileAsOperand([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
+            [CanBeNull] IVariable suggestion = null)
         {
             Contract.Requires(rb != null);
             Contract.Requires(expr != null);
@@ -456,19 +461,24 @@ namespace Zilf.Compiler
         /// </summary>
         /// <param name="rb">The routine builder.</param>
         /// <param name="expr">The expression to compile.</param>
-        /// <param name="resultStorage">The variable in which to store the value, or <b>null</b> to
+        /// <param name="resultStorage">The variable in which to store the value, or <see langword="null"/> to
         /// use a natural or temporary location. Must not be the stack.</param>
         /// <param name="label">The label to branch to.</param>
-        /// <param name="polarity"><b>true</b> to branch when the expression's value is nonzero,
-        /// or <b>false</b> to branch when it's zero.</param>
+        /// <param name="polarity"><see langword="true"/> to branch when the expression's value is nonzero,
+        /// or <see langword="false"/> to branch when it's zero.</param>
         /// <param name="tempVarProvider">A delegate that returns a temporary variable to use for
-        /// the result. Will only be called when <paramref name="resultStorage"/> is <b>null</b> and
+        /// the result. Will only be called when <paramref name="resultStorage"/> is <see langword="null"/> and
         /// the expression has no natural location.</param>
         /// <returns>The variable where the expression value was stored: always <paramref name="resultStorage"/> if
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
-        internal IOperand CompileAsOperandWithBranch(IRoutineBuilder rb, ZilObject expr, IVariable resultStorage,
-            ILabel label, bool polarity, Func<IVariable> tempVarProvider = null)
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [NotNull]
+        [ContractAnnotation("resultStorage: null => tempVarProvider: notnull")]
+        [ContractAnnotation("tempVarProvider: null => resultStorage: notnull")]
+        internal IOperand CompileAsOperandWithBranch([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr,
+            [CanBeNull] IVariable resultStorage,
+            [NotNull] ILabel label, bool polarity, [CanBeNull] Func<IVariable> tempVarProvider = null)
         {
             Contract.Requires(rb != null);
             Contract.Requires(expr != null);
@@ -531,7 +541,10 @@ namespace Zilf.Compiler
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
                     {
                         if (resultStorage == null)
+                        {
+                            Debug.Assert(tempVarProvider != null);
                             resultStorage = tempVarProvider();
+                        }
 
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label, polarity);
                         return resultStorage;
@@ -546,6 +559,7 @@ namespace Zilf.Compiler
                         }
                         else if (resultStorage == null && result == rb.Stack)
                         {
+                            Debug.Assert(tempVarProvider != null);
                             resultStorage = tempVarProvider();
                             rb.EmitStore(resultStorage, result);
                             result = resultStorage;
@@ -556,7 +570,10 @@ namespace Zilf.Compiler
                     if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
                     {
                         if (resultStorage == null)
+                        {
+                            Debug.Assert(tempVarProvider != null);
                             resultStorage = tempVarProvider();
+                        }
 
                         var label1 = rb.DefineLabel();
                         var label2 = rb.DefineLabel();
@@ -584,7 +601,7 @@ namespace Zilf.Compiler
                             rb.EmitStore(resultStorage, Game.One);
                         }
 
-                        if (polarity == true)
+                        if (polarity)
                             rb.Branch(label);
 
                         return result;
@@ -599,6 +616,7 @@ namespace Zilf.Compiler
                     }
                     else if (resultStorage == null && result == rb.Stack)
                     {
+                        Debug.Assert(tempVarProvider != null);
                         resultStorage = tempVarProvider();
                         rb.EmitStore(resultStorage, result);
                         result = resultStorage;
@@ -612,6 +630,7 @@ namespace Zilf.Compiler
                     if (constValue == null)
                     {
                         Context.HandleError(new CompilerError(expr, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                        return Game.Zero;
                     }
                     else
                     {
@@ -624,19 +643,25 @@ namespace Zilf.Compiler
                             rb.EmitStore(resultStorage, constValue);
                         }
 
-                        if (polarity == true)
+                        if (polarity)
                             rb.Branch(label);
                     }
                     return result;
             }
         }
 
-        IOperand CompileTell(IRoutineBuilder rb, ZilForm form)
+        [NotNull]
+        IOperand CompileTell([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
         {
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
             Contract.Requires(form.SourceLine != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
+
+            if (form.IsEmpty)
+                return Game.One;
+
+            Debug.Assert(form.Rest != null);
 
             var args = form.Rest.ToArray();
 
@@ -679,8 +704,9 @@ namespace Zilf.Compiler
                 // <QUOTE foo> -> <PRINTD ,foo>
                 if (args[index] is ZilForm innerForm)
                 {
-                    if (innerForm.First is ZilAtom atom && atom.StdAtom == StdAtom.QUOTE && innerForm.Rest != null)
+                    if (innerForm.First is ZilAtom atom && atom.StdAtom == StdAtom.QUOTE && innerForm.Rest != null && !innerForm.Rest.IsEmpty)
                     {
+                        Debug.Assert(innerForm.Rest.First != null);
                         var transformed = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
                         transformed.SourceLine = form.SourceLine;
                         var obj = CompileAsOperand(rb, transformed, innerForm.SourceLine);
@@ -705,7 +731,6 @@ namespace Zilf.Compiler
                 var str = CompileAsOperand(rb, args[index], args[index].SourceLine ?? form.SourceLine);
                 rb.EmitPrint(PrintOp.PackedAddr, str);
                 index++;
-                continue;
             }
 
             return Game.One;
@@ -721,6 +746,8 @@ namespace Zilf.Compiler
             if (!(form.First is ZilAtom head))
                 return false;
 
+            Debug.Assert(form.Rest != null);
+
             // some instructions always have side effects
             var zversion = Context.ZEnvironment.ZVersion;
             var argCount = form.Rest.Count();
@@ -732,11 +759,7 @@ namespace Zilf.Compiler
                 return true;
 
             // other instructions could still have side effects if their arguments do
-            foreach (ZilObject obj in form.Rest)
-                if (HasSideEffects(obj))
-                    return true;
-
-            return false;
+            return form.Rest.Any(HasSideEffects);
         }
     }
 }

@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 
 namespace Zilf.ZModel
@@ -26,6 +27,6 @@ namespace Zilf.ZModel
 
         Byte = 1,
         Writable = 2,
-        Extended = 4,
+        Extended = 4
     }
 }

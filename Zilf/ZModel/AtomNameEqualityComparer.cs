@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel
@@ -44,7 +45,7 @@ namespace Zilf.ZModel
             return x.Text == y.Text;
         }
 
-        public int GetHashCode(ZilAtom obj)
+        public int GetHashCode([CanBeNull] ZilAtom obj)
         {
             if (obj == null || obj.Text == null)
                 return 0;

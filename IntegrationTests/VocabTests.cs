@@ -15,28 +15,35 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.ZModel.Vocab;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
     [TestClass]
     public class VocabTests
     {
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
+            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
 
             return new RoutineAssertionHelper(argSpec, body);
         }
 
-        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        [NotNull]
+        static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
-            Contract.Requires(globals != null && globals.Length > 0);
+            Contract.Requires(globals != null);
+            Contract.Requires(globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
+            Contract.Ensures(Contract.Result<GlobalsAssertionHelper>() != null);
 
             return new GlobalsAssertionHelper(globals);
         }
@@ -75,9 +82,12 @@ namespace IntegrationTests
                     "<==? <GETB ,TCHARS 0> 144>");
         }
 
-        private static string[] PrepImplications(bool compact, params string[] wordAndIdConstantPairs)
+        [NotNull]
+        static string[] PrepImplications(bool compact, [ItemNotNull] [NotNull] params string[] wordAndIdConstantPairs)
         {
-            Contract.Requires(wordAndIdConstantPairs != null && wordAndIdConstantPairs.Length % 2 == 0);
+            Contract.Requires(wordAndIdConstantPairs != null);
+            Contract.Requires(wordAndIdConstantPairs.Length % 2 == 0);
+            Contract.Ensures(Contract.Result<string[]>() != null);
 
             const string SCompactTest =
                 "<==? <GETB <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> {1}>";
@@ -86,8 +96,10 @@ namespace IntegrationTests
 
             string testFormat = compact ? SCompactTest : SNonCompactTest;
 
-            var result = new List<string>();
-            result.Add(string.Format("<==? <GET ,PREPOSITIONS 0> {0}>", wordAndIdConstantPairs.Length / 2));
+            var result = new List<string>
+            {
+                $"<==? <GET ,PREPOSITIONS 0> {wordAndIdConstantPairs.Length / 2}>"
+            };
 
             for (int i = 0; i + 1 < wordAndIdConstantPairs.Length; i += 2)
             {

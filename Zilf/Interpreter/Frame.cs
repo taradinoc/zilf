@@ -19,13 +19,17 @@ using System;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
+using System.Diagnostics;
 
 namespace Zilf.Interpreter
 {
     abstract class Frame : IDisposable
     {
+        [NotNull]
         public Context Context { get; }
         public Frame Parent { get; }
+        [NotNull]
         public ISourceLine SourceLine { get; }
 
         public abstract string Description { get; }
@@ -33,13 +37,14 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(Context != null);
             Contract.Invariant(SourceLine != null);
         }
 
-        protected Frame(Context ctx, ZilForm callingForm)
+        protected Frame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(callingForm != null);
@@ -49,7 +54,7 @@ namespace Zilf.Interpreter
             SourceLine = callingForm.SourceLine;
         }
 
-        protected Frame(Context ctx, ISourceLine sourceLine)
+        protected Frame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(sourceLine != null);
@@ -59,6 +64,7 @@ namespace Zilf.Interpreter
             SourceLine = sourceLine;
         }
 
+        /// <exception cref="InvalidOperationException">This <see cref="Frame"/> was not on top of the stack.</exception>
         public void Dispose()
         {
             if (this == Context.TopFrame)

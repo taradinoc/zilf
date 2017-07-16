@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 
@@ -27,28 +28,28 @@ namespace Zilf.Language
     class InterpreterError : ZilError<InterpreterMessages>
     {
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(string message)
+        public InterpreterError([NotNull] string message)
             : base(message)
         {
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(string message, Exception innerException)
+        public InterpreterError([NotNull] string message, Exception innerException)
             : base(message, innerException)
         {
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(ISourceLine src, string message)
+        public InterpreterError(ISourceLine src, [NotNull] string message)
             : base(src, message)
         {
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(IProvideSourceLine node, string message)
+        public InterpreterError([NotNull] IProvideSourceLine node, [NotNull] string message)
             : base(node.SourceLine, message)
         {
             Contract.Requires(node != null);
@@ -79,17 +80,17 @@ namespace Zilf.Language
         {
         }
 
-        public InterpreterError(IProvideSourceLine node, int code, params object[] messageArgs)
+        public InterpreterError([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
         }
 
-        public InterpreterError(Diagnostic diagnostic)
+        public InterpreterError([NotNull] Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
 
-        protected InterpreterError(SerializationInfo si, StreamingContext sc)
+        protected InterpreterError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }

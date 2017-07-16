@@ -15,27 +15,32 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
     sealed class CallFrame : Frame
     {
+        [NotNull]
         public ZilForm CallingForm { get; }
 
+        [CanBeNull]
         public override string Description => CallingForm.First?.ToString();
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [ContractInvariantMethod]
+        [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
             Contract.Invariant(CallingForm != null);
         }
 
-        public CallFrame(Context ctx, ZilForm callingForm)
+        public CallFrame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
             : base(ctx, callingForm.SourceLine)
         {
             Contract.Requires(ctx != null);

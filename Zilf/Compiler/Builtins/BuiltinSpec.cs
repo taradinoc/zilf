@@ -21,9 +21,8 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Zilf.Emit;
-using Zilf.Interpreter;
-using Zilf.Interpreter.Values;
 using Zilf.ZModel;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -36,15 +35,16 @@ namespace Zilf.Compiler.Builtins
         public readonly BuiltinAttribute Attr;
         public readonly MethodInfo Method;
 
-        public BuiltinSpec(BuiltinAttribute attr, MethodInfo method)
+        /// <exception cref="ArgumentException">The attribute values or method signature are invalid.</exception>
+        public BuiltinSpec([NotNull] BuiltinAttribute attr, [NotNull] MethodInfo method)
         {
             Contract.Requires(attr != null);
             Contract.Requires(method != null);
 
             try
             {
-                this.Attr = attr;
-                this.Method = method;
+                Attr = attr;
+                Method = method;
 
                 // count args and find call type
                 int min = 0;
@@ -100,8 +100,9 @@ namespace Zilf.Compiler.Builtins
                             continue;
                         }
                     }
-                    else if (pi.ParameterType.IsArray &&
-                      ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
+
+                    if (pi.ParameterType.IsArray &&
+                        ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
                     {
                         // varargs: must be the last parameter and marked [ParamArray]
                         if (i != parameters.Length - 1)
@@ -117,8 +118,8 @@ namespace Zilf.Compiler.Builtins
                     throw new ArgumentException("Inscrutable parameter: " + pi.Name);
                 }
 
-                this.MinArgs = min;
-                this.MaxArgs = max;
+                MinArgs = min;
+                MaxArgs = max;
 
                 // validate [Data] parameter vs. Data attribute property
                 if (dataParamType != null)
@@ -156,7 +157,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        public bool AppliesTo(int zversion, int argCount, Type callType = null)
+        public bool AppliesTo(int zversion, int argCount, [CanBeNull] Type callType = null)
         {
             if (!ZEnvironment.VersionMatches(zversion, Attr.MinVersion, Attr.MaxVersion))
                 return false;
@@ -164,7 +165,7 @@ namespace Zilf.Compiler.Builtins
             if (argCount < MinArgs || (MaxArgs != null && argCount > MaxArgs))
                 return false;
 
-            if (callType != null && this.CallType != callType)
+            if (callType != null && CallType != callType)
                 return false;
 
             return true;

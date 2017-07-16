@@ -15,9 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -25,21 +28,32 @@ namespace Zilf.Interpreter
 {
     partial class ArgDecoder
     {
+        [ContractClass(typeof(ConstraintContract))]
         abstract class Constraint
         {
             public static readonly Constraint AnyObject = new AnyObjectConstraint();
             public static readonly Constraint Forbidden = new ForbiddenConstraint();
             public static readonly Constraint Structured = new StructuredConstraint();
             public static readonly Constraint Applicable = new ApplicableConstraint();
+
+            [NotNull]
             public static Constraint OfType(StdAtom typeAtom) => new TypeConstraint(typeAtom);
+
+            [NotNull]
             public static Constraint OfPrimType(PrimType primtype) => new PrimTypeConstraint(primtype);
 
-            public static Constraint FromDecl(Context ctx, ZilObject pattern)
+            [NotNull]
+            public static Constraint FromDecl([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject pattern)
             {
+                Contract.Requires(ctx != null);
+                Contract.Requires(pattern != null);
+                Contract.Ensures(Contract.Result<Constraint>() != null);
                 if (pattern is ZilForm form)
                 {
                     if (form.First is ZilAtom head)
                     {
+                        Debug.Assert(form.Rest != null);
+
                         switch (head.StdAtom)
                         {
                             case StdAtom.OR:
@@ -48,14 +62,15 @@ namespace Zilf.Interpreter
                                     .Aggregate(Forbidden, (a, b) => Disjunction.From(ctx, a, b));
 
                             case StdAtom.PRIMTYPE:
+                                Debug.Assert(form.Rest.First != null);
                                 return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
 
                             case StdAtom.None:
                                 break;
 
-                                // XXX may need to combine this with a contents constraint
-                                //default:
-                                //    return OfType(head.StdAtom);
+                            // XXX may need to combine this with a contents constraint
+                            //default:
+                            //    return OfType(head.StdAtom);
                         }
                     }
                 }
@@ -84,9 +99,13 @@ namespace Zilf.Interpreter
                 return new DeclConstraint(pattern);
             }
 
-            public virtual Constraint And(Context ctx, Constraint other)
+            [NotNull]
+            public Constraint And([NotNull] [ProvidesContext] Context ctx, [NotNull] Constraint other)
             {
-                switch (this.CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
+                Contract.Requires(ctx != null);
+                Contract.Requires(other != null);
+                Contract.Ensures(Contract.Result<Constraint>() != null);
+                switch (CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
                 {
                     case CompareOutcome.Looser:
                         return other;
@@ -99,9 +118,13 @@ namespace Zilf.Interpreter
                 }
             }
 
-            public virtual Constraint Or(Context ctx, Constraint other)
+            [NotNull]
+            public Constraint Or([NotNull] [ProvidesContext] Context ctx, [NotNull] Constraint other)
             {
-                switch (this.CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
+                Contract.Requires(ctx != null);
+                Contract.Requires(other != null);
+                Contract.Ensures(Contract.Result<Constraint>() != null);
+                switch (CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this)))
                 {
                     case CompareOutcome.Looser:
                         return this;
@@ -114,13 +137,17 @@ namespace Zilf.Interpreter
                 }
             }
 
-            protected CompareOutcome? CompareTo(Context ctx, Constraint other)
+            protected CompareOutcome? CompareTo([NotNull] [ProvidesContext] Context ctx, [NotNull] Constraint other)
             {
+                Contract.Requires(ctx != null);
+                Contract.Requires(other != null);
                 return CompareImpl(ctx, other) ?? Invert(other.CompareImpl(ctx, this));
             }
 
-            protected abstract CompareOutcome? CompareImpl(Context ctx, Constraint other);
-            public abstract bool Allows(Context ctx, ZilObject arg);
+            protected abstract CompareOutcome? CompareImpl([NotNull] [ProvidesContext] Context ctx,
+                [NotNull] Constraint other);
+
+            public abstract bool Allows([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject arg);
             public abstract override string ToString();
 
             protected enum CompareOutcome
@@ -145,8 +172,12 @@ namespace Zilf.Interpreter
                 }
             }
 
-            static string EnglishList(IEnumerable<string> items, string connector)
+            [NotNull]
+            static string EnglishList([ItemNotNull] [NotNull] IEnumerable<string> items, [NotNull] string connector)
             {
+                Contract.Requires(items != null);
+                Contract.Requires(connector != null);
+                Contract.Ensures(Contract.Result<string>() != null);
                 var array = items.ToArray();
 
                 Contract.Assert(array.Length > 0);
@@ -160,7 +191,8 @@ namespace Zilf.Interpreter
                         return array[0] + " " + connector + " " + array[1];
 
                     default:
-                        return string.Join(", ", items.Take(array.Length - 1)) + ", " + connector + " " + array[array.Length - 1];
+                        return string.Join(", ", array.Take(array.Length - 1)) + ", " + connector + " " +
+                               array[array.Length - 1];
                 }
             }
 
@@ -206,12 +238,13 @@ namespace Zilf.Interpreter
 
                 public TypeConstraint(StdAtom typeAtom)
                 {
-                    this.TypeAtom = typeAtom;
+                    TypeAtom = typeAtom;
                 }
 
-                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
+                protected override CompareOutcome? CompareImpl([ProvidesContext] Context ctx,
+                    Constraint other)
                 {
-                    if (other is TypeConstraint otherType && otherType.TypeAtom == this.TypeAtom)
+                    if (other is TypeConstraint otherType && otherType.TypeAtom == TypeAtom)
                     {
                         return CompareOutcome.Equal;
                     }
@@ -221,32 +254,33 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return arg.StdTypeAtom == this.TypeAtom;
+                    return arg.StdTypeAtom == TypeAtom;
                 }
 
                 public override string ToString()
                 {
-                    return this.TypeAtom.ToString();
+                    return TypeAtom.ToString();
                 }
             }
 
             class PrimTypeConstraint : Constraint
             {
-                public PrimType PrimType { get; }
+                PrimType PrimType { get; }
 
                 public PrimTypeConstraint(PrimType primtype)
                 {
-                    this.PrimType = primtype;
+                    PrimType = primtype;
                 }
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
                     switch (other)
                     {
-                        case PrimTypeConstraint otherPrimType when (otherPrimType.PrimType == this.PrimType):
+                        case PrimTypeConstraint otherPrimType when (otherPrimType.PrimType == PrimType):
                             return CompareOutcome.Equal;
 
-                        case TypeConstraint otherType when (ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) == this.PrimType):
+                        case TypeConstraint otherType when (ctx.GetTypePrim(ctx.GetStdAtom(otherType.TypeAtom)) ==
+                                                            PrimType):
                             return CompareOutcome.Looser;
 
                         default:
@@ -256,12 +290,12 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return arg.PrimType == this.PrimType;
+                    return arg.PrimType == PrimType;
                 }
 
                 public override string ToString()
                 {
-                    return "PRIMTYPE " + this.PrimType.ToString();
+                    return "PRIMTYPE " + PrimType.ToString();
                 }
             }
 
@@ -323,18 +357,18 @@ namespace Zilf.Interpreter
 
             class DeclConstraint : Constraint
             {
-                public ZilObject Pattern { get; }
+                ZilObject Pattern { get; }
 
                 public DeclConstraint(ZilObject pattern)
                 {
-                    this.Pattern = pattern;
+                    Pattern = pattern;
                 }
 
                 protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
                 {
                     switch (other)
                     {
-                        case DeclConstraint otherDecl when (this.Pattern.Equals(otherDecl.Pattern)):
+                        case DeclConstraint otherDecl when (Pattern.Equals(otherDecl.Pattern)):
                             return CompareOutcome.Equal;
 
                         default:
@@ -344,26 +378,32 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return Decl.Check(ctx, arg, this.Pattern);
+                    return Decl.Check(ctx, arg, Pattern);
                 }
 
                 public override string ToString()
                 {
-                    return this.Pattern.ToString();
+                    return Pattern.ToString();
                 }
             }
 
             class Conjunction : Constraint
             {
-                public IEnumerable<Constraint> Constraints { get; }
+                IEnumerable<Constraint> Constraints { get; }
 
                 Conjunction(IEnumerable<Constraint> constraints)
                 {
-                    this.Constraints = constraints;
+                    Constraints = constraints;
                 }
 
-                public static Conjunction From(Context ctx, Constraint left, Constraint right)
+                [NotNull]
+                public static Conjunction From([NotNull] [ProvidesContext] Context ctx, [NotNull] Constraint left,
+                    [NotNull] Constraint right)
                 {
+                    Contract.Requires(ctx != null);
+                    Contract.Requires(left != null);
+                    Contract.Requires(right != null);
+                    Contract.Ensures(Contract.Result<Conjunction>() != null);
                     var parts = new List<Constraint>();
 
                     if (left is Conjunction lc)
@@ -426,7 +466,7 @@ namespace Zilf.Interpreter
                 {
                     int count = 0, looser = 0, equal = 0;
 
-                    foreach (var c in this.Constraints)
+                    foreach (var c in Constraints)
                     {
                         count++;
 
@@ -457,26 +497,32 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return this.Constraints.All(c => c.Allows(ctx, arg));
+                    return Constraints.All(c => c.Allows(ctx, arg));
                 }
 
                 public override string ToString()
                 {
-                    return EnglishList(this.Constraints.Select(c => c.ToString()).OrderBy(s => s), "and");
+                    return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s), "and");
                 }
             }
 
             class Disjunction : Constraint
             {
-                public IEnumerable<Constraint> Constraints { get; }
+                IEnumerable<Constraint> Constraints { get; }
 
                 Disjunction(IEnumerable<Constraint> constraints)
                 {
-                    this.Constraints = constraints;
+                    Constraints = constraints;
                 }
 
-                public static Disjunction From(Context ctx, Constraint left, Constraint right)
+                [NotNull]
+                public static Disjunction From([NotNull] [ProvidesContext] Context ctx, [NotNull] Constraint left,
+                    [NotNull] Constraint right)
                 {
+                    Contract.Requires(ctx != null);
+                    Contract.Requires(left != null);
+                    Contract.Requires(right != null);
+                    Contract.Ensures(Contract.Result<Disjunction>() != null);
                     var parts = new List<Constraint>();
 
                     if (left is Disjunction ld)
@@ -539,7 +585,7 @@ namespace Zilf.Interpreter
                 {
                     int count = 0, stricter = 0, equal = 0;
 
-                    foreach (var c in this.Constraints)
+                    foreach (var c in Constraints)
                     {
                         count++;
 
@@ -570,12 +616,30 @@ namespace Zilf.Interpreter
 
                 public override bool Allows(Context ctx, ZilObject arg)
                 {
-                    return this.Constraints.Any(c => c.Allows(ctx, arg));
+                    return Constraints.Any(c => c.Allows(ctx, arg));
                 }
 
                 public override string ToString()
                 {
-                    return EnglishList(this.Constraints.Select(c => c.ToString()).OrderBy(s => s), "or");
+                    return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s), "or");
+                }
+            }
+
+            [ContractClassFor(typeof(Constraint))]
+            internal abstract class ConstraintContract : Constraint
+            {
+                protected override CompareOutcome? CompareImpl(Context ctx, Constraint other)
+                {
+                    Contract.Requires(ctx != null);
+                    Contract.Requires(other != null);
+                    return default(CompareOutcome?);
+                }
+
+                public override bool Allows(Context ctx, ZilObject arg)
+                {
+                    Contract.Requires(ctx != null);
+                    Contract.Requires(arg != null);
+                    return default(bool);
                 }
             }
         }

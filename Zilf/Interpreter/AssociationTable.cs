@@ -15,15 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -40,8 +38,8 @@ namespace Zilf.Interpreter
         /// <param name="first">The first object in the pair.</param>
         /// <param name="second">The second object in the pair.</param>
         /// <returns>The associated value, or null if no value is associated with the pair.</returns>
-        [Pure]
-        public ZilObject GetProp(ZilObject first, ZilObject second)
+        [System.Diagnostics.Contracts.Pure]
+        public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
             Contract.Requires(first != null);
             Contract.Requires(second != null);
@@ -59,7 +57,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <param name="value">The value to be associated with the pair, or
         /// null to clear the association.</param>
-        public void PutProp(ZilObject first, ZilObject second, ZilObject value)
+        public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
         {
             Contract.Requires(first != null);
             Contract.Requires(second != null);
@@ -99,6 +97,7 @@ namespace Zilf.Interpreter
             }
         }
 
+        [NotNull]
         public AsocResult[] ToArray()
         {
             var result = new List<AsocResult>();

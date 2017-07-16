@@ -29,8 +29,8 @@ namespace Zilf.Common
         /// <summary>
         /// Shouldn't get here.
         /// </summary>
-        public UnreachableCodeException()
-            : base("Shouldn't get here")
+        public UnreachableCodeException(Exception innerException = null)
+            : base("Shouldn't get here", innerException)
         {
         }
     }

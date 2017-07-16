@@ -1,4 +1,5 @@
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
@@ -6,9 +7,9 @@ namespace Zilf.Emit
     public interface ITableBuilder : IConstantOperand
     {
         void AddByte(byte value);
-        void AddByte(IOperand value);
+        void AddByte([NotNull] IOperand value);
         void AddShort(short value);
-        void AddShort(IOperand value);
+        void AddShort([NotNull] IOperand value);
     }
 
     [ContractClassFor(typeof(ITableBuilder))]

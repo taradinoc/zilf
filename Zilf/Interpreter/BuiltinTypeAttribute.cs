@@ -37,11 +37,11 @@ namespace Zilf.Interpreter
         /// <see cref="ChtypeMethodAttribute"/>.</remarks>
         public BuiltinTypeAttribute(StdAtom name, PrimType primType)
         {
-            this.Name = name;
-            this.PrimType = primType;
+            Name = name;
+            PrimType = primType;
         }
 
-        public StdAtom Name { get; private set; }
-        public PrimType PrimType { get; private set; }
+        public StdAtom Name { get; }
+        public PrimType PrimType { get; }
     }
 }

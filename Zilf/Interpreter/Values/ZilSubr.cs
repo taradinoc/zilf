@@ -15,30 +15,37 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Reflection;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SUBR, PrimType.STRING)]
     class ZilSubr : ZilObject, IApplicable
     {
+        [NotNull]
         protected readonly string name;
+
+        [NotNull]
         protected readonly SubrDelegate handler;
 
-        public ZilSubr(string name, SubrDelegate handler)
+        public ZilSubr([NotNull] string name, [NotNull] SubrDelegate handler)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(handler != null);
             this.name = name;
             this.handler = handler;
         }
 
         [ChtypeMethod]
-        public static ZilSubr FromString(Context ctx, ZilString str)
+        [NotNull]
+        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
@@ -47,7 +54,8 @@ namespace Zilf.Interpreter.Values
             return FromString(ctx, str.ToStringContext(ctx, true));
         }
 
-        public static ZilSubr FromString(Context ctx, string name)
+        [NotNull]
+        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] string name)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);
@@ -70,6 +78,7 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.STRING;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
             return ZilString.FromString(name);
@@ -102,15 +111,23 @@ namespace Zilf.Interpreter.Values
         {
             return
                 obj is ZilSubr other &&
-                other != null &&
-                other.GetType() == this.GetType() &&
-                other.name.Equals(this.name) &&
-                other.handler.Equals(this.handler);
+                other.GetType() == GetType() &&
+                other.name.Equals(name) &&
+                other.handler.Equals(handler);
         }
 
         public override int GetHashCode()
         {
             return handler.GetHashCode();
+        }
+
+        [ContractInvariantMethod]
+        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
+        [Conditional("CONTRACTS_FULL")]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(name != null);
+            Contract.Invariant(handler != null);
         }
     }
 }

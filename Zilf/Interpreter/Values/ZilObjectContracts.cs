@@ -15,13 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [ContractClassFor(typeof(ZilObject))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class ZilObjectContracts : ZilObject
     {
+        [NotNull]
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             Contract.Ensures(Contract.Result<ZilAtom>() != null);
@@ -29,6 +34,7 @@ namespace Zilf.Interpreter.Values
             return default(ZilAtom);
         }
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
             Contract.Ensures(Contract.Result<ZilObject>() != null);

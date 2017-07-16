@@ -18,10 +18,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -31,12 +32,13 @@ using Zilf.Language;
 
 namespace Zilf
 {
-    class Program
+    static class Program
     {
         public const string VERSION = "ZILF 0.8";
 
-        internal static int Main(string[] args)
+        internal static int Main([ItemNotNull] [NotNull] string[] args)
         {
+            Contract.Requires(args != null);
             var ctx = ParseArgs(args, out var inFile, out var outFile);
 
             if (ctx == null)
@@ -73,6 +75,7 @@ namespace Zilf
 
                     if (ctx.RunMode == RunMode.Compiler)
                     {
+                        Debug.Assert(outFile != null);
                         result = frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo);
                     }
                     else
@@ -112,8 +115,9 @@ namespace Zilf
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
-        static void DoREPL(Context ctx)
+        static void DoREPL([NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
             using (ctx.PushFileContext("<stdin>"))
             {
                 var sb = new StringBuilder();
@@ -186,6 +190,7 @@ namespace Zilf
                             sb.Length = 0;
                         }
                     }
+                    // ReSharper disable once CatchAllClause
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex);
@@ -203,25 +208,27 @@ namespace Zilf
             const int c_LinkerTimestampOffset = 8;
             byte[] b = new byte[2048];
 
-            using (var s = new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+            using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 s.Read(b, 0, 2048);
             }
 
-            var i = System.BitConverter.ToInt32(b, c_PeHeaderOffset);
-            var secondsSince1970 = System.BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
+            var i = BitConverter.ToInt32(b, c_PeHeaderOffset);
+            var secondsSince1970 = BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
             var dt = new DateTime(1970, 1, 1, 0, 0, 0);
             dt = dt.AddSeconds(secondsSince1970);
             dt = dt.ToLocalTime();
             return dt;
         }
 
-        static Context ParseArgs(string[] args, out string inFile, out string outFile)
+        [CanBeNull]
+        [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
+        static Context ParseArgs([NotNull] string[] args, [CanBeNull] out string inFile, [CanBeNull] out string outFile)
         {
             Contract.Requires(args != null);
 
-            inFile = null;
-            outFile = null;
+            string newInFile = inFile = null;
+            string newOutFile = outFile = null;
 
             bool traceRoutines = false, debugInfo = false;
             bool? caseSensitive = null;
@@ -229,121 +236,15 @@ namespace Zilf
             bool? quiet = null;
             var includePaths = new List<string>();
 
-            for (int i = 0; i < args.Length; i++)
-            {
-                switch (args[i].ToLowerInvariant())
-                {
-                    case "-c":
-                        mode = RunMode.Compiler;
-                        break;
+            if (!ParseArgs())
+                return null;
 
-                    case "-e":
-                        mode = RunMode.Expression;
-                        break;
+            if (!SetDefaultsAndValidate())
+                return null;
 
-                    case "-i":
-                        mode = RunMode.Interactive;
-                        break;
-
-                    case "-q":
-                        quiet = true;
-                        break;
-
-                    case "-cs":
-                        caseSensitive = true;
-                        break;
-
-                    case "-ci":
-                        caseSensitive = false;
-                        break;
-
-                    case "-tr":
-                        traceRoutines = true;
-                        break;
-
-                    case "-d":
-                        debugInfo = true;
-                        break;
-
-                    case "-x":
-                        mode = RunMode.Interpreter;
-                        break;
-
-                    case "-ip":
-                        i++;
-                        if (i < args.Length)
-                        {
-                            includePaths.Add(args[i]);
-                        }
-                        else
-                        {
-                            Usage();
-                            return null;
-                        }
-                        break;
-
-                    case "-?":
-                    case "--help":
-                    case "/?":
-                        Usage();
-                        return null;
-
-                    default:
-                        if (inFile == null)
-                        {
-                            inFile = args[i];
-                        }
-                        else if (outFile == null)
-                        {
-                            outFile = args[i];
-                        }
-                        else
-                        {
-                            Usage();
-                            return null;
-                        }
-                        break;
-                }
-            }
-
-            // set defaults and validate
-            if (mode == null)
-                mode = (inFile == null ? RunMode.Interactive : RunMode.Compiler);
-            if (quiet == null)
-                quiet = (mode == RunMode.Expression || mode == RunMode.Interpreter);
-
-            switch (mode.Value)
-            {
-                case RunMode.Compiler:
-                    if (inFile == null) { Usage(); return null; }
-                    if (outFile == null)
-                        outFile = Path.ChangeExtension(inFile, ".zap");
-                    break;
-
-                case RunMode.Expression:
-                case RunMode.Interpreter:
-                    if (inFile == null || outFile != null) { Usage(); return null; }
-                    break;
-
-                case RunMode.Interactive:
-                    if (inFile != null) { Usage(); return null; }
-                    break;
-            }
-
-            if (caseSensitive == null)
-            {
-                switch (mode.Value)
-                {
-                    case RunMode.Expression:
-                    case RunMode.Interactive:
-                        caseSensitive = false;
-                        break;
-
-                    default:
-                        caseSensitive = true;
-                        break;
-                }
-            }
+            Debug.Assert(caseSensitive != null);
+            Debug.Assert(mode != null);
+            Debug.Assert(quiet != null);
 
             // initialize and return Context
             var ctx = new Context(!caseSensitive.Value)
@@ -355,13 +256,159 @@ namespace Zilf
             };
 
             ctx.IncludePaths.AddRange(includePaths);
-            AddImplicitIncludePaths(ctx.IncludePaths, inFile, mode.Value);
+            AddImplicitIncludePaths(ctx.IncludePaths, newInFile, mode.Value);
 
+            inFile = newInFile;
+            outFile = newOutFile;
             return ctx;
+
+            bool ParseArgs()
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    switch (args[i].ToLowerInvariant())
+                    {
+                        case "-c":
+                            mode = RunMode.Compiler;
+                            break;
+
+                        case "-e":
+                            mode = RunMode.Expression;
+                            break;
+
+                        case "-i":
+                            mode = RunMode.Interactive;
+                            break;
+
+                        case "-q":
+                            quiet = true;
+                            break;
+
+                        case "-cs":
+                            caseSensitive = true;
+                            break;
+
+                        case "-ci":
+                            caseSensitive = false;
+                            break;
+
+                        case "-tr":
+                            traceRoutines = true;
+                            break;
+
+                        case "-d":
+                            debugInfo = true;
+                            break;
+
+                        case "-x":
+                            mode = RunMode.Interpreter;
+                            break;
+
+                        case "-ip":
+                            i++;
+                            if (i < args.Length)
+                            {
+                                includePaths.Add(args[i]);
+                            }
+                            else
+                            {
+                                Usage();
+                                return false;
+                            }
+
+                            break;
+
+                        case "-?":
+                        case "--help":
+                        case "/?":
+                            Usage();
+                            return false;
+
+                        default:
+                            if (newInFile == null)
+                            {
+                                newInFile = args[i];
+                            }
+                            else if (newOutFile == null)
+                            {
+                                newOutFile = args[i];
+                            }
+                            else
+                            {
+                                Usage();
+                                return false;
+                            }
+
+                            break;
+                    }
+                }
+
+                return true;
+            }
+
+            bool SetDefaultsAndValidate()
+            {
+                if (mode == null)
+                    mode = (newInFile == null ? RunMode.Interactive : RunMode.Compiler);
+                if (quiet == null)
+                    quiet = (mode == RunMode.Expression || mode == RunMode.Interpreter);
+
+                switch (mode.Value)
+                {
+                    case RunMode.Compiler:
+                        if (newInFile == null)
+                        {
+                            Usage();
+                            return false;
+                        }
+
+                        if (newOutFile == null)
+                            newOutFile = Path.ChangeExtension(newInFile, ".zap");
+                        break;
+
+                    case RunMode.Expression:
+                    case RunMode.Interpreter:
+                        if (newInFile == null || newOutFile != null)
+                        {
+                            Usage();
+                            return false;
+                        }
+
+                        break;
+
+                    case RunMode.Interactive:
+                        if (newInFile != null)
+                        {
+                            Usage();
+                            return false;
+                        }
+
+                        break;
+                }
+
+                if (caseSensitive == null)
+                {
+                    switch (mode.Value)
+                    {
+                        case RunMode.Expression:
+                        case RunMode.Interactive:
+                            caseSensitive = false;
+                            break;
+
+                        default:
+                            caseSensitive = true;
+                            break;
+                    }
+                }
+
+                return true;
+            }
         }
 
-        static void AddImplicitIncludePaths(List<string> includePaths, string inFile, RunMode mode)
+        static void AddImplicitIncludePaths([ItemNotNull] [NotNull] IList<string> includePaths, [CanBeNull] string inFile, RunMode mode)
         {
+            Contract.Requires(includePaths != null);
+
             if (inFile != null && mode != RunMode.Expression)
             {
                 includePaths.Insert(0, Path.GetDirectoryName(Path.GetFullPath(inFile)));
@@ -377,6 +424,7 @@ namespace Zilf
             string[] libraryDirNames = { "Library", "library", "lib" };
 
             var zilfDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Debug.Assert(zilfDir != null);
 
             while (true)
             {
@@ -385,6 +433,7 @@ namespace Zilf
                 foreach (var n in libraryDirNames)
                 {
                     var candidate = Path.Combine(zilfDir, n);
+
                     if (Directory.Exists(candidate))
                     {
                         includePaths.Add(candidate);
@@ -396,11 +445,16 @@ namespace Zilf
                 if (!found)
                 {
                     var segment = Path.GetFileName(zilfDir);
+                    Debug.Assert(segment != null);
+
                     if (strippables.Contains(segment.ToLowerInvariant()))
                     {
                         // strip last segment and keep looking
                         zilfDir = Path.GetDirectoryName(zilfDir);
-                        continue;
+                        if (zilfDir != null)
+                        {
+                            continue;
+                        }
                     }
                 }
 
@@ -433,7 +487,8 @@ Compiler switches:
         }
 
         // TODO: move Parse somewhere more sensible
-        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars)
+        /// <exception cref="InterpreterError">Syntax error.</exception>
+        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(chars != null);
@@ -441,7 +496,8 @@ Compiler switches:
             return Parse(ctx, null, chars, null);
         }
 
-        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars, params ZilObject[] templateParams)
+        /// <exception cref="InterpreterError">Syntax error.</exception>
+        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(chars != null);
@@ -449,7 +505,8 @@ Compiler switches:
             return Parse(ctx, null, chars, templateParams);
         }
 
-        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine src, IEnumerable<char> chars, params ZilObject[] templateParams)
+        /// <exception cref="InterpreterError">Syntax error.</exception>
+        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, ISourceLine src, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(chars != null);
@@ -479,7 +536,7 @@ Compiler switches:
                     case ParserOutputType.Terminator:
                         throw new InterpreterError(
                             src ?? new FileSourceLine(ctx.CurrentFile.Path, parser.Line),
-                            InterpreterMessages.Syntax_Error_0, "misplaced terminator");    //XXX
+                            InterpreterMessages.Syntax_Error_0, "misplaced terminator");
 
                     default:
                         throw new UnhandledCaseException("parser output type");
@@ -487,8 +544,9 @@ Compiler switches:
             }
         }
 
-        static IEnumerable<char> ReadAllChars(Stream stream)
+        static IEnumerable<char> ReadAllChars([NotNull] Stream stream)
         {
+            Contract.Requires(stream != null);
             using (var rdr = new StreamReader(stream))
             {
                 int c;
@@ -499,7 +557,10 @@ Compiler switches:
             }
         }
 
-        public static ZilObject Evaluate(Context ctx, Stream stream, bool wantExceptions = false)
+        [CanBeNull]
+        [ContractAnnotation("wantExceptions: true => notnull")]
+        // ReSharper disable once UnusedMethodReturnValue.Global
+        public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] Stream stream, bool wantExceptions = false)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(stream != null);
@@ -507,15 +568,26 @@ Compiler switches:
             return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
         }
 
-        public static ZilObject Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
+        /// <summary>
+        /// Evaluates some code in a <see cref="Context"/>.
+        /// </summary>
+        /// <param name="ctx">The context in which to evaluate.</param>
+        /// <param name="chars">The code to evaluate.</param>
+        /// <param name="wantExceptions"><see langword="true"/> if the method should be allowed to throw
+        /// <see cref="InterpreterError"/>, or <see langword="false"/> to catch it.</param>
+        /// <returns>The result of evaluating the last object in the code; or <see langword="null"/> if either the code contained
+        /// no objects, or <paramref name="wantExceptions"/> was <see langword="true"/> and an <see cref="InterpreterError"/> was caught.</returns>
+        [CanBeNull]
+        public static ZilObject Evaluate([NotNull] Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
         {
+            Contract.Requires(ctx != null);
             try
             {
                 var ztree = Parse(ctx, chars);
 
                 ZilObject result = null;
                 bool first = true;
-                foreach (ZilObject node in ztree)
+                foreach (var node in ztree)
                 {
                     try
                     {
@@ -525,7 +597,7 @@ Compiler switches:
                             {
                                 // V4 games can identify themselves this way instead of using <VERSION EZIP>
                                 if (node is ZilString str &&
-                                    str?.Text.StartsWith("EXTENDED", StringComparison.Ordinal) == true &&
+                                    str.Text.StartsWith("EXTENDED", StringComparison.Ordinal) &&
                                     ctx.ZEnvironment.ZVersion == 3)
                                 {
                                     ctx.SetZVersion(4);

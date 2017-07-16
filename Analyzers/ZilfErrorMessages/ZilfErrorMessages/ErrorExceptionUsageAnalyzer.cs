@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-
-using ZilfErrorMessages;
 using System.Text;
 
 namespace ZilfErrorMessages
@@ -22,9 +18,10 @@ namespace ZilfErrorMessages
         const string MessageFormat = "This exception should use a diagnostic code instead";
         const string Category = "Error Reporting";
 
-        static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat,
+            Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -49,57 +46,54 @@ namespace ZilfErrorMessages
             var qualifiedFormat = new SymbolDisplayFormat(
               typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
             var exceptionTypeName = typeSymbol.Type.ToDisplayString(qualifiedFormat);
-            ExpressionSyntax errorSourceExpr = null;
 
             literalCreation = null;
 
-            if (exceptionTypeName != null && ZilfFacts.MessageTypeMap.ContainsKey(exceptionTypeName))
+            if (exceptionTypeName == null || !ZilfFacts.MessageTypeMap.ContainsKey(exceptionTypeName))
+                return false;
+
+            var args = creationExpr.ArgumentList.Arguments;
+
+            if (args.Count < 1)
+                return false;
+
+            var argTypes = args.Select(a => semanticModel.GetTypeInfo(a.Expression).ConvertedType).ToArray();
+            int i = 0;
+
+            // ignore the (string, int, int) constructor
+            if (argTypes.Length == 3 && argTypes[0]?.SpecialType == SpecialType.System_String &&
+                argTypes[1]?.SpecialType == SpecialType.System_Int32 && argTypes[2]?.SpecialType == SpecialType.System_Int32)
             {
-                var args = creationExpr.ArgumentList.Arguments;
+                return false;
+            }
 
-                if (args.Count >= 1)
-                {
-                    var argTypes = args.Select(a => semanticModel.GetTypeInfo(a.Expression).ConvertedType).ToArray();
-                    int i = 0;
+            // if the first argument is ISourceLine or IProvideSourceLine, it's the error source expr
+            switch (argTypes[0]?.Name)
+            {
+                case "ISourceLine":
+                case "IProvideSourceLine":
 
-                    // ignore the (string, int, int) constructor
-                    if (argTypes.Length == 3 && argTypes[0]?.SpecialType == SpecialType.System_String &&
-                        argTypes[1]?.SpecialType == SpecialType.System_Int32 && argTypes[2]?.SpecialType == SpecialType.System_Int32)
-                    {
+                    i++;
+                    if (i >= argTypes.Length)
                         return false;
-                    }
 
-                    // if the first argument is ISourceLine or IProvideSourceLine, it's the error source expr
-                    switch (argTypes[0]?.Name)
-                    {
-                        case "ISourceLine":
-                        case "IProvideSourceLine":
-                            errorSourceExpr = args[0].Expression;
+                    break;
+            }
 
-                            i++;
-                            if (i >= argTypes.Length)
-                                return false;
+            // if the next argument is a string...
+            if (argTypes[i]?.SpecialType == SpecialType.System_String)
+            {
+                // we got a winner!
+                var expressionToReplace = args[i].Expression;
 
-                            break;
-                    }
-
-                    // if the next argument is a string...
-                    if (argTypes[i]?.SpecialType == SpecialType.System_String)
-                    {
-                        // we got a winner!
-                        var expressionToReplace = args[i].Expression;
-
-                        if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out var newMessageFormat, out var newMessageArgs))
-                        {
-                            literalCreation = new LiteralCreation(
-                                exceptionTypeName: exceptionTypeName,
-                                errorSourceExpression: errorSourceExpr,
-                                expressionToReplace: expressionToReplace,
-                                newMessageFormat: newMessageFormat,
-                                newMessageArgs: newMessageArgs);
-                            return true;
-                        }
-                    }
+                if (TryExtractFormatAndArgs(expressionToReplace, semanticModel, out var newMessageFormat, out var newMessageArgs))
+                {
+                    literalCreation = new LiteralCreation(
+                        exceptionTypeName: exceptionTypeName,
+                        expressionToReplace: expressionToReplace,
+                        newMessageFormat: newMessageFormat,
+                        newMessageArgs: newMessageArgs);
+                    return true;
                 }
             }
 
@@ -173,7 +167,7 @@ namespace ZilfErrorMessages
 
             var formatExpr = invocationExpr.ArgumentList.Arguments.FirstOrDefault()?.Expression;
 
-            if (formatExpr == null || !(semanticModel.GetTypeInfo(formatExpr).Type?.SpecialType == SpecialType.System_String))
+            if (formatExpr == null || semanticModel.GetTypeInfo(formatExpr).Type?.SpecialType != SpecialType.System_String)
                 return false;
 
             var formatConstValue = semanticModel.GetConstantValue(formatExpr);
@@ -246,10 +240,6 @@ namespace ZilfErrorMessages
         /// </summary>
         public string ExceptionTypeName { get; }
         /// <summary>
-        /// An expression of type ISourceLine or IProvideSourceLine, or null.
-        /// </summary>
-        public ExpressionSyntax ErrorSourceExpression { get; }
-        /// <summary>
         /// The expression to replace in the constructor arguments. Usually a <see cref="LiteralExpressionSyntax"/>.
         /// </summary>
         public ExpressionSyntax ExpressionToReplace { get; }
@@ -263,12 +253,11 @@ namespace ZilfErrorMessages
         public IImmutableList<ExpressionSyntax> NewMessageArgs { get; }
 
         public LiteralCreation(
-            string exceptionTypeName, ExpressionSyntax errorSourceExpression,
+            string exceptionTypeName,
             ExpressionSyntax expressionToReplace,
             string newMessageFormat, IImmutableList<ExpressionSyntax> newMessageArgs)
         {
             ExceptionTypeName = exceptionTypeName;
-            ErrorSourceExpression = errorSourceExpression;
             ExpressionToReplace = expressionToReplace;
             NewMessageFormat = newMessageFormat;
             NewMessageArgs = newMessageArgs;

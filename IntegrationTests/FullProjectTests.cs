@@ -15,12 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+extern alias JBA;
 using DiffLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text.RegularExpressions;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
@@ -32,6 +35,7 @@ namespace IntegrationTests
 
         static string projectsDir, libraryDir;
 
+        /// <exception cref="IOException">Can't locate projects and library directories</exception>
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
@@ -57,6 +61,7 @@ namespace IntegrationTests
                 throw new IOException("Can't locate projects and library directories");
         }
 
+        /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
         [TestMethod]
         [Timeout(30000)]
         public void TestProjects()
@@ -77,11 +82,11 @@ namespace IntegrationTests
 
                 bool testExecution = File.Exists(outputFile) && File.Exists(inputFile);
 
-                var helper = new FileBasedZlrHelper(
-                    mainZilFile,
-                    new string[] { dir, libraryDir },
-                    inputFile);
-                helper.WantStatusLine = true;
+                var helper = new FileBasedZlrHelper(mainZilFile,
+                    new[] { dir, libraryDir }, inputFile)
+                {
+                    WantStatusLine = true
+                };
 
                 Assert.IsTrue(helper.Compile(), "Failed to compile");
                 Assert.IsTrue(helper.Assemble(), "Failed to assemble");
@@ -139,8 +144,11 @@ namespace IntegrationTests
             }
         }
 
-        static Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
-        static Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
+        [NotNull]
+        static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
+
+        [NotNull]
+        static readonly Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
 
         static string MassageText(string text)
         {

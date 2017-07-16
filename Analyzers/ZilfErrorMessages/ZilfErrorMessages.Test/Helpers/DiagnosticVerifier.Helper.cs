@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 
+// ReSharper disable once CheckNamespace
 namespace TestHelper
 {
     /// <summary>
@@ -21,10 +22,10 @@ namespace TestHelper
         static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
 
-        internal static string DefaultFilePathPrefix = "Test";
-        internal static string CSharpDefaultFileExt = "cs";
-        internal static string VisualBasicDefaultExt = "vb";
-        internal static string TestProjectName = "TestProject";
+        const string DefaultFilePathPrefix = "Test";
+        const string CSharpDefaultFileExt = "cs";
+        const string VisualBasicDefaultExt = "vb";
+        const string TestProjectName = "TestProject";
 
         #region  Get Diagnostics
 
@@ -69,9 +70,8 @@ namespace TestHelper
                     }
                     else
                     {
-                        for (int i = 0; i < documents.Length; i++)
+                        foreach (var document in documents)
                         {
-                            var document = documents[i];
                             var tree = await document.GetSyntaxTreeAsync().ConfigureAwait(false);
                             if (tree == diag.Location.SourceTree)
                             {

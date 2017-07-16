@@ -16,8 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -26,19 +26,24 @@ using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        IOperand CompilePROG(IRoutineBuilder rb, ZilList args,
-            ISourceLine src,
-            bool wantResult, IVariable resultStorage, string name, bool repeat, bool catchy)
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: false => null")]
+        [ContractAnnotation("wantResult: true => notnull")]
+        IOperand CompilePROG([NotNull] IRoutineBuilder rb, [CanBeNull] ZilList args,
+            [NotNull] ISourceLine src,
+            bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
             Contract.Requires(rb != null);
             Contract.Requires(src != null);
+            Contract.Requires(name != null);
 
-            if (args == null || args.First == null)
+            if (args?.First == null)
             {
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
             }
@@ -52,7 +57,7 @@ namespace Zilf.Compiler
                 activationAtom = null;
             }
 
-            if (args == null || args.First == null)
+            if (args?.First == null)
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -82,9 +87,12 @@ namespace Zilf.Compiler
                 args = TransformProgArgsIfImplementingDeferredReturn(args);
             }
 
+            Debug.Assert(args.First != null);
+            Debug.Assert(args.Rest != null);
+
             // add new locals, if any
             var innerLocals = new Queue<ZilAtom>();
-            foreach (ZilObject obj in (ZilList)args.First)
+            foreach (var obj in (ZilList)args.First)
             {
                 ZilAtom atom;
 
@@ -106,8 +114,7 @@ namespace Zilf.Compiler
 
                     case StdAtom.LIST:
                         var list = (ZilList)obj;
-                        if (list.First == null || list.Rest == null ||
-                            list.Rest.First == null || (list.Rest.Rest != null && list.Rest.Rest.First != null))
+                        if (list.First == null || list.Rest?.First == null || list.Rest.Rest?.First != null)
                         {
                             throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
                         }
@@ -117,7 +124,7 @@ namespace Zilf.Compiler
                             if (list.First is ZilAdecl adecl)
                                 atom = adecl.First as ZilAtom;
                         }
-                        ZilObject value = list.Rest.First;
+                        var value = list.Rest.First;
                         if (atom == null)
                             throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
                         innerLocals.Enqueue(atom);
@@ -223,51 +230,61 @@ namespace Zilf.Compiler
             }
         }
 
-        static ZilList TransformProgArgsIfImplementingDeferredReturn(ZilList args)
+        [NotNull]
+        [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
+        static ZilList TransformProgArgsIfImplementingDeferredReturn([NotNull] ZilList args)
         {
-            if (args.First is ZilList bindingList)
+            Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilList>() != null);
+
+            if (!(args.First is ZilList bindingList))
+                return args;
+
+            Debug.Assert(args.First != null);
+            Debug.Assert(args.Rest != null);
+
+            // ends with <LVAL atom>?
+            if (!(args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
+                return args;
+
+            // atom is bound in the prog?
+            if (!GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
+                return args;
+
+            // atom is set earlier in the prog?
+            var setExpr = args.Rest
+                .OfType<ZilForm>()
+                .FirstOrDefault(
+                    form => ((IStructure)form).GetLength(3) == 3 &&
+                            (form.First as ZilAtom)?.StdAtom == StdAtom.SET &&
+                            form.Rest?.First == atom);
+
+            if (setExpr != null)
             {
-                // ends with <LVAL atom>?
-                if (args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr &&
-                    lastExpr.IsLVAL(out var atom))
+                // atom is not referenced anywhere else?
+                if (args.Rest.All(zo => ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
                 {
-                    // atom is bound in the prog?
-                    if (GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
-                    {
-                        // atom is set earlier in the prog?
-                        var setExpr = args.Rest.OfType<ZilForm>().FirstOrDefault(form =>
-                                ((IStructure)form).GetLength(3) == 3 &&
-                                ((form.First as ZilAtom)?.StdAtom == StdAtom.SET) &&
-                                form.Rest.First == atom);
+                    // we got a winner!
+                    var newBindingList = new ZilList(
+                        bindingList.Where(
+                            zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
 
-                        if (setExpr != null)
-                        {
-                            // atom is not referenced anywhere else?
-                            if (args.Rest.All(zo => zo == setExpr || zo == lastExpr || !RecursivelyContains(zo, atom)))
-                            {
-                                // we got a winner!
-                                var newBindingList = new ZilList(
-                                    bindingList.Where(
-                                        zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
+                    var newBody = new ZilList(
+                        args.Rest
+                            .Where(zo => !ReferenceEquals(zo, lastExpr))
+                            .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
 
-                                var newBody = new ZilList(
-                                    args.Rest
-                                    .Where(zo => zo != lastExpr)
-                                    .Select(zo => zo == setExpr ? ((IStructure)zo)[2] : zo));
-
-                                return new ZilList(newBindingList, newBody);
-                            }
-                        }
-                    }
+                    return new ZilList(newBindingList, newBody);
                 }
             }
 
             return args;
         }
 
-        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList(ZilList bindingList)
+        [NotNull]
+        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilList bindingList)
         {
-            Contract.Assert(bindingList != null);
+            Contract.Requires(bindingList != null);
             Contract.Ensures(Contract.Result<IEnumerable<ZilAtom>>() != null);
 
             return bindingList.EnumerateNonRecursive()
@@ -275,9 +292,10 @@ namespace Zilf.Compiler
                 .Where(a => a != null);
         }
 
-        static ZilAtom GetUninitializedAtomFromBindingListItem(ZilObject zo)
+        [CanBeNull]
+        static ZilAtom GetUninitializedAtomFromBindingListItem([NotNull] ZilObject zo)
         {
-            Contract.Assert(zo != null);
+            Contract.Requires(zo != null);
 
             switch (zo.StdTypeAtom)
             {
@@ -292,27 +310,25 @@ namespace Zilf.Compiler
             }
         }
 
-        static bool RecursivelyContains(ZilObject haystack, ZilObject needle)
+        static bool RecursivelyContains([NotNull] ZilObject haystack, [NotNull] ZilObject needle)
         {
+            Contract.Requires(haystack != null);
+            Contract.Requires(needle != null);
+
             if (Equals(haystack, needle))
                 return true;
 
-            if (haystack is IEnumerable<ZilObject> sequence)
-            {
-                foreach (var zo in sequence)
-                {
-                    if (RecursivelyContains(zo, needle))
-                        return true;
-                }
-            }
-
-            return false;
+            return haystack is IEnumerable<ZilObject> sequence &&
+                sequence.Any(zo => RecursivelyContains(zo, needle));
         }
 
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: false => null")]
+        [ContractAnnotation("wantResult: true => notnull")]
         [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
-        IOperand CompileDO(IRoutineBuilder rb, ZilList args, ISourceLine src, bool wantResult,
+        IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
 #pragma warning disable RECS0154 // Parameter is never used
-            IVariable resultStorage)
+            [CanBeNull] IVariable resultStorage)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
@@ -320,13 +336,15 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
-            // resultStorage is unused here for the same reason as in CompilePROG.
+            // TODO: use resultStorage here (see CompilePROG)
 
             // parse binding list
             if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "DO");
             }
+
+            Debug.Assert(args.Rest != null);
 
             var specLength = spec.GetLength(4);
             if (specLength < 3 || specLength == null)
@@ -336,6 +354,13 @@ namespace Zilf.Compiler
                     "DO",
                     new CountableString("3 or 4", true));
             }
+
+            Debug.Assert(spec.First != null);
+            Debug.Assert(spec.Rest != null);
+            Debug.Assert(spec.Rest.First != null);
+            Debug.Assert(spec.Rest.Rest != null);
+            Debug.Assert(spec.Rest.Rest.First != null);
+            Debug.Assert(spec.Rest.Rest.Rest != null);
 
             if (!(spec.First is ZilAtom atom))
             {
@@ -391,6 +416,8 @@ namespace Zilf.Compiler
             // body
             while (body != null && !body.IsEmpty)
             {
+                Debug.Assert(body.First != null);
+
                 // ignore the results of all statements
                 CompileStmt(rb, body.First, false);
                 body = body.Rest;
@@ -400,6 +427,9 @@ namespace Zilf.Compiler
             bool down;
             if (specLength == 4)
             {
+                Debug.Assert(spec.Rest.Rest.Rest.First != null);
+                Debug.Assert(spec.Rest.Rest.Rest.Rest != null);
+
                 var inc = spec.Rest.Rest.Rest.First;
                 int incValue;
 
@@ -424,7 +454,7 @@ namespace Zilf.Compiler
             }
             else
             {
-                down = (start is ZilFix fix1 && end is ZilFix fix2 && fix2.Value < fix1.Value);
+                down = start is ZilFix fix1 && end is ZilFix fix2 && fix2.Value < fix1.Value;
                 rb.EmitBinary(down ? BinaryOp.Sub : BinaryOp.Add, counter, Game.One, counter);
             }
 
@@ -444,6 +474,8 @@ namespace Zilf.Compiler
 
             while (endStmts != null && !endStmts.IsEmpty)
             {
+                Debug.Assert(endStmts.First != null);
+
                 CompileStmt(rb, endStmts.First, false);
                 endStmts = endStmts.Rest;
             }
@@ -462,9 +494,12 @@ namespace Zilf.Compiler
             return wantResult ? rb.Stack : null;
         }
 
-        IOperand CompileMAP_CONTENTS(IRoutineBuilder rb, ZilList args, ISourceLine src, bool wantResult,
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: false => null")]
+        [ContractAnnotation("wantResult: true => notnull")]
+        IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
 #pragma warning disable RECS0154 // Parameter is never used
-            IVariable resultStorage)
+            [CanBeNull] IVariable resultStorage)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
@@ -472,13 +507,15 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
-            // resultStorage is unused here for the same reason as in CompilePROG.
+            // TODO: use resultStorage here (see CompilePROG)
 
             // parse binding list
             if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-CONTENTS");
             }
+
+            Debug.Assert(args.Rest != null);
 
             var specLength = ((IStructure)spec).GetLength(3);
             if (specLength < 2 || specLength == null)
@@ -494,6 +531,8 @@ namespace Zilf.Compiler
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
             }
 
+            Debug.Assert(spec.Rest != null);
+
             ZilAtom nextAtom;
             ZilObject container;
             if (specLength == 3)
@@ -503,6 +542,8 @@ namespace Zilf.Compiler
                 {
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "middle", "an atom");
                 }
+
+                Debug.Assert(spec.Rest.Rest != null);
 
                 container = spec.Rest.Rest.First;
             }
@@ -555,6 +596,8 @@ namespace Zilf.Compiler
                 // body
                 while (body != null && !body.IsEmpty)
                 {
+                    Debug.Assert(body.First != null);
+
                     // ignore the results of all statements
                     CompileStmt(rb, body.First, false);
                     body = body.Rest;
@@ -572,6 +615,8 @@ namespace Zilf.Compiler
                 // body
                 while (body != null && !body.IsEmpty)
                 {
+                    Debug.Assert(body.First != null);
+
                     // ignore the results of all statements
                     CompileStmt(rb, body.First, false);
                     body = body.Rest;
@@ -586,6 +631,7 @@ namespace Zilf.Compiler
 
             while (endStmts != null && !endStmts.IsEmpty)
             {
+                Debug.Assert(endStmts.First != null);
                 CompileStmt(rb, endStmts.First, false);
                 endStmts = endStmts.Rest;
             }
@@ -603,9 +649,12 @@ namespace Zilf.Compiler
             return wantResult ? rb.Stack : null;
         }
 
-        IOperand CompileMAP_DIRECTIONS(IRoutineBuilder rb, ZilList args, ISourceLine src, bool wantResult,
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: false => null")]
+        [ContractAnnotation("wantResult: true => notnull")]
+        IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
 #pragma warning disable RECS0154 // Parameter is never used
-            IVariable resultStorage)
+            [CanBeNull] IVariable resultStorage)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
@@ -613,13 +662,15 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
-            // resultStorage is unused here for the same reason as in CompilePROG.
+            // TODO: use resultStorage here (see CompilePROG)
 
             // parse binding list
             if (!(args.First is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-DIRECTIONS");
             }
+
+            Debug.Assert(args.Rest != null);
 
             var specLength = spec.GetLength(3);
             if (specLength != 3)
@@ -637,8 +688,10 @@ namespace Zilf.Compiler
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "middle", "an atom");
             }
 
+            Debug.Assert(spec.Rest.Rest != null);
+
             var room = spec.Rest.Rest.First;
-            if (!room.IsLVAL(out _) && !room.IsGVAL(out _))
+            if (room == null || !room.IsLVAL(out _) && !room.IsGVAL(out _))
             {
                 throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "last", "an LVAL or GVAL");
             }
@@ -683,6 +736,7 @@ namespace Zilf.Compiler
             // body
             while (body != null && !body.IsEmpty)
             {
+                Debug.Assert(body.First != null);
                 // ignore the results of all statements
                 CompileStmt(rb, body.First, false);
                 body = body.Rest;
@@ -694,6 +748,7 @@ namespace Zilf.Compiler
             // end statements
             while (endStmts != null && !endStmts.IsEmpty)
             {
+                Debug.Assert(endStmts.First != null);
                 CompileStmt(rb, endStmts.First, false);
                 endStmts = endStmts.Rest;
             }

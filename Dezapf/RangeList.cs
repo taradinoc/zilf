@@ -30,19 +30,19 @@ namespace Dezapf
 
             public Range(int start, int length, T value)
             {
-                this.Start = start;
-                this.Length = length;
-                this.Value = value;
+                Start = start;
+                Length = length;
+                Value = value;
             }
 
             public int CompareTo(Range other)
             {
-                return this.Start - other.Start;
+                return Start - other.Start;
             }
 
             public override string ToString()
             {
-                return string.Format("Range {0} - {1}", Start, Start + Length - 1);
+                return $"Range {Start} - {Start + Length - 1}";
             }
         }
 
@@ -52,18 +52,18 @@ namespace Dezapf
 
             public Gap(int start, int length)
             {
-                this.Start = start;
-                this.Length = length;
+                Start = start;
+                Length = length;
             }
 
             public int CompareTo(Gap other)
             {
-                return this.Start - other.Start;
+                return Start - other.Start;
             }
 
             public override string ToString()
             {
-                return string.Format("Gap {0} - {1}", Start, Start + Length - 1);
+                return $"Gap {Start} - {Start + Length - 1}";
             }
         }
 
@@ -71,13 +71,13 @@ namespace Dezapf
 
         public RangeList()
         {
-            this.list = new List<Range>();
+            list = new List<Range>();
         }
 
         public void Add(Range range)
         {
             if (range.Length < 1)
-                throw new ArgumentOutOfRangeException("New range must have positive length");
+                throw new ArgumentOutOfRangeException(nameof(range), "New range must have positive length");
 
             int idx = list.BinarySearch(range);
 
@@ -147,8 +147,8 @@ namespace Dezapf
         {
             for (int i = 0; i < list.Count - 1; i++)
             {
-                Range r = list[i];
-                Range r2 = list[i + 1];
+                var r = list[i];
+                var r2 = list[i + 1];
 
                 if (r.Start < coalesceStart)
                     continue;
@@ -158,11 +158,10 @@ namespace Dezapf
 
                 if (r.Start + r.Length == r2.Start)
                 {
-                    T newValue;
                     bool combined = combine(
                         r.Start, r.Length, r.Value,
                         r2.Start, r2.Length, r2.Value,
-                        out newValue);
+                        out T newValue);
                     if (combined)
                     {
                         list[i] = new Range(r.Start, r.Length + r2.Length, newValue);
@@ -177,12 +176,11 @@ namespace Dezapf
         {
             int last = windowStart;
 
-            foreach (Range r in list)
+            foreach (var r in list)
             {
                 if (r.Start < last)
                 {
                     // before window
-                    continue;
                 }
                 else if (r.Start == last)
                 {

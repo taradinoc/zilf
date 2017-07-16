@@ -15,29 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
 using Zilf.Language;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.LIST, PrimType.LIST)]
     sealed class ZilList : ZilListBase
     {
-        public ZilList(IEnumerable<ZilObject> sequence)
-            : base(sequence) { }
+        public ZilList([NotNull] IEnumerable<ZilObject> sequence)
+            : base(sequence)
+        {
+            Contract.Requires(sequence != null);
+        }
 
         public ZilList(ZilObject first, ZilList rest)
             : base(first, rest) { }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilList FromList(Context ctx, ZilListBase list)
+        public static ZilList FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilList>() != null);
 
             return new ZilList(list.First, list.Rest);
         }
@@ -48,7 +52,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilResult result = EvalSequence(ctx, this, environment).ToZilListResult(this.SourceLine);
+            ZilResult result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
             if (result.ShouldPass())
                 return result;
 

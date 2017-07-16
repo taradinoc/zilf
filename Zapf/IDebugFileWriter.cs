@@ -24,9 +24,9 @@ namespace Zapf
     {
         public LineRef(byte file, ushort line, byte col)
         {
-            this.File = file;
-            this.Line = line;
-            this.Col = col;
+            File = file;
+            Line = line;
+            Col = col;
         }
 
         public readonly byte File;

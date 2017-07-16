@@ -19,6 +19,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -37,14 +38,17 @@ namespace ZilfTests
         {
             var atom = new ZilAtom("FOO", new ObList(), StdAtom.None);
 
-            var word = new OldParserWord(atom);
+            // ReSharper disable once ObjectCreationAsStatement
+            new OldParserWord(atom);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Ctor_Should_Reject_Null_Atom()
         {
-            var word = new OldParserWord(null);
+            // ReSharper disable once AssignNullToNotNullAttribute
+            // ReSharper disable once ObjectCreationAsStatement
+            new OldParserWord(null);
         }
 
         /// <summary>
@@ -60,8 +64,9 @@ namespace ZilfTests
         /// <item>verbValue (the value to use when setting PartOfSpeech.Verb), and</item>
         /// <item>prepValue (the value to use when setting PartOfSpeech.Preposition).</item>
         /// </list></param>
-        void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
+        void Test_Keep_VP_Values(int zversion, bool newVoc, [NotNull] Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
+            Contract.Requires(setPartsOfSpeech != null);
             CreateWordInContext(zversion, newVoc, out var ctx, out var word);
 
             // set parts of speech
@@ -82,8 +87,11 @@ namespace ZilfTests
         /// <param name="newVoc">true to test with NEW-VOC? enabled, otherwise false.</param>
         /// <param name="ctx">Returns the new Context.</param>
         /// <param name="word">Returns a new OldParserWord ("FOO") added to the context's ObList.</param>
-        static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out OldParserWord word)
+        static void CreateWordInContext(int zversion, bool newVoc, [NotNull] out Context ctx, [NotNull] out OldParserWord word)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(word != null);
+
             // set up context
             ctx = new Context();
             ctx.ZEnvironment.ZVersion = zversion;
@@ -208,19 +216,19 @@ namespace ZilfTests
 
         struct WtwbTestCase
         {
-            public int ZVersion;
-            public bool NewVoc;
+            public readonly int ZVersion;
+            public readonly bool NewVoc;
 
-            public PartOfSpeech FirstPart;
-            public byte FirstValue;
-            public PartOfSpeech SecondPart;
-            public byte SecondValue;
-            public PartOfSpeech ThirdPart;
-            public byte ThirdValue;
+            public readonly PartOfSpeech FirstPart;
+            public readonly byte FirstValue;
+            public readonly PartOfSpeech SecondPart;
+            public readonly byte SecondValue;
+            public readonly PartOfSpeech ThirdPart;
+            public readonly byte ThirdValue;
 
-            public PartOfSpeech ExpectedPartOfSpeech;
-            public byte ExpectedValue1;
-            public byte ExpectedValue2;
+            public readonly PartOfSpeech ExpectedPartOfSpeech;
+            public readonly byte ExpectedValue1;
+            public readonly byte ExpectedValue2;
 
             public bool Warn;
 
@@ -253,47 +261,47 @@ namespace ZilfTests
                 PartOfSpeech thirdPart, byte thirdValue,
                 PartOfSpeech expectedPartOfSpeech, byte expectedValue1, byte expectedValue2)
             {
-                this.ZVersion = zversion;
-                this.NewVoc = newVoc;
+                ZVersion = zversion;
+                NewVoc = newVoc;
 
-                this.FirstPart = firstPart;
-                this.FirstValue = firstValue;
-                this.SecondPart = secondPart;
-                this.SecondValue = secondValue;
-                this.ThirdPart = thirdPart;
-                this.ThirdValue = thirdValue;
+                FirstPart = firstPart;
+                FirstValue = firstValue;
+                SecondPart = secondPart;
+                SecondValue = secondValue;
+                ThirdPart = thirdPart;
+                ThirdValue = thirdValue;
 
-                this.ExpectedPartOfSpeech = expectedPartOfSpeech;
-                this.ExpectedValue1 = expectedValue1;
-                this.ExpectedValue2 = expectedValue2;
+                ExpectedPartOfSpeech = expectedPartOfSpeech;
+                ExpectedValue1 = expectedValue1;
+                ExpectedValue2 = expectedValue2;
 
-                this.Warn = false;
+                Warn = false;
             }
 
             public override string ToString()
             {
-                return string.Format("(V{0}-{1}, {2}={3}, {4}={5}, {6}={7})",
-                    ZVersion, NewVoc ? "New" : "Old",
-                    FirstPart, FirstValue,
-                    SecondPart, SecondValue,
-                    ThirdPart, ThirdValue);
+                return
+                    $"(V{ZVersion}-{(NewVoc ? "New" : "Old")}, " +
+                    $"{FirstPart}={FirstValue}, " +
+                    $"{SecondPart}={SecondValue}, " +
+                    $"{ThirdPart}={ThirdValue})";
             }
         }
 
         struct CompactWtwbTestCase
         {
-            public int ZVersion;
-            public bool NewVoc;
+            public readonly int ZVersion;
+            public readonly bool NewVoc;
 
-            public PartOfSpeech FirstPart;
-            public byte FirstValue;
-            public PartOfSpeech SecondPart;
-            public byte SecondValue;
-            public PartOfSpeech ThirdPart;
-            public byte ThirdValue;
+            public readonly PartOfSpeech FirstPart;
+            public readonly byte FirstValue;
+            public readonly PartOfSpeech SecondPart;
+            public readonly byte SecondValue;
+            public readonly PartOfSpeech ThirdPart;
+            public readonly byte ThirdValue;
 
-            public PartOfSpeech ExpectedPartOfSpeech;
-            public byte ExpectedValue1;
+            public readonly PartOfSpeech ExpectedPartOfSpeech;
+            public readonly byte ExpectedValue1;
 
             public bool Warn;
 
@@ -326,29 +334,29 @@ namespace ZilfTests
                 PartOfSpeech thirdPart, byte thirdValue,
                 PartOfSpeech expectedPartOfSpeech, byte expectedValue1)
             {
-                this.ZVersion = zversion;
-                this.NewVoc = newVoc;
+                ZVersion = zversion;
+                NewVoc = newVoc;
 
-                this.FirstPart = firstPart;
-                this.FirstValue = firstValue;
-                this.SecondPart = secondPart;
-                this.SecondValue = secondValue;
-                this.ThirdPart = thirdPart;
-                this.ThirdValue = thirdValue;
+                FirstPart = firstPart;
+                FirstValue = firstValue;
+                SecondPart = secondPart;
+                SecondValue = secondValue;
+                ThirdPart = thirdPart;
+                ThirdValue = thirdValue;
 
-                this.ExpectedPartOfSpeech = expectedPartOfSpeech;
-                this.ExpectedValue1 = expectedValue1;
+                ExpectedPartOfSpeech = expectedPartOfSpeech;
+                ExpectedValue1 = expectedValue1;
 
-                this.Warn = false;
+                Warn = false;
             }
 
             public override string ToString()
             {
-                return string.Format("(V{0}-{1}-Compact, {2}={3}, {4}={5}, {6}={7})",
-                    ZVersion, NewVoc ? "New" : "Old",
-                    FirstPart, FirstValue,
-                    SecondPart, SecondValue,
-                    ThirdPart, ThirdValue);
+                return
+                    $"(V{ZVersion}-{(NewVoc ? "New" : "Old")}-Compact, " +
+                    $"{FirstPart}={FirstValue}, " +
+                    $"{SecondPart}={SecondValue}, " +
+                    $"{ThirdPart}={ThirdValue})";
             }
         }
 

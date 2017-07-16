@@ -3,16 +3,19 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using JetBrains.Annotations;
 
+// ReSharper disable once CheckNamespace
 namespace TestHelper
 {
     /// <summary>
     /// Diagnostic Producer class with extra methods dealing with applying codefixes
     /// All methods are static
     /// </summary>
-    public abstract partial class CodeFixVerifier : DiagnosticVerifier
+    public abstract partial class CodeFixVerifier
     {
         /// <summary>
         /// Apply the inputted CodeAction to the inputted document.
@@ -36,7 +39,7 @@ namespace TestHelper
         /// <param name="diagnostics">The Diagnostics that existed in the code before the CodeFix was applied</param>
         /// <param name="newDiagnostics">The Diagnostics that exist in the code after the CodeFix was applied</param>
         /// <returns>A list of Diagnostics that only surfaced in the code after the CodeFix was applied</returns>
-        static IEnumerable<Diagnostic> GetNewDiagnostics(IEnumerable<Diagnostic> diagnostics, IEnumerable<Diagnostic> newDiagnostics)
+        static IEnumerable<Diagnostic> GetNewDiagnostics([InstantHandle] IEnumerable<Diagnostic> diagnostics, [InstantHandle] IEnumerable<Diagnostic> newDiagnostics)
         {
             var oldArray = diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
             var newArray = newDiagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
@@ -63,7 +66,7 @@ namespace TestHelper
         /// </summary>
         /// <param name="document">The Document to run the compiler diagnostic analyzers on</param>
         /// <returns>The compiler diagnostics that were found in the code</returns>
-        static IEnumerable<Diagnostic> GetCompilerDiagnostics(Document document)
+        static ImmutableArray<Diagnostic> GetCompilerDiagnostics(Document document)
         {
             return document.GetSemanticModelAsync().Result.GetDiagnostics();
         }

@@ -1,6 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
+using JetBrains.Annotations;
+using Microsoft.CodeAnalysis;
 
+// ReSharper disable once CheckNamespace
 namespace TestHelper
 {
     /// <summary>
@@ -8,6 +10,7 @@ namespace TestHelper
     /// </summary>
     public struct DiagnosticResultLocation
     {
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="line"/> or <paramref name="column"/> are out of range.</exception>
         public DiagnosticResultLocation(string path, int line, int column)
         {
             if (line < -1)
@@ -20,9 +23,9 @@ namespace TestHelper
                 throw new ArgumentOutOfRangeException(nameof(column), "column must be >= -1");
             }
 
-            this.Path = path;
-            this.Line = line;
-            this.Column = column;
+            Path = path;
+            Line = line;
+            Column = column;
         }
 
         public string Path { get; }
@@ -37,21 +40,12 @@ namespace TestHelper
     {
         DiagnosticResultLocation[] locations;
 
+        [NotNull]
         public DiagnosticResultLocation[] Locations
         {
-            get
-            {
-                if (this.locations == null)
-                {
-                    this.locations = new DiagnosticResultLocation[] { };
-                }
-                return this.locations;
-            }
+            get => locations ?? (locations = new DiagnosticResultLocation[] { });
 
-            set
-            {
-                this.locations = value;
-            }
+            set => locations = value;
         }
 
         public DiagnosticSeverity Severity { get; set; }
@@ -60,28 +54,12 @@ namespace TestHelper
 
         public string Message { get; set; }
 
-        public string Path
-        {
-            get
-            {
-                return this.Locations.Length > 0 ? this.Locations[0].Path : "";
-            }
-        }
+/*
+        public string Path => Locations.Length > 0 ? Locations[0].Path : "";
+*/
 
-        public int Line
-        {
-            get
-            {
-                return this.Locations.Length > 0 ? this.Locations[0].Line : -1;
-            }
-        }
+        public int Line => Locations.Length > 0 ? Locations[0].Line : -1;
 
-        public int Column
-        {
-            get
-            {
-                return this.Locations.Length > 0 ? this.Locations[0].Column : -1;
-            }
-        }
+        public int Column => Locations.Length > 0 ? Locations[0].Column : -1;
     }
 }

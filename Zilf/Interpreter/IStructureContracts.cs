@@ -15,15 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
     [ContractClassFor(typeof(IStructure))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IStructureContracts : IStructure
     {
         public ZilObject GetFirst()
@@ -44,7 +47,9 @@ namespace Zilf.Interpreter
             return default(IStructure);
         }
 
+#pragma warning disable ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
         public IStructure GetTop()
+#pragma warning restore ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
         {
             Contract.Ensures(Contract.Result<IStructure>() != null);
             return default(IStructure);
@@ -54,11 +59,13 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(end >= 0);
             Contract.Requires(beginning >= 0);
+            Contract.Requires(defaultValue != null);
         }
 
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         public abstract bool IsEmpty { get; }
 
+        [CanBeNull]
         public ZilObject this[int index]
         {
             get

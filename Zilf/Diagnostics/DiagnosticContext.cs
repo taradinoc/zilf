@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Language;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Diagnostics
 {
@@ -23,33 +21,36 @@ namespace Zilf.Diagnostics
                 this.newContext = newContext;
             }
 
+            /// <exception cref="InvalidOperationException">This contract is no longer on top of the stack</exception>
             public void Dispose()
             {
-                if (newContext != null)
+                if (newContext == null)
+                    return;
+
+                if (Current == newContext)
                 {
-                    if (DiagnosticContext.Current == newContext)
-                    {
-                        DiagnosticContext.Current = oldContext;
-                        newContext = oldContext = null;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Unable to restore diagnostic context");
-                    }
+                    Current = oldContext;
+                    newContext = oldContext = null;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unable to restore diagnostic context");
                 }
             }
         }
 
-        public static IDisposable Push(ISourceLine sourceLine = null, Frame frame = null)
+        [NotNull]
+        public static IDisposable Push([CanBeNull] ISourceLine sourceLine = null, [CanBeNull] Frame frame = null)
         {
-            var oldContext = DiagnosticContext.Current;
+            Contract.Ensures(Contract.Result<IDisposable>() != null);
+            var oldContext = Current;
 
             var newContext = new DiagnosticContext(
                 sourceLine ?? oldContext.SourceLine, frame ?? oldContext.Frame);
 
             var disposer = new Disposer(oldContext, newContext);
 
-            DiagnosticContext.Current = newContext;
+            Current = newContext;
             return disposer;
         }
 
@@ -60,8 +61,8 @@ namespace Zilf.Diagnostics
 
         DiagnosticContext(ISourceLine sourceLine, Frame frame)
         {
-            this.SourceLine = sourceLine;
-            this.Frame = frame;
+            SourceLine = sourceLine;
+            Frame = frame;
         }
 
         public ISourceLine SourceLine { get; }

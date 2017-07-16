@@ -15,46 +15,43 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
+using Zilf.Common;
+using Zilf.Diagnostics;
+using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
-using Zilf.Common;
 
 namespace Zilf.ZModel.Vocab.OldParser
 {
     class OldParserWord : IWord
     {
-        readonly ZilAtom atom;
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;
 
         readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
         readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
-        public OldParserWord(ZilAtom atom)
+        public OldParserWord([NotNull] ZilAtom atom)
         {
-            if (atom == null)
-                throw new ArgumentNullException(nameof(atom));
-
-            this.atom = atom;
+            Contract.Requires(atom != null);
+            Atom = atom ?? throw new ArgumentNullException(nameof(atom));
         }
 
-        public ZilAtom Atom
-        {
-            get { return atom; }
-        }
+        public ZilAtom Atom { get; }
 
         public override string ToString()
         {
             var sb = new StringBuilder();
             sb.Append('"');
-            sb.Append(Atom.ToString());
+            sb.Append(Atom);
             sb.Append("\"");
 
             switch (PartOfSpeech & PartOfSpeech.FirstMask)
@@ -106,13 +103,13 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        bool IsNewVoc(Context ctx)
+        bool IsNewVoc([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
         }
 
-        bool IsCompactVocab(Context ctx)
+        bool IsCompactVocab([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
             return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
@@ -123,20 +120,20 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>true if the new part of speech should set the First flag.</returns>
-        bool ShouldSetFirst(Context ctx)
+        bool ShouldSetFirst([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
 
             // if no parts of speech are set yet, this is easy
-            if (this.PartOfSpeech == PartOfSpeech.None)
+            if (PartOfSpeech == PartOfSpeech.None)
                 return true;
 
             // never add First flags to buzzwords
-            if ((this.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
+            if ((PartOfSpeech & PartOfSpeech.Buzzword) != 0)
                 return false;
 
             // ignore parts of speech that don't record values in the current context
-            var pos = this.PartOfSpeech;
+            var pos = PartOfSpeech;
             if (ctx.ZEnvironment.ZVersion >= 4)
                 pos &= ~PartOfSpeech.Adjective;
             if (IsNewVoc(ctx))
@@ -154,15 +151,15 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// <param name="ctx">The current context.</param>
         /// <remarks>
         /// Generally, a vocabulary word is limited to no more than two parts
-        /// of speech. However, in V4+, <see cref="PartOfSpeech.Adjective"/> does
+        /// of speech. However, in V4+, <see cref="Vocab.PartOfSpeech.Adjective"/> does
         /// not count against this limit; and in any version when the global
-        /// atom NEW-VOC? is true, <see cref="PartOfSpeech.Object"/> does not
+        /// atom NEW-VOC? is true, <see cref="Vocab.PartOfSpeech.Object"/> does not
         /// count against this limit. If the global atom COMPACT-VOCABULARY?
         /// is true (which should happen on V4+ only), the limit is one instead of
-        /// two, and <see cref="PartOfSpeech.Preposition"/> and
-        /// <see cref="PartOfSpeech.Buzzword"/> also don't count toward it.
+        /// two, and <see cref="Vocab.PartOfSpeech.Preposition"/> and
+        /// <see cref="Vocab.PartOfSpeech.Buzzword"/> also don't count toward it.
         /// </remarks>
-        void CheckTooMany(Context ctx)
+        void CheckTooMany([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
 
@@ -255,6 +252,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
+        [NotNull]
         string ListDefinitionLocations()
         {
             var sb = new StringBuilder();
@@ -266,7 +264,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                     sb.Append(", ");
                 }
 
-                sb.Append(pair.Key.ToString());
+                sb.Append(pair.Key);
                 sb.Append(" (");
                 sb.Append(pair.Value.SourceInfo);
                 sb.Append(")");
@@ -275,7 +273,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        public void SetObject(Context ctx, ISourceLine location)
+        public void SetObject([NotNull] Context ctx, ISourceLine location)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Object) != 0);
@@ -290,7 +288,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetVerb(Context ctx, ISourceLine location, byte value)
+        public void SetVerb([NotNull] Context ctx, ISourceLine location, byte value)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Verb) != 0);
@@ -306,7 +304,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetAdjective(Context ctx, ISourceLine location, byte value)
+        public void SetAdjective([NotNull] Context ctx, ISourceLine location, byte value)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Adjective) != 0);
@@ -322,7 +320,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetDirection(Context ctx, ISourceLine location, byte value)
+        public void SetDirection([NotNull] Context ctx, ISourceLine location, byte value)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Direction) != 0);
@@ -338,7 +336,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetBuzzword(Context ctx, ISourceLine location, byte value)
+        public void SetBuzzword([NotNull] Context ctx, ISourceLine location, byte value)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Buzzword) != 0);
@@ -355,7 +353,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetPreposition(Context ctx, ISourceLine location, byte value)
+        public void SetPreposition([NotNull] Context ctx, ISourceLine location, byte value)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Preposition) != 0);
@@ -372,7 +370,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
+        void UnsetPartOfSpeech([NotNull] Context ctx, PartOfSpeech part)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & part) == 0);
@@ -437,7 +435,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             return definitions[part];
         }
 
-        public void WriteToBuilder(Context ctx, Emit.IWordBuilder wb, Func<byte, Emit.IOperand> dirIndexToPropertyOperand)
+        public void WriteToBuilder([NotNull] Context ctx, [NotNull] IWordBuilder wb, [NotNull] DirIndexToPropertyOperandDelegate dirIndexToPropertyOperand)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(wb != null);
@@ -446,7 +444,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             // discard excess parts of speech if needed
             CheckTooMany(ctx);
 
-            var pos = this.PartOfSpeech;
+            var pos = PartOfSpeech;
             var partsToWrite = new List<PartOfSpeech>(2);
             var compactVocab = IsCompactVocab(ctx);
 
@@ -534,37 +532,37 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void MarkAsSynonym(PartOfSpeech synonymTypes)
         {
-            this.SynonymTypes |= synonymTypes;
+            SynonymTypes |= synonymTypes;
         }
 
         public bool IsSynonym(PartOfSpeech synonymTypes)
         {
-            return (this.SynonymTypes & synonymTypes) != 0;
+            return (SynonymTypes & synonymTypes) != 0;
         }
 
-        public void Merge(Context ctx, OldParserWord other)
+        public void Merge([NotNull] Context ctx, [NotNull] OldParserWord other)
         {
             Contract.Requires(ctx != null);
 
             if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
-                this.SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));
+                SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));
 
             if ((other.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
-                this.SetBuzzword(ctx, other.GetDefinition(PartOfSpeech.Buzzword), other.GetValue(PartOfSpeech.Buzzword));
+                SetBuzzword(ctx, other.GetDefinition(PartOfSpeech.Buzzword), other.GetValue(PartOfSpeech.Buzzword));
 
             if ((other.PartOfSpeech & PartOfSpeech.Direction) != 0)
-                this.SetDirection(ctx, other.GetDefinition(PartOfSpeech.Direction), other.GetValue(PartOfSpeech.Direction));
+                SetDirection(ctx, other.GetDefinition(PartOfSpeech.Direction), other.GetValue(PartOfSpeech.Direction));
 
             if ((other.PartOfSpeech & PartOfSpeech.Object) != 0)
-                this.SetObject(ctx, other.GetDefinition(PartOfSpeech.Object));
+                SetObject(ctx, other.GetDefinition(PartOfSpeech.Object));
 
             if ((other.PartOfSpeech & PartOfSpeech.Preposition) != 0)
-                this.SetPreposition(ctx, other.GetDefinition(PartOfSpeech.Preposition), other.GetValue(PartOfSpeech.Preposition));
+                SetPreposition(ctx, other.GetDefinition(PartOfSpeech.Preposition), other.GetValue(PartOfSpeech.Preposition));
 
             if ((other.PartOfSpeech & PartOfSpeech.Verb) != 0)
-                this.SetVerb(ctx, other.GetDefinition(PartOfSpeech.Verb), other.GetValue(PartOfSpeech.Verb));
+                SetVerb(ctx, other.GetDefinition(PartOfSpeech.Verb), other.GetValue(PartOfSpeech.Verb));
 
-            this.MarkAsSynonym(other.PartOfSpeech & ~PartOfSpeech.FirstMask);
+            MarkAsSynonym(other.PartOfSpeech & ~PartOfSpeech.FirstMask);
         }
     }
 }

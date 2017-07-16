@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
-using Zilf.Compiler;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
@@ -27,34 +27,39 @@ namespace Zilf.Language
     class CompilerError : ZilError<CompilerMessages>
     {
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(string message)
+        public CompilerError([NotNull] string message)
             : base(message)
         {
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(string format, params object[] args)
+        [StringFormatMethod("format")]
+        public CompilerError([NotNull] string format, [ItemNotNull] [NotNull] params object[] args)
             : base(string.Format(format, args))
         {
+            Contract.Requires(format != null);
+            Contract.Requires(args != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(ISourceLine src, string message)
+        public CompilerError(ISourceLine src, [NotNull] string message)
             : base(src, message)
         {
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(IProvideSourceLine node, string message)
+        public CompilerError([NotNull] IProvideSourceLine node, [NotNull] string message)
             : base(node.SourceLine, message)
         {
+            Contract.Requires(node != null);
             Contract.Requires(message != null);
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(ISourceLine src, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public CompilerError(ISourceLine src, [NotNull] string format, [NotNull] params object[] args)
             : base(src, string.Format(format, args))
         {
             Contract.Requires(format != null);
@@ -62,9 +67,11 @@ namespace Zilf.Language
         }
 
         [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(IProvideSourceLine node, string format, params object[] args)
+        [StringFormatMethod("format")]
+        public CompilerError([NotNull] IProvideSourceLine node, [NotNull] string format, [ItemNotNull] [NotNull] params object[] args)
             : base(node.SourceLine, string.Format(format, args))
         {
+            Contract.Requires(node != null);
             Contract.Requires(format != null);
             Contract.Requires(args != null);
         }
@@ -74,7 +81,7 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerError(int code, params object[] messageArgs)
+        public CompilerError(int code, [ItemNotNull] params object[] messageArgs)
             : this(DiagnosticContext.Current.SourceLine, code, messageArgs)
         {
         }
@@ -84,47 +91,56 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerError(ISourceLine sourceLine, int code, params object[] messageArgs)
+        public CompilerError(ISourceLine sourceLine, int code, [ItemNotNull] params object[] messageArgs)
             : base(MakeDiagnostic(sourceLine, code, messageArgs))
         {
         }
 
-        public CompilerError(IProvideSourceLine sourceLine, int code)
+        public CompilerError([NotNull] IProvideSourceLine sourceLine, int code)
            : this(sourceLine, code, null)
         {
+            Contract.Requires(sourceLine != null);
         }
 
-        public CompilerError(IProvideSourceLine node, int code, params object[] messageArgs)
+        public CompilerError([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
+            Contract.Requires(node != null);
         }
 
-        public CompilerError(Diagnostic diagnostic)
+        [UsedImplicitly]
+        public CompilerError([NotNull] Diagnostic diagnostic)
             : base(diagnostic)
         {
+            Contract.Requires(diagnostic != null);
         }
 
-        protected CompilerError(SerializationInfo si, StreamingContext sc)
+        protected CompilerError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
+            Contract.Requires(si != null);
         }
 
-        public static CompilerError WrongArgCount(string name, IEnumerable<ArgCountRange> ranges,
+        public static CompilerError WrongArgCount([NotNull] string name, [NotNull] IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
+            Contract.Requires(name != null);
+            Contract.Requires(ranges != null);
             ArgCountHelpers.FormatArgCount(ranges, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
-        public static CompilerError WrongArgCount(string name, ArgCountRange range,
+        public static CompilerError WrongArgCount([NotNull] string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
+            Contract.Requires(name != null);
             ArgCountHelpers.FormatArgCount(range, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
-        static CompilerError WrongArgCount(string name, CountableString cs, int? acceptableVersion)
+        static CompilerError WrongArgCount([NotNull] string name, CountableString cs, int? acceptableVersion)
         {
+            Contract.Requires(name != null);
             var error = new CompilerError(CompilerMessages._0_Requires_1_Argument1s, name, cs);
 
             if (acceptableVersion != null)

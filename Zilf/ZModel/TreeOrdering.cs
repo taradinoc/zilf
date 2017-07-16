@@ -34,6 +34,6 @@ namespace Zilf.ZModel
         /// <summary>
         /// Reverse definition order.
         /// </summary>
-        ReverseDefined,
+        ReverseDefined
     }
 }

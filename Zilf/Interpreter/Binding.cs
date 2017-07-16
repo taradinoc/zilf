@@ -27,7 +27,7 @@ namespace Zilf.Interpreter
 
         public Binding(ZilObject value)
         {
-            this.Value = value;
+            Value = value;
         }
     }
 }

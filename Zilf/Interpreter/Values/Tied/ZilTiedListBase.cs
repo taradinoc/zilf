@@ -1,20 +1,22 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Zilf.Language;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values.Tied
 {
-    abstract class ZilTiedListBase : ZilListoidBase, IStructure
+    [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
+    [ContractClass(typeof(ZilTiedListBaseContract))]
+    abstract class ZilTiedListBase : ZilListoidBase
     {
+        [NotNull]
         protected abstract TiedLayout GetLayout();
 
-        private TiedLayout MyLayout
+        TiedLayout MyLayout
         {
             get => TiedLayout.Layouts[GetType()];
             set => TiedLayout.Layouts[GetType()] = value;
@@ -25,11 +27,16 @@ namespace Zilf.Interpreter.Values.Tied
             var myType = GetType();
 
             if (!TiedLayout.Layouts.ContainsKey(myType))
+            {
+                // ReSharper disable once VirtualMemberCallInConstructor
                 MyLayout = GetLayout();
+            }
         }
 
+        [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilList(this);
         }
 
@@ -51,7 +58,7 @@ namespace Zilf.Interpreter.Values.Tied
                 zo => zo.ToStringContext(ctx, friendly));
         }
 
-        private static readonly ObList detachedObList = new ObList();
+        static readonly ObList detachedObList = new ObList();
 
         protected ZilAtom GetStdAtom(StdAtom stdAtom)
         {
@@ -64,6 +71,7 @@ namespace Zilf.Interpreter.Values.Tied
             return detachedObList[stdAtom.ToString()];
         }
 
+        [NotNull]
         protected ZilObject FALSE
         {
             get
@@ -75,6 +83,8 @@ namespace Zilf.Interpreter.Values.Tied
             }
         }
 
+        /// <exception cref="NotSupportedException" accessor="set">The element being written is tied to a read-only property.</exception>
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
         public sealed override ZilObject this[int index]
         {
             get
@@ -131,7 +141,7 @@ namespace Zilf.Interpreter.Values.Tied
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
             }
         }
@@ -165,15 +175,17 @@ namespace Zilf.Interpreter.Values.Tied
                 return null;
             }
 
-            set
-            {
-                this[0] = value;
-            }
+            set => this[0] = value;
         }
 
+        [NotNull]
         public sealed override ZilList Rest
         {
-            get => new ZilList(GetRest(1));
+            get
+            {
+                var rest = GetRest(1);
+                return rest == null ? new ZilList(null, null) : new ZilList(rest);
+            }
             set => throw new NotSupportedException();
         }
 
@@ -219,7 +231,7 @@ namespace Zilf.Interpreter.Values.Tied
         }
 
         [BuiltinAlternate(typeof(ZilList))]
-        private sealed class Wrapper : ZilListoidBase
+        sealed class Wrapper : ZilListoidBase
         {
             readonly ZilTiedListBase orig;
             readonly int offset;
@@ -251,9 +263,14 @@ namespace Zilf.Interpreter.Values.Tied
                 set => orig[offset] = value;
             }
 
+            [NotNull]
             public override ZilList Rest
             {
-                get => new ZilList(GetRest(1));
+                get
+                {
+                    var rest = GetRest(1);
+                    return rest == null ? new ZilList(null, null) : new ZilList(rest);
+                }
                 set => throw new NotSupportedException();
             }
 
@@ -261,8 +278,10 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override int? GetLength(int limit) => orig.GetLength(limit + offset) - offset;
 
+            [NotNull]
             public override ZilObject GetPrimitive(Context ctx)
             {
+                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 return new ZilList(this);
             }
 
@@ -291,6 +310,16 @@ namespace Zilf.Interpreter.Values.Tied
                     ")",
                     zo => zo.ToStringContext(ctx, friendly));
             }
+        }
+    }
+
+    [ContractClassFor(typeof(ZilTiedListBase))]
+    abstract class ZilTiedListBaseContract : ZilTiedListBase
+    {
+        protected override TiedLayout GetLayout()
+        {
+            Contract.Ensures(Contract.Result<TiedLayout>() != null);
+            throw new NotImplementedException();
         }
     }
 }

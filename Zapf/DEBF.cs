@@ -43,10 +43,18 @@ namespace Zapf
         public const string PropsMapName = "property defaults";
         public const string ObjectsMapName = "object tree";
         public const string GlobalsMapName = "global variables";
+/*
         public const string ArraysMapName = "array space";
+*/
+/*
         public const string GrammarMapName = "grammar table";
+*/
         public const string VocabMapName = "dictionary";
+/*
         public const string CodeMapName = "code area";
+*/
+/*
         public const string StringsMapName = "strings area";
+*/
     }
 }

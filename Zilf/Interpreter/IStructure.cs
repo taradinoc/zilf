@@ -15,8 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -31,13 +34,15 @@ namespace Zilf.Interpreter
         /// <summary>
         /// Gets the first element of the structure.
         /// </summary>
-        /// <returns>The first element.</returns>
+        /// <returns>The first element, or null if the structure is empty.</returns>
+        [CanBeNull]
         ZilObject GetFirst();
         /// <summary>
         /// Gets the remainder of the structure, after skipping the first few elements.
         /// </summary>
         /// <param name="skip">The number of elements to skip.</param>
         /// <returns>A structure containing the unskipped elements, or null if no elements are left.</returns>
+        [CanBeNull]
         IStructure GetRest(int skip);
         /// <summary>
         /// Reverses <see cref="GetRest(int)"/>, returning a larger structure with some of the
@@ -48,6 +53,7 @@ namespace Zilf.Interpreter
         /// have been skipped.</returns>
         /// <exception cref="System.NotSupportedException">The operation is not supported by this
         /// structure type.</exception>
+        [CanBeNull]
         IStructure GetBack(int skip);
         /// <summary>
         /// Completely reverses <see cref="GetRest(int)"/>, returning all elements of the underlying
@@ -56,32 +62,47 @@ namespace Zilf.Interpreter
         /// <returns>A structure.</returns>
         /// <exception cref="System.NotSupportedException">The operation is not supported by this
         /// structure type.</exception>
+        [NotNull]
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         IStructure GetTop();
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
 
         /// <summary>
         /// Increases the size of the structure by adding elements at either end.
         /// </summary>
         /// <param name="end">The number of elements to add at the end.</param>
         /// <param name="beginning">The number of elements to add at the beginning.</param>
-        void Grow(int end, int beginning, ZilObject defaultValue);
+        /// <param name="defaultValue">The initial value of the new elements.</param>
+        void Grow(int end, int beginning, [NotNull] ZilObject defaultValue);
 
         /// <summary>
         /// Gets a value indicating whether the structure is empty.
         /// </summary>
         /// <returns>true if the structure has no elements; false if it has any elements.</returns>
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         bool IsEmpty { get; }
 
         /// <summary>
         /// Gets or sets an element by its numeric index.
         /// </summary>
         /// <param name="index">The zero-based index of the element to access.</param>
-        /// <returns>The element value, or null if the specified element is past the end of
+        /// <returns>The element value, or <see langword="null"/> if the specified element is past the end of
         /// the structure.</returns>
-        /// <exception cref="Zilf.Language.InterpreterError">
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set">
         /// An attempt was made to set an element past the end of the structure.
         /// </exception>
-        ZilObject this[int index] { get; set; }
+        /// <exception cref="NotSupportedException" accessor="set">
+        /// The structure is read-only.
+        /// </exception>
+        ZilObject this[int index]
+        {
+            [CanBeNull]
+            [System.Diagnostics.Contracts.Pure]
+            get;
+
+            [NotNull]
+            set;
+        }
 
         /// <summary>
         /// Measures the length of the structure.
@@ -96,7 +117,7 @@ namespace Zilf.Interpreter
         /// <param name="limit">The maximum length to allow.</param>
         /// <returns>The number of elements in the structure, or null if the structure
         /// contains more than <paramref name="limit"/> elements.</returns>
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         int? GetLength(int limit);
     }
 }

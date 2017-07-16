@@ -23,14 +23,14 @@ namespace Dezapf
 {
     abstract class Chunk
     {
-        public int PC { get; protected set; }
+        public int PC { get; }
         public int Length { get; protected set; }
         public Chunk Parent;
 
         protected Chunk(int pc, int length)
         {
-            this.PC = pc;
-            this.Length = length;
+            PC = pc;
+            Length = length;
         }
 
         public abstract void WriteTo(TextWriter writer, Context ctx);
@@ -48,12 +48,12 @@ namespace Dezapf
 
     class DataChunk : Chunk
     {
-        public byte[] Bytes { get; private set; }
+        public byte[] Bytes { get; }
 
         DataChunk(int pc, int length, byte[] data)
             : base(pc, length)
         {
-            this.Bytes = data;
+            Bytes = data;
         }
 
         public static DataChunk FromStream(Stream stream, int offset, int length)
@@ -74,6 +74,7 @@ namespace Dezapf
     {
         protected readonly List<Chunk> contents = new List<Chunk>();
 
+/*
         public static CompoundChunk Combine(Chunk first, Chunk second)
         {
             if (first is CompoundChunk cc)
@@ -84,18 +85,21 @@ namespace Dezapf
 
             return new CompoundChunk(first.PC, first.Length + second.Length, first, second);
         }
+*/
 
-        public CompoundChunk(int pc, int length)
+        protected CompoundChunk(int pc, int length)
             : base(pc, length)
         {
         }
 
+/*
         public CompoundChunk(int pc, int length, Chunk first, Chunk second)
             : this(pc, length)
         {
             contents.Add(first);
             contents.Add(second);
         }
+*/
 
         public void Add(Chunk next)
         {
@@ -106,7 +110,7 @@ namespace Dezapf
 
         public override void WriteTo(TextWriter writer, Context ctx)
         {
-            foreach (Chunk ch in contents)
+            foreach (var ch in contents)
                 ch.WriteTo(writer, ctx);
         }
     }
@@ -135,12 +139,12 @@ namespace Dezapf
 
     class GlobalsChunk : Chunk
     {
-        public ushort[] Values { get; private set; }
+        public ushort[] Values { get; }
 
         GlobalsChunk(int pc, ushort[] values)
             : base(pc, values.Length * 2)
         {
-            this.Values = values;
+            Values = values;
         }
 
         public static GlobalsChunk FromStream(Stream stream, int offset, int length)

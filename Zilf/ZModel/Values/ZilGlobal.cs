@@ -15,35 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+using JetBrains.Annotations;
+using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
-using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
-using System;
+using Zilf.Language;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
     class ZilGlobal : ZilTiedListBase
     {
-        readonly ZilAtom name;
-        readonly ZilObject value;
-
         public ZilGlobal(ZilAtom name, ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
         {
-            this.name = name;
-            this.value = value;
-            this.StorageType = storageType;
-            this.IsWord = true;
+            Name = name;
+            Value = value;
+            StorageType = storageType;
+            IsWord = true;
         }
 
+        /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
+        [NotNull]
         [ChtypeMethod]
 #pragma warning disable RECS0154 // Parameter is never used
-        public static ZilGlobal FromList(Context ctx, ZilListBase list)
+        public static ZilGlobal FromList(Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
-            if (list.IsEmpty || list.Rest.IsEmpty || !list.Rest.Rest.IsEmpty)
+            Contract.Requires(list != null);
+            Contract.Ensures(Contract.Result<ZilGlobal>() != null);
+            if (list.IsEmpty || list.Rest?.IsEmpty != false || list.Rest.Rest?.IsEmpty != true)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to GLOBAL", 2);
 
             if (!(list.First is ZilAtom name))
@@ -54,8 +57,10 @@ namespace Zilf.ZModel.Values
             return new ZilGlobal(name, value);
         }
 
-        public ZilAtom Name => name;
-        public ZilObject Value => value;
+        public ZilAtom Name { get; }
+
+        public ZilObject Value { get; }
+
         public GlobalStorageType StorageType { get; set; }
         public bool IsWord { get; set; }
 

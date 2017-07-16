@@ -24,16 +24,19 @@ using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
     sealed class CharBuffer
     {
+        [NotNull]
         readonly IEnumerator<char> source;
         char? heldChar, curChar;
 
-        public CharBuffer(IEnumerable<char> source)
+        public CharBuffer([NotNull] IEnumerable<char> source)
         {
+            Contract.Requires(source != null);
             this.source = source.GetEnumerator();
         }
 
@@ -56,6 +59,7 @@ namespace Zilf.Language
             return false;
         }
 
+        /// <exception cref="InvalidOperationException" accessor="get">No character to read</exception>
         public char Current
         {
             get
@@ -67,6 +71,7 @@ namespace Zilf.Language
             }
         }
 
+        /// <exception cref="InvalidOperationException">A character is already held</exception>
         public void PushBack(char ch)
         {
             if (heldChar != null)
@@ -79,42 +84,69 @@ namespace Zilf.Language
     [Serializable]
     public abstract class ParserException : Exception
     {
-        protected ParserException(string message)
-            : base(message) { }
+        protected ParserException(string message, Exception innerException)
+            : base(message, innerException) { }
 
-        protected ParserException(SerializationInfo info, StreamingContext context)
-            : base(info, context) { }
+        protected ParserException([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Contract.Requires(info != null);
+        }
     }
 
     [Serializable]
     sealed class ExpectedButFound : ParserException
     {
-        public ExpectedButFound(string expected, string actual)
-            : base($"expected {expected} but found {actual}") { }
+        public ExpectedButFound(string expected, string actual, [CanBeNull] Exception innerException = null)
+            : base($"expected {expected} but found {actual}", innerException) { }
 
-        private ExpectedButFound(SerializationInfo info, StreamingContext context)
-            : base(info, context) { }
+        ExpectedButFound([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Contract.Requires(info != null);
+        }
     }
 
     [Serializable]
     sealed class ParsedNumberOverflowed : ParserException
     {
-        public ParsedNumberOverflowed(string number, string radix = "decimal")
-            : base($"{radix} number '{number}' cannot be represented in 32 bits") { }
+        const string DefaultRadix = "decimal";
 
-        private ParsedNumberOverflowed(SerializationInfo info, StreamingContext context)
-            : base(info, context) { }
+        public ParsedNumberOverflowed(string number, string radix = DefaultRadix, [CanBeNull] Exception innerException = null)
+            : base($"{radix} number '{number}' cannot be represented in 32 bits", innerException) { }
+
+        public ParsedNumberOverflowed(string number, [CanBeNull] Exception innerException)
+            : this(number, DefaultRadix, innerException) { }
+
+        ParsedNumberOverflowed([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Contract.Requires(info != null);
+        }
     }
 
+    [ContractClass(typeof(ParserSiteContract))]
     interface IParserSite
     {
-        ZilAtom ParseAtom(string text);
-        ZilAtom GetTypeAtom(ZilObject zo);
-        ZilObject ChangeType(ZilObject zo, ZilAtom type);
-        ZilObject Evaluate(ZilObject zo);
-        ZilObject GetGlobalVal(ZilAtom atom);
+        [NotNull]
+        ZilAtom ParseAtom([NotNull] string text);
 
+        [NotNull]
+        ZilAtom GetTypeAtom([NotNull] ZilObject zo);
+
+        [NotNull]
+        ZilObject ChangeType([NotNull] ZilObject zo, [NotNull] ZilAtom type);
+
+        [NotNull]
+        ZilObject Evaluate([NotNull] ZilObject zo);
+
+        [CanBeNull]
+        ZilObject GetGlobalVal([NotNull] ZilAtom atom);
+
+        [NotNull]
         string CurrentFilePath { get; }
+
+        [NotNull]
         ZilObject FALSE { get; }
     }
 
@@ -204,6 +236,7 @@ namespace Zilf.Language
         const char BANG_SQUOTE = (char)('\'' + 128);
         const char BANG_DQUOTE = (char)('"' + 128);
 
+        [NotNull]
         static string Rebang(char ch)
         {
             if (ch >= 128 && ch < 256)
@@ -212,19 +245,19 @@ namespace Zilf.Language
             return ch.ToString();
         }
 
-        public Parser(IParserSite site)
+        public Parser([NotNull] IParserSite site)
             : this(site, (ISourceLine)null, null)
         {
             Contract.Requires(site != null);
         }
 
-        public Parser(IParserSite site, params ZilObject[] templateParams)
+        public Parser([NotNull] IParserSite site, params ZilObject[] templateParams)
             : this(site, null, templateParams)
         {
             Contract.Requires(site != null);
         }
 
-        public Parser(IParserSite site, ISourceLine srcOverride, params ZilObject[] templateParams)
+        public Parser([NotNull] IParserSite site, ISourceLine srcOverride, params ZilObject[] templateParams)
         {
             Contract.Requires(site != null);
 
@@ -235,13 +268,19 @@ namespace Zilf.Language
 
         public int Line => line;
 
-        public IEnumerable<ParserOutput> Parse(IEnumerable<char> chars)
+        [NotNull]
+        public IEnumerable<ParserOutput> Parse([NotNull] IEnumerable<char> chars)
         {
+            Contract.Requires(chars != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ParserOutput>>() != null);
             return Parse(new CharBuffer(chars));
         }
 
-        IEnumerable<ParserOutput> Parse(CharBuffer chars)
+        [NotNull]
+        IEnumerable<ParserOutput> Parse([NotNull] CharBuffer chars)
         {
+            Contract.Requires(chars != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ParserOutput>>() != null);
             while (true)
             {
                 var po = ParseOne(chars, out ISourceLine src);
@@ -320,8 +359,11 @@ namespace Zilf.Language
             return po;
         }
 
-        ParserOutput ParseOneNonAdecl(CharBuffer chars, out ISourceLine sourceLine)
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        ParserOutput ParseOneNonAdecl(CharBuffer chars, [NotNull] out ISourceLine sourceLine)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Ensures(Contract.ValueAtReturn(out sourceLine) != null);
             try
             {
                 // handle whitespace
@@ -357,7 +399,7 @@ namespace Zilf.Language
                             ParseCurrentStructure(
                                 chars,
                                 '>',
-                                zos => zos.Count == 0 ? (ZilObject)site.FALSE : new ZilForm(zos)));
+                                zos => zos.Count == 0 ? site.FALSE : new ZilForm(zos)));
 
                     case '[':
                         return ParserOutput.FromObject(
@@ -522,9 +564,9 @@ namespace Zilf.Language
                                         {
                                             return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
                                         }
-                                        catch (OverflowException)
+                                        catch (OverflowException ex)
                                         {
-                                            throw new ParsedNumberOverflowed(sb.ToString(), "binary");
+                                            throw new ParsedNumberOverflowed(sb.ToString(), "binary", ex);
                                         }
                                     }
 
@@ -578,8 +620,9 @@ namespace Zilf.Language
             }
         }
 
-        bool SkipWhitespace(CharBuffer chars)
+        bool SkipWhitespace([NotNull] CharBuffer chars)
         {
+            Contract.Requires(chars != null);
             while (true)
             {
                 if (!chars.MoveNext())
@@ -607,8 +650,10 @@ namespace Zilf.Language
             }
         }
 
-        ZilObject ParseCurrentAtomOrNumber(CharBuffer chars)
+        [CanBeNull]
+        ZilObject ParseCurrentAtomOrNumber([NotNull] CharBuffer chars)
         {
+            Contract.Requires(chars != null);
             var sb = new StringBuilder();
 
             bool run = true, backslash = false;
@@ -728,9 +773,9 @@ namespace Zilf.Language
                     {
                         return new ZilFix(Convert.ToInt32(sb.ToString()));
                     }
-                    catch (OverflowException)
+                    catch (OverflowException ex)
                     {
-                        throw new ParsedNumberOverflowed(sb.ToString());
+                        throw new ParsedNumberOverflowed(sb.ToString(), ex);
                     }
                 }
 
@@ -743,9 +788,9 @@ namespace Zilf.Language
                     {
                         return new ZilFix(Convert.ToInt32(sb.ToString(), 8));
                     }
-                    catch (OverflowException)
+                    catch (OverflowException ex)
                     {
-                        throw new ParsedNumberOverflowed(sb.ToString(), "octal");
+                        throw new ParsedNumberOverflowed(sb.ToString(), "octal", ex);
                     }
                 }
             }
@@ -759,8 +804,11 @@ namespace Zilf.Language
             return atom;
         }
 
-        ZilString ParseCurrentString(CharBuffer chars)
+        [NotNull]
+        ZilString ParseCurrentString([NotNull] CharBuffer chars)
         {
+            Contract.Requires(chars != null);
+            Contract.Ensures(Contract.Result<ZilString>() != null);
             var sb = new StringBuilder();
 
             while (chars.MoveNext())
@@ -801,21 +849,30 @@ namespace Zilf.Language
             throw new ExpectedButFound("'\"'", "<EOF>");
         }
 
+        [NotNull]
         static string KetWanted(char ket1, char? ket2)
         {
-            if (ket2 == null)
-                return $"'{Rebang(ket1)}'";
-
-            return $"'{Rebang(ket1)}' or '{Rebang((char)ket2)}'";
+            Contract.Ensures(Contract.Result<string>() != null);
+            return ket2 == null
+                ? $"'{Rebang(ket1)}'"
+                : $"'{Rebang(ket1)}' or '{Rebang((char)ket2)}'";
         }
 
-        T ParseCurrentStructure<T>(CharBuffer chars, char ket, Func<IList<ZilObject>, T> build)
+        [NotNull]
+        T ParseCurrentStructure<T>([NotNull] CharBuffer chars, char ket, [NotNull] Func<IList<ZilObject>, T> build)
         {
+            Contract.Requires(chars != null);
+            Contract.Requires(build != null);
+            Contract.Ensures(Contract.Result<T>() != null);
             return ParseCurrentStructure(chars, ket, null, build);
         }
 
-        T ParseCurrentStructure<T>(CharBuffer chars, char ket1, char? ket2, Func<IList<ZilObject>, T> build)
+        [NotNull]
+        T ParseCurrentStructure<T>([NotNull] CharBuffer chars, char ket1, char? ket2, [NotNull] Func<IList<ZilObject>, T> build)
         {
+            Contract.Requires(chars != null);
+            Contract.Requires(build != null);
+            Contract.Ensures(Contract.Result<T>() != null);
             var items = new List<ZilObject>();
 
             while (true)
@@ -894,5 +951,48 @@ namespace Zilf.Language
                     throw new UnhandledCaseException("after prefix");
             }
         }
+    }
+
+    [ContractClassFor(typeof(IParserSite))]
+    internal abstract class ParserSiteContract : IParserSite
+    {
+        public ZilAtom ParseAtom(string text)
+        {
+            Contract.Requires(text != null);
+            Contract.Ensures(Contract.Result<ZilAtom>() != null);
+            throw new NotImplementedException();
+        }
+
+        public ZilAtom GetTypeAtom(ZilObject zo)
+        {
+            Contract.Requires(zo != null);
+            Contract.Ensures(Contract.Result<ZilAtom>() != null);
+            throw new NotImplementedException();
+        }
+
+        public ZilObject ChangeType(ZilObject zo, ZilAtom type)
+        {
+            Contract.Requires(zo != null);
+            Contract.Requires(type != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            throw new NotImplementedException();
+        }
+
+        public ZilObject Evaluate(ZilObject zo)
+        {
+            Contract.Requires(zo != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
+            throw new NotImplementedException();
+        }
+
+        public ZilObject GetGlobalVal(ZilAtom atom)
+        {
+            Contract.Requires(atom != null);
+            throw new NotImplementedException();
+        }
+
+        public string CurrentFilePath => throw new NotImplementedException();
+
+        public ZilObject FALSE => throw new NotImplementedException();
     }
 }

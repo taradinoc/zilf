@@ -17,15 +17,16 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -45,8 +46,10 @@ namespace Zilf.Compiler
                 Constants.Add(Context.RootObList[pair.Key], pair.Value);
         }
 
-        void BuildOldFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
+        void BuildOldFormatSyntaxTables([NotNull] IDictionary<string, ITableBuilder> tables)
         {
+            Contract.Requires(tables != null);
+
             // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
             var verbTable = Game.DefineTable("VTBL", true);
             var actionTable = Game.DefineTable("ATBL", true);
@@ -162,8 +165,9 @@ namespace Zilf.Compiler
             }
         }
 
-        void BuildNewFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
+        void BuildNewFormatSyntaxTables([NotNull] IDictionary<string, ITableBuilder> tables)
         {
+            Contract.Requires(tables != null);
             var actionTable = Game.DefineTable("ATBL", true);
             var preactionTable = Game.DefineTable("PATBL", true);
 
@@ -214,7 +218,7 @@ namespace Zilf.Compiler
                     foreach (var line in verb.Unary)
                     {
                         var act = ValidateAction(actions, line);
-                        utbl.AddShort(act.Constant);
+                        utbl.AddShort(act?.Constant ?? Game.Zero);
 
                         utbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
                         utbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
@@ -237,7 +241,7 @@ namespace Zilf.Compiler
                     foreach (var line in verb.Binary)
                     {
                         var act = ValidateAction(actions, line);
-                        btbl.AddShort(act.Constant);
+                        btbl.AddShort(act?.Constant ?? Game.Zero);
 
                         btbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
                         btbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
@@ -271,16 +275,19 @@ namespace Zilf.Compiler
         {
             var helpers = new BuildLateSyntaxTablesHelpers
             {
-                CompileConstant = CompileConstant,
-                GetGlobal = atom => Globals[atom],
+                CompileConstantDelegate = CompileConstant,
+                GetGlobalDelegate = atom => Globals[atom],
                 Vocabulary = Vocabulary
             };
 
             Context.ZEnvironment.VocabFormat.BuildLateSyntaxTables(helpers);
         }
 
-        Action ValidateAction(Dictionary<ZilAtom, Action> actions, Syntax line)
+        [CanBeNull]
+        Action ValidateAction([NotNull] Dictionary<ZilAtom, Action> actions, [NotNull] Syntax line)
         {
+            Contract.Requires(actions != null);
+            Contract.Requires(line != null);
             try
             {
                 using (DiagnosticContext.Push(line.SourceLine))
@@ -301,7 +308,10 @@ namespace Zilf.Compiler
                         var constant = Game.DefineConstant(actionName.Text, number);
                         Constants.Add(actionName, constant);
                         if (WantDebugInfo)
+                        {
+                            Debug.Assert(Game.DebugFile != null);
                             Game.DebugFile.MarkAction(constant, line.Action.Text);
+                        }
 
                         act = new Action(index, constant, routine, preRoutine, line.Action, line.Preaction);
                         actions.Add(actionName, act);
@@ -322,18 +332,19 @@ namespace Zilf.Compiler
             }
         }
 
-        void WarnIfActionRoutineDiffers(Syntax line, string description,
-            ZilAtom thisRoutineName, ZilAtom lastRoutineName)
+        void WarnIfActionRoutineDiffers([NotNull] Syntax line, [NotNull] string description,
+            [NotNull] ZilAtom thisRoutineName, [CanBeNull] ZilAtom lastRoutineName)
         {
             Contract.Requires(line != null);
             Contract.Requires(description != null);
+            Contract.Requires(thisRoutineName != null);
 
             if (thisRoutineName != lastRoutineName)
                 Context.HandleWarning(new CompilerError(line.SourceLine,
                     CompilerMessages._0_Mismatch_For_1_Using_2_As_Before,
                     description,
                     line.ActionName,
-                    lastRoutineName != null ? lastRoutineName.ToString() : "no " + description));
+                    lastRoutineName?.ToString() ?? "no " + description));
         }
 
         /// <summary>
@@ -342,7 +353,7 @@ namespace Zilf.Compiler
         /// </summary>
         /// <param name="word">The Word.</param>
         /// 
-        void DefineWord(IWord word)
+        void DefineWord([NotNull] IWord word)
         {
             Contract.Requires(word != null);
             Contract.Ensures(Vocabulary.ContainsKey(word));
@@ -381,7 +392,9 @@ namespace Zilf.Compiler
             }
         }
 
-        IOperand GetPreposition(IWord word)
+        [CanBeNull]
+        [ContractAnnotation("notnull => notnull")]
+        IOperand GetPreposition([CanBeNull] IWord word)
         {
             Contract.Ensures(Contract.Result<IOperand>() != null || word == null);
 

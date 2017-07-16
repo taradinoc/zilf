@@ -15,19 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
     static class ApplicableExtensions
     {
-        public static IApplicable AsApplicable(this ZilObject zo, Context ctx)
+        [CanBeNull]
+        [ContractAnnotation("zo: null => null")]
+        public static IApplicable AsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
             if (zo == null)
                 return null;
 
@@ -39,8 +40,10 @@ namespace Zilf.Interpreter
             return zo as IApplicable;
         }
 
-        public static bool IsApplicable(this ZilObject zo, Context ctx)
+        [ContractAnnotation("zo: null => false")]
+        public static bool IsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
         {
+            Contract.Requires(ctx != null);
             if (zo == null)
                 return false;
 
@@ -60,14 +63,9 @@ namespace Zilf.Interpreter
 
             public ZilResult Apply(Context ctx, ZilObject[] args)
             {
-                if (ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-                {
-                    return del(zo, args);
-                }
-                else
-                {
-                    return zr;
-                }
+                return ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr)
+                    ? del(zo, args)
+                    : zr;
             }
 
             public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)

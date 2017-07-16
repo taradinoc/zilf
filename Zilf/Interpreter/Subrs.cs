@@ -17,8 +17,10 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -27,6 +29,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+        [MeansImplicitUse]
         public class SubrAttribute : Attribute
         {
             public SubrAttribute()
@@ -35,7 +38,7 @@ namespace Zilf.Interpreter
 
             public SubrAttribute(string name)
             {
-                this.Name = name;
+                Name = name;
             }
 
             public string Name { get; }
@@ -57,25 +60,31 @@ namespace Zilf.Interpreter
         [AttributeUsage(AttributeTargets.Method)]
         public sealed class MdlZilRedirectAttribute : Attribute
         {
-            public MdlZilRedirectAttribute(Type type, string target)
+            public MdlZilRedirectAttribute([NotNull] Type type, [NotNull] string target)
             {
                 Contract.Requires(type != null);
                 Contract.Requires(!string.IsNullOrWhiteSpace(target));
 
-                this.Type = type;
-                this.Target = target;
+                Type = type;
+                Target = target;
             }
 
+            [NotNull]
             public Type Type { get; }
+
+            [NotNull]
             public string Target { get; }
 
             public bool TopLevelOnly { get; set; }
         }
 
+#pragma warning disable ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
+        // ReSharper disable UnusedParameter.Local
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
         [ContractAbbreviator]
-        static void SubrContracts(Context ctx, ZilObject[] args)
+        [Conditional("CONTRACTS_FULL")]
+        static void SubrContracts([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
@@ -85,10 +94,13 @@ namespace Zilf.Interpreter
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
         [ContractAbbreviator]
-        static void SubrContracts(Context ctx)
+        [Conditional("CONTRACTS_FULL")]
+        static void SubrContracts([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
         }
+        // ReSharper restore UnusedParameter.Local
+#pragma warning restore ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
     }
 }

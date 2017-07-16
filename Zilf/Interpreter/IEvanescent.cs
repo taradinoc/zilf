@@ -17,7 +17,6 @@
  */
 using System;
 using Zilf.Interpreter.Values;
-using Zilf.Language;
 
 namespace Zilf.Interpreter
 {

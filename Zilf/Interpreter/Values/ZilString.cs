@@ -18,10 +18,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -29,10 +31,12 @@ namespace Zilf.Interpreter.Values
     [ContractClass(typeof(ZilStringContracts))]
     abstract class ZilString : ZilObject, IStructure
     {
+        [NotNull]
         public abstract string Text { get; set; }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilString FromString(Context ctx, ZilString other)
+        public static ZilString FromString([NotNull] Context ctx, [NotNull] ZilString other)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(other != null);
@@ -40,12 +44,14 @@ namespace Zilf.Interpreter.Values
             return new OriginalString(other.Text);
         }
 
-        public static ZilString FromString(string text)
+        [NotNull]
+        public static ZilString FromString([NotNull] string text)
         {
             return new OriginalString(text);
         }
 
-        public static ZilString Parse(string str)
+        [NotNull]
+        public static ZilString Parse([NotNull] string str)
         {
             Contract.Requires(str != null);
             Contract.Requires(str.Length >= 2);
@@ -75,7 +81,8 @@ namespace Zilf.Interpreter.Values
             return Quote(Text);
         }
 
-        public static string Quote(string text)
+        [NotNull]
+        public static string Quote([NotNull] string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -124,6 +131,7 @@ namespace Zilf.Interpreter.Values
 
         public abstract ZilObject this[int index] { get; set; }
 
+        [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
             return this;
@@ -151,7 +159,7 @@ namespace Zilf.Interpreter.Values
         [BuiltinAlternate(typeof(ZilString))]
         sealed class OriginalString : ZilString
         {
-            public OriginalString(string text)
+            public OriginalString([NotNull] string text)
             {
                 Text = text;
             }
@@ -177,6 +185,7 @@ namespace Zilf.Interpreter.Values
 
             public override bool IsEmpty => Text.Length == 0;
 
+            [CanBeNull]
             public override ZilObject this[int index]
             {
                 get
@@ -229,7 +238,7 @@ namespace Zilf.Interpreter.Values
 
             public override bool Equals(object obj)
             {
-                if (obj is OffsetString other && other.orig == this.orig && other.offset == this.offset)
+                if (obj is OffsetString other && other.orig == orig && other.offset == offset)
                     return true;
 
                 return base.Equals(obj);
@@ -257,6 +266,7 @@ namespace Zilf.Interpreter.Values
 
             public override bool IsEmpty => offset >= orig.Text.Length;
 
+            [CanBeNull]
             public override ZilObject this[int index]
             {
                 get
@@ -307,6 +317,7 @@ namespace Zilf.Interpreter.Values
     }
 
     [ContractClassFor(typeof(ZilString))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class ZilStringContracts : ZilString
     {
         public override string Text

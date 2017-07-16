@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -30,8 +31,9 @@ namespace Zilf.Interpreter.Values
         public ZilObject First;
         public ZilObject Second;
 
+        /// <exception cref="InterpreterError"><paramref name="vector"/> has the wrong number of elements.</exception>
         [ChtypeMethod]
-        public ZilAdecl(ZilVector vector)
+        public ZilAdecl([NotNull] ZilVector vector)
         {
             Contract.Requires(vector != null);
 
@@ -42,10 +44,12 @@ namespace Zilf.Interpreter.Values
             Second = vector[1];
         }
 
-        public ZilAdecl(ZilObject first, ZilObject second)
+        public ZilAdecl([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
-            this.First = first ?? throw new ArgumentNullException(nameof(first));
-            this.Second = second ?? throw new ArgumentNullException(nameof(second));
+            Contract.Requires(first != null);
+            Contract.Requires(second != null);
+            First = first ?? throw new ArgumentNullException(nameof(first));
+            Second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
         public override bool Equals(object obj)
@@ -86,8 +90,10 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.VECTOR;
 
+        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(First, Second);
         }
 
@@ -123,16 +129,19 @@ namespace Zilf.Interpreter.Values
             }
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public IStructure GetBack(int skip)
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public IStructure GetTop()
         {
             throw new NotSupportedException();
         }
 
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         public void Grow(int end, int beginning, ZilObject defaultValue)
         {
             throw new NotSupportedException();
@@ -140,6 +149,7 @@ namespace Zilf.Interpreter.Values
 
         public bool IsEmpty => false;
 
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
         public ZilObject this[int index]
         {
             get

@@ -28,7 +28,6 @@ namespace Zilf.Interpreter
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
             Contract.Requires(Contract.ForAll(args, a => a != null));
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return default(ZilResult);
         }
 
@@ -37,7 +36,6 @@ namespace Zilf.Interpreter
             Contract.Requires(ctx != null);
             Contract.Requires(args != null);
             Contract.Requires(Contract.ForAll(args, a => a != null));
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return default(ZilResult);
         }
     }

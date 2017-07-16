@@ -36,9 +36,9 @@ namespace Zapf
 
             public Result(int score, int count, string text)
             {
-                this.Score = score;
-                this.Count = count;
-                this.Text = text;
+                Score = score;
+                Count = count;
+                Text = text;
             }
         }
 
@@ -77,10 +77,7 @@ namespace Zapf
         /// <summary>
         /// Gets the number of characters in the accumulator.
         /// </summary>
-        public int Position
-        {
-            get { return allText.Length; }
-        }
+        public int Position => allText.Length;
 
         /// <summary>
         /// Rolls the accumulator back to a previous state.
@@ -92,16 +89,17 @@ namespace Zapf
                 allText.Length = position;
         }
 
-        readonly static char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
+        static readonly char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
 
         IEnumerable<string> FindWords(string text)
         {
-            int wordStart = -1, wordEnd = -1;
+            int wordStart = -1;
             bool inWord = false;
 
             for (int i = 0; i < text.Length; i++)
             {
                 char c = text[i];
+                int wordEnd;
                 if (inWord)
                 {
                     if (Array.IndexOf(wordDelimiters, c) >= 0)
@@ -240,7 +238,7 @@ namespace Zapf
                     }
 
                     var newText = new StringBuilder(allText.Length);
-                    newText.Append(allText.ToString());
+                    newText.Append(allText);
                     allText = newText;
 
                     words.Remove(word);

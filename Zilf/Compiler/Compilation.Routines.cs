@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -26,14 +27,23 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        static ZilRoutine MaybeRewriteRoutine(Context ctx, ZilRoutine origRoutine)
+        [NotNull]
+        static ZilRoutine MaybeRewriteRoutine([NotNull] Context ctx, [NotNull] ZilRoutine origRoutine)
         {
+            Contract.Requires(ctx != null);
+            Contract.Requires(origRoutine != null);
+            Contract.Requires(origRoutine.Name != null);
+            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
+
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
+
+            Debug.Assert(origRoutine.Name != null);
 
             var result = ctx.RunHook(
                 "REWRITE-ROUTINE",
@@ -45,7 +55,8 @@ namespace Zilf.Compiler
             {
                 switch (result)
                 {
-                    case ZilList list when (list.GetLength(1) == null && list.First is ZilList args):
+                    case ZilList list when list.GetLength(1) == null && list.First is ZilList args:
+                        Debug.Assert(list.Rest != null);
                         return new ZilRoutine(origRoutine.Name, null, args, list.Rest, origRoutine.Flags);
 
                     case ZilFalse _:
@@ -59,7 +70,7 @@ namespace Zilf.Compiler
             return origRoutine;
         }
 
-        void BuildRoutine(ZilRoutine routine, IRoutineBuilder rb, bool entryPoint)
+        void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
             Contract.Requires(routine != null);
             Contract.Requires(rb != null);
@@ -76,66 +87,7 @@ namespace Zilf.Compiler
             if (Context.TraceRoutines)
                 rb.EmitPrint("[" + routine.Name, false);
 
-            foreach (ArgItem arg in routine.ArgSpec)
-            {
-                ILocalBuilder lb;
-
-                switch (arg.Type)
-                {
-                    case ArgItem.ArgType.Required:
-                        try
-                        {
-                            lb = rb.DefineRequiredParameter(arg.Atom.Text);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
-                        }
-                        if (Context.TraceRoutines)
-                        {
-                            rb.EmitPrint(" " + arg.Atom + "=", false);
-                            rb.EmitPrint(PrintOp.Number, lb);
-                        }
-                        break;
-                    case ArgItem.ArgType.Optional:
-                        lb = rb.DefineOptionalParameter(arg.Atom.Text);
-                        break;
-                    case ArgItem.ArgType.Auxiliary:
-                        lb = rb.DefineLocal(arg.Atom.Text);
-                        break;
-                    default:
-                        throw UnhandledCaseException.FromEnum(arg.Type);
-                }
-
-                Locals.Add(arg.Atom, lb);
-
-                if (arg.DefaultValue != null)
-                {
-                    lb.DefaultValue = CompileConstant(arg.DefaultValue);
-                    if (lb.DefaultValue == null)
-                    {
-                        // not a constant
-                        if (arg.Type == ArgItem.ArgType.Optional)
-                        {
-                            if (!rb.HasArgCount)
-                                throw new CompilerError(routine.SourceLine, CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
-
-                            var nextLabel = rb.DefineLabel();
-                            rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
-                            var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
-                            if (val != lb)
-                                rb.EmitStore(lb, val);
-                            rb.MarkLabel(nextLabel);
-                        }
-                        else
-                        {
-                            var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
-                            if (val != lb)
-                                rb.EmitStore(lb, val);
-                        }
-                    }
-                }
-            }
+            DefineParametersFromArgSpec();
 
             if (Context.TraceRoutines)
                 rb.EmitPrint("]\n", false);
@@ -152,7 +104,7 @@ namespace Zilf.Compiler
 
             // generate code for routine body
             int i = 1;
-            foreach (ZilObject stmt in routine.Body)
+            foreach (var stmt in routine.Body)
             {
                 // only want the result of the last statement
                 // and we never want results in the entry routine, since it can't return
@@ -171,10 +123,84 @@ namespace Zilf.Compiler
 
             Contract.Assume(Blocks.Count == 1);
             Blocks.Pop();
+
+            // helper
+            void DefineParametersFromArgSpec()
+            {
+                foreach (var arg in routine.ArgSpec)
+                {
+                    ILocalBuilder lb;
+
+                    switch (arg.Type)
+                    {
+                        case ArgItem.ArgType.Required:
+                            try
+                            {
+                                lb = rb.DefineRequiredParameter(arg.Atom.Text);
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                throw new CompilerError(
+                                    CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
+                            }
+
+                            if (traceRoutines)
+                            {
+                                rb.EmitPrint(" " + arg.Atom + "=", false);
+                                rb.EmitPrint(PrintOp.Number, lb);
+                            }
+                            break;
+
+                        case ArgItem.ArgType.Optional:
+                            lb = rb.DefineOptionalParameter(arg.Atom.Text);
+                            break;
+
+                        case ArgItem.ArgType.Auxiliary:
+                            lb = rb.DefineLocal(arg.Atom.Text);
+                            break;
+
+                        default:
+                            throw UnhandledCaseException.FromEnum(arg.Type);
+                    }
+
+                    Locals.Add(arg.Atom, lb);
+
+                    if (arg.DefaultValue == null)
+                        continue;
+
+                    lb.DefaultValue = CompileConstant(arg.DefaultValue);
+                    if (lb.DefaultValue != null)
+                        continue;
+
+                    // not a constant
+                    if (arg.Type == ArgItem.ArgType.Optional)
+                    {
+                        if (!rb.HasArgCount)
+                            throw new CompilerError(routine.SourceLine,
+                                CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
+
+                        var nextLabel = rb.DefineLabel();
+                        rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
+                        var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
+                        if (val != lb)
+                            rb.EmitStore(lb, val);
+                        rb.MarkLabel(nextLabel);
+                    }
+                    else
+                    {
+                        var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
+                        if (val != lb)
+                            rb.EmitStore(lb, val);
+                    }
+                }
+            }
         }
 
-        void CompileStmt(IRoutineBuilder rb, ZilObject stmt, bool wantResult)
+        void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
         {
+            Contract.Requires(rb != null);
+            Contract.Requires(stmt != null);
+
             if (stmt is ZilForm form)
             {
                 MarkSequencePoint(rb, form);
@@ -203,18 +229,16 @@ namespace Zilf.Compiler
             //}
         }
 
-        void MarkSequencePoint(IRoutineBuilder rb, ZilObject node)
+        void MarkSequencePoint([NotNull] IRoutineBuilder rb, [NotNull] IProvideSourceLine node)
         {
             Contract.Requires(rb != null);
             Contract.Requires(node != null);
 
-            if (WantDebugInfo)
+            if (WantDebugInfo && node.SourceLine is FileSourceLine fileSourceLine)
             {
-                if (node.SourceLine is FileSourceLine fileSourceLine)
-                {
-                    Game.DebugFile.MarkSequencePoint(rb,
-                        new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
-                }
+                Debug.Assert(Game.DebugFile != null);
+                Game.DebugFile.MarkSequencePoint(rb,
+                    new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
             }
         }
 
@@ -226,10 +250,12 @@ namespace Zilf.Compiler
         /// 
         /// <returns></returns>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
-        public ILocalBuilder PushInnerLocal(IRoutineBuilder rb, ZilAtom atom)
+        [NotNull]
+        public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom)
         {
             Contract.Requires(rb != null);
             Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
 
             string name = atom.Text;
 
@@ -289,7 +315,7 @@ namespace Zilf.Compiler
             return result;
         }
 
-        public void PopInnerLocal(ZilAtom atom)
+        public void PopInnerLocal([NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
+using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
@@ -10,8 +12,13 @@ namespace Zilf.Emit.Zap
     {
         const string INDENT = "\t";
 
+        [NotNull]
         internal static readonly NumericOperand ZERO = new NumericOperand(0);
+
+        [NotNull]
         internal static readonly NumericOperand ONE = new NumericOperand(1);
+
+        [NotNull]
         internal static readonly ConstantLiteralOperand VOCAB = new ConstantLiteralOperand("VOCAB");
 
         // TODO: share unicode translation table with Zapf
@@ -19,8 +26,10 @@ namespace Zilf.Emit.Zap
 
         #region Default Unicode Mapping
 
+        [NotNull]
         static Dictionary<char, byte> MakeDefaultUnicodeMapping()
         {
+            Contract.Ensures(Contract.Result<Dictionary<char, byte>>() != null);
             return new Dictionary<char, byte>(69)
             {
                 { 'ä', 155 },
@@ -100,7 +109,6 @@ namespace Zilf.Emit.Zap
         // all global names go in here
         readonly Dictionary<string, string> symbols = new Dictionary<string, string>(250);
 
-        readonly List<RoutineBuilder> routines = new List<RoutineBuilder>(100);
         readonly List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
         readonly Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
         readonly Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
@@ -123,13 +131,12 @@ namespace Zilf.Emit.Zap
         Stream stream;
         TextWriter writer;
 
-        public GameBuilder(int zversion, string outFile, bool wantDebugInfo, GameOptions options = null)
-            : this(zversion, new ZapStreamFactory(outFile), wantDebugInfo, options)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="zversion"/> is not a supported Z-machine version.</exception>
+        /// <exception cref="ArgumentException"><paramref name="options"/> is the wrong type for this Z-machine version.</exception>
+        public GameBuilder(int zversion, [NotNull] IZapStreamFactory streamFactory, bool wantDebugInfo,
+            [CanBeNull] GameOptions options = null)
         {
-        }
-
-        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo, GameOptions options = null)
-        {
+            Contract.Requires(streamFactory != null);
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
             this.zversion = zversion;
@@ -140,7 +147,7 @@ namespace Zilf.Emit.Zap
             {
                 const string SOptionsNotCompatible = "Options not compatible with this Z-machine version";
 
-                if (requiredOptionsType.IsAssignableFrom(options.GetType()))
+                if (requiredOptionsType.IsInstanceOfType(options))
                 {
                     this.options = options;
                 }
@@ -179,8 +186,12 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
+#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        static void GetOptionsTypeForZVersion(int zversion, [NotNull] out Type requiredOptionsType, [NotNull] out Type concreteOptionsType)
+#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
+            Contract.Ensures(Contract.ValueAtReturn(out requiredOptionsType) != null);
+            Contract.Ensures(Contract.ValueAtReturn(out concreteOptionsType) != null);
             switch (zversion)
             {
                 case 3:
@@ -219,12 +230,12 @@ namespace Zilf.Emit.Zap
         {
             if (zversion == 3)
             {
-                var v3options = (GameOptions.V3)options;
-                if (v3options.TimeStatusLine)
+                var v3Options = (GameOptions.V3)options;
+                if (v3Options.TimeStatusLine)
                 {
                     writer.WriteLine(INDENT + ".TIME");
                 }
-                if (v3options.SoundEffects)
+                if (v3Options.SoundEffects)
                 {
                     writer.WriteLine(INDENT + ".SOUND");
                 }
@@ -235,8 +246,8 @@ namespace Zilf.Emit.Zap
 
                 if (zversion == 4)
                 {
-                    var v4options = (GameOptions.V4)options;
-                    if (v4options.SoundEffects)
+                    var v4Options = (GameOptions.V4)options;
+                    if (v4Options.SoundEffects)
                     {
                         writer.WriteLine(INDENT + ".SOUND");
                     }
@@ -244,16 +255,16 @@ namespace Zilf.Emit.Zap
                 else
                 {
                     // character set
-                    var v5options = (GameOptions.V5Plus)options;
-                    if (v5options.LanguageEscapeChar != null)
+                    var v5Options = (GameOptions.V5Plus)options;
+                    if (v5Options.LanguageEscapeChar != null)
                     {
-                        writer.WriteLine(INDENT + ".LANG {0},{1}", v5options.LanguageId, (ushort)v5options.LanguageEscapeChar);
+                        writer.WriteLine(INDENT + ".LANG {0},{1}", v5Options.LanguageId, (ushort)v5Options.LanguageEscapeChar);
                     }
-                    if (v5options.Charset0 != null || v5options.Charset1 != null || v5options.Charset2 != null)
+                    if (v5Options.Charset0 != null || v5Options.Charset1 != null || v5Options.Charset2 != null)
                     {
-                        writer.WriteLine(INDENT + ".CHRSET 0," + ExpandChrSet(v5options.Charset0));
-                        writer.WriteLine(INDENT + ".CHRSET 1," + ExpandChrSet(v5options.Charset1));
-                        writer.WriteLine(INDENT + ".CHRSET 2," + ExpandChrSet(v5options.Charset2));
+                        writer.WriteLine(INDENT + ".CHRSET 0," + ExpandChrSet(v5Options.Charset0));
+                        writer.WriteLine(INDENT + ".CHRSET 1," + ExpandChrSet(v5Options.Charset1));
+                        writer.WriteLine(INDENT + ".CHRSET 2," + ExpandChrSet(v5Options.Charset2));
                     }
 
                     // build the header
@@ -296,8 +307,11 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
         }
 
-        static string ExpandChrSet(string alphabet)
+        [NotNull]
+        static string ExpandChrSet([CanBeNull] string alphabet)
         {
+            Contract.Ensures(Contract.Result<string>() != null);
+
             var sb = new StringBuilder(100);
             if (alphabet == null)
                 alphabet = "";
@@ -320,16 +334,11 @@ namespace Zilf.Emit.Zap
             return sb.ToString();
         }
 
-        public IDebugFileBuilder DebugFile
-        {
-            get { return debug; }
-        }
+        public IDebugFileBuilder DebugFile => debug;
 
-        public IGameOptions Options
-        {
-            get { return options; }
-        }
+        public IGameOptions Options => options;
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IOperand DefineConstant(string name, IOperand value)
         {
             name = SanitizeSymbol(name);
@@ -338,12 +347,12 @@ namespace Zilf.Emit.Zap
 
             constants.Add(name, value);
             symbols.Add(name, "constant");
-            if (value is INumericOperand num)
-                return new NumericConstantOperand(name, num.Value);
-            else
-                return new ConstantLiteralOperand(name);
+            return value is INumericOperand num
+                ? (IOperand)new NumericConstantOperand(name, num.Value)
+                : new ConstantLiteralOperand(name);
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IGlobalBuilder DefineGlobal(string name)
         {
             name = SanitizeSymbol(name);
@@ -356,6 +365,7 @@ namespace Zilf.Emit.Zap
             return gb;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public ITableBuilder DefineTable(string name, bool pure)
         {
             if (name == null)
@@ -375,6 +385,7 @@ namespace Zilf.Emit.Zap
             return tb;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined; or <paramref name="entryPoint"/> is <see langword="true"/> and an entry point routine is alrady defined.</exception>
         public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
         {
             name = SanitizeSymbol(name);
@@ -385,7 +396,6 @@ namespace Zilf.Emit.Zap
                 throw new ArgumentException("Entry routine already defined");
 
             var result = new RoutineBuilder(this, name, entryPoint, cleanStack);
-            routines.Add(result);
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -394,18 +404,20 @@ namespace Zilf.Emit.Zap
             return result;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IObjectBuilder DefineObject(string name)
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            var result = new ObjectBuilder(this, 1 + objects.Count, name);
+            var result = new ObjectBuilder(name);
             objects.Add(result);
             symbols.Add(name, "object");
             return result;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IPropertyBuilder DefineProperty(string name)
         {
             name = "P?" + SanitizeSymbol(name);
@@ -421,6 +433,7 @@ namespace Zilf.Emit.Zap
             return result;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IFlagBuilder DefineFlag(string name)
         {
             name = SanitizeSymbol(name);
@@ -436,6 +449,7 @@ namespace Zilf.Emit.Zap
             return result;
         }
 
+        /// <exception cref="ArgumentException">A symbol called <paramref name="word">W?WORD</paramref> is already defined.</exception>
         public IWordBuilder DefineVocabularyWord(string word)
         {
             string name = "W?" + SanitizeSymbol(word.ToUpperInvariant());
@@ -458,13 +472,14 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        public ICollection<char> SelfInsertingBreaks
-        {
-            get { return siBreaks; }
-        }
+        public ICollection<char> SelfInsertingBreaks => siBreaks;
 
-        public static string SanitizeString(string text)
+        [NotNull]
+        public static string SanitizeString([NotNull] string text)
         {
+            Contract.Requires(text != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             // escape '"' as '""'
             var sb = new StringBuilder(text);
 
@@ -475,8 +490,12 @@ namespace Zilf.Emit.Zap
             return sb.ToString();
         }
 
-        public static string SanitizeSymbol(string symbol)
+        [NotNull]
+        public static string SanitizeSymbol([NotNull] string symbol)
         {
+            Contract.Requires(symbol != null);
+            Contract.Ensures(Contract.Result<string>() != null);
+
             switch (symbol)
             {
                 case ".":
@@ -536,40 +555,14 @@ namespace Zilf.Emit.Zap
             return result;
         }
 
-        public int MaxPropertyLength
-        {
-            get { return zversion > 3 ? 64 : 8; }
-        }
+        public int MaxPropertyLength => zversion > 3 ? 64 : 8;
+        public int MaxProperties => zversion > 3 ? 63 : 31;
+        public int MaxFlags => zversion > 3 ? 48 : 32;
+        public int MaxCallArguments => zversion > 3 ? 7 : 3;
 
-        public int MaxProperties
-        {
-            get { return zversion > 3 ? 63 : 31; }
-        }
-
-        public int MaxFlags
-        {
-            get { return zversion > 3 ? 48 : 32; }
-        }
-
-        public int MaxCallArguments
-        {
-            get { return zversion > 3 ? 7 : 3; }
-        }
-
-        public INumericOperand Zero
-        {
-            get { return ZERO; }
-        }
-
-        public INumericOperand One
-        {
-            get { return ONE; }
-        }
-
-        public IConstantOperand VocabularyTable
-        {
-            get { return VOCAB; }
-        }
+        public INumericOperand Zero => ZERO;
+        public INumericOperand One => ONE;
+        public IConstantOperand VocabularyTable => VOCAB;
 
         public void Finish()
         {
@@ -676,35 +669,35 @@ namespace Zilf.Emit.Zap
 
             if (zversion >= 5)
             {
-                var v5options = (GameOptions.V5Plus)options;
-                if (v5options.DisplayOps)
+                var v5Options = (GameOptions.V5Plus)options;
+                if (v5Options.DisplayOps)
                 {
                     flags2 |= 8;
                 }
-                if (v5options.Undo)
+                if (v5Options.Undo)
                 {
                     flags2 |= 16;
                 }
-                if (v5options.Mouse)
+                if (v5Options.Mouse)
                 {
                     flags2 |= 32;
                 }
-                if (v5options.Color)
+                if (v5Options.Color)
                 {
                     flags2 |= 64;
                 }
-                if (v5options.SoundEffects)
+                if (v5Options.SoundEffects)
                 {
                     flags2 |= 128;
                 }
-                defineExtab = v5options.HeaderExtensionTable == null;
+                defineExtab = v5Options.HeaderExtensionTable == null;
                 defineTchars = !symbols.ContainsKey("TCHARS");
-                defineChrset = v5options.Charset0 == null && v5options.Charset1 == null && v5options.Charset2 == null;
+                defineChrset = v5Options.Charset0 == null && v5Options.Charset1 == null && v5Options.Charset2 == null;
 
                 if (zversion == 6)
                 {
-                    var v6options = (GameOptions.V6)options;
-                    if (v6options.Menus)
+                    var v6Options = (GameOptions.V6)options;
+                    if (v6Options.Menus)
                     {
                         flags2 |= 256;
                     }
@@ -761,7 +754,7 @@ namespace Zilf.Emit.Zap
             // property defaults
             var propNums = Enumerable.Range(1, (zversion >= 4) ? 63 : 31);
             var propDefaults = from num in propNums
-                               join p in this.props on num equals p.Value.Number into propGroup
+                               join p in props on num equals p.Value.Number into propGroup
                                from prop in propGroup.DefaultIfEmpty()
                                let name = prop.Key
                                let def = prop.Value?.DefaultValue
@@ -860,8 +853,8 @@ namespace Zilf.Emit.Zap
             foreach (char c in siBreaks)
             {
                 if ((byte)c != c)
-                    throw new InvalidOperationException(string.Format(
-                        "Self-inserting break character out of range (${0:x4})", (ushort)c));
+                    throw new InvalidOperationException(
+                        $"Self-inserting break character out of range (${(ushort)c:x4})");
 
                 writer.WriteLine(INDENT + ".BYTE {0}", (byte)c);
             }
@@ -873,7 +866,7 @@ namespace Zilf.Emit.Zap
             }
             else
             {
-                int zwordBytes = (zversion < 4) ? 4 : 6;
+                int zwordBytes = zversion < 4 ? 4 : 6;
                 int dataBytes = vocabulary[0].Size;
 
                 writer.WriteLine(INDENT + ".BYTE {0}", zwordBytes + dataBytes);
@@ -881,9 +874,9 @@ namespace Zilf.Emit.Zap
 
                 writer.WriteLine(INDENT + ".VOCBEG {0},{1}", zwordBytes + dataBytes, zwordBytes);
                 vocabulary.Sort((a, b) => string.Compare(a.Word, b.Word, StringComparison.Ordinal));
-                foreach (WordBuilder wb in vocabulary)
+                foreach (var wb in vocabulary)
                 {
-                    writer.WriteLine("{0}:: .ZWORD \"{1}\"", wb.Name, GameBuilder.SanitizeString(wb.Word));
+                    writer.WriteLine("{0}:: .ZWORD \"{1}\"", wb.Name, SanitizeString(wb.Word));
                     wb.WriteTo(writer);
                 }
                 writer.WriteLine(INDENT + ".VOCEND");
@@ -896,20 +889,20 @@ namespace Zilf.Emit.Zap
         {
             if (zversion >= 5)
             {
-                var v5options = (GameOptions.V5Plus)options;
-                if (v5options.Charset0 != null || v5options.Charset1 != null || v5options.Charset2 != null)
+                var v5Options = (GameOptions.V5Plus)options;
+                if (v5Options.Charset0 != null || v5Options.Charset1 != null || v5Options.Charset2 != null)
                 {
                     writer.WriteLine();
                     writer.WriteLine("CHRSET:: .TABLE 78");
-                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset0));
-                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset1));
-                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5options.Charset2));
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5Options.Charset0));
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5Options.Charset1));
+                    writer.WriteLine(INDENT + ".BYTE {0}", ExpandChrSet(v5Options.Charset2));
                     writer.WriteLine(INDENT + ".ENDT");
                 }
             }
 
             // pure user tables
-            foreach (TableBuilder tb in pureTables)
+            foreach (var tb in pureTables)
             {
                 writer.WriteLine();
                 writer.WriteLine("{0}:: .TABLE {1}", tb.Name, tb.Size);
@@ -935,12 +928,6 @@ namespace Zilf.Emit.Zap
         internal void WriteOutput(string str)
         {
             writer.WriteLine(str);
-        }
-
-        internal void WriteOutput(MemoryStream mstr)
-        {
-            writer.Flush();
-            stream.Write(mstr.GetBuffer(), 0, (int)mstr.Length);
         }
     }
 }

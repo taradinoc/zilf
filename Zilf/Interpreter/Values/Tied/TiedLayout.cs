@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values.Tied
 {
@@ -12,6 +11,7 @@ namespace Zilf.Interpreter.Values.Tied
     {
         internal static readonly Dictionary<Type, TiedLayout> Layouts = new Dictionary<Type, TiedLayout>();
 
+        [NotNull]
         public static TiedLayout Create<T>(params Expression<Func<T, ZilObject>>[] elements)
             where T : ZilObject, IStructure
         {
@@ -23,7 +23,7 @@ namespace Zilf.Interpreter.Values.Tied
             return new TiedLayout(properties.ToArray());
         }
 
-        public TiedLayout(PropertyInfo[] properties, PropertyInfo catchAll = null)
+        public TiedLayout(PropertyInfo[] properties, [CanBeNull] PropertyInfo catchAll = null)
         {
             PropertyInfos = properties;
             CatchAllPropertyInfo = catchAll;
@@ -33,7 +33,8 @@ namespace Zilf.Interpreter.Values.Tied
         public PropertyInfo CatchAllPropertyInfo { get; }
         public int MinLength => PropertyInfos.Count;
 
-        public TiedLayout WithCatchAll<T>(Expression<Func<T, IStructure>> catchAll)
+        [NotNull]
+        public TiedLayout WithCatchAll<T>([NotNull] Expression<Func<T, IStructure>> catchAll)
             where T : ZilObject, IStructure
         {
             if (CatchAllPropertyInfo != null)
