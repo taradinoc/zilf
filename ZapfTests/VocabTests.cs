@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Common.StringEncoding;
 
@@ -93,7 +94,7 @@ W?MULE::
         static void AssertZword(byte[] buffer, StringEncoder encoder, int zwordLength, int address, string expected)
         {
             var expectedBytes = encoder.Encode(expected, zwordLength * 3 / 2, StringEncoderMode.NoAbbreviations);
-            System.Diagnostics.Debug.Assert(expectedBytes.Length == zwordLength);
+            Debug.Assert(expectedBytes.Length == zwordLength);
 
             for (int i = 0; i < zwordLength; i++)
             {

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010, 2017 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -21,19 +21,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zapf;
 
 namespace ZapfTests
 {
-    internal static class TestHelper
+    static class TestHelper
     {
-        public static bool Assemble(string code) => Assemble(code, out _);
+        public static bool Assemble([NotNull] string code) => Assemble(code, out _);
 
-        public static bool Assemble(string code, out MemoryStream storyFile)
+        [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
+        public static bool Assemble([NotNull] string code, [CanBeNull] out MemoryStream storyFile)
+            => Assemble(code, null, out storyFile);
+
+        [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
+        public static bool Assemble([NotNull] string code, [CanBeNull] string[] args, [CanBeNull] out MemoryStream storyFile)
         {
             const string InputFileName = "Input.zap";
             const string OutputFileName = "Output.z#";
-            var inputFiles = new Dictionary<string, string>() {
+            var inputFiles = new Dictionary<string, string>
+            {
                 { InputFileName, code }
             };
             var outputFiles = new Dictionary<string, MemoryStream>();
@@ -63,6 +70,30 @@ namespace ZapfTests
                 e.Exists = inputFiles.ContainsKey(e.FileName);
             };
 
+            if (args != null)
+            {
+                assembler.InitializingContext += (sender, e) =>
+                {
+                    var inFile = e.Context.InFile;
+                    var outFile = e.Context.OutFile;
+
+                    var newArgs = args.ToList();
+
+                    if (inFile != null)
+                    {
+                        newArgs.Add(inFile);
+
+                        if (outFile != null)
+                            newArgs.Add(outFile);
+                    }
+
+                    e.Context = Program.ParseArgs(newArgs) ?? throw new ArgumentException("Invalid args", nameof(args));
+
+                    e.Context.InFile = inFile;
+                    e.Context.OutFile = outFile;
+                };
+            }
+
             // run assembly
             if (assembler.Assemble(InputFileName, OutputFileName))
             {
@@ -72,11 +103,9 @@ namespace ZapfTests
                              select pair.Value).Single();
                 return true;
             }
-            else
-            {
-                storyFile = null;
-                return false;
-            }
+
+            storyFile = null;
+            return false;
         }
     }
 }
