@@ -44,6 +44,7 @@ copy examples\advent\*.zil %dist%\sample\advent
 
 del /s %dist%\*~
 
+if not exist %zip7% set zip7="C:\Program Files\WinRAR\Rar.exe"
 if not exist %zip7% goto missing7z
 
 pushd dist
