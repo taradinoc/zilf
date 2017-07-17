@@ -36,6 +36,7 @@ namespace Zilf.Interpreter
         public static ZilObject SPNAME(Context ctx, [NotNull] ZilAtom atom)
         {
             Contract.Requires(atom != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
             return ZilString.FromString(atom.Text);
         }
@@ -102,6 +103,7 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(ctx != null);
             Contract.Requires(arg != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             // in MDL, this takes an optional second argument (radix), but we don't bother
@@ -146,6 +148,7 @@ namespace Zilf.Interpreter
             return atom;
         }
 
+#pragma warning disable CS0649
         public static class RemoveParams
         {
             [ZilSequenceParam]
@@ -155,6 +158,7 @@ namespace Zilf.Interpreter
                 public ObList ObList;
             }
         }
+#pragma warning restore CS0649
 
         [NotNull]
         [Subr]
@@ -375,6 +379,7 @@ namespace Zilf.Interpreter
             return ctx.GetGlobalBinding(atom, false) != null ? ctx.TRUE : ctx.FALSE;
         }
 
+#pragma warning disable CS0649
         public static class DeclParams
         {
             [ZilSequenceParam]
@@ -390,6 +395,7 @@ namespace Zilf.Interpreter
                 public ZilAtom[] Atoms;
             }
         }
+#pragma warning restore CS0649
 
         [NotNull]
         [FSubr]

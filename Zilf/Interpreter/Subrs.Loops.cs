@@ -28,6 +28,7 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+#pragma warning disable CS0649
         public static class BindingParams
         {
             [ZilStructuredParam(StdAtom.LIST)]
@@ -83,6 +84,7 @@ namespace Zilf.Interpreter
                 public ZilObject Initializer;
             }
         }
+#pragma warning restore CS0649
 
         [FSubr]
         public static ZilResult PROG([NotNull] Context ctx,

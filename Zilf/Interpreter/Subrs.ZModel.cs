@@ -139,6 +139,7 @@ namespace Zilf.Interpreter
             return result;
         }
 
+#pragma warning disable CS0649
         public static class AtomParams
         {
             [ZilSequenceParam]
@@ -199,6 +200,7 @@ namespace Zilf.Interpreter
                 }
             }
         }
+#pragma warning restore CS0649
 
         /// <exception cref="InterpreterError"><paramref name="name"/> is already defined.</exception>
         [FSubr]
@@ -297,6 +299,7 @@ namespace Zilf.Interpreter
             return g;
         }
 
+#pragma warning disable CS0649
         public static class DefineGlobalsParams
         {
             [ZilStructuredParam(StdAtom.LIST)]
@@ -311,6 +314,7 @@ namespace Zilf.Interpreter
                 public ZilObject Initializer;
             }
         }
+#pragma warning restore CS0649
 
         [FSubr("DEFINE-GLOBALS")]
         public static ZilResult DEFINE_GLOBALS(
@@ -1223,6 +1227,7 @@ namespace Zilf.Interpreter
             [NotNull] [Required, Decl("<LIST [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
         {
             Contract.Requires(args != null);
+            Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
             if (alphabetNum < 0 || alphabetNum > 2)
