@@ -55,12 +55,14 @@ namespace Zilf.Interpreter
             return result;
         }
 
+#pragma warning disable CS0649
         [ZilStructuredParam(StdAtom.LIST)]
         public struct CondClause
         {
             public ZilObject Condition;
             public ZilObject[] Body;
         }
+#pragma warning restore CS0649
 
         [FSubr]
         public static ZilResult OR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)

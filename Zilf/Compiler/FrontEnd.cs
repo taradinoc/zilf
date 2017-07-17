@@ -252,7 +252,7 @@ namespace Zilf.Compiler
         {
             Contract.Requires(ctx != null);
             Contract.Requires(inputFileName != null);
-            var f = InterpretOrCompile(ctx, inputFileName, null, true, false);
+            var f = InterpretOrCompile(ctx, inputFileName, null, false, false);
             return f;
         }
 

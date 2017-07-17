@@ -405,6 +405,7 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+#pragma warning disable CS0649
         [ZilSequenceParam]
         public struct AdditionalSortParam
         {
@@ -412,6 +413,7 @@ namespace Zilf.Interpreter
             [ZilOptional(Default = 1)]
             public int RecordSize;
         }
+#pragma warning restore CS0649
 
         [Serializable]
         class SortAbortedException : Exception
