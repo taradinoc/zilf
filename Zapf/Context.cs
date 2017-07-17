@@ -38,6 +38,7 @@ namespace Zapf
         public string Creator = "ZAPF", Serial;
         public byte ZVersion, ZFlags;
         public ushort ZFlags2;
+        public short? Release;
 
         public int FunctionsOffset, StringsOffset;
 
@@ -609,7 +610,6 @@ namespace Zapf
         {
             // define the current label, which is the one causing us to reassemble
             Contract.Requires(curLabel != null);
-            // define the current label, which is the one causing us to reassemble
             if (LocalSymbols.TryGetValue(curLabel, out var sym))
                 sym.Value = position;
             else

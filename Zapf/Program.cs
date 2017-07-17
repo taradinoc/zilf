@@ -42,7 +42,6 @@ namespace Zapf
         {
             // parse command line
             Contract.Requires(args != null);
-            // parse command line
             var ctx = ParseArgs(args);
             if (ctx == null)
             {
@@ -197,7 +196,6 @@ namespace Zapf
         {
             // escape '"' as '""'
             Contract.Ensures(Contract.Result<string>() != null);
-            // escape '"' as '""'
             var sb = new StringBuilder(text);
 
             for (int i = sb.Length - 1; i >= 0; i--)
@@ -236,12 +234,12 @@ namespace Zapf
         }
 
         [CanBeNull]
-        static Context ParseArgs([NotNull] string[] args)
+        internal static Context ParseArgs([ItemNotNull] [NotNull] IReadOnlyList<string> args)
         {
             Contract.Requires(args != null);
             var result = new Context();
 
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 0; i < args.Count; i++)
             {
                 switch (args[i])
                 {
@@ -262,25 +260,25 @@ namespace Zapf
                         break;
 
                     case "-v":
-                        if (++i == args.Length)
+                        if (++i == args.Count)
                             return null;
                         result.ZVersion = byte.Parse(args[i]);
                         break;
 
                     case "-r":
-                        if (++i == args.Length)
+                        if (++i == args.Count)
                             return null;
-                        result.GlobalSymbols["RELEASEID"] = new Symbol("RELEASEID", SymbolType.Constant, int.Parse(args[i]));
+                        result.Release = short.Parse(args[i]);
                         break;
 
                     case "-s":
-                        if (++i == args.Length)
+                        if (++i == args.Count)
                             return null;
                         result.Serial = args[i];
                         break;
 
                     case "-c":
-                        if (++i == args.Length)
+                        if (++i == args.Count)
                             return null;
                         result.Creator = args[i];
                         break;
@@ -345,7 +343,6 @@ General switches:
         {
             // read in all source code
             Contract.Requires(ctx != null);
-            // read in all source code
             List<AsmLine> file;
             ctx.PushFile(ctx.InFile);
             try
@@ -557,7 +554,6 @@ General switches:
         {
             // Z-code version and flags 1 byte
             Contract.Requires(ctx != null);
-            // Z-code version and flags 1 byte
             ctx.WriteByte(ctx.ZVersion);
             ctx.WriteByte(ctx.ZFlags);
             // release number
@@ -696,6 +692,13 @@ General switches:
             // write Z-code version into header
             ctx.Position = 0;
             ctx.WriteByte(ctx.ZVersion);
+
+            // write release number into header (overriding RELEASEID if set)
+            if (ctx.Release != null)
+            {
+                ctx.Position = 2;
+                ctx.WriteWord((ushort)ctx.Release);
+            }
 
             // write serial number into header
             if (ctx.Serial == null)

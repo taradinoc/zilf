@@ -25,32 +25,54 @@ namespace Zapf
 {
     class OpeningFileEventArgs : EventArgs
     {
-        public OpeningFileEventArgs(string filename, bool writing)
+        public OpeningFileEventArgs([NotNull] string filename, bool writing)
         {
+            Contract.Requires(filename != null);
             FileName = filename;
             Writing = writing;
         }
 
+        [NotNull]
         public string FileName { get; }
+
         public bool Writing { get; }
+
+        [CanBeNull]
         public Stream Stream { get; set; }
     }
 
     class CheckingFilePresenceEventArgs : EventArgs
     {
-        public CheckingFilePresenceEventArgs(string filename)
+        public CheckingFilePresenceEventArgs([NotNull] string filename)
         {
+            Contract.Requires(filename != null);
             FileName = filename;
         }
 
+        [NotNull]
         public string FileName { get; }
+
+        [CanBeNull]
         public bool? Exists { get; set; }
+    }
+
+    class InitializingContextEventArgs : EventArgs
+    {
+        public InitializingContextEventArgs([NotNull] Context ctx)
+        {
+            Contract.Requires(ctx != null);
+            Context = ctx;
+        }
+
+        [NotNull]
+        public Context Context { get; set; }
     }
 
     sealed class ZapfAssembler
     {
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
         public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
+        public event EventHandler<InitializingContextEventArgs> InitializingContext;
 
         [NotNull]
         Stream OpenFile(string path, bool writing)
@@ -89,6 +111,34 @@ namespace Zapf
             return File.Exists(path);
         }
 
+        [NotNull]
+        Context InitializeContext([NotNull] string inputFileName, [CanBeNull] string outputFileName)
+        {
+            Contract.Requires(inputFileName != null);
+            Contract.Ensures(Contract.Result<Context>() != null);
+
+            var ctx = new Context
+            {
+                Quiet = true,
+                InFile = inputFileName,
+                OutFile = outputFileName,
+                DebugFile = Path.ChangeExtension(outputFileName, ".dbg")
+            };
+
+            var handler = InitializingContext;
+            if (handler != null)
+            {
+                var args = new InitializingContextEventArgs(ctx);
+                handler(this, args);
+                ctx = args.Context;
+            }
+
+            ctx.InterceptOpenFile = OpenFile;
+            ctx.InterceptFileExists = CheckFileExists;
+
+            return ctx;
+        }
+
         public bool Assemble(string inputFileName, string outputFileName)
         {
             return Assemble(inputFileName, outputFileName, out _, out _);
@@ -96,16 +146,7 @@ namespace Zapf
 
         public bool Assemble(string inputFileName, string outputFileName, out int errorCount, out int warningCount)
         {
-            // initialize context
-            var ctx = new Context()
-            {
-                Quiet = true,
-                InFile = inputFileName,
-                OutFile = outputFileName,
-                DebugFile = Path.ChangeExtension(outputFileName, ".dbg"),
-                InterceptOpenFile = OpenFile,
-                InterceptFileExists = CheckFileExists
-            };
+            var ctx = InitializeContext(inputFileName, outputFileName);
 
             //XXX redirect log messages
 
