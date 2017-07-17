@@ -20,10 +20,13 @@ extern alias JBA;
 using DiffLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text.RegularExpressions;
 using JBA::JetBrains.Annotations;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace IntegrationTests
 {
@@ -32,6 +35,7 @@ namespace IntegrationTests
     {
         const string ProjectsDirName = "FullTestProjects";
         const string LibraryDirName = "Library";
+        const int PerTestTimeoutMilliseconds = 60000;
 
         static string projectsDir, libraryDir;
 
@@ -61,86 +65,87 @@ namespace IntegrationTests
                 throw new IOException("Can't locate projects and library directories");
         }
 
-        /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
-        [TestMethod]
-        [Timeout(30000)]
-        public void TestProjects()
+        [LinqTunnel]
+        [NotNull]
+        [UsedImplicitly]
+        static IEnumerable<string[]> GetProjects()
         {
-            bool inconclusive = false;
+            Contract.Ensures(Contract.Result<IEnumerable<string[]>>() != null);
+            return from dir in Directory.EnumerateDirectories(projectsDir, "*", SearchOption.AllDirectories)
+                   let baseName = Path.GetFileName(dir)
+                   let mainZilFile = Path.Combine(dir, baseName + ".zil")
+                   where File.Exists(mainZilFile)
+                   select new[] { baseName, dir, mainZilFile };
+        }
 
-            foreach (var dir in Directory.EnumerateDirectories(projectsDir, "*", SearchOption.AllDirectories))
+        /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
+        [DataTestMethod]
+        [DynamicData("GetProjects", DynamicDataSourceType.Method)]
+        [Timeout(PerTestTimeoutMilliseconds)]
+        public void TestProjects([NotNull] string baseName, [NotNull] string dir, [NotNull] string mainZilFile)
+        {
+            Contract.Requires(dir != null);
+            Contract.Requires(baseName != null);
+            Contract.Requires(mainZilFile != null);
+            Console.WriteLine("Testing {0}", dir);
+
+            var outputFile = Path.Combine(dir, baseName + ".output.txt");
+            var inputFile = Path.Combine(dir, baseName + ".input.txt");
+
+            bool testExecution = File.Exists(outputFile) && File.Exists(inputFile);
+
+            var helper = new FileBasedZlrHelper(mainZilFile,
+                new[] { dir, libraryDir }, inputFile)
             {
-                var baseName = Path.GetFileName(dir);
-                var mainZilFile = Path.Combine(dir, baseName + ".zil");
-                if (!File.Exists(mainZilFile))
-                    continue;
+                WantStatusLine = true
+            };
 
-                Console.WriteLine("Testing {0}", dir);
+            Assert.IsTrue(helper.Compile(), "Failed to compile");
+            Assert.IsTrue(helper.Assemble(), "Failed to assemble");
 
-                var outputFile = Path.Combine(dir, baseName + ".output.txt");
-                var inputFile = Path.Combine(dir, baseName + ".input.txt");
+            if (testExecution)
+            {
+                var actualOutput = helper.Execute();
 
-                bool testExecution = File.Exists(outputFile) && File.Exists(inputFile);
-
-                var helper = new FileBasedZlrHelper(mainZilFile,
-                    new[] { dir, libraryDir }, inputFile)
+                var massagedActual = MassageText(actualOutput);
+                var massagedExpected = MassageText(File.ReadAllText(outputFile));
+                if (massagedActual != massagedExpected)
                 {
-                    WantStatusLine = true
-                };
+                    string[] expectedLines = SplitLines(massagedExpected);
+                    string[] actualLines = SplitLines(massagedActual);
 
-                Assert.IsTrue(helper.Compile(), "Failed to compile");
-                Assert.IsTrue(helper.Assemble(), "Failed to assemble");
-
-                if (testExecution)
-                {
-                    var actualOutput = helper.Execute();
-
-                    var massagedActual = MassageText(actualOutput);
-                    var massagedExpected = MassageText(File.ReadAllText(outputFile));
-                    if (massagedActual != massagedExpected)
+                    var diff = Diff.CalculateSections(expectedLines, actualLines);
+                    int e = 0, a = 0;
+                    foreach (var change in diff)
                     {
-                        string[] expectedLines = SplitLines(massagedExpected);
-                        string[] actualLines = SplitLines(massagedActual);
-
-                        var diff = Diff.CalculateSections(expectedLines, actualLines);
-                        int e = 0, a = 0;
-                        foreach (var change in diff)
+                        if (!change.IsMatch)
                         {
-                            if (!change.IsMatch)
+                            Console.WriteLine("=== At line {0}, {1} ===", e + 1, a + 1);
+
+                            for (int k = e; k < e + change.LengthInCollection1; k++)
                             {
-                                Console.WriteLine("=== At line {0}, {1} ===", e + 1, a + 1);
-
-                                for (int k = e; k < e + change.LengthInCollection1; k++)
-                                {
-                                    Console.WriteLine("-{0}", expectedLines[k]);
-                                }
-
-                                for (int m = a; m < a + change.LengthInCollection2; m++)
-                                {
-                                    Contract.Assume(m >= 0);        // prevent spurious "Array access might be below lower bound"
-                                    Console.WriteLine("+{0}", actualLines[m]);
-                                }
-
-                                Console.WriteLine();
+                                Console.WriteLine("-{0}", expectedLines[k]);
                             }
 
-                            e += change.LengthInCollection1;
-                            a += change.LengthInCollection2;
+                            for (int m = a; m < a + change.LengthInCollection2; m++)
+                            {
+                                Contract.Assume(m >= 0); // prevent spurious "Array access might be below lower bound"
+                                Console.WriteLine("+{0}", actualLines[m]);
+                            }
+
+                            Console.WriteLine();
                         }
 
-                        Assert.Fail("Expected output not found (diff written to console)");
+                        e += change.LengthInCollection1;
+                        a += change.LengthInCollection2;
                     }
-                }
-                else
-                {
-                    Console.WriteLine("Expected input and/or output files missing.");
-                    inconclusive = true;
+
+                    Assert.Fail("Expected output not found (diff written to console)");
                 }
             }
-
-            if (inconclusive)
+            else
             {
-                Assert.Inconclusive("One or more projects had no expected input/output files.");
+                Assert.Inconclusive("Expected input and/or output files missing.");
             }
         }
 
