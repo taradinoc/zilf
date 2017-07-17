@@ -1,6 +1,6 @@
 extensions: designer.cs generated.cs
 extensions: .cs .cpp .h .g
-/* Copyright 2010, %CurrentYear% Jesse McGrew
+/* Copyright 2010-%CurrentYear% Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,7 @@ extensions: .cs .cpp .h .g
 
 extensions:  .xml .config .xsd
 <!--
-Copyright 2010, %CurrentYear% Jesse McGrew
+Copyright 2010-%CurrentYear% Jesse McGrew
 
 This file is part of ZILF.
 
