@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set zip7="C:\Program Files\7-Zip\7z.exe"
+set winrar="C:\Program Files\WinRAR\WinRAR.exe"
 
 if not exist zilf\bin\release\zilf.exe goto missing
 if not exist zapf\bin\release\zapf.exe goto missing
@@ -22,8 +23,6 @@ mkdir %dist%\sample\advent
 
 copy distfiles\README.txt %dist%
 
-copy zilf\bin\release\Antlr3.Runtime.dll %dist%\bin
-copy distfiles\AntlrLicense.txt %dist%\bin
 copy zilf\bin\release\zilf.exe %dist%\bin
 copy zilf\bin\release\zilf.emit.dll %dist%\bin
 copy zilf\bin\release\zilf.common.dll %dist%\bin
@@ -44,18 +43,21 @@ copy examples\advent\*.zil %dist%\sample\advent
 
 del /s %dist%\*~
 
-if not exist %zip7% set zip7="C:\Program Files\WinRAR\Rar.exe"
-if not exist %zip7% goto missing7z
+if exist %zip7% goto use7z
+if exist %winrar% goto usewinrar
+echo Can't find 7-Zip or WinRAR. Not zipping.
+exit /b 2
 
+:use7z
 pushd dist
 %zip7% a %distname%.zip %distname%
+exit /b 0
 
+:usewinrar
+pushd dist
+%winrar% a -afzip %distname%.zip %distname%
 exit /b 0
 
 :missing
 echo Can't find compiled program files.
 exit /b 1
-
-:missing7z
-echo Can't find 7-Zip. Not zipping.
-exit /b 2
