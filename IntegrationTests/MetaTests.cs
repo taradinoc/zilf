@@ -47,6 +47,15 @@ namespace IntegrationTests
             return new GlobalsAssertionHelper(globals);
         }
 
+        [NotNull]
+        static RawAssertionHelper AssertRaw([NotNull] string code)
+        {
+            Contract.Requires(!string.IsNullOrEmpty(code));
+            Contract.Ensures(Contract.Result<RawAssertionHelper>() != null);
+
+            return new RawAssertionHelper(code);
+        }
+
         [TestMethod]
         public void TestIFFLAG()
         {
@@ -227,6 +236,17 @@ namespace IntegrationTests
                 .WithGlobal(SMyHook)
                 .WithGlobal("<SETG PRE-COMPILE!-HOOKS!-ZILF ,MY-PRE-COMPILE>")
                 .Outputs("GO\nTEST?ROUTINE\n");
+        }
+
+        [DataTestMethod]
+        [DataRow(3), DataRow(4), DataRow(5), DataRow(6), DataRow(7), DataRow(8)]
+        public void RELEASEID_Is_Optional(int zversion)
+        {
+            string code =
+                $"<VERSION {zversion}>\n" +
+                "<ROUTINE GO () <PRINTN <GET 2 0>> <CRLF> <QUIT>>";
+
+            AssertRaw(code).Outputs("0\n");
         }
     }
 }

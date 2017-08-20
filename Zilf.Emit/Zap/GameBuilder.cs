@@ -762,6 +762,13 @@ namespace Zilf.Emit.Zap
                                  orderby cp.Key
                                  select cp)
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value);
+
+            // release number
+            if (zversion >= 5 && !constants.ContainsKey("RELEASEID"))
+            {
+                var value = constants.ContainsKey("ZORKID") ? "ZORKID" : "0";
+                writer.WriteLine(INDENT + "RELEASEID={0}", value);
+            }
         }
 
         void FinishObjects()

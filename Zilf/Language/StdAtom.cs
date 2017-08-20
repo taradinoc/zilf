@@ -313,7 +313,6 @@ namespace Zilf.Language
         RANDOM,
         READ,
         REDEFINE,
-        RELEASEID,
         REMOVE,
         REPEAT,
         [Atom("REPLACE-DEFINITION")]
@@ -453,7 +452,6 @@ namespace Zilf.Language
         [Atom("ZIL-VERSION")]
         ZIL_VERSION,
         ZIP,
-        ZORKID,
         ZVAL,
         ZWSTR,
     }

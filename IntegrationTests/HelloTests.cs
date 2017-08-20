@@ -59,8 +59,6 @@ namespace IntegrationTests
             const string code = @"
 <VERSION XZIP>
 
-<CONSTANT RELEASEID 1>
-
 <ROUTINE GO ()
     <PRINTI ""Hello, world!"">
     <CRLF>
@@ -76,8 +74,6 @@ namespace IntegrationTests
             const string code = @"
 <VERSION 6>
 
-<CONSTANT RELEASEID 1>
-
 <ROUTINE GO ()
     <PRINTI ""Hello, world!"">
     <CRLF>
@@ -91,8 +87,6 @@ namespace IntegrationTests
         {
             const string code = @"
 <VERSION 7>
-
-<CONSTANT RELEASEID 1>
 
 <ROUTINE GO ()
     <PRINTI ""Hello, world!"">
@@ -108,8 +102,6 @@ namespace IntegrationTests
         {
             const string code = @"
 <VERSION 8>
-
-<CONSTANT RELEASEID 1>
 
 <ROUTINE GO ()
     <PRINTI ""Hello, world!"">
