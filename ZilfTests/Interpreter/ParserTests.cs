@@ -23,6 +23,8 @@ using Zilf.Language;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using System.Linq;
+using JetBrains.Annotations;
+using System.Diagnostics.Contracts;
 
 namespace ZilfTests.Interpreter
 {
@@ -44,19 +46,18 @@ namespace ZilfTests.Interpreter
 
             public ZilAtom ParseAtom(string text)
             {
-                ZilAtom result;
-                if (!atoms.TryGetValue(text, out result))
-                {
-                    result = new ZilAtom(text, null, StdAtom.None);
-                    atoms.Add(text, result);
-                }
+                if (atoms.TryGetValue(text, out ZilAtom result))
+                    return result;
+
+                result = new ZilAtom(text, null, StdAtom.None);
+                atoms.Add(text, result);
                 return result;
             }
 
             public ZilAtom GetTypeAtom(ZilObject zo)
             {
-                if (zo is ZilHash)
-                    return ((ZilHash)zo).Type;
+                if (zo is ZilHash hash)
+                    return hash.Type;
 
                 System.Diagnostics.Debug.Assert(zo.StdTypeAtom != StdAtom.None);
                 return ParseAtom(zo.StdTypeAtom.ToString());
@@ -67,6 +68,7 @@ namespace ZilfTests.Interpreter
                 return new ZilHash(type, zo.PrimType, zo);
             }
 
+            /// <exception cref="InvalidOperationException"><see cref="OnEvaluate"/> is not set.</exception>
             public ZilObject Evaluate(ZilObject zo)
             {
                 var handler = OnEvaluate;
@@ -83,8 +85,9 @@ namespace ZilfTests.Interpreter
                 return null;
             }
 
-            public void AddStdAtom(string name, StdAtom stdAtom)
+            public void AddStdAtom([NotNull] string name, StdAtom stdAtom)
             {
+                Contract.Requires(name != null);
                 atoms.Add(name, new ZilAtom(name, null, stdAtom));
             }
         }

@@ -558,6 +558,9 @@ namespace ZilfTests.Interpreter
             // confirm lengths
             TestHelpers.EvalAndAssert(ctx, "<LENGTH .V>", new ZilFix(4));
             TestHelpers.EvalAndAssert(ctx, "<LENGTH .G>", new ZilFix(6));
+            // confirm ToString
+            TestHelpers.EvalAndAssert(ctx, "<UNPARSE .V>", ZilString.FromString("[1 2 3 #FALSE ()]"));
+            TestHelpers.EvalAndAssert(ctx, "<UNPARSE .G>", ZilString.FromString("[#FALSE () #FALSE () 1 2 3 #FALSE ()]"));
             // confirm elements are shared
             TestHelpers.EvalAndAssert(ctx, "<1 .V>", new ZilFix(1));
             TestHelpers.EvalAndAssert(ctx, "<3 .G>", new ZilFix(1));
@@ -570,6 +573,11 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<1 <BACK .V 2>>", new ZilFix(111));
             TestHelpers.EvalAndAssert(ctx, "<1 <REST .G 2>>", new ZilFix(999));
             TestHelpers.EvalAndAssert(ctx, "<1 <REST <BACK .V 2> 2>>", new ZilFix(999));
+
+            TestHelpers.EvalAndAssert(ctx, "<REST .V 4>", new ZilVector());
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<REST .V 5>");
+            TestHelpers.EvalAndAssert(ctx, "<REST .G 6>", new ZilVector());
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<REST .G 7>");
 
             // can't remove elements
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SET V2 <GROW .G -1 -2>>");
