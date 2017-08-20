@@ -62,7 +62,8 @@ namespace Zilf.Interpreter.Values
             [NotNull]
             public IEnumerable<ZilObject> GetSequence(int offset)
             {
-                return items.Skip(offset - BaseOffset);
+                Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
+                return items.Skip(offset + BaseOffset);
             }
 
             public int GetLength(int offset)
@@ -244,10 +245,9 @@ namespace Zilf.Interpreter.Values
             return storage.GetItem(offset, 0);
         }
 
-        [NotNull]
         public IStructure GetRest(int skip)
         {
-            return new ZilVector(storage, offset + skip);
+            return skip > GetLength() ? null : new ZilVector(storage, offset + skip);
         }
 
         public IStructure GetBack(int skip)
@@ -268,9 +268,8 @@ namespace Zilf.Interpreter.Values
             return new ZilVector(storage, -storage.BaseOffset);
         }
 
-        public void Grow(int end, int beginning, [NotNull] ZilObject defaultValue)
+        public void Grow(int end, int beginning, ZilObject defaultValue)
         {
-            Contract.Requires(defaultValue != null);
             storage.Grow(end, beginning, defaultValue);
         }
 
