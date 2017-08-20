@@ -17,6 +17,9 @@
  */
 
 extern alias JBA;
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics.Contracts;
@@ -116,8 +119,6 @@ namespace IntegrationTests
         {
             var sb = new StringBuilder();
             sb.Append(versionDirective);
-
-            sb.AppendLine("<CONSTANT RELEASEID 1>");
 
             sb.Append(miscGlobals);
 
@@ -361,6 +362,32 @@ namespace IntegrationTests
         protected override string Expression()
         {
             return "<>";
+        }
+    }
+
+    sealed class RawAssertionHelper
+    {
+        [NotNull]
+        readonly string code;
+
+        public RawAssertionHelper([NotNull] string code)
+        {
+            Contract.Requires(code != null);
+            this.code = code;
+        }
+
+        public void Outputs([NotNull] string expectedValue)
+        {
+            Contract.Requires(expectedValue != null);
+            ZlrHelper.RunAndAssert(code, null, expectedValue);
+        }
+
+        [ContractInvariantMethod]
+        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
+        [Conditional("CONTRACTS_FULL")]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(code != null);
         }
     }
 }
