@@ -36,12 +36,12 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerError(ISourceLine sourceLine, int code)
+        public CompilerError([CanBeNull] ISourceLine sourceLine, int code)
             : this(sourceLine, code, null)
         {
         }
 
-        public CompilerError(ISourceLine sourceLine, int code, [ItemNotNull] params object[] messageArgs)
+        public CompilerError([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] params object[] messageArgs)
             : base(MakeDiagnostic(sourceLine, code, messageArgs))
         {
         }
