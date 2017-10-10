@@ -111,6 +111,7 @@ namespace Zilf.Emit.Zap
             props.Add(pe);
         }
 
+        [NotNull]
         public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
         {
             var data = new TableBuilder($"?{this}?CP?{prop}");
@@ -126,7 +127,7 @@ namespace Zilf.Emit.Zap
                 flags.Add(fb);
         }
 
-        internal void WriteProperties(TextWriter writer)
+        internal void WriteProperties([NotNull] TextWriter writer)
         {
             writer.WriteLine(INDENT + ".STRL \"{0}\"", GameBuilder.SanitizeString(DescriptiveName));
 
@@ -138,11 +139,11 @@ namespace Zilf.Emit.Zap
                 {
                     case PropertyEntry.BYTE:
                         writer.WriteLine(INDENT + ".PROP 1,{0}", pe.Property);
-                        writer.WriteLine(INDENT + ".BYTE {0}", pe.Value);
+                        writer.WriteLine(INDENT + ".BYTE {0}", pe.Value.StripIndirect());
                         break;
                     case PropertyEntry.WORD:
                         writer.WriteLine(INDENT + ".PROP 2,{0}", pe.Property);
-                        writer.WriteLine(INDENT + ".WORD {0}", pe.Value);
+                        writer.WriteLine(INDENT + ".WORD {0}", pe.Value.StripIndirect());
                         break;
                     default:
                         var tb = (TableBuilder)pe.Value;

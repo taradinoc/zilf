@@ -29,10 +29,13 @@ namespace Zilf.Emit.Zap
         readonly List<byte> types = new List<byte>();
         int size;
 
+        const byte WORD_FLAG = 1;
+        const byte OPERAND_FLAG = 2;
+
         const byte T_NUM_BYTE = 0;
-        const byte T_NUM_WORD = 1;
-        const byte T_OP_BYTE = 2;
-        const byte T_OP_WORD = 3;
+        const byte T_NUM_WORD = WORD_FLAG;
+        const byte T_OP_BYTE = OPERAND_FLAG;
+        const byte T_OP_WORD = OPERAND_FLAG | WORD_FLAG;
 
         protected const string INDENT = "\t";
 
@@ -44,10 +47,7 @@ namespace Zilf.Emit.Zap
         [NotNull]
         public string Name { get; }
 
-        public int Size
-        {
-            get { return size; }
-        }
+        public int Size => size;
 
         public void AddByte(byte value)
         {
@@ -82,15 +82,14 @@ namespace Zilf.Emit.Zap
             return Name;
         }
 
-        public void WriteTo(TextWriter writer)
+        public void WriteTo([NotNull] TextWriter writer)
         {
             bool wasWord = false;
             int lineCount = 0, ni = 0, oi = 0;
-            for (int i = 0; i < types.Count; i++)
+            foreach (byte t in types)
             {
-                byte t = types[i];
-                bool isWord = (t & 1) != 0;
-                bool isOperand = (t & 2) != 0;
+                bool isWord = (t & WORD_FLAG) != 0;
+                bool isOperand = (t & OPERAND_FLAG) != 0;
 
                 if (lineCount == 0 || lineCount == 10 || isWord != wasWord)
                 {
@@ -103,7 +102,7 @@ namespace Zilf.Emit.Zap
                     writer.Write(',');
 
                 if (isOperand)
-                    writer.Write(operandValues[oi++]);
+                    writer.Write(operandValues[oi++].StripIndirect());
                 else
                     writer.Write(numericValues[ni++]);
 

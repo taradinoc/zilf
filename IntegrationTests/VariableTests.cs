@@ -196,5 +196,18 @@ namespace IntegrationTests
                 .WithGlobal("<CONSTANT BAR:FIX 34>")
                 .Compiles();
         }
+
+        [TestMethod]
+        public void Global_Can_Be_Initialized_To_A_Global_Index_With_Warning()
+        {
+            AssertRoutine("", "<PRINTN ,BAR>")
+                .WithGlobal("<GLOBAL GLOBAL-16 <>>")
+                .WithGlobal("<GLOBAL GLOBAL-17 <>>")
+                .WithGlobal("<GLOBAL FOO <>>")
+                .WithGlobal("<GLOBAL BAR FOO>")
+                .WithWarnings()
+                .Outputs("18");
+        }
+
     }
 }

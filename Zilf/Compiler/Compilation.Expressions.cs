@@ -411,7 +411,7 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            var constant = CompileConstant(expr);
+            var constant = CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
             if (constant != null)
                 return constant;
 
