@@ -394,11 +394,17 @@ namespace Zilf.Emit
         }
 
         [System.Diagnostics.Conditional("TRACE_PEEPHOLE")]
-        void Trace()
+        void Trace([CanBeNull] string message = null)
         {
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
+
+            if (message != null)
+            {
+                Console.WriteLine("... {0} ...", message);
+                Console.WriteLine();
+            }
 
             foreach (Line line in lines)
             {
@@ -481,7 +487,7 @@ namespace Zilf.Emit
 
             do
             {
-                Trace();
+                Trace("begin iteration " + iterations);
 
                 if (lines.Count == 0)
                     break;
@@ -494,15 +500,23 @@ namespace Zilf.Emit
                 // mark code as reachable and detect label usage
                 reachableFlag = !reachableFlag;
                 usedLabels.Clear();
-                queue.Enqueue(lines.First);
+                MarkReachable(lines.First);
 
-                while (queue.Count > 0)
+                void MarkReachable(LinkedListNode<Line> reachableNode)
                 {
-                    var node = queue.Dequeue();
-                    Line line = node.Value;
+                    if (reachableNode.Value.Flag == reachableFlag)
+                        return;
 
-                    if (line.Flag != reachableFlag)
+                    queue.Enqueue(reachableNode);
+
+                    while (queue.Count > 0)
                     {
+                        var node = queue.Dequeue();
+                        var line = node.Value;
+
+                        if (line.Flag == reachableFlag)
+                            continue;
+
                         line.Flag = reachableFlag;
                         if (line.TargetLabel != null)
                             usedLabels[line.TargetLabel] = true;
@@ -535,12 +549,16 @@ namespace Zilf.Emit
                     {
                         line.Label = null;
                         changed = true;
+
+                        Trace("clear unused label");
                     }
 
                     if (line.Flag != reachableFlag)
                     {
                         // delete unreachable code
                         delete = true;
+
+                        Trace("doom unreachable lineu");
                     }
                     else if (line.TargetLine != null && line.TargetLine != line)
                     {
@@ -552,6 +570,8 @@ namespace Zilf.Emit
                             line.TargetLine = line.TargetLine.TargetLine;
 
                             changed = true;
+
+                            Trace("optimize branch to unconditional");
                         }
                         else if (Combiner != null && IsInvertibleBranch(line.TargetLine.Type) &&
                                  (sameTestResult = Combiner.AreSameTest(line.Code, line.TargetLine.Code)) != SameTestResult.Unrelated)
@@ -657,6 +677,8 @@ namespace Zilf.Emit
                             }
 
                             changed = true;
+
+                            Trace("optimize conditional branch to related conditional");
                         }
                         else if (IsInvertibleBranch(line.Type) && node.Next?.Next != null &&
                                  line.TargetLine == node.Next.Next.Value &&
@@ -713,12 +735,16 @@ namespace Zilf.Emit
 
                             node = lines.AddAfter(node, newLine);
                             changed = true;
+
+                            Trace("optimize conditional branch over unconditional");
                         }
                         else if (line.Type == PeepholeLineType.BranchAlways &&
                             node.Next != null && line.TargetLine == node.Next.Value)
                         {
                             // delete "branch to next"
                             delete = true;
+
+                            Trace("doom branch to next");
                         }
                         else if (line.Type == PeepholeLineType.BranchAlways &&
                             line.TargetLine.Type == PeepholeLineType.Terminator)
@@ -730,6 +756,8 @@ namespace Zilf.Emit
                             if (line.Label != null)
                                 labelMap[line.Label] = line;
                             changed = true;
+
+                            Trace("optimize branch to terminator");
                         }
                     }
 
@@ -767,6 +795,8 @@ namespace Zilf.Emit
                             }
 
                             changed = true;
+
+                            Trace("optimize pushed constant falling through to conditional");
                         }
                         else if (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine != null &&
                             (controlsCondResult = Combiner.ControlsConditionalBranch(line.Code, node.Next.Value.TargetLine.Code)) != ControlsConditionResult.Unrelated)
@@ -798,6 +828,8 @@ namespace Zilf.Emit
                             }
 
                             changed = true;
+
+                            Trace("optimize pushed constant jumping to conditional");
                         }
                     }
 
@@ -814,7 +846,7 @@ namespace Zilf.Emit
                         {
                             delete = true;
 
-                            nextLine.Flag = reachableFlag;
+                            MarkReachable(node.Next);
 
                             // merge code
                             nextLine.Code = Combiner.MergeIdentical(line.Code, nextLine.Code);
@@ -834,8 +866,11 @@ namespace Zilf.Emit
                                 {
                                     l.TargetLabel = nextLine.Label;
                                     l.TargetLine = nextLine;
+                                    usedLabels[l.TargetLabel] = true;
                                 }
                             }
+
+                            Trace("merge adjacent identical terminators/unconditionals");
                         }
                     }
 
@@ -900,6 +935,8 @@ namespace Zilf.Emit
                             }
 
                             changed = true;
+
+                            Trace("apply user combiner");
                         }
                     }
 
@@ -918,6 +955,8 @@ namespace Zilf.Emit
                         {
                             Contract.Assert(next != null);
 
+                            MarkReachable(next);
+
                             // update references to this label
                             if (next.Value.Label == null)
                             {
@@ -931,9 +970,12 @@ namespace Zilf.Emit
                                 {
                                     l2.TargetLabel = next.Value.Label;
                                     l2.TargetLine = next.Value;
+                                    usedLabels[l2.TargetLabel] = true;
                                 }
                             }
                         }
+
+                        Trace("delete doomed line");
 
                         if (next?.Previous != null)
                         {
