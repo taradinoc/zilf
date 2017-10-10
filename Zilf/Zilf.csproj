@@ -175,6 +175,7 @@
     <Compile Include="Diagnostics\DefaultDiagnosticFormatter.cs" />
     <Compile Include="Diagnostics\Diagnostic.cs" />
     <Compile Include="Diagnostics\DiagnosticContext.cs" />
+    <Compile Include="Diagnostics\DiagnosticManager.cs" />
     <Compile Include="Diagnostics\IDiagnosticFormatter.cs" />
     <Compile Include="Diagnostics\InterpreterMessages.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -253,6 +254,7 @@
     <Compile Include="Interpreter\WeakCountingSet.cs" />
     <Compile Include="Interpreter\ZilResult.cs" />
     <Compile Include="Language\AtomAttribute.cs" />
+    <Compile Include="Language\CompilerFatal.cs" />
     <Compile Include="Language\CompilerError.cs" />
     <Compile Include="Language\FileSourceLine.cs" />
     <Compile Include="Language\InterpreterError.cs" />
@@ -264,7 +266,6 @@
     <Compile Include="Compiler\Compilation.Compile.cs" />
     <Compile Include="Interpreter\Context.cs" />
     <Compile Include="Language\Decl.cs" />
-    <Compile Include="Language\Errors.cs" />
     <Compile Include="Interpreter\ObList.cs" />
     <Compile Include="Language\StringSourceLine.cs" />
     <Compile Include="Language\SyntaxError.cs" />

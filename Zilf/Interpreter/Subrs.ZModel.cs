@@ -114,7 +114,7 @@ namespace Zilf.Interpreter
             if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;
-                ctx.HandleWarning(new InterpreterError(ctx.TopFrame.SourceLine,
+                ctx.HandleError(new InterpreterError(ctx.TopFrame.SourceLine,
                     InterpreterMessages._0_Only_1_Routine_Argument1s_Allowed_In_V2_So_Last_3_OPT_Argument3s_Will_Never_Be_Passed,
                     "ROUTINE",
                     maxArgsAllowed,
@@ -435,7 +435,7 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
-                ctx.HandleWarning(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
+                ctx.HandleError(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
 
             var zr = defaultValue.Eval(ctx);
             if (zr.ShouldPass())

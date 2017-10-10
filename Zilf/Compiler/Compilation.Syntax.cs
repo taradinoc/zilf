@@ -20,13 +20,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -182,7 +182,7 @@ namespace Zilf.Compiler
                             Word = verbGrouping.Key,
                             Nullary = numObjLookup[0].FirstOrDefault(),
                             Unary = numObjLookup[1].ToArray(),
-                            Binary = numObjLookup[2].ToArray(),
+                            Binary = numObjLookup[2].ToArray()
                         };
 
             // syntax lines are emitted in definition order, so we can validate actions and emit syntax lines in one pass
@@ -340,7 +340,7 @@ namespace Zilf.Compiler
             Contract.Requires(thisRoutineName != null);
 
             if (thisRoutineName != lastRoutineName)
-                Context.HandleWarning(new CompilerError(line.SourceLine,
+                Context.HandleError(new CompilerError(line.SourceLine,
                     CompilerMessages._0_Mismatch_For_1_Using_2_As_Before,
                     description,
                     line.ActionName,

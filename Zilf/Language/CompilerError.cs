@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
@@ -27,56 +26,6 @@ namespace Zilf.Language
 {
     class CompilerError : ZilError<CompilerMessages>
     {
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError([NotNull] string message)
-            : base(message)
-        {
-            Contract.Requires(message != null);
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        [StringFormatMethod("format")]
-        public CompilerError([NotNull] string format, [ItemNotNull] [NotNull] params object[] args)
-            : base(string.Format(format, args))
-        {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError(ISourceLine src, [NotNull] string message)
-            : base(src, message)
-        {
-            Contract.Requires(message != null);
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public CompilerError([NotNull] IProvideSourceLine node, [NotNull] string message)
-            : base(node.SourceLine, message)
-        {
-            Contract.Requires(node != null);
-            Contract.Requires(message != null);
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        [StringFormatMethod("format")]
-        public CompilerError(ISourceLine src, [NotNull] string format, [NotNull] params object[] args)
-            : base(src, string.Format(format, args))
-        {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        [StringFormatMethod("format")]
-        public CompilerError([NotNull] IProvideSourceLine node, [NotNull] string format, [ItemNotNull] [NotNull] params object[] args)
-            : base(node.SourceLine, string.Format(format, args))
-        {
-            Contract.Requires(node != null);
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
-        }
-
         public CompilerError(int code)
             : this(code, null)
         {

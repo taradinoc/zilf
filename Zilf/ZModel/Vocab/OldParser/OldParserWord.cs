@@ -219,7 +219,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             int limit = compactVocab ? 1 : 2;
             if (count > limit)
             {
-                ctx.HandleWarning(new CompilerError(CompilerMessages.Too_Many_Parts_Of_Speech_For_0_1, Atom, ListDefinitionLocations()));
+                ctx.HandleError(new CompilerError(CompilerMessages.Too_Many_Parts_Of_Speech_For_0_1, Atom, ListDefinitionLocations()));
 
                 /* The order we trim is mostly arbitrary, except that adjective and object are first
                 * since they can sometimes be recognized without the part-of-speech flags. */
@@ -236,7 +236,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                 {
                     if ((PartOfSpeech & trim.part) != 0 && !trim.free)
                     {
-                        ctx.HandleWarning(new CompilerError(
+                        ctx.HandleError(new CompilerError(
                             GetDefinition(trim.part),
                             CompilerMessages.Discarding_The_0_Part_Of_Speech_For_1,
                             trim.part,

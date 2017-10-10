@@ -27,12 +27,12 @@ using JetBrains.Annotations;
 namespace Zilf.Language
 {
     [Serializable]
-    public abstract class ZilError : Exception
+    public abstract class ZilErrorBase : Exception
     {
-        protected ZilError(string message) : base(message) { }
-        protected ZilError(string message, Exception innerException) : base(message, innerException) { }
+        protected ZilErrorBase(string message) : base(message) { }
+        protected ZilErrorBase(string message, Exception innerException) : base(message, innerException) { }
 
-        protected ZilError([NotNull] SerializationInfo info, StreamingContext context)
+        protected ZilErrorBase([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             Contract.Requires(info != null);
@@ -40,12 +40,53 @@ namespace Zilf.Language
 
         public Diagnostic Diagnostic { get; protected set; }
         public ISourceLine SourceLine { get; protected set; }
+
+        [NotNull]
+        public string SourcePrefix => SourceLine?.SourceInfo == null ? "" : SourceLine.SourceInfo + ": ";
     }
 
-    static class ZilErrorExtensions
+    [Serializable]
+    public abstract class ZilError : ZilErrorBase
+    {
+        protected ZilError(string message)
+            : base(message)
+        {
+        }
+
+        protected ZilError(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+        protected ZilError([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+        }
+    }
+
+    [Serializable]
+    public abstract class ZilFatal : ZilErrorBase
+    {
+        protected ZilFatal(string message)
+            : base(message)
+        {
+        }
+
+        protected ZilFatal(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+        protected ZilFatal([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+        }
+    }
+
+    static class ZilErrorBaseExtensions
     {
         public static T Combine<T>([NotNull] this T mainError, [NotNull] T subError)
-            where T : ZilError
+            where T : ZilErrorBase
         {
             Contract.Assert(mainError != null);
             Contract.Assert(subError != null);
@@ -97,9 +138,6 @@ namespace Zilf.Language
             Contract.Requires(si != null);
         }
 
-        [NotNull]
-        public string SourcePrefix => SourceLine?.SourceInfo == null ? "" : SourceLine.SourceInfo + ": ";
-
 #pragma warning disable RECS0108 // Warns about static fields in generic types
         protected static readonly IDiagnosticFactory DiagnosticFactory = DiagnosticFactory<TMessageSet>.Instance;
 #pragma warning restore RECS0108 // Warns about static fields in generic types
@@ -115,8 +153,7 @@ namespace Zilf.Language
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine ?? DiagnosticContext.Current.SourceLine,
                 code,
-                messageArgs,
-                MakeStackTrace(DiagnosticContext.Current.Frame));
+                messageArgs, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
         [NotNull]
@@ -129,8 +166,67 @@ namespace Zilf.Language
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine,
                 LegacyErrorCode,
-                new object[] { message },
-                MakeStackTrace(DiagnosticContext.Current.Frame));
+                new object[] { message }, MakeStackTrace(DiagnosticContext.Current.Frame));
+        }
+
+        [CanBeNull]
+        [ContractAnnotation("notnull => notnull; null => null")]
+        static string MakeStackTrace([CanBeNull] Frame errorFrame)
+        {
+            if (errorFrame == null)
+                return null;
+
+            var sb = new StringBuilder();
+
+            // skip the top and bottom frame
+            for (var frame = errorFrame.Parent; frame?.Parent != null; frame = frame.Parent)
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine();
+
+                var caller = frame.Description != null
+                    ? $"in {frame.Description} called "
+                    : "";
+
+                sb.AppendFormat("  {0}at {1}", caller, frame.SourceLine.SourceInfo);
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
+    abstract class ZilFatal<TMessageSet> : ZilFatal
+       where TMessageSet : class
+    {
+        protected ZilFatal([NotNull] Diagnostic diag)
+            : base(diag.ToString())
+        {
+            Contract.Requires(diag != null);
+            Diagnostic = diag;
+            SourceLine = diag.Location;
+        }
+
+        protected ZilFatal([NotNull] SerializationInfo si, StreamingContext sc)
+            : base(si, sc)
+        {
+            Contract.Requires(si != null);
+        }
+
+#pragma warning disable RECS0108 // Warns about static fields in generic types
+        protected static readonly IDiagnosticFactory DiagnosticFactory = DiagnosticFactory<TMessageSet>.Instance;
+#pragma warning restore RECS0108 // Warns about static fields in generic types
+
+        [NotNull]
+        protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
+        {
+            Contract.Requires(code >= 0);
+            Contract.Ensures(Contract.Result<Diagnostic>() != null);
+
+            return DiagnosticFactory.GetDiagnostic(
+                sourceLine ?? DiagnosticContext.Current.SourceLine,
+                code,
+                messageArgs, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
         [CanBeNull]
