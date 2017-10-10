@@ -84,8 +84,15 @@ namespace Zilf.Compiler
             PrepareLateRoutineBuilders();
 
             EnterZilch();
-            GenerateRoutineCode();
-            ExitZilch();
+            try
+            {
+                ExpandRoutineBodies();
+                GenerateRoutineCode();
+            }
+            finally
+            {
+                ExitZilch();
+            }
 
             BuildObjects();
 
@@ -97,6 +104,21 @@ namespace Zilf.Compiler
             BuildHeaderExtensionTable();
 
             Game.Finish();
+        }
+
+        void HandleZValChangedWhileCompilingRoutine([NotNull] object sender, [NotNull] ZValEventArgs e)
+        {
+            switch (e.NewValue)
+            {
+                case ZilGlobal g:
+                    if (!Globals.ContainsKey(g.Name))
+                    {
+                        var glb = Game.DefineGlobal(g.Name.Text);
+                        glb.DefaultValue = GetGlobalDefaultValue(g);
+                        Globals.Add(g.Name, glb);
+                    }
+                    break;
+            }
         }
 
         void BuildUserDefinedTables()
@@ -186,6 +208,22 @@ namespace Zilf.Compiler
         {
             // ...and we're done generating code
             Context.DefineCompilationFlag(Context.GetStdAtom(StdAtom.IN_ZILCH), Context.FALSE, true);
+        }
+
+        void ExpandRoutineBodies()
+        {
+            Context.ZValChanged += HandleZValChangedWhileCompilingRoutine;
+            try
+            {
+                foreach (var routine in Context.ZEnvironment.Routines)
+                {
+                    routine.ExpandBodyInPlace(Context);
+                }
+            }
+            finally
+            {
+                Context.ZValChanged -= HandleZValChangedWhileCompilingRoutine;
+            }
         }
 
         void GenerateRoutineCode()

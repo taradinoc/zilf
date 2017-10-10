@@ -53,5 +53,14 @@ namespace IntegrationTests
                 .WithGlobal("<DEFMAC FOO ('X 'Y 'Z) <FORM TELL \"hello world\" CR>>")
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void Macros_Can_Define_Globals_Inside_Routines()
+        {
+            AssertRoutine("", "<PRINTN <MAKE-GLOBAL 123>>")
+                .WithGlobal("<DEFMAC MAKE-GLOBAL (N) <EVAL <FORM GLOBAL NEW-GLOBAL .N>> ',NEW-GLOBAL>")
+                .Outputs("123");
+        }
+
     }
 }

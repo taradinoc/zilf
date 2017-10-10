@@ -44,6 +44,20 @@ namespace Zilf.Interpreter
     delegate ZilResult EvalTypeDelegate(ZilObject zo);
     delegate ZilResult ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
+    class ZValEventArgs : EventArgs
+    {
+        [NotNull]
+        public ZilAtom Name { get; }
+        [CanBeNull]
+        public ZilObject NewValue { get; }
+
+        public ZValEventArgs([NotNull] ZilAtom name, [CanBeNull] ZilObject newValue)
+        {
+            Name = name;
+            NewValue = newValue;
+        }
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
     sealed class Context : IParserSite
@@ -76,14 +90,17 @@ namespace Zilf.Interpreter
 
         [NotNull]
         readonly ObList rootObList, packageObList, compilationFlagsObList, hooksObList;
+        [NotNull]
         readonly Stack<ZilObject> previousObPaths;
         [NotNull]
         LocalEnvironment localEnvironment;
+        [NotNull]
         readonly Dictionary<ZilAtom, Binding> globalValues;
         [NotNull]
         readonly AssociationTable associations;
         [NotNull]
         readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
+        [NotNull]
         readonly Dictionary<string, SubrDelegate> subrDelegates;
         [NotNull]
         readonly ZEnvironment zenv;
@@ -103,7 +120,9 @@ namespace Zilf.Interpreter
         /// </summary>
         public Frame TopFrame { get; private set; }
 
-        ZilAtom[] stdAtoms;
+        public event EventHandler<ZValEventArgs> ZValChanged;
+
+        readonly ZilAtom[] stdAtoms;
 
         public Context()
             : this(false)
@@ -128,7 +147,7 @@ namespace Zilf.Interpreter
 
             // set up the ROOT oblist manually
             rootObList = new ObList(ignoreCase);
-            InitStdAtoms();
+            stdAtoms = InitStdAtoms();
             associations = new AssociationTable();
             PutProp(rootObList, GetStdAtom(StdAtom.OBLIST), GetStdAtom(StdAtom.ROOT));
             PutProp(GetStdAtom(StdAtom.ROOT), GetStdAtom(StdAtom.OBLIST), rootObList);
@@ -276,17 +295,16 @@ namespace Zilf.Interpreter
             return File.Exists(filename);
         }
 
-        void InitStdAtoms()
+        [ItemNotNull]
+        [NotNull]
+        ZilAtom[] InitStdAtoms()
         {
-            Contract.Ensures(stdAtoms != null);
-            Contract.Ensures(stdAtoms.Length > 0);
-
             var ids = (StdAtom[])Enum.GetValues(typeof(StdAtom));
             Contract.Assume(ids.Length > 0);
             Contract.Assume(Contract.Exists(ids, i => i != StdAtom.None));
 
             StdAtom max = ids[ids.Length - 1];
-            stdAtoms = new ZilAtom[(int)max + 1];
+            var newStdAtoms = new ZilAtom[(int)max + 1];
 
             foreach (StdAtom sa in ids)
             {
@@ -302,11 +320,12 @@ namespace Zilf.Interpreter
                     
                     var atom = new ZilAtom(pname, rootObList, sa);
                     rootObList[pname] = atom;
-                    stdAtoms[(int)sa] = atom;
+                    newStdAtoms[(int)sa] = atom;
                 }
             }
 
-            Contract.Assume(stdAtoms.Length > 0);
+            Contract.Assume(newStdAtoms.Length > 0);
+            return newStdAtoms;
         }
 
         [NotNull]
@@ -787,13 +806,15 @@ namespace Zilf.Interpreter
         /// </summary>
         /// <param name="atom">The atom.</param>
         /// <param name="value">The new value, or null to clear the value.</param>
-        /// <remarks>This is equivalent to &lt;PUTPROP atom ZVAL value&gt;.</remarks>
+        /// <remarks>This is equivalent to &lt;PUTPROP atom ZVAL value&gt;
+        /// but also raises the <see cref="ZValChanged"/> event.</remarks>
         public void SetZVal([NotNull] ZilAtom atom, ZilObject value)
         {
             Contract.Requires(atom != null);
             Contract.Ensures(GetZVal(atom) == value);
 
             PutProp(atom, GetStdAtom(StdAtom.ZVAL), value);
+            ZValChanged?.Invoke(this, new ZValEventArgs(atom, value));
         }
 
         /// <summary>

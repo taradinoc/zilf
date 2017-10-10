@@ -201,6 +201,12 @@ namespace Zilf.Compiler
             Contract.Requires(rb != null);
             Contract.Requires(stmt != null);
 
+            if (stmt is ZilAdecl adecl)
+            {
+                // TODO: check DECL
+                stmt = adecl.First;
+            }
+
             if (stmt is ZilForm form)
             {
                 MarkSequencePoint(rb, form);
