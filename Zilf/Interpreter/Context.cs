@@ -1347,6 +1347,7 @@ namespace Zilf.Interpreter
 
             /* hacky special cases for GVAL and LVAL:
              * <CHTYPE FOO GVAL> gives '<GVAL FOO> rather than #GVAL FOO
+             * <CHTYPE ,FOO ATOM> gives FOO
              */
             if (newType.StdAtom == StdAtom.GVAL || newType.StdAtom == StdAtom.LVAL)
             {
@@ -1354,6 +1355,14 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
 
                 return new ZilForm(new[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
+            }
+
+            if (newType.StdAtom == StdAtom.ATOM && value.StdTypeAtom == StdAtom.FORM)
+            {
+                if (value.IsGVAL(out var atom) || value.IsLVAL(out atom))
+                    return atom;
+
+                throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "ATOM", "ATOM, GVAL, or LVAL");
             }
 
             // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too

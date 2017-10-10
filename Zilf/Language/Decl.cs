@@ -166,10 +166,21 @@ namespace Zilf.Language
                             if (aliased != null && aliased != atom)
                                 return Check(ctx, value, aliased);
 
-                            throw new InterpreterError(
-                                InterpreterMessages.Unrecognized_0_1,
-                                "atom in DECL pattern",
-                                atom);
+                            // special cases for GVAL and LVAL
+                            switch (atom.StdAtom)
+                            {
+                                case StdAtom.GVAL:
+                                    return value.IsGVAL(out _);
+
+                                case StdAtom.LVAL:
+                                    return value.IsLVAL(out _);
+
+                                default:
+                                    throw new InterpreterError(
+                                        InterpreterMessages.Unrecognized_0_1,
+                                        "atom in DECL pattern",
+                                        atom);
+                            }
                     }
 
                 case StdAtom.SEGMENT:
@@ -199,7 +210,11 @@ namespace Zilf.Language
                                 return Equals(form.Rest.First, value);
 
                             case StdAtom.PRIMTYPE when form.Rest.First is ZilAtom primType:
-                                return value.PrimType == ctx.GetTypePrim(primType);
+                                // special case for GVAL and LVAL, which can substitute for <PRIMTYPE ATOM>
+                                return
+                                    value.PrimType == ctx.GetTypePrim(primType) ||
+                                    (primType.StdAtom == StdAtom.ATOM &&
+                                     (value.IsGVAL(out _) || value.IsLVAL(out _)));
                         }
                     }
 

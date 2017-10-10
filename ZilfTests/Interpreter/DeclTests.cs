@@ -158,5 +158,17 @@ namespace ZilfTests.Interpreter
 
             TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<SETG FOO <>>");
         }
+
+        [TestMethod]
+        public void Test_LVAL_GVAL_DECL()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '.X LVAL>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '.X GVAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? ',X GVAL>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? ',X LVAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? '.X '<PRIMTYPE ATOM>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<DECL? ',X '<PRIMTYPE ATOM>>", ctx.TRUE);
+        }
+
     }
 }
