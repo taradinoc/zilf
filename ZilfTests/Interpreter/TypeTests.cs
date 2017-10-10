@@ -1361,5 +1361,23 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<=? '(1 2 3) '<1 2 3>>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<=? '<1 2 3> '(1 2 3)>", ctx.FALSE);
         }
+
+        [TestMethod]
+        public void LVAL_And_GVAL_Should_Use_Value_Comparison_For_Eeq()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<==? ',FOO ',FOO>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<==? '.FOO '.FOO>", ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx, "<==? '.FOO ',FOO>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<==? '.FOO '<LVAL FOO X>>", ctx.FALSE);
+
+            // and the inverse for N==?
+            TestHelpers.EvalAndAssert(ctx, "<N==? ',FOO ',FOO>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<N==? '.FOO '.FOO>", ctx.FALSE);
+
+            TestHelpers.EvalAndAssert(ctx, "<N==? '.FOO ',FOO>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<N==? '.FOO '<LVAL FOO X>>", ctx.TRUE);
+        }
+
     }
 }

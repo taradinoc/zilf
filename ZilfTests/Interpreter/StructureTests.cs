@@ -34,18 +34,32 @@ namespace ZilfTests.Interpreter
         public void TestMEMQ()
         {
             TestHelpers.EvalAndAssert("<MEMQ 5 '(3 4 5 6 7)>",
-                new ZilList(new ZilObject[] {
+                new ZilList(new ZilObject[]
+                {
                     new ZilFix(5),
                     new ZilFix(6),
                     new ZilFix(7)
                 }));
 
             TestHelpers.EvalAndAssert("<MEMQ 5 '[3 4 5 6 7]>",
-                new ZilVector(new ZilObject[] {
-                            new ZilFix(5),
-                            new ZilFix(6),
-                            new ZilFix(7)
-                        }));
+                new ZilVector(new ZilObject[]
+                {
+                    new ZilFix(5),
+                    new ZilFix(6),
+                    new ZilFix(7)
+                }));
+
+            // use value comparison for LVAL/GVAL, but not other structures
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<MEMQ '.C '[.A .B .C .D]>",
+                new ZilVector(new ZilObject[]
+                {
+                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("C", ctx) }),
+                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("D", ctx) }),
+                }));
+
+            TestHelpers.EvalAndAssert(ctx, "<MEMQ '<FOO C> '[<FOO A> <FOO B> <FOO C> <FOO D>]>",
+                ctx.FALSE);
         }
 
         [TestMethod]
