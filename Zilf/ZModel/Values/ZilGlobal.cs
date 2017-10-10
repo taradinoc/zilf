@@ -29,7 +29,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
     class ZilGlobal : ZilTiedListBase
     {
-        public ZilGlobal(ZilAtom name, ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
+        public ZilGlobal([NotNull] ZilAtom name, [CanBeNull] ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
         {
             Name = name;
             Value = value;
@@ -41,7 +41,7 @@ namespace Zilf.ZModel.Values
         [NotNull]
         [ChtypeMethod]
 #pragma warning disable RECS0154 // Parameter is never used
-        public static ZilGlobal FromList(Context ctx, [NotNull] ZilListBase list)
+        public static ZilGlobal FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(list != null);
@@ -57,8 +57,10 @@ namespace Zilf.ZModel.Values
             return new ZilGlobal(name, value);
         }
 
+        [NotNull]
         public ZilAtom Name { get; }
 
+        [CanBeNull]
         public ZilObject Value { get; }
 
         public GlobalStorageType StorageType { get; set; }

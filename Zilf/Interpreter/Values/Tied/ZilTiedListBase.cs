@@ -78,23 +78,24 @@ namespace Zilf.Interpreter.Values.Tied
 
         static readonly ObList detachedObList = new ObList();
 
-        protected ZilAtom GetStdAtom(StdAtom stdAtom)
+        [NotNull]
+        protected static ZilAtom GetStdAtom(StdAtom stdAtom)
         {
             /* Tied values with atoms in their printed representation may need to return
              * atoms from tied properties even when no Context is available.
              */
-            if (Diagnostics.DiagnosticContext.Current?.Frame?.Context is Context ctx)
+            if (Diagnostics.DiagnosticContext.Current.Frame?.Context is Context ctx)
                 return ctx.GetStdAtom(stdAtom);
 
             return detachedObList[stdAtom.ToString()];
         }
 
         [NotNull]
-        protected ZilObject FALSE
+        protected static ZilObject FALSE
         {
             get
             {
-                if (Diagnostics.DiagnosticContext.Current?.Frame?.Context is Context ctx)
+                if (Diagnostics.DiagnosticContext.Current.Frame?.Context is Context ctx)
                     return ctx.FALSE;
 
                 return new ZilFalse(new ZilList(null, null));
@@ -196,6 +197,7 @@ namespace Zilf.Interpreter.Values.Tied
             set => this[0] = value;
         }
 
+        // ReSharper disable once AnnotationConflictInHierarchy
         [NotNull]
         public sealed override ZilList Rest
         {
@@ -281,6 +283,7 @@ namespace Zilf.Interpreter.Values.Tied
                 set => orig[offset] = value;
             }
 
+            // ReSharper disable once AnnotationConflictInHierarchy
             [NotNull]
             public override ZilList Rest
             {

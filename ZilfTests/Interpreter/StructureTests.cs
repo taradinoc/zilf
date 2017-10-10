@@ -24,6 +24,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
+// ReSharper disable InconsistentNaming
 
 namespace ZilfTests.Interpreter
 {

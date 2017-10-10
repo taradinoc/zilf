@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Language;
@@ -27,19 +28,24 @@ namespace Zilf.Diagnostics
     sealed class DiagnosticContext
     {
         // TODO: this should be thread-local
+        [NotNull]
         public static DiagnosticContext Current { get; private set; } = new DiagnosticContext();
 
         class Disposer : IDisposable
         {
-            DiagnosticContext oldContext, newContext;
+            [CanBeNull]
+            DiagnosticContext oldContext;
+            [CanBeNull]
+            DiagnosticContext newContext;
 
-            public Disposer(DiagnosticContext oldContext, DiagnosticContext newContext)
+            public Disposer([NotNull] DiagnosticContext oldContext, [NotNull] DiagnosticContext newContext)
             {
                 this.oldContext = oldContext;
                 this.newContext = newContext;
             }
 
-            /// <exception cref="InvalidOperationException">This contract is no longer on top of the stack</exception>
+            /// <inheritdoc />
+            /// <exception cref="T:System.InvalidOperationException">This contract is no longer on top of the stack</exception>
             public void Dispose()
             {
                 if (newContext == null)
@@ -47,6 +53,7 @@ namespace Zilf.Diagnostics
 
                 if (Current == newContext)
                 {
+                    Debug.Assert(oldContext != null, nameof(oldContext) + " != null");
                     Current = oldContext;
                     newContext = oldContext = null;
                 }
@@ -77,13 +84,15 @@ namespace Zilf.Diagnostics
         {
         }
 
-        DiagnosticContext(ISourceLine sourceLine, Frame frame)
+        DiagnosticContext([NotNull] ISourceLine sourceLine, [CanBeNull] Frame frame)
         {
             SourceLine = sourceLine;
             Frame = frame;
         }
 
+        [NotNull]
         public ISourceLine SourceLine { get; }
+        [CanBeNull]
         public Frame Frame { get; }
     }
 }

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -29,17 +30,22 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ATOM, PrimType.ATOM)]
     class ZilAtom : ZilObject
     {
+        [CanBeNull]
         ObList list;
 
-        public ZilAtom(string text, ObList list, StdAtom stdAtom)
+        public ZilAtom([NotNull] string text, [CanBeNull] ObList list, StdAtom stdAtom)
         {
+            if (string.IsNullOrEmpty(text))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(text));
+
             Text = text;
             this.list = list;
             StdAtom = stdAtom;
         }
 
+        [NotNull]
         [ChtypeMethod]
-        public static ZilAtom FromAtom([NotNull] Context ctx, ZilAtom other)
+        public static ZilAtom FromAtom([NotNull] Context ctx, [NotNull] ZilAtom other)
         {
             Contract.Requires(ctx != null);
 
@@ -47,6 +53,7 @@ namespace Zilf.Interpreter.Values
             return other;
         }
 
+        [NotNull]
         public string Text { get; }
 
         [CanBeNull]
@@ -79,13 +86,14 @@ namespace Zilf.Interpreter.Values
         /// <returns>The parsed atom.</returns>
         /// <remarks>This method does not strip backslashes from <see cref="text"/>.</remarks>
         /// <exception cref="InterpreterError">No OBLIST path.</exception>
+        [NotNull]
         public static ZilAtom Parse([NotNull] string text, [NotNull] Context ctx)
         {
             Contract.Requires(text != null);
             Contract.Requires(ctx != null);
 
             ZilAtom result;
-            var idx = text.IndexOf("!-", System.StringComparison.Ordinal);
+            var idx = text.IndexOf("!-", StringComparison.Ordinal);
 
             if (idx == -1)
             {

@@ -33,10 +33,12 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
     class ZilRoutine : ZilTiedListBase
     {
+        [ItemNotNull]
         [NotNull]
         readonly ZilObject[] body;
 
-        public ZilRoutine([CanBeNull] ZilAtom name, ZilAtom activationAtom, [NotNull] IEnumerable<ZilObject> argspec, [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
+        public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
+            [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
         {
             Contract.Requires(argspec != null);
             Contract.Requires(body != null);

@@ -30,6 +30,7 @@ namespace Zilf.Interpreter
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
     class ObList : ZilTiedListBase
     {
+        [NotNull]
         readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
         readonly bool ignoreCase;
 
@@ -97,6 +98,8 @@ namespace Zilf.Interpreter
 
                 foreach (var pair in dict)
                 {
+                    Debug.Assert(pair.Key != null, "pair.Key != null");
+                    Debug.Assert(pair.Value != null, "pair.Value != null");
                     result.Add(
                         new ZilList(ZilString.FromString(pair.Key),
                             new ZilList(pair.Value,
@@ -109,13 +112,14 @@ namespace Zilf.Interpreter
 
         public override StdAtom StdTypeAtom => StdAtom.OBLIST;
 
-        public bool Contains(string pname)
+        public bool Contains([NotNull] string pname)
         {
             string key = ignoreCase ? pname.ToUpperInvariant() : pname;
             return dict.ContainsKey(key);
         }
 
-        public ZilAtom this[string pname]
+        [NotNull]
+        public ZilAtom this[[NotNull] string pname]
         {
             get
             {

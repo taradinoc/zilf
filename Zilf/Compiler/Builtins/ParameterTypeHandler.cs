@@ -35,6 +35,7 @@ namespace Zilf.Compiler.Builtins
             [NotNull] ZilObject arg, [NotNull] ParameterInfo pi);
         public virtual bool IsVariable => false;
 
+        [NotNull]
         public static readonly IReadOnlyDictionary<Type, ParameterTypeHandler> Handlers =
             new Dictionary<Type, ParameterTypeHandler>
             {
@@ -48,7 +49,7 @@ namespace Zilf.Compiler.Builtins
                 { typeof(ZilObject), new ZilObjectHandler() },
             };
 
-        static VariableRef? GetVariable(Compilation cc, ZilObject expr, QuirksMode quirks = QuirksMode.None)
+        static VariableRef? GetVariable([NotNull] Compilation cc, [NotNull] ZilObject expr, QuirksMode quirks = QuirksMode.None)
         {
             if (!(expr is ZilAtom atom))
             {

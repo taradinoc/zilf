@@ -33,7 +33,6 @@ namespace Zilf.Interpreter.Values
         ZilObject first;
         ZilList rest;
 
-        [CanBeNull]
         public sealed override ZilObject First
         {
             get => first;
@@ -50,7 +49,6 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        [CanBeNull]
         public sealed override ZilList Rest
         {
             get => rest;
@@ -248,7 +246,6 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        [CanBeNull]
         public sealed override ZilObject this[int index]
         {
             get

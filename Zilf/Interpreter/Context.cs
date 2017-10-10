@@ -293,12 +293,13 @@ namespace Zilf.Interpreter
                 if (sa != StdAtom.None)
                 {
                     var pname = Enum.GetName(typeof(StdAtom), sa);
+                    Debug.Assert(pname != null, nameof(pname) + " != null");
 
                     var attrs = typeof(StdAtom).GetField(pname).GetCustomAttributes(
                         typeof(AtomAttribute), false);
                     if (attrs.Length > 0)
                         pname = ((AtomAttribute)attrs[0]).Name;
-
+                    
                     var atom = new ZilAtom(pname, rootObList, sa);
                     rootObList[pname] = atom;
                     stdAtoms[(int)sa] = atom;

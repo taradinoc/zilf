@@ -275,14 +275,11 @@ namespace Zilf.Interpreter
             {
                 if (ctx.AllowRedefine)
                 {
-                    if (oldVal is ZilGlobal glob)
+                    if (oldVal is ZilGlobal glob && glob.Value is ZilTable tbl)
                     {
-                        if (glob.Value is ZilTable tbl)
-                        {
-                            // prevent errors about duplicate symbol T?GLOBAL-NAME
-                            // TODO: undefine the table if it hasn't been referenced anywhere yet
-                            tbl.Name = null;
-                        }
+                        // prevent errors about duplicate symbol T?GLOBAL-NAME
+                        // TODO: undefine the table if it hasn't been referenced anywhere yet
+                        tbl.Name = null;
                     }
 
                     ctx.Redefine(oldAtom);

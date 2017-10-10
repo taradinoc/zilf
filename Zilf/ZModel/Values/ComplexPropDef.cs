@@ -135,9 +135,8 @@ namespace Zilf.ZModel.Values
             }
 
             [NotNull]
-            public ZilObject ToZilObject([NotNull] ComplexPropDef tied)
+            public ZilObject ToZilObject()
             {
-                Contract.Requires(tied != null);
                 Contract.Ensures(Contract.Result<ZilObject>() != null);
                 ZilObject result;
                 StdAtom head;
@@ -145,7 +144,7 @@ namespace Zilf.ZModel.Values
                 switch (Type)
                 {
                     case OutputElementType.Length:
-                        result = Fix ?? tied.FALSE;
+                        result = Fix ?? FALSE;
                         break;
 
                     case OutputElementType.Many:
@@ -178,9 +177,9 @@ namespace Zilf.ZModel.Values
 
                     TwoElementForm:
                         result = new ZilForm(new[] {
-                            tied.GetStdAtom(head),
+                            GetStdAtom(head),
                             (ZilObject)Fix ?? new ZilForm(new[] {
-                                tied.GetStdAtom(StdAtom.LVAL),
+                                GetStdAtom(StdAtom.LVAL),
                                 Variable
                             })
                         });
@@ -188,9 +187,9 @@ namespace Zilf.ZModel.Values
 
                     case OutputElementType.Voc:
                         result = new ZilForm(new[] {
-                            tied.GetStdAtom(StdAtom.VOC),
+                            GetStdAtom(StdAtom.VOC),
                             (ZilObject)Fix ?? new ZilForm(new[] {
-                                tied.GetStdAtom(StdAtom.LVAL),
+                                GetStdAtom(StdAtom.LVAL),
                                 Variable
                             }),
                             PartOfSpeech
@@ -625,7 +624,7 @@ namespace Zilf.ZModel.Values
 
                     pattern.AddRange(p.Inputs.Select(i => i.ToZilObject()));
                     pattern.Add(GetStdAtom(StdAtom.Eq));
-                    pattern.AddRange(p.Outputs.Select(o => o.ToZilObject(this)));
+                    pattern.AddRange(p.Outputs.Select(o => o.ToZilObject()));
 
                     result.Add(new ZilList(pattern));
                 }
