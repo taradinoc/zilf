@@ -170,7 +170,7 @@ namespace Zilf.Interpreter
             throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "REPLACE-DEFINITION", state);
         }
 
-        /// <exception cref="InterpreterError">The section has already been defined or is in a bad state.</exception>
+        /// <exception cref="InterpreterError">The section is in a bad state.</exception>
         [FSubr("DEFAULT-DEFINITION")]
         public static ZilResult DEFAULT_DEFINITION([NotNull] Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
@@ -203,7 +203,11 @@ namespace Zilf.Interpreter
             }
 
             if (state == ctx.GetStdAtom(StdAtom.DEFAULT_DEFINITION))
-                throw new InterpreterError(InterpreterMessages._0_Duplicate_Default_For_Section_1, "DEFAULT-DEFINITION", name);
+            {
+                ctx.HandleError(new InterpreterError(InterpreterMessages._0_Duplicate_Default_For_Section_1,
+                    "DEFAULT-DEFINITION", name));
+                return ctx.FALSE;
+            }
 
             throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
         }
