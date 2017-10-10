@@ -47,7 +47,7 @@ namespace Zilf.Compiler
             {
                 using (DiagnosticContext.Push(global.SourceLine))
                 {
-                    result = CompileConstant(global.Value);
+                    result = CompileConstant(global.Value, AmbiguousConstantMode.Optimistic);
                     if (result == null)
                     {
                         Context.HandleError(new CompilerError(
@@ -78,10 +78,11 @@ namespace Zilf.Compiler
         /// assigns offsets within the table, and fills the table with the initial values.</para>
         /// </remarks>
         /// <param name="reservedGlobals">The number of hard globals that are reserved for other purposes (i.e. parser tables).
-        /// Subtracting <paramref name="reservedGlobals"/> from 240 gives the number of hard globals that are actually available
-        /// for storing <see cref="ZEnvironment.Globals"/>.</param>
+        ///     Subtracting <paramref name="reservedGlobals"/> from 240 gives the number of hard globals that are actually available
+        ///     for storing <see cref="ZEnvironment.Globals"/>.</param>
+        /// <param name="GlobalInitializers"></param>
         /// <exception cref="CompilerError"></exception>
-        void DoFunnyGlobals(int reservedGlobals)
+        void DoFunnyGlobals(int reservedGlobals, Queue<System.Action> GlobalInitializers)
         {
             Contract.Requires(reservedGlobals >= 0);
             Contract.Ensures(Contract.ForAll(Context.ZEnvironment.Globals, g => g.StorageType != GlobalStorageType.Any));
@@ -213,7 +214,8 @@ namespace Zilf.Compiler
                     };
                     SoftGlobals.Add(g.Name, entry);
 
-                    table.AddByte(GetGlobalDefaultValue(g) ?? Game.Zero);
+                    var gSave = g;
+                    GlobalInitializers.Enqueue(() => table.AddByte(GetGlobalDefaultValue(gSave) ?? Game.Zero));
 
                     byteOffset++;
                 }
@@ -222,7 +224,7 @@ namespace Zilf.Compiler
             if (byteOffset % 2 != 0)
             {
                 byteOffset++;
-                table.AddByte(Game.Zero);
+                GlobalInitializers.Enqueue(() => table.AddByte(Game.Zero));
             }
 
             foreach (var g in softGlobals)
@@ -236,16 +238,36 @@ namespace Zilf.Compiler
                     };
                     SoftGlobals.Add(g.Name, entry);
 
-                    table.AddShort(GetGlobalDefaultValue(g) ?? Game.Zero);
+                    var gSave = g;
+                    GlobalInitializers.Enqueue(() => table.AddShort(GetGlobalDefaultValue(gSave) ?? Game.Zero));
+
                     byteOffset += 2;
                 }
             }
         }
 
+        public enum AmbiguousConstantMode
+        {
+            /// <summary>
+            /// Try to interpret ambiguous expressions as constants.
+            /// </summary>
+            Optimistic,
+            /// <summary>
+            /// Don't try to interpret ambiguous expressions as constants.
+            /// </summary>
+            Pessimistic,
+        }
+
+        [CanBeNull]
+        public IOperand CompileConstant([NotNull] ZilObject expr)
+        {
+            return CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
+        }
+
         // this method has a high complexity score because it has a big switch statement
         [SuppressMessage("ReSharper", "CyclomaticComplexity")]
         [CanBeNull]
-        public IOperand CompileConstant([NotNull] ZilObject expr)
+        public IOperand CompileConstant([NotNull] ZilObject expr, AmbiguousConstantMode mode)
         {
             Contract.Requires(expr != null);
 
@@ -278,6 +300,13 @@ namespace Zilf.Compiler
                         return obj;
                     if (Constants.TryGetValue(atom, out var operand))
                         return operand;
+
+                    if (mode == AmbiguousConstantMode.Optimistic && Globals.TryGetValue(atom, out var global))
+                    {
+                        Context.HandleError(new CompilerError(expr.SourceLine,
+                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right, atom));
+                        return global;
+                    }
                     return null;
 
                 case StdAtom.FALSE:
@@ -312,7 +341,7 @@ namespace Zilf.Compiler
                     if (form.Rest.First.StdTypeAtom == StdAtom.ATOM &&
                         form.Rest.Rest.IsEmpty)
                     {
-                        return CompileConstant(form.Rest.First);
+                        return CompileConstant(form.Rest.First, AmbiguousConstantMode.Pessimistic);
                     }
 
                     return null;

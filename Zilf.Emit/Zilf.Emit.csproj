@@ -109,6 +109,7 @@
     <Compile Include="Zap\DummyGameOptions.cs" />
     <Compile Include="Zap\ConstantLiteralOperand.cs" />
     <Compile Include="Zap\NumericConstantOperand.cs" />
+    <Compile Include="Zap\OperandExtensions.cs" />
     <Compile Include="Zap\SumOperand.cs" />
     <Compile Include="Zap\ZapCode.cs" />
     <Compile Include="Peephole.cs" />

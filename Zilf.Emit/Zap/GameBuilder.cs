@@ -761,7 +761,7 @@ namespace Zilf.Emit.Zap
             foreach (var pair in from cp in constants
                                  orderby cp.Key
                                  select cp)
-                writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value);
+                writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.StripIndirect());
 
             // release number
             if (zversion >= 5 && !constants.ContainsKey("RELEASEID"))
@@ -782,7 +782,7 @@ namespace Zilf.Emit.Zap
                                join p in props on num equals p.Value.Number into propGroup
                                from prop in propGroup.DefaultIfEmpty()
                                let name = prop.Key
-                               let def = prop.Value?.DefaultValue
+                               let def = prop.Value?.DefaultValue?.StripIndirect()
                                select new { num, name, def };
 
             foreach (var row in propDefaults)
@@ -847,8 +847,8 @@ namespace Zilf.Emit.Zap
             }
 
             // global variables
-            foreach (GlobalBuilder gb in globals)
-                writer.WriteLine(INDENT + ".GVAR {0}={1}", gb.Name, (object)gb.DefaultValue ?? "0");
+            foreach (var gb in globals)
+                writer.WriteLine(INDENT + ".GVAR {0}={1}", gb.Name, (object)gb.DefaultValue?.StripIndirect() ?? "0");
 
             writer.WriteLine(INDENT + ".ENDT");
         }

@@ -70,12 +70,18 @@ namespace Zilf.Compiler
             PrepareFlagAliases();
             EnforceFlagLimit();
 
-            PrepareAndCheckGlobalStorage(out string[] reservedGlobals);
+            var globalInitializers = new Queue<System.Action>(Context.ZEnvironment.Globals.Count + 10);
+
+            PrepareAndCheckGlobalStorage(globalInitializers, out string[] reservedGlobals);
             PrepareConstantBuilders(lastObject);
             PrepareLongWordTableBuilder(out ITableBuilder longWordTable);
             PrepareVocabConstant();
-            PrepareHardGlobalBuilders();
+            PrepareHardGlobalBuilders(globalInitializers);
             PrepareReservedGlobalBuilders(reservedGlobals);
+            PrepareGlobalDefaults(globalInitializers);
+
+            globalInitializers = null;
+
             PreparePropertyDefaults();
             PrepareLateRoutineBuilders();
 
@@ -270,7 +276,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareHardGlobalBuilders()
+        void PrepareHardGlobalBuilders(Queue<System.Action> globalInitializers)
         {
             // builders and values for globals (which may refer to constants)
             foreach (var global in Context.ZEnvironment.Globals)
@@ -278,10 +284,17 @@ namespace Zilf.Compiler
                 if (global.StorageType == GlobalStorageType.Hard)
                 {
                     var glb = Game.DefineGlobal(global.Name.Text);
-                    glb.DefaultValue = GetGlobalDefaultValue(global);
                     Globals.Add(global.Name, glb);
+                    var globalSave = global;
+                    globalInitializers.Enqueue(() => glb.DefaultValue = GetGlobalDefaultValue(globalSave));
                 }
             }
+        }
+
+        void PrepareGlobalDefaults(Queue<System.Action> globalInitializers)
+        {
+            while (globalInitializers.Count > 0)
+                globalInitializers.Dequeue().Invoke();
         }
 
         void PrepareVocabConstant()
@@ -333,9 +346,7 @@ namespace Zilf.Compiler
             }
         }
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
-        void PrepareAndCheckGlobalStorage([ItemNotNull] [NotNull] out string[] reservedGlobals)
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
+        void PrepareAndCheckGlobalStorage(Queue<System.Action> globalInitializers, [ItemNotNull] [NotNull] out string[] reservedGlobals)
         {
             Contract.Ensures(Contract.ValueAtReturn(out reservedGlobals) != null);
 
@@ -343,8 +354,9 @@ namespace Zilf.Compiler
             reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
             if (Context.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
             {
-                // this sets StorageType for all variables, and creates the table and global if needed
-                DoFunnyGlobals(reservedGlobals.Length);
+                // this sets StorageType for all variables, queues the soft globals' initializers,
+                // and creates the soft globals table and variable if needed
+                DoFunnyGlobals(reservedGlobals.Length, globalInitializers);
             }
             else
             {

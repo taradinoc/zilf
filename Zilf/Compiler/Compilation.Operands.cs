@@ -69,7 +69,7 @@ namespace Zilf.Compiler
             {
                 bool needTemp = false;
 
-                var value = CompileConstant(exprs[i]);
+                var value = CompileConstant(exprs[i], AmbiguousConstantMode.Pessimistic);
                 if (value == null)
                 {
                     // could still be a constant if it compiles to a constant operand
@@ -89,7 +89,7 @@ namespace Zilf.Compiler
                         {
                             for (int j = i + 1; j < length; j++)
                             {
-                                if (CompileConstant(exprs[j]) == null && !exprs[j].IsVariableRef())
+                                if (CompileConstant(exprs[j], AmbiguousConstantMode.Pessimistic) == null && !exprs[j].IsVariableRef())
                                 {
                                     needTemp = true;
                                     break;
