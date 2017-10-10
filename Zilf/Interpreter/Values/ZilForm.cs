@@ -131,32 +131,35 @@ namespace Zilf.Interpreter.Values
 
             Debug.Assert(Rest != null);
 
-            ZilObject target;
-            if (First is ZilAtom fa)
+            using (var frame = ctx.PushFrame(this))
+            using (DiagnosticContext.Push(SourceLine, frame))
             {
-                target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
-                if (target == null)
-                    throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0, fa.ToStringContext(ctx, false));
-            }
-            else
-            {
-                var result = First.Eval(ctx);
-                if (result.ShouldPass())
-                    return result;
+                ZilObject target;
+                if (First is ZilAtom fa)
+                {
+                    target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
+                    if (target == null)
+                        throw new InterpreterError(this, InterpreterMessages.Calling_Unassigned_Atom_0,
+                            fa.ToStringContext(ctx, false));
+                }
+                else
+                {
+                    var result = First.Eval(ctx);
+                    if (result.ShouldPass())
+                        return result;
 
-                target = (ZilObject)result;
-            }
+                    target = (ZilObject)result;
+                }
 
-            var applicable = target.AsApplicable(ctx);
-            if (applicable != null)
-            {
-                using (var frame = ctx.PushFrame(this))
-                using (DiagnosticContext.Push(SourceLine, frame))
+                var applicable = target.AsApplicable(ctx);
+                if (applicable != null)
                 {
                     return applicable.Apply(ctx, Rest.ToArray());
                 }
+
+                throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0,
+                    target.GetTypeAtom(ctx).ToStringContext(ctx, false));
             }
-            throw new InterpreterError(this, InterpreterMessages.Not_An_Applicable_Type_0, target.GetTypeAtom(ctx).ToStringContext(ctx, false));
         }
 
         public override ZilResult Expand(Context ctx)
