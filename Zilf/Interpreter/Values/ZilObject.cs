@@ -245,6 +245,7 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is an LVAL.</returns>
+        [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
         public virtual bool IsLVAL([CanBeNull] out ZilAtom atom)
         {
             atom = null;
@@ -256,6 +257,7 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is a GVAL.</returns>
+        [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
         public virtual bool IsGVAL([CanBeNull] out ZilAtom atom)
         {
             atom = null;

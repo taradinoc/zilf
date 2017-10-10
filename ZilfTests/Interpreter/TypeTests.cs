@@ -1379,5 +1379,14 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<N==? '.FOO '<LVAL FOO X>>", ctx.TRUE);
         }
 
+        [TestMethod]
+        public void TYPE_P_Should_Handle_LVAL_And_GVAL()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<TYPE? '.X LVAL>", ctx.GetStdAtom(StdAtom.LVAL));
+            TestHelpers.EvalAndAssert(ctx, "<TYPE? ',X LVAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<TYPE? '.X GVAL>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<TYPE? ',X GVAL>", ctx.GetStdAtom(StdAtom.GVAL));
+        }
+
     }
 }

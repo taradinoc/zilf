@@ -54,7 +54,19 @@ namespace Zilf.Interpreter
             SubrContracts(ctx);
 
             var type = value.GetTypeAtom(ctx);
-            return types.FirstOrDefault(a => a == type) ?? ctx.FALSE;
+
+            foreach (var candidate in types)
+            {
+                if (candidate == type)
+                    return candidate;
+
+                // Special case for LVAL/GVAL
+                if (candidate.StdAtom == StdAtom.LVAL && value.IsLVAL(out _) ||
+                    candidate.StdAtom == StdAtom.GVAL && value.IsGVAL(out _))
+                    return candidate;
+            }
+
+            return ctx.FALSE;
         }
 
         static StdAtom PrimTypeToType(PrimType pt)
