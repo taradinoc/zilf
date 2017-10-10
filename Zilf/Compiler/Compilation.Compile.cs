@@ -238,7 +238,7 @@ namespace Zilf.Compiler
                 {
                     using (DiagnosticContext.Push(
                         pair.Value.SourceLine ??
-                        new StringSourceLine("property default for '" + pair.Key + "'")))
+                        new StringSourceLine($"<property default for '{pair.Key}'>")))
                     {
                         var pb = Properties[pair.Key];
                         pb.DefaultValue = CompileConstant(pair.Value);
