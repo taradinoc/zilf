@@ -447,7 +447,7 @@ namespace Zilf.Compiler
                     return Game.Zero;
 
                 case StdAtom.ADECL:
-                    // TODO: verify DECL
+                    // TODO: check DECL
                     return CompileAsOperand(rb, ((ZilAdecl)expr).First, src, suggestion ?? rb.Stack);
 
                 default:

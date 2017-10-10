@@ -348,6 +348,25 @@ namespace Zilf.Interpreter.Values
             return Enumerable.Repeat(result, 1);
         }
 
+        [NotNull]
+        public static IEnumerable<ZilResult> ExpandWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
+        {
+            Contract.Requires(ctx != null);
+            Contract.Requires(obj != null);
+            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
+
+            if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
+                return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
+
+            var result = obj.Expand(ctx);
+            var resultObj = (ZilObject)result;
+
+            if (resultObj != obj && resultObj is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
+                return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
+
+            return Enumerable.Repeat(result, 1);
+        }
+
         /// <summary>
         /// Evaluates a sequence of expressions without expanding segment references.
         /// </summary>

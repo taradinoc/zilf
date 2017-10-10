@@ -31,11 +31,11 @@ using Zilf.Language;
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
-    class ZilRoutine : ZilTiedListBase
+    sealed class ZilRoutine : ZilTiedListBase
     {
         [ItemNotNull]
         [NotNull]
-        readonly ZilObject[] body;
+        ZilObject[] body;
 
         public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
@@ -136,6 +136,62 @@ namespace Zilf.ZModel.Values
         void ObjectInvariant()
         {
             Contract.Invariant(body != null);
+        }
+
+        internal void ExpandBodyInPlace([NotNull] Context ctx)
+        {
+            IEnumerable<ZilObject> RecursiveExpandWithSplice(ZilObject zo)
+            {
+                ZilObject result;
+
+                ZilObject SetSourceLine(ZilResult zr)
+                {
+                    var newObj = (ZilObject)zr;
+                    newObj.SourceLine = zo.SourceLine;
+                    return newObj;
+                }
+
+                switch (zo)
+                {
+                    case ZilList list:
+                        result = new ZilList(list.SelectMany(RecursiveExpandWithSplice));
+                        break;
+
+                    case ZilVector vector:
+                        result = new ZilVector(vector.SelectMany(RecursiveExpandWithSplice).ToArray());
+                        break;
+
+                    case ZilForm form:
+                        var expanded = (ZilObject)form.Expand(ctx);
+                        if (expanded is IMayExpandAfterEvaluation expandAfter &&
+                            expandAfter.ShouldExpandAfterEvaluation)
+                        {
+                            return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment).Select(SetSourceLine);
+                        }
+                        else if (!ReferenceEquals(expanded, form))
+                        {
+                            expanded.SourceLine = zo.SourceLine;
+                            return RecursiveExpandWithSplice(expanded);
+                        }
+                        else
+                        {
+                            result = new ZilForm(form.SelectMany(RecursiveExpandWithSplice));
+                        }
+                        break;
+
+                    case ZilAdecl adecl:
+                        result = new ZilAdecl(new ZilVector(adecl.SelectMany(RecursiveExpandWithSplice).ToArray()));
+                        break;
+
+                    default:
+                        return ExpandWithSplice(ctx, zo).Select(SetSourceLine);
+                }
+
+                result.SourceLine = zo.SourceLine;
+                return Enumerable.Repeat(result, 1);
+            }
+
+            body = body.SelectMany(RecursiveExpandWithSplice).ToArray();
         }
     }
 }

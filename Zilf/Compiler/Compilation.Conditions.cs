@@ -419,16 +419,9 @@ namespace Zilf.Compiler
                 clauses = clauses.Rest;
                 Debug.Assert(clauses != null);
 
-                if (clause is ZilForm)
-                {
-                    // a macro call returning a list or false
-                    var newClause = (ZilObject)clause.Expand(Context);
-
-                    if (newClause is ZilFalse)
-                        continue;
-
-                    clause = newClause as ZilList;
-                }
+                // previously, FALSE was only allowed when returned by a macro call, but now we expand macros before generating any code
+                if (clause is ZilFalse)
+                    continue;
 
                 if (clause == null || clause.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
@@ -515,7 +508,10 @@ namespace Zilf.Compiler
 
                 var stmt = clause.First;
                 if (stmt is ZilAdecl adecl)
+                {
+                    // TODO: check DECL
                     stmt = adecl.First;
+                }
 
                 if (stmt is ZilForm form)
                 {
