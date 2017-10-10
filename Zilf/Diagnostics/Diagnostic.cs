@@ -31,6 +31,7 @@ namespace Zilf.Diagnostics
         Info,
         Warning,
         Error,
+        Fatal,
     }
 
     public sealed class Diagnostic
@@ -109,7 +110,6 @@ namespace Zilf.Diagnostics
             {
             }
 
-            [CanBeNull]
             public object GetFormat(Type formatType)
             {
                 if (formatType == typeof(ICustomFormatter))

@@ -59,7 +59,7 @@ namespace Zilf.Compiler
                         if (Locals.ContainsKey(atom) || Globals.ContainsKey(atom))
                             warning = warning.Combine(new CompilerError(src, CompilerMessages.Did_You_Mean_The_Variable));
 
-                        Context.HandleWarning(warning);
+                        Context.HandleError(warning);
                     }
 
                     if (polarity)
@@ -223,7 +223,7 @@ namespace Zilf.Compiler
                 var last = args[args.Length - 1];
                 if (and && last.IsSetToZeroForm())
                 {
-                    Context.HandleWarning(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
+                    Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
                     CompileStmt(rb, last, false);
                 }
                 else
@@ -241,7 +241,7 @@ namespace Zilf.Compiler
                 var last = args[args.Length - 1];
                 if (and && last.IsSetToZeroForm())
                 {
-                    Context.HandleWarning(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
+                    Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
                     CompileStmt(rb, last, false);
                 }
                 else
@@ -475,7 +475,7 @@ namespace Zilf.Compiler
                 {
                     if (!clauses.IsEmpty)
                     {
-                        Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "COND"));
+                        Context.HandleError(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "COND"));
                     }
 
                     break;
@@ -619,7 +619,7 @@ namespace Zilf.Compiler
 
                 if (condVersion == 0 && !clauses.IsEmpty)
                 {
-                    Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "VERSION?"));
+                    Context.HandleError(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "VERSION?"));
                 }
 
                 return wantResult ? clauseResult : null;
@@ -691,7 +691,7 @@ namespace Zilf.Compiler
 
                 if (isElse && !clauses.IsEmpty)
                 {
-                    Context.HandleWarning(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG"));
+                    Context.HandleError(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG"));
                 }
 
                 return wantResult ? clauseResult : null;

@@ -231,7 +231,7 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
-        public void DoesNotCompile()
+        public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null)
         {
             var testCode =
                 $"{GlobalCode()}\r\n" +
@@ -245,6 +245,10 @@ namespace IntegrationTests
             if (expectWarnings != null)
             {
                 Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
+            }
+            if (resultFilter != null)
+            {
+                Assert.IsTrue(resultFilter(result), "Result filter failed");
             }
         }
 

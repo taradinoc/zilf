@@ -214,7 +214,7 @@ namespace Zilf.Compiler
                         // quirks: local
                         if (Locals.TryGetValue(atom, out local))
                         {
-                            Context.HandleWarning(new CompilerError(
+                            Context.HandleError(new CompilerError(
                                 form,
                                 CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
                                 "global",
@@ -241,7 +241,7 @@ namespace Zilf.Compiler
                         // quirks: constant, global, object, or routine
                         if (Constants.TryGetValue(atom, out operand))
                         {
-                            Context.HandleWarning(new CompilerError(
+                            Context.HandleError(new CompilerError(
                                 form,
                                 CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
                                 "local",
@@ -251,7 +251,7 @@ namespace Zilf.Compiler
                         }
                         if (Globals.TryGetValue(atom, out global))
                         {
-                            Context.HandleWarning(new CompilerError(
+                            Context.HandleError(new CompilerError(
                                 form,
                                 CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
                                 "local",
@@ -261,7 +261,7 @@ namespace Zilf.Compiler
                         }
                         if (Objects.TryGetValue(atom, out objbld))
                         {
-                            Context.HandleWarning(new CompilerError(
+                            Context.HandleError(new CompilerError(
                                 form,
                                 CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
                                 "local",
@@ -271,7 +271,7 @@ namespace Zilf.Compiler
                         }
                         if (Routines.TryGetValue(atom, out routine))
                         {
-                            Context.HandleWarning(new CompilerError(
+                            Context.HandleError(new CompilerError(
                                 form,
                                 CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
                                 "local",
@@ -424,7 +424,7 @@ namespace Zilf.Compiler
                     var atom = (ZilAtom)expr;
                     if (Globals.ContainsKey(atom))
                     {
-                        Context.HandleWarning(new CompilerError(expr.SourceLine ?? src,
+                        Context.HandleError(new CompilerError(expr.SourceLine ?? src,
                             CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right, atom));
                         return Globals[atom].Indirect;
                     }

@@ -18,6 +18,7 @@
 
 extern alias JBA;
 using System.Diagnostics.Contracts;
+using System.Text;
 using JBA::JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -248,5 +249,19 @@ namespace IntegrationTests
 
             AssertRaw(code).Outputs("0\n");
         }
+
+        [TestMethod]
+        public void Compilation_Stops_After_100_Errors()
+        {
+            var builder = AssertRoutine("", "T");
+
+            for (var i = 1; i <= 150; i++)
+            {
+                builder = builder.WithGlobal($"<ROUTINE DUMMY-{i} () <THIS-IS-INVALID>>");
+            }
+
+            builder.DoesNotCompile(r => r.ErrorCount == 101);
+        }
+
     }
 }

@@ -238,10 +238,10 @@ namespace Zilf.Compiler
         }
 
         [NotNull]
-        Context NewContext()
+        Context NewContext(RunMode runMode)
         {
             Contract.Ensures(Contract.Result<Context>() != null);
-            var result = new Context();
+            var result = new Context { RunMode = runMode };
 
             InitializeContext?.Invoke(this, new ContextEventArgs(result));
 
@@ -267,7 +267,7 @@ namespace Zilf.Compiler
         {
             Contract.Requires(inputFileName != null);
             Contract.Requires(outputFileName != null);
-            return Compile(NewContext(), inputFileName, outputFileName, wantDebugInfo);
+            return Compile(NewContext(RunMode.Compiler), inputFileName, outputFileName, wantDebugInfo);
         }
 
         internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
@@ -300,7 +300,14 @@ namespace Zilf.Compiler
                     ctx.InterceptOpenFile = OpenFile;
                     ctx.InterceptFileExists = CheckFileExists;
                     ctx.IncludePaths.AddRange(IncludePaths);
-                    Program.Evaluate(ctx, inputStream);
+                    try
+                    {
+                        Program.Evaluate(ctx, inputStream);
+                    }
+                    catch (ZilErrorBase ex)
+                    {
+                        ctx.HandleError(ex);
+                    }
 
                     // compile, if there were no evaluation errors
                     if (wantCompile && ctx.ErrorCount == 0)
@@ -319,7 +326,7 @@ namespace Zilf.Compiler
                                 Compilation.Compile(ctx, gameBuilder);
                             }
                         }
-                        catch (ZilError ex)
+                        catch (ZilErrorBase ex)     // catch fatals too
                         {
                             ctx.HandleError(ex);
                         }

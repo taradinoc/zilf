@@ -35,10 +35,14 @@ namespace Zilf.Diagnostics
         {
         }
 
-/*
-        [Message("{0}")]
-        public const int LegacyError = 0;
-*/
+        /*
+                [Message("{0}")]
+                public const int LegacyError = 0;
+        */
+
+        [Message("too many errors, stopping", Severity = Severity.Fatal)]
+        public const int Too_Many_Errors = 1;
+
 
         // Syntax - 0100
 

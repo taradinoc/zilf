@@ -50,6 +50,7 @@ namespace IntegrationTests
         // ReSharper disable once NotAccessedField.Global
         public string Output;
         public int WarningCount;
+        public int ErrorCount;
     }
 
     class ZlrHelper
@@ -90,6 +91,7 @@ namespace IntegrationTests
             var result = new ZlrHelperRunResult();
 
             bool compiled = helper.Compile();
+            result.ErrorCount = helper.ErrorCount;
             result.WarningCount = helper.WarningCount;
             if (!compiled)
             {
@@ -127,6 +129,7 @@ namespace IntegrationTests
 
         MemoryStream zapfOutputFile;
 
+        public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
 
         public ZlrHelper([NotNull] string code, [CanBeNull] string input)
@@ -209,6 +212,7 @@ namespace IntegrationTests
             // run compilation
             PrintZilCode();
             var result = frontEnd.Compile(SZilFileName, SMainZapFileName);
+            ErrorCount = result.ErrorCount;
             WarningCount = result.WarningCount;
             if (result.Success)
             {

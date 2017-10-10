@@ -67,8 +67,8 @@ namespace Zilf.Interpreter
             public ApplyTypeDelegate ApplyTypeDelegate;
         }
 
-        int errorCount, warningCount;
-        readonly IDiagnosticFormatter diagnosticFormatter = new DefaultDiagnosticFormatter();
+        [NotNull]
+        readonly DiagnosticManager diagnostics;
 
         readonly bool ignoreCase;
         [NotNull]
@@ -113,6 +113,15 @@ namespace Zilf.Interpreter
         public Context(bool ignoreCase)
         {
             this.ignoreCase = ignoreCase;
+
+            diagnostics = new DiagnosticManager();
+            diagnostics.TooManyErrors += (sender, args) =>
+            {
+                if (RunMode == RunMode.Compiler)
+                {
+                    throw new CompilerFatal(CompilerMessages.Too_Many_Errors);
+                }
+            };
 
             // so we can create FileSourceInfos for default PROPDEFs
             CurrentFile = new FileContext(this, "<internal>");
@@ -177,8 +186,7 @@ namespace Zilf.Interpreter
         [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
         {
-            Contract.Invariant(errorCount >= 0);
-            Contract.Invariant(warningCount >= 0);
+            Contract.Invariant(diagnostics != null);
             Contract.Invariant(includePaths != null);
             Contract.Invariant(rootObList != null);
             Contract.Invariant(packageObList != null);
@@ -217,33 +225,18 @@ namespace Zilf.Interpreter
 
         public bool WantDebugInfo { get; set; }
 
-        public int ErrorCount
+        public int ErrorCount => diagnostics.ErrorCount;
+
+        public int? MaxErrorCount
         {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                return errorCount;
-            }
+            get => diagnostics.MaxErrorCount;
+            set => diagnostics.MaxErrorCount = value;
         }
 
-        public int WarningCount
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                return warningCount;
-            }
-        }
+        public int WarningCount => diagnostics.WarningCount;
 
         [NotNull]
-        public ZEnvironment ZEnvironment
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ZEnvironment>() != null);
-                return zenv;
-            }
-        }
+        public ZEnvironment ZEnvironment => zenv;
 
         public FileContext CurrentFile { get; set; }
 
@@ -848,54 +841,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        [Obsolete("Use the overload that takes a " + nameof(ZilError) + " instead.")]
-        public void HandleWarning([CanBeNull] ISourceLine node, [NotNull] string message)
-        {
-            Contract.Requires(message != null);
-            Contract.Ensures(warningCount > 0);
-
-            warningCount++;
-            Console.Error.WriteLine("[warning] {0}{1}{2}",
-                node == null ? "" : node.SourceInfo,
-                node == null ? "" : ": ",
-                message);
-        }
-
-        public void HandleWarning([NotNull] ZilError ex)
-        {
-            Contract.Requires(ex != null);
-            Contract.Ensures(warningCount > 0);
-
-            HandleDiagnostic(ex.Diagnostic);
-        }
-
-        public void HandleError([NotNull] ZilError ex)
-        {
-            Contract.Requires(ex != null);
-            Contract.Ensures(errorCount > 0);
-
-            HandleDiagnostic(ex.Diagnostic);
-        }
-
-        public void HandleDiagnostic([NotNull] Diagnostic diag)
-        {
-            Contract.Requires(diag != null);
-            Contract.Ensures(errorCount >= Contract.OldValue(errorCount));
-            Contract.Ensures(warningCount >= Contract.OldValue(warningCount));
-
-            switch (diag.Severity)
-            {
-                case Severity.Error:
-                    errorCount++;
-                    break;
-
-                case Severity.Warning:
-                    warningCount++;
-                    break;
-            }
-
-            Console.Error.WriteLine(diagnosticFormatter.Format(diag));
-        }
+        public void HandleError([NotNull] ZilErrorBase ex) => diagnostics.Handle(ex.Diagnostic);
 
         /// <exception cref="FileNotFoundException">The file wasn't found in any include path.</exception>
         [NotNull]

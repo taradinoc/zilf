@@ -567,7 +567,7 @@ namespace Zilf.ZModel
                 else
                 {
                     Contract.Assume(entry.InitialMention != null);
-                    ctx.HandleWarning(new CompilerError(entry.InitialMention, CompilerMessages.Mentioned_Object_0_Is_Never_Defined, entry.Name));
+                    ctx.HandleError(new CompilerError(entry.InitialMention, CompilerMessages.Mentioned_Object_0_Is_Never_Defined, entry.Name));
                     yield return new ZilModelObject(entry.Name, new ZilList[0], false);
                 }
             }

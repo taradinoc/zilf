@@ -144,7 +144,7 @@ namespace Zilf.ZModel
                             case StdAtom.CARRIED:
                             case StdAtom.ON_GROUND:
                             case StdAtom.IN_ROOM:
-                                ctx.HandleWarning(new InterpreterError(
+                                ctx.HandleError(new InterpreterError(
                                     src,
                                     InterpreterMessages.Ignoring_List_Of_Flags_In_Syntax_Definition_With_No_Preceding_OBJECT));
                                 break;
