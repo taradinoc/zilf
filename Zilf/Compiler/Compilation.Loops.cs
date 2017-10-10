@@ -327,9 +327,8 @@ namespace Zilf.Compiler
         [ContractAnnotation("wantResult: true => notnull")]
         [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
         IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-#pragma warning disable RECS0154 // Parameter is never used
+            // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
-#pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
             Contract.Requires(args != null);
@@ -498,9 +497,8 @@ namespace Zilf.Compiler
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
         IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-#pragma warning disable RECS0154 // Parameter is never used
+            // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
-#pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
             Contract.Requires(args != null);
@@ -653,9 +651,8 @@ namespace Zilf.Compiler
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
         IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-#pragma warning disable RECS0154 // Parameter is never used
+            // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
-#pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(rb != null);
             Contract.Requires(args != null);

@@ -40,7 +40,6 @@ namespace Zilf.ZModel.Values
 
         public ZilObject Value { get; }
 
-        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ZilWord>(x => x.Value);

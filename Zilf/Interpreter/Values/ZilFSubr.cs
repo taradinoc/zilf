@@ -24,7 +24,7 @@ using JetBrains.Annotations;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FSUBR, PrimType.STRING)]
-    class ZilFSubr : ZilSubr, IApplicable
+    class ZilFSubr : ZilSubr
     {
         public ZilFSubr([NotNull] string name, [NotNull] SubrDelegate handler)
             : base(name, handler)

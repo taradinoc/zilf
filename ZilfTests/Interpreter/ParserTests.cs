@@ -18,13 +18,14 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zilf.Language;
-using Zilf.Interpreter;
-using Zilf.Interpreter.Values;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
-using System.Diagnostics.Contracts;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
@@ -59,7 +60,7 @@ namespace ZilfTests.Interpreter
                 if (zo is ZilHash hash)
                     return hash.Type;
 
-                System.Diagnostics.Debug.Assert(zo.StdTypeAtom != StdAtom.None);
+                Debug.Assert(zo.StdTypeAtom != StdAtom.None);
                 return ParseAtom(zo.StdTypeAtom.ToString());
             }
 
@@ -218,7 +219,7 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             Assert.AreEqual(
-                new ZilForm(new ZilObject[] { site.FALSE, new ZilFix(1), site.FALSE }),
+                new ZilForm(new[] { site.FALSE, new ZilFix(1), site.FALSE }),
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }

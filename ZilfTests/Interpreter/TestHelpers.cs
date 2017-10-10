@@ -16,8 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -47,14 +47,14 @@ namespace ZilfTests.Interpreter
         internal static void EvalAndAssert(Context ctx, string expression, ZilObject expected)
         {
             var actual = Evaluate(ctx, expression);
-            if (!object.Equals(actual, expected))
+            if (!Equals(actual, expected))
                 throw new AssertFailedException(string.Format("TestHelpers.EvalAndAssert failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}", expected, actual, expression));
         }
 
         internal static void EvalAndCatch<TException>(string expression, Predicate<TException> predicate = null)
             where TException : Exception
         {
-            EvalAndCatch<TException>(null, expression, predicate);
+            EvalAndCatch(null, expression, predicate);
         }
 
         internal static void EvalAndCatch<TException>(Context ctx, string expression, Predicate<TException> predicate = null)

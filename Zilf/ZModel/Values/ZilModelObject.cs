@@ -80,7 +80,6 @@ namespace Zilf.ZModel.Values
         [NotNull]
         public ZilList PropertiesList => new ZilList(Properties);
 
-        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ZilModelObject>(

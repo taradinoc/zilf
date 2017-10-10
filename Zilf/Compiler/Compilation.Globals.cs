@@ -17,17 +17,17 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
-using JetBrains.Annotations;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Compiler
 {

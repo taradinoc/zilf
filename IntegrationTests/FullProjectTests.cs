@@ -20,7 +20,6 @@ extern alias JBA;
 using DiffLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -155,7 +154,8 @@ namespace IntegrationTests
         [NotNull]
         static readonly Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
 
-        static string MassageText(string text)
+        [NotNull]
+        static string MassageText([NotNull] string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -165,7 +165,8 @@ namespace IntegrationTests
             return text;
         }
 
-        static string[] SplitLines(string text)
+        [NotNull]
+        static string[] SplitLines([NotNull] string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string[]>() != null);

@@ -19,8 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using JetBrains.Annotations;
 using Zilf.Common;
@@ -113,7 +115,7 @@ namespace Zilf
             return 0;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
         static void DoREPL([NotNull] Context ctx)
         {
@@ -203,7 +205,7 @@ namespace Zilf
         static DateTime RetrieveLinkerTimestamp()
         {
             // http://stackoverflow.com/questions/1600962/displaying-the-build-date
-            string filePath = System.Reflection.Assembly.GetCallingAssembly().Location;
+            string filePath = Assembly.GetCallingAssembly().Location;
             const int c_PeHeaderOffset = 60;
             const int c_LinkerTimestampOffset = 8;
             byte[] b = new byte[2048];
@@ -423,7 +425,7 @@ namespace Zilf
             var strippables = new HashSet<string> { "bin", "debug", "release", "zilf" };
             string[] libraryDirNames = { "Library", "library", "lib" };
 
-            var zilfDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var zilfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Debug.Assert(zilfDir != null);
 
             while (true)

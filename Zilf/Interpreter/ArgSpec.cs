@@ -576,6 +576,7 @@ namespace Zilf.Interpreter
                     if (enumerator.MoveNext())
                     {
                         var result = enumerator.Current;
+                        Contract.Assert(result != null);
 
                         if (!eval)
                         {

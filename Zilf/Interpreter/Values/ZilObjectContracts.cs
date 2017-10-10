@@ -26,7 +26,6 @@ namespace Zilf.Interpreter.Values
     [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class ZilObjectContracts : ZilObject
     {
-        [NotNull]
         public override ZilAtom GetTypeAtom(Context ctx)
         {
             Contract.Ensures(Contract.Result<ZilAtom>() != null);

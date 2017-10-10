@@ -70,7 +70,6 @@ namespace Zilf.ZModel.Values
             throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to ROUTINE", "a list");
         }
 
-        [NotNull]
         protected override TiedLayout GetLayout()
         {
             Contract.Ensures(Contract.Result<TiedLayout>() != null);

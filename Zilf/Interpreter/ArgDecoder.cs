@@ -635,6 +635,7 @@ namespace Zilf.Interpreter
             else if (eitherAttr != null && paramType.IsArray)
             {
                 var elemType = paramType.GetElementType();
+                Contract.Assert(elemType != null);
                 var innerStepInfo = PrepareOneEither(ctx, eitherAttr.DefaultParamDesc ?? name, eitherAttr.Types);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
@@ -644,9 +645,10 @@ namespace Zilf.Interpreter
                 result = PrepareOneStructured(ctx, paramType);
             }
             else if (paramType.IsArray &&
-                paramType.GetElementType().GetCustomAttribute<ZilStructuredParamAttribute>() != null)
+                paramType.GetElementType()?.GetCustomAttribute<ZilStructuredParamAttribute>() != null)
             {
                 var elemType = paramType.GetElementType();
+                Contract.Assert(elemType != null);
                 var innerStepInfo = PrepareOneStructured(ctx, elemType);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
@@ -656,9 +658,10 @@ namespace Zilf.Interpreter
                 result = PrepareOneSequence(ctx, paramType);
             }
             else if (paramType.IsArray &&
-                paramType.GetElementType().GetCustomAttribute<ZilSequenceParamAttribute>() != null)
+                paramType.GetElementType()?.GetCustomAttribute<ZilSequenceParamAttribute>() != null)
             {
                 var elemType = paramType.GetElementType();
+                Contract.Assert(elemType != null);
                 var innerStepInfo = PrepareOneSequence(ctx, elemType);
                 result = PrepareOneArrayFromInnerStep(elemType, innerStepInfo, isRequired, out defaultValue);
             }
@@ -764,6 +767,7 @@ namespace Zilf.Interpreter
             {
                 // decode as an array containing all remaining args
                 var eltype = paramType.GetElementType();
+                Contract.Assert(eltype != null);
                 defaultValue = Array.CreateInstance(eltype, 0);
 
                 var constraint = ZilObjectTypeToConstraint(eltype);

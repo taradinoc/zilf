@@ -16,10 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -81,14 +81,7 @@ namespace ZilfTests.Interpreter
                     }
                 )
             ));
-            ctx.SetLocalVal(ZilAtom.Parse("A-VECTOR", ctx), new ZilVector(new ZilObject[] {
-                new ZilFix(4),
-                new ZilFix(8),
-                new ZilFix(15),
-                new ZilFix(16),
-                new ZilFix(23),
-                new ZilFix(42)
-            }));
+            ctx.SetLocalVal(ZilAtom.Parse("A-VECTOR", ctx), new ZilVector(new ZilFix(4), new ZilFix(8), new ZilFix(15), new ZilFix(16), new ZilFix(23), new ZilFix(42)));
             ctx.SetLocalVal(ZilAtom.Parse("A-ADECL", ctx), new ZilAdecl(
                 ZilString.FromString("FIDO"),
                 ZilAtom.Parse("DOG", ctx)
@@ -703,18 +696,10 @@ namespace ZilfTests.Interpreter
         {
             // vector-based types can be coerced to VECTOR
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-ADECL VECTOR>",
-                new ZilVector(new ZilObject[] {
-                    ZilString.FromString("FIDO"),
-                    ZilAtom.Parse("DOG", ctx)
-                })
+                new ZilVector(ZilString.FromString("FIDO"), ZilAtom.Parse("DOG", ctx))
             );
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-OFFSET VECTOR>",
-                new ZilVector(new ZilObject[]
-                {
-                    new ZilFix(2),
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM) }),
-                    ctx.GetStdAtom(StdAtom.ATOM)
-                })
+                new ZilVector(new ZilFix(2), new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM) }), ctx.GetStdAtom(StdAtom.ATOM))
             );
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM VECTOR>");
@@ -868,11 +853,7 @@ namespace ZilfTests.Interpreter
         {
             TestHelpers.EvalAndAssert("<VECTOR>", new ZilVector());
             TestHelpers.EvalAndAssert("<VECTOR 1>", new ZilVector(new ZilFix(1)));
-            TestHelpers.EvalAndAssert("<VECTOR 1 2 3>", new ZilVector(new ZilObject[] {
-                new ZilFix(1),
-                new ZilFix(2),
-                new ZilFix(3)
-            }));
+            TestHelpers.EvalAndAssert("<VECTOR 1 2 3>", new ZilVector(new ZilFix(1), new ZilFix(2), new ZilFix(3)));
 
             TestHelpers.EvalAndAssert("<REST [1 2 3]>",
                 new ZilVector(new ZilFix(2), new ZilFix(3)));
@@ -1031,7 +1012,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "(<+ 1 2> <+ 3 4>)",
                 new ZilList(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
             TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
-                new ZilVector(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
+                new ZilVector(new ZilFix(3), new ZilFix(7)));
 
             TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:FIX", new ZilFix(3));
         }
@@ -1244,9 +1225,6 @@ namespace ZilfTests.Interpreter
         [TestMethod]
         public void All_ZilObject_Classes_With_Structured_PrimTypes_Implement_IStructure()
         {
-            //XXX
-            var w = new ZilWord(new ZilFix(123));
-
             bool IsStructuredPrimType(PrimType pt)
             {
                 switch (pt)
@@ -1262,12 +1240,13 @@ namespace ZilfTests.Interpreter
             }
 
             var typesWithPrimTypes =
-                from t in GetConcreteZilObjectTypes()
-                where !typeof(IStructure).IsAssignableFrom(t)
-                let builtinTypeAttrs = t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
-                where builtinTypeAttrs.Length == 1
-                let attr = (BuiltinTypeAttribute)builtinTypeAttrs[0]
-                select new { attr.PrimType, Type = t };
+                (from t in GetConcreteZilObjectTypes()
+                 where !typeof(IStructure).IsAssignableFrom(t)
+                 let builtinTypeAttrs = t.GetCustomAttributes(typeof(BuiltinTypeAttribute), false)
+                 where builtinTypeAttrs.Length == 1
+                 let attr = (BuiltinTypeAttribute)builtinTypeAttrs[0]
+                 select new { attr.PrimType, Type = t })
+                .ToArray();
 
             var typesMissingIStructure =
                 from t in typesWithPrimTypes
@@ -1367,12 +1346,12 @@ namespace ZilfTests.Interpreter
 
             // with the call to FOO, BAR gets FOO's environment, which expires after the call returns
             TestHelpers.EvalAndAssert(ctx, "<FOO>", ctx.TRUE);
-            System.GC.Collect();
+            GC.Collect();
             TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ENV>", ctx.FALSE);
 
             // without the call to FOO, BAR gets the root environment, which won't expire
             TestHelpers.EvalAndAssert(ctx, "<BAR>", ctx.TRUE);
-            System.GC.Collect();
+            GC.Collect();
             TestHelpers.EvalAndAssert(ctx, "<LEGAL? ,ENV>", ctx.TRUE);
         }
 

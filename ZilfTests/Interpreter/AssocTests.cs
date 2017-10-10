@@ -18,7 +18,6 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -72,6 +71,7 @@ namespace ZilfTests.Interpreter
             ctx.PutProp(foo, ctx.TRUE, ctx.TRUE);
 
             var weakRef = new WeakReference<ZilString>(foo);
+            // ReSharper disable once RedundantAssignment
             foo = null;
 
             GC.Collect();
