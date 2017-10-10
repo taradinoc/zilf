@@ -111,6 +111,7 @@ namespace Zilf.ZModel
         /// <summary>
         /// The last direction defined with &lt;DIRECTIONS&gt;.
         /// </summary>
+        [CanBeNull]
         public ZilAtom LowDirection;
 
         public byte NextAction;         // V? (intentions)
@@ -473,6 +474,7 @@ namespace Zilf.ZModel
             }
         }
 
+        [NotNull]
         [ItemNotNull]
         public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder()
         {
@@ -842,7 +844,7 @@ namespace Zilf.ZModel
             var zval = ctx.GetZVal(target);
             if (zval != null)
             {
-                ctx.SetZVal(target, zval);
+                ctx.SetZVal(target, zval);  // TODO: shouldn't this be alias, not target?
             }
         }
 

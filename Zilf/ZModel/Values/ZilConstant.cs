@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
@@ -29,7 +30,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
     class ZilConstant : ZilTiedListBase
     {
-        public ZilConstant(ZilAtom name, ZilObject value)
+        public ZilConstant([NotNull] ZilAtom name, [NotNull] ZilObject value)
         {
             Name = name;
             Value = value;
@@ -39,7 +40,7 @@ namespace Zilf.ZModel.Values
         [NotNull]
         [ChtypeMethod]
 #pragma warning disable RECS0154 // Parameter is never used
-        public static ZilConstant FromList(Context ctx, [NotNull] ZilListBase list)
+        public static ZilConstant FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             Contract.Requires(list != null);
@@ -50,13 +51,16 @@ namespace Zilf.ZModel.Values
             if (!(list.First is ZilAtom name))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to CONSTANT", "an atom");
 
+            Debug.Assert(list.Rest.First != null, "list.Rest.First != null");
             var value = list.Rest.First;
 
             return new ZilConstant(name, value);
         }
 
+        [NotNull]
         public ZilAtom Name { get; }
 
+        [NotNull]
         public ZilObject Value { get; }
 
         protected override TiedLayout GetLayout()

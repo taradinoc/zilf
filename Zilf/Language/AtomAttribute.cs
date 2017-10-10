@@ -17,22 +17,19 @@
  */
 
 using System;
+using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
     [AttributeUsage(AttributeTargets.Field)]
     class AtomAttribute : Attribute
     {
-        readonly string name;
-
-        public AtomAttribute(string name)
+        public AtomAttribute([NotNull] string name)
         {
-            this.name = name;
+            Name = name;
         }
 
-        public string Name
-        {
-            get { return name; }
-        }
+        [NotNull]
+        public string Name { get; }
     }
 }

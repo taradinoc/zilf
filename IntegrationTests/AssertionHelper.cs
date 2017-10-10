@@ -32,8 +32,11 @@ namespace IntegrationTests
     abstract class AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelper<TThis>
     {
+        [NotNull]
         protected string versionDirective = "<VERSION ZIP>";
+        [NotNull]
         protected readonly StringBuilder miscGlobals = new StringBuilder();
+        [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
@@ -43,78 +46,91 @@ namespace IntegrationTests
             Contract.Assume(GetType() == typeof(TThis));
         }
 
+        [NotNull]
         public TThis InV3()
         {
             versionDirective = "<VERSION ZIP>";
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis InV4()
         {
             versionDirective = "<VERSION EZIP>";
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis InV5()
         {
             versionDirective = "<VERSION XZIP>";
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis InV6()
         {
             versionDirective = "<VERSION YZIP>";
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis InV7()
         {
             versionDirective = "<VERSION 7>";
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis InV8()
         {
             versionDirective = "<VERSION 8>";
             return (TThis)this;
         }
 
-        public TThis WithVersionDirective(string versionStr)
+        [NotNull]
+        public TThis WithVersionDirective([NotNull] string versionStr)
         {
             versionDirective = versionStr;
             return (TThis)this;
         }
 
-        public TThis WithGlobal(string code)
+        [NotNull]
+        public TThis WithGlobal([NotNull] string code)
         {
             miscGlobals.AppendLine(code);
             return (TThis)this;
         }
 
-        public TThis WithInput(string line)
+        [NotNull]
+        public TThis WithInput([NotNull] string line)
         {
             input.AppendLine(line);
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis WithWarnings()
         {
             expectWarnings = true;
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis WithoutWarnings()
         {
             expectWarnings = false;
             return (TThis)this;
         }
 
+        [NotNull]
         public TThis CapturingCompileOutput()
         {
             wantCompileOutput = true;
             return (TThis)this;
         }
 
+        [NotNull]
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -128,9 +144,10 @@ namespace IntegrationTests
 
     sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
     {
+        [NotNull]
         readonly string argSpec, body;
 
-        public EntryPointAssertionHelper(string argSpec, string body)
+        public EntryPointAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
             this.argSpec = argSpec;
             this.body = body;
@@ -138,11 +155,10 @@ namespace IntegrationTests
 
         public void DoesNotCompile()
         {
-            var testCode = string.Format(
-                "{0}\r\n<ROUTINE GO ({1})\r\n\t{2}\r\n\t<QUIT>>",
-                GlobalCode(),
-                argSpec,
-                body);
+            var testCode = $"{GlobalCode()}\r\n" +
+                           $"<ROUTINE GO ({argSpec})\r\n" +
+                           $"\t{body}\r\n" +
+                           "\t<QUIT>>";
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
@@ -186,7 +202,7 @@ namespace IntegrationTests
     abstract class AbstractAssertionHelperWithEntryPoint<TThis> : AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelperWithEntryPoint<TThis>
     {
-        protected abstract string Expression();
+        [NotNull] protected abstract string Expression();
 
         public void GivesNumber([NotNull] string expectedValue)
         {
@@ -303,6 +319,7 @@ namespace IntegrationTests
 
     sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
     {
+        [NotNull]
         readonly string expression;
 
         public ExprAssertionHelper([NotNull] string expression)
@@ -334,6 +351,7 @@ namespace IntegrationTests
             this.body = body;
         }
 
+        [NotNull]
         public RoutineAssertionHelper WhenCalledWith([NotNull] string testArguments)
         {
             Contract.Requires(testArguments != null);
@@ -354,7 +372,7 @@ namespace IntegrationTests
 
     sealed class GlobalsAssertionHelper : AbstractAssertionHelperWithEntryPoint<GlobalsAssertionHelper>
     {
-        public GlobalsAssertionHelper(params string[] globals)
+        public GlobalsAssertionHelper([ItemNotNull] [NotNull] params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));

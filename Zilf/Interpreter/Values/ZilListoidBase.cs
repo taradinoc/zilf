@@ -20,13 +20,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
+using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinPrimType(PrimType.LIST)]
     abstract class ZilListoidBase : ZilObject, IStructure
     {
+        [CanBeNull]
         public abstract ZilObject First { get; set; }
+        [CanBeNull]
         public abstract ZilList Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
 
         [ContractInvariantMethod]
@@ -53,6 +56,7 @@ namespace Zilf.Interpreter.Values
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
+        [CanBeNull]
         public abstract ZilObject this[int index] { get; set; }
         public abstract int GetLength();
         public abstract int? GetLength(int limit);

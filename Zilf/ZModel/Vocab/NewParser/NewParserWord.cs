@@ -27,13 +27,14 @@ namespace Zilf.ZModel.Vocab.NewParser
 {
     class NewParserWord : IWord
     {
+        [NotNull]
         readonly Context ctx;
 
-        public NewParserWord(Context ctx, ZilAtom atom, ZilHash vword)
+        public NewParserWord([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilHash vword)
         {
             this.ctx = ctx;
-            this.Atom = atom;
-            this.Inner = vword;
+            Atom = atom;
+            Inner = vword;
         }
 
         [NotNull]
@@ -61,6 +62,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public ZilAtom Atom { get; }
 
+        [NotNull]
         public ZilHash Inner { get; }
 
         /* GetViaInner and SetViaInner disable DECL checking because user code may expect

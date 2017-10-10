@@ -102,9 +102,11 @@ namespace Zilf.ZModel.Vocab
         IWord CreateWord([NotNull] ZilAtom text);
         void WriteToBuilder([NotNull] IWord word, [NotNull] IWordBuilder wb, WriteToBuilderHelpers helpers);
 
+        [ItemNotNull]
         [NotNull]
         string[] GetReservedGlobalNames();
 
+        [ItemNotNull]
         [NotNull]
         string[] GetLateSyntaxTableNames();
 

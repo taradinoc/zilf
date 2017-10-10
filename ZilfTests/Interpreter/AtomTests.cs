@@ -22,7 +22,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-
+// ReSharper disable InconsistentNaming
 // ReSharper disable ExceptionNotDocumentedOptional
 
 namespace ZilfTests.Interpreter

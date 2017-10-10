@@ -67,7 +67,7 @@ namespace Zilf.Interpreter.Values
         protected override string CloseBracket => ">";
 
         [NotNull]
-        string ToString(Func<ZilObject, string> convert)
+        string ToString([NotNull] Func<ZilObject, string> convert)
         {
             Contract.Ensures(Contract.Result<string>() != null);
             if (Recursion.TryLock(this))
@@ -107,12 +107,12 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            return ToString(zo => zo.ToString());
+            return ToString(zo => zo?.ToString());
         }
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            return ToString(zo => zo.ToStringContext(ctx, friendly));
+            return ToString(zo => zo?.ToStringContext(ctx, friendly));
         }
 
         public override StdAtom StdTypeAtom => StdAtom.FORM;

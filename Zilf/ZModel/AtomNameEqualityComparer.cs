@@ -47,13 +47,11 @@ namespace Zilf.ZModel
 
         public int GetHashCode([CanBeNull] ZilAtom obj)
         {
-            if (obj == null || obj.Text == null)
+            if (obj == null)
                 return 0;
 
-            if (ignoreCase)
-                return obj.Text.ToUpperInvariant().GetHashCode();
-
-            return obj.Text.GetHashCode();
+            var text = ignoreCase ? obj.Text.ToUpperInvariant() : obj.Text;
+            return text.GetHashCode();
         }
     }
 }

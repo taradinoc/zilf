@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
@@ -31,12 +32,16 @@ namespace Zilf.Compiler.Builtins
     {
         public readonly int MinArgs;
         public readonly int? MaxArgs;
+        [NotNull]
         public readonly Type CallType;
 
+        [NotNull]
         public readonly BuiltinAttribute Attr;
+        [NotNull]
         public readonly MethodInfo Method;
 
         /// <exception cref="ArgumentException">The attribute values or method signature are invalid.</exception>
+        // ReSharper disable once NotNullMemberIsNotInitialized
         public BuiltinSpec([NotNull] BuiltinAttribute attr, [NotNull] MethodInfo method)
         {
             Contract.Requires(attr != null);
@@ -51,7 +56,10 @@ namespace Zilf.Compiler.Builtins
                 int min = 0;
                 int? max = 0;
                 Type dataParamType = null;
+
                 var parameters = method.GetParameters();
+                if (parameters.Length == 0)
+                    throw new ArgumentException("Not enough parameters");
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -120,6 +128,8 @@ namespace Zilf.Compiler.Builtins
                     // unrecognized type
                     throw new ArgumentException("Inscrutable parameter: " + pi.Name);
                 }
+
+                Debug.Assert(CallType != null);
 
                 MinArgs = min;
                 MaxArgs = max;

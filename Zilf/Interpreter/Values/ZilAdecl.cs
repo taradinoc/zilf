@@ -29,7 +29,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ADECL, PrimType.VECTOR)]
     sealed class ZilAdecl : ZilObject, IStructure
     {
+        [NotNull]
         public ZilObject First;
+        [NotNull]
         public ZilObject Second;
 
         /// <exception cref="InterpreterError"><paramref name="vector"/> has the wrong number of elements.</exception>

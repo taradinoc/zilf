@@ -18,7 +18,6 @@
 
 extern alias JBA;
 using System.Diagnostics.Contracts;
-using System.Text;
 using JBA::JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

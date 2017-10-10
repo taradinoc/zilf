@@ -80,9 +80,9 @@ namespace Zilf.Compiler
         /// <param name="reservedGlobals">The number of hard globals that are reserved for other purposes (i.e. parser tables).
         ///     Subtracting <paramref name="reservedGlobals"/> from 240 gives the number of hard globals that are actually available
         ///     for storing <see cref="ZEnvironment.Globals"/>.</param>
-        /// <param name="GlobalInitializers"></param>
+        /// <param name="globalInitializers"></param>
         /// <exception cref="CompilerError"></exception>
-        void DoFunnyGlobals(int reservedGlobals, Queue<System.Action> GlobalInitializers)
+        void DoFunnyGlobals(int reservedGlobals, Queue<System.Action> globalInitializers)
         {
             Contract.Requires(reservedGlobals >= 0);
             Contract.Ensures(Contract.ForAll(Context.ZEnvironment.Globals, g => g.StorageType != GlobalStorageType.Any));
@@ -215,7 +215,7 @@ namespace Zilf.Compiler
                     SoftGlobals.Add(g.Name, entry);
 
                     var gSave = g;
-                    GlobalInitializers.Enqueue(() => table.AddByte(GetGlobalDefaultValue(gSave) ?? Game.Zero));
+                    globalInitializers.Enqueue(() => table.AddByte(GetGlobalDefaultValue(gSave) ?? Game.Zero));
 
                     byteOffset++;
                 }
@@ -224,7 +224,7 @@ namespace Zilf.Compiler
             if (byteOffset % 2 != 0)
             {
                 byteOffset++;
-                GlobalInitializers.Enqueue(() => table.AddByte(Game.Zero));
+                globalInitializers.Enqueue(() => table.AddByte(Game.Zero));
             }
 
             foreach (var g in softGlobals)
@@ -239,7 +239,7 @@ namespace Zilf.Compiler
                     SoftGlobals.Add(g.Name, entry);
 
                     var gSave = g;
-                    GlobalInitializers.Enqueue(() => table.AddShort(GetGlobalDefaultValue(gSave) ?? Game.Zero));
+                    globalInitializers.Enqueue(() => table.AddShort(GetGlobalDefaultValue(gSave) ?? Game.Zero));
 
                     byteOffset += 2;
                 }

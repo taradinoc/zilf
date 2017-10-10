@@ -198,6 +198,8 @@ namespace Zilf.Compiler
                         // soft global
                         if (SoftGlobals.TryGetValue(atom, out var softGlobal))
                         {
+                            Debug.Assert(SoftGlobalsTable != null, nameof(SoftGlobalsTable) + " != null");
+
                             if (wantResult)
                             {
                                 resultStorage = resultStorage ?? rb.Stack;

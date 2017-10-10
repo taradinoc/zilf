@@ -78,22 +78,37 @@ namespace Zilf.Compiler
             Contract.Invariant(Game != null);
         }
 
+        [NotNull]
         public readonly Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
+        [NotNull]
         public readonly HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
+        [NotNull]
         public readonly Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
+        [NotNull]
         public readonly Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
+        [NotNull]
         public readonly Stack<Block> Blocks = new Stack<Block>();
 
+        [NotNull]
         public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals;
+        [NotNull]
         public readonly Dictionary<ZilAtom, IOperand> Constants;
+        [NotNull]
         public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines;
+        [NotNull]
         public readonly Dictionary<ZilAtom, IObjectBuilder> Objects;
+        [NotNull]
         public readonly Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
+        [NotNull]
         public readonly Dictionary<IWord, IWordBuilder> Vocabulary = new Dictionary<IWord, IWordBuilder>();
+        [NotNull]
         public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties;
+        [NotNull]
         public readonly Dictionary<ZilAtom, IFlagBuilder> Flags;
 
+        [NotNull]
         public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals;
+        [CanBeNull]
         public IOperand SoftGlobalsTable;
 
         public int UniqueFlags { get; set; }

@@ -36,54 +36,88 @@ namespace Zilf.Compiler.Builtins
 {
     static class ZBuiltins
     {
+        [ItemNotNull]
         [NotNull]
         static readonly ILookup<string, BuiltinSpec> builtins =
             (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
-             from a in mi.GetCustomAttributes<BuiltinAttribute>()
+             from a in mi?.GetCustomAttributes<BuiltinAttribute>()
              from name in a.Names
              select new { Name = name, Attr = a, Method = mi })
             .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
 
-        public static bool IsBuiltinValueCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinValueCall([NotNull] string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(ValueCall)));
+            return builtins[name].Any(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, argCount, typeof(ValueCall));
+            });
         }
 
-        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinVoidCall([NotNull] string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(VoidCall)));
+            return builtins[name].Any(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, argCount, typeof(VoidCall));
+            });
         }
 
-        public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinPredCall([NotNull] string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(PredCall)));
+            return builtins[name].Any(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, argCount, typeof(PredCall));
+            });
         }
 
-        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinValuePredCall([NotNull] string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s => s.AppliesTo(zversion, argCount, typeof(ValuePredCall)));
+            return builtins[name].Any(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, argCount, typeof(ValuePredCall));
+            });
         }
 
-        public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
+        public static bool IsBuiltinWithSideEffects([NotNull] string name, int zversion, int argCount)
         {
             // true if there's a void, value, or predicate version with side effects
-            return builtins[name].Any(s => s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect);
+            return builtins[name].Any(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect;
+            });
         }
 
-        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, out CompilerError error)
+        [ContractAnnotation("=> true, error: notnull; => false, error: null")]
+        public static bool IsNearMatchBuiltin([NotNull] string name, int zversion, int argCount, [CanBeNull] out CompilerError error)
         {
             // is there a match with this zversion but any arg count?
             var wrongArgCount =
-                builtins[name].Where(s => ZEnvironment.VersionMatches(
-                    zversion, s.Attr.MinVersion, s.Attr.MaxVersion))
+                builtins[name].Where(s =>
+                    {
+                        Debug.Assert(s != null, nameof(s) + " != null");
+                        return ZEnvironment.VersionMatches(
+                            zversion, s.Attr.MinVersion, s.Attr.MaxVersion);
+                    })
                 .ToArray();
             if (wrongArgCount.Length > 0)
             {
-                var counts = wrongArgCount.Select(s => new ArgCountRange(s.MinArgs, s.MaxArgs));
+                var counts = wrongArgCount.Select(s =>
+                {
+                    Debug.Assert(s != null, nameof(s) + " != null");
+                    return new ArgCountRange(s.MinArgs, s.MaxArgs);
+                });
 
                 // be a little more helpful if this arg count would work in another zversion
                 var acceptableVersion = builtins[name]
-                    .FirstOrDefault(s => argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs))
+                    .FirstOrDefault(s =>
+                    {
+                        Debug.Assert(s != null, nameof(s) + " != null");
+                        return argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs);
+                    })
                     ?.Attr.MinVersion;
 
                 error = CompilerError.WrongArgCount(name, counts, acceptableVersion);
@@ -127,10 +161,15 @@ namespace Zilf.Compiler.Builtins
             for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
             {
                 Contract.Assume(j < builtinParamInfos.Length);
+                Debug.Assert(args[i] != null);  // FIXME: this is implied by [ItemNotNull]
 
                 var pi = builtinParamInfos[j];
 
-                void InnerError(string msg) => error(i, msg);
+                void InnerError(string msg)
+                {
+                    Debug.Assert(msg != null, nameof(msg) + " != null");
+                    error(i, msg);
+                }
 
                 if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
                 {
@@ -221,6 +260,7 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
+        [CanBeNull]
         static object CompileBuiltinCall<TCall>([NotNull] string name, [NotNull] Compilation cc,
             [NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase form, TCall call)
             where TCall : struct
@@ -230,10 +270,16 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(rb != null);
             Contract.Requires(form != null);
 
+            Debug.Assert(form.Rest != null, "form.Rest != null");
+
             int zversion = cc.Context.ZEnvironment.ZVersion;
             var argList = form.Rest;
             var args = argList.ToArray();
-            var candidateSpecs = builtins[name].Where(s => s.AppliesTo(zversion, args.Length, typeof(TCall))).ToArray();
+            var candidateSpecs = builtins[name].Where(s =>
+            {
+                Debug.Assert(s != null, nameof(s) + " != null");
+                return s.AppliesTo(zversion, args.Length, typeof(TCall));
+            }).ToArray();
             Contract.Assume(candidateSpecs.Length >= 1);
 
             // find the best matching spec, if there's more than one
@@ -243,6 +289,7 @@ namespace Zilf.Compiler.Builtins
                 // choose the one with the fewest validation errors
                 spec = candidateSpecs.OrderBy(s =>
                 {
+                    Debug.Assert(s != null, nameof(s) + " != null");
                     int errors = 0;
                     var pis = s.Method.GetParameters();
                     ValidateArguments(cc, s, pis, args, delegate { errors++; });
@@ -253,6 +300,7 @@ namespace Zilf.Compiler.Builtins
             {
                 spec = candidateSpecs[0];
             }
+            Debug.Assert(spec != null, nameof(spec) + " != null");
             var builtinParamInfos = spec.Method.GetParameters();
 
             // validate arguments
@@ -277,11 +325,13 @@ namespace Zilf.Compiler.Builtins
             var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
             // generate code for arguments
+            Debug.Assert(form.SourceLine != null, "form.SourceLine != null");
             using (var operands = cc.CompileOperands(rb, form.SourceLine, needEvalExprs))
             {
                 // update validatedArgs with the evaluated operands
                 for (int i = 0; i < operands.Count; i++)
                 {
+                    Debug.Assert(needEval[i] != null);
                     var oidx = needEval[i].oidx;
                     validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
                 }
@@ -290,7 +340,8 @@ namespace Zilf.Compiler.Builtins
                 var builtinParams = MakeBuiltinMethodParams(spec, builtinParamInfos, call, validatedArgs);
                 try
                 {
-                    return spec.Method.Invoke(null, builtinParams.ToArray());
+                    var result = spec.Method.Invoke(null, builtinParams.ToArray());
+                    return result;
                 }
                 catch (TargetInvocationException ex) when (ex.InnerException is ZilError zex)
                 {
@@ -310,8 +361,10 @@ namespace Zilf.Compiler.Builtins
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             // TODO: allow resultStorage to be passed as null to handlers that want it? are there any?
-            return (IOperand)CompileBuiltinCall(name, cc, rb, form,
+            var result = (IOperand)CompileBuiltinCall(name, cc, rb, form,
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
+            Debug.Assert(result != null, nameof(result) + " != null");
+            return result;
         }
 
         public static void CompileVoidCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
@@ -356,7 +409,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("EQUAL?", "=?", "==?")]
         public static void VarargsEqualityOp(
             PredCall c, [NotNull] IOperand arg1, [NotNull] IOperand arg2,
-            [NotNull] params IOperand[] restOfArgs)
+            [ItemNotNull] [NotNull] params IOperand[] restOfArgs)
         {
             Contract.Requires(arg1 != null);
             Contract.Requires(arg2 != null);
@@ -408,6 +461,7 @@ namespace Zilf.Compiler.Builtins
                             queue.Enqueue(arg);
 
                     arg2 = queue.Dequeue();
+                    Debug.Assert(arg2 != null);
                     restOfArgs = queue.ToArray();
                 }
             }
@@ -418,9 +472,12 @@ namespace Zilf.Compiler.Builtins
                 switch (restOfArgs.Length)
                 {
                     case 2:
+                        Debug.Assert(restOfArgs[0] != null);
+                        Debug.Assert(restOfArgs[1] != null);
                         c.rb.BranchIfEqual(arg1, arg2, restOfArgs[0], restOfArgs[1], c.label, c.polarity);
                         break;
                     case 1:
+                        Debug.Assert(restOfArgs[0] != null);
                         c.rb.BranchIfEqual(arg1, arg2, restOfArgs[0], c.label, c.polarity);
                         break;
                     default:
@@ -444,6 +501,8 @@ namespace Zilf.Compiler.Builtins
                 foreach (var arg in restOfArgs)
                     queue.Enqueue(arg);
 
+                // ReSharper disable AssignNullToNotNullAttribute
+                // FIXME: every queue.Dequeue() triggers this warning
                 if (c.polarity)
                 {
                     while (queue.Count > 0)
@@ -489,6 +548,7 @@ namespace Zilf.Compiler.Builtins
 
                     c.rb.MarkLabel(skip);
                 }
+                // ReSharper restore AssignNullToNotNullAttribute
 
                 if (tempAtom != null)
                     c.cc.PopInnerLocal(tempAtom);
@@ -1009,6 +1069,7 @@ namespace Zilf.Compiler.Builtins
         {
             Contract.Requires(left != null);
             Contract.Requires(right != null);
+            Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
 
             var offset = c.cc.Game.MakeOperand(left.Offset);
 
@@ -1363,6 +1424,8 @@ namespace Zilf.Compiler.Builtins
 
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.rb.Stack);
 
+            Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
+
             if (storage == c.rb.Stack)
             {
                 // duplicate the value
@@ -1536,6 +1599,9 @@ namespace Zilf.Compiler.Builtins
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
             var offset = c.cc.Game.MakeOperand(victim.Offset);
+
+            Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
+
             c.rb.EmitBinary(
                 victim.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
                 c.cc.SoftGlobalsTable,
@@ -1570,6 +1636,9 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(victim != null);
 
             var offset = c.cc.Game.MakeOperand(victim.Offset);
+
+            Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
+
             c.rb.EmitBinary(
                 victim.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
                 c.cc.SoftGlobalsTable,

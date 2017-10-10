@@ -80,8 +80,6 @@ namespace Zilf.Compiler
             PrepareReservedGlobalBuilders(reservedGlobals);
             PrepareGlobalDefaults(globalInitializers);
 
-            globalInitializers = null;
-
             PreparePropertyDefaults();
             PrepareLateRoutineBuilders();
 
@@ -105,11 +103,13 @@ namespace Zilf.Compiler
         {
             // build tables
             foreach (var pair in Tables)
+            {
                 BuildTable(pair.Key, pair.Value);
+            }
         }
 
         [ContractAnnotation("longWords: notnull => longWordTable: notnull")]
-        void BuildLongWordTable([CanBeNull] ITableBuilder longWordTable, [CanBeNull] Queue<IWord> longWords)
+        void BuildLongWordTable([CanBeNull] ITableBuilder longWordTable, [CanBeNull][ItemNotNull] Queue<IWord> longWords)
         {
             if (longWords == null)
                 return;
@@ -120,7 +120,8 @@ namespace Zilf.Compiler
             while (longWords.Count > 0)
             {
                 var word = longWords.Dequeue();
-                longWordTable.AddShort(Vocabulary[word]);
+                var wb = Vocabulary[word];
+                longWordTable.AddShort(wb);
                 longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
             }
         }
@@ -133,7 +134,12 @@ namespace Zilf.Compiler
             var helpers = new WriteToBuilderHelpers
             {
                 CompileConstantDelegate = CompileConstant,
-                DirIndexToPropertyOperandDelegate = di => Properties[Context.ZEnvironment.Directions[di]]
+                DirIndexToPropertyOperandDelegate = di =>
+                {
+                    Debug.Assert(di < Context.ZEnvironment.Directions.Count);
+                    var dir = Context.ZEnvironment.Directions[di];
+                    return Properties[dir];
+                }
             };
 
             var builtWords = new HashSet<IWordBuilder>();
@@ -247,7 +253,9 @@ namespace Zilf.Compiler
                         new StringSourceLine($"<property default for '{pair.Key}'>")))
                     {
                         var pb = Properties[pair.Key];
+
                         pb.DefaultValue = CompileConstant(pair.Value);
+
                         if (pb.DefaultValue == null)
                             throw new CompilerError(
                                 CompilerMessages.Nonconstant_Initializer_For_0_1_2,
@@ -272,11 +280,12 @@ namespace Zilf.Compiler
             foreach (var name in reservedGlobals)
             {
                 var glb = Game.DefineGlobal(name);
-                Globals.Add(Context.RootObList[name], glb);
+                var atom = Context.RootObList[name];
+                Globals.Add(atom, glb);
             }
         }
 
-        void PrepareHardGlobalBuilders(Queue<System.Action> globalInitializers)
+        void PrepareHardGlobalBuilders([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
         {
             // builders and values for globals (which may refer to constants)
             foreach (var global in Context.ZEnvironment.Globals)
@@ -291,10 +300,10 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareGlobalDefaults(Queue<System.Action> globalInitializers)
+        void PrepareGlobalDefaults([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
         {
             while (globalInitializers.Count > 0)
-                globalInitializers.Dequeue().Invoke();
+                globalInitializers.Dequeue()?.Invoke();
         }
 
         void PrepareVocabConstant()
@@ -346,7 +355,8 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareAndCheckGlobalStorage(Queue<System.Action> globalInitializers, [ItemNotNull] [NotNull] out string[] reservedGlobals)
+        void PrepareAndCheckGlobalStorage([NotNull] [ItemNotNull] Queue<System.Action> globalInitializers,
+            [ItemNotNull] [NotNull] out string[] reservedGlobals)
         {
             Contract.Ensures(Contract.ValueAtReturn(out reservedGlobals) != null);
 
@@ -387,7 +397,9 @@ namespace Zilf.Compiler
         {
             // may as well do bit synonyms here too
             foreach (var pair in Context.ZEnvironment.BitSynonyms)
+            {
                 DefineFlagAlias(pair.Key, pair.Value);
+            }
         }
 
         void CopyVocabSynonymValues()
@@ -523,6 +535,7 @@ namespace Zilf.Compiler
             // builders for tables
             ITableBuilder firstPureTable = null;
             int ParserTablesFirst(ZilTable t) => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+
             foreach (var table in Context.ZEnvironment.Tables.OrderBy(ParserTablesFirst))
             {
                 var pure = (table.Flags & TableFlags.Pure) != 0;
@@ -534,7 +547,9 @@ namespace Zilf.Compiler
             }
 
             if (firstPureTable != null)
+            {
                 Constants.Add(Context.GetStdAtom(StdAtom.PRSTBL), firstPureTable);
+            }
         }
 
         void PrepareObjectBuilders([CanBeNull] out ZilModelObject lastObject)
@@ -555,8 +570,11 @@ namespace Zilf.Compiler
         void PrepareHighestFlagBuilders()
         {
             // builders for flags that need to be numbered highest (explicitly listed or used in syntax)
-            ZilAtom GetOriginal(ZilAtom flag) =>
-                Context.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
+            ZilAtom GetOriginal(ZilAtom flag)
+            {
+                return Context.ZEnvironment.TryGetBitSynonym(flag, out var orig) ? orig : flag;
+            }
+
             var highestFlags =
                 Context.ZEnvironment.FlagsOrderedLast
                     .Concat(
@@ -575,7 +593,9 @@ namespace Zilf.Compiler
                     Game.MaxFlags));
 
             foreach (var flag in highestFlags)
+            {
                 DefineFlag(flag);
+            }
         }
 
         void PreparePropertyBuilders()
@@ -585,13 +605,18 @@ namespace Zilf.Compiler
                 DefineProperty(dir);
 
             // create a constant for the last explicitly defined direction
-            if (Context.ZEnvironment.LowDirection != null)
+            var lowDir = Context.ZEnvironment.LowDirection;
+            if (lowDir != null)
+            {
                 Constants.Add(Context.GetStdAtom(StdAtom.LOW_DIRECTION),
-                    Properties[Context.ZEnvironment.LowDirection]);
+                    Properties[lowDir]);
+            }
 
             // builders and constants for some more properties
             foreach (var pair in Context.ZEnvironment.PropertyDefaults)
+            {
                 DefineProperty(pair.Key);
+            }
         }
 
         void PrepareEarlyRoutineBuilders()

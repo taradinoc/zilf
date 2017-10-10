@@ -16,12 +16,14 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel.Vocab
 {
     interface IWord
     {
+        [NotNull]
         ZilAtom Atom { get; }
     }
 }
