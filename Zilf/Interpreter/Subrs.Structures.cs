@@ -378,7 +378,7 @@ namespace Zilf.Interpreter
             return PerformMember(ctx, needle, haystack, (a, b) =>
             {
                 if (a is IStructure)
-                    return (a == b);
+                    return StructuresEqual(a, b);
 
                 return a.Equals(b);
             });
