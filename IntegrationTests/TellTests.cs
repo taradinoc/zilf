@@ -123,6 +123,17 @@ namespace IntegrationTests
         }
 
         [TestMethod]
+        public void Two_Spaces_After_Period_Bang_Or_Question_Should_Become_Sentence_Space_With_SENTENCE_ENDS()
+        {
+            // Note: a space followed by embedded newline will produce two spaces instead of collapsing.
+            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  Hi. \nHi.\" CR>")
+                .InV6()
+                .WithGlobal("<FILE-FLAGS SENTENCE-ENDS?>")
+                .Outputs("Hi.\u000bHi.\u000b Hi.\n  Hi!\u000bHi?\u000bHi.  Hi.\n");
+        }
+
+
+        [TestMethod]
         public void CHRSET_Should_Affect_Text_Decoding()
         {
             /*     1         2         3 

@@ -351,6 +351,8 @@ namespace Zilf.Language
         SEARCH_MUST_HAVE,
         SEGMENT,
         SEMI,
+        [Atom("SENTENCE-ENDS?")]
+        SENTENCE_ENDS_P,
         SERIAL,
         SET,
         SETG,

@@ -27,6 +27,23 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
+        public enum StringSpacesMode
+        {
+            /// <summary>
+            /// Two spaces after a period become one space. This is the default.
+            /// </summary>
+            CollapseAfterPeriod,
+            /// <summary>
+            /// Preserve spaces exactly as in the source code.
+            /// </summary>
+            Preserve,
+            /// <summary>
+            /// Two spaces after a period, question mark, or exclamation point become a sentence space (ZSCII 11). V6 only.
+            /// </summary>
+            CollapseWithSentenceSpace,
+        }
+
+        [NotNull]
         public static string TranslateString(string str, [NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);
@@ -34,12 +51,25 @@ namespace Zilf.Compiler
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
                 str,
-                crlfChar == null ? '|' : crlfChar.Char,
-                ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P));
+                crlfChar?.Char ?? '|',
+                GetSpacesMode(ctx));
         }
 
+        static StringSpacesMode GetSpacesMode(Context ctx)
+        {
+            if (ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P))
+                return StringSpacesMode.Preserve;
+
+            if ((ctx.CurrentFile.Flags & FileFlags.SentenceEnds) != 0)
+                return StringSpacesMode.CollapseWithSentenceSpace;
+
+            return StringSpacesMode.CollapseAfterPeriod;
+        }
+
+        const char SentenceSpaceChar = '\u000b';
+
         [NotNull]
-        public static string TranslateString(string str, char crlfChar, bool preserveSpaces)
+        static string TranslateString(string str, char crlfChar, StringSpacesMode spacesMode)
         {
             // strip CR/LF and ensure 1 space afterward, translate crlfChar to LF,
             // and collapse two spaces after '.' or crlfChar into one
@@ -51,23 +81,44 @@ namespace Zilf.Compiler
             {
                 char c = sb[i];
 
-                if (!preserveSpaces)
+                switch (spacesMode)
                 {
-                    if ((last == '.' || last == crlfChar) && c == ' ')
-                    {
-                        sawDotSpace = true;
-                    }
-                    else if (sawDotSpace && c == ' ')
-                    {
-                        sb.Remove(i--, 1);
-                        sawDotSpace = false;
-                        last = c;
-                        continue;
-                    }
-                    else
-                    {
-                        sawDotSpace = false;
-                    }
+                    case StringSpacesMode.CollapseAfterPeriod:
+                        if ((last == '.' || last == crlfChar) && c == ' ')
+                        {
+                            sawDotSpace = true;
+                        }
+                        else if (sawDotSpace && c == ' ')
+                        {
+                            sb.Remove(i--, 1);
+                            sawDotSpace = false;
+                            last = c;
+                            continue;
+                        }
+                        else
+                        {
+                            sawDotSpace = false;
+                        }
+                        break;
+
+                    case StringSpacesMode.CollapseWithSentenceSpace:
+                        if ((last == '.' || last == '?' || last == '!') && c == ' ')
+                        {
+                            sawDotSpace = true;
+                        }
+                        else if (sawDotSpace && c == ' ')
+                        {
+                            sb.Remove(i--, 1);
+                            sb[i] = SentenceSpaceChar;
+                            sawDotSpace = false;
+                            last = c;
+                            continue;
+                        }
+                        else
+                        {
+                            sawDotSpace = false;
+                        }
+                        break;
                 }
 
                 switch (c)
