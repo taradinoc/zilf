@@ -60,7 +60,6 @@ namespace Zilf.Interpreter.Values
         public ZilObject Indicator => results[index].Indicator;
         public ZilObject Value => results[index].Value;
 
-        [NotNull]
         protected override TiedLayout GetLayout()
         {
             Contract.Ensures(Contract.Result<TiedLayout>() != null);

@@ -18,12 +18,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
+using Zilf.Emit.Zap;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -34,7 +35,7 @@ namespace Zilf.Compiler
             var size = Context.ZEnvironment.HeaderExtensionWords;
             if (size > 0)
             {
-                if (Game.Options is Emit.Zap.GameOptions.V5Plus v5Options)
+                if (Game.Options is GameOptions.V5Plus v5Options)
                 {
                     var extab = Game.DefineTable("EXTAB", false);
                     extab.AddShort((short)size);

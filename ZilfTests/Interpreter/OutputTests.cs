@@ -16,19 +16,20 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using System.IO;
+using JetBrains.Annotations;
 
 namespace ZilfTests.Interpreter
 {
     [TestClass]
     public class OutputTests
     {
-        static ZilStringChannel MakeTestChannel(Context ctx)
+        [NotNull]
+        static ZilStringChannel MakeTestChannel([NotNull] Context ctx)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);

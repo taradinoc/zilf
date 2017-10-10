@@ -56,11 +56,12 @@ namespace Zilf.Compiler.Builtins
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     var pi = parameters[i];
+                    var paramType = pi.ParameterType;
 
                     if (i == 0)
                     {
                         // first parameter: call type
-                        CallType = pi.ParameterType;
+                        CallType = paramType;
 
                         if (CallType != typeof(VoidCall) && CallType != typeof(ValueCall) && CallType != typeof(PredCall) && CallType != typeof(ValuePredCall))
                             throw new ArgumentException("Unexpected call parameter type");
@@ -76,11 +77,11 @@ namespace Zilf.Compiler.Builtins
                         if (pi.Position != 1)
                             throw new ArgumentException("[Data] parameter must be the second parameter");
 
-                        dataParamType = pi.ParameterType;
+                        dataParamType = paramType;
                         continue;
                     }
 
-                    if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
+                    if (ParameterTypeHandler.Handlers.TryGetValue(paramType, out var handler))
                     {
                         if (handler.IsVariable)
                         {
@@ -102,8 +103,9 @@ namespace Zilf.Compiler.Builtins
                         }
                     }
 
-                    if (pi.ParameterType.IsArray &&
-                        ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
+                    if (paramType.IsArray &&
+                        paramType.GetElementType() is Type t &&
+                        ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
                     {
                         // varargs: must be the last parameter and marked [ParamArray]
                         if (i != parameters.Length - 1)

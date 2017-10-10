@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -137,6 +138,7 @@ namespace Zilf.Interpreter
             }
         }
 
+        [SuppressMessage("ReSharper", "ParameterHidesMember")]
         public bool IsMapControl(out Outcome outcome, out ZilObject value)
         {
             outcome = this.outcome;
@@ -154,6 +156,7 @@ namespace Zilf.Interpreter
             }
         }
 
+        [SuppressMessage("ReSharper", "ParameterHidesMember")]
         public bool IsReturn(ZilActivation currentActivation, out ZilObject value)
         {
             value = this.value;

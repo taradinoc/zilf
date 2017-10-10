@@ -61,6 +61,7 @@ namespace Zilf.Interpreter
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         static ZilObject PerformParse([NotNull] [ProvidesContext] Context ctx, [NotNull] string text, int radix, ZilObject lookupObList,
             [NotNull] string name, bool singleResult)
         {
@@ -69,6 +70,7 @@ namespace Zilf.Interpreter
             Contract.Requires(name != null);
 
             // we only pretend to implement radix. the decl and default should guarantee it's 10.
+            // TODO: support radixes other than 10?
             Contract.Assert(radix == 10);
 
             using (var innerEnv = ctx.PushEnvironment())

@@ -28,14 +28,12 @@ namespace Zilf.ZModel.Vocab.NewParser
     class NewParserWord : IWord
     {
         readonly Context ctx;
-        readonly ZilAtom atom;
-        readonly ZilHash vword;
 
         public NewParserWord(Context ctx, ZilAtom atom, ZilHash vword)
         {
             this.ctx = ctx;
-            this.atom = atom;
-            this.vword = vword;
+            this.Atom = atom;
+            this.Inner = vword;
         }
 
         [NotNull]
@@ -61,15 +59,9 @@ namespace Zilf.ZModel.Vocab.NewParser
             return new NewParserWord(ctx, atom, vword);
         }
 
-        public ZilAtom Atom
-        {
-            get { return atom; }
-        }
+        public ZilAtom Atom { get; }
 
-        public ZilHash Inner
-        {
-            get { return vword; }
-        }
+        public ZilHash Inner { get; }
 
         /* GetViaInner and SetViaInner disable DECL checking because user code may expect
          * property identifiers to be passed as FIXes instead of ATOMs. */
@@ -82,7 +74,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var form = new ZilForm(new ZilObject[]
                 {
                     ctx.GetStdAtom(accessor),
-                    vword
+                    Inner
                 });
 
                 return (ZilObject)form.Eval(ctx);
@@ -102,7 +94,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 var form = new ZilForm(new[]
                 {
                     ctx.GetStdAtom(accessor),
-                    vword,
+                    Inner,
                     value
                 });
 
@@ -116,38 +108,38 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public ZilObject AdjId
         {
-            get { return GetViaInner(StdAtom.WORD_ADJ_ID); }
-            set { SetViaInner(StdAtom.WORD_ADJ_ID, value); }
+            get => GetViaInner(StdAtom.WORD_ADJ_ID);
+            set => SetViaInner(StdAtom.WORD_ADJ_ID, value);
         }
 
         public int Classification
         {
-            get { return ((ZilFix)GetViaInner(StdAtom.WORD_CLASSIFICATION_NUMBER)).Value; }
-            set { SetViaInner(StdAtom.WORD_CLASSIFICATION_NUMBER, new ZilFix(value)); }
+            get => ((ZilFix)GetViaInner(StdAtom.WORD_CLASSIFICATION_NUMBER)).Value;
+            set => SetViaInner(StdAtom.WORD_CLASSIFICATION_NUMBER, new ZilFix(value));
         }
 
         public ZilObject DirId
         {
-            get { return GetViaInner(StdAtom.WORD_DIR_ID); }
-            set { SetViaInner(StdAtom.WORD_DIR_ID, value); }
+            get => GetViaInner(StdAtom.WORD_DIR_ID);
+            set => SetViaInner(StdAtom.WORD_DIR_ID, value);
         }
 
         public int Flags
         {
-            get { return ((ZilFix)GetViaInner(StdAtom.WORD_FLAGS)).Value; }
-            set { SetViaInner(StdAtom.WORD_FLAGS, new ZilFix(value)); }
+            get => ((ZilFix)GetViaInner(StdAtom.WORD_FLAGS)).Value;
+            set => SetViaInner(StdAtom.WORD_FLAGS, new ZilFix(value));
         }
 
         public ZilObject SemanticStuff
         {
-            get { return GetViaInner(StdAtom.WORD_SEMANTIC_STUFF); }
-            set { SetViaInner(StdAtom.WORD_SEMANTIC_STUFF, value); }
+            get => GetViaInner(StdAtom.WORD_SEMANTIC_STUFF);
+            set => SetViaInner(StdAtom.WORD_SEMANTIC_STUFF, value);
         }
 
         public ZilObject VerbStuff
         {
-            get { return GetViaInner(StdAtom.WORD_VERB_STUFF); }
-            set { SetViaInner(StdAtom.WORD_VERB_STUFF, value); }
+            get => GetViaInner(StdAtom.WORD_VERB_STUFF);
+            set => SetViaInner(StdAtom.WORD_VERB_STUFF, value);
         }
 
         public bool HasClass(int queryClass)

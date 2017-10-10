@@ -476,7 +476,7 @@ namespace Zilf.ZModel.Values
             ZilFix outFix;
             switch (form.Rest.First)
             {
-                case var zo when zo.IsLVAL(out var atom):
+                case ZilObject zo when zo.IsLVAL(out var atom):
                     outVariable = atom;
                     outFix = null;
                     break;

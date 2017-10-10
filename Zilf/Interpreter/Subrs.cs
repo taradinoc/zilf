@@ -18,6 +18,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
@@ -80,10 +81,11 @@ namespace Zilf.Interpreter
 
 #pragma warning disable ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
         // ReSharper disable UnusedParameter.Local
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
         [ContractAbbreviator]
         [Conditional("CONTRACTS_FULL")]
+        [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
         static void SubrContracts([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
@@ -92,9 +94,10 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
         [ContractAbbreviator]
         [Conditional("CONTRACTS_FULL")]
+        [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
         static void SubrContracts([NotNull] Context ctx)
         {
             Contract.Requires(ctx != null);

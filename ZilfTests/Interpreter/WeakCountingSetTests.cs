@@ -19,7 +19,6 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ZilfTests.Interpreter
@@ -50,7 +49,9 @@ namespace ZilfTests.Interpreter
 
             CollectionAssert.AreEquivalent(new[] { foo }, set.ToArray());
 
+            // ReSharper disable RedundantAssignment
             foo = bar = null;
+            // ReSharper restore RedundantAssignment
             GC.Collect();
 
             CollectionAssert.AreEqual(new object[] { }, set.ToArray());

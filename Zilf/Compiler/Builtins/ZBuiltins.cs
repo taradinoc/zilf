@@ -19,17 +19,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using JetBrains.Annotations;
+using Zilf.Common;
+using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel;
-using Zilf.Diagnostics;
-using Zilf.Common;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -103,12 +104,12 @@ namespace Zilf.Compiler.Builtins
 
         delegate void InvalidArgumentDelegate(int index, [NotNull] string message);
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         [NotNull]
         static IList<BuiltinArg> ValidateArguments(
-            [NotNull] Compilation cc, [NotNull] BuiltinSpec spec, [NotNull] ParameterInfo[] builtinParamInfos,
-            [NotNull] ZilObject[] args, [NotNull] InvalidArgumentDelegate error)
+            [NotNull] Compilation cc, [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
+            [ItemNotNull] [NotNull] ZilObject[] args, [NotNull] InvalidArgumentDelegate error)
         {
             Contract.Requires(cc != null);
             Contract.Requires(spec != null);
@@ -136,7 +137,8 @@ namespace Zilf.Compiler.Builtins
                     result.Add(handler.Process(cc, InnerError, args[i], pi));
                 }
                 else if (pi.ParameterType.IsArray &&
-                    ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType.GetElementType(), out handler))
+                    pi.ParameterType.GetElementType() is Type t &&
+                    ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
                 {
                     // consume all remaining arguments
                     while (i < args.Length)
@@ -872,7 +874,8 @@ namespace Zilf.Compiler.Builtins
                 {
                     return lconst.Add(rconst);
                 }
-                else if (right == null)
+
+                if (right == null)
                 {
                     return lconst.Add(c.cc.Game.One);
                 }
@@ -1246,7 +1249,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.Branch(cond, var, null, c.label, c.polarity);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "var")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "var")]
         [Builtin("ASSIGNED?", MinVersion = 5)]
         public static void SoftGlobalAssignedOp(PredCall c, [Variable][NotNull] SoftGlobal var)
         {
@@ -1629,10 +1632,8 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitUnary(UnaryOp.LoadIndirect, var.Indirect, c.resultStorage);
                 return c.resultStorage;
             }
-            else
-            {
-                return var;
-            }
+
+            return var;
         }
 
         [Builtin("VALUE", Priority = 2)]

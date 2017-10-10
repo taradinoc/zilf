@@ -83,7 +83,6 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        [NotNull]
         protected override TiedLayout GetLayout()
         {
             return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.PairsList);

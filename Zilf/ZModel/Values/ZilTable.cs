@@ -822,7 +822,7 @@ namespace Zilf.ZModel.Values
             throw new NotImplementedException();
         }
 
-        public override void CopyTo<T>([NotNull] T[] array, [NotNull] TableToArrayElementConverter<T> convert, [NotNull] T defaultFiller, [NotNull] Context ctx)
+        public override void CopyTo<T>([NotNull] T[] array, [NotNull] TableToArrayElementConverter<T> convert, T defaultFiller, [NotNull] Context ctx)
         {
             Contract.Requires(array != null);
             Contract.Requires(convert != null);

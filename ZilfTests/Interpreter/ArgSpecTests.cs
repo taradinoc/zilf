@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -81,7 +80,7 @@ namespace ZilfTests.Interpreter
         {
             var ctx = new Context();
 
-            var spec1 = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 ZilString.FromString("ARGS"),
                 new ZilAdecl(
@@ -89,7 +88,7 @@ namespace ZilfTests.Interpreter
                     ctx.GetStdAtom(StdAtom.LIST))
             });
 
-            var spec2 = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
+            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
             {
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(

@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -126,7 +125,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<PUT-DECL BOOLEAN '<OR ATOM FALSE>>", ZilAtom.Parse("BOOLEAN", ctx));
             TestHelpers.EvalAndAssert(ctx, "<DECL? T BOOLEAN>", ctx.TRUE);
 
-            /// <see cref="StructureTests.TestOFFSET"/> tests GET-DECL for OFFSETs
+            // StructureTests.TestOFFSET tests GET-DECL for OFFSETs
         }
 
         [TestMethod]
@@ -142,7 +141,7 @@ namespace ZilfTests.Interpreter
                     ctx.GetStdAtom(StdAtom.FALSE)
                 }));
 
-            /// <see cref="StructureTests.TestOFFSET"/> tests GET-DECL for OFFSETs
+            // StructureTests.TestOFFSET tests GET-DECL for OFFSETs
         }
 
         [TestMethod]
