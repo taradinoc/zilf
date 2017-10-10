@@ -267,7 +267,7 @@ namespace Zilf.Diagnostics
         public const int _0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2 = 500;
         [Message("{0}: bad state: {1}")]
         public const int _0_Bad_State_1 = 501;
-        [Message("{0}: duplicate default for section: {1}")]
+        [Message("{0}: duplicate default for section: {1}", Severity = Severity.Warning)]
         public const int _0_Duplicate_Default_For_Section_1 = 502;
         [Message("{0}: duplicate replacement for section: {1}")]
         public const int _0_Duplicate_Replacement_For_Section_1 = 503;
