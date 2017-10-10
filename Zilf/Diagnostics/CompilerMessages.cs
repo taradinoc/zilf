@@ -178,5 +178,7 @@ namespace Zilf.Diagnostics
         public const int Treating_SET_To_0_As_True_Here = 504;
         [Message("{0}: clauses after else part will never be evaluated", Severity = Severity.Warning)]
         public const int _0_Clauses_After_Else_Part_Will_Never_Be_Evaluated = 505;
+        [Message("undeclared compilation flag '{0}'?", Severity = Severity.Info)]
+        public const int Undeclared_Compilation_Flag_0 = 506;
     }
 }
