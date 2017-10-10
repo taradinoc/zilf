@@ -303,7 +303,7 @@ namespace Zilf.Compiler
 
                     if (mode == AmbiguousConstantMode.Optimistic && Globals.TryGetValue(atom, out var global))
                     {
-                        Context.HandleError(new CompilerError(expr.SourceLine,
+                        Context.HandleError(new CompilerError((ISourceLine)null,
                             CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right, atom));
                         return global;
                     }

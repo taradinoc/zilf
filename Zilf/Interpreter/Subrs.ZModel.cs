@@ -238,7 +238,9 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return ctx.AddZConstant(atom, value);
+            var result = ctx.AddZConstant(atom, value);
+            result.SourceLine = ctx.TopFrame.SourceLine;
+            return result;
         }
 
         /// <exception cref="InterpreterError"><paramref name="name"/> is already defined.</exception>
@@ -293,7 +295,7 @@ namespace Zilf.Interpreter
             if (defaultValue is ZilTable table)
                 table.Name = "T?" + atom.Text;
 
-            var g = new ZilGlobal(atom, defaultValue);
+            var g = new ZilGlobal(atom, defaultValue) { SourceLine = ctx.TopFrame.SourceLine };
             ctx.SetZVal(atom, g);
             ctx.ZEnvironment.Globals.Add(g);
             return g;
@@ -346,7 +348,7 @@ namespace Zilf.Interpreter
                 {
                     initializer = null;
                 }
-                var g = new ZilGlobal(globalAtom, initializer ?? ctx.FALSE);
+                var g = new ZilGlobal(globalAtom, initializer ?? ctx.FALSE) { SourceLine = ctx.TopFrame.SourceLine };
                 if (spec.Size?.StdAtom == StdAtom.BYTE)
                 {
                     g.IsWord = false;
