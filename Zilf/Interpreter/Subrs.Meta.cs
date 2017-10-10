@@ -105,6 +105,10 @@ namespace Zilf.Interpreter
                         // ignore
                         break;
 
+                    case StdAtom.SENTENCE_ENDS_P:
+                        newFlags |= FileFlags.SentenceEnds;
+                        break;
+
                     default:
                         throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "FILE-FLAGS", "flag", atom);
                 }

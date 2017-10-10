@@ -26,5 +26,6 @@ namespace Zilf.Interpreter
         None = 0,
         CleanStack = 1,
         MdlZil = 2,
+        SentenceEnds = 3,
     }
 }
