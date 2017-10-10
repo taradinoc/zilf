@@ -661,17 +661,17 @@ namespace Zilf.Compiler
                 Debug.Assert(clause.First != null);
                 Debug.Assert(clause.Rest != null);
 
-                ZilObject value;
-                bool match, isElse = false;
-                if ((clause.First is ZilAtom atom &&
-                     (value = Context.GetCompilationFlagValue(atom)) != null) ||
-                    (clause.First is ZilString str &&
-                     (value = Context.GetCompilationFlagValue(str.Text)) != null))
+                ZilObject value, flag = clause.First;
+                bool match, isElse = false, isShadyElse = false;
+                if (flag is ZilAtom atom &&
+                    (value = Context.GetCompilationFlagValue(atom)) != null ||
+                    flag is ZilString str &&
+                    (value = Context.GetCompilationFlagValue(str.Text)) != null)
                 {
                     // name of a defined compilation flag
                     match = value.IsTrue;
                 }
-                else if (clause.First is ZilForm form)
+                else if (flag is ZilForm form)
                 {
                     form = Subrs.SubstituteIfflagForm(Context, form);
                     match = ((ZilObject)form.Eval(Context)).IsTrue;
@@ -679,6 +679,7 @@ namespace Zilf.Compiler
                 else
                 {
                     match = isElse = true;
+                    isShadyElse = flag is ZilAtom atom2 && atom2.StdAtom != StdAtom.ELSE && atom2.StdAtom != StdAtom.T;
                 }
 
                 // does this clause match?
@@ -691,7 +692,15 @@ namespace Zilf.Compiler
 
                 if (isElse && !clauses.IsEmpty)
                 {
-                    Context.HandleError(new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG"));
+                    var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
+                    if (isShadyElse)
+                    {
+                        warning = warning.Combine(new CompilerError(
+                            flag.SourceLine,
+                            CompilerMessages.Undeclared_Compilation_Flag_0,
+                            (ZilAtom)flag));
+                    }
+                    Context.HandleError(warning);
                 }
 
                 return wantResult ? clauseResult : null;
