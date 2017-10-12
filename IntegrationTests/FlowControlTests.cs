@@ -109,6 +109,36 @@ namespace IntegrationTests
                 .GivesNumber("123");
         }
 
+        [TestMethod]
+        public void RETURN_With_DO_FUNNY_RETURN_True_Or_High_Version_Should_Exit_Routine()
+        {
+            AssertRoutine("\"AUX\" X",
+                "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+                .WithGlobal("<SETG DO-FUNNY-RETURN? T>")
+                .InV3()
+                .GivesNumber("123");
+
+            AssertRoutine("\"AUX\" X",
+                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+                .InV5()
+                .GivesNumber("123");
+        }
+
+        [TestMethod]
+        public void RETURN_With_DO_FUNNY_RETURN_False_Or_Low_Version_Should_Exit_Block()
+        {
+            AssertRoutine("\"AUX\" X",
+                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+                .WithGlobal("<SETG DO-FUNNY-RETURN? <>>")
+                .InV5()
+                .GivesNumber("246");
+
+            AssertRoutine("\"AUX\" X",
+                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+                .InV3()
+                .GivesNumber("246");
+        }
+
         #endregion
 
         #region AGAIN

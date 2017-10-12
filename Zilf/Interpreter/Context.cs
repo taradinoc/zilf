@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
@@ -58,7 +59,7 @@ namespace Zilf.Interpreter
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
     sealed class Context : IParserSite
     {
@@ -203,7 +204,7 @@ namespace Zilf.Interpreter
             localEnvironment.Rebind(olatom, new ZilList(userObList, olpath));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         [ContractInvariantMethod]
         [Conditional("CONTRACTS_FULL")]
         void ObjectInvariant()
@@ -611,7 +612,7 @@ namespace Zilf.Interpreter
         /// <remarks>The MDL documentation refers to the macro expansion environment as a
         /// "top level environment", but for the purposes of MDL-ZIL?, the environment is
         /// not considered "top level" (i.e. SUBR names are not redirected).</remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public T ExecuteInMacroEnvironment<T>(Func<T> func)
         {
             var oblistAtom = GetStdAtom(StdAtom.OBLIST);
@@ -832,6 +833,7 @@ namespace Zilf.Interpreter
             return value != null && value.IsTrue;
         }
 
+        [Pure]
         public bool AllowRedefine
         {
             get
@@ -934,7 +936,7 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
+        [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
         void InitTypeMap()
         {
             Contract.Ensures(typeMap.Count > 0);
@@ -1701,6 +1703,29 @@ B * <PRINTB .X>
             }
 
             return null;
+        }
+
+        [Pure]
+        [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
+        public ReturnQuirkMode ReturnQuirkMode
+        {
+            get
+            {
+                switch (GetGlobalVal(GetStdAtom(StdAtom.DO_FUNNY_RETURN_P))?.IsTrue)
+                {
+                    case true:
+                        return ReturnQuirkMode.PreferRoutine;
+
+                    case false:
+                        return ReturnQuirkMode.PreferBlock;
+
+                    case null:
+                        return ReturnQuirkMode.ByVersion;
+
+                    default:
+                        goto case null;
+                }
+            }
         }
 
         #region IParserSite

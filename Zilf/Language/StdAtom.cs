@@ -89,6 +89,8 @@ namespace Zilf.Language
         DO,
         [Atom("DO-FUNNY-GLOBALS?")]
         DO_FUNNY_GLOBALS_P,
+        [Atom("DO-FUNNY-RETURN?")]
+        DO_FUNNY_RETURN_P,
         ELSE,
         ENVIRONMENT,
         EVAL,

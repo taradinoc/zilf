@@ -2006,13 +2006,33 @@ namespace Zilf.Compiler.Builtins
 
             IOperand value;
 
-            if (block.ReturnLabel == null)
+            var quirkMode = c.cc.Context.ReturnQuirkMode;
+            bool preferRoutine;
+            switch (quirkMode)
+            {
+                case ReturnQuirkMode.ByVersion:
+                    preferRoutine = c.cc.Context.ZEnvironment.ZVersion >= 5;
+                    break;
+
+                case ReturnQuirkMode.PreferRoutine:
+                    preferRoutine = true;
+                    break;
+
+                //case ReturnQuirkMode.PreferBlock:
+                default:
+                    preferRoutine = false;
+                    break;
+            }
+
+            if (block.ReturnLabel == null || (expr != null && preferRoutine))
             {
                 // return from routine
                 value = expr != null
                     ? c.cc.CompileAsOperand(c.rb, expr, c.form.SourceLine)
                     : c.cc.Game.One;
                 c.rb.Return(value);
+
+                // TODO: warn about iffy preferRoutine situations, if we can identify them somehow
             }
             else
             {
@@ -2046,7 +2066,7 @@ namespace Zilf.Compiler.Builtins
                     if (origBlock == null ||
                         (value != c.cc.Game.Zero && value != c.cc.Game.One))
                     {
-                        c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_Block_Is_In_Void_Context);
+                        c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_PROGREPEAT_Block_Is_In_Void_Context);
                     }
                 }
 
