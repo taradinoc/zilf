@@ -279,6 +279,7 @@
     <Compile Include="ZModel\LowCoreField.cs" />
     <Compile Include="ZModel\LowCoreFlags.cs" />
     <Compile Include="ZModel\ObjectOrdering.cs" />
+    <Compile Include="ZModel\ReturnQuirkMode.cs" />
     <Compile Include="ZModel\Syntax.cs" />
     <Compile Include="ZModel\Values\TableFlags.cs" />
     <Compile Include="ZModel\TellTokens.cs" />

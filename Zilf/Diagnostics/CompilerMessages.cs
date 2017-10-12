@@ -170,8 +170,8 @@ namespace Zilf.Diagnostics
         public const int AGAIN_Requires_A_PROGREPEAT_Block_Or_Routine = 500;
         [Message("non-constant initializer for {0} '{1}': {2}")]
         public const int Nonconstant_Initializer_For_0_1_2 = 501;
-        [Message("RETURN value ignored: block is in void context", Severity = Severity.Warning)]
-        public const int RETURN_Value_Ignored_Block_Is_In_Void_Context = 502;
+        [Message("RETURN value ignored: PROG/REPEAT block is in void context", Severity = Severity.Warning)]
+        public const int RETURN_Value_Ignored_PROGREPEAT_Block_Is_In_Void_Context = 502;
         [Message("soft variable '{0}' may not be used here")]
         public const int Soft_Variable_0_May_Not_Be_Used_Here = 503;
         [Message("treating SET to 0 as true here", Severity = Severity.Warning)]
