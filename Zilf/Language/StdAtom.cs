@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -25,59 +24,38 @@ namespace Zilf.Language
     /// Contains values for atoms used internally.
     /// </summary>
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [UsedImplicitly(ImplicitUseTargetFlags.Members)]
     enum StdAtom
     {
         None,
 
         [Atom("+")]
         Plus,
-        [Atom("-")]
-        Minus,
         [Atom("*")]
         Times,
-        [Atom("/")]
-        Divide,
         [Atom("=")]
         Eq,
 
         ACTIONS,
         ACTIVATION,
-        ADD,
         ADECL,
         ADJ,
         ADJECTIVE,
-        AGAIN,
         AND,
-        ANDB,
         ANY,
         APPLICABLE,
         APPLY,
         ASOC,
         ATBL,
         ATOM,
-        B,
-        BACK,
-        BAND,
-        BCOM,
         BIG,
         BIND,
-        BOR,
-        BTST,
-        BUFOUT,
         BUZZ,
         BYTE,
-        BYTELENGTH,
-        C,
         CARRIED,
-        CEXIT,
-        CEXITFLAG,
-        CEXITSTR,
         CHANNEL,
         CHARACTER,
         [Atom("CLEAN-STACK?")]
         CLEAN_STACK_P,
-        CLEAR,
         COLOR,
         [Atom("COMPACT-SYNTAXES?")]
         COMPACT_SYNTAXES_P,
@@ -89,14 +67,8 @@ namespace Zilf.Language
         CONSOLE,
         CONSTANT,
         CONSTRUCTOR,
-        COPYT,
-        CR,
-        CRLF,
         [Atom("CRLF-CHARACTER")]
         CRLF_CHARACTER,
-        CURGET,
-        CURSET,
-        D,
         DEC,
         DECL,
         DEFAULT,
@@ -104,21 +76,14 @@ namespace Zilf.Language
         DEFAULT_DEFINITION,
         DEFINED,
         DEFINITIONS,
-        DEFSTRUCT,
         [Atom("DELAY-DEFINITION")]
         DELAY_DEFINITION,
         DESC,
-        DEXIT,
-        DEXITOBJ,
-        DEXITSTR,
         DIR,
         DIRECTIONS,
-        DIRIN,
-        DIROUT,
         DISPLAY,
         [Atom("DISPLAY-OPS?")]
         DISPLAY_OPS_P,
-        DIV,
         [Atom("DLESS?")]
         DLESS_P,
         DO,
@@ -126,8 +91,6 @@ namespace Zilf.Language
         DO_FUNNY_GLOBALS_P,
         ELSE,
         ENVIRONMENT,
-        [Atom("EQUAL?")]
-        EQUAL_P,
         EVAL,
         EZIP,
         [Atom("F?")]
@@ -137,32 +100,16 @@ namespace Zilf.Language
         FALSE_VALUE,
         [Atom("FATAL-VALUE")]
         FATAL_VALUE,
-        FCLEAR,
         FCN,
-        FEXIT,
-        FEXITFCN,
         FIND,
-        FIRST,
-        [Atom("FIRST?")]
-        FIRST_P,
         FIX,
         FLAGS,
         FORM,
-        FSET,
-        [Atom("FSET?")]
-        FSET_P,
         FSUBR,
         FUNCTION,
-        [Atom("G?")]
-        G_P,
-        [Atom("G=?")]
-        GEq_P,
         GET,
         [Atom("GET-CLASSIFICATION")]
         GET_CLASSIFICATION,
-        GETB,
-        GETP,
-        GETPT,
         GLOBAL,
         [Atom("GLOBAL-VARS-TABLE")]
         GLOBAL_VARS_TABLE,
@@ -171,40 +118,24 @@ namespace Zilf.Language
         HAVE,
         HELD,
         HERE,
-        HLIGHT,
-        IF,
         IFFLAG,
         [Atom("IGRTR?")]
         IGRTR_P,
         IN,
-        [Atom("IN?")]
-        IN_P,
         [Atom("IN-ROOM")]
         IN_ROOM,
         [Atom("IN-ZILCH")]
         IN_ZILCH,
         INC,
-        INCHAN,
         [Atom("INIT-ARGS")]
         INIT_ARGS,
         INITIAL,
-        INPUT,
-        [Atom("INTBL?")]
-        INTBL_P,
         INTERRUPTS,
-        IRESTORE,
-        IS,
-        ISAVE,
         ITABLE,
         KERNEL,
-        [Atom("L?")]
-        L_P,
-        LAST,
         [Atom("LAST-OBJECT")]
         LAST_OBJECT,
         LENGTH,
-        [Atom("L=?")]
-        LEq_P,
         LEXV,
         LINK,
         LIST,
@@ -232,23 +163,14 @@ namespace Zilf.Language
         [Atom("MDL-ZIL?")]
         MDL_ZIL_P,
         MENU,
-        MOD,
         MOUSE,
-        MOVE,
         MOVES,
-        MUL,
-        N,
         [Atom("NEW-PARSER?")]
         NEW_PARSER_P,
         [Atom("NEW-SFLAGS")]
         NEW_SFLAGS,
         [Atom("NEW-VOC?")]
         NEW_VOC_P,
-        NEXIT,
-        NEXITSTR,
-        [Atom("NEXT?")]
-        NEXT_P,
-        NEXTP,
         NODECL,
         NONE,
         NOT,
@@ -262,11 +184,9 @@ namespace Zilf.Language
         ON_GROUND,
         [Atom("ONE-BYTE-PARTS-OF-SPEECH")]
         ONE_BYTE_PARTS_OF_SPEECH,
-        OPEN,
         OPT,
         OPTIONAL,
         OR,
-        ORB,
         OUTCHAN,
         PACKAGE,
         [Atom("PARSER-TABLE")]
@@ -274,7 +194,6 @@ namespace Zilf.Language
         PARTICLE,
         PATBL,
         PATTERN,
-        PER,
         PLTABLE,
         [Atom("PLUS-MODE")]
         PLUS_MODE,
@@ -286,12 +205,6 @@ namespace Zilf.Language
         PRESERVE_SPACES_P,
         PRIMTYPE,
         PRINT,
-        PRINTB,
-        PRINTC,
-        PRINTD,
-        PRINTI,
-        PRINTN,
-        PRINTR,
         PRINTTYPE,
         [Atom("PRMANY-CRLF")]
         PRMANY_CRLF,
@@ -302,30 +215,17 @@ namespace Zilf.Language
         PRTBL,
         PSEUDO,
         PTABLE,
-        PTSIZE,
         PURE,
-        PUSH,
         PUT,
-        PUTB,
-        PUTP,
-        QUIT,
         QUOTE,
-        RANDOM,
         READ,
         REDEFINE,
-        REMOVE,
         REPEAT,
         [Atom("REPLACE-DEFINITION")]
         REPLACE_DEFINITION,
         REST,
-        RESTART,
-        RESTORE,
-        RETURN,
         [Atom("REVERSE-DEFINED")]
         REVERSE_DEFINED,
-        REWRITER,
-        REXIT,
-        RFALSE,
         ROOM,
         ROOMS,
         [Atom("ROOMS-AND-LGS-FIRST")]
@@ -336,11 +236,7 @@ namespace Zilf.Language
         ROOMS_LAST,
         ROOT,
         ROUTINE,
-        RSTACK,
-        RTRUE,
-        SAVE,
         SCORE,
-        SCREEN,
         [Atom("SEARCH-ALL")]
         SEARCH_ALL,
         [Atom("SEARCH-DO-TAKE")]
@@ -362,12 +258,10 @@ namespace Zilf.Language
         [Atom("SOUND-EFFECTS?")]
         SOUND_EFFECTS_P,
         SPLICE,
-        SPLIT,
         [Atom("START-OFFSET")]
         START_OFFSET,
         STRING,
         STRUCTURED,
-        SUB,
         SUBR,
         SYNONYM,
         T,
@@ -377,13 +271,10 @@ namespace Zilf.Language
         TADJ,
         TAKE,
         TBUZZ,
-        TCHARS,
         TDIR,
         TELL,
         [Atom("TEMP-TABLE")]
         TEMP_TABLE,
-        TIME,
-        TO,
         TOBJECT,
         TPREP,
         [Atom("TRUE-VALUE")]
@@ -391,7 +282,6 @@ namespace Zilf.Language
         TUPLE,
         TVERB,
         TZERO,
-        UEXIT,
         UNDO,
         [Atom("USE-COLOR?")]
         USE_COLOR_P,
@@ -403,7 +293,6 @@ namespace Zilf.Language
         USE_SOUND_P,
         [Atom("USE-UNDO?")]
         USE_UNDO_P,
-        USL,
         VALUE,
         VECTOR,
         VERB,
@@ -412,7 +301,6 @@ namespace Zilf.Language
         [Atom("VERB-STUFF-ID")]
         VERB_STUFF_ID,
         VERBS,
-        VERIFY,
         [Atom("VERSION?")]
         VERSION_P,
         VOC,
@@ -440,21 +328,15 @@ namespace Zilf.Language
         WORD_SEMANTIC_STUFF,
         [Atom("WORD-VERB-STUFF")]
         WORD_VERB_STUFF,
-        WORDLENGTH,
-        X,
-        XORB,
         XZIP,
         YZIP,
         [Atom("ZAP-TO-SOURCE-DIRECTORY?")]
         ZAP_TO_SOURCE_DIRECTORY_P,
-        [Atom("ZERO?")]
-        ZERO_P,
         ZILCH,
         ZILF,
         [Atom("ZIL-VERSION")]
         ZIL_VERSION,
         ZIP,
         ZVAL,
-        ZWSTR,
     }
 }

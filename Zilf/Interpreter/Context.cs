@@ -176,10 +176,9 @@ namespace Zilf.Interpreter
 
             InitConstants();
 
-            // initialize OBLIST path
-            var userObList = MakeObList(GetStdAtom(StdAtom.INITIAL));
-            var olpath = new ZilList(new ZilObject[] { userObList, rootObList });
+            // initialize OBLIST path: only the root oblist for now
             var olatom = GetStdAtom(StdAtom.OBLIST);
+            var olpath = new ZilList(new ZilObject[] { rootObList });
             localEnvironment.Rebind(olatom, olpath);
 
             // InitSubrs uses ArgDecoder, which parses DECLs and needs the OBLIST path
@@ -198,6 +197,10 @@ namespace Zilf.Interpreter
             InitPropDefs();
             InitCompilationFlags();
             InitPackages();
+
+            // set up the user oblist
+            var userObList = MakeObList(GetStdAtom(StdAtom.INITIAL));
+            localEnvironment.Rebind(olatom, new ZilList(userObList, olpath));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
