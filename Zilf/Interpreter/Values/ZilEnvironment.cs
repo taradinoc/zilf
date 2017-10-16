@@ -62,24 +62,17 @@ namespace Zilf.Interpreter.Values
             return (int)StdAtom.ENVIRONMENT;
         }
 
-        public override string ToString()
-        {
-            return string.Format("#ENVIRONMENT {0}", name);
-        }
+        public override string ToString() =>
+            $"#ENVIRONMENT {name}";
 
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return string.Format("#ENVIRONMENT {0}", name.ToStringContext(ctx, friendly));
-        }
+        protected override string ToStringContextImpl(Context ctx, bool friendly) =>
+            $"#ENVIRONMENT {name.ToStringContext(ctx, friendly)}";
 
         public override StdAtom StdTypeAtom => StdAtom.ENVIRONMENT;
 
         public override PrimType PrimType => PrimType.ATOM;
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return name;
-        }
+        public override ZilObject GetPrimitive(Context ctx) => name;
 
         [NotNull]
         public LocalEnvironment LocalEnvironment =>

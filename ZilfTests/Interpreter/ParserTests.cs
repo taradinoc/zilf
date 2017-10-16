@@ -47,7 +47,7 @@ namespace ZilfTests.Interpreter
 
             public ZilAtom ParseAtom(string text)
             {
-                if (atoms.TryGetValue(text, out ZilAtom result))
+                if (atoms.TryGetValue(text, out var result))
                     return result;
 
                 result = new ZilAtom(text, null, StdAtom.None);

@@ -25,9 +25,6 @@ namespace Zilf.Emit.Zap
         {
         }
 
-        public IIndirectOperand Indirect
-        {
-            get { return new IndirectOperand(this); }
-        }
+        public IIndirectOperand Indirect => new IndirectOperand(this);
     }
 }

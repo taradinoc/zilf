@@ -578,9 +578,9 @@ Compiler switches:
         /// <param name="wantExceptions"><see langword="true"/> if the method should be allowed to throw
         /// <see cref="InterpreterError"/>, or <see langword="false"/> to catch it.</param>
         /// <returns>The result of evaluating the last object in the code; or <see langword="null"/> if either the code contained
-        /// no objects, or <paramref name="wantExceptions"/> was <see langword="true"/> and an <see cref="InterpreterError"/> was caught.</returns>
+        /// no objects, or <paramref name="wantExceptions"/> was <see langword="false"/> and an <see cref="InterpreterError"/> was caught.</returns>
         [CanBeNull]
-        public static ZilObject Evaluate([NotNull] Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
+        public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, bool wantExceptions = false)
         {
             Contract.Requires(ctx != null);
             try

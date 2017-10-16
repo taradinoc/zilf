@@ -207,6 +207,7 @@ namespace IntegrationTests
     {
         [NotNull] protected abstract string Expression();
 
+        [AssertionMethod]
         public void GivesNumber([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
@@ -217,6 +218,7 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
+        [AssertionMethod]
         public void Outputs([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
@@ -227,6 +229,7 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
         }
 
+        [AssertionMethod]
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
             Contract.Requires(conditions != null);
@@ -250,6 +253,7 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
+        [AssertionMethod]
         public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
             [CanBeNull] string message = null)
         {
@@ -272,6 +276,7 @@ namespace IntegrationTests
             }
         }
 
+        [AssertionMethod]
         public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
         {
             var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
@@ -286,6 +291,7 @@ namespace IntegrationTests
                 $"Expected diagnostic {attr.Prefix}{diagnosticCode:0000} was not produced");
         }
 
+        [AssertionMethod]
         public void Compiles()
         {
             var testCode =

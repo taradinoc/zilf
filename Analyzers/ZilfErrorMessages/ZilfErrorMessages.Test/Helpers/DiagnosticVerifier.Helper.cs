@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace TestHelper
@@ -36,7 +37,8 @@ namespace TestHelper
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzer">The analyzer to be run on the sources</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        private static async Task<Diagnostic[]> GetSortedDiagnosticsAsync(string[] sources, string language, DiagnosticAnalyzer analyzer)
+        [ItemNotNull]
+        private static async Task<Diagnostic[]> GetSortedDiagnosticsAsync([NotNull] string[] sources, [NotNull] string language, DiagnosticAnalyzer analyzer)
         {
             return await GetSortedDiagnosticsFromDocumentsAsync(analyzer, GetDocuments(sources, language)).ConfigureAwait(false);
         }
@@ -48,7 +50,8 @@ namespace TestHelper
         /// <param name="analyzer">The analyzer to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static async Task<Diagnostic[]> GetSortedDiagnosticsFromDocumentsAsync(DiagnosticAnalyzer analyzer, Document[] documents)
+        [ItemNotNull]
+        protected static async Task<Diagnostic[]> GetSortedDiagnosticsFromDocumentsAsync(DiagnosticAnalyzer analyzer, [NotNull] Document[] documents)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -92,7 +95,8 @@ namespace TestHelper
         /// </summary>
         /// <param name="diagnostics">The list of Diagnostics to be sorted</param>
         /// <returns>An IEnumerable containing the Diagnostics in order of Location</returns>
-        static Diagnostic[] SortDiagnostics(IEnumerable<Diagnostic> diagnostics)
+        [NotNull]
+        static Diagnostic[] SortDiagnostics([NotNull] IEnumerable<Diagnostic> diagnostics)
         {
             return diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
         }
@@ -106,7 +110,8 @@ namespace TestHelper
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
         /// <returns>A Tuple containing the Documents produced from the sources and their TextSpans if relevant</returns>
-        static Document[] GetDocuments(string[] sources, string language)
+        [NotNull]
+        static Document[] GetDocuments([NotNull] string[] sources, [NotNull] string language)
         {
             if (language != LanguageNames.CSharp && language != LanguageNames.VisualBasic)
             {
@@ -141,7 +146,7 @@ namespace TestHelper
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
         /// <returns>A Project created out of the Documents created from the source strings</returns>
-        static Project CreateProject(string[] sources, string language = LanguageNames.CSharp)
+        static Project CreateProject([NotNull] string[] sources, string language = LanguageNames.CSharp)
         {
             string fileNamePrefix = DefaultFilePathPrefix;
             string fileExt = language == LanguageNames.CSharp ? CSharpDefaultFileExt : VisualBasicDefaultExt;

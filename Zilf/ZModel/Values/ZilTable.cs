@@ -78,7 +78,7 @@ namespace Zilf.ZModel.Values
 
         [NotNull]
         protected abstract ZilTable AsNewTable();
-        public abstract ZilTable OffsetByBytes([NotNull] Context ctx, int bytesToSkip);
+        public abstract ZilTable OffsetByBytes(int bytesToSkip);
 
         protected abstract string ToString([NotNull] Func<ZilObject, string> convert);
 
@@ -700,7 +700,7 @@ namespace Zilf.ZModel.Values
             }
 
             [NotNull]
-            public override ZilTable OffsetByBytes(Context ctx, int bytesToSkip)
+            public override ZilTable OffsetByBytes(int bytesToSkip)
             {
                 return new OffsetTable(this, bytesToSkip);
             }
@@ -777,7 +777,7 @@ namespace Zilf.ZModel.Values
             }
 
             [NotNull]
-            public override ZilTable OffsetByBytes(Context ctx, int bytesToSkip)
+            public override ZilTable OffsetByBytes(int bytesToSkip)
             {
                 return new OffsetTable(orig, byteOffset + bytesToSkip);
             }
@@ -837,9 +837,8 @@ namespace Zilf.ZModel.Values
             throw new NotImplementedException();
         }
 
-        public override ZilTable OffsetByBytes(Context ctx, int bytesToSkip)
+        public override ZilTable OffsetByBytes(int bytesToSkip)
         {
-            Contract.Requires(ctx != null);
             throw new NotImplementedException();
         }
 

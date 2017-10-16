@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -249,7 +250,7 @@ namespace ZilfTests.Interpreter
                 TestHelpers.EvalAndAssert(
                     ctx,
                     string.Format("<CHTYPE .A-{0} {0}>", t),
-                    ctx.GetLocalVal(ZilAtom.Parse("A-" + t, ctx)));
+                    ctx.GetLocalVal(ZilAtom.Parse("A-" + t, ctx)) ?? throw new InvalidOperationException());
             }
 
             // specific type coercions are tested in other methods
@@ -1181,6 +1182,8 @@ namespace ZilfTests.Interpreter
                 }));
         }
 
+        [ItemNotNull]
+        [NotNull]
         static IEnumerable<Type> GetConcreteZilObjectTypes()
         {
             return from t in typeof(ZilObject).Assembly.GetTypes()
@@ -1216,7 +1219,7 @@ namespace ZilfTests.Interpreter
             var alternatesBadList = string.Join(
                 ", ",
                 alternatesWithBadMainTypes.Select(
-                    p => string.Format("{0} (main type {1})", p.AlternateType, p.MainType)));
+                    p => $"{p.AlternateType} (main type {p.MainType})"));
 
             Assert.AreEqual("", alternatesBadList,
                 $"Some {nameof(ZilObject)} classes with {nameof(BuiltinAlternateAttribute)} " +

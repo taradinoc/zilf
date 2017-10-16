@@ -55,7 +55,7 @@ namespace Zilf.Compiler
                 GetSpacesMode(ctx));
         }
 
-        static StringSpacesMode GetSpacesMode(Context ctx)
+        static StringSpacesMode GetSpacesMode([NotNull] Context ctx)
         {
             if (ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P))
                 return StringSpacesMode.Preserve;

@@ -26,12 +26,13 @@ namespace Zilf.Diagnostics
 {
     sealed class DiagnosticManager
     {
+        const int MaxErrorCount = 100;
+
         [NotNull]
         readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
 
         [NotNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
-        public int? MaxErrorCount { get; set; } = 100;
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
         public int WarningCount => Diagnostics.Count(d => d.Severity == Severity.Warning);
 

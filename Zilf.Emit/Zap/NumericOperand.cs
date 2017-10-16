@@ -32,9 +32,6 @@ namespace Zilf.Emit.Zap
             return value.ToString();
         }
 
-        public int Value
-        {
-            get { return value; }
-        }
+        public int Value => value;
     }
 }

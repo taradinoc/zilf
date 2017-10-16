@@ -23,31 +23,19 @@ namespace Zilf.Language
 {
     sealed class FileSourceLine : ISourceLine
     {
-        readonly string filename;
-        readonly int line;
-
         public FileSourceLine([NotNull] string filename, int line)
         {
             Contract.Requires(filename != null);
 
-            this.filename = filename;
-            this.line = line;
+            FileName = filename;
+            Line = line;
         }
 
         [NotNull]
-        public string SourceInfo
-        {
-            get { return string.Format("{0}:{1}", filename, line); }
-        }
+        public string SourceInfo => $"{FileName}:{Line}";
 
-        public string FileName
-        {
-            get { return filename; }
-        }
+        public string FileName { get; }
 
-        public int Line
-        {
-            get { return line; }
-        }
+        public int Line { get; }
     }
 }

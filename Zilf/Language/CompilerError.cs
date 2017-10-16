@@ -71,6 +71,7 @@ namespace Zilf.Language
             Contract.Requires(si != null);
         }
 
+        [NotNull]
         public static CompilerError WrongArgCount([NotNull] string name, [NotNull] IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
@@ -80,6 +81,7 @@ namespace Zilf.Language
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
+        [NotNull]
         public static CompilerError WrongArgCount([NotNull] string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
@@ -88,6 +90,7 @@ namespace Zilf.Language
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
+        [NotNull]
         static CompilerError WrongArgCount([NotNull] string name, CountableString cs, int? acceptableVersion)
         {
             Contract.Requires(name != null);

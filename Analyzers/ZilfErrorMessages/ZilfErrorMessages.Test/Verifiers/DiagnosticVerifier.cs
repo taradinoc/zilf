@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace TestHelper
@@ -18,18 +19,15 @@ namespace TestHelper
         /// <summary>
         /// Get the CSharp analyzer being tested - to be implemented in non-abstract class
         /// </summary>
-        protected virtual DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
-        {
-            return null;
-        }
+        [CanBeNull]
+        protected abstract DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer();
 
         /// <summary>
         /// Get the Visual Basic analyzer being tested (C#) - to be implemented in non-abstract class
         /// </summary>
-        protected virtual DiagnosticAnalyzer GetBasicDiagnosticAnalyzer()
-        {
-            return null;
-        }
+        [CanBeNull]
+        protected abstract DiagnosticAnalyzer GetBasicDiagnosticAnalyzer();
+
         #endregion
 
         #region Verifier wrappers
@@ -40,7 +38,7 @@ namespace TestHelper
         /// </summary>
         /// <param name="source">A class in the form of a string to run the analyzer on</param>
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
-        protected async Task VerifyCSharpDiagnosticAsync(string source, params DiagnosticResult[] expected)
+        protected async Task VerifyCSharpDiagnosticAsync(string source, [NotNull] params DiagnosticResult[] expected)
         {
             await VerifyDiagnosticsAsync(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
         }
@@ -51,7 +49,7 @@ namespace TestHelper
         /// </summary>
         /// <param name="source">A class in the form of a string to run the analyzer on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
-        protected async Task VerifyBasicDiagnosticAsync(string source, params DiagnosticResult[] expected)
+        protected async Task VerifyBasicDiagnosticAsync(string source, [NotNull] params DiagnosticResult[] expected)
         {
             await VerifyDiagnosticsAsync(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
         }
@@ -62,7 +60,7 @@ namespace TestHelper
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected async Task VerifyCSharpDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
+        protected async Task VerifyCSharpDiagnosticAsync([NotNull] string[] sources, [NotNull] params DiagnosticResult[] expected)
         {
             await VerifyDiagnosticsAsync(sources, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
         }
@@ -73,7 +71,7 @@ namespace TestHelper
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected async Task VerifyBasicDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
+        protected async Task VerifyBasicDiagnosticAsync([NotNull] string[] sources, [NotNull] params DiagnosticResult[] expected)
         {
             await VerifyDiagnosticsAsync(sources, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
         }
@@ -86,7 +84,7 @@ namespace TestHelper
         /// <param name="language">The language of the classes represented by the source strings</param>
         /// <param name="analyzer">The analyzer to be run on the source code</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        async Task VerifyDiagnosticsAsync(string[] sources, string language, DiagnosticAnalyzer analyzer, params DiagnosticResult[] expected)
+        async Task VerifyDiagnosticsAsync([NotNull] string[] sources, [NotNull] string language, DiagnosticAnalyzer analyzer, [NotNull] params DiagnosticResult[] expected)
         {
             var diagnostics = await GetSortedDiagnosticsAsync(sources, language, analyzer).ConfigureAwait(false);
             VerifyDiagnosticResults(diagnostics, analyzer, expected);
@@ -102,7 +100,7 @@ namespace TestHelper
         /// <param name="actualResults">The Diagnostics found by the compiler after running the analyzer on the source code</param>
         /// <param name="analyzer">The analyzer that was being run on the sources</param>
         /// <param name="expectedResults">Diagnostic Results that should have appeared in the code</param>
-        static void VerifyDiagnosticResults(IEnumerable<Diagnostic> actualResults, DiagnosticAnalyzer analyzer, params DiagnosticResult[] expectedResults)
+        static void VerifyDiagnosticResults([NotNull] IEnumerable<Diagnostic> actualResults, DiagnosticAnalyzer analyzer, [NotNull] params DiagnosticResult[] expectedResults)
         {
             var expectedCount = expectedResults.Length;
             var actualResultsArray = actualResults as Diagnostic[] ?? actualResults.ToArray();
@@ -174,7 +172,7 @@ namespace TestHelper
         /// <param name="diagnostic">The diagnostic that was found in the code</param>
         /// <param name="actual">The Location of the Diagnostic found in the code</param>
         /// <param name="expected">The DiagnosticResultLocation that should have been found</param>
-        static void VerifyDiagnosticLocation(DiagnosticAnalyzer analyzer, Diagnostic diagnostic, Location actual, DiagnosticResultLocation expected)
+        static void VerifyDiagnosticLocation(DiagnosticAnalyzer analyzer, Diagnostic diagnostic, [NotNull] Location actual, DiagnosticResultLocation expected)
         {
             var actualSpan = actual.GetLineSpan();
 
@@ -215,7 +213,8 @@ namespace TestHelper
         /// <param name="analyzer">The analyzer that this verifier tests</param>
         /// <param name="diagnostics">The Diagnostics to be formatted</param>
         /// <returns>The Diagnostics formatted as a string</returns>
-        static string FormatDiagnostics(DiagnosticAnalyzer analyzer, params Diagnostic[] diagnostics)
+        [NotNull]
+        static string FormatDiagnostics(DiagnosticAnalyzer analyzer, [NotNull] params Diagnostic[] diagnostics)
         {
             var builder = new StringBuilder();
             for (int i = 0; i < diagnostics.Length; ++i)

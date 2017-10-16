@@ -84,7 +84,7 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void MakeObject(IWord result, ISourceLine location)
         {
-            ((OldParserWord)result).SetObject(ctx, location);
+            ((OldParserWord)result).SetObject(location);
         }
 
         public void MakeBuzzword(IWord word, ISourceLine location) => MakePart(word, location,

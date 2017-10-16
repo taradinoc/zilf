@@ -26,21 +26,16 @@ namespace Zilf.Common
         public static UnhandledCaseException FromEnum<T>(T enumValue, string usage = null)
             where T : struct
         {
-            return new UnhandledCaseException(string.Format(
-                "Unhandled {0}: {1}.{2}",
-                usage ?? "case",
-                typeof(T).Name,
-                enumValue));
+            return new UnhandledCaseException(
+                $"Unhandled {usage ?? "case"}: " +
+                $"{typeof(T).Name}.{enumValue}");
         }
 
         public static UnhandledCaseException FromTypeOf<T>(T value, string usage = null)
         {
-            return new UnhandledCaseException(string.Format(
-                "Unhandled {0}: {1}",
-                usage == null ? "type" : usage + " type",
-#pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                value == null ? "null" : value.GetType().Name));
-#pragma warning restore RECS0017 // Possible compare of value type with 'null'
+            return new UnhandledCaseException(
+                $"Unhandled {(usage == null ? "type" : usage + " type")}: " +
+                $"{(value == null ? "null" : value.GetType().Name)}");
         }
 
         public UnhandledCaseException(string message)

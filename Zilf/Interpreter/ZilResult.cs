@@ -206,12 +206,6 @@ namespace Zilf.Interpreter
             return new ZilList(array.Select(i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
-        [NotNull]
-        public static ZilObject[] ToZilObjectArray([NotNull] this IEnumerable<ZilResult> inputs)
-        {
-            return inputs.Select(i => (ZilObject)i).ToArray();
-        }
-
         [ContractAnnotation("=> false, array: null; => true, array: notnull")]
         public static bool TryToZilObjectArray([NotNull] this IEnumerable<ZilResult> inputs, [CanBeNull] out ZilObject[] array, out ZilResult result)
         {

@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using TestHelper;
 
 namespace ZilfErrorMessages.Test
@@ -76,28 +77,28 @@ namespace Zilf.Diagnostics {
                 new DiagnosticResult
                 {
                     Id = "ZILF0002",
-                    Message = string.Format("The code '{0}' is used more than once in message set '{1}'", "1", "InterpreterMessages"),
+                    Message = "The code \'1\' is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 27, 26) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0003",
-                    Message = string.Format("This format string is used more than once in message set '{0}'", "InterpreterMessages"),
+                    Message = "This format string is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 28, 18), new DiagnosticResultLocation("Test0.cs", 26, 18) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0004",
-                    Message = string.Format("This format string has the prefix '{0}', which should be moved to the call site", "QU-UX?"),
+                    Message = "This format string has the prefix \'QU-UX?\', which should be moved to the call site",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 30, 18) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0002",
-                    Message = string.Format("The code '{0}' is used more than once in message set '{1}'", "2", "InterpreterMessages"),
+                    Message = "The code \'2\' is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 26) }
                 }
@@ -154,14 +155,25 @@ namespace Zilf.Diagnostics {
             await VerifyCSharpFixAsync(test, fixtest);
         }
 
+        [NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new MessageConstantAnalyzer();
         }
 
+        protected override DiagnosticAnalyzer GetBasicDiagnosticAnalyzer()
+        {
+            throw new System.NotImplementedException();
+        }
+
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
             return new MessageConstantCodeFixProvider();
+        }
+
+        protected override CodeFixProvider GetBasicCodeFixProvider()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

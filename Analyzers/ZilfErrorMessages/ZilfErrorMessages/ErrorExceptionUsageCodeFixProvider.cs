@@ -26,6 +26,7 @@ namespace ZilfErrorMessages
         public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
             ErrorExceptionUsageAnalyzer.DiagnosticId);
 
+        [NotNull]
         public sealed override FixAllProvider GetFixAllProvider()
         {
             return new ErrorExceptionUsageFixAllProvider();
@@ -71,7 +72,7 @@ namespace ZilfErrorMessages
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        async Task<Solution> ConvertMessagesToConstantsAsync([NotNull] Document document, [NotNull] LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var invocations = PlanInvocations(creations, severity);
             return await ApplyInvocationsAsync(
@@ -80,7 +81,7 @@ namespace ZilfErrorMessages
                 cancellationToken);
         }
 
-        static Invocation[] PlanInvocations(LiteralCreation[] creations, string severity)
+        static Invocation[] PlanInvocations([NotNull] LiteralCreation[] creations, string severity)
         {
             var invocations = new List<Invocation>();
 
@@ -118,7 +119,7 @@ namespace ZilfErrorMessages
 
         static async Task<Solution> ApplyInvocationsAsync(
             Solution solution,
-            IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument,
+            [NotNull] IEnumerable<KeyValuePair<DocumentId, Invocation[]>> invocationsByDocument,
             CancellationToken cancellationToken)
         {
             // apply changes at invocation sites
@@ -201,7 +202,7 @@ namespace ZilfErrorMessages
             return solution;
         }
 
-        static IEnumerable<INamedTypeSymbol> GetAllTypes(Compilation compilation)
+        static IEnumerable<INamedTypeSymbol> GetAllTypes([NotNull] Compilation compilation)
         {
             var nsQueue = new Queue<INamespaceSymbol>();
             nsQueue.Enqueue(compilation.GlobalNamespace);
@@ -222,7 +223,7 @@ namespace ZilfErrorMessages
             }
         }
 
-        static void AddUsingIfNeeded(SyntaxEditor docEditor)
+        static void AddUsingIfNeeded([NotNull] SyntaxEditor docEditor)
         {
             if (!(docEditor.OriginalRoot is CompilationUnitSyntax compilationUnitSyntax))
                 return;
@@ -282,7 +283,7 @@ namespace ZilfErrorMessages
                 semicolonToken: SyntaxFactory.Token(SyntaxKind.SemicolonToken));
         }
 
-        public static string GetConstantNameFromMessageFormat(string formatString)
+        public static string GetConstantNameFromMessageFormat([NotNull] string formatString)
         {
             var sb = new StringBuilder();
             bool capNext = true;

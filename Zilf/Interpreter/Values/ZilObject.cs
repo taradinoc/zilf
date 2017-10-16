@@ -331,25 +331,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [NotNull]
-        public static IEnumerable<ZilResult> EvalWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
-
-            if (obj is IMayExpandBeforeEvaluation)
-                return Enumerable.Repeat((ZilResult)obj, 1);
-
-            var result = obj.Eval(ctx);
-
-            if ((ZilObject)result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
-                return expandAfter.ExpandAfterEvaluation().AsResultSequence();
-
-            return Enumerable.Repeat(result, 1);
-        }
-
-        [NotNull]
-        public static IEnumerable<ZilResult> ExpandWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
+        protected static IEnumerable<ZilResult> ExpandWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(obj != null);
@@ -367,46 +349,8 @@ namespace Zilf.Interpreter.Values
             return Enumerable.Repeat(result, 1);
         }
 
-        /// <summary>
-        /// Evaluates a sequence of expressions without expanding segment references.
-        /// </summary>
-        /// <param name="ctx">The current context.</param>
-        /// <param name="sequence">The sequence to evaluate.</param>
-        /// <returns>A sequence of evaluation results.</returns>
         [NotNull]
-        public static IEnumerable<ZilResult> EvalSequenceLeavingSegments([NotNull] Context ctx, [NotNull] IEnumerable<ZilObject> sequence)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(sequence != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
-
-            return sequence.SelectMany(zo => EvalWithSplice(ctx, zo));
-        }
-
-        /// <summary>
-        /// Expands segment references (!.X) in a sequence of expressions, leaving the rest unchanged.
-        /// </summary>
-        /// <param name="ctx">The current context.</param>
-        /// <param name="sequence">The sequence of expressions.</param>
-        /// <returns>A sequence of resulting expressions.</returns>
-        [NotNull]
-        public static IEnumerable<ZilResult> ExpandSegments([NotNull] Context ctx, [NotNull] IEnumerable<ZilObject> sequence)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(sequence != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
-
-            return sequence.SelectMany(zo =>
-            {
-                if (zo is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
-                    return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
-
-                return Enumerable.Repeat((ZilResult)zo, 1);
-            });
-        }
-
-        [NotNull]
-        public static string SequenceToString([NotNull] IEnumerable<ZilObject> items,
+        protected static string SequenceToString([NotNull] IEnumerable<ZilObject> items,
             [NotNull] string start, [NotNull] string end, [NotNull] Func<ZilObject, string> convert)
         {
             Contract.Requires(items != null);

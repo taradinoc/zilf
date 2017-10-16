@@ -16,33 +16,26 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
+
 namespace Zilf.Emit.Zap
 {
     class LocalBuilder : ILocalBuilder
     {
+        [NotNull]
         readonly string name;
-        IOperand defaultValue;
 
-        public LocalBuilder(string name)
+        public LocalBuilder([NotNull] string name)
         {
             this.name = name;
         }
 
-        public IIndirectOperand Indirect
-        {
-            get { return new IndirectOperand(this); }
-        }
+        public IIndirectOperand Indirect => new IndirectOperand(this);
 
-        public IOperand DefaultValue
-        {
-            get { return defaultValue; }
-            set { defaultValue = value; }
-        }
+        public IOperand DefaultValue { get; set; }
 
-        public string Name
-        {
-            get { return name; }
-        }
+        [NotNull]
+        public string Name => name;
 
         public override string ToString()
         {

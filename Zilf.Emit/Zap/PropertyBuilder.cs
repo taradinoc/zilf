@@ -16,30 +16,24 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
+
 namespace Zilf.Emit.Zap
 {
     class PropertyBuilder : IPropertyBuilder
     {
+        [NotNull]
         readonly string name;
-        readonly int number;
-        IOperand defaultValue;
 
-        public PropertyBuilder(string name, int number)
+        public PropertyBuilder([NotNull] string name, int number)
         {
             this.name = name;
-            this.number = number;
+            Number = number;
         }
 
-        public int Number
-        {
-            get { return number; }
-        }
+        public int Number { get; }
 
-        public IOperand DefaultValue
-        {
-            get { return defaultValue; }
-            set { defaultValue = value; }
-        }
+        public IOperand DefaultValue { get; set; }
 
         public override string ToString()
         {

@@ -47,10 +47,7 @@ namespace Zilf.Interpreter.Values
             return new ZilChar(fix.Value);
         }
 
-        public char Char
-        {
-            get { return (char)value; }
-        }
+        public char Char => (char)value;
 
         public override string ToString()
         {

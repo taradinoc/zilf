@@ -17,6 +17,7 @@
  */
 
 using System;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf;
 using Zilf.Interpreter;
@@ -26,38 +27,41 @@ namespace ZilfTests.Interpreter
 {
     internal static class TestHelpers
     {
-        internal static ZilObject Evaluate(string expression)
+        [CanBeNull]
+        internal static ZilObject Evaluate([NotNull] string expression)
         {
             return Evaluate(null, expression);
         }
 
-        internal static ZilObject Evaluate(Context ctx, string expression)
+        [NotNull]
+        internal static ZilObject Evaluate([CanBeNull] Context ctx, [NotNull] string expression)
         {
             if (ctx == null)
                 ctx = new Context();
 
-            return Program.Evaluate(ctx, expression, true);
+            return Program.Evaluate(ctx, expression, true) ?? throw new ArgumentException("Bad expression", nameof(expression));
         }
 
-        internal static void EvalAndAssert(string expression, ZilObject expected)
+        internal static void EvalAndAssert([NotNull] string expression, [NotNull] ZilObject expected)
         {
             EvalAndAssert(null, expression, expected);
         }
 
-        internal static void EvalAndAssert(Context ctx, string expression, ZilObject expected)
+        internal static void EvalAndAssert(Context ctx, [NotNull] string expression, [NotNull] ZilObject expected)
         {
             var actual = Evaluate(ctx, expression);
             if (!Equals(actual, expected))
-                throw new AssertFailedException(string.Format("TestHelpers.EvalAndAssert failed. Expected:<{0}>. Actual:<{1}>. Expression was: {2}", expected, actual, expression));
+                throw new AssertFailedException(
+                    $"TestHelpers.EvalAndAssert failed. Expected:<{expected}>. Actual:<{actual}>. Expression was: {expression}");
         }
 
-        internal static void EvalAndCatch<TException>(string expression, Predicate<TException> predicate = null)
+        internal static void EvalAndCatch<TException>([NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
             where TException : Exception
         {
             EvalAndCatch(null, expression, predicate);
         }
 
-        internal static void EvalAndCatch<TException>(Context ctx, string expression, Predicate<TException> predicate = null)
+        internal static void EvalAndCatch<TException>(Context ctx, [NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
             where TException : Exception
         {
             const string SWrongException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual exception:<{1}> ({4}). Expression was: {2}.\nOriginal stack trace:\n{3}";

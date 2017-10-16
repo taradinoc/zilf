@@ -112,7 +112,7 @@ namespace ZilfTests
             {
                 word.SetVerb(ctx, dummySrc, verbValue);
                 word.SetPreposition(ctx, dummySrc, prepValue);
-                word.SetObject(ctx, dummySrc);
+                word.SetObject(dummySrc);
             });
         }
 
@@ -121,7 +121,7 @@ namespace ZilfTests
         {
             Test_Keep_VP_Values(3, true, (ctx, word, verbValue, prepValue) =>
             {
-                word.SetObject(ctx, dummySrc);
+                word.SetObject(dummySrc);
                 word.SetPreposition(ctx, dummySrc, prepValue);
                 word.SetVerb(ctx, dummySrc, verbValue);
             });
@@ -133,7 +133,7 @@ namespace ZilfTests
             Test_Keep_VP_Values(3, true, (ctx, word, verbValue, prepValue) =>
             {
                 word.SetPreposition(ctx, dummySrc, prepValue);
-                word.SetObject(ctx, dummySrc);
+                word.SetObject(dummySrc);
                 word.SetVerb(ctx, dummySrc, verbValue);
             });
         }
@@ -145,7 +145,7 @@ namespace ZilfTests
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
-            word.SetObject(ctx, dummySrc);
+            word.SetObject(dummySrc);
 
             word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
             Assert.AreNotEqual(0, ctx.WarningCount);
@@ -158,7 +158,7 @@ namespace ZilfTests
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
-            word.SetObject(ctx, dummySrc);
+            word.SetObject(dummySrc);
 
             word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
             Assert.AreNotEqual(0, ctx.WarningCount);
@@ -184,7 +184,7 @@ namespace ZilfTests
             {
                 word.SetVerb(ctx, dummySrc, verbValue);
                 word.SetPreposition(ctx, dummySrc, prepValue);
-                word.SetObject(ctx, dummySrc);
+                word.SetObject(dummySrc);
                 word.SetAdjective(ctx, dummySrc, 7);
             });
         }
@@ -197,7 +197,7 @@ namespace ZilfTests
                 word.SetVerb(ctx, dummySrc, verbValue);
                 word.SetAdjective(ctx, dummySrc, 7);
                 word.SetPreposition(ctx, dummySrc, prepValue);
-                word.SetObject(ctx, dummySrc);
+                word.SetObject(dummySrc);
             });
         }
 
@@ -208,7 +208,7 @@ namespace ZilfTests
 
             word.SetVerb(ctx, dummySrc, 100);
             word.SetPreposition(ctx, dummySrc, 200);
-            word.SetObject(ctx, dummySrc);
+            word.SetObject(dummySrc);
             word.SetAdjective(ctx, dummySrc, 250);
 
             word.WriteToBuilder(ctx, new MockWordBuilder(), dir => new MockOperand { Value = dir });
@@ -535,7 +535,7 @@ namespace ZilfTests
                             word.SetDirection(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Object:
-                            word.SetObject(ctx, dummySrc);
+                            word.SetObject(dummySrc);
                             break;
                         case PartOfSpeech.Preposition:
                             word.SetPreposition(ctx, dummySrc, value);
@@ -715,7 +715,7 @@ namespace ZilfTests
                             word.SetDirection(ctx, dummySrc, value);
                             break;
                         case PartOfSpeech.Object:
-                            word.SetObject(ctx, dummySrc);
+                            word.SetObject(dummySrc);
                             break;
                         case PartOfSpeech.Preposition:
                             word.SetPreposition(ctx, dummySrc, value);

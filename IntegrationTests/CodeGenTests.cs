@@ -16,15 +16,18 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.Contracts;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
     [TestClass]
     public class CodeGenTests
     {
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -32,7 +35,8 @@ namespace IntegrationTests
             return new RoutineAssertionHelper(argSpec, body);
         }
 
-        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        [NotNull]
+        static GlobalsAssertionHelper AssertGlobals([NotNull] params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));

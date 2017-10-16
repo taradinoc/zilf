@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 
 namespace ZilfErrorMessages
 {
@@ -51,7 +52,7 @@ namespace ZilfErrorMessages
                 Rule_DuplicateMessageFormat,
                 Rule_PrefixedMessageFormat);
 
-        public override void Initialize(AnalysisContext context)
+        public override void Initialize([NotNull] AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.ClassDeclaration);
         }
@@ -146,7 +147,8 @@ namespace ZilfErrorMessages
             }
         }
 
-        static IEnumerable<FieldDeclarationSyntax> GetConstIntFields(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        [NotNull]
+        static IEnumerable<FieldDeclarationSyntax> GetConstIntFields([NotNull] ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             return from field in classDecl.Members.OfType<FieldDeclarationSyntax>()
                    where field.Modifiers.Any(SyntaxKind.PublicKeyword) && field.Modifiers.Any(SyntaxKind.ConstKeyword)
@@ -154,7 +156,7 @@ namespace ZilfErrorMessages
                    select field;
         }
 
-        static bool IsMessageSet(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        static bool IsMessageSet([NotNull] ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             var attributes = from alist in classDecl.AttributeLists
                              from attr in alist.Attributes

@@ -51,32 +51,6 @@ namespace Zilf.Interpreter.Values
             return new OriginalString(text);
         }
 
-        [NotNull]
-        public static ZilString Parse([NotNull] string str)
-        {
-            Contract.Requires(str != null);
-            Contract.Requires(str.Length >= 2);
-
-            var sb = new StringBuilder(str.Length - 2);
-
-            for (int i = 1; i < str.Length - 1; i++)
-            {
-                char ch = str[i];
-                switch (ch)
-                {
-                    case '\\':
-                        sb.Append(str[++i]);
-                        break;
-
-                    default:
-                        sb.Append(ch);
-                        break;
-                }
-            }
-
-            return new OriginalString(sb.ToString());
-        }
-
         public sealed override string ToString()
         {
             return Quote(Text);

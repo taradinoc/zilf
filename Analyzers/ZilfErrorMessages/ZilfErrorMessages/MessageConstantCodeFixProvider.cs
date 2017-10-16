@@ -3,6 +3,7 @@ using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -184,6 +185,7 @@ namespace ZilfErrorMessages
             return solution;
         }
 
+        [ItemCanBeNull]
         static async Task<PendingReplacement> ReplacementCallSiteWithPrefixInsertedAsync(
             ReferenceLocation location, LiteralExpressionSyntax prefixSyntax, CancellationToken cancellationToken)
         {

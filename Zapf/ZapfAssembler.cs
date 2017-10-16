@@ -75,7 +75,7 @@ namespace Zapf
         public event EventHandler<InitializingContextEventArgs> InitializingContext;
 
         [NotNull]
-        Stream OpenFile(string path, bool writing)
+        Stream OpenFile([NotNull] string path, bool writing)
         {
             Contract.Ensures(Contract.Result<Stream>() != null);
             var handler = OpeningFile;

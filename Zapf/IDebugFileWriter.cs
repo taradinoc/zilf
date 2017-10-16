@@ -49,7 +49,7 @@ namespace Zapf
 
         public override bool Equals(object obj)
         {
-            return obj is LineRef && ((LineRef)obj) == this;
+            return obj is LineRef lineRef && lineRef == this;
         }
 
         public override int GetHashCode()

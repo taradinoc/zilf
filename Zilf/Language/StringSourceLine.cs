@@ -20,16 +20,11 @@ namespace Zilf.Language
 {
     sealed class StringSourceLine : ISourceLine
     {
-        readonly string info;
-
         public StringSourceLine(string info)
         {
-            this.info = info;
+            SourceInfo = info;
         }
 
-        public string SourceInfo
-        {
-            get { return info; }
-        }
+        public string SourceInfo { get; }
     }
 }

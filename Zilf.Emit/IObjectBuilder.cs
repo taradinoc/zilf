@@ -23,6 +23,7 @@ using JetBrains.Annotations;
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IObjectBuilderContracts))]
+    [PublicAPI]
     public interface IObjectBuilder : IConstantOperand
     {
         [NotNull]

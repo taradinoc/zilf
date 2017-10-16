@@ -28,7 +28,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilResult MAPF(Context ctx,
+        public static ZilResult MAPF([NotNull] Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, [ItemNotNull] [NotNull] IStructure[] structs)
         {
@@ -39,7 +39,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult MAPR(Context ctx,
+        public static ZilResult MAPR([NotNull] Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, [NotNull] [ItemNotNull] IStructure[] structs)
         {
@@ -49,7 +49,7 @@ namespace Zilf.Interpreter
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
-        static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
+        static ZilResult PerformMap([NotNull] Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
         {
             Contract.Requires(structs != null);
             SubrContracts(ctx);
@@ -134,7 +134,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult MAPRET(Context ctx, ZilObject[] args)
+        public static ZilResult MAPRET(Context ctx, [NotNull] ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
@@ -142,7 +142,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult MAPSTOP(Context ctx, ZilObject[] args)
+        public static ZilResult MAPSTOP(Context ctx, [NotNull] ZilObject[] args)
         {
             SubrContracts(ctx, args);
 
