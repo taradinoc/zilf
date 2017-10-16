@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ZapfTests
@@ -25,6 +26,7 @@ namespace ZapfTests
     [TestClass]
     public class LabelConvergenceTests
     {
+        [NotNull]
         static string PaddingWords(int count)
         {
             if (count < 1)
@@ -37,7 +39,8 @@ namespace ZapfTests
             return sb.ToString();
         }
 
-        static string FormatAsRanges(IEnumerable<int> numbers)
+        [NotNull]
+        static string FormatAsRanges([NotNull] IEnumerable<int> numbers)
         {
             int? last = null, rangeStart = null;
             var ranges = new List<string>();
@@ -56,10 +59,7 @@ namespace ZapfTests
                 else
                 {
                     // terminate range and start a new one
-                    if (rangeStart == last)
-                        ranges.Add(rangeStart.ToString());
-                    else
-                        ranges.Add(string.Format("{0}-{1}", rangeStart, last));
+                    ranges.Add(rangeStart == last ? $"{rangeStart}" : $"{rangeStart}-{last}");
 
                     rangeStart = i;
                 }
@@ -69,10 +69,7 @@ namespace ZapfTests
 
             if (last != null)
             {
-                if (rangeStart == last)
-                    ranges.Add(rangeStart.ToString());
-                else
-                    ranges.Add(string.Format("{0}-{1}", rangeStart, last));
+                ranges.Add(rangeStart == last ? $"{rangeStart}" : $"{rangeStart}-{last}");
             }
 
             return string.Join(", ", ranges);

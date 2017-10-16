@@ -61,14 +61,13 @@ namespace Zilf.ZModel.Vocab
             public byte DefaultFlags;
         }
 
-        static ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
+        static readonly ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
 
         public static byte Parse([CanBeNull] ZilList list, [NotNull] Context ctx)
         {
             byte result = 0;
-            var sflagsVector = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_SFLAGS)) as ZilVector;
 
-            if (sflagsVector == null)
+            if (!(ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_SFLAGS)) is ZilVector sflagsVector))
             {
                 // use default set of flags
                 if (list == null)
@@ -119,10 +118,8 @@ namespace Zilf.ZModel.Vocab
                             "NEW-SFLAGS vector",
                             new CountableString("an even number of", true));
 
-                    entry = new CacheEntry();
-
                     // default set of flags
-                    entry.DefaultFlags = GetSflagValue(ctx, StdAtom.SEARCH_ALL);
+                    entry = new CacheEntry { DefaultFlags = GetSflagValue(ctx, StdAtom.SEARCH_ALL) };
 
                     // additive flags: always present
                     MakeAdditiveFlag(ctx, entry, "HAVE", StdAtom.SEARCH_MUST_HAVE);
@@ -136,15 +133,22 @@ namespace Zilf.ZModel.Vocab
                         var value = sflagsVector[i + 1];
 
                         string nameStr;
-                        if (name is ZilString zstr)
-                            nameStr = zstr.Text;
-                        else if (name is ZilAtom atom)
-                            nameStr = atom.Text;
-                        else
-                            throw new InterpreterError(
-                                InterpreterMessages._0_Must_Be_1,
-                                "NEW-SFLAGS names",
-                                "strings or atoms");
+                        switch (name)
+                        {
+                            case ZilString zstr:
+                                nameStr = zstr.Text;
+                                break;
+
+                            case ZilAtom atom:
+                                nameStr = atom.Text;
+                                break;
+
+                            default:
+                                throw new InterpreterError(
+                                    InterpreterMessages._0_Must_Be_1,
+                                    "NEW-SFLAGS names",
+                                    "strings or atoms");
+                        }
 
                         if (value is ZilFix fix && (fix.Value & ~255) == 0)
                         {
@@ -216,7 +220,7 @@ namespace Zilf.ZModel.Vocab
             return (byte)fix.Value;
         }
 
-        static void MakeAdditiveFlag(Context ctx, [NotNull] CacheEntry entry, [NotNull] string name, StdAtom valueAtom)
+        static void MakeAdditiveFlag([NotNull] Context ctx, [NotNull] CacheEntry entry, [NotNull] string name, StdAtom valueAtom)
         {
             entry.Dict.Add(name, GetSflagValue(ctx, valueAtom));
             entry.Additive.Add(name);

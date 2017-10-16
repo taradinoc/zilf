@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -112,6 +113,7 @@ namespace Zilf.Interpreter.Values
 
         #region IStructure Members
 
+        [NotNull]
         public ZilObject GetFirst()
         {
             return First;
@@ -153,6 +155,7 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => false;
 
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
+        [CanBeNull]
         public ZilObject this[int index]
         {
             get
@@ -171,6 +174,8 @@ namespace Zilf.Interpreter.Values
             }
             set
             {
+                Debug.Assert(value != null);
+
                 switch (index)
                 {
                     case 0:

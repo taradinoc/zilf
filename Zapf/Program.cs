@@ -485,7 +485,7 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
+        static void PassOne(Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
         {
             switch (node)
             {
@@ -786,7 +786,7 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        static void PassTwo(Context ctx, AsmLine node, ref int nodeIndex)
+        static void PassTwo(Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
         {
             switch (node)
             {
@@ -858,7 +858,7 @@ General switches:
             }
         }
 
-        static Symbol EvalExpr(Context ctx, AsmExpr node)
+        static Symbol EvalExpr(Context ctx, [NotNull] AsmExpr node)
         {
             switch (node)
             {
@@ -866,8 +866,7 @@ General switches:
                     return new Symbol(int.Parse(num.Text));
 
                 case SymbolExpr sym:
-                    Symbol result;
-                    if (!ctx.LocalSymbols.TryGetValue(sym.Text, out result) &&
+                    if (!ctx.LocalSymbols.TryGetValue(sym.Text, out var result) &&
                         !ctx.GlobalSymbols.TryGetValue(sym.Text, out result))
                     {
                         if (ctx.FinalPass)
@@ -994,7 +993,7 @@ General switches:
                 type = OPERAND_BYTE;
         }
 
-        static bool IsLongConstant(Context ctx, AsmExpr node)
+        static bool IsLongConstant(Context ctx, [NotNull] AsmExpr node)
         {
             switch (node)
             {
@@ -1036,7 +1035,7 @@ General switches:
             }
         }
 
-        static void HandleDirective(Context ctx, AsmLine node, int nodeIndex, bool assembling)
+        static void HandleDirective(Context ctx, [NotNull] AsmLine node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
             if (!(node is DebugLineDirective))
@@ -1772,8 +1771,7 @@ General switches:
                             offset = 0;
                             break;
                         default:
-                            Symbol sym;
-                            if (ctx.LocalSymbols.TryGetValue(node.BranchTarget, out sym))
+                            if (ctx.LocalSymbols.TryGetValue(node.BranchTarget, out var sym))
                             {
                                 offset = sym.Value - (ctx.Position + 1) + 2;
                                 if (offset < 2 || offset > 63)
@@ -1802,7 +1800,7 @@ General switches:
             }
         }
 
-        static void HandleLabel([NotNull] Context ctx, AsmLine node, ref int nodeIndex)
+        static void HandleLabel([NotNull] Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
         {
             Contract.Requires(ctx != null);
             Symbol sym;

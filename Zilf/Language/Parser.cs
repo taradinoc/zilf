@@ -302,7 +302,7 @@ namespace Zilf.Language
             }
         }
 
-        ParserOutput ParseOne(CharBuffer chars, out ISourceLine sourceLine)
+        ParserOutput ParseOne(CharBuffer chars, [NotNull] out ISourceLine sourceLine)
         {
             if (heldObjects.Count > 0)
             {

@@ -106,7 +106,6 @@
     <Compile Include="IWordBuilder.cs" />
     <Compile Include="Zap\ConstantOperandBase.cs" />
     <Compile Include="Zap\DebugFileBuilder.cs" />
-    <Compile Include="Zap\DummyGameOptions.cs" />
     <Compile Include="Zap\ConstantLiteralOperand.cs" />
     <Compile Include="Zap\NumericConstantOperand.cs" />
     <Compile Include="Zap\OperandExtensions.cs" />

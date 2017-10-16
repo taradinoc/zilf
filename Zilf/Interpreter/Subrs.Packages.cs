@@ -32,7 +32,7 @@ namespace Zilf.Interpreter
         [Subr]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
-        public static ZilObject PACKAGE([NotNull] Context ctx, string pname)
+        public static ZilObject PACKAGE([NotNull] Context ctx, [NotNull] string pname)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -62,7 +62,7 @@ namespace Zilf.Interpreter
         [Subr]
         [Subr("ZSECTION")]
         [Subr("ZZSECTION")]
-        public static ZilObject DEFINITIONS([NotNull] Context ctx, string pname)
+        public static ZilObject DEFINITIONS([NotNull] Context ctx, [NotNull] string pname)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);

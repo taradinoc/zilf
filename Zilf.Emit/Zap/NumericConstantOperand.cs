@@ -16,17 +16,19 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
+
 namespace Zilf.Emit.Zap
 {
     class NumericConstantOperand : ConstantOperandBase, INumericOperand
     {
+        [NotNull]
         readonly string literal;
-        readonly int value;
 
-        public NumericConstantOperand(string literal, int value)
+        public NumericConstantOperand([NotNull] string literal, int value)
         {
             this.literal = literal;
-            this.value = value;
+            Value = value;
         }
 
         public override string ToString()
@@ -34,9 +36,6 @@ namespace Zilf.Emit.Zap
             return literal;
         }
 
-        public int Value
-        {
-            get { return value; }
-        }
+        public int Value { get; }
     }
 }

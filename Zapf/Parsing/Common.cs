@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 
 namespace Zapf.Parsing
 {
@@ -119,7 +120,7 @@ namespace Zapf.Parsing
 
     sealed class ChrsetDirective : Directive
     {
-        public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
+        public ChrsetDirective(AsmExpr alphabetNum, [NotNull] IEnumerable<AsmExpr> characters)
         {
             CharsetNum = alphabetNum;
             Characters = new List<AsmExpr>(characters);
@@ -488,7 +489,7 @@ namespace Zapf.Parsing
     sealed class DebugRoutineDirective : LineDebugDirective
     {
         public DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
-            string name, IEnumerable<string> locals)
+            string name, [NotNull] IEnumerable<string> locals)
             : base(file, line, column)
         {
             Name = name;

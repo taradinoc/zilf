@@ -186,6 +186,7 @@ namespace Zilf.Interpreter
                 [Either(typeof(ZilAtom), typeof(string))]
                 public object Content;
 
+                [NotNull]
                 public ZilAtom GetAtom(Context ctx)
                 {
                     if (Content is ZilAtom atom)
@@ -374,7 +375,7 @@ namespace Zilf.Interpreter
         [NotNull]
         [Subr]
         public static ZilObject OBJECT([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [Decl("<LIST [REST LIST]>")] ZilList[] props)
+            [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);
@@ -387,7 +388,7 @@ namespace Zilf.Interpreter
         [NotNull]
         [Subr]
         public static ZilObject ROOM([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [Decl("<LIST [REST LIST]>")] ZilList[] props)
+            [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);
@@ -398,7 +399,7 @@ namespace Zilf.Interpreter
         }
 
         [NotNull]
-        static ZilObject PerformObject([NotNull] Context ctx, [NotNull] ZilAtom atom, ZilList[] props, bool isRoom)
+        static ZilObject PerformObject([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilList[] props, bool isRoom)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(atom != null);
@@ -941,7 +942,7 @@ namespace Zilf.Interpreter
             if (bytes > table.ByteCount)
                 throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "ZREST");
 
-            return table.OffsetByBytes(ctx, bytes);
+            return table.OffsetByBytes(bytes);
         }
 
         #endregion
@@ -1402,6 +1403,7 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="ArgumentCountError"><paramref name="args"/> is too short.</exception>
+        [NotNull]
         [Subr]
         public static ZilObject SYNTAX([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
@@ -1530,7 +1532,7 @@ namespace Zilf.Interpreter
 
         [NotNull]
         [FSubr("TELL-TOKENS")]
-        public static ZilObject TELL_TOKENS([NotNull] Context ctx, ZilObject[] args)
+        public static ZilObject TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -1542,7 +1544,7 @@ namespace Zilf.Interpreter
 
         [NotNull]
         [FSubr("ADD-TELL-TOKENS")]
-        public static ZilObject ADD_TELL_TOKENS([NotNull] Context ctx, ZilObject[] args)
+        public static ZilObject ADD_TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             Contract.Requires(ctx != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
@@ -1557,6 +1559,7 @@ namespace Zilf.Interpreter
         #region Z-Code: Version 6 Parser
 
         /// <exception cref="InterpreterError">NEW-PARSER? is not enabled.</exception>
+        [NotNull]
         [Subr("ADD-WORD")]
         [Subr("NEW-ADD-WORD")]
         public static ZilObject NEW_ADD_WORD([NotNull] Context ctx,

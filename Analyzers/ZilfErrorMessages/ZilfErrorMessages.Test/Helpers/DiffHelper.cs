@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace TestHelper
@@ -19,7 +20,7 @@ namespace TestHelper
             ShouldEqualWithDiff(actualValue, expectedValue, diffStyle, Console.Out);
         }
 
-        public static void ShouldEqualWithDiff(this string actualValue, string expectedValue, DiffStyle diffStyle, TextWriter output)
+        public static void ShouldEqualWithDiff([CanBeNull] this string actualValue, [CanBeNull] string expectedValue, DiffStyle diffStyle, TextWriter output)
         {
             if (actualValue == null || expectedValue == null)
             {
@@ -52,6 +53,7 @@ namespace TestHelper
             Assert.AreEqual(expectedValue, actualValue);
         }
 
+        [NotNull]
         static string ToSafeString(this char c)
         {
             switch (c)

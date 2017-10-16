@@ -74,7 +74,7 @@ namespace Zilf.Language
         {
         }
 
-        public InterpreterError(IProvideSourceLine sourceLine, int code)
+        public InterpreterError([NotNull] IProvideSourceLine sourceLine, int code)
            : this(sourceLine, code, null)
         {
         }

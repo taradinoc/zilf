@@ -16,21 +16,19 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
+
 namespace Zilf.Emit.Zap
 {
     class WordBuilder : TableBuilder, IWordBuilder
     {
-        readonly string word;
-
-        public WordBuilder(string tableName, string word)
+        public WordBuilder([NotNull] string tableName, [NotNull] string word)
             : base(tableName)
         {
-            this.word = word;
+            Word = word;
         }
 
-        public string Word
-        {
-            get { return word; }
-        }
+        [NotNull]
+        public string Word { get; }
     }
 }

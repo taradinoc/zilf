@@ -105,6 +105,7 @@ namespace Zapf.Parsing
             public string SourceFile { get; }
         }
 
+        [NotNull]
         ISourceLine CurrentSourceLine => new BasicSourceLine(line, filename);
 
         public Tokenizer([NotNull] Stream stream, [NotNull] string filename)
@@ -209,9 +210,8 @@ namespace Zapf.Parsing
                     break;
 
                 default:
-                    TokenType type;
                     Debug.Assert(c != null);
-                    if (CharTokens.TryGetValue((char)c, out type))
+                    if (CharTokens.TryGetValue((char)c, out var type))
                     {
                         NextChar();
                         result.Type = type;
@@ -478,37 +478,37 @@ namespace Zapf.Parsing
             };
         }
 
-        void ReportError(ISourceLine node, string message)
+        void ReportError(ISourceLine node, [NotNull] string message)
         {
             errorCount++;
             Errors.Serious(sink, node, message);
         }
 
-        void ReportError(ISourceLine node, string format, params object[] args)
+        void ReportError(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             errorCount++;
             Errors.Serious(sink, node, format, args);
         }
 
-        void ReportErrorAndSkipLine(ISourceLine node, string message)
+        void ReportErrorAndSkipLine(ISourceLine node, [NotNull] string message)
         {
             ReportError(node, message);
             SkipLine();
         }
 
-        void ReportErrorAndSkipLine(ISourceLine node, string format, params object[] args)
+        void ReportErrorAndSkipLine(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             ReportError(node, format, args);
             SkipLine();
         }
 
-        void ReportErrorAndSkipExpr(ISourceLine node, string message)
+        void ReportErrorAndSkipExpr(ISourceLine node, [NotNull] string message)
         {
             ReportError(node, message);
             SkipExpr();
         }
 
-        void ReportErrorAndSkipExpr(ISourceLine node, string format, params object[] args)
+        void ReportErrorAndSkipExpr(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
             ReportError(node, format, args);
             SkipExpr();
@@ -558,6 +558,7 @@ namespace Zapf.Parsing
             }
         }
 
+        [CanBeNull]
         AsmLine TryParseInstruction(Token head)
         {
             if (head.Type == TokenType.Symbol && opcodeDict.ContainsKey(head.Text))
@@ -654,6 +655,7 @@ namespace Zapf.Parsing
             return null;
         }
 
+        [CanBeNull]
         AsmLine TryParseLabel(Token head)
         {
             if (head.Type == TokenType.Symbol)
@@ -673,11 +675,13 @@ namespace Zapf.Parsing
             return null;
         }
 
+        [NotNull]
         AsmExpr ParseExprOne()
         {
             return ParseExprOne(toks.NextToken());
         }
 
+        [NotNull]
         AsmExpr ParseExprOne(Token head)
         {
             switch (head.Type)
@@ -715,11 +719,13 @@ namespace Zapf.Parsing
             }
         }
 
+        [NotNull]
         AsmExpr ParseExpr()
         {
             return ParseExpr(toks.NextToken());
         }
 
+        [NotNull]
         AsmExpr ParseExpr(Token head)
         {
             var result = ParseExprOne(head);
@@ -735,6 +741,7 @@ namespace Zapf.Parsing
             return result;
         }
 
+        [CanBeNull]
         AsmExpr TryParseExpr()
         {
             return CanStartExpr(toks.PeekToken().Type) ? ParseExpr() : null;
@@ -785,6 +792,7 @@ namespace Zapf.Parsing
             return null;
         }
 
+        [NotNull]
         AsmLine ParseUnrecognizedInstruction(Token head)
         {
             var result = new BareSymbolLine(head.Text);
@@ -899,6 +907,7 @@ namespace Zapf.Parsing
             return "???";
         }
 
+        [NotNull]
         AsmLine ParseByteDirective(Token head)
         {
             var result = new ByteDirective();
@@ -910,6 +919,7 @@ namespace Zapf.Parsing
             return result;
         }
 
+        [NotNull]
         AsmLine ParseChrsetDirective(Token head)
         {
             var alphabetNum = ParseExpr();
@@ -922,24 +932,28 @@ namespace Zapf.Parsing
             return new ChrsetDirective(alphabetNum, characters);
         }
 
+        [NotNull]
         AsmLine ParseEndDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndDirective();
         }
 
+        [NotNull]
         AsmLine ParseEndiDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndiDirective();
         }
 
+        [NotNull]
         AsmLine ParseEndtDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndtDirective();
         }
 
+        [NotNull]
         AsmLine ParseFstrDirective(Token head)
         {
             var name = MatchSymbol();
@@ -949,6 +963,7 @@ namespace Zapf.Parsing
             return new FstrDirective(name, text);
         }
 
+        [NotNull]
         AsmLine ParseFunctDirective(Token head)
         {
             var result = new FunctDirective(MatchSymbol());
@@ -962,6 +977,7 @@ namespace Zapf.Parsing
             return result;
         }
 
+        [NotNull]
         AsmLine ParseGstrDirective(Token head)
         {
             var name = MatchSymbol();
@@ -971,6 +987,7 @@ namespace Zapf.Parsing
             return new GstrDirective(name, text);
         }
 
+        [NotNull]
         AsmLine ParseGvarDirective(Token head)
         {
             var name = MatchSymbol();
@@ -990,6 +1007,7 @@ namespace Zapf.Parsing
             return new GvarDirective(name, initialValue);
         }
 
+        [NotNull]
         AsmLine ParseInsertDirective(Token head)
         {
             var filename = MatchString();
@@ -997,6 +1015,7 @@ namespace Zapf.Parsing
             return new InsertDirective(filename);
         }
 
+        [NotNull]
         AsmLine ParseLangDirective(Token head)
         {
             var langId = ParseExpr();
@@ -1006,6 +1025,7 @@ namespace Zapf.Parsing
             return new LangDirective(langId, escapeChar);
         }
 
+        [NotNull]
         AsmLine ParseLenDirective(Token head)
         {
             var text = MatchString();
@@ -1013,6 +1033,7 @@ namespace Zapf.Parsing
             return new LenDirective(text);
         }
 
+        [NotNull]
         AsmLine ParseNewDirective(Token head)
         {
             var version = TryParseExpr();
@@ -1020,6 +1041,7 @@ namespace Zapf.Parsing
             return new NewDirective(version);
         }
 
+        [NotNull]
         AsmLine ParseObjectDirective(Token head)
         {
             var result = new ObjectDirective(MatchSymbol());
@@ -1057,6 +1079,7 @@ namespace Zapf.Parsing
             return result;
         }
 
+        [NotNull]
         AsmLine ParsePropDirective(Token head)
         {
             var size = ParseExpr();
@@ -1066,12 +1089,14 @@ namespace Zapf.Parsing
             return new PropDirective(size, prop);
         }
 
+        [NotNull]
         AsmLine ParseSoundDirective(Token head)
         {
             MatchEndOfDirective();
             return new SoundDirective();
         }
 
+        [NotNull]
         AsmLine ParseStrDirective(Token head)
         {
             var text = MatchString();
@@ -1079,6 +1104,7 @@ namespace Zapf.Parsing
             return new StrDirective(text);
         }
 
+        [NotNull]
         AsmLine ParseStrlDirective(Token head)
         {
             var text = MatchString();
@@ -1086,6 +1112,7 @@ namespace Zapf.Parsing
             return new StrlDirective(text);
         }
 
+        [NotNull]
         AsmLine ParseTableDirective(Token head)
         {
             var size = TryParseExpr();
@@ -1093,12 +1120,14 @@ namespace Zapf.Parsing
             return new TableDirective(size);
         }
 
+        [NotNull]
         AsmLine ParseTimeDirective(Token head)
         {
             MatchEndOfDirective();
             return new TimeDirective();
         }
 
+        [NotNull]
         AsmLine ParseVocbegDirective(Token head)
         {
             var recordSize = ParseExpr();
@@ -1108,12 +1137,14 @@ namespace Zapf.Parsing
             return new VocbegDirective(recordSize, keySize);
         }
 
+        [NotNull]
         AsmLine ParseVocendDirective(Token head)
         {
             MatchEndOfDirective();
             return new VocendDirective();
         }
 
+        [NotNull]
         AsmLine ParseWordDirective(Token head)
         {
             var result = new WordDirective();
@@ -1125,6 +1156,7 @@ namespace Zapf.Parsing
             return result;
         }
 
+        [NotNull]
         AsmLine ParseZwordDirective(Token head)
         {
             var text = MatchString();
@@ -1132,6 +1164,7 @@ namespace Zapf.Parsing
             return new ZwordDirective(text);
         }
 
+        [NotNull]
         AsmLine ParseDebugActionDirective(Token head)
         {
             var number = ParseExpr();
@@ -1141,6 +1174,7 @@ namespace Zapf.Parsing
             return new DebugActionDirective(number, name);
         }
 
+        [NotNull]
         AsmLine ParseDebugArrayDirective(Token head)
         {
             var number = ParseExpr();
@@ -1150,6 +1184,7 @@ namespace Zapf.Parsing
             return new DebugArrayDirective(number, name);
         }
 
+        [NotNull]
         AsmLine ParseDebugAttrDirective(Token head)
         {
             var number = ParseExpr();
@@ -1159,6 +1194,7 @@ namespace Zapf.Parsing
             return new DebugAttrDirective(number, name);
         }
 
+        [NotNull]
         AsmLine ParseDebugFileDirective(Token head)
         {
             var number = ParseExpr();
@@ -1170,6 +1206,7 @@ namespace Zapf.Parsing
             return new DebugFileDirective(number, includeName, actualName);
         }
 
+        [NotNull]
         AsmLine ParseDebugGlobalDirective(Token head)
         {
             var number = ParseExpr();
@@ -1179,6 +1216,7 @@ namespace Zapf.Parsing
             return new DebugGlobalDirective(number, name);
         }
 
+        [NotNull]
         AsmLine ParseDebugLineDirective(Token head)
         {
             var file = ParseExpr();
@@ -1190,6 +1228,7 @@ namespace Zapf.Parsing
             return new DebugLineDirective(file, line, column);
         }
 
+        [NotNull]
         AsmLine ParseDebugObjectDirective(Token head)
         {
             var number = ParseExpr();
@@ -1214,6 +1253,7 @@ namespace Zapf.Parsing
                 endFile, endLine, endColumn);
         }
 
+        [NotNull]
         AsmLine ParseDebugPropDirective(Token head)
         {
             var number = ParseExpr();
@@ -1223,6 +1263,7 @@ namespace Zapf.Parsing
             return new DebugPropDirective(number, name);
         }
 
+        [NotNull]
         AsmLine ParseDebugRoutineDirective(Token head)
         {
             var file = ParseExpr();
@@ -1241,6 +1282,7 @@ namespace Zapf.Parsing
             return new DebugRoutineDirective(file, line, column, name, locals);
         }
 
+        [NotNull]
         AsmLine ParseDebugRoutineEndDirective(Token head)
         {
             var file = ParseExpr();

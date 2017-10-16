@@ -23,6 +23,7 @@ using System.Diagnostics;
 #endif
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using Zilf.Common.StringEncoding;
 
 namespace Zapf
@@ -56,7 +57,7 @@ namespace Zapf
         /// Adds some text to the accumulator.
         /// </summary>
         /// <param name="text">The text to add.</param>
-        public void AddText(string text)
+        public void AddText([NotNull] string text)
         {
             allText.Append(text);
             allText.Append('\0');
@@ -91,7 +92,7 @@ namespace Zapf
 
         static readonly char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
 
-        IEnumerable<string> FindWords(string text)
+        IEnumerable<string> FindWords([NotNull] string text)
         {
             int wordStart = -1;
             bool inWord = false;
@@ -146,7 +147,7 @@ namespace Zapf
             return zchars - 2;
         }
 
-        int CountAppearances(Horspool pattern)
+        int CountAppearances([NotNull] Horspool pattern)
         {
 #if DEBUG_ABBREV
             var stopw = new Stopwatch();

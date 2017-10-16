@@ -273,9 +273,8 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        public void SetObject([NotNull] Context ctx, ISourceLine location)
+        public void SetObject(ISourceLine location)
         {
-            Contract.Requires(ctx != null);
             Contract.Ensures((PartOfSpeech & PartOfSpeech.Object) != 0);
 
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
@@ -405,7 +404,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                         SetPreposition(ctx, p.location, p.value);
                         break;
                     case PartOfSpeech.Object:
-                        SetObject(ctx, p.location);
+                        SetObject(p.location);
                         break;
                     default:
                         throw UnhandledCaseException.FromEnum(p.part);
@@ -535,11 +534,6 @@ namespace Zilf.ZModel.Vocab.OldParser
             SynonymTypes |= synonymTypes;
         }
 
-        public bool IsSynonym(PartOfSpeech synonymTypes)
-        {
-            return (SynonymTypes & synonymTypes) != 0;
-        }
-
         public void Merge([NotNull] Context ctx, [NotNull] OldParserWord other)
         {
             Contract.Requires(ctx != null);
@@ -554,7 +548,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                 SetDirection(ctx, other.GetDefinition(PartOfSpeech.Direction), other.GetValue(PartOfSpeech.Direction));
 
             if ((other.PartOfSpeech & PartOfSpeech.Object) != 0)
-                SetObject(ctx, other.GetDefinition(PartOfSpeech.Object));
+                SetObject(other.GetDefinition(PartOfSpeech.Object));
 
             if ((other.PartOfSpeech & PartOfSpeech.Preposition) != 0)
                 SetPreposition(ctx, other.GetDefinition(PartOfSpeech.Preposition), other.GetValue(PartOfSpeech.Preposition));

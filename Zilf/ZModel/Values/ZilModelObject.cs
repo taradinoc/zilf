@@ -75,6 +75,7 @@ namespace Zilf.ZModel.Values
 
         public bool IsRoom { get; }
 
+        [NotNull]
         public ZilAtom ObjectOrRoom => GetStdAtom(IsRoom ? StdAtom.ROOM : StdAtom.OBJECT);
 
         [NotNull]

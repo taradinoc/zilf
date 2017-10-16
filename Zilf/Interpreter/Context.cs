@@ -250,12 +250,6 @@ namespace Zilf.Interpreter
 
         public int ErrorCount => diagnostics.ErrorCount;
 
-        public int? MaxErrorCount
-        {
-            get => diagnostics.MaxErrorCount;
-            set => diagnostics.MaxErrorCount = value;
-        }
-
         public int WarningCount => diagnostics.WarningCount;
 
         [NotNull]

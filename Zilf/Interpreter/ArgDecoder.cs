@@ -38,10 +38,10 @@ namespace Zilf.Interpreter
     [Serializable]
     abstract class ArgumentDecodingError : InterpreterError
     {
-        protected ArgumentDecodingError(Diagnostic diagnostic)
+        protected ArgumentDecodingError([NotNull] Diagnostic diagnostic)
             : base(diagnostic) { }
 
-        protected ArgumentDecodingError(SerializationInfo si, StreamingContext sc)
+        protected ArgumentDecodingError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }
@@ -100,12 +100,12 @@ namespace Zilf.Interpreter
     [Serializable]
     sealed class ArgumentCountError : ArgumentDecodingError
     {
-        ArgumentCountError(Diagnostic diagnostic)
+        ArgumentCountError([NotNull] Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
 
-        ArgumentCountError(SerializationInfo si, StreamingContext sc)
+        ArgumentCountError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }
@@ -174,7 +174,7 @@ namespace Zilf.Interpreter
             Contract.Requires(constraintDesc != null);
         }
 
-        ArgumentTypeError(SerializationInfo si, StreamingContext sc)
+        ArgumentTypeError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }

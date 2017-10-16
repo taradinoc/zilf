@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace ZilfErrorMessages
 {
@@ -23,7 +24,7 @@ namespace ZilfErrorMessages
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule);
 
-        public override void Initialize(AnalysisContext context)
+        public override void Initialize([NotNull] AnalysisContext context)
         {
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.ObjectCreationExpression);
         }
@@ -40,7 +41,7 @@ namespace ZilfErrorMessages
         }
 
         public static bool TryMatchLiteralCreation(ObjectCreationExpressionSyntax creationExpr,
-            SemanticModel semanticModel, out LiteralCreation literalCreation)
+            SemanticModel semanticModel, [CanBeNull] out LiteralCreation literalCreation)
         {
             var typeSymbol = semanticModel.GetTypeInfo(creationExpr);
             var qualifiedFormat = new SymbolDisplayFormat(
@@ -101,7 +102,7 @@ namespace ZilfErrorMessages
         }
 
         static bool TryExtractFormatAndArgs(
-            ExpressionSyntax expressionToReplace, SemanticModel semanticModel,
+            ExpressionSyntax expressionToReplace, [NotNull] SemanticModel semanticModel,
             out string newMessageFormat, out ImmutableList<ExpressionSyntax> newMessageArgs)
         {
             string format;
@@ -144,7 +145,7 @@ namespace ZilfErrorMessages
             return true;
         }
 
-        static bool IsSpecialTypeMethod(ISymbol symbol, SpecialType specialType, string methodName)
+        static bool IsSpecialTypeMethod([CanBeNull] ISymbol symbol, SpecialType specialType, string methodName)
         {
             return
                 symbol?.Kind == SymbolKind.Method &&

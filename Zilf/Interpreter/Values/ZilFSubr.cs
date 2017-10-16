@@ -33,7 +33,7 @@ namespace Zilf.Interpreter.Values
 
         [ChtypeMethod]
         [NotNull]
-        public static new ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
+        public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(str != null);
@@ -43,7 +43,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [NotNull]
-        public static new ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
+        public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);

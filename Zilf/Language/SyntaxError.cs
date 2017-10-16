@@ -32,7 +32,7 @@ namespace Zilf.Language
             Contract.Requires(message != null);
         }
 
-        protected SyntaxError(SerializationInfo si, StreamingContext sc)
+        protected SyntaxError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }

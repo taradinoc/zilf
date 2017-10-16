@@ -39,10 +39,7 @@ namespace Zilf.Language
         }
 
         public Diagnostic Diagnostic { get; protected set; }
-        public ISourceLine SourceLine { get; protected set; }
-
-        [NotNull]
-        public string SourcePrefix => SourceLine?.SourceInfo == null ? "" : SourceLine.SourceInfo + ": ";
+        protected ISourceLine SourceLine { get; set; }
     }
 
     [Serializable]
@@ -72,11 +69,6 @@ namespace Zilf.Language
         {
         }
 
-        protected ZilFatal(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
-
         protected ZilFatal([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -85,6 +77,7 @@ namespace Zilf.Language
 
     static class ZilErrorBaseExtensions
     {
+        [NotNull]
         public static T Combine<T>([NotNull] this T mainError, [NotNull] T subError)
             where T : ZilErrorBase
         {

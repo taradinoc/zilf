@@ -16,17 +16,20 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern alias JBA;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Text;
+using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
     [TestClass]
     public class ObjectTests
     {
-        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        [NotNull]
+        static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
@@ -34,7 +37,8 @@ namespace IntegrationTests
             return new GlobalsAssertionHelper(globals);
         }
 
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -44,7 +48,9 @@ namespace IntegrationTests
 
         #region Object Numbering & Tree Ordering
 
-        string[] TreeImplications(string[] numbering, params string[][] chains)
+        [ItemNotNull]
+        [NotNull]
+        static string[] TreeImplications([ItemNotNull] [NotNull] string[] numbering, [ItemNotNull] [NotNull] params string[][] chains)
         {
             Contract.Requires(numbering != null && numbering.Length > 0);
             Contract.Requires(Contract.ForAll(numbering, n => !string.IsNullOrWhiteSpace(n)));
@@ -54,34 +60,31 @@ namespace IntegrationTests
 
             for (int i = 0; i < numbering.Length; i++)
             {
-                result.Add(string.Format("<=? ,{0} {1}>", numbering[i], i + 1));
+                result.Add($"<=? ,{numbering[i]} {i + 1}>");
             }
 
             var heads = new HashSet<string>();
 
-            if (chains != null)
+            foreach (var chain in chains)
             {
-                foreach (var chain in chains)
+                Contract.Assert(chain.Length >= 2);
+
+                heads.Add(chain[0]);
+                result.Add($"<=? <FIRST? ,{chain[0]}> ,{chain[1]}>");
+
+                for (int i = 1; i < chain.Length - 1; i++)
                 {
-                    Contract.Assert(chain.Length >= 2);
-
-                    heads.Add(chain[0]);
-                    result.Add(string.Format("<=? <FIRST? ,{0}> ,{1}>", chain[0], chain[1]));
-
-                    for (int i = 1; i < chain.Length - 1; i++)
-                    {
-                        result.Add(string.Format("<=? <NEXT? ,{0}> ,{1}>", chain[i], chain[i + 1]));
-                    }
-
-                    result.Add(string.Format("<NOT <NEXT? ,{0}>>", chain[chain.Length - 1]));
+                    result.Add($"<=? <NEXT? ,{chain[i]}> ,{chain[i + 1]}>");
                 }
+
+                result.Add($"<NOT <NEXT? ,{chain[chain.Length - 1]}>>");
             }
 
             foreach (var o in numbering)
             {
                 if (!heads.Contains(o))
                 {
-                    result.Add(string.Format("<NOT <FIRST? ,{0}>>", o));
+                    result.Add($"<NOT <FIRST? ,{o}>>");
                 }
             }
 
@@ -337,7 +340,7 @@ namespace IntegrationTests
             }
 
             AssertGlobals(
-                string.Format("<OBJECT FOO (FLAGS {0})>", tooManyBits))
+                $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV3()
                 .DoesNotCompile();
 
@@ -348,7 +351,7 @@ namespace IntegrationTests
             }
 
             AssertGlobals(
-                string.Format("<OBJECT FOO (FLAGS {0})>", tooManyBits))
+                $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV4()
                 .DoesNotCompile();
         }

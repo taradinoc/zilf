@@ -19,6 +19,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using JetBrains.Annotations;
 
 namespace Zapf
 {
@@ -27,7 +28,7 @@ namespace Zapf
         readonly XmlWriter xml;
         bool inRoutine;
 
-        public XmlDebugFileWriter(Stream debugStream)
+        public XmlDebugFileWriter([NotNull] Stream debugStream)
         {
             var settings = new XmlWriterSettings()
             {
@@ -50,7 +51,7 @@ namespace Zapf
             xml.Close();
         }
 
-        public void StartRoutine(LineRef start, int address, string name, IEnumerable<string> locals)
+        public void StartRoutine(LineRef start, int address, string name, [NotNull] IEnumerable<string> locals)
         {
             xml.WriteStartElement("routine");
 
@@ -74,10 +75,7 @@ namespace Zapf
             inRoutine = true;
         }
 
-        public bool InRoutine
-        {
-            get { return inRoutine; }
-        }
+        public bool InRoutine => inRoutine;
 
         public void WriteLine(LineRef loc, int address)
         {
@@ -154,7 +152,7 @@ namespace Zapf
             xml.WriteEndElement();
         }
 
-        public void WriteFile(byte number, string includeName, string actualName)
+        public void WriteFile(byte number, [NotNull] string includeName, [NotNull] string actualName)
         {
             xml.WriteStartElement("source");
             xml.WriteAttributeString("index", number.ToString());
@@ -177,14 +175,14 @@ namespace Zapf
             xml.WriteEndElement();
         }
 
-        public void WriteHeader(byte[] header)
+        public void WriteHeader([NotNull] byte[] header)
         {
             xml.WriteStartElement("story-file-prefix");
             xml.WriteBase64(header, 0, header.Length);
             xml.WriteEndElement();
         }
 
-        public void WriteMap(IEnumerable<KeyValuePair<string, int>> map)
+        public void WriteMap([NotNull] IEnumerable<KeyValuePair<string, int>> map)
         {
             foreach (var entry in map)
             {

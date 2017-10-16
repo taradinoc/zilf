@@ -78,17 +78,16 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
+            string MaybeQuote(ZilObject zo)
+            {
+                return zo is ZilAtom ? "'" + zo : zo.ToString();
+            }
+
             if (Recursion.TryLock(this))
             {
                 try
                 {
-                    return string.Format(
-                        "%<OFFSET {0} {1}{2} {3}{4}>",
-                        Index,
-                        StructurePattern is ZilAtom ? "" : "'",
-                        StructurePattern,
-                        ValuePattern is ZilAtom ? "" : "'",
-                        ValuePattern);
+                    return $"%<OFFSET {Index} {MaybeQuote(StructurePattern)} {MaybeQuote(ValuePattern)}>";
                 }
                 finally
                 {
@@ -100,17 +99,16 @@ namespace Zilf.Interpreter.Values
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
+            string MaybeQuote(ZilObject zo)
+            {
+                return zo is ZilAtom ? "'" + zo : zo.ToStringContext(ctx, friendly);
+            }
+
             if (Recursion.TryLock(this))
             {
                 try
                 {
-                    return string.Format(
-                        "%<OFFSET {0} {1}{2} {3}{4}>",
-                        Index,
-                        StructurePattern is ZilAtom ? "" : "'",
-                        StructurePattern.ToStringContext(ctx, friendly),
-                        ValuePattern is ZilAtom ? "" : "'",
-                        ValuePattern.ToStringContext(ctx, friendly));
+                    return $"%<OFFSET {Index} {MaybeQuote(StructurePattern)} {MaybeQuote(ValuePattern)}>";
                 }
                 finally
                 {
@@ -198,10 +196,7 @@ namespace Zilf.Interpreter.Values
                         return null;
                 }
             }
-            set
-            {
-                throw new InterpreterError(InterpreterMessages.OFFSET_Is_Immutable);
-            }
+            set => throw new InterpreterError(InterpreterMessages.OFFSET_Is_Immutable);
         }
 
         public int GetLength()

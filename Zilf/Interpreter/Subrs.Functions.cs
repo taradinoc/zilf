@@ -63,7 +63,7 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformDefine([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilAtom name,
             [CanBeNull] ZilAtom activationAtom,
-            ZilList argList, ZilDecl decl, [NotNull] ZilObject[] body, [NotNull] string subrName)
+            [NotNull] ZilList argList, ZilDecl decl, [NotNull] ZilObject[] body, [NotNull] string subrName)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(name != null);

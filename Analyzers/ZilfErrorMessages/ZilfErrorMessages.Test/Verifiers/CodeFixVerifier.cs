@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace TestHelper
@@ -22,19 +23,15 @@ namespace TestHelper
         /// Returns the codefix being tested (C#) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for CSharp code</returns>
-        protected virtual CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return null;
-        }
+        [NotNull]
+        protected abstract CodeFixProvider GetCSharpCodeFixProvider();
 
         /// <summary>
         /// Returns the codefix being tested (VB) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for VisualBasic code</returns>
-        protected virtual CodeFixProvider GetBasicCodeFixProvider()
-        {
-            return null;
-        }
+        [NotNull]
+        protected abstract CodeFixProvider GetBasicCodeFixProvider();
 
         /// <summary>
         /// Called to test a C# codefix when applied on the inputted string as a source
@@ -73,7 +70,7 @@ namespace TestHelper
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
+        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, [NotNull] CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
             var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);

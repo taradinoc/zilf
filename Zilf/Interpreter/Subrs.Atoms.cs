@@ -113,8 +113,9 @@ namespace Zilf.Interpreter
             return ZilString.FromString(arg.ToStringContext(ctx, false));
         }
 
+        [NotNull]
         [Subr]
-        public static ZilObject LOOKUP(Context ctx, string str, [NotNull] ObList oblist)
+        public static ZilObject LOOKUP(Context ctx, [NotNull] string str, [NotNull] ObList oblist)
         {
             Contract.Requires(oblist != null);
             SubrContracts(ctx);
@@ -122,6 +123,7 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="stringOrAtom"/>, or <paramref name="stringOrAtom"/> is an atom that is already on a different OBLIST.</exception>
+        [NotNull]
         [Subr]
         public static ZilObject INSERT(Context ctx,
             [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
@@ -197,7 +199,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="str"/>.</exception>
         [Subr]
-        public static ZilObject LINK([NotNull] Context ctx, ZilObject value, string str, [NotNull] ObList oblist)
+        public static ZilObject LINK([NotNull] Context ctx, ZilObject value, [NotNull] string str, [NotNull] ObList oblist)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(oblist != null);
@@ -215,7 +217,7 @@ namespace Zilf.Interpreter
 
         [NotNull]
         [Subr]
-        public static ZilObject ATOM(Context ctx, string pname)
+        public static ZilObject ATOM(Context ctx, [NotNull] string pname)
         {
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);

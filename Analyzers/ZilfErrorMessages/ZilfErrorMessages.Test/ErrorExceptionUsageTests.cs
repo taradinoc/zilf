@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using TestHelper;
 
 namespace ZilfErrorMessages.Test
@@ -177,9 +178,20 @@ class Program {
             return new ErrorExceptionUsageCodeFixProvider();
         }
 
+        protected override CodeFixProvider GetBasicCodeFixProvider()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        [NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new ErrorExceptionUsageAnalyzer();
+        }
+
+        protected override DiagnosticAnalyzer GetBasicDiagnosticAnalyzer()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

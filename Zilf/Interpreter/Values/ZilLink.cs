@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
 
@@ -24,7 +25,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.LINK, PrimType.ATOM)]
     sealed class ZilLink : ZilAtom
     {
-        public ZilLink(string pname, ObList list)
+        public ZilLink([NotNull] string pname, ObList list)
             : base(pname, list, StdAtom.None)
         {
         }
@@ -32,7 +33,7 @@ namespace Zilf.Interpreter.Values
         public override StdAtom StdTypeAtom => StdAtom.LINK;
 
         [ChtypeMethod]
-        public static new ZilLink FromAtom(Context ctx, ZilAtom atom)
+        public new static ZilLink FromAtom(Context ctx, ZilAtom atom)
         {
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "LINK");
         }

@@ -772,7 +772,7 @@ namespace Zilf.ZModel
 
             public override bool Equals(object obj)
             {
-                return obj is EncodedWord && Equals((EncodedWord)obj);
+                return obj is EncodedWord word && Equals(word);
             }
 
             public override int GetHashCode()

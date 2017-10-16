@@ -431,7 +431,7 @@ namespace Zilf.Interpreter
         [NotNull]
         [FSubr]
         public static ZilObject FUNCTION(Context ctx, [CanBeNull] [Optional] ZilAtom activationAtom,
-            ZilList argList, [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
+            [NotNull] ZilList argList, [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
         {
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
