@@ -114,7 +114,7 @@ namespace Zilf.ZModel
         [CanBeNull]
         public ZilAtom LowDirection;
 
-        public byte NextAction;         // V? (intentions)
+        public ushort NextAction;         // V? (intentions)
 
         public int HeaderExtensionWords;
 

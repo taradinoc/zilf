@@ -259,6 +259,9 @@ namespace Zilf.Interpreter
         public int WarningCount => diagnostics.WarningCount;
 
         [NotNull]
+        public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics.Diagnostics;
+
+        [NotNull]
         public ZEnvironment ZEnvironment => zenv;
 
         public FileContext CurrentFile { get; set; }
@@ -268,6 +271,7 @@ namespace Zilf.Interpreter
         // TODO: merge AtTopLevel into Frame
         public bool AtTopLevel { get; set; }
 
+        // TODO: implement or delete StreamOpener
         [CanBeNull]
         public Func<string, FileAccess, Stream> StreamOpener => null;
 

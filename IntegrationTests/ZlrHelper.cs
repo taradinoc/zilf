@@ -31,6 +31,7 @@ using Zilf.Compiler;
 using Zilf.Interpreter.Values;
 using ZLR.VM;
 using JBA::JetBrains.Annotations;
+using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
@@ -51,6 +52,7 @@ namespace IntegrationTests
         public string Output;
         public int WarningCount;
         public int ErrorCount;
+        public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
 
     class ZlrHelper
@@ -93,6 +95,7 @@ namespace IntegrationTests
             bool compiled = helper.Compile();
             result.ErrorCount = helper.ErrorCount;
             result.WarningCount = helper.WarningCount;
+            result.Diagnostics = helper.Diagnostics;
             if (!compiled)
             {
                 result.Status = ZlrTestStatus.CompilationFailed;
@@ -131,6 +134,7 @@ namespace IntegrationTests
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
+        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
 
         public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
@@ -214,6 +218,7 @@ namespace IntegrationTests
             var result = frontEnd.Compile(SZilFileName, SMainZapFileName);
             ErrorCount = result.ErrorCount;
             WarningCount = result.WarningCount;
+            Diagnostics = result.Diagnostics;
             if (result.Success)
             {
                 PrintZapCode();

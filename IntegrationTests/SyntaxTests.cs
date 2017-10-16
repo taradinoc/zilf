@@ -16,15 +16,21 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern alias JBA;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.Contracts;
+using System.Linq;
+using JBA::JetBrains.Annotations;
+using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
     [TestClass]
     public class SyntaxTests
     {
-        static GlobalsAssertionHelper AssertGlobals(params string[] globals)
+        [NotNull]
+        static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
@@ -32,7 +38,8 @@ namespace IntegrationTests
             return new GlobalsAssertionHelper(globals);
         }
 
-        static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
+        [NotNull]
+        static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -104,5 +111,42 @@ namespace IntegrationTests
                 .WithGlobal("<DEFMAC FOO () <FORM REST ,PRTBL 1>>")
                 .Compiles();
         }
+
+        [TestMethod]
+        public void Old_Parser_Only_Allows_255_Verbs()
+        {
+            var globals = Enumerable.Range(0, 256)
+                .Select(i => $"<SYNTAX VERB-{i} = V-FOO>")
+                .ToArray();
+
+            AssertGlobals(globals)
+                .WithGlobal("<ROUTINE V-FOO () <>>")
+                .DoesNotCompile<InterpreterMessages>(
+                    InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                    d => d.GetFormattedMessage().Contains("verbs"));
+        }
+
+        [TestMethod]
+        public void Old_Parser_Only_Allows_255_Actions()
+        {
+            var globals = Enumerable.Range(0, 256)
+                .Select(i => $"<SYNTAX VERB-{i / 100} PREP-{i % 100} OBJECT = V-FOO-{i}> <ROUTINE V-FOO-{i} () <>>")
+                .ToArray();
+
+            AssertGlobals(globals)
+                .DoesNotCompile<InterpreterMessages>(
+                    InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                    d => d.GetFormattedMessage().Contains("actions"));
+        }
+
+        [TestMethod]
+        public void NEW_PARSER_P_Supports_More_Than_255_Verbs_And_Actions()
+        {
+            var globals = new List<string>(258) { VocabTests.SNewParserBootstrap };
+            globals.AddRange(Enumerable.Range(0, 257).Select(i => $"<SYNTAX VERB-{i} = V-VERB-{i}> <ROUTINE V-VERB-{i} () <>>"));
+
+            AssertGlobals(globals.ToArray()).GeneratesCodeMatching(@"V\?VERB-256=256");
+        }
+
     }
 }

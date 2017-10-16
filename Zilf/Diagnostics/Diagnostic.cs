@@ -36,11 +36,15 @@ namespace Zilf.Diagnostics
 
     public sealed class Diagnostic
     {
+        [NotNull]
         public ISourceLine Location { get; }
         public Severity Severity { get; }
+        [NotNull]
         public string CodePrefix { get; }
         public int Code { get; }
+        [CanBeNull]
         public string StackTrace { get; }
+        [NotNull]
         public Diagnostic[] SubDiagnostics { get; }
 
         string MessageFormat { get; }
