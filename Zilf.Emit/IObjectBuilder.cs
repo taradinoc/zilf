@@ -16,26 +16,34 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IObjectBuilderContracts))]
     public interface IObjectBuilder : IConstantOperand
     {
+        [NotNull]
         string DescriptiveName { get; set; }
+        [CanBeNull]
         IObjectBuilder Parent { get; set; }
+        [CanBeNull]
         IObjectBuilder Child { get; set; }
+        [CanBeNull]
         IObjectBuilder Sibling { get; set; }
 
-        void AddByteProperty(IPropertyBuilder prop, IOperand value);
-        void AddWordProperty(IPropertyBuilder prop, IOperand value);
-        ITableBuilder AddComplexProperty(IPropertyBuilder prop);
+        void AddByteProperty([NotNull] IPropertyBuilder prop, [NotNull] IOperand value);
+        void AddWordProperty([NotNull] IPropertyBuilder prop, [NotNull] IOperand value);
+        [NotNull] ITableBuilder AddComplexProperty([NotNull] IPropertyBuilder prop);
 
-        void AddFlag(IFlagBuilder flag);
+        void AddFlag([NotNull] IFlagBuilder flag);
     }
 
     [ContractClassFor(typeof(IObjectBuilder))]
+    [SuppressMessage("ReSharper", "NotNullMemberIsNotInitialized")]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IObjectBuilderContracts : IObjectBuilder
     {
         public string DescriptiveName { get; set; }

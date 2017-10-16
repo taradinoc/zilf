@@ -16,29 +16,31 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.IO;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
     [ContractClass(typeof(IZapStreamFactoryContracts))]
     public interface IZapStreamFactory
     {
-        Stream CreateMainStream();
-        Stream CreateFrequentWordsStream();
-        Stream CreateDataStream();
-        Stream CreateStringStream();
+        [NotNull] Stream CreateMainStream();
+        [NotNull] Stream CreateFrequentWordsStream();
+        [NotNull] Stream CreateDataStream();
+        [NotNull] Stream CreateStringStream();
 
-        string GetMainFileName(bool withExt);
-        string GetDataFileName(bool withExt);
-        string GetFrequentWordsFileName(bool withExt);
-        string GetStringFileName(bool withExt);
+        [NotNull] string GetMainFileName(bool withExt);
+        [NotNull] string GetDataFileName(bool withExt);
+        [NotNull] string GetFrequentWordsFileName(bool withExt);
+        [NotNull] string GetStringFileName(bool withExt);
 
         bool FrequentWordsFileExists { get; }
     }
 
     [ContractClassFor(typeof(IZapStreamFactory))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IZapStreamFactoryContracts : IZapStreamFactory
     {
         public Stream CreateMainStream()
@@ -67,27 +69,24 @@ namespace Zilf.Emit.Zap
 
         public string GetMainFileName(bool withExt)
         {
-            throw new NotImplementedException();
+            return default(string);
         }
 
         public string GetDataFileName(bool withExt)
         {
-            throw new NotImplementedException();
+            return default(string);
         }
 
         public string GetFrequentWordsFileName(bool withExt)
         {
-            throw new NotImplementedException();
+            return default(string);
         }
 
         public string GetStringFileName(bool withExt)
         {
-            throw new NotImplementedException();
+            return default(string);
         }
 
-        public bool FrequentWordsFileExists
-        {
-            get { throw new NotImplementedException(); }
-        }
+        public bool FrequentWordsFileExists => default(bool);
     }
 }

@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
@@ -28,28 +29,28 @@ namespace Zilf.Emit
         /// </summary>
         /// <param name="action">The operand whose value identifies an action.</param>
         /// <param name="name">The name of the action.</param>
-        void MarkAction(IOperand action, string name);
+        void MarkAction([NotNull] IOperand action, [NotNull] string name);
         /// <summary>
         /// Marks the bounds of an object definition.
         /// </summary>
         /// <param name="obj">The object being defined.</param>
         /// <param name="start">The position where the object definition begins.</param>
         /// <param name="end">The position where the object definition ends.</param>
-        void MarkObject(IObjectBuilder obj, DebugLineRef start, DebugLineRef end);
+        void MarkObject([NotNull] IObjectBuilder obj, DebugLineRef start, DebugLineRef end);
         /// <summary>
         /// Marks the bounds of a routine definition.
         /// </summary>
         /// <param name="routine">The routine being defined.</param>
         /// <param name="start">The position where the routine definition begins.</param>
         /// <param name="end">The position where the routine definition ends.</param>
-        void MarkRoutine(IRoutineBuilder routine, DebugLineRef start, DebugLineRef end);
+        void MarkRoutine([NotNull] IRoutineBuilder routine, DebugLineRef start, DebugLineRef end);
         /// <summary>
         /// Marks a sequence point at the current position in a routine.
         /// </summary>
         /// <param name="routine">The routine being defined.</param>
         /// <param name="point">The position corresponding to the next
         /// instruction emitted.</param>
-        void MarkSequencePoint(IRoutineBuilder routine, DebugLineRef point);
+        void MarkSequencePoint([NotNull] IRoutineBuilder routine, DebugLineRef point);
     }
 
     [ContractClassFor(typeof(IDebugFileBuilder))]

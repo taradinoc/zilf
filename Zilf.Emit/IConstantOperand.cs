@@ -16,17 +16,20 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IConstantOperandContracts))]
     public interface IConstantOperand : IOperand
     {
-        IConstantOperand Add(IConstantOperand other);
+        [NotNull] IConstantOperand Add([NotNull] IConstantOperand other);
     }
 
     [ContractClassFor(typeof(IVariable))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IConstantOperandContracts : IConstantOperand
     {
         public IConstantOperand Add(IConstantOperand other)

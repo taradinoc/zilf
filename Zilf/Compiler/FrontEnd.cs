@@ -163,35 +163,30 @@ namespace Zilf.Compiler
 
             #region IZapStreamFactory Members
 
-            [NotNull]
             public Stream CreateMainStream()
             {
                 Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(mainFile, true);
             }
 
-            [NotNull]
             public Stream CreateFrequentWordsStream()
             {
                 Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(fwordsFile, true);
             }
 
-            [NotNull]
             public Stream CreateDataStream()
             {
                 Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(dataFile, true);
             }
 
-            [NotNull]
             public Stream CreateStringStream()
             {
                 Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(stringFile, true);
             }
 
-            [NotNull]
             public string GetMainFileName(bool withExt)
             {
                 Contract.Ensures(Contract.Result<string>() != null);
@@ -201,7 +196,6 @@ namespace Zilf.Compiler
                 return result;
             }
 
-            [NotNull]
             public string GetDataFileName(bool withExt)
             {
                 Contract.Ensures(Contract.Result<string>() != null);
@@ -211,7 +205,6 @@ namespace Zilf.Compiler
                 return result;
             }
 
-            [NotNull]
             public string GetFrequentWordsFileName(bool withExt)
             {
                 Contract.Ensures(Contract.Result<string>() != null);
@@ -221,7 +214,6 @@ namespace Zilf.Compiler
                 return result;
             }
 
-            [NotNull]
             public string GetStringFileName(bool withExt)
             {
                 Contract.Ensures(Contract.Result<string>() != null);

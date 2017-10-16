@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
@@ -25,17 +26,15 @@ namespace Zilf.Emit.Zap
         readonly Dictionary<string, int> files = new Dictionary<string, int>();
         readonly List<string> storedLines = new List<string>();
 
-        public int GetFileNumber(string filename)
+        public int GetFileNumber([CanBeNull] string filename)
         {
             if (filename == null)
                 return 0;
 
-            if (files.TryGetValue(filename, out int result) == false)
-            {
-                result = files.Count + 1;
-                files[filename] = result;
-            }
-            return result;
+            if (files.TryGetValue(filename, out int result))
+                return result;
+
+            return files[filename] = files.Count + 1;
         }
 
         public IEnumerable<string> StoredLines => storedLines;
