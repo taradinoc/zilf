@@ -17,18 +17,22 @@
  */
 
 using System.Collections.Generic;
+using JetBrains.Annotations;
+using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
     interface IMayExpandBeforeEvaluation
     {
         bool ShouldExpandBeforeEvaluation { get; }
+        [NotNull]
         IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env);
     }
 
     interface IMayExpandAfterEvaluation
     {
         bool ShouldExpandAfterEvaluation { get; }
-        IEnumerable<ZilResult> ExpandAfterEvaluation(Context ctx, LocalEnvironment env);
+        [NotNull]
+        IEnumerable<ZilObject> ExpandAfterEvaluation();
     }
 }

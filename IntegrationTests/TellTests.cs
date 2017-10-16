@@ -52,17 +52,21 @@ namespace IntegrationTests
         [TestMethod]
         public void Tell_Builtin_Should_Support_New_Tokens()
         {
-            AssertRoutine("", "<TELL DBL 21 CRLF WUTEVA \"hello\" GLOB WUTEVA 45 CR>")
+            AssertRoutine("", "<TELL DBL 21 CRLF WUTEVA \"hello\" GLOB WUTEVA 45 CR MAC1 MAC2>")
                 .WithGlobal(
                     "<TELL-TOKENS " +
                     "  (CR CRLF)        <CRLF>" +
                     "  DBL *            <PRINT-DBL .X>" +
                     "  WUTEVA *:STRING  <PRINTI .X>" +
                     "  WUTEVA *:FIX     <PRINTN .X>" +
-                    "  GLOB             <PRINTN ,GLOB>>")
+                    "  GLOB             <PRINTN ,GLOB>" +
+                    "  MAC1             <PRINT-MAC-1>" +
+                    "  MAC2             <PRINT-MAC-2>>")
                 .WithGlobal("<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>")
                 .WithGlobal("<GLOBAL GLOB 123>")
-                .Outputs("42\nhello12345\n");
+                .WithGlobal("<DEFMAC PRINT-MAC-1 () '<PRINT \"macro\">>")
+                .WithGlobal("<DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT \"mac\"> <PRINT \"ro\">)>")
+                .Outputs("42\nhello12345\nmacromacro");
         }
 
         [TestMethod]

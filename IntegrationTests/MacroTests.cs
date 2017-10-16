@@ -62,5 +62,13 @@ namespace IntegrationTests
                 .Outputs("123");
         }
 
+        [TestMethod]
+        public void Macros_Can_Be_Used_In_Local_Initializers()
+        {
+            AssertRoutine("\"AUX\" (X <MY-VALUE>)", ".X")
+                .WithGlobal("<DEFMAC MY-VALUE () 123>")
+                .GivesNumber("123");
+        }
+
     }
 }

@@ -217,7 +217,7 @@ namespace Zilf.Compiler
             {
                 foreach (var routine in Context.ZEnvironment.Routines)
                 {
-                    routine.ExpandBodyInPlace(Context);
+                    routine.ExpandInPlace(Context);
                 }
             }
             finally

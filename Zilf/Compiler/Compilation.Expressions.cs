@@ -24,7 +24,6 @@ using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Emit;
-using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
@@ -57,37 +56,19 @@ namespace Zilf.Compiler
 
             using (DiagnosticContext.Push(form.SourceLine))
             {
-                // expand macro invocations
-                ZilObject expanded;
-                try
+                var unwrapped = form.Unwrap(Context);
+
+                if (!ReferenceEquals(unwrapped, form))
                 {
-                    using (DiagnosticContext.Push(form.SourceLine))
+                    switch (unwrapped)
                     {
-                        expanded = (ZilObject)form.Expand(Context);
+                        case ZilForm newForm:
+                            form = newForm;
+                            break;
+
+                        default:
+                            return wantResult ? CompileAsOperand(rb, unwrapped, form.SourceLine, resultStorage) : null;
                     }
-                }
-                catch (InterpreterError ex)
-                {
-                    Context.HandleError(ex);
-                    return Game.Zero;
-                }
-
-                switch (expanded)
-                {
-                    case ZilForm expandedForm:
-                        form = expandedForm;
-                        break;
-
-                    case IMayExpandAfterEvaluation expAfter when (expAfter.ShouldExpandAfterEvaluation):
-                        var src = form.SourceLine;
-                        var reexpanded = expAfter.ExpandAfterEvaluation(Context, Context.LocalEnvironment).ToZilObjectArray();
-                        form = (ZilForm)Program.Parse(Context, src, "<BIND () {0:SPLICE}>", new ZilList(reexpanded)).Single();
-                        break;
-
-                    default:
-                        if (wantResult)
-                            return CompileAsOperand(rb, expanded, form.SourceLine, resultStorage);
-                        return null;
                 }
 
                 if (!(form.First is ZilAtom head))
@@ -413,6 +394,8 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
+            expr = expr.Unwrap(Context);
+
             var constant = CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
             if (constant != null)
                 return constant;
@@ -445,10 +428,6 @@ namespace Zilf.Compiler
                             atom));
                     }
                     return Game.Zero;
-
-                case StdAtom.ADECL:
-                    // TODO: check DECL
-                    return CompileAsOperand(rb, ((ZilAdecl)expr).First, src, suggestion ?? rb.Stack);
 
                 default:
                     Context.HandleError(new CompilerError(
@@ -489,7 +468,7 @@ namespace Zilf.Compiler
             Contract.Requires(resultStorage != null || tempVarProvider != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            expr = (ZilObject)expr.Expand(Context);
+            expr = expr.Unwrap(Context);
             IOperand result = resultStorage;
 
             switch (expr)
@@ -524,10 +503,6 @@ namespace Zilf.Compiler
                         rb.Branch(label);
 
                     return result;
-
-                case ZilAdecl adecl:
-                    // TODO: check DECL
-                    return CompileAsOperandWithBranch(rb, adecl.First, resultStorage, label, polarity, tempVarProvider);
 
                 case ZilForm form:
                     if (!(form.First is ZilAtom head))

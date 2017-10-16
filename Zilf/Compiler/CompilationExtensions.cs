@@ -26,6 +26,8 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
 using JetBrains.Annotations;
+using Zilf.Diagnostics;
+using Zilf.Interpreter;
 
 namespace Zilf.Compiler
 {
@@ -132,9 +134,7 @@ namespace Zilf.Compiler
                     }
                 }
 
-                foreach (var zo in list)
-                    if (ModifiesLocal(zo, localAtom))
-                        return true;
+                return list.Any(zo => ModifiesLocal(zo, localAtom));
             }
 
             return false;
@@ -159,6 +159,75 @@ namespace Zilf.Compiler
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Recursively expands macros and cracks ADECLs to prepare an expression for compilation.
+        /// </summary>
+        /// <param name="zo">The expression.</param>
+        /// <param name="ctx">The context.</param>
+        /// <returns>The unwrapped expression. If macro expansion resulted in a SPLICE, this will be a call to BIND.</returns>
+        [NotNull]
+        public static ZilObject Unwrap([NotNull] this ZilObject zo, [NotNull] Context ctx)
+        {
+            var src = zo.SourceLine;
+
+            using (DiagnosticContext.Push(src))
+            {
+                while (true)
+                {
+                    zo = (ZilObject)zo.Expand(ctx);
+
+                    switch (zo)
+                    {
+                        case ZilAdecl adecl:
+                            // TODO: check DECL
+                            zo = adecl.First;
+                            break;
+
+                        case IMayExpandAfterEvaluation expandAfter when expandAfter.ShouldExpandAfterEvaluation:
+                            zo = expandAfter.ExpandAfterEvaluation()
+                                .FirstOrCombine(zos =>
+                                    Program.Parse(ctx, src, "<BIND () {0:SPLICE}>", new ZilList(zos))
+                                        .Single());
+                            break;
+
+                        default:
+                            return zo;
+                    }
+                }
+            }
+        }
+
+        [ItemNotNull]
+        static IEnumerable<T> ReconstructSequence<T>([NotNull] T first, [NotNull] IEnumerator<T> enumerator)
+        {
+            yield return first;
+
+            do
+            {
+                var item = enumerator.Current;
+                Debug.Assert(item != null, nameof(item) + " != null");
+                yield return item;
+            } while (enumerator.MoveNext());
+        }
+
+        [NotNull]
+        public delegate T SequenceCombiner<T>([ItemNotNull] [NotNull] IEnumerable<T> sequence);
+
+        [NotNull]
+        public static T FirstOrCombine<T>([ItemNotNull] [NotNull] this IEnumerable<T> sequence, [NotNull] SequenceCombiner<T> combiner)
+        {
+            using (var tor = sequence.GetEnumerator())
+            {
+                if (!tor.MoveNext())
+                    throw new InvalidOperationException("No items in sequence");
+
+                var first = tor.Current;
+                Debug.Assert(first != null);
+
+                return tor.MoveNext() ? combiner(ReconstructSequence(first, tor)) : first;
+            }
         }
     }
 }
