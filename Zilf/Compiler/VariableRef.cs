@@ -16,30 +16,30 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
 using Zilf.Emit;
 
 namespace Zilf.Compiler
 {
     struct VariableRef
     {
+        [CanBeNull]
         public readonly IVariable Hard;
+        [CanBeNull]
         public readonly SoftGlobal Soft;
 
-        public VariableRef(IVariable hard)
+        public VariableRef([NotNull] IVariable hard)
         {
             Hard = hard;
             Soft = null;
         }
 
-        public VariableRef(SoftGlobal soft)
+        public VariableRef([NotNull] SoftGlobal soft)
         {
             Soft = soft;
             Hard = null;
         }
 
-        public bool IsHard
-        {
-            get { return Hard != null; }
-        }
+        public bool IsHard => Hard != null;
     }
 }

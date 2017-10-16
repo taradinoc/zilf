@@ -209,5 +209,20 @@ namespace IntegrationTests
                 .Outputs("18");
         }
 
+        [TestMethod]
+        public void Locals_Can_Have_The_Same_Names_As_Globals()
+        {
+            // global can be accessed with SETG and GVAL
+            AssertRoutine("", "<BUMP-IT 111> ,FOO")
+                .WithGlobal("<GLOBAL FOO 123>")
+                .WithGlobal("<ROUTINE BUMP-IT (FOO) <SETG FOO <+ ,FOO .FOO>>>")
+                .GivesNumber("234");
+
+            // PROG local shadows ROUTINE local
+            AssertRoutine("", "<BUMP-IT 111> ,FOO")
+                .WithGlobal("<GLOBAL FOO 123>")
+                .WithGlobal("<ROUTINE BUMP-IT (FOO) <PROG ((FOO 1000)) <SETG FOO <+ ,FOO .FOO>>>>")
+                .GivesNumber("1123");
+        }
     }
 }
