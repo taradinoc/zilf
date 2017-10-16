@@ -99,8 +99,8 @@ namespace Zilf.Diagnostics
 
         // Definitions - 0200
 
-        [Message("bare atom '{0}' interpreted as global variable index; be sure this is right", Severity = Severity.Warning)]
-        public const int Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right = 200;
+        [Message("bare atom '{0}' interpreted as global variable index", Severity = Severity.Warning)]
+        public const int Bare_Atom_0_Interpreted_As_Global_Variable_Index = 200;
         [Message("duplicate {0} definition: {1}")]
         public const int Duplicate_0_Definition_1 = 201;
         [Message("mentioned object '{0}' is never defined", Severity = Severity.Warning)]
