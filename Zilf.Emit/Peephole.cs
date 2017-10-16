@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -209,15 +210,18 @@ namespace Zilf.Emit
     {
         class Line
         {
+            [CanBeNull]
             public ILabel Label;
             public TCode Code;
+            [CanBeNull]
             public ILabel TargetLabel;
             public PeepholeLineType Type;
 
+            [CanBeNull]
             public Line TargetLine;
             public bool Flag;       // toggled to mark reachability
 
-            public Line(ILabel label, TCode code, ILabel target, PeepholeLineType type)
+            public Line([CanBeNull] ILabel label, TCode code, [CanBeNull] ILabel target, PeepholeLineType type)
             {
                 Label = label;
                 Code = code;
@@ -271,8 +275,12 @@ namespace Zilf.Emit
             }
         }
 
+        [CanBeNull]
         ILabel pendingLabel;
+        [NotNull]
         readonly Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
+        [ItemNotNull]
+        [NotNull]
         readonly LinkedList<Line> lines = new LinkedList<Line>();
 
         /// <summary>
@@ -287,7 +295,7 @@ namespace Zilf.Emit
         /// <param name="code">The instruction.</param>
         /// <param name="target">The target label of this instruction, or null.</param>
         /// <param name="type">The type of instruction.</param>
-        public void AddLine(TCode code, ILabel target, PeepholeLineType type)
+        public void AddLine(TCode code, [CanBeNull] ILabel target, PeepholeLineType type)
         {
             lines.AddLast(new Line(pendingLabel, code, target, type));
             pendingLabel = null;
@@ -349,7 +357,7 @@ namespace Zilf.Emit
         /// Marks a label at the current position.
         /// </summary>
         /// <param name="label">The label to mark.</param>
-        public void MarkLabel(ILabel label)
+        public void MarkLabel([NotNull] ILabel label)
         {
             if (pendingLabel == null)
                 pendingLabel = label;
@@ -385,7 +393,7 @@ namespace Zilf.Emit
         ///     </description></item>
         /// </list>
         /// </remarks>
-        public void Finish(Action<ILabel, TCode, ILabel, PeepholeLineType> handler)
+        public void Finish([NotNull] Action<ILabel, TCode, ILabel, PeepholeLineType> handler)
         {
             Optimize();
 
@@ -988,7 +996,7 @@ namespace Zilf.Emit
             } while (changed);
         }
 
-        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
+        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines([NotNull] LinkedListNode<Line> node)
         {
             yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
 
@@ -1021,41 +1029,43 @@ namespace Zilf.Emit
     }
 
     [ContractClassFor(typeof(IPeepholeCombiner<>))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+    [SuppressMessage("ReSharper", "AnnotateCanBeNullTypeMember")]
     abstract class PeepholeCombinerContract<TCode> : IPeepholeCombiner<TCode>
     {
         public CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines)
         {
-            throw new NotImplementedException();
+            return default(CombinerResult<TCode>);
         }
 
         public TCode SynthesizeBranchAlways()
         {
-            throw new NotImplementedException();
+            return default(TCode);
         }
 
         public bool AreIdentical(TCode a, TCode b)
         {
-            throw new NotImplementedException();
+            return default(bool);
         }
 
         public TCode MergeIdentical(TCode a, TCode b)
         {
-            throw new NotImplementedException();
+            return default(TCode);
         }
 
         public SameTestResult AreSameTest(TCode a, TCode b)
         {
-            throw new NotImplementedException();
+            return default(SameTestResult);
         }
 
         public ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b)
         {
-            throw new NotImplementedException();
+            return default(ControlsConditionResult);
         }
 
         public ILabel NewLabel()
         {
-            throw new NotImplementedException();
+            return default(ILabel);
         }
     }
 }

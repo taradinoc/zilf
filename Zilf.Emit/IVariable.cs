@@ -16,17 +16,21 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IVariableContracts))]
     public interface IVariable : IOperand
     {
+        [NotNull]
         IIndirectOperand Indirect { get; }
     }
 
     [ContractClassFor(typeof(IVariable))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class IVariableContracts : IVariable
     {
         [ContractInvariantMethod]
@@ -35,9 +39,6 @@ namespace Zilf.Emit
             Contract.Invariant(Indirect != null);
         }
 
-        public IIndirectOperand Indirect
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public IIndirectOperand Indirect => default(IIndirectOperand);
     }
 }

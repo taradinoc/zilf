@@ -130,7 +130,6 @@
     <Compile Include="Zap\TableBuilder.cs" />
     <Compile Include="Zap\VariableOperand.cs" />
     <Compile Include="Zap\WordBuilder.cs" />
-    <Compile Include="Zap\ZapStreamFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">

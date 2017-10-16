@@ -43,8 +43,7 @@ namespace Zilf.Emit.Zap
             return $"{Left}+{Right}";
         }
 
-        [NotNull]
-        public IConstantOperand Add([NotNull] IConstantOperand other)
+        public IConstantOperand Add(IConstantOperand other)
         {
             Contract.Requires(other != null);
             return new SumOperand(this, other);

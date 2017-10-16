@@ -17,12 +17,14 @@
  */
 
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
     [ContractClass(typeof(IIndirectOperandContracts))]
     public interface IIndirectOperand : IConstantOperand
     {
+        [NotNull]
         IVariable Variable { get; }
     }
 

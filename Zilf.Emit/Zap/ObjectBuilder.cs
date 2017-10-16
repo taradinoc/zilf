@@ -56,16 +56,12 @@ namespace Zilf.Emit.Zap
 
         public string SymbolicName { get; }
 
-        [NotNull]
         public string DescriptiveName { get; set; } = "";
 
-        [CanBeNull]
         public IObjectBuilder Parent { get; set; }
 
-        [CanBeNull]
         public IObjectBuilder Child { get; set; }
 
-        [CanBeNull]
         public IObjectBuilder Sibling { get; set; }
 
         [NotNull]
@@ -111,7 +107,6 @@ namespace Zilf.Emit.Zap
             props.Add(pe);
         }
 
-        [NotNull]
         public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
         {
             var data = new TableBuilder($"?{this}?CP?{prop}");

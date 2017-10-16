@@ -24,7 +24,7 @@ namespace Zilf.Emit.Zap
 {
     class IndirectOperand : ConstantOperandBase, IIndirectOperand
     {
-        public IndirectOperand(IVariable variable)
+        public IndirectOperand([NotNull] IVariable variable)
         {
             Variable = variable;
         }
@@ -36,7 +36,6 @@ namespace Zilf.Emit.Zap
             Contract.Invariant(Variable != null);
         }
 
-        [NotNull]
         public IVariable Variable { get; }
 
         public override string ToString()

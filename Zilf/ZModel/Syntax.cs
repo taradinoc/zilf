@@ -33,18 +33,29 @@ namespace Zilf.ZModel
     class Syntax : IProvideSourceLine
     {
         public readonly int NumObjects;
-        public readonly IWord Verb, Preposition1, Preposition2;
+        [NotNull]
+        public readonly IWord Verb;
+        [CanBeNull]
+        public readonly IWord Preposition1;
+        [CanBeNull]
+        public readonly IWord Preposition2;
         public readonly byte Options1, Options2;
+        [CanBeNull]
         public readonly ZilAtom FindFlag1, FindFlag2;
-        public readonly ZilAtom Action, Preaction, ActionName;
+        [NotNull]
+        public readonly ZilAtom Action;
+        [CanBeNull]
+        public readonly ZilAtom Preaction;
+        [NotNull]
+        public readonly ZilAtom ActionName;
         public readonly IList<ZilAtom> Synonyms;
 
         static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
 
-        public Syntax(ISourceLine src, [NotNull] IWord verb, int numObjects, IWord prep1, IWord prep2,
-            byte options1, byte options2, ZilAtom findFlag1, ZilAtom findFlag2,
-            [NotNull] ZilAtom action, ZilAtom preaction, ZilAtom actionName,
-            [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
+        public Syntax(ISourceLine src, [NotNull] IWord verb, int numObjects, [CanBeNull] IWord prep1, [CanBeNull] IWord prep2,
+            byte options1, byte options2, [CanBeNull] ZilAtom findFlag1, [CanBeNull] ZilAtom findFlag2,
+            [NotNull] ZilAtom action, [CanBeNull] ZilAtom preaction, [NotNull] ZilAtom actionName,
+            [ItemNotNull] [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
         {
             Contract.Requires(verb != null);
             Contract.Requires(numObjects >= 0 & numObjects <= 2);

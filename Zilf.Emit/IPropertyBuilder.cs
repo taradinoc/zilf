@@ -16,10 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using JetBrains.Annotations;
+
 namespace Zilf.Emit
 {
     public interface IPropertyBuilder : IConstantOperand
     {
+        [CanBeNull]
         IOperand DefaultValue { get; set; }
     }
 }

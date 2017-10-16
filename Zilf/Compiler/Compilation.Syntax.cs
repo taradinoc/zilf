@@ -333,7 +333,7 @@ namespace Zilf.Compiler
         }
 
         void WarnIfActionRoutineDiffers([NotNull] Syntax line, [NotNull] string description,
-            [NotNull] ZilAtom thisRoutineName, [CanBeNull] ZilAtom lastRoutineName)
+            [CanBeNull] ZilAtom thisRoutineName, [CanBeNull] ZilAtom lastRoutineName)
         {
             Contract.Requires(line != null);
             Contract.Requires(description != null);
