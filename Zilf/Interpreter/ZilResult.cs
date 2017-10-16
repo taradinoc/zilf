@@ -188,7 +188,7 @@ namespace Zilf.Interpreter
             return inputs.Select<ZilObject, ZilResult>(i => i);
         }
 
-        public static ZilResult ToZilVectorResult(this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
+        public static ZilResult ToZilVectorResult([NotNull] this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
         {
             var array = inputs.Trim().ToArray();
             if (array.Length > 0 && array[array.Length - 1].ShouldPass())
@@ -197,7 +197,7 @@ namespace Zilf.Interpreter
             return new ZilVector(Array.ConvertAll(array, i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
-        public static ZilResult ToZilListResult(this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
+        public static ZilResult ToZilListResult([NotNull] this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
         {
             var array = inputs.Trim().ToArray();
             if (array.Length > 0 && array[array.Length - 1].ShouldPass())

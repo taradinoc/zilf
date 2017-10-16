@@ -39,8 +39,8 @@ namespace Zilf.Compiler
             Contract.Requires(src != null);
             Contract.Requires(label != null);
 
-            expr = (ZilObject)expr.Expand(Context);
-            StdAtom type = expr.StdTypeAtom;
+            expr = expr.Unwrap(Context);
+            var type = expr.StdTypeAtom;
 
             switch (type)
             {
@@ -70,11 +70,6 @@ namespace Zilf.Compiler
                     bool nonzero = ((ZilFix)expr).Value != 0;
                     if (polarity == nonzero)
                         rb.Branch(label);
-                    return;
-
-                case StdAtom.ADECL:
-                    // TODO: check DECL
-                    CompileCondition(rb, ((ZilAdecl)expr).First, src, label, polarity);
                     return;
 
                 case StdAtom.FORM:
@@ -429,7 +424,7 @@ namespace Zilf.Compiler
                 Debug.Assert(clause.First != null);
                 Debug.Assert(clause.Rest != null);
 
-                var condition = clause.First;
+                var condition = clause.First.Unwrap(Context);
 
                 // if condition is always true (i.e. not a FORM or a FALSE), this is the "else" part
                 switch (condition.StdTypeAtom)
@@ -506,12 +501,7 @@ namespace Zilf.Compiler
                 // only want the result of the last statement (if any)
                 bool wantThisResult = wantResult && clause.Rest.IsEmpty;
 
-                var stmt = clause.First;
-                if (stmt is ZilAdecl adecl)
-                {
-                    // TODO: check DECL
-                    stmt = adecl.First;
-                }
+                var stmt = clause.First.Unwrap(Context);
 
                 if (stmt is ZilForm form)
                 {

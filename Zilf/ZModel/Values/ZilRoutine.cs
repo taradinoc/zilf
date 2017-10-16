@@ -81,7 +81,7 @@ namespace Zilf.ZModel.Values
         }
 
         [NotNull]
-        public ArgSpec ArgSpec { get; }
+        public ArgSpec ArgSpec { get; private set; }
 
         [NotNull]
         public IEnumerable<ZilObject> Body => body;
@@ -138,7 +138,7 @@ namespace Zilf.ZModel.Values
             Contract.Invariant(body != null);
         }
 
-        internal void ExpandBodyInPlace([NotNull] Context ctx)
+        internal void ExpandInPlace([NotNull] Context ctx)
         {
             IEnumerable<ZilObject> RecursiveExpandWithSplice(ZilObject zo)
             {
@@ -162,11 +162,23 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case ZilForm form:
-                        var expanded = (ZilObject)form.Expand(ctx);
+                        ZilObject expanded;
+                        try
+                        {
+                            using (DiagnosticContext.Push(form.SourceLine))
+                            {
+                                expanded = (ZilObject)form.Expand(ctx);
+                            }
+                        }
+                        catch (InterpreterError ex)
+                        {
+                            ctx.HandleError(ex);
+                            return new[] { ctx.FALSE };
+                        }
                         if (expanded is IMayExpandAfterEvaluation expandAfter &&
                             expandAfter.ShouldExpandAfterEvaluation)
                         {
-                            return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment).Select(SetSourceLine);
+                            return expandAfter.ExpandAfterEvaluation().AsResultSequence().Select(SetSourceLine);
                         }
                         else if (!ReferenceEquals(expanded, form))
                         {
@@ -188,9 +200,17 @@ namespace Zilf.ZModel.Values
                 }
 
                 result.SourceLine = zo.SourceLine;
-                return Enumerable.Repeat(result, 1);
+                return new[] { result };
             }
 
+            // expand argument defaults
+            ArgSpec = ArgSpec.Parse(
+                "<macro expansion>",
+                ArgSpec.Name,
+                null,
+                ArgSpec.AsZilListBody().SelectMany(RecursiveExpandWithSplice));
+
+            // expand body
             body = body.SelectMany(RecursiveExpandWithSplice).ToArray();
         }
     }

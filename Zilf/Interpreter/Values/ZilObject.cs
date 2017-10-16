@@ -305,7 +305,7 @@ namespace Zilf.Interpreter.Values
                 return Enumerable.Repeat(result, 1);
 
             if ((ZilObject)result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
-                return expandAfter.ExpandAfterEvaluation(ctx, environment);
+                return expandAfter.ExpandAfterEvaluation().AsResultSequence();
 
             return Enumerable.Repeat(result, 1);
         }
@@ -343,7 +343,7 @@ namespace Zilf.Interpreter.Values
             var result = obj.Eval(ctx);
 
             if ((ZilObject)result is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
-                return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
+                return expandAfter.ExpandAfterEvaluation().AsResultSequence();
 
             return Enumerable.Repeat(result, 1);
         }
@@ -362,7 +362,7 @@ namespace Zilf.Interpreter.Values
             var resultObj = (ZilObject)result;
 
             if (resultObj != obj && resultObj is IMayExpandAfterEvaluation expandAfter && expandAfter.ShouldExpandAfterEvaluation)
-                return expandAfter.ExpandAfterEvaluation(ctx, ctx.LocalEnvironment);
+                return expandAfter.ExpandAfterEvaluation().AsResultSequence();
 
             return Enumerable.Repeat(result, 1);
         }

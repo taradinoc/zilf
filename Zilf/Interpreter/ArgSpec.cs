@@ -33,33 +33,47 @@ namespace Zilf.Interpreter
     class ArgSpec : IEnumerable<ArgItem>
     {
         // name of the function to which this spec belongs
+        [CanBeNull]
         readonly ZilAtom name;
         // reference to the "QUOTE" atom used for any quoted args
+        [CanBeNull]
         readonly ZilAtom quoteAtom;
 
         // "BIND"
+        [CanBeNull]
         readonly ZilAtom environmentAtom;
 
         // regular args, "OPT", and "AUX"
+        [NotNull]
         readonly ZilAtom[] argAtoms;
+        [NotNull]
         readonly ZilObject[] argDecls;
+        [NotNull]
         readonly bool[] argQuoted;
+        [NotNull]
         readonly ZilObject[] argDefaults;
         readonly int optArgsStart, auxArgsStart;
 
         // "ARGS" or "TUPLE"
+        [CanBeNull]
         readonly ZilAtom varargsAtom;
+        [CanBeNull]
         readonly ZilObject varargsDecl;
         readonly bool varargsQuoted;
 
         // "NAME"/"ACT"
+        [CanBeNull]
         readonly ZilAtom activationAtom;
 
         // "VALUE"
+        [CanBeNull]
         readonly ZilObject valueDecl;
 
-        ArgSpec(ZilAtom name, ZilAtom activationAtom, int optArgsStart, int auxArgsStart, ZilAtom varargsAtom, bool varargsQuoted, ZilObject varargsDecl,
-            ZilAtom environmentAtom, ZilObject valueDecl, ZilAtom quoteAtom, ZilAtom[] argAtoms, ZilObject[] argDecls, bool[] argQuoted, ZilObject[] argDefaults)
+        ArgSpec([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom, int optArgsStart, int auxArgsStart,
+            [CanBeNull] ZilAtom varargsAtom, bool varargsQuoted, [CanBeNull] ZilObject varargsDecl,
+            [CanBeNull] ZilAtom environmentAtom, [CanBeNull] ZilObject valueDecl, [CanBeNull] ZilAtom quoteAtom,
+            [NotNull] ZilAtom[] argAtoms,
+            [NotNull] ZilObject[] argDecls, [NotNull] bool[] argQuoted, [NotNull] ZilObject[] argDefaults)
         {
             this.name = name;
             this.activationAtom = activationAtom;
@@ -80,7 +94,8 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError">The argument specification is invalid.</exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         [NotNull]
-        public static ArgSpec Parse([NotNull] string caller, ZilAtom targetName, ZilAtom activationAtom, IEnumerable<ZilObject> argspec, ZilDecl bodyDecl = null)
+        public static ArgSpec Parse([NotNull] string caller, [CanBeNull] ZilAtom targetName, [CanBeNull] ZilAtom activationAtom,
+            [NotNull] IEnumerable<ZilObject> argspec, [CanBeNull] ZilDecl bodyDecl = null)
         {
             Contract.Requires(caller != null);
             Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
@@ -420,7 +435,10 @@ namespace Zilf.Interpreter
         public override int GetHashCode()
         {
             int result = (argAtoms.Length << 1) ^ (optArgsStart << 2) ^ (auxArgsStart << 3);
-            result ^= varargsAtom.GetHashCode();
+
+            if (varargsAtom != null)
+                result ^= varargsAtom.GetHashCode();
+
             result ^= varargsQuoted.GetHashCode();
 
             for (int i = 0; i < argAtoms.Length; i++)
@@ -757,7 +775,7 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(ctx != null);
             Contract.Requires(result != null);
-            ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", name);
+            ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", (object)name ?? "user-defined function");
         }
 
         [NotNull]
@@ -768,6 +786,7 @@ namespace Zilf.Interpreter
             return new ZilList(AsZilListBody());
         }
 
+        [ItemNotNull]
         public IEnumerable<ZilObject> AsZilListBody()
         {
             bool emittedVarargs = false;
@@ -851,6 +870,10 @@ namespace Zilf.Interpreter
             }
         }
 
+        [CanBeNull]
+        public ZilAtom Name => name;
+
+        [CanBeNull]
         public ZilAtom ActivationAtom => activationAtom;
     }
 }
