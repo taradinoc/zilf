@@ -114,7 +114,8 @@ namespace Zilf.Language
     {
         /// <exception cref="InterpreterError">The syntax is incorrect.</exception>
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern)
+        public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
+            bool ignoreErrors = false)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(value != null);
@@ -164,7 +165,7 @@ namespace Zilf.Language
 
                             // TODO: better check for circular aliases
                             if (aliased != null && aliased != atom)
-                                return Check(ctx, value, aliased);
+                                return Check(ctx, value, aliased, ignoreErrors);
 
                             // special cases for GVAL and LVAL
                             switch (atom.StdAtom)
@@ -176,6 +177,9 @@ namespace Zilf.Language
                                     return value.IsLVAL(out _);
 
                                 default:
+                                    if (ignoreErrors)
+                                        return false;
+
                                     throw new InterpreterError(
                                         InterpreterMessages.Unrecognized_0_1,
                                         "atom in DECL pattern",
@@ -202,7 +206,7 @@ namespace Zilf.Language
                         {
                             case StdAtom.OR:
                                 foreach (var subpattern in form.Rest)
-                                    if (Check(ctx, value, subpattern))
+                                    if (Check(ctx, value, subpattern, ignoreErrors))
                                         return true;
                                 return false;
 
@@ -220,7 +224,7 @@ namespace Zilf.Language
 
                     // structure form: first pattern element is a DECL matched against the whole structure
                     // (usually a type atom), remaining elements are matched against the structure elements
-                    if (first == null || !Check(ctx, value, first))
+                    if (first == null || !Check(ctx, value, first, ignoreErrors))
                         return false;
 
                     if (value is IStructure valueAsStructure)
@@ -236,9 +240,12 @@ namespace Zilf.Language
                         return false;
                     }
 
-                    return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment);
+                    return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment, ignoreErrors);
 
                 default:
+                    if (ignoreErrors)
+                        return false;
+
                     throw new InterpreterError(
                         InterpreterMessages.Unrecognized_0_1,
                         "value in DECL pattern",
@@ -246,7 +253,8 @@ namespace Zilf.Language
             }
         }
 
-        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment)
+        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment,
+            bool ignoreErrors)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(structure != null);
@@ -342,6 +350,9 @@ namespace Zilf.Language
                         // move on to the next subpattern, if any
                         continue;
                     }
+
+                    if (ignoreErrors)
+                        return false;
 
                     throw new InterpreterError(
                         InterpreterMessages.Unrecognized_0_1,
