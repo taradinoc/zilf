@@ -410,7 +410,7 @@ namespace Zilf.Compiler
                     if (Globals.ContainsKey(atom))
                     {
                         Context.HandleError(new CompilerError(expr.SourceLine ?? src,
-                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index_Be_Sure_This_Is_Right, atom));
+                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index, atom));
                         return Globals[atom].Indirect;
                     }
                     if (SoftGlobals.ContainsKey(atom))
