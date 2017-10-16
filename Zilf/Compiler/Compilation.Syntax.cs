@@ -310,7 +310,7 @@ namespace Zilf.Compiler
                         if (WantDebugInfo)
                         {
                             Debug.Assert(Game.DebugFile != null);
-                            Game.DebugFile.MarkAction(constant, line.Action.Text);
+                            Game.DebugFile.MarkAction(constant, actionName.Text);
                         }
 
                         act = new Action(index, constant, routine, preRoutine, line.Action, line.Preaction);
