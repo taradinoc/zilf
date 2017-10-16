@@ -25,6 +25,7 @@ using Zilf.Emit.Zap;
 using Zilf.Interpreter;
 using Zilf.Language;
 using JetBrains.Annotations;
+using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -68,6 +69,7 @@ namespace Zilf.Compiler
         public bool Success { get; set; }
         public int ErrorCount { get; set; }
         public int WarningCount { get; set; }
+        public IReadOnlyCollection<Diagnostic> Diagnostics { get; set; }
     }
 
     public sealed class FrontEnd
@@ -328,6 +330,7 @@ namespace Zilf.Compiler
                 result.ErrorCount = ctx.ErrorCount;
                 result.WarningCount = ctx.WarningCount;
                 result.Success = (ctx.ErrorCount == 0);
+                result.Diagnostics = ctx.Diagnostics;
                 return result;
             }
         }

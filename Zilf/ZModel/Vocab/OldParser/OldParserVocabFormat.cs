@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -38,85 +39,59 @@ namespace Zilf.ZModel.Vocab.OldParser
             this.ctx = ctx;
         }
 
-        public IWord CreateWord(ZilAtom text)
-        {
-            return new OldParserWord(text);
-        }
+        public IWord CreateWord(ZilAtom text) => new OldParserWord(text);
 
         public void MergeWords(IWord dest, IWord src)
         {
             ((OldParserWord)dest).Merge(ctx, (OldParserWord)src);
         }
 
-        public void MakePreposition(IWord word, ISourceLine location)
+        void MakePart(IWord word, ISourceLine location, PartOfSpeech part, string description,
+            Func<OldParserWord, Action<Context, ISourceLine, byte>> getSetter, ref byte next, bool onlyNumberedInV3 = false)
         {
             var result = (OldParserWord)word;
 
-            if ((result.PartOfSpeech & PartOfSpeech.Preposition) == 0)
+            if ((result.PartOfSpeech & part) != 0)
+                return;
+
+            byte value;
+
+            if (!onlyNumberedInV3 || ctx.ZEnvironment.ZVersion == 3)
             {
-                if (nextPreposition == 0)
-                    throw new InvalidOperationException("Too many prepositions");
+                if (next == 0)
+                    throw new InterpreterError(
+                        InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                        description,
+                        255);
 
-                result.SetPreposition(ctx, location, nextPreposition--);
+                value = next--;
             }
-        }
-
-        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
-        {
-            MakePreposition(word, location);
-        }
-
-        public void MakeAdjective(IWord word, ISourceLine location)
-        {
-            var result = (OldParserWord)word;
-
-            if ((result.PartOfSpeech & PartOfSpeech.Adjective) == 0)
+            else
             {
-                // adjective numbers only exist in V3
-                if (ctx.ZEnvironment.ZVersion == 3)
-                {
-                    if (nextAdjective == 0)
-                        throw new InvalidOperationException("Too many adjectives");
-
-                    result.SetAdjective(ctx, location, nextAdjective--);
-                }
-                else
-                {
-                    result.SetAdjective(ctx, location, 0);
-                }
+                value = 0;
             }
+
+            getSetter(result)(ctx, location, value);
         }
+
+        public void MakePreposition(IWord word, ISourceLine location) => MakePart(word, location,
+            PartOfSpeech.Preposition, "prepositions", w => w.SetPreposition, ref nextPreposition);
+
+        public void MakeSyntaxPreposition(IWord word, ISourceLine location) => MakePreposition(word, location);
+
+        public void MakeAdjective(IWord word, ISourceLine location) => MakePart(word, location,
+            PartOfSpeech.Adjective, "adjectives", w => w.SetAdjective, ref nextAdjective, onlyNumberedInV3: true);
 
         public void MakeObject(IWord result, ISourceLine location)
         {
             ((OldParserWord)result).SetObject(ctx, location);
         }
 
-        public void MakeBuzzword(IWord word, ISourceLine location)
-        {
-            var result = (OldParserWord)word;
+        public void MakeBuzzword(IWord word, ISourceLine location) => MakePart(word, location,
+            PartOfSpeech.Buzzword, "buzzwords", w => w.SetBuzzword, ref nextBuzzword);
 
-            if ((result.PartOfSpeech & PartOfSpeech.Buzzword) == 0)
-            {
-                if (nextBuzzword == 0)
-                    throw new InvalidOperationException("Too many buzzwords");
-
-                result.SetBuzzword(ctx, location, nextBuzzword--);
-            }
-        }
-
-        public void MakeVerb(IWord word, ISourceLine location)
-        {
-            var result = (OldParserWord)word;
-
-            if ((result.PartOfSpeech & PartOfSpeech.Verb) == 0)
-            {
-                if (nextVerb == 0)
-                    throw new InvalidOperationException("Too many verbs");
-
-                result.SetVerb(ctx, location, nextVerb--);
-            }
-        }
+        public void MakeVerb(IWord word, ISourceLine location) => MakePart(word, location,
+            PartOfSpeech.Verb, "verbs", w => w.SetVerb, ref nextVerb);
 
         public void MakeDirection(IWord word, ISourceLine location)
         {
@@ -160,70 +135,33 @@ namespace Zilf.ZModel.Vocab.OldParser
             ((OldParserWord)word).WriteToBuilder(ctx, wb, helpers.DirIndexToPropertyOperand);
         }
 
-        public bool IsPreposition(IWord word)
+        static bool CheckPart(IWord word, PartOfSpeech part)
         {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Preposition) != 0;
+            return (((OldParserWord)word).PartOfSpeech & part) != 0;
         }
 
-        public bool IsAdjective(IWord word)
-        {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Adjective) != 0;
-        }
+        public bool IsPreposition(IWord word) => CheckPart(word, PartOfSpeech.Preposition);
+        public bool IsAdjective(IWord word) => CheckPart(word, PartOfSpeech.Adjective);
+        public bool IsObject(IWord word) => CheckPart(word, PartOfSpeech.Object);
+        public bool IsBuzzword(IWord word) => CheckPart(word, PartOfSpeech.Buzzword);
+        public bool IsVerb(IWord word) => CheckPart(word, PartOfSpeech.Verb);
+        public bool IsDirection(IWord word) => CheckPart(word, PartOfSpeech.Direction);
 
-        public bool IsObject(IWord word)
-        {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Object) != 0;
-        }
+        public bool IsSynonym(IWord word) => ((OldParserWord)word).SynonymTypes != PartOfSpeech.None;
 
-        public bool IsBuzzword(IWord word)
-        {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Buzzword) != 0;
-        }
-
-        public bool IsVerb(IWord word)
-        {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Verb) != 0;
-        }
-
-        public bool IsDirection(IWord word)
-        {
-            return (((OldParserWord)word).PartOfSpeech & PartOfSpeech.Direction) != 0;
-        }
-
-        public bool IsSynonym(IWord word)
-        {
-            return ((OldParserWord)word).SynonymTypes != PartOfSpeech.None;
-        }
-
-        public void MakeSynonym(IWord synonym, IWord original)
-        {
-            MergeWords(synonym, original);
-        }
-
-        public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
-        {
+        public void MakeSynonym(IWord synonym, IWord original) => MergeWords(synonym, original);
+        public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech) =>
             MakeSynonym(synonym, original);
+
+        static byte GetPart(IWord word, PartOfSpeech part)
+        {
+            return ((OldParserWord)word).GetValue(part);
         }
 
-        public byte GetPrepositionValue(IWord word)
-        {
-            return ((OldParserWord)word).GetValue(PartOfSpeech.Preposition);
-        }
-
-        public byte GetAdjectiveValue(IWord word)
-        {
-            return ((OldParserWord)word).GetValue(PartOfSpeech.Adjective);
-        }
-
-        public byte GetVerbValue(IWord word)
-        {
-            return ((OldParserWord)word).GetValue(PartOfSpeech.Verb);
-        }
-
-        public byte GetDirectionValue(IWord word)
-        {
-            return ((OldParserWord)word).GetValue(PartOfSpeech.Direction);
-        }
+        public byte GetPrepositionValue(IWord word) => GetPart(word, PartOfSpeech.Preposition);
+        public byte GetAdjectiveValue(IWord word) => GetPart(word, PartOfSpeech.Adjective);
+        public byte GetVerbValue(IWord word) => GetPart(word, PartOfSpeech.Verb);
+        public byte GetDirectionValue(IWord word) => GetPart(word, PartOfSpeech.Direction);
 
         public string[] GetReservedGlobalNames()
         {
@@ -234,6 +172,8 @@ namespace Zilf.ZModel.Vocab.OldParser
         {
             return new[] { "PRTBL" };
         }
+
+        public int MaxActionCount => 255;
 
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
         {

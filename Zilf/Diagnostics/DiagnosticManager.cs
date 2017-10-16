@@ -17,18 +17,27 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
     sealed class DiagnosticManager
     {
-        public int ErrorCount { get; private set; }
-        public int? MaxErrorCount { get; set; } = 100;
-        public int WarningCount { get; private set; }
+        [NotNull]
+        readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
 
+        [NotNull]
+        public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
+        public int? MaxErrorCount { get; set; } = 100;
+        public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
+        public int WarningCount => Diagnostics.Count(d => d.Severity == Severity.Warning);
+
+        [NotNull]
         public IDiagnosticFormatter Formatter { get; }
+        [NotNull]
         public TextWriter OutputWriter { get; }
 
         public event EventHandler TooManyErrors;
@@ -41,23 +50,14 @@ namespace Zilf.Diagnostics
 
         public void Handle([NotNull] Diagnostic diag)
         {
-            switch (diag.Severity)
+            diagnostics.Add(diag);
+
+            if (diag.Severity == Severity.Error)
             {
-                case Severity.Fatal:
-                    ErrorCount++;
-                    break;
-
-                case Severity.Error:
-                    ErrorCount++;
-                    if (ErrorCount >= MaxErrorCount)
-                    {
-                        TooManyErrors?.Invoke(this, EventArgs.Empty);
-                    }
-                    break;
-
-                case Severity.Warning:
-                    WarningCount++;
-                    break;
+                if (ErrorCount >= MaxErrorCount)
+                {
+                    TooManyErrors?.Invoke(this, EventArgs.Empty);
+                }
             }
 
             OutputWriter.WriteLine(Formatter.Format(diag));

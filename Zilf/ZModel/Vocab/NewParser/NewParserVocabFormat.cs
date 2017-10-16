@@ -75,6 +75,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             return new[] { "ACTIONS", "PREACTIONS" };
         }
 
+        public int MaxActionCount => 32767;
+
         /// <exception cref="InterpreterError">MAKE-VWORD did not return a VWORD.</exception>
         public IWord CreateWord(ZilAtom atom)
         {
@@ -185,7 +187,10 @@ namespace Zilf.ZModel.Vocab.NewParser
                 if (ctx.ZEnvironment.ZVersion < 4)
                 {
                     if (nextAdjective == 0)
-                        throw new InvalidOperationException("Too many adjectives");
+                        throw new InterpreterError(
+                            InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                            "adjectives",
+                            255);
 
                     value = new ZilFix(nextAdjective--);
                 }
@@ -377,7 +382,12 @@ namespace Zilf.ZModel.Vocab.NewParser
             var oclass = norig.Classification;
             if (nclass != 0 && oclass != 0 && (nclass & 0x8000) != (oclass & 0x8000))
             {
-                throw new InterpreterError(InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3, nsyn.Atom, nclass, norig.Atom, oclass);
+                throw new InterpreterError(
+                    InterpreterMessages.Incompatible_Classifications_Merging_Words_0_1__2_3,
+                    nsyn.Atom,
+                    nclass,
+                    norig.Atom,
+                    oclass);
             }
 
             nsyn.Classification = nclass | oclass;
@@ -574,6 +584,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
+        [NotNull]
         internal ZilObject NewAddWord([NotNull] ZilAtom name, ZilAtom type, [CanBeNull] ZilObject value, [NotNull] ZilFix flags)
         {
             Contract.Requires(name != null);

@@ -260,6 +260,8 @@ namespace Zilf.Diagnostics
         public const int _0_Vector_May_Only_Appear_At_The_End_Of_A_PATTERN = 424;
         [Message("{0}: word would be overloaded")]
         public const int _0_Word_Would_Be_Overloaded = 425;
+        [Message("too many {0}: only {1} allowed in this vocab format")]
+        public const int Too_Many_0_Only_1_Allowed_In_This_Vocab_Format = 426;
 
         // Modularity (package system, definitions sections) - 0500
 

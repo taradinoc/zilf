@@ -141,6 +141,8 @@ namespace Zilf.ZModel.Vocab
         byte GetAdjectiveValue([NotNull] IWord word);
         byte GetVerbValue([NotNull] IWord word);
         byte GetDirectionValue([NotNull] IWord word);
+
+        int MaxActionCount { get; }
     }
 
     [ContractClassFor(typeof(IVocabFormat))]
@@ -305,6 +307,15 @@ namespace Zilf.ZModel.Vocab
             Contract.Requires(word != null);
             Contract.Requires(wb != null);
             Contract.Requires(helpers.IsValid);
+        }
+
+        public int MaxActionCount
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<int>() > 0);
+                return default(int);
+            }
         }
     }
 }

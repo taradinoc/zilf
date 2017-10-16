@@ -304,6 +304,13 @@ namespace Zilf.Compiler
 
                         ZilAtom actionName = line.ActionName;
                         int index = Context.ZEnvironment.NextAction++;
+
+                        if (index >= Context.ZEnvironment.VocabFormat.MaxActionCount)
+                            throw new InterpreterError(
+                                InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                                "actions",
+                                Context.ZEnvironment.VocabFormat.MaxActionCount);
+
                         var number = Game.MakeOperand(index);
                         var constant = Game.DefineConstant(actionName.Text, number);
                         Constants.Add(actionName, constant);

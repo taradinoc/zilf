@@ -23,9 +23,12 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using JBA::JetBrains.Annotations;
+using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
@@ -247,7 +250,8 @@ namespace IntegrationTests
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
-        public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null)
+        public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
+            [CanBeNull] string message = null)
         {
             var testCode =
                 $"{GlobalCode()}\r\n" +
@@ -264,8 +268,22 @@ namespace IntegrationTests
             }
             if (resultFilter != null)
             {
-                Assert.IsTrue(resultFilter(result), "Result filter failed");
+                Assert.IsTrue(resultFilter(result), message ?? "Result filter failed");
             }
+        }
+
+        public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
+        {
+            var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
+            Debug.Assert(attr != null, "No " + nameof(MessageSetAttribute) + " on " + typeof(TMessages).FullName);
+
+            var prefix = attr.Prefix;
+            DoesNotCompile(res =>
+                {
+                    var diag = res.Diagnostics.FirstOrDefault(d => d.CodePrefix == prefix && d.Code == diagnosticCode);
+                    return diag != null && (diagFilter == null || diagFilter(diag));
+                },
+                $"Expected diagnostic {attr.Prefix}{diagnosticCode:0000} was not produced");
         }
 
         public void Compiles()
