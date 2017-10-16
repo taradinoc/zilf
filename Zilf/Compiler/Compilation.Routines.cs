@@ -51,23 +51,19 @@ namespace Zilf.Compiler
                 origRoutine.ArgSpec.ToZilList(),
                 new ZilList(origRoutine.Body));
 
-            if (result != null)
+            switch (result)
             {
-                switch (result)
-                {
-                    case ZilList list when list.GetLength(1) == null && list.First is ZilList args:
-                        Debug.Assert(list.Rest != null);
-                        return new ZilRoutine(origRoutine.Name, null, args, list.Rest, origRoutine.Flags);
+                case ZilList list when list.GetLength(1) == null && list.First is ZilList args:
+                    Debug.Assert(list.Rest != null);
+                    return new ZilRoutine(origRoutine.Name, null, args, list.Rest, origRoutine.Flags);
 
-                    case ZilFalse _:
-                        break;
+                case ZilFalse _:
+                case null:
+                    return origRoutine;
 
-                    default:
-                        throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
-                }
+                default:
+                    throw new InterpreterError(InterpreterMessages._0_1_Must_Return_2, "routine rewriter", SExpectedResultType);
             }
-
-            return origRoutine;
         }
 
         void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
@@ -131,12 +127,15 @@ namespace Zilf.Compiler
                 {
                     ILocalBuilder lb;
 
+                    var originalArgName = arg.Atom;
+                    var uniqueArgName = MakeUniqueVariableName(originalArgName);
+
                     switch (arg.Type)
                     {
                         case ArgItem.ArgType.Required:
                             try
                             {
-                                lb = rb.DefineRequiredParameter(arg.Atom.Text);
+                                lb = rb.DefineRequiredParameter(uniqueArgName.Text);
                             }
                             catch (InvalidOperationException)
                             {
@@ -146,24 +145,40 @@ namespace Zilf.Compiler
 
                             if (traceRoutines)
                             {
-                                rb.EmitPrint(" " + arg.Atom + "=", false);
+                                rb.EmitPrint(" " + originalArgName + "=", false);
                                 rb.EmitPrint(PrintOp.Number, lb);
                             }
                             break;
 
                         case ArgItem.ArgType.Optional:
-                            lb = rb.DefineOptionalParameter(arg.Atom.Text);
+                            lb = rb.DefineOptionalParameter(uniqueArgName.Text);
                             break;
 
                         case ArgItem.ArgType.Auxiliary:
-                            lb = rb.DefineLocal(arg.Atom.Text);
+                            lb = rb.DefineLocal(uniqueArgName.Text);
                             break;
 
                         default:
                             throw UnhandledCaseException.FromEnum(arg.Type);
                     }
 
-                    Locals.Add(arg.Atom, lb);
+                    Locals.Add(originalArgName, lb);
+                    if (uniqueArgName != originalArgName)
+                    {
+                        /* When a parameter has to be renamed because of a conflict, use TempLocalNames
+                         * to reserve the new name so we don't collide with it later. For example:
+                         * 
+                         *   <GLOBAL FOO <>>
+                         *   <ROUTINE BLAH (FOO)
+                         *     <PROG ((FOO)) ...>>
+                         * 
+                         * We rename the local variable to FOO?1 to avoid shadowing the global.
+                         * Now the temporary variable bound by the PROG has to be FOO?2.
+                         * ZIL code only sees the name FOO: the local is shadowed inside the PROG,
+                         * and the global can always be accessed with SETG and GVAL.
+                         */
+                        TempLocalNames.Add(uniqueArgName);
+                    }
 
                     if (arg.DefaultValue == null)
                         continue;
@@ -259,8 +274,6 @@ namespace Zilf.Compiler
             Contract.Requires(atom != null);
             Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
 
-            string name = atom.Text;
-
             if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
@@ -281,29 +294,11 @@ namespace Zilf.Compiler
             else
             {
                 // allocate a new variable with a unique name
-                ZilAtom tempName;
-
-                if (Locals.ContainsKey(atom) || TempLocalNames.Contains(atom))
-                {
-                    ZilAtom newAtom;
-                    int num = 1;
-                    do
-                    {
-                        name = atom.Text + "?" + num;
-                        num++;
-                        newAtom = ZilAtom.Parse(name, Context);
-                    } while (Locals.ContainsKey(newAtom) || TempLocalNames.Contains(newAtom));
-
-                    tempName = newAtom;
-                }
-                else
-                {
-                    tempName = atom;
-                }
+                var tempName = MakeUniqueVariableName(atom);
 
                 try
                 {
-                    result = rb.DefineLocal(name);
+                    result = rb.DefineLocal(tempName.Text);
                 }
                 catch (InvalidOperationException)
                 {
@@ -315,6 +310,31 @@ namespace Zilf.Compiler
 
             Locals[atom] = result;
             return result;
+        }
+
+        [NotNull]
+        ZilAtom MakeUniqueVariableName([NotNull] ZilAtom atom)
+        {
+            if (!VariableNameInUse(atom))
+                return atom;
+
+            ZilAtom newAtom;
+            int num = 1;
+            do
+            {
+                var name = atom.Text + "?" + num;
+                num++;
+                newAtom = ZilAtom.Parse(name, Context);
+            } while (VariableNameInUse(newAtom));
+
+            return newAtom;
+        }
+
+        bool VariableNameInUse([NotNull] ZilAtom atom)
+        {
+            return Locals.ContainsKey(atom) || TempLocalNames.Contains(atom) ||
+                   Globals.ContainsKey(atom) || SoftGlobals.ContainsKey(atom) ||
+                   Constants.ContainsKey(atom) || Objects.ContainsKey(atom) || Routines.ContainsKey(atom);
         }
 
         public void PopInnerLocal([NotNull] ZilAtom atom)

@@ -51,40 +51,29 @@ namespace Zilf.Compiler.Builtins
 
         static VariableRef? GetVariable([NotNull] Compilation cc, [NotNull] ZilObject expr, QuirksMode quirks = QuirksMode.None)
         {
-            if (!(expr is ZilAtom atom))
+            if (!(expr is ZilAtom atom) &&
+                ((quirks & QuirksMode.Global) == 0 || !expr.IsGVAL(out atom)) &&
+                ((quirks & QuirksMode.Local) == 0 || !expr.IsLVAL(out atom)))
             {
-                if (quirks == QuirksMode.None)
-                    return null;
-
-                if (!(expr is ZilForm form && form.First is ZilAtom head))
-                    return null;
-
-                switch (head.StdAtom)
-                {
-                    case StdAtom.GVAL:
-                        if ((quirks & QuirksMode.Global) == 0)
-                            return null;
-                        break;
-                    case StdAtom.LVAL:
-                        if ((quirks & QuirksMode.Local) == 0)
-                            return null;
-                        break;
-                }
-
-                if (form.Rest?.First is ZilAtom variable)
-                {
-                    atom = variable;
-                }
-                else
-                {
-                    return null;
-                }
+                return null;
             }
 
-            if (cc.Locals.TryGetValue(atom, out var lb))
-                return new VariableRef(lb);
-            if (cc.Globals.TryGetValue(atom, out var gb))
-                return new VariableRef(gb);
+            if (quirks == QuirksMode.Global)
+            {
+                // prefer global over local
+                if (cc.Globals.TryGetValue(atom, out var gb))
+                    return new VariableRef(gb);
+                if (cc.Locals.TryGetValue(atom, out var lb))
+                    return new VariableRef(lb);
+            }
+            else
+            {
+                if (cc.Locals.TryGetValue(atom, out var lb))
+                    return new VariableRef(lb);
+                if (cc.Globals.TryGetValue(atom, out var gb))
+                    return new VariableRef(gb);
+            }
+
             if (cc.SoftGlobals.TryGetValue(atom, out var sg))
                 return new VariableRef(sg);
 
@@ -204,34 +193,18 @@ namespace Zilf.Compiler.Builtins
 
             public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
             {
+                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().QuirksMode;
+
                 // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
                 var atom = arg as ZilAtom;
-                QuirksMode quirks = QuirksMode.None;
-                if (atom == null)
-                {
-                    var attr = pi.GetCustomAttributes<VariableAttribute>().Single();
-                    quirks = attr.QuirksMode;
-                    if (quirks != QuirksMode.None && arg is ZilForm form)
-                    {
-                        if (form.First is ZilAtom fatom &&
-                            (((quirks & QuirksMode.Global) != 0 && fatom.StdAtom == StdAtom.GVAL) ||
-                             ((quirks & QuirksMode.Local) != 0 && fatom.StdAtom == StdAtom.LVAL)) &&
-                            // ReSharper disable PossibleNullReferenceException
-                            form.Rest.First is ZilAtom &&
-                            form.Rest.Rest.IsEmpty)
-                            // ReSharper restore PossibleNullReferenceException
-                        {
-                            atom = (ZilAtom)form.Rest.First;
-                        }
-                    }
-                }
-
-                if (atom == null)
+                if (atom == null && !((quirks & QuirksMode.Global) != 0 && arg.IsGVAL(out atom) ||
+                                      (quirks & QuirksMode.Local) != 0 && arg.IsLVAL(out atom)))
                 {
                     error("argument must be a variable");
                     return new BuiltinArg(BuiltinArgType.Operand, null);
                 }
-                else if (pi.ParameterType == typeof(IVariable))
+
+                if (pi.ParameterType == typeof(IVariable))
                 {
                     if (!cc.Locals.ContainsKey(atom) && !cc.Globals.ContainsKey(atom))
                         error("no such variable: " + atom);
@@ -260,7 +233,7 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(error != null);
             Contract.Requires(arg != null);
             Contract.Requires(pi != null);
-            throw new NotImplementedException();
+            return default(BuiltinArg);
         }
     }
 }
