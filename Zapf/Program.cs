@@ -330,7 +330,7 @@ General switches:
   -q                    quiet (no banner)
   -v #                  set default Z-machine version (.NEW overrides this)
   -la                   list global label addresses
-  -r #                  set release number (RELEASEID overrides this)
+  -r #                  set release number (this overrides RELEASEID)
   -s ######             set serial number
   -c ####               set creator version
   -ab                   also optimize abbreviations and print ZAPF code
