@@ -315,6 +315,8 @@ namespace Zapf.Parsing
                 case '#':
                 case '&':
                 case '.':
+                case '%':
+                case '!':
                     return true;
 
                 default:
@@ -324,10 +326,15 @@ namespace Zapf.Parsing
 
         static bool CanContinueSymbol(char c)
         {
-            if (c == '\'')
-                return true;
+            switch (c)
+            {
+                case '\'':
+                case '/':
+                    return true;
 
-            return CanStartSymbol(c);
+                default:
+                    return CanStartSymbol(c);
+            }
         }
 
         public void Dispose()
@@ -747,6 +754,14 @@ namespace Zapf.Parsing
             return CanStartExpr(toks.PeekToken().Type) ? ParseExpr() : null;
         }
 
+        void MaybeSkipTypeFlag()
+        {
+            if (TryMatchComma())
+            {
+                MatchSymbol();
+            }
+        }
+
         AsmLine TryParseDirective(Token head)
         {
             if (head.Type == TokenType.Symbol)
@@ -755,6 +770,8 @@ namespace Zapf.Parsing
                 {
                     toks.NextToken();
                     var expr = ParseExpr();
+                    MaybeSkipTypeFlag();
+                    MatchEndOfDirective();
                     return new EqualsDirective(head.Text, expr);
                 }
 
@@ -878,6 +895,25 @@ namespace Zapf.Parsing
             }
         }
 
+        bool TryMatchColon()
+        {
+            if (toks.PeekToken().Type == TokenType.Colon)
+            {
+                toks.NextToken();
+                return true;
+            }
+
+            return false;
+        }
+
+        void MatchColon()
+        {
+            if (!TryMatchColon())
+            {
+                ReportErrorAndSkipExpr(toks.PeekToken(), "expected ':'");
+            }
+        }
+
         bool TryMatchEquals()
         {
             if (toks.PeekToken().Type == TokenType.Equals)
@@ -967,6 +1003,14 @@ namespace Zapf.Parsing
         AsmLine ParseFunctDirective(Token head)
         {
             var result = new FunctDirective(MatchSymbol());
+            if (TryMatchColon())
+            {
+                MatchSymbol();
+                MatchColon();
+                ParseExpr();
+                MatchColon();
+                ParseExpr();
+            }
             while (TryMatchComma())
             {
                 var localName = MatchSymbol();
@@ -1044,39 +1088,42 @@ namespace Zapf.Parsing
         [NotNull]
         AsmLine ParseObjectDirective(Token head)
         {
-            var result = new ObjectDirective(MatchSymbol());
+            var name = MatchSymbol();
             MatchComma();
-            result.Flags1 = ParseExpr();
+            var flags1 = ParseExpr();
             MatchComma();
-            result.Flags2 = ParseExpr();
+            var flags2 = ParseExpr();
             MatchComma();
             // flags3 may be omitted, depending on version...
-            var misc1 = ParseExpr();    // parent or flags3
+            var parentOrFlags3 = ParseExpr();    // parent or flags3
             MatchComma();
-            var misc2 = ParseExpr();    // sibling or parent
+            var siblingOrParent = ParseExpr();    // sibling or parent
             MatchComma();
-            var misc3 = ParseExpr();    // child or sibling
+            var childOrSibling = ParseExpr();    // child or sibling
             MatchComma();
-            var misc4 = ParseExpr();    // proptable or child
+            var propTableOrChild = ParseExpr();    // proptable or child
+
+            AsmExpr flags3, parent, sibling, child, propTable;
             if (TryMatchComma())
             {
                 // flags3 provided
-                result.Flags3 = misc1;
-                result.Parent = misc2;
-                result.Sibling = misc3;
-                result.Child = misc4;
-                result.PropTable = ParseExpr();
+                flags3 = parentOrFlags3;
+                parent = siblingOrParent;
+                sibling = childOrSibling;
+                child = propTableOrChild;
+                propTable = ParseExpr();
             }
             else
             {
                 // flags3 omitted
-                result.Parent = misc1;
-                result.Sibling = misc2;
-                result.Child = misc3;
-                result.PropTable = misc4;
+                flags3 = null;
+                parent = parentOrFlags3;
+                sibling = siblingOrParent;
+                child = childOrSibling;
+                propTable = propTableOrChild;
             }
             MatchEndOfDirective();
-            return result;
+            return new ObjectDirective(name, flags1, flags2, flags3, parent, sibling, child, propTable);
         }
 
         [NotNull]
