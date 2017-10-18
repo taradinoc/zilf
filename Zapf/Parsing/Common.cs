@@ -40,21 +40,23 @@ namespace Zapf.Parsing
 
     abstract class NamedDirective : Directive
     {
-        protected NamedDirective(string name)
+        protected NamedDirective([NotNull] string name)
         {
             Name = name;
         }
 
+        [NotNull]
         public string Name { get; }
     }
 
     abstract class TextDirective : Directive
     {
-        protected TextDirective(string text)
+        protected TextDirective([NotNull] string text)
         {
             Text = text;
         }
 
+        [NotNull]
         public string Text { get; }
     }
 
@@ -144,12 +146,13 @@ namespace Zapf.Parsing
 
     sealed class FunctDirective : NamedDirective
     {
-        public FunctDirective(string name)
+        public FunctDirective([NotNull] string name)
             : base(name)
         {
             Locals = new List<FunctLocal>();
         }
 
+        [NotNull]
         public IList<FunctLocal> Locals { get; }
     }
 
@@ -266,74 +269,98 @@ namespace Zapf.Parsing
 
     sealed class StrDirective : TextDirective
     {
-        public StrDirective(string text)
+        public StrDirective([NotNull] string text)
             : base(text) { }
     }
 
     sealed class LenDirective : TextDirective
     {
-        public LenDirective(string text)
+        public LenDirective([NotNull] string text)
             : base(text) { }
     }
 
     sealed class StrlDirective : TextDirective
     {
-        public StrlDirective(string text)
+        public StrlDirective([NotNull] string text)
             : base(text) { }
     }
 
     sealed class ZwordDirective : TextDirective
     {
-        public ZwordDirective(string text)
+        public ZwordDirective([NotNull] string text)
             : base(text) { }
     }
 
     sealed class GvarDirective : NamedDirective
     {
-        public GvarDirective(string name, AsmExpr initialValue)
+        public GvarDirective([NotNull] string name, [CanBeNull] AsmExpr initialValue)
             : base(name)
         {
             InitialValue = initialValue;
         }
 
+        [CanBeNull]
         public AsmExpr InitialValue { get; }
     }
 
     sealed class ObjectDirective : NamedDirective
     {
-        public ObjectDirective(string name)
-            : base(name) { }
+        public ObjectDirective([NotNull] string name,
+            [NotNull] AsmExpr flags1, [NotNull] AsmExpr flags2, [CanBeNull] AsmExpr flags3,
+            [NotNull] AsmExpr parent, [NotNull] AsmExpr sibling, [NotNull] AsmExpr child,
+            [NotNull] AsmExpr propTable)
+            : base(name)
+        {
+            Flags1 = flags1;
+            Flags2 = flags2;
+            Flags3 = flags3;
+            Parent = parent;
+            Sibling = sibling;
+            Child = child;
+            PropTable = propTable;
+        }
 
+        [NotNull]
         public AsmExpr Flags1 { get; set; }
+        [NotNull]
         public AsmExpr Flags2 { get; set; }
+        [CanBeNull]
         public AsmExpr Flags3 { get; set; }
+        [NotNull]
         public AsmExpr Parent { get; set; }
+        [NotNull]
         public AsmExpr Sibling { get; set; }
+        [NotNull]
         public AsmExpr Child { get; set; }
+        [NotNull]
         public AsmExpr PropTable { get; set; }
     }
 
     sealed class PropDirective : Directive
     {
-        public PropDirective(AsmExpr size, AsmExpr prop)
+        public PropDirective([NotNull] AsmExpr size, [NotNull] AsmExpr prop)
         {
             Size = size;
             Prop = prop;
         }
 
+        [NotNull]
         public AsmExpr Size { get; }
+        [NotNull]
         public AsmExpr Prop { get; }
     }
 
     sealed class EqualsDirective : Directive
     {
-        public EqualsDirective(string left, AsmExpr right)
+        public EqualsDirective([NotNull] string left, [NotNull] AsmExpr right)
         {
             Left = left;
             Right = right;
         }
 
+        [NotNull]
         public string Left { get; }
+        [NotNull]
         public AsmExpr Right { get; }
     }
 
@@ -343,31 +370,33 @@ namespace Zapf.Parsing
 
     abstract class NumberAndNameDebugDirective : DebugDirective
     {
-        protected NumberAndNameDebugDirective(AsmExpr number, string name)
+        protected NumberAndNameDebugDirective([NotNull] AsmExpr number, [NotNull] string name)
         {
             Number = number;
             Name = name;
         }
 
+        [NotNull]
         public AsmExpr Number { get; }
+        [NotNull]
         public string Name { get; }
     }
 
     sealed class DebugActionDirective : NumberAndNameDebugDirective
     {
-        public DebugActionDirective(AsmExpr number, string name)
+        public DebugActionDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
     sealed class DebugArrayDirective : NumberAndNameDebugDirective
     {
-        public DebugArrayDirective(AsmExpr number, string name)
+        public DebugArrayDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
     sealed class DebugAttrDirective : NumberAndNameDebugDirective
     {
-        public DebugAttrDirective(AsmExpr number, string name)
+        public DebugAttrDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
@@ -397,7 +426,7 @@ namespace Zapf.Parsing
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugFakeActionDirective : NumberAndNameDebugDirective
     {
-        public DebugFakeActionDirective(AsmExpr number, string name)
+        public DebugFakeActionDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
@@ -417,27 +446,30 @@ namespace Zapf.Parsing
 
     sealed class DebugGlobalDirective : NumberAndNameDebugDirective
     {
-        public DebugGlobalDirective(AsmExpr number, string name)
+        public DebugGlobalDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
     abstract class LineDebugDirective : DebugDirective
     {
-        protected LineDebugDirective(AsmExpr file, AsmExpr line, AsmExpr column)
+        protected LineDebugDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column)
         {
             TheFile = file;
             TheLine = line;
             TheColumn = column;
         }
 
+        [NotNull]
         public AsmExpr TheFile { get; }
+        [NotNull]
         public AsmExpr TheLine { get; }
+        [NotNull]
         public AsmExpr TheColumn { get; }
     }
 
     sealed class DebugLineDirective : LineDebugDirective
     {
-        public DebugLineDirective(AsmExpr file, AsmExpr line, AsmExpr column)
+        public DebugLineDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column)
             : base(file, line, column) { }
     }
 
@@ -482,13 +514,13 @@ namespace Zapf.Parsing
 
     sealed class DebugPropDirective : NumberAndNameDebugDirective
     {
-        public DebugPropDirective(AsmExpr number, string name)
+        public DebugPropDirective([NotNull] AsmExpr number, [NotNull] string name)
             : base(number, name) { }
     }
 
     sealed class DebugRoutineDirective : LineDebugDirective
     {
-        public DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
+        public DebugRoutineDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column,
             string name, [NotNull] IEnumerable<string> locals)
             : base(file, line, column)
         {
@@ -502,7 +534,7 @@ namespace Zapf.Parsing
 
     sealed class DebugRoutineEndDirective : LineDebugDirective
     {
-        public DebugRoutineEndDirective(AsmExpr file, AsmExpr line, AsmExpr column)
+        public DebugRoutineEndDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column)
             : base(file, line, column) { }
     }
 

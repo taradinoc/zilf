@@ -1225,12 +1225,16 @@ General switches:
 
                 case ObjectDirective od:
                     ctx.AddObject(od.Name);
-                    //XXX const string ObjectVersionError = "wrong .OBJECT syntax for this version";
+                    const string ObjectVersionError = "wrong .OBJECT syntax for this version";
                     if (ctx.ZVersion < 4)
                     {
                         // 2 flag words
                         ctx.WriteWord(EvalExpr(ctx, od.Flags1));
                         ctx.WriteWord(EvalExpr(ctx, od.Flags2));
+                        if (od.Flags3 != null)
+                        {
+                            Errors.Serious(ctx, node, ObjectVersionError);
+                        }
                         // 3 object link bytes
                         ctx.WriteByte(EvalExpr(ctx, od.Parent));
                         ctx.WriteByte(EvalExpr(ctx, od.Sibling));
@@ -1243,7 +1247,15 @@ General switches:
                         // 3 flag words
                         ctx.WriteWord(EvalExpr(ctx, od.Flags1));
                         ctx.WriteWord(EvalExpr(ctx, od.Flags2));
-                        ctx.WriteWord(EvalExpr(ctx, od.Flags3));
+                        if (od.Flags3 == null)
+                        {
+                            Errors.Serious(ctx, node, ObjectVersionError);
+                            ctx.WriteWord(0);
+                        }
+                        else
+                        {
+                            ctx.WriteWord(EvalExpr(ctx, od.Flags3));
+                        }
                         // 3 object link words
                         ctx.WriteWord(EvalExpr(ctx, od.Parent));
                         ctx.WriteWord(EvalExpr(ctx, od.Sibling));
