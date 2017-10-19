@@ -402,6 +402,12 @@ namespace Zapf.Parsing
                 { ".DEBUG-ROUTINE", ParseDebugRoutineDirective },
                 { ".DEBUG-ROUTINE-END", ParseDebugRoutineEndDirective },
 
+                { ".DEFSEG", IgnoreDirective },
+                { ".ENDSEG", IgnoreDirective },
+                { ".OPTIONS", IgnoreDirective },
+                { ".PICFILE", IgnoreDirective },
+                { ".SEGMENT", IgnoreDirective },
+
                 // TODO: .TRUE and .FALSE?
             };
         }
@@ -855,7 +861,7 @@ namespace Zapf.Parsing
 
         #region Directive Handlers
 
-        delegate AsmLine DirectiveParseHandler(Token head);
+        [NotNull] delegate AsmLine DirectiveParseHandler(Token head);
 
         readonly IReadOnlyDictionary<string, DirectiveParseHandler> directiveDict;
 
@@ -941,6 +947,13 @@ namespace Zapf.Parsing
 
             ReportErrorAndSkipExpr(toks.PeekToken(), "expected string");
             return "???";
+        }
+
+        [NotNull]
+        AsmLine IgnoreDirective(Token head)
+        {
+            SkipLine();
+            return new NullDirective();
         }
 
         [NotNull]

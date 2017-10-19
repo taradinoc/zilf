@@ -1043,6 +1043,10 @@ General switches:
 
             switch (node)
             {
+                case NullDirective _:
+                    // nada
+                    break;
+
                 case NewDirective _:
                 case TimeDirective _:
                 case SoundDirective _:
