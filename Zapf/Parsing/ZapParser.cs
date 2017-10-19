@@ -366,6 +366,7 @@ namespace Zapf.Parsing
 
             directiveDict = new Dictionary<string, DirectiveParseHandler>
             {
+                { ".ALIGN", ParseAlignDirective },
                 { ".BYTE", ParseByteDirective },
                 { ".CHRSET", ParseChrsetDirective },
                 { ".END", ParseEndDirective },
@@ -954,6 +955,14 @@ namespace Zapf.Parsing
         {
             SkipLine();
             return new NullDirective();
+        }
+
+        [NotNull]
+        AsmLine ParseAlignDirective(Token head)
+        {
+            var divisor = ParseExpr();
+            MatchEndOfDirective();
+            return new AlignDirective(divisor);
         }
 
         [NotNull]
