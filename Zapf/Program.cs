@@ -1087,9 +1087,20 @@ General switches:
                     BeginFunction(ctx, functNode, nodeIndex);
                     break;
 
+                case AlignDirective alignNode:
+                    var divisor = EvalExpr(ctx, alignNode.Divisor);
+                    if (divisor.Type != SymbolType.Constant)
+                    {
+                        Errors.ThrowSerious(alignNode.Divisor, "non-constant argument to .ALIGN");
+                    }
+                    AlignUnpacked(ctx, divisor.Value);
+                    break;
+
                 case TableDirective tableNode:
                     if (ctx.TableStart != null)
+                    {
                         Errors.Warn(ctx, node, "starting new table before ending old table");
+                    }
                     ctx.TableStart = ctx.Position;
                     ctx.TableSize = null;
                     if (tableNode.Size != null)
@@ -1274,7 +1285,9 @@ General switches:
                     var prop = EvalExpr(ctx, propNode.Prop);
                     if (ctx.FinalPass &&
                         (size.Type != SymbolType.Constant || prop.Type != SymbolType.Constant))
+                    {
                         Errors.Serious(ctx, node, "non-constant arguments to .PROP");
+                    }
                     if (ctx.ZVersion < 4)
                     {
                         if (size.Value > 8)
@@ -1512,6 +1525,12 @@ General switches:
             {
                 Errors.Warn(ctx, node, "ignoring default local variable values");
             }
+        }
+
+        static void AlignUnpacked([NotNull] Context ctx, int divisor)
+        {
+            while (ctx.Position % divisor != 0)
+                ctx.WriteByte(0);
         }
 
         static void AlignPacked([NotNull] Context ctx, ref int offset)

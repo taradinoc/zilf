@@ -162,6 +162,17 @@ namespace Zapf.Parsing
         public IList<FunctLocal> Locals { get; }
     }
 
+    sealed class AlignDirective : Directive
+    {
+        public AlignDirective([NotNull] AsmExpr divisor)
+        {
+            Divisor = divisor;
+        }
+
+        [NotNull]
+        public AsmExpr Divisor { get; }
+    }
+
     sealed class TableDirective : Directive
     {
         public TableDirective(AsmExpr size)
