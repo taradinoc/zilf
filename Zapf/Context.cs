@@ -736,6 +736,22 @@ namespace Zapf
                 GlobalSymbols["SOFF"] = new Symbol("SOFF", SymbolType.Constant, StringsOffset / PackingOffsetDivisor);
             }
 
+            // define FLAGS and RELEASEID if needed
+            void SetConstantDefault(string name, ushort value)
+            {
+                if (GlobalSymbols.TryGetValue(name, out var sym) && sym.Type == SymbolType.Unknown)
+                {
+                    sym.Type = SymbolType.Constant;
+                    sym.Value = value;
+                }
+            }
+
+            SetConstantDefault("FLAGS", 0);
+
+            var releaseId = (ushort)GetHeaderValue("RELEASEID", "ZORKID", false);
+            SetConstantDefault("RELEASEID", releaseId);
+            SetConstantDefault("ZORKID", releaseId);
+
             // now look for any remaining undefined symbols
             var offenders = new HashSet<string>();
 
@@ -880,6 +896,39 @@ namespace Zapf
             Contract.Invariant(DebugFileMap != null);
             Contract.Invariant(fileStack != null);
             Contract.Invariant(reassemblyLabels != null);
+        }
+
+        public int GetHeaderValue([NotNull] string name, bool required)
+        {
+            Contract.Requires(this != null);
+            Contract.Requires(name != null);
+            return GetHeaderValue(name, null, required);
+        }
+
+        public int GetHeaderValue([NotNull] string name1, string name2, bool required)
+        {
+            Contract.Requires(this != null);
+            Contract.Requires(name1 != null);
+            if (GlobalSymbols.TryGetValue(name1, out var sym) ||
+                (name2 != null && GlobalSymbols.TryGetValue(name2, out sym)))
+            {
+                switch (sym.Type)
+                {
+                    case SymbolType.Label:
+                    case SymbolType.Function:
+                    case SymbolType.Constant:
+                        return sym.Value;
+
+                    default:
+                        return 0;
+                }
+            }
+            else
+            {
+                if (required)
+                    Errors.Serious(this, "required global symbol '{0}' is missing", name1);
+                return 0;
+            }
         }
     }
 
