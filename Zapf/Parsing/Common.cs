@@ -24,6 +24,8 @@ namespace Zapf.Parsing
 {
     struct ParseResult
     {
+        [ItemNotNull]
+        [NotNull]
         public IEnumerable<AsmLine> Lines;
         public int NumberOfSyntaxErrors;
     }
@@ -35,6 +37,10 @@ namespace Zapf.Parsing
     }
 
     abstract class Directive : AsmLine
+    {
+    }
+
+    sealed class NullDirective : Directive
     {
     }
 
