@@ -559,21 +559,21 @@ General switches:
             ctx.WriteByte(ctx.ZVersion);
             ctx.WriteByte(ctx.ZFlags);
             // release number
-            ctx.WriteWord((ushort)GetHeaderValue(ctx, "RELEASEID", "ZORKID", false));
+            ctx.WriteWord((ushort)ctx.GetHeaderValue("RELEASEID", "ZORKID", false));
             // high memory mark (ENDLOD)
-            var endlod = GetHeaderValue(ctx, "ENDLOD", strict);
+            var endlod = ctx.GetHeaderValue("ENDLOD", strict);
             ctx.WriteWord((ushort)endlod);
             // initial program counter (START)
-            var start = GetHeaderValue(ctx, "START", strict);
+            var start = ctx.GetHeaderValue("START", strict);
             ctx.WriteWord((ushort)start);
             // pointer to dictionary (VOCAB)
-            ctx.WriteWord((ushort)GetHeaderValue(ctx, "VOCAB", strict));
+            ctx.WriteWord((ushort)ctx.GetHeaderValue("VOCAB", strict));
             // pointer to objects (OBJECT)
-            ctx.WriteWord((ushort)GetHeaderValue(ctx, "OBJECT", strict));
+            ctx.WriteWord((ushort)ctx.GetHeaderValue("OBJECT", strict));
             // pointer to global variables (GLOBAL)
-            ctx.WriteWord((ushort)GetHeaderValue(ctx, "GLOBAL", strict));
+            ctx.WriteWord((ushort)ctx.GetHeaderValue("GLOBAL", strict));
             // static memory mark (IMPURE - the memory *below* this point is impure)
-            var impure = GetHeaderValue(ctx, "IMPURE", strict);
+            var impure = ctx.GetHeaderValue("IMPURE", strict);
             ctx.WriteWord((ushort)impure);
             // flags 2 word
             ctx.WriteWord(ctx.ZFlags2);
@@ -582,7 +582,7 @@ General switches:
             ctx.WriteWord(0);
             ctx.WriteWord(0);
             // pointer to abbreviations (WORDS)
-            ctx.WriteWord((ushort)GetHeaderValue(ctx, "WORDS", strict));
+            ctx.WriteWord((ushort)ctx.GetHeaderValue("WORDS", strict));
             // packed program length
             ctx.WriteWord(0);   // we'll fill this in later
             // checksum
@@ -598,39 +598,6 @@ General switches:
                 Errors.ThrowSerious("IMPURE must be in the first 64k (currently {0})", impure);
             if (endlod < impure)
                 Errors.ThrowSerious("ENDLOD must be after IMPURE");
-        }
-
-        static int GetHeaderValue([NotNull] Context ctx, [NotNull] string name, bool required)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            return GetHeaderValue(ctx, name, null, required);
-        }
-
-        static int GetHeaderValue([NotNull] Context ctx, [NotNull] string name1, string name2, bool required)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name1 != null);
-            if (ctx.GlobalSymbols.TryGetValue(name1, out var sym) ||
-                (name2 != null && ctx.GlobalSymbols.TryGetValue(name2, out sym)))
-            {
-                switch (sym.Type)
-                {
-                    case SymbolType.Label:
-                    case SymbolType.Function:
-                    case SymbolType.Constant:
-                        return sym.Value;
-
-                    default:
-                        return 0;
-                }
-            }
-            else
-            {
-                if (required)
-                    Errors.Serious(ctx, "required global symbol '{0}' is missing", name1);
-                return 0;
-            }
         }
 
         static Symbol GetDebugMapValue([NotNull] Context ctx, [NotNull] string name)
