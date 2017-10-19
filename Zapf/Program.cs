@@ -373,6 +373,7 @@ General switches:
                     WriteHeader(ctx, false);
 
                 for (int i = 0; i < file.Count; i++)
+                {
                     try
                     {
                         if (file[i] is EndDirective)
@@ -384,6 +385,7 @@ General switches:
                     {
                         ctx.HandleSeriousError(ser);
                     }
+                }
 
                 ctx.CheckForUndefinedSymbols();
 
@@ -1631,18 +1633,25 @@ General switches:
             var pair = ctx.OpcodeDict[node.Name];
             ushort opcode = pair.Key;
             var attr = pair.Value;
+            int operandCount = node.Operands.Count;
 
-            var usesLongConstants = node.Operands.Any(o => IsLongConstant(ctx, o));
+            // substitute the opcode number if it has more than 4 operands
+            if (attr.WhenExtra != null && operandCount > 4)
+            {
+                pair = ctx.OpcodeDict[attr.WhenExtra];
+                opcode = pair.Key;
+                attr = pair.Value;
+            }
 
             // force a 2OP instruction to EXT mode if it uses long constants
             // or has more than 2 operands
-            if (opcode < 128 && (usesLongConstants || node.Operands.Count > 2))
+            if (opcode < 128 && (operandCount > 2 || node.Operands.Any(o => IsLongConstant(ctx, o))))
                 opcode += 192;
 
             if (opcode < 128)
             {
                 // 2OP
-                if (node.Operands.Count != 2)
+                if (operandCount != 2)
                     Errors.ThrowSerious(node, "expected 2 operands");
 
                 var b = (byte)opcode;
@@ -1665,7 +1674,7 @@ General switches:
             else if (opcode < 176)
             {
                 // 1OP
-                if (node.Operands.Count != 1)
+                if (operandCount != 1)
                     Errors.ThrowSerious(node, "expected 1 operand");
 
                 var b = (byte)opcode;
@@ -1697,14 +1706,14 @@ General switches:
                 // 0OP
                 if ((attr.Flags & ZOpFlags.String) == 0)
                 {
-                    if (node.Operands.Count != 0)
+                    if (operandCount != 0)
                         Errors.ThrowSerious(node, "expected 0 operands");
 
                     ctx.WriteByte((byte)opcode);
                 }
                 else
                 {
-                    if (node.Operands.Count != 1)
+                    if (operandCount != 1)
                         Errors.ThrowSerious(node, "expected literal string as only operand");
 
                     ctx.WriteByte((byte)opcode);
@@ -1716,7 +1725,7 @@ General switches:
                 // EXT
                 int maxArgs = ((attr.Flags & ZOpFlags.Extra) == 0) ? 4 : 8;
 
-                if (node.Operands.Count > maxArgs)
+                if (operandCount > maxArgs)
                     Errors.ThrowSerious(node, "expected 0-{0} operands", maxArgs);
 
                 if (opcode >= 256)
@@ -1732,7 +1741,7 @@ General switches:
                 for (int i = 0; i < maxArgs; i++)
                 {
                     byte t;
-                    if (i < node.Operands.Count)
+                    if (i < operandCount)
                     {
                         EvalOperand(ctx, node.Operands[i], out t, out tmpOperandValues[i], out tmpOperandFixups[i]);
                         tmpOperandTypes[i] = t;
@@ -1750,7 +1759,7 @@ General switches:
                 }
 
                 // operands
-                for (int i = 0; i < node.Operands.Count; i++)
+                for (int i = 0; i < operandCount; i++)
                 {
                     if (tmpOperandFixups[i] != null)
                     {

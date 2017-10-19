@@ -338,19 +338,19 @@ namespace Zapf.Parsing
         }
 
         [NotNull]
-        public AsmExpr Flags1 { get; set; }
+        public AsmExpr Flags1 { get; }
         [NotNull]
-        public AsmExpr Flags2 { get; set; }
+        public AsmExpr Flags2 { get; }
         [CanBeNull]
-        public AsmExpr Flags3 { get; set; }
+        public AsmExpr Flags3 { get; }
         [NotNull]
-        public AsmExpr Parent { get; set; }
+        public AsmExpr Parent { get; }
         [NotNull]
-        public AsmExpr Sibling { get; set; }
+        public AsmExpr Sibling { get; }
         [NotNull]
-        public AsmExpr Child { get; set; }
+        public AsmExpr Child { get; }
         [NotNull]
-        public AsmExpr PropTable { get; set; }
+        public AsmExpr PropTable { get; }
     }
 
     sealed class PropDirective : Directive

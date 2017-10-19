@@ -74,7 +74,7 @@ namespace Zapf
     [MeansImplicitUse]
     public class ZOpAttribute : Attribute
     {
-        public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)
+        public ZOpAttribute([NotNull] string classicName, [NotNull] string informName, int minVer, int maxVer, ZOpFlags flags)
         {
             ClassicName = classicName;
             InformName = informName;
@@ -83,8 +83,10 @@ namespace Zapf
             Flags = flags;
         }
 
+        [NotNull]
         public string ClassicName { get; }
 
+        [NotNull]
         public string InformName { get; }
 
         public int MinVer { get; }
@@ -92,6 +94,9 @@ namespace Zapf
         public int MaxVer { get; }
 
         public ZOpFlags Flags { get; }
+
+        [CanBeNull]
+        public string WhenExtra { get; set; }
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -115,7 +120,7 @@ namespace Zapf
         Btst = 7,
         [ZOp("BUFOUT", "buffer_mode", 4, 6, 0)]
         Bufout = 242,
-        [ZOp("CALL", "call_vs", 1, 6, ZOpFlags.Store | ZOpFlags.Call)]
+        [ZOp("CALL", "call_vs", 1, 6, ZOpFlags.Store | ZOpFlags.Call, WhenExtra = "XCALL")]
         Call = 224,
         [ZOp("CALL1", "call_1s", 4, 6, ZOpFlags.Store | ZOpFlags.Call)]
         Call1 = 136,
@@ -184,7 +189,7 @@ namespace Zapf
         Grtr_P = 3,
         [ZOp("HLIGHT", "set_text_style", 4, 6, 0)]
         Hlight = 241,
-        [ZOp("ICALL", "call_vn", 5, 6, ZOpFlags.Call)]
+        [ZOp("ICALL", "call_vn", 5, 6, ZOpFlags.Call, WhenExtra = "IXCALL")]
         Icall = 249,
         [ZOp("ICALL1", "call_1n", 5, 6, ZOpFlags.Call)]
         Icall1 = 143,
