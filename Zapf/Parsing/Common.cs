@@ -68,13 +68,15 @@ namespace Zapf.Parsing
 
     abstract class NameAndTextDirective : Directive
     {
-        protected NameAndTextDirective(string name, string text)
+        protected NameAndTextDirective([NotNull] string name, [NotNull] string text)
         {
             Name = name;
             Text = text;
         }
 
+        [NotNull]
         public string Name { get; }
+        [NotNull]
         public string Text { get; }
     }
 
@@ -88,21 +90,23 @@ namespace Zapf.Parsing
 
     sealed class InsertDirective : Directive
     {
-        public InsertDirective(string filename)
+        public InsertDirective([NotNull] string filename)
         {
             InsertFileName = filename;
         }
 
+        [NotNull]
         public string InsertFileName { get; }
     }
 
     sealed class NewDirective : Directive
     {
-        public NewDirective(AsmExpr version)
+        public NewDirective([CanBeNull] AsmExpr version)
         {
             Version = version;
         }
 
+        [CanBeNull]
         public AsmExpr Version { get; }
     }
 
@@ -116,37 +120,43 @@ namespace Zapf.Parsing
 
     sealed class LangDirective : Directive
     {
-        public LangDirective(AsmExpr langId, AsmExpr escapeChar)
+        public LangDirective([NotNull] AsmExpr langId, [NotNull] AsmExpr escapeChar)
         {
             LanguageId = langId;
             EscapeChar = escapeChar;
         }
 
+        [NotNull]
         public AsmExpr LanguageId { get; }
+        [NotNull]
         public AsmExpr EscapeChar { get; }
     }
 
     sealed class ChrsetDirective : Directive
     {
-        public ChrsetDirective(AsmExpr alphabetNum, [NotNull] IEnumerable<AsmExpr> characters)
+        public ChrsetDirective([NotNull] AsmExpr alphabetNum, [NotNull] IEnumerable<AsmExpr> characters)
         {
             CharsetNum = alphabetNum;
             Characters = new List<AsmExpr>(characters);
         }
 
+        [NotNull]
         public AsmExpr CharsetNum { get; }
+        [NotNull]
         public IList<AsmExpr> Characters { get; }
     }
 
     struct FunctLocal
     {
-        public FunctLocal(string name, AsmExpr defaultValue)
+        public FunctLocal([NotNull] string name, [CanBeNull] AsmExpr defaultValue)
         {
             Name = name;
             DefaultValue = defaultValue;
         }
 
+        [NotNull]
         public readonly string Name;
+        [CanBeNull]
         public readonly AsmExpr DefaultValue;
     }
 
@@ -175,11 +185,12 @@ namespace Zapf.Parsing
 
     sealed class TableDirective : Directive
     {
-        public TableDirective(AsmExpr size)
+        public TableDirective([CanBeNull] AsmExpr size)
         {
             Size = size;
         }
 
+        [CanBeNull]
         public AsmExpr Size { get; }
     }
 
@@ -189,13 +200,15 @@ namespace Zapf.Parsing
 
     sealed class VocbegDirective : Directive
     {
-        public VocbegDirective(AsmExpr recordSize, AsmExpr keySize)
+        public VocbegDirective([NotNull] AsmExpr recordSize, [NotNull] AsmExpr keySize)
         {
             RecordSize = recordSize;
             KeySize = keySize;
         }
 
+        [NotNull]
         public AsmExpr RecordSize { get; }
+        [NotNull]
         public AsmExpr KeySize { get; }
     }
 
@@ -205,6 +218,7 @@ namespace Zapf.Parsing
 
     abstract class DataDirective : Directive
     {
+        [NotNull]
         public IList<AsmExpr> Elements { get; } = new List<AsmExpr>();
     }
 
@@ -221,28 +235,33 @@ namespace Zapf.Parsing
         public const string BranchTrue = "TRUE";
         public const string BranchFalse = "FALSE";
 
-        public Instruction(string name)
+        public Instruction([NotNull] string name)
         {
             Name = name;
         }
 
+        [NotNull]
         public string Name { get; }
 
+        [NotNull]
         public IList<AsmExpr> Operands { get; } = new List<AsmExpr>();
 
+        [CanBeNull]
         public string StoreTarget { get; set; }
 
         public bool? BranchPolarity { get; set; }
+        [CanBeNull]
         public string BranchTarget { get; set; }
     }
 
     sealed class BareSymbolLine : AsmLine
     {
-        public BareSymbolLine(string text)
+        public BareSymbolLine([NotNull] string text)
         {
             Text = text;
         }
 
+        [NotNull]
         public string Text { get; }
 
         public int OperandCount { get; set; }
@@ -254,33 +273,35 @@ namespace Zapf.Parsing
 
     sealed class LocalLabel : AsmLine
     {
-        public LocalLabel(string name)
+        public LocalLabel([NotNull] string name)
         {
             Name = name;
         }
 
+        [NotNull]
         public string Name { get; }
     }
 
     sealed class GlobalLabel : AsmLine
     {
-        public GlobalLabel(string name)
+        public GlobalLabel([NotNull] string name)
         {
             Name = name;
         }
 
+        [NotNull]
         public string Name { get; }
     }
 
     sealed class FstrDirective : NameAndTextDirective
     {
-        public FstrDirective(string name, string text)
+        public FstrDirective([NotNull] string name, [NotNull] string text)
             : base(name, text) { }
     }
 
     sealed class GstrDirective : NameAndTextDirective
     {
-        public GstrDirective(string name, string text)
+        public GstrDirective([NotNull] string name, [NotNull] string text)
             : base(name, text) { }
     }
 
@@ -420,7 +441,9 @@ namespace Zapf.Parsing
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugClassDirective : DebugDirective
     {
-        public DebugClassDirective(string name, AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn, AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
+        public DebugClassDirective([NotNull] string name,
+            [NotNull] AsmExpr startFile, [NotNull] AsmExpr startLine, [NotNull] AsmExpr startColumn,
+            [NotNull] AsmExpr endFile, [NotNull] AsmExpr endLine, [NotNull] AsmExpr endColumn)
         {
             Name = name;
             StartFile = startFile;
@@ -431,12 +454,19 @@ namespace Zapf.Parsing
             EndColumn = endColumn;
         }
 
+        [NotNull]
         public string Name { get; }
+        [NotNull]
         public AsmExpr StartFile { get; }
+        [NotNull]
         public AsmExpr StartLine { get; }
+        [NotNull]
         public AsmExpr StartColumn { get; }
+        [NotNull]
         public AsmExpr EndFile { get; }
+        [NotNull]
         public AsmExpr EndLine { get; }
+        [NotNull]
         public AsmExpr EndColumn { get; }
     }
 
@@ -449,15 +479,18 @@ namespace Zapf.Parsing
 
     sealed class DebugFileDirective : DebugDirective
     {
-        public DebugFileDirective(AsmExpr number, string includeName, string actualName)
+        public DebugFileDirective([NotNull] AsmExpr number, [NotNull] string includeName, [NotNull] string actualName)
         {
             Number = number;
             IncludeName = includeName;
             ActualName = actualName;
         }
 
+        [NotNull]
         public AsmExpr Number { get; }
+        [NotNull]
         public string IncludeName { get; }
+        [NotNull]
         public string ActualName { get; }
     }
 
@@ -493,21 +526,23 @@ namespace Zapf.Parsing
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     sealed class DebugMapDirective : DebugDirective
     {
-        public DebugMapDirective(string key, AsmExpr value)
+        public DebugMapDirective([NotNull] string key, [NotNull] AsmExpr value)
         {
             Key = key;
             Value = value;
         }
 
+        [NotNull]
         public string Key { get; }
+        [NotNull]
         public AsmExpr Value { get; }
     }
 
     sealed class DebugObjectDirective : DebugDirective
     {
-        public DebugObjectDirective(AsmExpr number, string name,
-            AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
-            AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
+        public DebugObjectDirective([NotNull] AsmExpr number, [NotNull] string name,
+            [NotNull] AsmExpr startFile, [NotNull] AsmExpr startLine, [NotNull] AsmExpr startColumn,
+            [NotNull] AsmExpr endFile, [NotNull] AsmExpr endLine, [NotNull] AsmExpr endColumn)
         {
             Number = number;
             Name = name;
@@ -519,13 +554,21 @@ namespace Zapf.Parsing
             EndColumn = endColumn;
         }
 
+        [NotNull]
         public AsmExpr Number { get; }
+        [NotNull]
         public string Name { get; }
+        [NotNull]
         public AsmExpr StartFile { get; }
+        [NotNull]
         public AsmExpr StartLine { get; }
+        [NotNull]
         public AsmExpr StartColumn { get; }
+        [NotNull]
         public AsmExpr EndFile { get; }
+        [NotNull]
         public AsmExpr EndLine { get; }
+        [NotNull]
         public AsmExpr EndColumn { get; }
     }
 
@@ -538,14 +581,17 @@ namespace Zapf.Parsing
     sealed class DebugRoutineDirective : LineDebugDirective
     {
         public DebugRoutineDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column,
-            string name, [NotNull] IEnumerable<string> locals)
+            [NotNull] string name, [ItemNotNull] [NotNull] IEnumerable<string> locals)
             : base(file, line, column)
         {
             Name = name;
             Locals = new List<string>(locals);
         }
 
+        [NotNull]
         public string Name { get; }
+        [ItemNotNull]
+        [NotNull]
         public IList<string> Locals { get; }
     }
 
@@ -563,51 +609,55 @@ namespace Zapf.Parsing
 
     abstract class TextAsmExpr : AsmExpr
     {
-        protected TextAsmExpr(string text)
+        protected TextAsmExpr([NotNull] string text)
         {
             Text = text;
         }
 
+        [NotNull]
         public string Text { get; }
     }
 
     sealed class NumericLiteral : TextAsmExpr
     {
-        public NumericLiteral(string text)
+        public NumericLiteral([NotNull] string text)
             : base(text) { }
     }
 
     sealed class StringLiteral : TextAsmExpr
     {
-        public StringLiteral(string text)
+        public StringLiteral([NotNull] string text)
             : base(text) { }
     }
 
     sealed class SymbolExpr : TextAsmExpr
     {
-        public SymbolExpr(string name)
+        public SymbolExpr([NotNull] string name)
             : base(name) { }
     }
 
     sealed class AdditionExpr : AsmExpr
     {
-        public AdditionExpr(AsmExpr left, AsmExpr right)
+        public AdditionExpr([NotNull] AsmExpr left, [NotNull] AsmExpr right)
         {
             Left = left;
             Right = right;
         }
 
+        [NotNull]
         public AsmExpr Left { get; }
+        [NotNull]
         public AsmExpr Right { get; }
     }
 
     sealed class QuoteExpr : AsmExpr
     {
-        public QuoteExpr(AsmExpr inner)
+        public QuoteExpr([NotNull] AsmExpr inner)
         {
             Inner = inner;
         }
 
+        [NotNull]
         public AsmExpr Inner { get; }
     }
 }
