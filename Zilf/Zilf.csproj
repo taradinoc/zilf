@@ -196,7 +196,7 @@
     <Compile Include="Interpreter\Frame.cs" />
     <Compile Include="Interpreter\IApplicable.cs" />
     <Compile Include="Interpreter\IApplicableContracts.cs" />
-    <Compile Include="Interpreter\IdentityEqualityComparer.cs" />
+    <Compile Include="Interpreter\EqualityComparers.cs" />
     <Compile Include="Interpreter\IEvanescent.cs" />
     <Compile Include="Interpreter\IMayExpand.cs" />
     <Compile Include="Interpreter\IStructure.cs" />

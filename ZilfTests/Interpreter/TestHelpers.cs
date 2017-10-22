@@ -50,7 +50,7 @@ namespace ZilfTests.Interpreter
         internal static void EvalAndAssert(Context ctx, [NotNull] string expression, [NotNull] ZilObject expected)
         {
             var actual = Evaluate(ctx, expression);
-            if (!Equals(actual, expected))
+            if (!actual.StructurallyEquals(expected))
                 throw new AssertFailedException(
                     $"TestHelpers.EvalAndAssert failed. Expected:<{expected}>. Actual:<{actual}>. Expression was: {expression}");
         }
@@ -97,6 +97,80 @@ namespace ZilfTests.Interpreter
                     typeof(TException).FullName,
                     result,
                     expression));
+        }
+
+        [AssertionMethod]
+        internal static void AssertStructurallyEqual([CanBeNull] ZilObject expected, [CanBeNull] ZilObject actual, [CanBeNull] string message = null)
+        {
+            bool ok;
+            if (expected == null || actual == null)
+            {
+                ok = ReferenceEquals(expected, actual);
+            }
+            else
+            {
+                ok = expected.StructurallyEquals(actual);
+            }
+
+            if (!ok)
+            {
+                message = message ?? $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
+                throw new AssertFailedException($"{message}. Expected:<{expected}>. Actual:<{actual}>.");
+            }
+        }
+
+        [AssertionMethod]
+        [StringFormatMethod("format")]
+        internal static void AssertStructurallyEqual([CanBeNull] ZilObject expected, [CanBeNull] ZilObject actual, [NotNull] string format, [NotNull] params object[] args)
+        {
+            bool ok;
+            if (expected == null || actual == null)
+            {
+                ok = ReferenceEquals(expected, actual);
+            }
+            else
+            {
+                ok = expected.StructurallyEquals(actual);
+            }
+
+            if (!ok)
+            {
+                var message = string.Format(format, args);
+                throw new AssertFailedException($"{message}. Expected:<{expected}>. Actual:<{actual}>.");
+            }
+        }
+
+        [AssertionMethod]
+        public static void AssertNotStructurallyEqual([CanBeNull] ZilObject notExpected, [CanBeNull] ZilObject actual)
+        {
+            bool ok;
+            if (notExpected == null || actual == null)
+            {
+                ok = !ReferenceEquals(notExpected, actual);
+            }
+            else
+            {
+                ok = !notExpected.StructurallyEquals(actual);
+            }
+
+            if (!ok)
+            {
+                throw new AssertFailedException(
+                    $"{nameof(TestHelpers)}.{nameof(AssertNotStructurallyEqual)} failed. Not expected:<{notExpected}>. Actual:<{actual}>.");
+            }
+        }
+
+        [AssertionMethod]
+        public static void AssertStructurallyEqual([NotNull] ZilObject[] expected, [NotNull] ZilObject[] actual, [CanBeNull] string message = null)
+        {
+            message = message ?? $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
+
+            Assert.AreEqual(expected.Length, actual.Length, $"{message}. Array lengths differ");
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                AssertStructurallyEqual(expected[i], actual[i], $"{message}. Arrays differ at position {0}", i);
+            }
         }
     }
 }

@@ -59,12 +59,12 @@ namespace Zilf.Interpreter.Values
             ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
         }
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
             return obj is ZilOffset other &&
                 other.Index == Index &&
-                StructurePattern.Equals(other.StructurePattern) &&
-                ValuePattern.Equals(other.ValuePattern);
+                StructurePattern.StructurallyEquals(other.StructurePattern) &&
+                ValuePattern.StructurallyEquals(other.ValuePattern);
         }
 
         public override int GetHashCode()

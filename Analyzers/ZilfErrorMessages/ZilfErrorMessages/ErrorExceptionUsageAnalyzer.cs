@@ -13,13 +13,12 @@ namespace ZilfErrorMessages
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ErrorExceptionUsageAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ZILF0001";
-
         const string Title = "Obsolete error format";
         const string MessageFormat = "This exception should use a diagnostic code instead";
         const string Category = "Error Reporting";
 
-        static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat,
+        static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+            DiagnosticIds.ExceptionShouldUseDiagnosticCode, Title, MessageFormat,
             Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule);

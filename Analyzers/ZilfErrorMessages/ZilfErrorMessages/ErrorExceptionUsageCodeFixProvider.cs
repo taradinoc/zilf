@@ -24,7 +24,7 @@ namespace ZilfErrorMessages
         const string Title = "Convert message to diagnostic constant ({0})";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-            ErrorExceptionUsageAnalyzer.DiagnosticId);
+            DiagnosticIds.ExceptionShouldUseDiagnosticCode);
 
         [NotNull]
         public sealed override FixAllProvider GetFixAllProvider()

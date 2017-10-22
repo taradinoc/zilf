@@ -235,5 +235,12 @@ namespace Zilf.Interpreter
             result = default(ZilResult);
             return true;
         }
+
+        public static bool SequenceStructurallyEqual([NotNull] this IEnumerable<ZilObject> first, [NotNull] IEnumerable<ZilObject> second)
+        {
+#pragma warning disable ZILF0005 // Comparing ZilObjects with Equals
+            return first.SequenceEqual(second, StructuralEqualityComparer.Instance);
+#pragma warning restore ZILF0005 // Comparing ZilObjects with Equals
+        }
     }
 }

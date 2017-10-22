@@ -292,7 +292,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return a.Equals(b) ? ctx.TRUE : ctx.FALSE;
+            return a.StructurallyEquals(b) ? ctx.TRUE : ctx.FALSE;
         }
 
         [NotNull]
@@ -305,7 +305,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return a.Equals(b) ? ctx.FALSE : ctx.TRUE;
+            return a.StructurallyEquals(b) ? ctx.FALSE : ctx.TRUE;
         }
 
         [NotNull]
@@ -318,21 +318,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            bool equal = a is IStructure ? StructuresEqual(a, b) : a.Equals(b);
-            return equal ? ctx.TRUE : ctx.FALSE;
-        }
-
-        static bool StructuresEqual([NotNull] ZilObject a, [NotNull] ZilObject b)
-        {
-            /* Special case for GVAL and LVAL:
-             * <==? ',FOO ',FOO> returns T, even though the two values are independent FORMs.
-             */
-
-            return
-                a.IsGVAL(out var atom1) && b.IsGVAL(out var atom2) ||
-                a.IsLVAL(out atom1) && b.IsLVAL(out atom2)
-                    ? atom1 == atom2
-                    : a == b;
+            return a.ExactlyEquals(b) ? ctx.TRUE : ctx.FALSE;
         }
 
         [NotNull]
@@ -345,8 +331,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            bool equal = a is IStructure ? StructuresEqual(a, b) : a.Equals(b);
-            return equal ? ctx.FALSE : ctx.TRUE;
+            return a.ExactlyEquals(b) ? ctx.FALSE : ctx.TRUE;
         }
 
         [NotNull]

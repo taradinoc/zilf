@@ -315,7 +315,7 @@ namespace Zilf.Compiler
             Contract.Requires(haystack != null);
             Contract.Requires(needle != null);
 
-            if (Equals(haystack, needle))
+            if (haystack == needle)
                 return true;
 
             return haystack is IEnumerable<ZilObject> sequence &&

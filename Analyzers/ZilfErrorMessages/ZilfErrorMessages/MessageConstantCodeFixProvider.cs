@@ -20,7 +20,7 @@ namespace ZilfErrorMessages
         const string Title = "Move prefix to call sites";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-            MessageConstantAnalyzer.DiagnosticId_PrefixedMessageFormat);
+            DiagnosticIds.PrefixedMessageFormat);
 
         public sealed override FixAllProvider GetFixAllProvider()
         {
@@ -32,7 +32,7 @@ namespace ZilfErrorMessages
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
             // we can only fix PrefixedMessageFormat
-            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Id == MessageConstantAnalyzer.DiagnosticId_PrefixedMessageFormat);
+            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.PrefixedMessageFormat);
 
             if (diagnostic == null)
                 return;

@@ -25,6 +25,8 @@ using Zilf.Interpreter.Values;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
 using System.Diagnostics.Contracts;
+using ZilfTests.Interpreter;
+
 // ReSharper disable ExceptionNotDocumentedOptional
 
 namespace ZilfTests
@@ -289,8 +291,8 @@ namespace ZilfTests
             Assert.AreEqual("V?EXAMINE", syntax.ActionName.ToString());
 
             Assert.AreEqual(2, syntax.Synonyms.Count);
-            Assert.AreEqual(ZilAtom.Parse("STARE", ctx), syntax.Synonyms[0]);
-            Assert.AreEqual(ZilAtom.Parse("GAZE", ctx), syntax.Synonyms[1]);
+            TestHelpers.AssertStructurallyEqual(ZilAtom.Parse("STARE", ctx), syntax.Synonyms[0]);
+            TestHelpers.AssertStructurallyEqual(ZilAtom.Parse("GAZE", ctx), syntax.Synonyms[1]);
         }
     }
 }

@@ -133,14 +133,9 @@ namespace Zilf.Interpreter.Values
             return result.ShouldPass() ? result : MakeSpliceExpandable((ZilObject)result);
         }
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
-            return obj is ZilEvalMacro other && other.WrappedValue.Equals(WrappedValue);
-        }
-
-        public override int GetHashCode()
-        {
-            return WrappedValue.GetHashCode();
+            return obj is ZilEvalMacro other && other.WrappedValue.StructurallyEquals(WrappedValue);
         }
     }
 }

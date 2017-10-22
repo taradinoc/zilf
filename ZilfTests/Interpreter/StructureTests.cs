@@ -134,10 +134,10 @@ namespace ZilfTests.Interpreter
                 new ZilStructuredHash(pointAtom, PrimType.VECTOR, vector));
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT .MY-VECTOR 'POINT-Y 999 'POINT-X 888>",
                 new ZilStructuredHash(pointAtom, PrimType.VECTOR, vector));
-            Assert.AreEqual(new ZilFix(888), vector[0]);
-            Assert.AreEqual(new ZilFix(999), vector[1]);
-            Assert.AreEqual(new ZilFix(0), vector[2]);
-            Assert.AreEqual(new ZilFix(1011), vector[3]);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(888), vector[0]);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(999), vector[1]);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(0), vector[2]);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(1011), vector[3]);
         }
 
         [TestMethod]

@@ -34,7 +34,7 @@ namespace ZilfTests.Interpreter
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), new ZilObject[0]);
 
-            CollectionAssert.AreEqual(
+            TestHelpers.AssertStructurallyEqual(
                 new ZilObject[]
                 {
                     ZilString.FromString("NAME"),
@@ -50,7 +50,7 @@ namespace ZilfTests.Interpreter
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx) });
 
-            CollectionAssert.AreEqual(
+            TestHelpers.AssertStructurallyEqual(
                 new ZilObject[]
                 {
                     ZilString.FromString("ARGS"),
@@ -66,7 +66,7 @@ namespace ZilfTests.Interpreter
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx) });
 
-            CollectionAssert.AreEqual(
+            TestHelpers.AssertStructurallyEqual(
                 new ZilObject[]
                 {
                     ZilString.FromString("TUPLE"),
@@ -119,7 +119,7 @@ namespace ZilfTests.Interpreter
                     ctx.GetStdAtom(StdAtom.LIST))
             });
 
-            CollectionAssert.AreEqual(
+            TestHelpers.AssertStructurallyEqual(
                 new ZilObject[] {
                     new ZilAdecl(
                         ZilAtom.Parse("A1", ctx),
@@ -159,7 +159,7 @@ namespace ZilfTests.Interpreter
                 })
             });
 
-            CollectionAssert.AreEqual(
+            TestHelpers.AssertStructurallyEqual(
                 new ZilObject[]
                 {
                     ZilString.FromString("AUX"),
@@ -186,7 +186,7 @@ namespace ZilfTests.Interpreter
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
 
-            CollectionAssert.AreEqual(args, spec.AsZilListBody().ToArray());
+            TestHelpers.AssertStructurallyEqual(args, spec.AsZilListBody().ToArray());
         }
     }
 }

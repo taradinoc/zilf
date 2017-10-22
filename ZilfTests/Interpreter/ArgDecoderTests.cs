@@ -131,7 +131,7 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(expected.Length, actual.Length);
             Assert.AreEqual(expected[0], actual[0]);
             Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
-            CollectionAssert.AreEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
+            TestHelpers.AssertStructurallyEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
         }
 
         [TestMethod]
@@ -148,7 +148,7 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(expected.Length, actual.Length);
             Assert.AreEqual(expected[0], actual[0]);
             Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
-            CollectionAssert.AreEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
+            TestHelpers.AssertStructurallyEqual((ZilObject[])expected[1], (ZilObject[])actual[1]);
         }
 
         [UsedImplicitly]
@@ -536,7 +536,7 @@ namespace ZilfTests.Interpreter
             Assert.AreEqual(actual.Length, 2);
             Assert.AreEqual(actual[0], ctx);
             Assert.IsInstanceOfType(actual[1], typeof(ZilObject[]));
-            CollectionAssert.AreEqual(args, (ZilObject[])actual[1]);
+            TestHelpers.AssertStructurallyEqual(args, (ZilObject[])actual[1]);
         }
 
         [TestMethod]
@@ -690,7 +690,7 @@ namespace ZilfTests.Interpreter
             var actual = del("dummy", ctx, args);
             var expected = new ZilFix(246);
 
-            Assert.AreEqual(expected, actual);
+            TestHelpers.AssertStructurallyEqual(expected, (ZilObject)actual);
         }
 
         [Subrs.MdlZilRedirect(typeof(ArgDecoderTests), nameof(Dummy_MdlZilRedirect_To))]

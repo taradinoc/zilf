@@ -20,6 +20,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Diagnostics;
@@ -205,13 +206,10 @@ namespace Zilf.Language
                         switch (atom.StdAtom)
                         {
                             case StdAtom.OR:
-                                foreach (var subpattern in form.Rest)
-                                    if (Check(ctx, value, subpattern, ignoreErrors))
-                                        return true;
-                                return false;
+                                return form.Rest.Any(subpattern => Check(ctx, value, subpattern, ignoreErrors));
 
                             case StdAtom.QUOTE:
-                                return Equals(form.Rest.First, value);
+                                return form.Rest.First?.StructurallyEquals(value) ?? false;
 
                             case StdAtom.PRIMTYPE when form.Rest.First is ZilAtom primType:
                                 // special case for GVAL and LVAL, which can substitute for <PRIMTYPE ATOM>

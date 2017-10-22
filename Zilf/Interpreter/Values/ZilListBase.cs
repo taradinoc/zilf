@@ -188,7 +188,7 @@ namespace Zilf.Interpreter.Values
         [Pure]
         public IEnumerable<ZilObject> EnumerateNonRecursive()
         {
-            var seen = new HashSet<ZilListBase>(IdentityEqualityComparer<ZilListBase>.Instance);
+            var seen = new HashSet<ZilListBase>(ReferenceEqualityComparer<ZilListBase>.Instance);
             var list = this;
 
             while (!list.IsEmpty)
@@ -206,9 +206,20 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public sealed override bool Equals(object obj)
+        public override bool ExactlyEquals(ZilObject obj)
         {
-            if (obj == this)
+            return ReferenceEquals(obj, this) ||
+                obj is ZilListBase other && other.StdTypeAtom == StdTypeAtom && IsEmpty && other.IsEmpty;
+        }
+
+        public override int GetHashCode()
+        {
+            return IsEmpty ? StdTypeAtom.GetHashCode() : base.GetHashCode();
+        }
+
+        public sealed override bool StructurallyEquals(ZilObject obj)
+        {
+            if (ReferenceEquals(obj, this))
                 return true;
 
             if (!(obj is ZilListBase other) || other.StdTypeAtom != StdTypeAtom)
@@ -216,26 +227,13 @@ namespace Zilf.Interpreter.Values
 
             if (First == null)
                 return other.First == null;
-            if (!First.Equals(other.First))
+            if (!First.StructurallyEquals(other.First))
                 return false;
 
             if (Rest == null)
                 return other.Rest == null;
 
-            return Rest.Equals(other.Rest);
-        }
-
-        public sealed override int GetHashCode()
-        {
-            var result = (int)StdTypeAtom;
-            foreach (ZilObject obj in EnumerateNonRecursive())
-            {
-                if (obj == null)
-                    break;
-
-                result = result * 31 + obj.GetHashCode();
-            }
-            return result;
+            return Rest.StructurallyEquals(other.Rest);
         }
 
         public sealed override IStructure GetRest(int skip)
