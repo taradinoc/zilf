@@ -1288,7 +1288,7 @@ namespace ZilfTests.Interpreter
                 new ZilFix(3)
             };
 
-            Assert.IsTrue(expected.SequenceEqual(array), "Unexpected table contents");
+            TestHelpers.AssertStructurallyEqual(expected, array, "Unexpected table contents");
         }
 
         [TestMethod]

@@ -56,17 +56,9 @@ namespace Zilf.Interpreter.Values
             Second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
-            return obj is ZilAdecl other && other.First.Equals(First) && other.Second.Equals(Second);
-        }
-
-        public override int GetHashCode()
-        {
-            var result = (int)StdAtom.ADECL;
-            result = result * 31 + First.GetHashCode();
-            result = result * 31 + Second.GetHashCode();
-            return result;
+            return obj is ZilAdecl other && other.First.StructurallyEquals(First) && other.Second.StructurallyEquals(Second);
         }
 
         public override string ToString()

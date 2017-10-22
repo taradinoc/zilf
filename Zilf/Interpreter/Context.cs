@@ -1287,7 +1287,7 @@ namespace Zilf.Interpreter
             if (handler.IsApplicable(this))
             {
                 // setting to <GVAL clearIndicator> means clearing
-                if (handler.Equals(GetGlobalVal(GetStdAtom(clearIndicator))))
+                if (handler.ExactlyEquals(GetGlobalVal(GetStdAtom(clearIndicator))))
                 {
                     setHandler(entry, null);
                     setDelegate(entry, null);

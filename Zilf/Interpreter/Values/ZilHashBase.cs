@@ -34,14 +34,20 @@ namespace Zilf.Interpreter.Values
             this.primValue = primValue;
         }
 
-        public override bool Equals(object obj)
+        public sealed override int GetHashCode() =>
+            type.GetHashCode() ^ primValue.GetHashCode();
+
+        public sealed override bool ExactlyEquals(ZilObject other)
         {
-            return (obj is ZilHashBase<TPrim> hash && hash.type == type &&
-                    hash.primValue.Equals(primValue));
+            return other is ZilHashBase<TPrim> hash && hash.type == type &&
+                   ((ZilObject)(object)hash.primValue).ExactlyEquals((ZilObject)(object)primValue);
         }
 
-        public override int GetHashCode() =>
-            type.GetHashCode() ^ primValue.GetHashCode();
+        public sealed override bool StructurallyEquals(ZilObject other)
+        {
+            return other is ZilHashBase<TPrim> hash && hash.type == type &&
+                   ((ZilObject)(object)hash.primValue).StructurallyEquals((ZilObject)(object)primValue);
+        }
 
         public ZilAtom Type => type;
 

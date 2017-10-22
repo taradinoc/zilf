@@ -13,12 +13,8 @@ namespace ZilfErrorMessages
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId_DuplicateMessageCode = "ZILF0002";
-        public const string DiagnosticId_DuplicateMessageFormat = "ZILF0003";
-        public const string DiagnosticId_PrefixedMessageFormat = "ZILF0004";
-
         static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
-            DiagnosticId_DuplicateMessageCode,
+            DiagnosticIds.DuplicateMessageCode,
             "Duplicate message code",
             "The code '{0}' is used more than once in message set '{1}'",
             "Error Reporting",
@@ -26,7 +22,7 @@ namespace ZilfErrorMessages
             isEnabledByDefault: true);
 
         static readonly DiagnosticDescriptor Rule_DuplicateMessageFormat = new DiagnosticDescriptor(
-            DiagnosticId_DuplicateMessageFormat,
+            DiagnosticIds.DuplicateMessageFormat,
             "Duplicate message format",
             "This format string is used more than once in message set '{0}'",
             "Error Reporting",
@@ -34,7 +30,7 @@ namespace ZilfErrorMessages
             isEnabledByDefault: true);
 
         static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new DiagnosticDescriptor(
-            DiagnosticId_PrefixedMessageFormat,
+            DiagnosticIds.PrefixedMessageFormat,
             "Message has hardcoded prefix",
             "This format string has the prefix '{0}', which should be moved to the call site",
             "Error Reporting",

@@ -82,8 +82,8 @@ namespace Zilf.Interpreter.Values
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
             throw new InterpreterError(InterpreterMessages.A_SEGMENT_Can_Only_Be_Evaluated_Inside_A_Structure);
 
-        public override bool Equals(object obj) =>
-            obj is ZilSegment other && other.form.Equals(form);
+        public override bool StructurallyEquals(ZilObject obj) =>
+            obj is ZilSegment other && other.form.StructurallyEquals(form);
 
         public override int GetHashCode() => form.GetHashCode();
 

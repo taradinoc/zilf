@@ -368,7 +368,7 @@ namespace Zilf.Interpreter
                 {
                     switch (other)
                     {
-                        case DeclConstraint otherDecl when (Pattern.Equals(otherDecl.Pattern)):
+                        case DeclConstraint otherDecl when Pattern.StructurallyEquals(otherDecl.Pattern):
                             return CompareOutcome.Equal;
 
                         default:

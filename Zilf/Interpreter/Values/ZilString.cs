@@ -90,7 +90,7 @@ namespace Zilf.Interpreter.Values
             return friendly ? Text : ToString();
         }
 
-        public override bool Equals(object obj)
+        public override bool ExactlyEquals(ZilObject obj)
         {
             return (obj as ZilString)?.Text.Equals(Text) ?? false;
         }
@@ -211,16 +211,13 @@ namespace Zilf.Interpreter.Values
                 set => orig.Text = orig.Text.Substring(0, offset) + value;
             }
 
-            public override bool Equals(object obj)
+            public override bool StructurallyEquals(ZilObject obj)
             {
-                if (obj is OffsetString other && other.orig == orig && other.offset == offset)
+                if (obj is OffsetString other && ReferenceEquals(other.orig, orig) && other.offset == offset)
                     return true;
 
-                return base.Equals(obj);
+                return base.StructurallyEquals(obj);
             }
-
-            // make the compiler happy
-            public override int GetHashCode() => base.GetHashCode();
 
             public override ZilObject GetFirst()
             {

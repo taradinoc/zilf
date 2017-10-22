@@ -54,7 +54,7 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => this;
 
-        public override bool Equals(object obj)
+        public override bool ExactlyEquals(ZilObject obj)
         {
             return obj is ZilFix other && other.value == value;
         }

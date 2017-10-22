@@ -126,7 +126,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<SETG FOO 123>", expected);
 
             var stored = ctx.GetGlobalVal(ZilAtom.Parse("FOO", ctx));
-            Assert.AreEqual(expected, stored);
+            TestHelpers.AssertStructurallyEqual(expected, stored);
 
             // must have 2 arguments
             TestHelpers.EvalAndCatch<InterpreterError>("<SETG>");
@@ -146,7 +146,7 @@ namespace ZilfTests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<SET FOO 123>", expected);
 
             var stored = ctx.GetLocalVal(ZilAtom.Parse("FOO", ctx));
-            Assert.AreEqual(expected, stored);
+            TestHelpers.AssertStructurallyEqual(expected, stored);
 
             // must have 2-3 arguments
             TestHelpers.EvalAndCatch<ArgumentCountError>("<SET>");
@@ -174,7 +174,7 @@ namespace ZilfTests.Interpreter
             var expected = new ZilFix(123);
             ctx.SetGlobalVal(ZilAtom.Parse("FOO", ctx), expected);
             var actual = TestHelpers.Evaluate(ctx, "<GVAL FOO>");
-            Assert.AreEqual(expected, actual);
+            TestHelpers.AssertStructurallyEqual(expected, actual);
 
             // fails when undefined
             TestHelpers.EvalAndCatch<InterpreterError>("<GVAL TESTING-TESTING-THIS-ATOM-HAS-NO-GVAL>");
@@ -195,7 +195,7 @@ namespace ZilfTests.Interpreter
             var expected = new ZilFix(123);
             ctx.SetLocalVal(ZilAtom.Parse("FOO", ctx), expected);
             var actual = TestHelpers.Evaluate(ctx, "<LVAL FOO>");
-            Assert.AreEqual(expected, actual);
+            TestHelpers.AssertStructurallyEqual(expected, actual);
 
             // fails when undefined
             TestHelpers.EvalAndCatch<InterpreterError>("<LVAL TESTING-TESTING-THIS-ATOM-HAS-NO-LVAL>");
@@ -509,7 +509,7 @@ namespace ZilfTests.Interpreter
             var atom = (ZilAtom)TestHelpers.Evaluate(ctx, "<REMOVE FOO>");
             Assert.AreSame(oldFoo, atom);
             Assert.IsNull(atom.ObList);
-            Assert.AreNotEqual(ZilAtom.Parse("FOO", ctx), atom);
+            TestHelpers.AssertNotStructurallyEqual(ZilAtom.Parse("FOO", ctx), atom);
 
             // remove an atom that's on no oblist
             TestHelpers.EvalAndAssert(ctx, "<REMOVE <ATOM \"FOO\">>", ctx.FALSE);
@@ -621,9 +621,9 @@ namespace ZilfTests.Interpreter
             var foo2 = TestHelpers.Evaluate(ctx, "<ATOM \"FOO\">");
             var foo3 = TestHelpers.Evaluate(ctx, "<ATOM \"FOO\">");
 
-            Assert.AreNotEqual(foo1, foo2);
-            Assert.AreNotEqual(foo1, foo3);
-            Assert.AreNotEqual(foo2, foo3);
+            TestHelpers.AssertNotStructurallyEqual(foo1, foo2);
+            TestHelpers.AssertNotStructurallyEqual(foo1, foo3);
+            TestHelpers.AssertNotStructurallyEqual(foo2, foo3);
 
             Assert.IsNull(((ZilAtom)foo2).ObList);
             Assert.IsNull(((ZilAtom)foo3).ObList);

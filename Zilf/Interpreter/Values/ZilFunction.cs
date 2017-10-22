@@ -135,7 +135,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
             if (!(obj is ZilFunction other))
                 return false;
@@ -147,20 +147,10 @@ namespace Zilf.Interpreter.Values
                 return false;
 
             for (int i = 0; i < body.Length; i++)
-                if (!other.body[i].Equals(body[i]))
+                if (!other.body[i].StructurallyEquals(body[i]))
                     return false;
 
             return true;
-        }
-
-        public override int GetHashCode()
-        {
-            var result = argspec.GetHashCode();
-
-            foreach (ZilObject obj in body)
-                result ^= obj.GetHashCode();
-
-            return result;
         }
     }
 }

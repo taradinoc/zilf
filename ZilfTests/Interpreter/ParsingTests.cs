@@ -56,8 +56,8 @@ namespace ZilfTests.Interpreter
 
                 var adecl = (ZilAdecl)combined;
 
-                Assert.AreEqual(firstValue, adecl.First);
-                Assert.AreEqual(secondValue, adecl.Second);
+                TestHelpers.AssertStructurallyEqual(firstValue, adecl.First);
+                TestHelpers.AssertStructurallyEqual(secondValue, adecl.Second);
             }
         }
 

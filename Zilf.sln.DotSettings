@@ -226,47 +226,137 @@ Zilf.Language.InterpreterError,InvocationOnly</s:String>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EPsi_002ECSharp_002ECodeStyle_002ESettingsUpgrade_002EAddAccessorOwnerDeclarationBracesMigration/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EPsi_002ECSharp_002ECodeStyle_002ESettingsUpgrade_002EMigrateBlankLinesAroundFieldToBlankLinesAroundProperty/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EPsi_002ECSharp_002ECodeStyle_002ESettingsUpgrade_002EMigrateThisQualifierSettings/@EntryIndexedValue">True</s:Boolean>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/@KeyIndexDefined">False</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=collection/Properties/=ExactType/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=collection/Properties/=ExactType/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=collection/Properties/=ExpressionType/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=collection/Properties/=ExpressionType/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=collection/Type/@EntryValue"></s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=enumerable/Properties/=ExactType/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=enumerable/Properties/=ExactType/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=enumerable/Properties/=ExpressionType/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=enumerable/Properties/=ExpressionType/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=enumerable/Type/@EntryValue"></s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=CaseSensitive/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=CaseSensitive/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=ExactType/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=ExactType/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=RegEx/@EntryIndexedValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Properties/=RegEx/@EntryIndexRemoved">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/CustomPatternPlaceholder/=i/Type/@EntryValue"></s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/LanguageName/@EntryValue"></s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/MatchCatchClauseWithoutExceptionFilter/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=98D5AD62224E4340BFAC7CA32BA54A30/SearchPattern/@EntryValue"></s:String>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=9E09CF3020A68A41BB83FFBCE9F384F3/@KeyIndexDefined">False</s:Boolean>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/Comment/@EntryValue">Parsing an atom made from another atom's unparsed form</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=args/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=args/Properties/=Maximal/@EntryIndexedValue">-1</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=args/Properties/=Minimal/@EntryIndexedValue">-1</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=args/Type/@EntryValue">ArgumentPlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=atom/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=atom/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=atom/Properties/=ExpressionType/@EntryIndexedValue">Zilf.Interpreter.Values.ZilAtom</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=atom/Type/@EntryValue">ExpressionPlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=prefix/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=prefix/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=prefix/Properties/=ExpressionType/@EntryIndexedValue">System.String</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/CustomPatternPlaceholder/=prefix/Type/@EntryValue">ExpressionPlaceholder</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/FormatAfterReplace/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/IgnoreBracesInSingleStatementBlocks/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/IgnoreConditionalAccess/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/IgnoreEmptyStatements/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/IgnoreParanthesisInExpressions/@EntryValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/IsReplacePattern/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/LanguageName/@EntryValue">CSHARP</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/MatchAllMembersWithoutModifiers/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/MatchAllSymbolsWithoutAttributes/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/MatchCatchClauseWithoutExceptionFilter/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/MatchExpressionBodyAndRegularBody/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/MatchMethodParameterWithThisRefOut/@EntryValue">False</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/ReplaceComment/@EntryValue">Use the atom's Text property</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/ReplacePattern/@EntryValue">ZilAtom.Parse($prefix$ + $atom$.Text, $args$)</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/SearchPattern/@EntryValue">ZilAtom.Parse($prefix$ + $atom$, $args$)</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/Severity/@EntryValue">WARNING</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/ShortenReferences/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/SmartMatchAssociativeExpressions/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/TreatPostfixAndPrefixOperatorEquivalent/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/TreatReversedBinaryExpressionsEquivalent/@EntryValue">Never</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=B02D3ABEE763D2498326C8483F01FB61/TypePlaceholderMatchesVoid/@EntryValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/Comment/@EntryValue">Prefixing an atom's unparsed form (when assigning)</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=type/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=type/Properties/=ExactType/@EntryIndexedValue">False</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=type/Properties/=Type/@EntryIndexedValue"></s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=type/Type/@EntryValue">TypePlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=atom/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=atom/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=atom/Properties/=ExpressionType/@EntryIndexedValue">Zilf.Interpreter.Values.ZilAtom</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=atom/Type/@EntryValue">ExpressionPlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=id/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=id/Properties/=CaseSensitive/@EntryIndexedValue">True</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=id/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=id/Properties/=RegEx/@EntryIndexedValue"></s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=id/Type/@EntryValue">IdentifierPlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=prefix/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=prefix/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=prefix/Properties/=ExpressionType/@EntryIndexedValue">System.String</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/CustomPatternPlaceholder/=prefix/Type/@EntryValue">ExpressionPlaceholder</s:String>
+	
+	
+	
+	
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/FormatAfterReplace/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/IgnoreBracesInSingleStatementBlocks/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/IgnoreConditionalAccess/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/IgnoreEmptyStatements/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/IgnoreParanthesisInExpressions/@EntryValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/IsReplacePattern/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/LanguageName/@EntryValue">CSHARP</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/MatchAllMembersWithoutModifiers/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/MatchAllSymbolsWithoutAttributes/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/MatchCatchClauseWithoutExceptionFilter/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/MatchExpressionBodyAndRegularBody/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/MatchMethodParameterWithThisRefOut/@EntryValue">False</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/ReplaceComment/@EntryValue">Use the atom's Text property</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/ReplacePattern/@EntryValue">$type$ $id$ = $prefix$ + $atom$.Text;</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/SearchPattern/@EntryValue">$type$ $id$ = $prefix$ + $atom$;</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/ReplacePattern/@EntryValue">var $id$ = $prefix$ + $atom$.Text;</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/SearchPattern/@EntryValue">var $id$ = $prefix$ + $atom$;</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/Severity/@EntryValue">SUGGESTION</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/ShortenReferences/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/SmartMatchAssociativeExpressions/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/TreatPostfixAndPrefixOperatorEquivalent/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/TreatReversedBinaryExpressionsEquivalent/@EntryValue">Never</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=CCC81F8E684B03419313D59B2AB6603D/TypePlaceholderMatchesVoid/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/Comment/@EntryValue">Comparing ZilObjects with Equals</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/CustomPatternPlaceholder/=obj/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/CustomPatternPlaceholder/=obj/Properties/=ExactType/@EntryIndexedValue">False</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/CustomPatternPlaceholder/=obj/Properties/=ExpressionType/@EntryIndexedValue">Zilf.Interpreter.Values.ZilObject</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/CustomPatternPlaceholder/=obj/Type/@EntryValue">ExpressionPlaceholder</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/FormatAfterReplace/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/IsReplacePattern/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/LanguageName/@EntryValue">CSHARP</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/MatchCatchClauseWithoutExceptionFilter/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/ReplaceComment/@EntryValue">Compare with ExactlyEquals</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/ReplacePattern/@EntryValue">$obj$.ExactlyEquals</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/SearchPattern/@EntryValue">$obj$.Equals</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/Severity/@EntryValue">WARNING</s:String>
+	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/ShortenReferences/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EF76E98B824D944AA5C7B6C443D782CE/SuppressionKey/@EntryValue">ComparingZilObjectsWithEquals</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/Todo/TodoPatterns/=4795E94A287C2645913867EAE5FDD872/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/Todo/TodoPatterns/=4795E94A287C2645913867EAE5FDD872/Color/@EntryValue">207, 157, 50</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/Todo/TodoPatterns/=4795E94A287C2645913867EAE5FDD872/MatchComments/@EntryValue">True</s:Boolean>

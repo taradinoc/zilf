@@ -156,17 +156,9 @@ namespace Zilf.Interpreter.Values
             offset = 0;
         }
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
-            return obj is ZilVector other && this.SequenceEqual(other);
-        }
-
-        public override int GetHashCode()
-        {
-            var result = (int)StdAtom.VECTOR;
-            foreach (ZilObject obj in this)
-                result = result * 31 + obj.GetHashCode();
-            return result;
+            return obj is ZilVector other && this.SequenceStructurallyEqual(other);
         }
 
         public override string ToString()

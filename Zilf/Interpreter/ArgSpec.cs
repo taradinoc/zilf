@@ -425,7 +425,9 @@ namespace Zilf.Interpreter
                     return false;
                 if (other.argQuoted[i] != argQuoted[i])
                     return false;
-                if (!Equals(other.argDefaults[i], argDefaults[i]))
+                if (other.argDefaults[i] == null
+                    ? argDefaults[i] != null
+                    : !other.argDefaults[i].StructurallyEquals(argDefaults[i]))
                     return false;
             }
 

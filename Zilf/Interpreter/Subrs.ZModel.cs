@@ -228,7 +228,7 @@ namespace Zilf.Interpreter
                     ctx.Redefine(oldAtom);
                     ctx.ZEnvironment.InternGlobalName(atom);
                 }
-                else if (previous is ZilConstant cnst && cnst.Value.Equals(value))
+                else if (previous is ZilConstant cnst && cnst.Value.StructurallyEquals(value))
                 {
                     // silently ignore duplicate constants as long as the values are equal
                     return previous;

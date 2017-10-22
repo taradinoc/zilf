@@ -276,5 +276,26 @@ namespace Zilf.Interpreter.Values
             atom = null;
             return false;
         }
+
+        public override bool ExactlyEquals(ZilObject other)
+        {
+            if (ReferenceEquals(this, other))
+                return true;
+
+            return (IsLVAL(out var myAtom) && other.IsLVAL(out var theirAtom) ||
+                    IsGVAL(out myAtom) && other.IsGVAL(out theirAtom)) &&
+                    myAtom == theirAtom;
+        }
+
+        public override int GetHashCode()
+        {
+            if (IsLVAL(out var atom))
+                return atom.GetHashCode() ^ StdAtom.LVAL.GetHashCode();
+
+            if (IsGVAL(out atom))
+                return atom.GetHashCode() ^ StdAtom.GVAL.GetHashCode();
+
+            return base.GetHashCode();
+        }
     }
 }

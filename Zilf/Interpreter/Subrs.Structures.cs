@@ -363,7 +363,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return PerformMember(ctx, needle, haystack, Equals);
+            return PerformMember(ctx, needle, haystack, (a, b) => a.StructurallyEquals(b));
         }
 
         [NotNull]
@@ -375,13 +375,7 @@ namespace Zilf.Interpreter
             Contract.Ensures(Contract.Result<ZilObject>() != null);
             SubrContracts(ctx);
 
-            return PerformMember(ctx, needle, haystack, (a, b) =>
-            {
-                if (a is IStructure)
-                    return StructuresEqual(a, b);
-
-                return a.Equals(b);
-            });
+            return PerformMember(ctx, needle, haystack, (a, b) => a.ExactlyEquals(b));
         }
 
         [NotNull]

@@ -45,7 +45,7 @@ namespace Zilf.Interpreter.Values
             this.name = name;
         }
 
-        public override bool Equals(object obj)
+        public override bool ExactlyEquals(ZilObject obj)
         {
             if (obj is ZilEnvironment other &&
                 env.TryGetTarget(out var thisTarget) &&

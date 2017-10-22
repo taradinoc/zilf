@@ -64,6 +64,84 @@ namespace Zilf.Interpreter.Values
         }
 
         /// <summary>
+        /// Determines whether another <see cref="ZilObject"/> is "the same object" as the current one,
+        /// for the purposes of <c>==?</c> and <c>N==?</c> comparisons.
+        /// </summary>
+        /// <param name="other">The other object.</param>
+        /// <returns><see langword="true"/> if the objects are identical; otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// MDL defines <c>==?</c> as being true iff the objects are made up of the same bits in
+        /// MDL's internal representation. For non-structured types, this means they have the same <c>TYPE</c> and value.
+        /// For structured types, it means they reference the same location in the same structure; for values of
+        /// <c>PRIMTYPE</c> <c>LIST</c>, they may also both be empty.
+        /// </remarks>
+        /// <seealso cref="StructurallyEquals"/>
+        public virtual bool ExactlyEquals(ZilObject other)
+        {
+            return ReferenceEquals(this, other);
+        }
+
+        /// <summary>
+        /// Determines whether another <see cref="ZilObject"/> is "structurally equal" or "looks the same"
+        /// as the current one, for the purposes of <c>=?</c> and <c>N=?</c> comparisons.
+        /// </summary>
+        /// <param name="other">The other object.</param>
+        /// <returns><see langword="true"/> if the objects are structurally equal; otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// MDL defines <c>=?</c> as being true for non-structured objects iff they are "the same object" (<c>==?</c>);
+        /// and for structured objects if they have the same <c>TYPE</c>, same length, and each element in one is
+        /// <c>=?</c> to the corresponding element in the other.
+        /// </remarks>
+        /// <seealso cref="ExactlyEquals"/>
+        public virtual bool StructurallyEquals([CanBeNull] ZilObject other)
+        {
+            return Equals(other);
+        }
+
+        /// <summary>
+        /// Redirects to <see cref="ExactlyEquals"/>.
+        /// </summary>
+        /// <param name="obj">The other object.</param>
+        /// <returns><see langword="true"/> if <paramref name="obj"/> is a <see cref="ZilObject"/> and is <c>==?</c> to this object;
+        /// otherwise <see langword="false"/>.</returns>
+        public sealed override bool Equals(object obj)
+        {
+            return obj is ZilObject other && ExactlyEquals(other);
+        }
+
+        /// <summary>
+        /// Redirects to <see cref="object.ReferenceEquals"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns><see langword="true"/> if the objects are identical; otherwise <see langword="false"/>.</returns>
+        /// <remarks>This silences a ReSharper warning that shouldn't be suppressed completely.</remarks>
+        public static bool operator ==([CanBeNull] ZilObject left, [CanBeNull] ZilObject right)
+        {
+            return ReferenceEquals(left, right);
+        }
+
+        /// <summary>
+        /// Redirects to <see cref="object.ReferenceEquals"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns><see langword="false"/> if the objects are identical; otherwise <see langword="true"/>.</returns>
+        /// <remarks>This silences a ReSharper warning that shouldn't be suppressed completely.</remarks>
+        public static bool operator !=([CanBeNull] ZilObject left, [CanBeNull] ZilObject right)
+        {
+            return !ReferenceEquals(left, right);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            // keep the compiler happy
+            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
+            return base.GetHashCode();
+        }
+
+        /// <summary>
         /// Converts the ZIL object to a string (in reparsable format, if possible).
         /// </summary>
         /// <returns>A string representation of the object.</returns>

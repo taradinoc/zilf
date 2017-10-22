@@ -18,15 +18,16 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    class IdentityEqualityComparer<T> : IEqualityComparer<T>
+    class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         where T : class
     {
-        public static readonly IEqualityComparer<T> Instance = new IdentityEqualityComparer<T>();
+        public static readonly IEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
 
-        IdentityEqualityComparer()
+        ReferenceEqualityComparer()
         {
         }
 
@@ -38,6 +39,25 @@ namespace Zilf.Interpreter
         public int GetHashCode(T obj)
         {
             return RuntimeHelpers.GetHashCode(obj);
+        }
+    }
+
+    class StructuralEqualityComparer : IEqualityComparer<ZilObject>
+    {
+        public static readonly StructuralEqualityComparer Instance = new StructuralEqualityComparer();
+
+        StructuralEqualityComparer()
+        {
+        }
+
+        public bool Equals(ZilObject x, ZilObject y)
+        {
+            return x?.StructurallyEquals(y) ?? y == null;
+        }
+
+        public int GetHashCode(ZilObject obj)
+        {
+            return obj.ToString().GetHashCode();
         }
     }
 }

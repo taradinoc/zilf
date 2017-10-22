@@ -44,7 +44,7 @@ namespace ZilfTests.Interpreter
 
             var evald = result.Eval(ctx);
 
-            Assert.AreEqual(new ZilFix(1024), evald);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(1024), (ZilObject)evald);
         }
 
         [TestMethod]
@@ -59,9 +59,9 @@ namespace ZilfTests.Interpreter
 
             var evald = result.Eval(ctx);
 
-            Assert.AreEqual(new ZilFix(21), evald);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(21), (ZilObject)evald);
 
-            Assert.AreEqual(ctx.TRUE, ctx.GetGlobalVal(ZilAtom.Parse("DONE", ctx)));
+            TestHelpers.AssertStructurallyEqual(ctx.TRUE, ctx.GetGlobalVal(ZilAtom.Parse("DONE", ctx)));
         }
     }
 }

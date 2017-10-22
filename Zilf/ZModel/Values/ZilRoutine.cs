@@ -102,7 +102,7 @@ namespace Zilf.ZModel.Values
 
         public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
 
-        public override bool Equals(object obj)
+        public override bool StructurallyEquals(ZilObject obj)
         {
             if (!(obj is ZilRoutine other))
                 return false;
@@ -114,20 +114,10 @@ namespace Zilf.ZModel.Values
                 return false;
 
             for (int i = 0; i < body.Length; i++)
-                if (!other.body[i].Equals(body[i]))
+                if (!other.body[i].StructurallyEquals(body[i]))
                     return false;
 
             return true;
-        }
-
-        public override int GetHashCode()
-        {
-            var result = ArgSpec.GetHashCode();
-
-            foreach (var obj in body)
-                result ^= obj.GetHashCode();
-
-            return result;
         }
 
         [ContractInvariantMethod]
