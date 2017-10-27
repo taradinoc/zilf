@@ -24,5 +24,9 @@ namespace Zapf.Parsing.Expressions
     {
         public string SourceFile => null;
         public int LineNum => 0;
+
+        public abstract override string ToString();
+        public abstract override bool Equals(object obj);
+        public abstract override int GetHashCode();
     }
 }

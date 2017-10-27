@@ -16,16 +16,18 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using Zapf.Parsing.Instructions;
+
 namespace Zilf.Emit.Zap
 {
     struct ZapCode
     {
-        public string Text;
+        public Instruction Instruction;
         public string DebugText;
 
         public override string ToString()
         {
-            return Text;
+            return Instruction.ToString();
         }
     }
 }

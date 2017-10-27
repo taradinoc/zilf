@@ -392,7 +392,7 @@ namespace Zapf.Parsing
 
                 default:
                     ReportErrorAndSkipExpr(head, "unexpected expr token {0}", head);
-                    return new NumericLiteral("0");
+                    return new NumericLiteral(0);
             }
         }
 

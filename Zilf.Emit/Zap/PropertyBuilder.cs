@@ -20,7 +20,7 @@ using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
-    class PropertyBuilder : IPropertyBuilder
+    class PropertyBuilder : ConstantOperandBase, IPropertyBuilder
     {
         [NotNull]
         readonly string name;
@@ -38,11 +38,6 @@ namespace Zilf.Emit.Zap
         public override string ToString()
         {
             return name;
-        }
-
-        public IConstantOperand Add(IConstantOperand other)
-        {
-            return new SumOperand(this, other);
         }
     }
 }

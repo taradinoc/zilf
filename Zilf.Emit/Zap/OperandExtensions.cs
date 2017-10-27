@@ -17,6 +17,7 @@
  */
 
 using JetBrains.Annotations;
+using Zapf.Parsing.Expressions;
 
 namespace Zilf.Emit.Zap
 {
@@ -26,6 +27,43 @@ namespace Zilf.Emit.Zap
         public static IOperand StripIndirect([NotNull] this IOperand operand)
         {
             return operand is IIndirectOperand indirect ? indirect.Variable : operand;
+        }
+
+        [NotNull]
+        public static AsmExpr ToAsmExpr([NotNull] this IOperand operand)
+        {
+            switch (operand)
+            {
+                case NumericOperand num:
+                    return new NumericLiteral(num.Value);
+
+                case IndirectOperand indirect:
+                    return new QuoteExpr(indirect.Variable.ToAsmExpr());
+
+                case SumOperand sum:
+                    return new AdditionExpr(sum.Left.ToAsmExpr(), sum.Right.ToAsmExpr());
+
+                default:
+                    return new SymbolExpr(operand.ToString());
+            }
+        }
+
+        public static bool IsStack([NotNull] this AsmExpr asmExpr)
+        {
+            return asmExpr is SymbolExpr sym && sym.Text == "STACK";
+        }
+
+        [ContractAnnotation("=> false, inner: null; => true, inner: notnull")]
+        public static bool IsQuote([NotNull] this AsmExpr asmExpr, out AsmExpr inner)
+        {
+            if (asmExpr is QuoteExpr quote)
+            {
+                inner = quote.Inner;
+                return true;
+            }
+
+            inner = null;
+            return false;
         }
     }
 }

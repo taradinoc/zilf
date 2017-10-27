@@ -29,5 +29,20 @@ namespace Zapf.Parsing.Expressions
 
         [NotNull]
         public AsmExpr Inner { get; }
+
+        public override string ToString()
+        {
+            return "'" + Inner;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is QuoteExpr other && other.Inner.Equals(Inner);
+        }
+
+        public override int GetHashCode()
+        {
+            return Inner.GetHashCode();
+        }
     }
 }
