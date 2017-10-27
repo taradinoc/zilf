@@ -336,12 +336,13 @@ namespace Zilf.Interpreter.Values.Tied
     }
 
     [ContractClassFor(typeof(ZilTiedListBase))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class ZilTiedListBaseContract : ZilTiedListBase
     {
         protected override TiedLayout GetLayout()
         {
             Contract.Ensures(Contract.Result<TiedLayout>() != null);
-            throw new NotImplementedException();
+            return default(TiedLayout);
         }
     }
 }

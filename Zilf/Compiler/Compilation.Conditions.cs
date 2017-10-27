@@ -211,8 +211,8 @@ namespace Zilf.Compiler
                 for (int i = 0; i < args.Length - 1; i++)
                     CompileCondition(rb, args[i], src, failure, !and);
 
-                /* Historical note: ZILCH considered <AND ... <SET X 0>> to be true,
-                 * even though <SET X 0> is false. We emulate the bug by compiling the
+                /* QUIRK: ZILCH considered <AND ... <SET X 0>> to be true,
+                 * even though <SET X 0> is false. We emulate this issue by compiling the
                  * last element as a statement instead of a condition when it fits
                  * this pattern. */
                 var last = args[args.Length - 1];
@@ -232,7 +232,7 @@ namespace Zilf.Compiler
                 for (int i = 0; i < args.Length - 1; i++)
                     CompileCondition(rb, args[i], src, label, !and);
 
-                /* Emulate the aforementioned ZILCH bug. */
+                /* QUIRK: Emulate the aforementioned SET issue. */
                 var last = args[args.Length - 1];
                 if (and && last.IsSetToZeroForm())
                 {
@@ -437,12 +437,17 @@ namespace Zilf.Compiler
 
                     case StdAtom.FALSE:
                         // never true
-                        // TODO: warning message? clause will never be evaluated
+                        Context.HandleError(new CompilerError(clause, CompilerMessages._0_Condition_Is_Always_1, "COND", "false"));
                         continue;
 
                     default:
                         // always true
-                        // TODO: warn if not T or ELSE?
+                        if (!(condition is ZilAtom atom &&
+                              (atom.StdAtom == StdAtom.T || atom.StdAtom == StdAtom.ELSE)))
+                        {
+                            Context.HandleError(new CompilerError(clause, CompilerMessages._0_Condition_Is_Always_1,
+                                "COND", "true"));
+                        }
                         elsePart = true;
                         break;
                 }

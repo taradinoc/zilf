@@ -708,9 +708,9 @@ namespace Zilf.ZModel
 
             // initialize string encoder
             var encoder = new StringEncoder();
-            encoder.SetCharset(0, charset0.Select(StringEncoder.UnicodeToZscii));
-            encoder.SetCharset(1, charset1.Select(StringEncoder.UnicodeToZscii));
-            encoder.SetCharset(2, charset2.Select(StringEncoder.UnicodeToZscii));
+            encoder.SetCharset(0, charset0.Select(UnicodeTranslation.ToZscii));
+            encoder.SetCharset(1, charset1.Select(UnicodeTranslation.ToZscii));
+            encoder.SetCharset(2, charset2.Select(UnicodeTranslation.ToZscii));
 
             var resolution = ZVersion >= 4 ? 9 : 6;
             var groupedWords =
@@ -844,7 +844,7 @@ namespace Zilf.ZModel
             var zval = ctx.GetZVal(target);
             if (zval != null)
             {
-                ctx.SetZVal(target, zval);  // TODO: shouldn't this be alias, not target?
+                ctx.SetZVal(alias, zval);
             }
         }
 

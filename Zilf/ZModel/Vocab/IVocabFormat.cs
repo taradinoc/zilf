@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -96,6 +95,7 @@ namespace Zilf.ZModel.Vocab
     }
 
     [ContractClass(typeof(IVocabFormatContracts))]
+    [PublicAPI]
     interface IVocabFormat
     {
         [NotNull]
@@ -201,7 +201,7 @@ namespace Zilf.ZModel.Vocab
         {
             Contract.Requires(word != null);
             Contract.Ensures(Contract.Result<IEnumerable<KeyValuePair<string, int>>>() != null);
-            throw new NotImplementedException();
+            return default(IEnumerable<KeyValuePair<string, int>>);
         }
 
         public bool IsAdjective(IWord word)

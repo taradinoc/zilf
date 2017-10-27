@@ -37,7 +37,6 @@ namespace Zilf.Emit
 
         public void AddByte(byte value)
         {
-            throw new System.NotImplementedException();
         }
 
         public void AddByte(IOperand value)
@@ -47,7 +46,6 @@ namespace Zilf.Emit
 
         public void AddShort(short value)
         {
-            throw new System.NotImplementedException();
         }
 
         public void AddShort(IOperand value)

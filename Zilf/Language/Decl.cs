@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -162,10 +163,7 @@ namespace Zilf.Language
                             }
 
                             // ...or aliases
-                            var aliased = ctx.GetProp(atom, ctx.GetStdAtom(StdAtom.DECL));
-
-                            // TODO: better check for circular aliases
-                            if (aliased != null && aliased != atom)
+                            if (IsNonCircularAlias(ctx, atom, out var aliased))
                                 return Check(ctx, value, aliased, ignoreErrors);
 
                             // special cases for GVAL and LVAL
@@ -249,6 +247,33 @@ namespace Zilf.Language
                         "value in DECL pattern",
                         pattern.ToStringContext(ctx, false));
             }
+        }
+
+        [ContractAnnotation("=> true, decl: notnull; => false, decl: null")]
+        static bool IsNonCircularAlias([NotNull] Context ctx, [NotNull] ZilAtom atom, out ZilObject decl)
+        {
+            var seen = new HashSet<ZilAtom>();
+            var declAtom = ctx.GetStdAtom(StdAtom.DECL);
+            ZilObject value;
+
+            do
+            {
+                seen.Add(atom);
+
+                value = ctx.GetProp(atom, declAtom);
+                atom = value as ZilAtom;
+            } while (atom != null && !seen.Contains(atom));
+
+            if (atom != null)
+            {
+                // circular
+                decl = null;
+                return false;
+            }
+
+            // noncircular, or not an alias
+            decl = value;
+            return value != null;
         }
 
         static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment,

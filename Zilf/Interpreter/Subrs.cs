@@ -29,6 +29,8 @@ namespace Zilf.Interpreter
 
     static partial class Subrs
     {
+        [MeansImplicitUse]
+        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public abstract class SubrAttributeBase : Attribute
         {
             protected SubrAttributeBase([CanBeNull] string name)
@@ -40,8 +42,6 @@ namespace Zilf.Interpreter
             public string Name { get; }
         }
 
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-        [MeansImplicitUse]
         public sealed class SubrAttribute : SubrAttributeBase
         {
             public SubrAttribute()
@@ -55,7 +55,6 @@ namespace Zilf.Interpreter
             }
         }
 
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public sealed class FSubrAttribute : SubrAttributeBase
         {
             public FSubrAttribute()
