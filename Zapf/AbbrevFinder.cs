@@ -183,18 +183,6 @@ namespace Zapf
                 if (max < 1)
                     yield break;
 
-                var query =
-                    from p in words.AsParallel().WithExecutionMode(ParallelExecutionMode.ForceParallelism)
-                    let count = CountAppearances(p.Value.Pattern)
-                    let overallSavings = (count - 1) * p.Value.Savings - 2
-                    orderby overallSavings descending
-                    select new
-                    {
-                        Savings = overallSavings,
-                        Count = count,
-                        p.Value.Pattern
-                    };
-
                 int numResults = 0;
                 while (numResults < max)
                 {
@@ -203,6 +191,18 @@ namespace Zapf
                     Console.Error.WriteLine("Querying {0} words in {1} chars of text", words.Count, allText.Length);
                     stopw.Start();
 #endif
+
+                    var query =
+                        from p in words.AsParallel().WithExecutionMode(ParallelExecutionMode.ForceParallelism)
+                        let count = CountAppearances(p.Value.Pattern)
+                        let overallSavings = (count - 1) * p.Value.Savings - 2
+                        orderby overallSavings descending
+                        select new
+                        {
+                            Savings = overallSavings,
+                            Count = count,
+                            p.Value.Pattern
+                        };
 
                     var queryResults = query.ToList();
 
