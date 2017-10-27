@@ -23,7 +23,7 @@ using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Flow Control")]
     public class FlowControlTests
     {
         [NotNull]

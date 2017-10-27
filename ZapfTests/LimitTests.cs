@@ -21,7 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ZapfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Assembler")]
     public class LimitTests
     {
         [TestMethod]

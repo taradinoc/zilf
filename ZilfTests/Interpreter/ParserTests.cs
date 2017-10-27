@@ -32,7 +32,7 @@ namespace ZilfTests.Interpreter
     /// <summary>
     /// Tests for the Parser class
     /// </summary>
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Parsing")]
     public class ParserTests
     {
         class TestParserSite : IParserSite

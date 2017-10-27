@@ -24,7 +24,7 @@ using Zilf.Interpreter.Values;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Parsing")]
     public class ParsingTests
     {
         [TestMethod]

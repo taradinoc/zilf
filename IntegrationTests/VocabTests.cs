@@ -25,7 +25,7 @@ using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Vocab")]
     public class VocabTests
     {
         [NotNull]
@@ -289,7 +289,7 @@ namespace IntegrationTests
     (WORD-DIR-ID ANY)>
 ";
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void Game_Without_Objects_Should_Compile_With_NEW_PARSER_P()
         {
             AssertRoutine("", @"<PRINTR ""Hello, world!"">")
@@ -297,7 +297,7 @@ namespace IntegrationTests
                 .Outputs("Hello, world!\n");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Should_Affect_Vocab_Word_Size()
         {
             AssertRoutine("", "<GETB ,VOCAB <+ 1 <GETB ,VOCAB 0>>>")
@@ -308,7 +308,7 @@ namespace IntegrationTests
                 .GivesNumber("12");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Verbs_Should_Have_Verb_Data()
         {
             AssertGlobals(
@@ -321,7 +321,7 @@ namespace IntegrationTests
                 .Implies("<N=? <GET ,W?SING 3> 0>");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Should_Affect_Syntax_Format()
         {
             AssertGlobals(
@@ -350,7 +350,7 @@ namespace IntegrationTests
                     "<=? <GET ,WORD-FLAG-TABLE 2> 12345>");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Synonyms_Should_Use_Pointers()
         {
             AssertGlobals(

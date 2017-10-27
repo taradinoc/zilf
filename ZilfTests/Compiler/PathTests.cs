@@ -27,7 +27,7 @@ using Zilf.Compiler;
 
 namespace ZilfTests.Compiler
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler")]
     public class PathTests
     {
         class PathTestHelper

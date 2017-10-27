@@ -23,7 +23,7 @@ using System.Linq;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class WeakCountingSetTests
     {
         [TestMethod]

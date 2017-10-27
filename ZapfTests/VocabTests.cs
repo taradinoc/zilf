@@ -23,7 +23,7 @@ using Zilf.Common.StringEncoding;
 
 namespace ZapfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Assembler"), TestCategory("Vocab")]
     public class VocabTests
     {
         [TestMethod]

@@ -7,7 +7,7 @@ using TestHelper;
 
 namespace ZilfErrorMessages.Test
 {
-    [TestClass]
+    [TestClass, TestCategory("Analyzers")]
     public class ZilObjectTests : DiagnosticVerifier
     {
 

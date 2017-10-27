@@ -22,7 +22,7 @@ using Zilf.Interpreter.Values;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class CompilationFlagTests
     {
         [TestMethod]

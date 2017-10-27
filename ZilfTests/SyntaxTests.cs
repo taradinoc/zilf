@@ -31,7 +31,7 @@ using ZilfTests.Interpreter;
 
 namespace ZilfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class SyntaxTests
     {
         [NotNull]

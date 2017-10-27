@@ -29,7 +29,7 @@ using Zilf.ZModel.Values;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class TypeTests
     {
         Context ctx;
