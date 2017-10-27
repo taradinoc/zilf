@@ -16,105 +16,12 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
-using JetBrains.Annotations;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 
-namespace Zapf
+namespace Zapf.Parsing.Diagnostics
 {
-    [ContractClass(typeof(SourceLineContract))]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    interface ISourceLine
-    {
-        [CanBeNull]
-        string SourceFile { get; }
-        int LineNum { get; }
-    }
-
-    interface IErrorSink
-    {
-        void HandleSeriousError(SeriousError ser);
-        void HandleWarning(Warning warning);
-    }
-
-    /// <summary>
-    /// Thrown when a configuration change has occurred that
-    /// requires the assembler to restart.
-    /// </summary>
-    [Serializable]
-    public class RestartException : Exception
-    {
-    }
-
-    [Serializable]
-    abstract class AssemblerError : Exception
-    {
-        protected AssemblerError(ISourceLine node, string message)
-            : base(message)
-        {
-            Node = node;
-        }
-
-        protected AssemblerError([NotNull] SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Contract.Requires(info != null);
-            Node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
-        }
-
-        public ISourceLine Node { get; }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-
-            if (Node != null)
-            {
-                info.AddValue("node", Node);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Thrown when an unrecoverable error occurs.
-    /// </summary>
-    [Serializable]
-    class FatalError : AssemblerError
-    {
-        public FatalError(ISourceLine node, string message)
-            : base(node, message)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Thrown when a serious (but not totally unrecoverable) error occurs.
-    /// </summary>
-    [Serializable]
-    class SeriousError : AssemblerError
-    {
-        public SeriousError(ISourceLine node, string message)
-            : base(node, message)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Not thrown, but passed around to report warnings.
-    /// </summary>
-    [Serializable]
-    class Warning : AssemblerError
-    {
-        public Warning(ISourceLine node, string message)
-            : base(node, message)
-        {
-        }
-    }
-
-    static class Errors
+    public static class Errors
     {
         public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string message)
         {
@@ -254,12 +161,5 @@ namespace Zapf
             Contract.Requires(args != null);
             ThrowFatal(node, string.Format(format, args));
         }
-    }
-
-    [ContractClassFor(typeof(ISourceLine))]
-    abstract class SourceLineContract : ISourceLine
-    {
-        public abstract string SourceFile { get; }
-        public abstract int LineNum { get; }
     }
 }

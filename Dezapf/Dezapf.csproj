@@ -94,6 +94,10 @@
     <Compile Include="RangeList.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj">
+      <Project>{f05efb4a-9b94-4e4c-b158-bf1ee09584c7}</Project>
+      <Name>Zapf.Parsing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Zapf\Zapf.csproj">
       <Project>{C4379053-B0C7-4826-AC41-CEA59A743B15}</Project>
       <Name>Zapf</Name>

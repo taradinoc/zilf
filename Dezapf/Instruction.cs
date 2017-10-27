@@ -19,6 +19,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Zapf;
+using Zapf.Parsing;
+using Zapf.Parsing.Instructions;
 
 namespace Dezapf
 {

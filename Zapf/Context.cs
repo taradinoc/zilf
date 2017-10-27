@@ -25,6 +25,8 @@ using System.Text;
 using JetBrains.Annotations;
 using Zilf.Common.StringEncoding;
 using System.Diagnostics.Contracts;
+using Zapf.Parsing.Diagnostics;
+using Zapf.Parsing.Instructions;
 
 namespace Zapf
 {

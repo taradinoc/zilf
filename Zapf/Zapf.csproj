@@ -140,11 +140,7 @@
     <Compile Include="BinaryDebugFileWriter.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="DEBF.cs" />
-    <Compile Include="Errors.cs" />
     <Compile Include="IDebugFileWriter.cs" />
-    <Compile Include="Opcodes.cs" />
-    <Compile Include="Parsing\Common.cs" />
-    <Compile Include="Parsing\ZapParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="XmlDebugFileWriter.cs" />
@@ -175,6 +171,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj">
+      <Project>{f05efb4a-9b94-4e4c-b158-bf1ee09584c7}</Project>
+      <Name>Zapf.Parsing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">
       <Project>{433b6da6-ff85-4370-9012-4c6b7177fc0d}</Project>
       <Name>Zilf.Common</Name>

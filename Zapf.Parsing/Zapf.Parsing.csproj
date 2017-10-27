@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Zapf.Parsing</RootNamespace>
+    <AssemblyName>Zapf.Parsing</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="JetBrains.Annotations, Version=10.2.1.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
+      <HintPath>..\packages\JetBrains.Annotations.10.2.1\lib\net\JetBrains.Annotations.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Expressions\AdditionExpr.cs" />
+    <Compile Include="Directives\AlignDirective.cs" />
+    <Compile Include="Expressions\AsmExpr.cs" />
+    <Compile Include="Directives\AsmLine.cs" />
+    <Compile Include="Diagnostics\AssemblerError.cs" />
+    <Compile Include="Directives\BareSymbolLine.cs" />
+    <Compile Include="Directives\ByteDirective.cs" />
+    <Compile Include="Directives\ChrsetDirective.cs" />
+    <Compile Include="ParseResult.cs" />
+    <Compile Include="Directives\DataDirective.cs" />
+    <Compile Include="Directives\DebugActionDirective.cs" />
+    <Compile Include="Directives\DebugArrayDirective.cs" />
+    <Compile Include="Directives\DebugAttrDirective.cs" />
+    <Compile Include="Directives\DebugClassDirective.cs" />
+    <Compile Include="Directives\DebugDirective.cs" />
+    <Compile Include="Directives\DebugFakeActionDirective.cs" />
+    <Compile Include="Directives\DebugFileDirective.cs" />
+    <Compile Include="Directives\DebugGlobalDirective.cs" />
+    <Compile Include="Directives\DebugLineDirective.cs" />
+    <Compile Include="Directives\DebugMapDirective.cs" />
+    <Compile Include="Directives\DebugObjectDirective.cs" />
+    <Compile Include="Directives\DebugPropDirective.cs" />
+    <Compile Include="Directives\DebugRoutineDirective.cs" />
+    <Compile Include="Directives\DebugRoutineEndDirective.cs" />
+    <Compile Include="Directives\Directive.cs" />
+    <Compile Include="Directives\EndDirective.cs" />
+    <Compile Include="Directives\EndiDirective.cs" />
+    <Compile Include="Directives\EndtDirective.cs" />
+    <Compile Include="Directives\EqualsDirective.cs" />
+    <Compile Include="Diagnostics\Errors.cs" />
+    <Compile Include="Diagnostics\FatalError.cs" />
+    <Compile Include="Directives\FstrDirective.cs" />
+    <Compile Include="Directives\FunctDirective.cs" />
+    <Compile Include="Directives\FunctLocal.cs" />
+    <Compile Include="GlobalLabel.cs" />
+    <Compile Include="Directives\GstrDirective.cs" />
+    <Compile Include="Directives\GvarDirective.cs" />
+    <Compile Include="Diagnostics\IErrorSink.cs" />
+    <Compile Include="Directives\InsertDirective.cs" />
+    <Compile Include="Instructions\Instruction.cs" />
+    <Compile Include="Diagnostics\ISourceLine.cs" />
+    <Compile Include="Directives\LangDirective.cs" />
+    <Compile Include="Directives\LenDirective.cs" />
+    <Compile Include="Directives\LineDebugDirective.cs" />
+    <Compile Include="Instructions\LocalLabel.cs" />
+    <Compile Include="Directives\NameAndTextDirective.cs" />
+    <Compile Include="Directives\NamedDirective.cs" />
+    <Compile Include="Directives\NewDirective.cs" />
+    <Compile Include="Directives\NullDirective.cs" />
+    <Compile Include="Directives\NumberAndNameDebugDirective.cs" />
+    <Compile Include="Expressions\NumericLiteral.cs" />
+    <Compile Include="Directives\ObjectDirective.cs" />
+    <Compile Include="Instructions\Opcodes.cs" />
+    <Compile Include="Directives\PropDirective.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Expressions\QuoteExpr.cs" />
+    <Compile Include="RestartException.cs" />
+    <Compile Include="Diagnostics\SeriousError.cs" />
+    <Compile Include="Directives\SoundDirective.cs" />
+    <Compile Include="Diagnostics\SourceLineContract.cs" />
+    <Compile Include="Directives\StrDirective.cs" />
+    <Compile Include="Expressions\StringLiteral.cs" />
+    <Compile Include="Directives\StrlDirective.cs" />
+    <Compile Include="Expressions\SymbolExpr.cs" />
+    <Compile Include="Directives\TableDirective.cs" />
+    <Compile Include="Expressions\TextAsmExpr.cs" />
+    <Compile Include="Directives\TextDirective.cs" />
+    <Compile Include="Directives\TimeDirective.cs" />
+    <Compile Include="Token.cs" />
+    <Compile Include="Tokenizer.cs" />
+    <Compile Include="TokenType.cs" />
+    <Compile Include="Directives\VocbegDirective.cs" />
+    <Compile Include="Directives\VocendDirective.cs" />
+    <Compile Include="Diagnostics\Warning.cs" />
+    <Compile Include="Directives\WordDirective.cs" />
+    <Compile Include="ZapParser.cs" />
+    <Compile Include="Instructions\ZOpAttribute.cs" />
+    <Compile Include="Instructions\ZOpFlags.cs" />
+    <Compile Include="Directives\ZwordDirective.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Zilf.licenseheader">
+      <Link>Zilf.licenseheader</Link>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
