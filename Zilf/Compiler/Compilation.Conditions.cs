@@ -649,7 +649,8 @@ namespace Zilf.Compiler
 
                 ZilObject value, flag = clause.First;
                 bool match, isElse = false, isShadyElse = false;
-                if (flag is ZilAtom atom &&
+                var atom = flag as ZilAtom;
+                if (atom != null &&
                     (value = Context.GetCompilationFlagValue(atom)) != null ||
                     flag is ZilString str &&
                     (value = Context.GetCompilationFlagValue(str.Text)) != null)
@@ -665,7 +666,7 @@ namespace Zilf.Compiler
                 else
                 {
                     match = isElse = true;
-                    isShadyElse = flag is ZilAtom atom2 && atom2.StdAtom != StdAtom.ELSE && atom2.StdAtom != StdAtom.T;
+                    isShadyElse = atom != null && atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T;
                 }
 
                 // does this clause match?
@@ -681,10 +682,11 @@ namespace Zilf.Compiler
                     var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
                     if (isShadyElse)
                     {
+                        Debug.Assert(atom != null);
                         warning = warning.Combine(new CompilerError(
                             flag.SourceLine,
                             CompilerMessages.Undeclared_Compilation_Flag_0,
-                            (ZilAtom)flag));
+                            atom));
                     }
                     Context.HandleError(warning);
                 }

@@ -182,7 +182,7 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var args = Zilf.Program.Parse(ctx, @"""BIND"" B X ""NAME"" N").ToArray();
+            var args = Program.Parse(ctx, @"""BIND"" B X ""NAME"" N").ToArray();
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
 

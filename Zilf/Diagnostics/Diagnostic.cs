@@ -45,7 +45,7 @@ namespace Zilf.Diagnostics
         [CanBeNull]
         public string StackTrace { get; }
         [NotNull]
-        public Diagnostic[] SubDiagnostics { get; }
+        public IReadOnlyList<Diagnostic> SubDiagnostics { get; }
 
         string MessageFormat { get; }
         object[] MessageArgs { get; }
@@ -226,6 +226,7 @@ namespace Zilf.Diagnostics
         readonly string prefix;
         readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
 
+        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static readonly DiagnosticFactory<TMessageSet> Instance = new DiagnosticFactory<TMessageSet>();
 
@@ -267,7 +268,7 @@ namespace Zilf.Diagnostics
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    public class MessageSetAttribute : Attribute
+    public sealed class MessageSetAttribute : Attribute
     {
         public string Prefix { get; }
 
@@ -278,7 +279,7 @@ namespace Zilf.Diagnostics
     }
 
     [AttributeUsage(AttributeTargets.Field)]
-    public class MessageAttribute : Attribute
+    public sealed class MessageAttribute : Attribute
     {
         public string Format { get; }
         public Severity Severity { get; set; }

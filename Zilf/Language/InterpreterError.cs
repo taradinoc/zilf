@@ -24,6 +24,7 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
+    [Serializable]
     class InterpreterError : ZilError<InterpreterMessages>
     {
         [Obsolete("Use a constructor that takes a diagnostic code.")]

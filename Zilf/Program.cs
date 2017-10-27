@@ -579,6 +579,7 @@ Compiler switches:
         /// <see cref="InterpreterError"/>, or <see langword="false"/> to catch it.</param>
         /// <returns>The result of evaluating the last object in the code; or <see langword="null"/> if either the code contained
         /// no objects, or <paramref name="wantExceptions"/> was <see langword="false"/> and an <see cref="InterpreterError"/> was caught.</returns>
+        [SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
         [CanBeNull]
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, bool wantExceptions = false)
         {

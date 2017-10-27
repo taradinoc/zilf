@@ -424,7 +424,7 @@ namespace Zilf.Tests.Interpreter
             catch (ArgumentCountError ex)
             {
                 StringAssert.EndsWith(ex.Message, SExpectedMessage);
-                Assert.AreEqual(1, ex.Diagnostic.SubDiagnostics.Length);
+                Assert.AreEqual(1, ex.Diagnostic.SubDiagnostics.Count);
                 var sd = ex.Diagnostic.SubDiagnostics[0];
                 Assert.AreEqual(SExpectedSubMessage, sd.GetFormattedMessage());
                 return;
@@ -717,7 +717,7 @@ namespace Zilf.Tests.Interpreter
 
             try
             {
-                Zilf.Program.Evaluate(ctx, "<PNAME 1>", true);
+                Program.Evaluate(ctx, "<PNAME 1>", true);
             }
             catch (ArgumentTypeError ex)
             {

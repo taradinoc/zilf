@@ -29,30 +29,41 @@ namespace Zilf.Interpreter
 
     static partial class Subrs
     {
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-        [MeansImplicitUse]
-        public class SubrAttribute : Attribute
+        public abstract class SubrAttributeBase : Attribute
         {
-            public SubrAttribute()
-            {
-            }
-
-            public SubrAttribute(string name)
+            protected SubrAttributeBase([CanBeNull] string name)
             {
                 Name = name;
             }
 
+            [CanBeNull]
             public string Name { get; }
         }
 
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-        public sealed class FSubrAttribute : SubrAttribute
+        [MeansImplicitUse]
+        public sealed class SubrAttribute : SubrAttributeBase
         {
-            public FSubrAttribute()
+            public SubrAttribute()
+                : base(null)
             {
             }
 
-            public FSubrAttribute(string name)
+            public SubrAttribute([NotNull] string name)
+                : base(name)
+            {
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+        public sealed class FSubrAttribute : SubrAttributeBase
+        {
+            public FSubrAttribute()
+                : base(null)
+            {
+            }
+
+            public FSubrAttribute([NotNull] string name)
                 : base(name)
             {
             }

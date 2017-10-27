@@ -2339,7 +2339,6 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
-#pragma warning disable RECS0154 // Parameter is never used
         [Builtin("CHTYPE")]
         [NotNull]
         public static IOperand ChtypeValueOp(ValueCall c, [NotNull] IOperand value, [NotNull] ZilAtom type)
@@ -2351,6 +2350,5 @@ namespace Zilf.Compiler.Builtins
             // TODO: check type?
             return value;
         }
-#pragma warning restore RECS0154 // Parameter is never used
     }
 }

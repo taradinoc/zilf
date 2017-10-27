@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using Zilf.Diagnostics;
@@ -23,6 +24,7 @@ using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
+    [Serializable]
     class SyntaxError : InterpreterError
     {
         public SyntaxError([NotNull] string filename, int line, [NotNull] string message)

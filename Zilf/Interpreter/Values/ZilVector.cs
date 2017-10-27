@@ -92,7 +92,7 @@ namespace Zilf.Interpreter.Values
                 }
                 catch (IndexOutOfRangeException ex)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), ex);
+                    throw new ArgumentOutOfRangeException("Index out of range", ex);
                 }
             }
 

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using JetBrains.Annotations;
@@ -23,6 +24,7 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
+    [Serializable]
     class CompilerFatal : ZilFatal<CompilerMessages>
     {
         public CompilerFatal(int code)

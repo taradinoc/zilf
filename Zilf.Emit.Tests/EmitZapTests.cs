@@ -24,7 +24,7 @@ using Zilf.Emit.Zap;
 namespace Zilf.Emit.Tests
 {
     [TestClass, TestCategory("Compiler")]
-    public class EmitZapTests
+    public class EmitZapTests : IDisposable
     {
         MockFactory mockFactory;
         Mock<IZapStreamFactory> mockStreamFactory;
@@ -63,6 +63,11 @@ namespace Zilf.Emit.Tests
         {
             // ReSharper disable once AssignNullToNotNullAttribute
             var dummy = new GameBuilder(5, null, false);
+        }
+
+        public void Dispose()
+        {
+            mockFactory?.Dispose();
         }
     }
 }

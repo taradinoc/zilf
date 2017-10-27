@@ -22,7 +22,7 @@ using JetBrains.Annotations;
 namespace Zilf.Language
 {
     [AttributeUsage(AttributeTargets.Field)]
-    class AtomAttribute : Attribute
+    sealed class AtomAttribute : Attribute
     {
         public AtomAttribute([NotNull] string name)
         {

@@ -268,16 +268,19 @@ namespace Zilf.Interpreter.Values
 
         public sealed override int? GetLength(int limit)
         {
-            int count = 0;
-
-            foreach (var _ in this)
+            using (var tor = GetEnumerator())
             {
-                count++;
-                if (count > limit)
-                    return null;
-            }
+                int count = 0;
 
-            return count;
+                while (tor.MoveNext())
+                {
+                    count++;
+                    if (count > limit)
+                        return null;
+                }
+
+                return count;
+            }
         }
     }
 }
