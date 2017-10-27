@@ -23,7 +23,7 @@ using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Macros")]
     public class MacroTests
     {
         [NotNull]

@@ -25,7 +25,7 @@ using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler")]
     public class VariableTests
     {
         [NotNull]

@@ -29,7 +29,7 @@ using System.Linq;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Slow")]
     public class FullProjectTests
     {
         const string ProjectsDirName = "FullTestProjects";

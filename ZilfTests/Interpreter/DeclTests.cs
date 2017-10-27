@@ -23,7 +23,7 @@ using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class DeclTests
     {
         Context ctx;

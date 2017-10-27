@@ -27,7 +27,7 @@ using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class AtomTests
     {
         [TestMethod]

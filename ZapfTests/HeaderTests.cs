@@ -21,7 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ZapfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Assembler")]
     public class HeaderTests
     {
         static void AssertWordAtOffset([NotNull] byte[] buffer, int offset, ushort expected)

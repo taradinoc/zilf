@@ -23,7 +23,7 @@ using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Flow Control")]
     public class FlowControlTests
     {
         [TestMethod]

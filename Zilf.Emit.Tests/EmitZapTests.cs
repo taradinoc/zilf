@@ -23,7 +23,7 @@ using Zilf.Emit.Zap;
 
 namespace Zilf.Emit.Tests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler")]
     public class EmitZapTests
     {
         MockFactory mockFactory;

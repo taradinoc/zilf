@@ -23,7 +23,7 @@ using JBA::JetBrains.Annotations;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Code Generation")]
     public class CodeGenTests
     {
         [NotNull]
@@ -642,7 +642,7 @@ namespace IntegrationTests
                 .GeneratesCodeMatching("RETURN MY-GLOBAL");
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void Words_Containing_Hash_Sign_Compile_Correctly_With_New_Parser()
         {
             AssertRoutine("", @"<PRINTB ,W?\#FOO>")

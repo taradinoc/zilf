@@ -24,7 +24,7 @@ using System.Linq;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Arguments")]
     public class ArgSpecTests
     {
         [TestMethod]

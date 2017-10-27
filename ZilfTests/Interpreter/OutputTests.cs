@@ -25,7 +25,7 @@ using JetBrains.Annotations;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class OutputTests
     {
         [NotNull]

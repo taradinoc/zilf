@@ -29,7 +29,7 @@ using Zilf.ZModel.Vocab.OldParser;
 
 namespace ZilfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class OldParserWordTests
     {
         static readonly ISourceLine dummySrc = new StringSourceLine("dummy");

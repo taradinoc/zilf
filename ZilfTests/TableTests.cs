@@ -23,7 +23,7 @@ using Zilf.ZModel.Values;
 
 namespace ZilfTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter")]
     public class TableTests
     {
         [TestMethod]

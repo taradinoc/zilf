@@ -20,7 +20,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler")]
     public class HelloTests
     {
         [TestMethod]

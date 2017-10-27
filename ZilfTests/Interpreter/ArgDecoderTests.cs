@@ -35,7 +35,7 @@ using Zilf.Language;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Arguments")]
     public class ArgDecoderTests
     {
         Context ctx;
@@ -46,12 +46,14 @@ namespace ZilfTests.Interpreter
             ctx = new Context();
         }
 
+        [NotNull]
         static MethodInfo GetMethod([NotNull] string name)
         {
             Contract.Requires(name != null);
             return typeof(ArgDecoderTests).GetMethod(
-                name,
-                BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+                       name,
+                       BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic) ??
+                   throw new InvalidOperationException();
         }
 
         [TestMethod]

@@ -26,7 +26,7 @@ using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Vocab")]
     public class SyntaxTests
     {
         [NotNull]
@@ -139,7 +139,7 @@ namespace IntegrationTests
                     d => d.GetFormattedMessage().Contains("actions"));
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Supports_More_Than_255_Verbs_And_Actions()
         {
             var globals = new List<string>(258) { VocabTests.SNewParserBootstrap };

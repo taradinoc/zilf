@@ -25,7 +25,7 @@ using Zilf.Diagnostics;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestClass, TestCategory("Compiler"), TestCategory("Arguments")]
     public class FormatArgCountTests
     {
         [TestMethod]
@@ -126,7 +126,7 @@ namespace IntegrationTests
         }
     }
     
-    [TestClass]
+    [TestClass, TestCategory("Compiler")]
     [SuppressMessage("ReSharper", "ExceptionNotDocumented")]
     public class OpcodeTests
     {

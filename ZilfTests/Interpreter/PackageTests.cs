@@ -25,7 +25,7 @@ using System.IO;
 
 namespace ZilfTests.Interpreter
 {
-    [TestClass]
+    [TestClass, TestCategory("Interpreter"), TestCategory("Package System")]
     public class PackageTests
     {
         [TestMethod]
