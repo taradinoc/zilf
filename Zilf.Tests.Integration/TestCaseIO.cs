@@ -21,6 +21,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
+using JBA::JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ZLR.VM;
 
@@ -30,7 +31,7 @@ namespace Zilf.Tests.Integration
     {
         protected readonly StringBuilder outputBuffer = new StringBuilder();
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         public string CollectOutput()
         {
             Contract.Ensures(Contract.Result<string>() != null);
@@ -40,14 +41,16 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    class ReplayIO : TestCaseIO, IZMachineIO
+    sealed class ReplayIO : TestCaseIO, IZMachineIO, IDisposable
     {
+        [NotNull]
         readonly Stream inputStream;
         readonly bool wantStatusLine;
 
+        [CanBeNull]
         MemoryStream saveStream;
 
-        public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
+        public ReplayIO([NotNull] Stream prevInputStream, bool wantStatusLine = false)
         {
             inputStream = prevInputStream;
             this.wantStatusLine = wantStatusLine;
@@ -81,7 +84,7 @@ namespace Zilf.Tests.Integration
             outputBuffer.Append(str);
         }
 
-        void IZMachineIO.PutTextRectangle([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] string[] lines)
+        void IZMachineIO.PutTextRectangle([ItemNotNullAttribute] [NotNullAttribute] string[] lines)
         {
             Contract.Requires(lines != null);
             foreach (string line in lines)
@@ -104,7 +107,7 @@ namespace Zilf.Tests.Integration
             // nada
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
             Contract.Ensures(Contract.Result<Stream>() != null);
@@ -112,19 +115,20 @@ namespace Zilf.Tests.Integration
             return saveStream;
         }
 
-        [JBA::JetBrains.Annotations.CanBeNullAttribute]
+        [CanBeNullAttribute]
         Stream IZMachineIO.OpenRestoreFile()
         {
             return saveStream != null ? new MemoryStream(saveStream.ToArray()) : null;
         }
 
-        [JBA::JetBrains.Annotations.CanBeNullAttribute]
-        Stream IZMachineIO.OpenAuxiliaryFile([JBA::JetBrains.Annotations.NotNullAttribute] string name, int size, bool writing)
+        [CanBeNullAttribute]
+        Stream IZMachineIO.OpenAuxiliaryFile([NotNullAttribute] string name, int size, bool writing)
         {
             Contract.Requires(name != null);
             return null;
         }
 
+        [CanBeNull]
         Stream IZMachineIO.OpenCommandFile(bool writing)
         {
             if (writing)
@@ -258,5 +262,11 @@ namespace Zilf.Tests.Integration
         }
 
         #endregion
+
+        public void Dispose()
+        {
+            inputStream.Dispose();
+            saveStream?.Dispose();
+        }
     }
 }

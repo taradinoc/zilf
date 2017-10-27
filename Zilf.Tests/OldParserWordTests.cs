@@ -23,6 +23,7 @@ using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Emit;
 using Zilf.Language;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.OldParser;
@@ -361,12 +362,12 @@ namespace Zilf.Tests
             }
         }
 
-        class MockOperand : Zilf.Emit.IOperand
+        class MockOperand : IOperand
         {
             public byte Value;
         }
 
-        class MockWordBuilder : Zilf.Emit.IWordBuilder
+        class MockWordBuilder : IWordBuilder
         {
             public readonly List<byte> ActualBytes = new List<byte>(3);
 
@@ -375,7 +376,7 @@ namespace Zilf.Tests
                 ActualBytes.Add(value);
             }
 
-            public void AddByte(Zilf.Emit.IOperand value)
+            public void AddByte(IOperand value)
             {
                 Assert.IsInstanceOfType(value, typeof(MockOperand),
                     "IWordBuilder.AddByte should be called with an operand we gave it");
@@ -388,15 +389,15 @@ namespace Zilf.Tests
                 Assert.Fail("IWordBuilder.AddShort shouldn't be called");
             }
 
-            public void AddShort(Zilf.Emit.IOperand value)
+            public void AddShort(IOperand value)
             {
                 Assert.Fail("IWordBuilder.AddShort shouldn't be called");
             }
 
-            public Zilf.Emit.IConstantOperand Add(Zilf.Emit.IConstantOperand other)
+            public IConstantOperand Add(IConstantOperand other)
             {
                 Assert.Fail("IWordBuilder.Add shouldn't be called");
-                return default(Zilf.Emit.IConstantOperand);
+                return default(IConstantOperand);
             }
         }
 

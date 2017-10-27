@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
@@ -57,6 +58,9 @@ namespace Zilf.Interpreter
 
         public int GetHashCode(ZilObject obj)
         {
+            if (obj == null)
+                throw new ArgumentNullException(nameof(obj));
+
             return obj.ToString().GetHashCode();
         }
     }

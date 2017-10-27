@@ -40,7 +40,7 @@ namespace Zilf.Tests
             Contract.Requires(!string.IsNullOrWhiteSpace(definition));
             Contract.Ensures(Contract.Result<Syntax>() != null);
 
-            var defn = (ZilList)Zilf.Program.Evaluate(ctx, definition, true);
+            var defn = (ZilList)Program.Evaluate(ctx, definition, true);
             Debug.Assert(defn != null);
 
             var syntax = Syntax.Parse(null, defn, ctx);

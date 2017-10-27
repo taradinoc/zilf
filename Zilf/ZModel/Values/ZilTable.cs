@@ -151,18 +151,6 @@ namespace Zilf.ZModel.Values
                 this.pattern = pattern;
             }
 
-            [ChtypeMethod]
-            public OriginalTable([NotNull] OriginalTable other)
-                : this(other.repetitions,
-                       (ZilObject[])other.initializer?.Clone(),
-                       other.flags,
-                       (ZilObject[])other.pattern?.Clone())
-            {
-                Contract.Requires(other != null);
-
-                SourceLine = other.SourceLine;
-            }
-
             [ContractInvariantMethod]
             [Conditional("CONTRACTS_FULL")]
             void ObjectInvariant()

@@ -37,7 +37,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void Parse_Function_Should_Support_Templates()
         {
-            var result = Zilf.Program.Parse(ctx, "<* 2 {0}>", new ZilFix(512)).Single();
+            var result = Program.Parse(ctx, "<* 2 {0}>", new ZilFix(512)).Single();
 
             Assert.IsInstanceOfType(result, typeof(ZilForm));
 
@@ -49,9 +49,9 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void Templates_Can_Insert_Multiple_Values()
         {
-            var result = Zilf.Program.Parse(ctx, "<BIND () {1:SPLICE} <+ !'{0}>>",
+            var result = Program.Parse(ctx, "<BIND () {1:SPLICE} <+ !'{0}>>",
                 new ZilVector(new ZilFix(1), new ZilFix(20)),
-                new ZilList(Zilf.Program.Parse(ctx, @"<PRINT ""Hi!""> <CRLF> <SETG DONE T>"))
+                new ZilList(Program.Parse(ctx, @"<PRINT ""Hi!""> <CRLF> <SETG DONE T>"))
                 ).Single();
 
             Assert.IsInstanceOfType(result, typeof(ZilForm));

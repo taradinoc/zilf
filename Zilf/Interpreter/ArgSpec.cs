@@ -237,6 +237,7 @@ namespace Zilf.Interpreter
                     if (al.IsEmpty)
                         throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);
 
+                    // TODO: report error if length != 2, or if in required args section
                     argName = al.First;
                     argValue = al.Rest.First;
                 }

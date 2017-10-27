@@ -420,6 +420,7 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
         [NotNull]
         [Subr]
         public static ZilObject GC([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)

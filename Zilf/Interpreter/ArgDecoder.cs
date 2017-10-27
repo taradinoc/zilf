@@ -346,7 +346,7 @@ namespace Zilf.Interpreter
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
-        DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] ParameterInfo pi)
+        static DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] ParameterInfo pi)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(pi != null);

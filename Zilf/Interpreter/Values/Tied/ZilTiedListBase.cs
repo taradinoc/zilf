@@ -40,6 +40,7 @@ namespace Zilf.Interpreter.Values.Tied
             set => TiedLayout.Layouts[GetType()] = value;
         }
 
+        [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         protected ZilTiedListBase()
         {
             var myType = GetType();

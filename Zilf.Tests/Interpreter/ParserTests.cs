@@ -72,13 +72,8 @@ namespace Zilf.Tests.Interpreter
             /// <exception cref="InvalidOperationException"><see cref="OnEvaluate"/> is not set.</exception>
             public ZilObject Evaluate(ZilObject zo)
             {
-                var handler = OnEvaluate;
-                if (handler != null)
-                {
-                    return handler(zo);
-                }
-
-                throw new InvalidOperationException($"{nameof(OnEvaluate)} not set");
+                var handler = OnEvaluate ?? throw new InvalidOperationException($"{nameof(OnEvaluate)} not set");
+                return handler(zo);
             }
 
             public ZilObject GetGlobalVal(ZilAtom atom)

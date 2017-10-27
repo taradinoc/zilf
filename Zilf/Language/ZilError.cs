@@ -38,6 +38,14 @@ namespace Zilf.Language
             Contract.Requires(info != null);
         }
 
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            info.AddValue("Diagnostic", Diagnostic);
+            info.AddValue("SourceLine", SourceLine);
+        }
+
         public Diagnostic Diagnostic { get; protected set; }
         protected ISourceLine SourceLine { get; set; }
     }
@@ -90,6 +98,7 @@ namespace Zilf.Language
     }
 
     [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
+    [Serializable]
     abstract class ZilError<TMessageSet> : ZilError
         where TMessageSet : class
     {
@@ -189,6 +198,7 @@ namespace Zilf.Language
     }
 
     [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
+    [Serializable]
     abstract class ZilFatal<TMessageSet> : ZilFatal
        where TMessageSet : class
     {

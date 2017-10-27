@@ -29,7 +29,7 @@ namespace Zilf.ZModel
         public int Offset { get; }
         public LowCoreFlags Flags { get; }
         public int MinVersion { get; }
-        public int? MaxVersion => null;
+        public int? MaxVersion { get; }
 
         LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
         {
@@ -40,6 +40,7 @@ namespace Zilf.ZModel
             Offset = offset;
             Flags = flags;
             MinVersion = minVersion;
+            MaxVersion = maxVersion;
         }
 
         [ContractInvariantMethod]

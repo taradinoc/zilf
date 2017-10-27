@@ -38,7 +38,7 @@ namespace Zilf.Tests.Interpreter
             if (ctx == null)
                 ctx = new Context();
 
-            return Zilf.Program.Evaluate(ctx, expression, true) ?? throw new ArgumentException("Bad expression", nameof(expression));
+            return Program.Evaluate(ctx, expression, true) ?? throw new ArgumentException("Bad expression", nameof(expression));
         }
 
         internal static void EvalAndAssert([NotNull] string expression, [NotNull] ZilObject expected)

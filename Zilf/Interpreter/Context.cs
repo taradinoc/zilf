@@ -45,6 +45,7 @@ namespace Zilf.Interpreter
     delegate ZilResult EvalTypeDelegate(ZilObject zo);
     delegate ZilResult ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
+    [PublicAPI]
     class ZValEventArgs : EventArgs
     {
         [NotNull]
@@ -265,10 +266,6 @@ namespace Zilf.Interpreter
         // TODO: merge AtTopLevel into Frame
         public bool AtTopLevel { get; set; }
 
-        // TODO: implement or delete StreamOpener
-        [CanBeNull]
-        public Func<string, FileAccess, Stream> StreamOpener => null;
-
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
 
@@ -366,13 +363,13 @@ namespace Zilf.Interpreter
             var methods = typeof(Subrs).GetMethods(BindingFlags.Static | BindingFlags.Public);
             foreach (MethodInfo mi in methods)
             {
-                var attrs = mi.GetCustomAttributes(typeof(Subrs.SubrAttribute), false);
+                var attrs = mi.GetCustomAttributes<Subrs.SubrAttributeBase>(false).ToArray();
                 if (attrs.Length == 0)
                     continue;
 
                 var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this, out var desc);
 
-                foreach (Subrs.SubrAttribute attr in attrs)
+                foreach (var attr in attrs)
                 {
                     string name = attr.Name ?? mi.Name;
 
@@ -385,7 +382,7 @@ namespace Zilf.Interpreter
                         sub = new ZilSubr(name, del);
 
                     // these need to be on the root oblist
-                    ZilAtom atom = rootObList[name];
+                    var atom = rootObList[name];
                     SetGlobalVal(atom, sub);
 
                     PutProp(sub, descAtom, ZilString.FromString(desc));
@@ -882,7 +879,7 @@ namespace Zilf.Interpreter
                 if (FileExists(combined))
                     return combined;
 
-                if (Path.GetExtension(combined) == string.Empty)
+                if (string.IsNullOrEmpty(Path.GetExtension(combined)))
                 {
                     combined = Path.ChangeExtension(combined, ".zil");
                     if (FileExists(combined))
@@ -1619,9 +1616,6 @@ B * <PRINTB .X>
                 Debug.Assert(dir != null);
                 path = Path.Combine(dir, path);
             }
-
-            if (StreamOpener != null)
-                return StreamOpener(path, fileAccess);
 
             FileMode mode;
             switch (fileAccess)

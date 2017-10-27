@@ -29,7 +29,7 @@ namespace Zilf.Tests
         public void TestITABLE()
         {
             var ctx = new Context();
-            var table = (ZilTable)Zilf.Program.Evaluate(ctx, "<ITABLE 3 2 1 0>", true);
+            var table = (ZilTable)Program.Evaluate(ctx, "<ITABLE 3 2 1 0>", true);
 
             Assert.IsNotNull(table);
             Assert.AreEqual(9, table.ElementCount);
@@ -39,7 +39,7 @@ namespace Zilf.Tests
         public void TestTABLE()
         {
             var ctx = new Context();
-            var table = (ZilTable)Zilf.Program.Evaluate(ctx, "<TABLE 3 2 1 0>", true);
+            var table = (ZilTable)Program.Evaluate(ctx, "<TABLE 3 2 1 0>", true);
 
             Assert.IsNotNull(table);
             Assert.AreEqual(4, table.ElementCount);
@@ -49,7 +49,7 @@ namespace Zilf.Tests
         public void TestLTABLE()
         {
             var ctx = new Context();
-            var table = (ZilTable)Zilf.Program.Evaluate(ctx, "<LTABLE 3 2 1 0>", true);
+            var table = (ZilTable)Program.Evaluate(ctx, "<LTABLE 3 2 1 0>", true);
 
             Assert.IsNotNull(table);
             Assert.AreEqual(5, table.ElementCount);

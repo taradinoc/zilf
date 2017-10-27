@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
@@ -24,6 +25,7 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
+    [Serializable]
     class CompilerError : ZilError<CompilerMessages>
     {
         public CompilerError(int code)

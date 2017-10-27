@@ -49,6 +49,7 @@ namespace Zilf.Interpreter
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static ZilResult PerformMap([NotNull] Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
         {
             Contract.Requires(structs != null);
@@ -71,7 +72,7 @@ namespace Zilf.Interpreter
                 int i;
                 for (i = 0; i < numStructs; i++)
                 {
-                    IStructure st = structs[i];
+                    var st = structs[i];
                     if (st == null || st.IsEmpty)
                         break;
 
@@ -113,24 +114,20 @@ namespace Zilf.Interpreter
                             throw new UnhandledCaseException(outcome.ToString());
                     }
                 }
-                else if (result.ShouldPass())
+
+                if (result.ShouldPass())
                 {
                     return result;
                 }
-                else
-                {
-                    results.Add((ZilObject)result);
-                }
+
+                results.Add((ZilObject)result);
             }
 
             // apply final function
             if (finalf_app != null)
                 return finalf_app.ApplyNoEval(ctx, results.ToArray());
 
-            if (results.Count > 0)
-                return results[results.Count - 1];
-
-            return ctx.FALSE;
+            return results.Count > 0 ? results[results.Count - 1] : ctx.FALSE;
         }
 
         [Subr]

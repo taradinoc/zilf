@@ -31,6 +31,7 @@ using Zilf.Compiler;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using ZLR.VM;
+using JBA::JetBrains.Annotations;
 
 namespace Zilf.Tests.Integration
 {
@@ -54,9 +55,9 @@ namespace Zilf.Tests.Integration
         public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
 
-    class ZlrHelper
+    sealed class ZlrHelper : IDisposable
     {
-        public static void RunAndAssert([JBA::JetBrains.Annotations.NotNullAttribute] string code, string input, [JBA::JetBrains.Annotations.NotNullAttribute] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
+        public static void RunAndAssert([NotNullAttribute] string code, string input, [NotNullAttribute] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
             Contract.Requires(code != null);
             Contract.Requires(expectedOutput != null);
@@ -84,7 +85,7 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run([JBA::JetBrains.Annotations.NotNullAttribute] string code, string input, bool compileOnly = false)
+        public static ZlrHelperRunResult Run([NotNullAttribute] string code, string input, bool compileOnly = false)
         {
             Contract.Requires(code != null);
 
@@ -124,18 +125,23 @@ namespace Zilf.Tests.Integration
         const string SMainZapFileName = "Output.zap";
         const string SStoryFileNameTemplate = "Output.z#";
 
+        [NotNull]
         readonly string code;
+        [CanBeNull]
         readonly string input;
 
-        Dictionary<string, MemoryStream> zilfOutputFiles;
+        [NotNull]
+        readonly Dictionary<string, MemoryStream> zilfOutputFiles = new Dictionary<string, MemoryStream>();
 
+        [CanBeNull]
         MemoryStream zapfOutputFile;
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
+        [CanBeNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
 
-        public ZlrHelper([JBA::JetBrains.Annotations.NotNullAttribute] string code, [JBA::JetBrains.Annotations.CanBeNullAttribute] string input)
+        public ZlrHelper([NotNullAttribute] string code, [CanBeNullAttribute] string input)
         {
             Contract.Requires(code != null);
 
@@ -156,7 +162,7 @@ namespace Zilf.Tests.Integration
             PrintZapCode("Output_data.zap");
         }
 
-        void PrintZapCode([JBA::JetBrains.Annotations.NotNullAttribute] string filename)
+        void PrintZapCode([NotNullAttribute] string filename)
         {
             Contract.Requires(filename != null);
             var zapStream = zilfOutputFiles[filename];
@@ -171,7 +177,7 @@ namespace Zilf.Tests.Integration
             return Compile(null);
         }
 
-        bool Compile([JBA::JetBrains.Annotations.CanBeNullAttribute] Action<FrontEnd> initializeFrontEnd)
+        bool Compile([CanBeNullAttribute] Action<FrontEnd> initializeFrontEnd)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -183,7 +189,7 @@ namespace Zilf.Tests.Integration
             codeStream.Seek(0, SeekOrigin.Begin);
 
             // initialize ZilfCompiler
-            zilfOutputFiles = new Dictionary<string, MemoryStream>();
+            zilfOutputFiles.Clear();
 
             var frontEnd = new FrontEnd();
             frontEnd.OpeningFile += (sender, e) =>
@@ -228,7 +234,7 @@ namespace Zilf.Tests.Integration
             return false;
         }
 
-        public bool Compile([JBA::JetBrains.Annotations.NotNullAttribute] out string compileOutput)
+        public bool Compile([NotNullAttribute] out string compileOutput)
         {
             Contract.Requires(compileOutput != null);
             var channel = new ZilStringChannel(FileAccess.Write);
@@ -237,7 +243,7 @@ namespace Zilf.Tests.Integration
             {
                 fe.InitializeContext += (sender, e) =>
                 {
-                    e.Context.SetLocalVal(e.Context.GetStdAtom(Zilf.Language.StdAtom.OUTCHAN), channel);
+                    e.Context.SetLocalVal(e.Context.GetStdAtom(Language.StdAtom.OUTCHAN), channel);
                 };
             });
 
@@ -245,7 +251,7 @@ namespace Zilf.Tests.Integration
             return compiled;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         public string GetZapCode()
         {
             Contract.Ensures(Contract.Result<string>() != null);
@@ -294,10 +300,12 @@ namespace Zilf.Tests.Integration
             return success;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         string Execute()
         {
             Contract.Ensures(Contract.Result<string>() != null);
+            Debug.Assert(zapfOutputFile != null);
+
             var inputStream = input != null ? new MemoryStream(Encoding.UTF8.GetBytes(input)) : new MemoryStream();
 
             var io = new ReplayIO(inputStream);
@@ -312,6 +320,11 @@ namespace Zilf.Tests.Integration
 
             return io.CollectOutput();
         }
+
+        public void Dispose()
+        {
+            zapfOutputFile?.Dispose();
+        }
     }
 
     // TODO: merge this with ZlrHelper
@@ -319,24 +332,24 @@ namespace Zilf.Tests.Integration
     {
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         readonly string codeFile;
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNullAttribute]
         readonly string zapFileName;
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        [JBA::JetBrains.Annotations.ItemNotNullAttribute]
+        [NotNullAttribute]
+        [ItemNotNullAttribute]
         readonly string[] includeDirs;
 
-        [JBA::JetBrains.Annotations.CanBeNullAttribute]
+        [CanBeNullAttribute]
         readonly string inputFile;
 
         Dictionary<string, MemoryStream> zilfOutputFiles;
 
         MemoryStream zapfOutputFile;
 
-        public FileBasedZlrHelper([JBA::JetBrains.Annotations.NotNullAttribute] string codeFile, [JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper([NotNullAttribute] string codeFile, [ItemNotNullAttribute] [NotNullAttribute] string[] includeDirs, string inputFile)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(codeFile));
             Contract.Requires(includeDirs != null);

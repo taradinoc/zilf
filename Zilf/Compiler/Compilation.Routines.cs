@@ -130,6 +130,7 @@ namespace Zilf.Compiler
                     var originalArgName = arg.Atom;
                     var uniqueArgName = MakeUniqueVariableName(originalArgName);
 
+                    // TODO: report error if "NAME", "BIND", "ARGS", "TUPLE", or quoted args are used
                     switch (arg.Type)
                     {
                         case ArgItem.ArgType.Required:

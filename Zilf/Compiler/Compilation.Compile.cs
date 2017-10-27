@@ -338,7 +338,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareGlobalDefaults([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
+        static void PrepareGlobalDefaults([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
         {
             while (globalInitializers.Count > 0)
                 globalInitializers.Dequeue()?.Invoke();
