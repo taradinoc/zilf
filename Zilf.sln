@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
 	ProjectSection(SolutionItems) = preProject
@@ -24,17 +24,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf", "Zapf\Zapf.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DezapfTests", "DezapfTests\DezapfTests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf.Tests", "Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Emit", "Zilf.Emit\Zilf.Emit.csproj", "{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Emit.Tests", "Zilf.Emit.Tests\Zilf.Emit.Tests.csproj", "{44193312-FD34-4A33-A9BC-D4170028B279}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfTests", "ZilfTests\ZilfTests.csproj", "{E7119E94-B1B0-4C23-9D61-69746A7AA1A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Tests", "Zilf.Tests\Zilf.Tests.csproj", "{E7119E94-B1B0-4C23-9D61-69746A7AA1A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Tests.Integration", "Zilf.Tests.Integration\Zilf.Tests.Integration.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZapfTests", "ZapfTests\ZapfTests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf.Tests", "Zapf.Tests\Zapf.Tests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Common", "Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
 EndProject
@@ -145,6 +145,9 @@ Global
 		{D1A7D72F-8AF5-4225-A68B-985354E7BA86} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{B5C50D4D-08A3-4075-8393-DA4B251DE4E0} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{9245F88E-2771-4770-8D59-27D8CFB2B9F1} = {598B603F-F081-440B-BD43-4813EC6E043C}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {44AF70BC-5065-4944-9A5E-F97D693358F7}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Zilf.vsmdi
