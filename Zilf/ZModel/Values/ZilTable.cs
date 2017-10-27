@@ -78,6 +78,7 @@ namespace Zilf.ZModel.Values
 
         [NotNull]
         protected abstract ZilTable AsNewTable();
+        [NotNull]
         public abstract ZilTable OffsetByBytes(int bytesToSkip);
 
         protected abstract string ToString([NotNull] Func<ZilObject, string> convert);
@@ -476,26 +477,17 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetWord(Context ctx, int offset)
             {
-                return GetWordAtByte(ctx, offset * 2);
+                return GetWordAtByte(offset * 2);
             }
 
-            // ReSharper disable once UnusedParameter.Local
             [CanBeNull]
-            public ZilObject GetWordAtByte(Context ctx, int byteOffset)
+            public ZilObject GetWordAtByte(int byteOffset)
             {
-                // FIXME: workaround for CSC bug
-                // https://developercommunity.visualstudio.com/content/problem/41565/pattern-matching-is-operator-evaluates-nullable-ex.html
-                var temp = ByteOffsetToIndex(byteOffset);
-                // ReSharper disable once IsExpressionAlwaysTrue        // false alarm!
-                if (temp is int index && IsWord(index))
-                {
-                    if (index == -1)
-                        return new ZilFix(ElementCountWithoutLength);
+                // ReSharper disable once PatternAlwaysOfType
+                if (!(ByteOffsetToIndex(byteOffset) is int index) || !IsWord(index))
+                    throw new UnalignedTableReadException();
 
-                    return initializer?[index % initializer.Length];
-                }
-
-                throw new UnalignedTableReadException();
+                return index == -1 ? new ZilFix(ElementCountWithoutLength) : initializer?[index % initializer.Length];
             }
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
@@ -506,13 +498,16 @@ namespace Zilf.ZModel.Values
             public void PutWordAtByte(Context ctx, int byteOffset, ZilObject value)
             {
                 var index = ByteOffsetToIndex(byteOffset);
-                if (index == null)
-                    throw new ArgumentException($"No element at offset {byteOffset}");
 
-                if (index == -1)
+                switch (index)
                 {
-                    ExpandLengthPrefix(ctx);
-                    index = 0;
+                    case null:
+                        throw new ArgumentException($"No element at offset {byteOffset}");
+
+                    case -1:
+                        ExpandLengthPrefix(ctx);
+                        index = 0;
+                        break;
                 }
 
                 if (!IsWord(index.Value))
@@ -568,19 +563,11 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetByte(Context ctx, int offset)
             {
-                // FIXME: workaround for CSC bug
-                // https://developercommunity.visualstudio.com/content/problem/41565/pattern-matching-is-operator-evaluates-nullable-ex.html
-                var temp = ByteOffsetToIndex(offset);
-                // ReSharper disable once IsExpressionAlwaysTrue        // false alarm!
-                if (temp is int index && !IsWord(index))
-                {
-                    if (index == -1)
-                        return new ZilFix((byte)ElementCountWithoutLength);
+                // ReSharper disable once PatternAlwaysOfType
+                if (!(ByteOffsetToIndex(offset) is int index) || IsWord(index))
+                    throw new UnalignedTableReadException();
 
-                    return initializer?[index % initializer.Length];
-                }
-
-                throw new UnalignedTableReadException();
+                return index == -1 ? new ZilFix((byte)ElementCountWithoutLength) : initializer?[index % initializer.Length];
             }
 
             public override void PutByte(Context ctx, int offset, ZilObject value)
@@ -590,24 +577,27 @@ namespace Zilf.ZModel.Values
 
                 var index = ByteOffsetToIndex(offset);
                 bool second = false;
-                if (index == null)
-                {
-                    // might be the second byte of a word
-                    index = ByteOffsetToIndex(offset - 1);
-                    if (index != null && IsWord(index.Value))
-                    {
-                        second = true;
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"No element at offset {offset}");
-                    }
-                }
 
-                if (index == -1)
+                switch (index)
                 {
-                    ExpandLengthPrefix(ctx);
-                    index = 0;
+                    case null:
+                        // might be the second byte of a word
+                        index = ByteOffsetToIndex(offset - 1);
+                        if (index != null && IsWord(index.Value))
+                        {
+                            second = true;
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"No element at offset {offset}");
+                        }
+
+                        break;
+
+                    case -1:
+                        ExpandLengthPrefix(ctx);
+                        index = 0;
+                        break;
                 }
 
                 if (IsWord(index.Value))
@@ -687,7 +677,6 @@ namespace Zilf.ZModel.Values
                     (ZilObject[])pattern?.Clone());
             }
 
-            [NotNull]
             public override ZilTable OffsetByBytes(int bytesToSkip)
             {
                 return new OffsetTable(this, bytesToSkip);
@@ -740,7 +729,7 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject GetWord(Context ctx, int offset)
             {
-                return orig.GetWordAtByte(ctx, offset * 2 + byteOffset);
+                return orig.GetWordAtByte(offset * 2 + byteOffset);
             }
 
             public override ZilObject GetByte(Context ctx, int offset)
@@ -760,11 +749,9 @@ namespace Zilf.ZModel.Values
 
             protected override ZilTable AsNewTable()
             {
-                // TODO: implement me
                 throw new NotImplementedException();
             }
 
-            [NotNull]
             public override ZilTable OffsetByBytes(int bytesToSkip)
             {
                 return new OffsetTable(orig, byteOffset + bytesToSkip);
@@ -782,32 +769,31 @@ namespace Zilf.ZModel.Values
 
     [ContractClassFor(typeof(ZilTable))]
     [SuppressMessage("ReSharper", "AnnotationRedundancyInHierarchy")]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     abstract class ZilTableContract : ZilTable
     {
         public override ZilObject GetWord(Context ctx, int offset)
         {
             Contract.Requires(ctx != null);
-            throw new NotImplementedException();
+            return default(ZilObject);
         }
 
         public override ZilObject GetByte(Context ctx, int offset)
         {
             Contract.Requires(ctx != null);
-            throw new NotImplementedException();
+            return default(ZilObject);
         }
 
         public override void PutWord(Context ctx, int offset, ZilObject value)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(value != null);
-            throw new NotImplementedException();
         }
 
         public override void PutByte(Context ctx, int offset, ZilObject value)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(value != null);
-            throw new NotImplementedException();
         }
 
         public override void CopyTo<T>([NotNull] T[] array, [NotNull] TableToArrayElementConverter<T> convert, T defaultFiller, [NotNull] Context ctx)
@@ -816,24 +802,23 @@ namespace Zilf.ZModel.Values
             Contract.Requires(convert != null);
             Contract.Requires(defaultFiller != null);
             Contract.Requires(ctx != null);
-            throw new NotImplementedException();
         }
 
         protected override ZilTable AsNewTable()
         {
             Contract.Ensures(Contract.Result<ZilTable>() != null);
-            throw new NotImplementedException();
+            return default(ZilTable);
         }
 
         public override ZilTable OffsetByBytes(int bytesToSkip)
         {
-            throw new NotImplementedException();
+            return default(ZilTable);
         }
 
         protected override string ToString(Func<ZilObject, string> convert)
         {
             Contract.Requires(convert != null);
-            throw new NotImplementedException();
+            return default(string);
         }
     }
 }

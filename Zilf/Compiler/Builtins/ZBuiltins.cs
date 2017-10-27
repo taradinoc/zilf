@@ -161,7 +161,6 @@ namespace Zilf.Compiler.Builtins
             for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
             {
                 Contract.Assume(j < builtinParamInfos.Length);
-                Debug.Assert(args[i] != null);  // FIXME: this is implied by [ItemNotNull]
 
                 var pi = builtinParamInfos[j];
 
@@ -360,7 +359,6 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(form != null);
             Contract.Ensures(Contract.Result<IOperand>() != null);
 
-            // TODO: allow resultStorage to be passed as null to handlers that want it? are there any?
             var result = (IOperand)CompileBuiltinCall(name, cc, rb, form,
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
             Debug.Assert(result != null, nameof(result) + " != null");
@@ -501,8 +499,6 @@ namespace Zilf.Compiler.Builtins
                 foreach (var arg in restOfArgs)
                     queue.Enqueue(arg);
 
-                // ReSharper disable AssignNullToNotNullAttribute
-                // FIXME: every queue.Dequeue() triggers this warning
                 if (c.polarity)
                 {
                     while (queue.Count > 0)
@@ -2032,7 +2028,9 @@ namespace Zilf.Compiler.Builtins
                     : c.cc.Game.One;
                 c.rb.Return(value);
 
-                // TODO: warn about iffy preferRoutine situations, if we can identify them somehow
+                /* TODO: warn about iffy preferRoutine situations, if we can identify them somehow
+                 * one possibility is if a local variable was set in this basic block and hasn't been
+                 * read yet. it may be a flag that the author expects to read outside the loop. */
             }
             else
             {

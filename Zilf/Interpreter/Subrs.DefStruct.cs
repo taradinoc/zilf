@@ -113,7 +113,7 @@ namespace Zilf.Interpreter
 
                 public StdAtom ClauseType => Form?.Rest?.First is ZilAtom atom
                     ? atom.StdAtom
-                    : throw new NotImplementedException();
+                    : throw new InvalidOperationException();
             }
 
             [ZilStructuredParam(StdAtom.LIST)]
@@ -125,7 +125,7 @@ namespace Zilf.Interpreter
 
                 public StdAtom ClauseType => Form?.Rest?.First is ZilAtom atom
                     ? atom.StdAtom
-                    : throw new NotImplementedException();
+                    : throw new InvalidOperationException();
             }
 
             [ZilStructuredParam(StdAtom.LIST)]
@@ -147,7 +147,7 @@ namespace Zilf.Interpreter
 
                 public StdAtom ClauseType => Form?.Rest?.First is ZilAtom atom
                     ? atom.StdAtom
-                    : throw new NotImplementedException();
+                    : throw new InvalidOperationException();
             }
 
             [ZilSequenceParam]
@@ -159,7 +159,7 @@ namespace Zilf.Interpreter
 
                 public StdAtom ClauseType => Form?.Rest?.First is ZilAtom atom
                     ? atom.StdAtom
-                    : throw new NotImplementedException();
+                    : throw new InvalidOperationException();
             }
 
             [ZilSequenceParam]
@@ -171,7 +171,7 @@ namespace Zilf.Interpreter
 
                 public StdAtom ClauseType => Form?.Rest?.First is ZilAtom atom
                     ? atom.StdAtom
-                    : throw new NotImplementedException();
+                    : throw new InvalidOperationException();
             }
         }
 #pragma warning restore 649

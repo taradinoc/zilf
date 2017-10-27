@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -314,7 +313,7 @@ namespace Zilf.ZModel
                 Contract.Requires(ctx != null);
                 Contract.Requires(input != null);
                 Contract.Requires(result != null);
-                throw new NotImplementedException();
+                return default(bool);
             }
         }
     }

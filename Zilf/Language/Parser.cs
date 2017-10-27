@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -954,20 +955,21 @@ namespace Zilf.Language
     }
 
     [ContractClassFor(typeof(IParserSite))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     internal abstract class ParserSiteContract : IParserSite
     {
         public ZilAtom ParseAtom(string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<ZilAtom>() != null);
-            throw new NotImplementedException();
+            return default(ZilAtom);
         }
 
         public ZilAtom GetTypeAtom(ZilObject zo)
         {
             Contract.Requires(zo != null);
             Contract.Ensures(Contract.Result<ZilAtom>() != null);
-            throw new NotImplementedException();
+            return default(ZilAtom);
         }
 
         public ZilObject ChangeType(ZilObject zo, ZilAtom type)
@@ -975,24 +977,24 @@ namespace Zilf.Language
             Contract.Requires(zo != null);
             Contract.Requires(type != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
-            throw new NotImplementedException();
+            return default(ZilObject);
         }
 
         public ZilObject Evaluate(ZilObject zo)
         {
             Contract.Requires(zo != null);
             Contract.Ensures(Contract.Result<ZilObject>() != null);
-            throw new NotImplementedException();
+            return default(ZilObject);
         }
 
         public ZilObject GetGlobalVal(ZilAtom atom)
         {
             Contract.Requires(atom != null);
-            throw new NotImplementedException();
+            return default(ZilObject);
         }
 
-        public string CurrentFilePath => throw new NotImplementedException();
+        public string CurrentFilePath => default(string);
 
-        public ZilObject FALSE => throw new NotImplementedException();
+        public ZilObject FALSE => default(ZilObject);
     }
 }

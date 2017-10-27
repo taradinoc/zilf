@@ -51,20 +51,21 @@ namespace Zilf.ZModel.Values
                     "list coerced to OBJECT",
                     new CountableString("at least 1", false));
 
-            if (!(list.First is ZilAtom atom))
+            if (!(list.First is ZilAtom objectOrRoom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
-            Debug.Assert(list.Rest != null);
+            if (!(list.Rest?.First is ZilAtom atom))
+                throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 2, "list coerced to OBJECT", "an atom");
 
-            if (!list.Rest.All(zo => zo is ZilList))
+            Debug.Assert(list.Rest.Rest != null);
+            if (!list.Rest.Rest.All(zo => zo is ZilList))
                 throw new InterpreterError(
                     InterpreterMessages._0_In_1_Must_Be_2,
                     "elements after first",
                     "list coerced to OBJECT",
                     "lists");
 
-            // TODO: set isRoom
-            return new ZilModelObject(atom, list.Rest.Cast<ZilList>().ToArray(), false);
+            return new ZilModelObject(atom, list.Rest.Rest.Cast<ZilList>().ToArray(), objectOrRoom.StdAtom == StdAtom.ROOM);
         }
 
         [NotNull]

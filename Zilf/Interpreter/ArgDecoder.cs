@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
@@ -345,7 +346,7 @@ namespace Zilf.Interpreter
             Description = sb.ToString();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
+        [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
         static DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] ParameterInfo pi)
         {
             Contract.Requires(ctx != null);
@@ -607,8 +608,8 @@ namespace Zilf.Interpreter
             return sb.ToString();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
+        [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
+        [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
         static DecodingStepInfo PrepareOne([NotNull] [ProvidesContext] Context ctx, [NotNull] Type paramType,
             [NotNull] string name, [ItemNotNull] [NotNull] object[] customAttributes,
             bool isOptional, object defaultValueWhenOptional)
@@ -1757,6 +1758,7 @@ namespace Zilf.Interpreter
     }
 
     [ContractClassFor(typeof(CallSite))]
+    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
     internal abstract class CallSiteContract : CallSite
     {
         protected CallSiteContract([NotNull] string name)
@@ -1770,7 +1772,7 @@ namespace Zilf.Interpreter
             get
             {
                 Contract.Ensures(Contract.Result<string>() != null);
-                throw new NotImplementedException();
+                return default(string);
             }
         }
     }
