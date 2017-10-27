@@ -32,5 +32,22 @@ namespace Zapf.Parsing.Expressions
         public AsmExpr Left { get; }
         [NotNull]
         public AsmExpr Right { get; }
+
+        public override string ToString()
+        {
+            return $"{Left}+{Right}";
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is AdditionExpr other &&
+                   other.Left.Equals(Left) &&
+                   other.Right.Equals(Right);
+        }
+
+        public override int GetHashCode()
+        {
+            return Left.GetHashCode() * 17 + Right.GetHashCode();
+        }
     }
 }

@@ -24,5 +24,20 @@ namespace Zapf.Parsing.Expressions
     {
         public SymbolExpr([NotNull] string name)
             : base(name) { }
+
+        public override string ToString()
+        {
+            return Text;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SymbolExpr other && other.Text == Text;
+        }
+
+        public override int GetHashCode()
+        {
+            return Text.GetHashCode();
+        }
     }
 }

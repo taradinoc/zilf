@@ -393,7 +393,7 @@ namespace Zilf.Emit
         ///     </description></item>
         /// </list>
         /// </remarks>
-        public void Finish([NotNull] Action<ILabel, TCode, ILabel, PeepholeLineType> handler)
+        public void Finish([NotNull] [InstantHandle] Action<ILabel, TCode, ILabel, PeepholeLineType> handler)
         {
             Optimize();
 

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Text;
 using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Expressions
@@ -24,5 +25,33 @@ namespace Zapf.Parsing.Expressions
     {
         public StringLiteral([NotNull] string text)
             : base(text) { }
+
+        public override string ToString()
+        {
+            // escape '"' as '""'
+            var sb = new StringBuilder(Text.Length + 2);
+            sb.Append('"');
+
+            foreach (var c in Text)
+            {
+                if (c == '"')
+                    sb.Append('"');
+
+                sb.Append(c);
+            }
+
+            sb.Append('"');
+            return sb.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is StringLiteral other && other.Text == Text;
+        }
+
+        public override int GetHashCode()
+        {
+            return Text.GetHashCode();
+        }
     }
 }

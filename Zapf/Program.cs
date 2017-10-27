@@ -836,7 +836,7 @@ General switches:
             switch (node)
             {
                 case NumericLiteral num:
-                    return new Symbol(int.Parse(num.Text));
+                    return new Symbol(num.Value);
 
                 case SymbolExpr sym:
                     if (!ctx.LocalSymbols.TryGetValue(sym.Text, out var result) &&
@@ -971,8 +971,7 @@ General switches:
             switch (node)
             {
                 case NumericLiteral num:
-                    var value = int.Parse(num.Text);
-                    return ((uint)value & 0xffffff00) != 0;
+                    return ((uint)num.Value & 0xffffff00) != 0;
 
                 case SymbolExpr symExpr:
                     if (ctx.LocalSymbols.TryGetValue(symExpr.Text, out var sym))

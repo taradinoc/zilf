@@ -23,6 +23,32 @@ namespace Zapf.Parsing.Expressions
     public sealed class NumericLiteral : TextAsmExpr
     {
         public NumericLiteral([NotNull] string text)
-            : base(text) { }
+            : base(text)
+        {
+            Value = int.Parse(text);
+        }
+
+        public NumericLiteral(int value)
+            : base(value.ToString())
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is NumericLiteral other && other.Value == Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
     }
 }
