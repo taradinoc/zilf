@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages.Test", "A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages.Vsix", "Analyzers\ZilfErrorMessages\ZilfErrorMessages.Vsix\ZilfErrorMessages.Vsix.csproj", "{9245F88E-2771-4770-8D59-27D8CFB2B9F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf.Parsing", "Zapf.Parsing\Zapf.Parsing.csproj", "{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -137,6 +139,14 @@ Global
 		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|x86.ActiveCfg = Release|Any CPU
 		{9245F88E-2771-4770-8D59-27D8CFB2B9F1}.Release|x86.Build.0 = Release|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Debug|x86.Build.0 = Debug|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.ActiveCfg = Release|Any CPU
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -147,7 +157,7 @@ Global
 		{9245F88E-2771-4770-8D59-27D8CFB2B9F1} = {598B603F-F081-440B-BD43-4813EC6E043C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {44AF70BC-5065-4944-9A5E-F97D693358F7}
+		SolutionGuid = {774D42F0-105F-4B51-BC60-F4661B610BAC}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Zilf.vsmdi

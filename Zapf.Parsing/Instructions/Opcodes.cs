@@ -16,89 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 
-namespace Zapf
+namespace Zapf.Parsing.Instructions
 {
-    [Flags]
-    public enum ZOpFlags
-    {
-/*
-        None = 0,
-*/
-        /// <summary>
-        /// The instruction stores a result.
-        /// </summary>
-        Store = 1,
-        /// <summary>
-        /// The instruction branches to a label.
-        /// </summary>
-        Branch = 2,
-        /// <summary>
-        /// The instruction takes an extra operand type byte, for a total of 8 possible operands.
-        /// ("XCALL", "IXCALL")
-        /// </summary>
-        Extra = 4,
-        /// <summary>
-        /// The instruction is nominally 2OP but can take up to 4 operands.
-        /// ("EQUAL?")
-        /// </summary>
-        VarArgs = 8,
-        /// <summary>
-        /// The instruction has a string literal operand.
-        /// ("PRINTI", "PRINTR")
-        /// </summary>
-        String = 16,
-        /// <summary>
-        /// The instruction can take a local label operand.
-        /// ("JUMP")
-        /// </summary>
-        Label = 32,
-        /// <summary>
-        /// The instruction's first operand is an indirect variable number.
-        /// </summary>
-        IndirectVar = 64,
-        /// <summary>
-        /// The instruction's first operand is a packed routine address.
-        /// </summary>
-        Call = 128,
-        /// <summary>
-        /// Control flow does not pass to the following instruction.
-        /// </summary>
-        Terminates = 256,
-    }
-
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    [MeansImplicitUse]
-    public class ZOpAttribute : Attribute
-    {
-        public ZOpAttribute([NotNull] string classicName, [NotNull] string informName, int minVer, int maxVer, ZOpFlags flags)
-        {
-            ClassicName = classicName;
-            InformName = informName;
-            MinVer = minVer;
-            MaxVer = maxVer;
-            Flags = flags;
-        }
-
-        [NotNull]
-        public string ClassicName { get; }
-
-        [NotNull]
-        public string InformName { get; }
-
-        public int MinVer { get; }
-
-        public int MaxVer { get; }
-
-        public ZOpFlags Flags { get; }
-
-        [CanBeNull]
-        public string WhenExtra { get; set; }
-    }
-
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum Opcodes : ushort
     {

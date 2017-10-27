@@ -27,6 +27,10 @@ using JetBrains.Annotations;
 using Zapf.Parsing;
 using Zilf.Common.StringEncoding;
 using System.Diagnostics.Contracts;
+using Zapf.Parsing.Diagnostics;
+using Zapf.Parsing.Directives;
+using Zapf.Parsing.Expressions;
+using Zapf.Parsing.Instructions;
 
 namespace Zapf
 {

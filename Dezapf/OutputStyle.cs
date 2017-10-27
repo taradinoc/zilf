@@ -20,6 +20,9 @@ using System;
 using System.IO;
 using System.Text;
 using Zapf;
+using Zapf.Parsing;
+using Zapf.Parsing.Instructions;
+
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedParameter.Global
 

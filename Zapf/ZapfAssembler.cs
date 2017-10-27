@@ -20,6 +20,8 @@ using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 using JetBrains.Annotations;
+using Zapf.Parsing;
+using Zapf.Parsing.Diagnostics;
 
 namespace Zapf
 {
