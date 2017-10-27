@@ -59,9 +59,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("0.8.0.0")]
 
 #if DEBUG
-[assembly: InternalsVisibleTo("ZapfTests")]
-[assembly: InternalsVisibleTo("DezapfTests")]
-[assembly: InternalsVisibleTo("IntegrationTests")]
+[assembly: InternalsVisibleTo("Zapf.Tests")]
+[assembly: InternalsVisibleTo("Dezapf.Tests")]
+[assembly: InternalsVisibleTo("Zilf.Tests.Integration")]
 #endif
 
 [assembly: CLSCompliant(false)]
