@@ -16,42 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
-using System.Diagnostics.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Flow Control")]
-    public class FlowControlTests
+    public class FlowControlTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static GlobalsAssertionHelper AssertGlobals([JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
-        {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-
-            return new GlobalsAssertionHelper(globals);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static EntryPointAssertionHelper AssertEntryPoint([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
-            return new EntryPointAssertionHelper(argSpec, body);
-        }
-
         #region RETURN
 
         [TestMethod]

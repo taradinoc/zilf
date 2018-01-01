@@ -16,79 +16,15 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Objects")]
-    public class ObjectTests
+    public class ObjectTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static GlobalsAssertionHelper AssertGlobals([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
-        {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-
-            return new GlobalsAssertionHelper(globals);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
         #region Object Numbering & Tree Ordering
-
-        [JBA::JetBrains.Annotations.ItemNotNullAttribute]
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static string[] TreeImplications([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] string[] numbering, [JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[][] chains)
-        {
-            Contract.Requires(numbering != null && numbering.Length > 0);
-            Contract.Requires(Contract.ForAll(numbering, n => !string.IsNullOrWhiteSpace(n)));
-            Contract.Requires(Contract.ForAll(chains, c => c.Length >= 2));
-
-            var result = new List<string>();
-
-            for (int i = 0; i < numbering.Length; i++)
-            {
-                result.Add($"<=? ,{numbering[i]} {i + 1}>");
-            }
-
-            var heads = new HashSet<string>();
-
-            foreach (var chain in chains)
-            {
-                Contract.Assert(chain.Length >= 2);
-
-                heads.Add(chain[0]);
-                result.Add($"<=? <FIRST? ,{chain[0]}> ,{chain[1]}>");
-
-                for (int i = 1; i < chain.Length - 1; i++)
-                {
-                    result.Add($"<=? <NEXT? ,{chain[i]}> ,{chain[i + 1]}>");
-                }
-
-                result.Add($"<NOT <NEXT? ,{chain[chain.Length - 1]}>>");
-            }
-
-            foreach (var o in numbering)
-            {
-                if (!heads.Contains(o))
-                {
-                    result.Add($"<NOT <FIRST? ,{o}>>");
-                }
-            }
-
-            return result.ToArray();
-        }
 
         /* Default ordering:
          * 

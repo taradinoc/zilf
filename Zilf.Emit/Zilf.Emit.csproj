@@ -139,7 +139,7 @@
   <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj">
-      <Project>{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}</Project>
+      <Project>{f05efb4a-9b94-4e4c-b158-bf1ee09584c7}</Project>
       <Name>Zapf.Parsing</Name>
     </ProjectReference>
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj">

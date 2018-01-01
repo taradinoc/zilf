@@ -16,16 +16,16 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
+extern alias DL;
+using DL::DiffLib;
+using JetBrains.Annotations;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using DiffLib;
-using JetBrains.Annotations;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
@@ -65,7 +65,7 @@ namespace Zilf.Tests.Integration
         }
 
         [LinqTunnel]
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         [UsedImplicitly]
         static IEnumerable<string[]> GetProjects()
         {
@@ -81,7 +81,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData("GetProjects", DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
-        public void TestProjects([JBA::JetBrains.Annotations.NotNullAttribute] string baseName, [JBA::JetBrains.Annotations.NotNullAttribute] string dir, [JBA::JetBrains.Annotations.NotNullAttribute] string mainZilFile)
+        public void TestProjects([NotNull] string baseName, [NotNull] string dir, [NotNull] string mainZilFile)
         {
             Contract.Requires(dir != null);
             Contract.Requires(baseName != null);
@@ -148,14 +148,14 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         static readonly Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static string MassageText([JBA::JetBrains.Annotations.NotNullAttribute] string text)
+        [NotNull]
+        static string MassageText([NotNull] string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string>() != null);
@@ -165,8 +165,8 @@ namespace Zilf.Tests.Integration
             return text;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static string[] SplitLines([JBA::JetBrains.Annotations.NotNullAttribute] string text)
+        [NotNull]
+        static string[] SplitLines([NotNull] string text)
         {
             Contract.Requires(text != null);
             Contract.Ensures(Contract.Result<string[]>() != null);

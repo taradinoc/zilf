@@ -20,7 +20,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.ZModel.Values;
 
-namespace Zilf.Tests
+namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter")]
     public class TableTests

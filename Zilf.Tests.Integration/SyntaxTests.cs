@@ -16,9 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Diagnostics;
@@ -26,26 +24,8 @@ using Zilf.Diagnostics;
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Vocab")]
-    public class SyntaxTests
+    public class SyntaxTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static GlobalsAssertionHelper AssertGlobals([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
-        {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-
-            return new GlobalsAssertionHelper(globals);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
         [TestMethod]
         public void First_Preaction_Definition_Per_Action_Name_Should_Persist()
         {

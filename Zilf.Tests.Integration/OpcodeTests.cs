@@ -16,9 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Diagnostics;
 
@@ -127,27 +125,8 @@ namespace Zilf.Tests.Integration
     
     [TestClass, TestCategory("Compiler")]
     [SuppressMessage("ReSharper", "ExceptionNotDocumented")]
-    public class OpcodeTests
+    public class OpcodeTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static ExprAssertionHelper AssertExpr([JBA::JetBrains.Annotations.NotNullAttribute] string expression)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(expression));
-            Contract.Ensures(Contract.Result<ExprAssertionHelper>() != null);
-
-            return new ExprAssertionHelper(expression);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
         #region Z-Machine Opcodes
 
         [TestMethod]

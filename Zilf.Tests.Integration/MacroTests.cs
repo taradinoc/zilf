@@ -16,24 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
-using System.Diagnostics.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Macros")]
-    public class MacroTests
+    public class MacroTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
         [TestMethod]
         public void SPLICEs_Should_Work_Inside_Routines()
         {

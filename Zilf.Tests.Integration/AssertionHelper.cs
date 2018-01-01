@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
+using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -25,20 +25,19 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Diagnostics;
 
 namespace Zilf.Tests.Integration
 {
-    abstract class AbstractAssertionHelper<TThis>
+    public abstract class AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelper<TThis>
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         protected string versionDirective = "<VERSION ZIP>";
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         protected readonly StringBuilder miscGlobals = new StringBuilder();
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
@@ -48,91 +47,91 @@ namespace Zilf.Tests.Integration
             Contract.Assume(GetType() == typeof(TThis));
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV3()
         {
             versionDirective = "<VERSION ZIP>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV4()
         {
             versionDirective = "<VERSION EZIP>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV5()
         {
             versionDirective = "<VERSION XZIP>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV6()
         {
             versionDirective = "<VERSION YZIP>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV7()
         {
             versionDirective = "<VERSION 7>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis InV8()
         {
             versionDirective = "<VERSION 8>";
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        public TThis WithVersionDirective([JBA::JetBrains.Annotations.NotNullAttribute] string versionStr)
+        [NotNull]
+        public TThis WithVersionDirective([NotNull] string versionStr)
         {
             versionDirective = versionStr;
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        public TThis WithGlobal([JBA::JetBrains.Annotations.NotNullAttribute] string code)
+        [NotNull]
+        public TThis WithGlobal([NotNull] string code)
         {
             miscGlobals.AppendLine(code);
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        public TThis WithInput([JBA::JetBrains.Annotations.NotNullAttribute] string line)
+        [NotNull]
+        public TThis WithInput([NotNull] string line)
         {
             input.AppendLine(line);
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis WithWarnings()
         {
             expectWarnings = true;
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis WithoutWarnings()
         {
             expectWarnings = false;
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         public TThis CapturingCompileOutput()
         {
             wantCompileOutput = true;
             return (TThis)this;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -144,12 +143,12 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
+    public sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         readonly string argSpec, body;
 
-        public EntryPointAssertionHelper([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
+        public EntryPointAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
             this.argSpec = argSpec;
             this.body = body;
@@ -201,13 +200,13 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    abstract class AbstractAssertionHelperWithEntryPoint<TThis> : AbstractAssertionHelper<TThis>
+    public abstract class AbstractAssertionHelperWithEntryPoint<TThis> : AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelperWithEntryPoint<TThis>
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute] protected abstract string Expression();
+        [NotNull] protected abstract string Expression();
 
         [AssertionMethod]
-        public void GivesNumber([JBA::JetBrains.Annotations.NotNullAttribute] string expectedValue)
+        public void GivesNumber([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
 
@@ -218,7 +217,7 @@ namespace Zilf.Tests.Integration
         }
 
         [AssertionMethod]
-        public void Outputs([JBA::JetBrains.Annotations.NotNullAttribute] string expectedValue)
+        public void Outputs([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
 
@@ -229,7 +228,7 @@ namespace Zilf.Tests.Integration
         }
 
         [AssertionMethod]
-        public void Implies([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] conditions)
+        public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
             Contract.Requires(conditions != null);
             Contract.Requires(conditions.Length > 0);
@@ -253,8 +252,8 @@ namespace Zilf.Tests.Integration
         }
 
         [AssertionMethod]
-        public void DoesNotCompile([JBA::JetBrains.Annotations.CanBeNullAttribute] Predicate<ZlrHelperRunResult> resultFilter = null,
-            [JBA::JetBrains.Annotations.CanBeNullAttribute] string message = null)
+        public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
+            [CanBeNull] string message = null)
         {
             var testCode =
                 $"{GlobalCode()}\r\n" +
@@ -276,7 +275,7 @@ namespace Zilf.Tests.Integration
         }
 
         [AssertionMethod]
-        public void DoesNotCompile<TMessages>(int diagnosticCode, [JBA::JetBrains.Annotations.CanBeNullAttribute] Predicate<Diagnostic> diagFilter = null)
+        public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
         {
             var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
             Debug.Assert(attr != null, "No " + nameof(MessageSetAttribute) + " on " + typeof(TMessages).FullName);
@@ -317,7 +316,7 @@ namespace Zilf.Tests.Integration
         }
 
         [AssertionMethod]
-        public void GeneratesCodeMatching([JBA::JetBrains.Annotations.NotNullAttribute] string pattern)
+        public void GeneratesCodeMatching([NotNull] string pattern)
         {
             Contract.Requires(pattern != null);
 
@@ -340,12 +339,12 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
+    public sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         readonly string expression;
 
-        public ExprAssertionHelper([JBA::JetBrains.Annotations.NotNullAttribute] string expression)
+        public ExprAssertionHelper([NotNull] string expression)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
@@ -358,14 +357,14 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class RoutineAssertionHelper : AbstractAssertionHelperWithEntryPoint<RoutineAssertionHelper>
+    public sealed class RoutineAssertionHelper : AbstractAssertionHelperWithEntryPoint<RoutineAssertionHelper>
     {
         readonly string argSpec, body;
         string arguments = "";
 
         const string RoutineName = "TEST?ROUTINE";
 
-        public RoutineAssertionHelper([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
+        public RoutineAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
             Contract.Requires(argSpec != null);
             Contract.Requires(!string.IsNullOrWhiteSpace(body));
@@ -374,8 +373,8 @@ namespace Zilf.Tests.Integration
             this.body = body;
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        public RoutineAssertionHelper WhenCalledWith([JBA::JetBrains.Annotations.NotNullAttribute] string testArguments)
+        [NotNull]
+        public RoutineAssertionHelper WhenCalledWith([NotNull] string testArguments)
         {
             Contract.Requires(testArguments != null);
             arguments = testArguments;
@@ -393,9 +392,9 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class GlobalsAssertionHelper : AbstractAssertionHelperWithEntryPoint<GlobalsAssertionHelper>
+    public sealed class GlobalsAssertionHelper : AbstractAssertionHelperWithEntryPoint<GlobalsAssertionHelper>
     {
-        public GlobalsAssertionHelper([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
+        public GlobalsAssertionHelper([ItemNotNull] [NotNull] params string[] globals)
         {
             Contract.Requires(globals != null && globals.Length > 0);
             Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
@@ -410,18 +409,18 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class RawAssertionHelper
+    public sealed class RawAssertionHelper
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
+        [NotNull]
         readonly string code;
 
-        public RawAssertionHelper([JBA::JetBrains.Annotations.NotNullAttribute] string code)
+        public RawAssertionHelper([NotNull] string code)
         {
             Contract.Requires(code != null);
             this.code = code;
         }
 
-        public void Outputs([JBA::JetBrains.Annotations.NotNullAttribute] string expectedValue)
+        public void Outputs([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
             ZlrHelper.RunAndAssert(code, null, expectedValue);

@@ -21,14 +21,14 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Emit;
 using Zilf.Language;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.OldParser;
 
-namespace Zilf.Tests
+namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class OldParserWordTests
