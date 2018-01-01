@@ -885,7 +885,7 @@ Returns:
                   <THIS-IS-IT .HOLDER>
                   <OR .SILENT <TELL CT .HOLDER " is in the way." CR>>
                   <RFALSE>)
-                 (<NOT <TAKE-CAPACITY-CHECK .OBJ>>)
+                 (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>)
                  (<AND <FSET? .HOLDER ,CONTBIT>
                        <HELD? .OBJ .HOLDER>
                        <NOT <HELD? ,WINNER .HOLDER>>>
@@ -904,7 +904,7 @@ Returns:
                                 <FSET .OBJ ,WORNBIT>)
                                (ELSE <TELL "take ">)>
                          <TELL T .OBJ "." CR>)>
-                  <RFALSE>)>)>
+                  <RTRUE>)>)>
     <COND (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>
            <RFALSE>)
           (<FSET? .OBJ ,WEARBIT>
