@@ -22,13 +22,12 @@ using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using Zilf.Tests.Interpreter;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
 
 // ReSharper disable ExceptionNotDocumentedOptional
 
-namespace Zilf.Tests
+namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class SyntaxTests

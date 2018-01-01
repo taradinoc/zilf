@@ -16,12 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
+using JetBrains.Annotations;
 using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
-using JBA::JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ZLR.VM;
 
@@ -31,7 +30,7 @@ namespace Zilf.Tests.Integration
     {
         protected readonly StringBuilder outputBuffer = new StringBuilder();
 
-        [NotNullAttribute]
+        [NotNull]
         public string CollectOutput()
         {
             Contract.Ensures(Contract.Result<string>() != null);
@@ -84,7 +83,7 @@ namespace Zilf.Tests.Integration
             outputBuffer.Append(str);
         }
 
-        void IZMachineIO.PutTextRectangle([ItemNotNullAttribute] [NotNullAttribute] string[] lines)
+        void IZMachineIO.PutTextRectangle([ItemNotNull] [NotNull] string[] lines)
         {
             Contract.Requires(lines != null);
             foreach (string line in lines)
@@ -107,7 +106,7 @@ namespace Zilf.Tests.Integration
             // nada
         }
 
-        [NotNullAttribute]
+        [NotNull]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
             Contract.Ensures(Contract.Result<Stream>() != null);
@@ -115,14 +114,14 @@ namespace Zilf.Tests.Integration
             return saveStream;
         }
 
-        [CanBeNullAttribute]
+        [CanBeNull]
         Stream IZMachineIO.OpenRestoreFile()
         {
             return saveStream != null ? new MemoryStream(saveStream.ToArray()) : null;
         }
 
-        [CanBeNullAttribute]
-        Stream IZMachineIO.OpenAuxiliaryFile([NotNullAttribute] string name, int size, bool writing)
+        [CanBeNull]
+        Stream IZMachineIO.OpenAuxiliaryFile([NotNull] string name, int size, bool writing)
         {
             Contract.Requires(name != null);
             return null;

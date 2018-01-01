@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,21 +31,21 @@ using Zilf.Compiler;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using ZLR.VM;
-using JBA::JetBrains.Annotations;
+using Zilf.Language;
 
 namespace Zilf.Tests.Integration
 {
-    enum ZlrTestStatus
+    public enum ZlrTestStatus
     {
         CompilationFailed,
         AssemblyFailed,
 /*
         ExecutionFailed,        // execution failure means an exception in ZLR, and it bubbles up through the test
 */
-        Finished,
+        Finished
     }
 
-    struct ZlrHelperRunResult
+    public struct ZlrHelperRunResult
     {
         public ZlrTestStatus Status;
         // ReSharper disable once NotAccessedField.Global
@@ -57,7 +57,7 @@ namespace Zilf.Tests.Integration
 
     sealed class ZlrHelper : IDisposable
     {
-        public static void RunAndAssert([NotNullAttribute] string code, string input, [NotNullAttribute] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
+        public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
             Contract.Requires(code != null);
             Contract.Requires(expectedOutput != null);
@@ -85,7 +85,7 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run([NotNullAttribute] string code, string input, bool compileOnly = false)
+        public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false)
         {
             Contract.Requires(code != null);
 
@@ -141,7 +141,7 @@ namespace Zilf.Tests.Integration
         [CanBeNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
 
-        public ZlrHelper([NotNullAttribute] string code, [CanBeNullAttribute] string input)
+        public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
             Contract.Requires(code != null);
 
@@ -162,7 +162,7 @@ namespace Zilf.Tests.Integration
             PrintZapCode("Output_data.zap");
         }
 
-        void PrintZapCode([NotNullAttribute] string filename)
+        void PrintZapCode([NotNull] string filename)
         {
             Contract.Requires(filename != null);
             var zapStream = zilfOutputFiles[filename];
@@ -177,7 +177,7 @@ namespace Zilf.Tests.Integration
             return Compile(null);
         }
 
-        bool Compile([CanBeNullAttribute] Action<FrontEnd> initializeFrontEnd)
+        bool Compile([CanBeNull] Action<FrontEnd> initializeFrontEnd)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -234,7 +234,7 @@ namespace Zilf.Tests.Integration
             return false;
         }
 
-        public bool Compile([NotNullAttribute] out string compileOutput)
+        public bool Compile([NotNull] out string compileOutput)
         {
             Contract.Requires(compileOutput != null);
             var channel = new ZilStringChannel(FileAccess.Write);
@@ -243,7 +243,7 @@ namespace Zilf.Tests.Integration
             {
                 fe.InitializeContext += (sender, e) =>
                 {
-                    e.Context.SetLocalVal(e.Context.GetStdAtom(Language.StdAtom.OUTCHAN), channel);
+                    e.Context.SetLocalVal(e.Context.GetStdAtom(StdAtom.OUTCHAN), channel);
                 };
             });
 
@@ -251,7 +251,7 @@ namespace Zilf.Tests.Integration
             return compiled;
         }
 
-        [NotNullAttribute]
+        [NotNull]
         public string GetZapCode()
         {
             Contract.Ensures(Contract.Result<string>() != null);
@@ -300,7 +300,7 @@ namespace Zilf.Tests.Integration
             return success;
         }
 
-        [NotNullAttribute]
+        [NotNull]
         string Execute()
         {
             Contract.Ensures(Contract.Result<string>() != null);
@@ -332,24 +332,24 @@ namespace Zilf.Tests.Integration
     {
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [NotNullAttribute]
+        [NotNull]
         readonly string codeFile;
 
-        [NotNullAttribute]
+        [NotNull]
         readonly string zapFileName;
 
-        [NotNullAttribute]
-        [ItemNotNullAttribute]
+        [NotNull]
+        [ItemNotNull]
         readonly string[] includeDirs;
 
-        [CanBeNullAttribute]
+        [CanBeNull]
         readonly string inputFile;
 
         Dictionary<string, MemoryStream> zilfOutputFiles;
 
         MemoryStream zapfOutputFile;
 
-        public FileBasedZlrHelper([NotNullAttribute] string codeFile, [ItemNotNullAttribute] [NotNullAttribute] string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper([NotNull] string codeFile, [ItemNotNull] [NotNull] string[] includeDirs, string inputFile)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(codeFile));
             Contract.Requires(includeDirs != null);

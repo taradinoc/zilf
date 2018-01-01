@@ -16,38 +16,17 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.ZModel.Vocab;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Vocab")]
-    public class VocabTests
+    public class VocabTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static GlobalsAssertionHelper AssertGlobals([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
-        {
-            Contract.Requires(globals != null);
-            Contract.Requires(globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-            Contract.Ensures(Contract.Result<GlobalsAssertionHelper>() != null);
-
-            return new GlobalsAssertionHelper(globals);
-        }
-
         [TestMethod]
         public void SIBREAKS_Should_Affect_Lexing()
         {
@@ -82,8 +61,8 @@ namespace Zilf.Tests.Integration
                     "<==? <GETB ,TCHARS 0> 144>");
         }
 
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static string[] PrepImplications(bool compact, [JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] wordAndIdConstantPairs)
+        [NotNull]
+        static string[] PrepImplications(bool compact, [ItemNotNull] [NotNull] params string[] wordAndIdConstantPairs)
         {
             Contract.Requires(wordAndIdConstantPairs != null);
             Contract.Requires(wordAndIdConstantPairs.Length % 2 == 0);

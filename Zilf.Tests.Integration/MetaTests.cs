@@ -16,45 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
-using System.Diagnostics.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler")]
-    public class MetaTests
+    public class MetaTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static GlobalsAssertionHelper AssertGlobals([JBA::JetBrains.Annotations.ItemNotNullAttribute] [JBA::JetBrains.Annotations.NotNullAttribute] params string[] globals)
-        {
-            Contract.Requires(globals != null);
-            Contract.Requires(globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-            Contract.Ensures(Contract.Result<GlobalsAssertionHelper>() != null);
-
-            return new GlobalsAssertionHelper(globals);
-        }
-
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RawAssertionHelper AssertRaw([JBA::JetBrains.Annotations.NotNullAttribute] string code)
-        {
-            Contract.Requires(!string.IsNullOrEmpty(code));
-            Contract.Ensures(Contract.Result<RawAssertionHelper>() != null);
-
-            return new RawAssertionHelper(code);
-        }
-
         [TestMethod]
         public void TestIFFLAG()
         {

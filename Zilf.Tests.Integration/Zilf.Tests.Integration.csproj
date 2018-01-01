@@ -77,10 +77,11 @@
     <Reference Include="DiffLib, Version=2016.4.21.1027, Culture=neutral, PublicKeyToken=9e2fabf3af85dba9, processorArchitecture=MSIL">
       <HintPath>..\packages\DiffLib.2016.4.21.1027\lib\net40\DiffLib.dll</HintPath>
       <Private>True</Private>
+      <Aliases>DL</Aliases>
     </Reference>
     <Reference Include="JetBrains.Annotations, Version=10.4.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
       <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
-      <Aliases>global,JBA</Aliases>
+      <Aliases>global</Aliases>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.1.2.0\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
@@ -95,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssertionHelper.cs" />
+    <Compile Include="IntegrationTestClass.cs" />
     <Compile Include="OpcodeTests.cs" />
     <Compile Include="HelloTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

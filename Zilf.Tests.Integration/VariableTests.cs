@@ -16,27 +16,15 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias JBA;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler")]
-    public class VariableTests
+    public class VariableTests : IntegrationTestClass
     {
-        [JBA::JetBrains.Annotations.NotNullAttribute]
-        static RoutineAssertionHelper AssertRoutine([JBA::JetBrains.Annotations.NotNullAttribute] string argSpec, [JBA::JetBrains.Annotations.NotNullAttribute] string body)
-        {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-            Contract.Ensures(Contract.Result<RoutineAssertionHelper>() != null);
-
-            return new RoutineAssertionHelper(argSpec, body);
-        }
-
         [TestMethod]
         public void FUNNY_GLOBALS_Should_Allow_Lots_Of_Globals()
         {
