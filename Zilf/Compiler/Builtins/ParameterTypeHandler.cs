@@ -25,6 +25,7 @@ using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Language.Signatures;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -34,6 +35,12 @@ namespace Zilf.Compiler.Builtins
         public abstract BuiltinArg Process([NotNull] Compilation cc, [NotNull] [InstantHandle] Action<string> error,
             [NotNull] ZilObject arg, [NotNull] ParameterInfo pi);
         public virtual bool IsVariable => false;
+
+        /// <remarks>
+        /// Does not need to handle optional or varargs.
+        /// </remarks>
+        [NotNull]
+        public abstract SignaturePart ToSignaturePart([NotNull] ParameterInfo pi);
 
         [NotNull]
         public static readonly IReadOnlyDictionary<Type, ParameterTypeHandler> Handlers =
@@ -95,11 +102,16 @@ namespace Zilf.Compiler.Builtins
 
                     return new BuiltinArg(BuiltinArgType.Operand, block);
                 }
-                else
-                {
-                    error("argument must be a local variable reference");
-                    return new BuiltinArg(BuiltinArgType.Operand, null);
-                }
+
+                error("argument must be a local variable reference");
+                return new BuiltinArg(BuiltinArgType.Operand, null);
+            }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Constrained(
+                    SignatureBuilder.Identifier(pi.Name),
+                    Constraint.OfType(StdAtom.ACTIVATION));
             }
         }
 
@@ -112,6 +124,13 @@ namespace Zilf.Compiler.Builtins
 
                 return new BuiltinArg(BuiltinArgType.Operand, ((ZilFix)arg).Value);
             }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Constrained(
+                    SignatureBuilder.Identifier(pi.Name),
+                    Constraint.OfType(StdAtom.FIX));
+            }
         }
 
         sealed class AtomHandler : ParameterTypeHandler
@@ -123,6 +142,13 @@ namespace Zilf.Compiler.Builtins
 
                 return new BuiltinArg(BuiltinArgType.Operand, arg);
             }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Constrained(
+                    SignatureBuilder.Identifier(pi.Name),
+                    Constraint.OfType(StdAtom.ATOM));
+            }
         }
 
         sealed class ZilObjectHandler : ParameterTypeHandler
@@ -130,6 +156,11 @@ namespace Zilf.Compiler.Builtins
             public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
             {
                 return new BuiltinArg(BuiltinArgType.Operand, arg);
+            }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Identifier(pi.Name);
             }
         }
 
@@ -168,6 +199,11 @@ namespace Zilf.Compiler.Builtins
                     return new BuiltinArg(BuiltinArgType.NeedsEval, arg);
                 }
             }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Identifier(pi.Name);
+            }
         }
 
         sealed class StringHandler : ParameterTypeHandler
@@ -180,10 +216,15 @@ namespace Zilf.Compiler.Builtins
                     error("argument must be a literal string");
                     return new BuiltinArg(BuiltinArgType.Operand, null);
                 }
-                else
-                {
-                    return new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr.Text, cc.Context));
-                }
+
+                return new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr.Text, cc.Context));
+            }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                return SignatureBuilder.Constrained(
+                    SignatureBuilder.Identifier(pi.Name),
+                    Constraint.OfType(StdAtom.STRING));
             }
         }
 
@@ -220,6 +261,29 @@ namespace Zilf.Compiler.Builtins
                     var variableRef = GetVariable(cc, arg, quirks);
                     return new BuiltinArg(BuiltinArgType.Operand, variableRef?.Soft);
                 }
+            }
+
+            public override SignaturePart ToSignaturePart(ParameterInfo pi)
+            {
+                var constraint = Constraint.OfType(StdAtom.ATOM);
+
+                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().QuirksMode;
+
+                if ((quirks & QuirksMode.Global) != 0)
+                {
+                    //XXX
+                    constraint = constraint.Or(Constraint.OfType(StdAtom.GVAL));
+                }
+
+                if ((quirks & QuirksMode.Local) != 0)
+                {
+                    //XXX
+                    constraint = constraint.Or(Constraint.OfType(StdAtom.LVAL));
+                }
+
+                return SignatureBuilder.Constrained(
+                    SignatureBuilder.Identifier(pi.Name),
+                    constraint);
             }
         }
     }

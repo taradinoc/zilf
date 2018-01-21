@@ -119,12 +119,18 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="JetBrains.Annotations, Version=10.4.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
-      <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
+    <Reference Include="JetBrains.Annotations, Version=11.1.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
+      <HintPath>..\packages\JetBrains.Annotations.11.1.0\lib\net20\JetBrains.Annotations.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -180,7 +186,9 @@
     <Compile Include="Diagnostics\InterpreterMessages.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
-    <Compile Include="Interpreter\ArgDecoder.Constraint.cs" />
+    <Compile Include="Language\Signatures\ZBuiltinSignature.cs" />
+    <Compile Include="Language\Signatures\ConstrainedPart.cs" />
+    <Compile Include="Language\Signatures\Constraint.cs" />
     <Compile Include="Interpreter\ArgDecoder.cs" />
     <Compile Include="Interpreter\ArgItem.cs" />
     <Compile Include="Interpreter\ArgSpec.cs" />
@@ -199,6 +207,15 @@
     <Compile Include="Interpreter\EqualityComparers.cs" />
     <Compile Include="Interpreter\IEvanescent.cs" />
     <Compile Include="Interpreter\IMayExpand.cs" />
+    <Compile Include="Language\Signatures\ISignatureVisitor.cs" />
+    <Compile Include="Language\Signatures\JsonDescriber.cs" />
+    <Compile Include="Language\Signatures\PlainDescriber.cs" />
+    <Compile Include="Language\Signatures\AdeclPart.cs" />
+    <Compile Include="Language\Signatures\AlternativesPart.cs" />
+    <Compile Include="Language\Signatures\FormPart.cs" />
+    <Compile Include="Language\Signatures\AnyPart.cs" />
+    <Compile Include="Language\Signatures\ISignature.cs" />
+    <Compile Include="Language\Signatures\ISignaturePart.cs" />
     <Compile Include="Interpreter\IStructure.cs" />
     <Compile Include="Interpreter\IStructureContracts.cs" />
     <Compile Include="Interpreter\NativeFrame.cs" />
@@ -206,6 +223,12 @@
     <Compile Include="Interpreter\Recursion.cs" />
     <Compile Include="Interpreter\RoutineFlags.cs" />
     <Compile Include="Interpreter\RunMode.cs" />
+    <Compile Include="Language\Signatures\ListPart.cs" />
+    <Compile Include="Language\Signatures\LiteralPart.cs" />
+    <Compile Include="Language\Signatures\OptionalPart.cs" />
+    <Compile Include="Language\Signatures\QuotedPart.cs" />
+    <Compile Include="Language\Signatures\SequencePart.cs" />
+    <Compile Include="Language\Signatures\SignatureBuilder.cs" />
     <Compile Include="Interpreter\Subrs.Atoms.cs" />
     <Compile Include="Interpreter\Subrs.Conditionals.cs" />
     <Compile Include="Interpreter\Subrs.DefStruct.cs" />
@@ -261,6 +284,11 @@
     <Compile Include="Language\IProvideSourceLine.cs" />
     <Compile Include="Language\ISourceLine.cs" />
     <Compile Include="Language\Parser.cs" />
+    <Compile Include="Language\Signatures\SignaturePart.cs" />
+    <Compile Include="Language\Signatures\StructurePart.cs" />
+    <Compile Include="Language\Signatures\SubrSignature.Builder.cs" />
+    <Compile Include="Language\Signatures\SubrSignature.cs" />
+    <Compile Include="Language\Signatures\VarArgsPart.cs" />
     <Compile Include="Language\SourceLines.cs" />
     <Compile Include="Language\StdAtom.cs" />
     <Compile Include="Compiler\Compilation.Compile.cs" />

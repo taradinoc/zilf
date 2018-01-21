@@ -687,7 +687,7 @@ namespace Zilf.Tests.Interpreter
 
             ZilObject[] args = { new ZilFix(123) };
 
-            var del = ArgDecoder.WrapMethodAsSubrDelegate(methodInfo, ctx, out _);
+            var del = ArgDecoder.WrapMethod(methodInfo, ctx);
             var actual = del("dummy", ctx, args);
             var expected = new ZilFix(246);
 

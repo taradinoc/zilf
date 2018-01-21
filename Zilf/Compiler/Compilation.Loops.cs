@@ -35,7 +35,7 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompilePROG([NotNull] IRoutineBuilder rb, [CanBeNull] ZilList args,
+        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [CanBeNull] ZilList args,
             [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
@@ -259,26 +259,25 @@ namespace Zilf.Compiler
                             (form.First as ZilAtom)?.StdAtom == StdAtom.SET &&
                             form.Rest?.First == atom);
 
-            if (setExpr != null)
-            {
-                // atom is not referenced anywhere else?
-                if (args.Rest.All(zo => ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
-                {
-                    // we got a winner!
-                    var newBindingList = new ZilList(
-                        bindingList.Where(
-                            zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
+            if (setExpr == null)
+                return args;
 
-                    var newBody = new ZilList(
-                        args.Rest
-                            .Where(zo => !ReferenceEquals(zo, lastExpr))
-                            .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
+            // atom is not referenced anywhere else?
+            if (!args.Rest.All(zo =>
+                ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
+                return args;
 
-                    return new ZilList(newBindingList, newBody);
-                }
-            }
+            // we got a winner!
+            var newBindingList = new ZilList(
+                bindingList.Where(zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
 
-            return args;
+            var newBody = new ZilList(
+                args.Rest
+                    .Where(zo => !ReferenceEquals(zo, lastExpr))
+                    .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
+
+            return new ZilList(newBindingList, newBody);
+
         }
 
         [NotNull]
@@ -326,7 +325,7 @@ namespace Zilf.Compiler
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
         [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
-        IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
+        internal IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
             // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
         {
@@ -496,7 +495,7 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
+        internal IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
             // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
         {
@@ -650,7 +649,7 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
+        internal IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
             // ReSharper disable once UnusedParameter.Local
             [CanBeNull] IVariable resultStorage)
         {

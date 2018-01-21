@@ -31,7 +31,7 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
+        internal void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [NotNull] ILabel label, bool polarity)
         {
             Contract.Requires(rb != null);
@@ -103,15 +103,7 @@ namespace Zilf.Compiler
             if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, rb.Stack);
-                if (result is INumericOperand numericResult)
-                {
-                    if ((numericResult.Value != 0) == polarity)
-                        rb.Branch(label);
-                }
-                else
-                {
-                    rb.BranchIfZero(result, label, !polarity);
-                }
+                BranchIfNonZero(result);
                 return;
             }
             if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
@@ -142,51 +134,24 @@ namespace Zilf.Compiler
             }
 
             // special cases
-            var args = form.Skip(1).ToArray();
+            var op1 = CompileAsOperand(rb, form, form.SourceLine);
+            BranchIfNonZero(op1);
 
-            switch (head.StdAtom)
+            void BranchIfNonZero(IOperand operand)
             {
-                case StdAtom.NOT:
-                case StdAtom.F_P:
-                    polarity = !polarity;
-                    goto case StdAtom.T_P;
-
-                case StdAtom.T_P:
-                    if (args.Length == 1)
-                    {
-                        CompileCondition(rb, args[0], form.SourceLine, label, polarity);
-                    }
-                    else
-                    {
-                        Context.HandleError(new CompilerError(
-                            expr.SourceLine ?? src,
-                            CompilerMessages._0_Requires_1_Argument1s,
-                            head,
-                            new CountableString("exactly 1", false)));
-                    }
-                    break;
-
-                case StdAtom.OR:
-                case StdAtom.AND:
-                    CompileBoolean(rb, args, form.SourceLine, head.StdAtom == StdAtom.AND, label, polarity);
-                    break;
-
-                default:
-                    var op1 = CompileAsOperand(rb, form, form.SourceLine);
-                    if (op1 is INumericOperand numericResult)
-                    {
-                        if ((numericResult.Value != 0) == polarity)
-                            rb.Branch(label);
-                    }
-                    else
-                    {
-                        rb.BranchIfZero(op1, label, !polarity);
-                    }
-                    break;
+                if (operand is INumericOperand numericResult)
+                {
+                    if ((numericResult.Value != 0) == polarity)
+                        rb.Branch(label);
+                }
+                else
+                {
+                    rb.BranchIfZero(operand, label, !polarity);
+                }
             }
         }
 
-        void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
+        internal void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
             bool and, [NotNull] ILabel label, bool polarity)
         {
             Contract.Requires(rb != null);
@@ -246,7 +211,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src,
+        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src,
             bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
         {
             Contract.Requires(rb != null);
@@ -391,7 +356,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
             Contract.Requires(rb != null);
@@ -533,7 +498,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
             Contract.Requires(rb != null);
@@ -625,7 +590,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
             Contract.Requires(rb != null);
