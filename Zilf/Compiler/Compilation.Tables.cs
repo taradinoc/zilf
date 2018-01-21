@@ -140,18 +140,5 @@ namespace Zilf.Compiler
                 }
             }
         }
-
-        [NotNull]
-        IOperand CompileImpromptuTable([NotNull] ZilObject tableExpr)
-        {
-            Contract.Requires(tableExpr != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
-            var table = (ZilTable)tableExpr.Eval(Context);
-
-            var tableBuilder = Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
-            Tables.Add(table, tableBuilder);
-            return tableBuilder;
-        }
     }
 }

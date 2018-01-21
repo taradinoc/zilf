@@ -927,6 +927,7 @@ namespace Zilf.Interpreter
             return newValue;
         }
 
+        [NotNull]
         [Subr]
         public static ZilObject ZREST([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int bytes)
         {

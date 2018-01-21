@@ -40,6 +40,9 @@ namespace Zilf.Interpreter
 
             [CanBeNull]
             public string Name { get; }
+
+            [CanBeNull]
+            public string ObList { get; set; }
         }
 
         public sealed class SubrAttribute : SubrAttributeBase

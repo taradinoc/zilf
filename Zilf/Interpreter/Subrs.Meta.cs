@@ -16,13 +16,16 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Linq;
 using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using Zilf.Compiler.Builtins;
+using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
+using Zilf.Language.Signatures;
 
 namespace Zilf.Interpreter
 {
@@ -30,7 +33,7 @@ namespace Zilf.Interpreter
     {
         /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
         [NotNull]
-        public static ZilObject PerformLoadFile([NotNull] Context ctx, [NotNull] string file, [NotNull] string name)
+        static ZilObject PerformLoadFile([NotNull] Context ctx, [NotNull] string file, [NotNull] string name)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(file != null);
@@ -270,40 +273,38 @@ namespace Zilf.Interpreter
                 bool match;
                 ZilObject value;
 
-                if ((clause.Condition is ZilAtom atom &&
-                     (value = ctx.GetCompilationFlagValue(atom)) != null) ||
-                    (clause.Condition is ZilString str &&
-                     (value = ctx.GetCompilationFlagValue(str.Text)) != null))
+                switch (clause.Condition)
                 {
-                    // name of a defined compilation flag
-                    match = value.IsTrue;
-                }
-                else if (clause.Condition is ZilForm form)
-                {
-                    form = SubstituteIfflagForm(ctx, form);
-                    var zr = form.Eval(ctx);
-                    if (zr.ShouldPass())
-                        return zr;
-                    match = ((ZilObject)zr).IsTrue;
-                }
-                else
-                {
-                    match = true;
+                    case ZilAtom atom when (value = ctx.GetCompilationFlagValue(atom)) != null:
+                    case ZilString str when (value = ctx.GetCompilationFlagValue(str.Text)) != null:
+                        // name of a defined compilation flag
+                        match = value.IsTrue;
+                        break;
+                    case ZilForm form:
+                        form = SubstituteIfflagForm(ctx, form);
+                        var zr = form.Eval(ctx);
+                        if (zr.ShouldPass())
+                            return zr;
+                        match = ((ZilObject)zr).IsTrue;
+                        break;
+                    default:
+                        match = true;
+                        break;
                 }
 
-                if (match)
+                if (!match)
+                    continue;
+
+                ZilResult result = clause.Condition;
+
+                foreach (var expr in clause.Body)
                 {
-                    ZilResult result = clause.Condition;
-
-                    foreach (var expr in clause.Body)
-                    {
-                        result = expr.Eval(ctx);
-                        if (result.ShouldPass())
-                            break;
-                    }
-
-                    return result;
+                    result = expr.Eval(ctx);
+                    if (result.ShouldPass())
+                        break;
                 }
+
+                return result;
             }
 
             // no match
@@ -447,5 +448,44 @@ namespace Zilf.Interpreter
                 "ERROR",
                 string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
         }
+
+        #region IDE Help
+
+        [NotNull]
+        [Subr("DESC-BUILTINS", ObList = "YOMIN")]
+        public static ZilObject DESCRIBE_BUILTINS([NotNull] Context ctx)
+        {
+            SubrContracts(ctx);
+
+            var result = new JObject();
+
+            // Z-code builtins
+            foreach (var name in ZBuiltins.GetBuiltinNames())
+            {
+                var jsigs = ZBuiltins.GetBuiltinSignatures(name).Select(JsonDescriber.Describe);
+                result[name] = new JArray(jsigs);
+            }
+
+            // add SUBRs
+            foreach (var (name, mi, isFSubr) in ctx.GetSubrDefinitions())
+            {
+                var sig = SubrSignature.FromMethodInfo(mi, isFSubr);
+                var desc = JsonDescriber.Describe(sig);
+
+                var array = (JArray)result[name];
+                if (array == null)
+                {
+                    result[name] = new JArray(desc);
+                }
+                else
+                {
+                    array.Add(desc);
+                }
+            }
+
+            return ZilString.FromString(result.ToString());
+        }
+
+        #endregion
     }
 }

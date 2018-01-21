@@ -30,12 +30,16 @@ using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Language.Signatures;
 using Zilf.ZModel;
+using Zilf.ZModel.Values;
 
 namespace Zilf.Compiler.Builtins
 {
     static class ZBuiltins
     {
+        #region Infrastructure
+
         [ItemNotNull]
         [NotNull]
         static readonly ILookup<string, BuiltinSpec> builtins =
@@ -44,6 +48,20 @@ namespace Zilf.Compiler.Builtins
              from name in a.Names
              select new { Name = name, Attr = a, Method = mi })
             .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
+
+        [NotNull]
+        [ItemNotNull]
+        public static IEnumerable<string> GetBuiltinNames()
+        {
+            return builtins.Select(g => g.Key);
+        }
+
+        [NotNull]
+        [ItemNotNull]
+        public static IEnumerable<ISignature> GetBuiltinSignatures([NotNull] string name)
+        {
+            return builtins[name].Select(ZBuiltinSignature.FromBuiltinSpec);
+        }
 
         public static bool IsBuiltinValueCall([NotNull] string name, int zversion, int argCount)
         {
@@ -143,7 +161,7 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         static IList<BuiltinArg> ValidateArguments(
             [NotNull] Compilation cc, [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
-            [ItemNotNull] [NotNull] ZilObject[] args, [NotNull] InvalidArgumentDelegate error)
+            [ItemNotNull] [NotNull] IReadOnlyList<ZilObject> args, [NotNull] [InstantHandle] InvalidArgumentDelegate error)
         {
             Contract.Requires(cc != null);
             Contract.Requires(spec != null);
@@ -152,13 +170,13 @@ namespace Zilf.Compiler.Builtins
             Contract.Requires(args != null);
             Contract.Requires(error != null);
             Contract.Ensures(Contract.Result<IList<BuiltinArg>>() != null);
-            Contract.Ensures(Contract.Result<IList<BuiltinArg>>().Count == args.Length);
+            Contract.Ensures(Contract.Result<IList<BuiltinArg>>().Count == args.Count);
 
             // args may be short (for optional params)
 
-            var result = new List<BuiltinArg>(args.Length);
+            var result = new List<BuiltinArg>(args.Count);
 
-            for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
+            for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Count; i++, j++)
             {
                 Contract.Assume(j < builtinParamInfos.Length);
 
@@ -179,7 +197,7 @@ namespace Zilf.Compiler.Builtins
                     ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
                 {
                     // consume all remaining arguments
-                    while (i < args.Length)
+                    while (i < args.Count)
                     {
                         result.Add(handler.Process(cc, InnerError, args[i], pi));
                         i++;
@@ -398,6 +416,8 @@ namespace Zilf.Compiler.Builtins
             CompileBuiltinCall(name, cc, rb, form,
                 new ValuePredCall(cc, rb, form, resultStorage ?? rb.Stack, label, polarity));
         }
+
+        #endregion
 
         #region Equality Opcodes
 
@@ -1377,7 +1397,7 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
-        #region Variable Opcodes
+        #region Variable Opcodes/Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
@@ -1710,6 +1730,116 @@ namespace Zilf.Compiler.Builtins
 
             c.rb.EmitUnary(UnaryOp.LoadIndirect, value, c.resultStorage);
             return c.resultStorage;
+        }
+
+        [NotNull]
+        [Builtin("GVAL")]
+        public static IOperand GvalOp(ValueCall c, [NotNull] ZilAtom atom)
+        {
+            // constant, global, object, or routine
+            if (c.cc.Constants.TryGetValue(atom, out var operand))
+                return operand;
+            if (c.cc.Globals.TryGetValue(atom, out var global))
+                return global;
+            if (c.cc.Objects.TryGetValue(atom, out var objbld))
+                return objbld;
+            if (c.cc.Routines.TryGetValue(atom, out var routine))
+                return routine;
+
+            // soft global
+            if (c.cc.SoftGlobals.TryGetValue(atom, out var softGlobal))
+            {
+                Debug.Assert(c.cc.SoftGlobalsTable != null, nameof(c.cc.SoftGlobalsTable) + " != null");
+
+                c.rb.EmitBinary(
+                    softGlobal.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
+                    c.cc.SoftGlobalsTable,
+                    c.cc.Game.MakeOperand(softGlobal.Offset),
+                    c.resultStorage);
+                return c.resultStorage;
+            }
+
+            // quirks: local
+            if (c.cc.Locals.TryGetValue(atom, out var local))
+            {
+                c.cc.Context.HandleError(new CompilerError(
+                    c.form,
+                    CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
+                    "global",
+                    atom,
+                    "local"));
+                return local;
+            }
+
+            // error
+            c.cc.Context.HandleError(new CompilerError(
+                c.form,
+                CompilerMessages.Undefined_0_1,
+                "global or constant",
+                atom));
+            return c.cc.Game.Zero;
+        }
+
+        [NotNull]
+        [Builtin("LVAL")]
+        public static IOperand LvalOp(ValueCall c, [NotNull] ZilAtom atom)
+        {
+            // local
+            if (c.cc.Locals.TryGetValue(atom, out var local))
+                return local;
+
+            // quirks: constant, global, object, or routine
+            if (c.cc.Constants.TryGetValue(atom, out var operand))
+            {
+                c.cc.Context.HandleError(new CompilerError(
+                    c.form,
+                    CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
+                    "local",
+                    atom,
+                    "constant"));
+                return operand;
+            }
+
+            if (c.cc.Globals.TryGetValue(atom, out var global))
+            {
+                c.cc.Context.HandleError(new CompilerError(
+                    c.form,
+                    CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
+                    "local",
+                    atom,
+                    "global"));
+                return global;
+            }
+
+            if (c.cc.Objects.TryGetValue(atom, out var objbld))
+            {
+                c.cc.Context.HandleError(new CompilerError(
+                    c.form,
+                    CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
+                    "local",
+                    atom,
+                    "object"));
+                return objbld;
+            }
+
+            if (c.cc.Routines.TryGetValue(atom, out var routine))
+            {
+                c.cc.Context.HandleError(new CompilerError(
+                    c.form,
+                    CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
+                    "local",
+                    atom,
+                    "routine"));
+                return routine;
+            }
+
+            // error
+            c.cc.Context.HandleError(new CompilerError(
+                c.form,
+                CompilerMessages.Undefined_0_1,
+                "local",
+                atom));
+            return c.cc.Game.Zero;
         }
 
         #endregion
@@ -2335,6 +2465,182 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        [NotNull]
+        [Builtin("ITABLE")]
+        [Builtin("TABLE", "PTABLE", "LTABLE", "PLTABLE")]
+        [return: Table]
+        public static IOperand TableOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            var table = (ZilTable)c.form.Eval(c.cc.Context);
+            var tableBuilder = c.cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
+            c.cc.Tables.Add(table, tableBuilder);
+            return tableBuilder;
+        }
+
+        #endregion
+
+        #region Logical & Loop Builtins
+
+        [NotNull]
+        [Builtin("PROG", Data = StdAtom.PROG)]
+        [Builtin("REPEAT", Data = StdAtom.REPEAT)]
+        [Builtin("BIND", Data = StdAtom.BIND)]
+        public static IOperand ProgValueOp(ValueCall c, [Data] StdAtom mode, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            bool repeat = mode == StdAtom.REPEAT;
+            bool catchy = mode != StdAtom.BIND;
+            return c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
+        }
+
+        [Builtin("PROG", Data = StdAtom.PROG)]
+        [Builtin("REPEAT", Data = StdAtom.REPEAT)]
+        [Builtin("BIND", Data = StdAtom.BIND)]
+        public static void ProgVoidOp(VoidCall c, [Data] StdAtom mode, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            bool repeat = mode == StdAtom.REPEAT;
+            bool catchy = mode != StdAtom.BIND;
+            c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
+        }
+
+        [NotNull]
+        [Builtin("NOT", Data = false)]
+        [Builtin("F?", Data = false)]
+        [Builtin("T?", Data = true)]
+        public static IOperand TrueFalseValueOp(ValueCall c, [Data] bool polarity, [NotNull] ZilObject condition)
+        {
+            var label1 = c.rb.DefineLabel();
+            var label2 = c.rb.DefineLabel();
+            c.cc.CompileCondition(c.rb, condition, c.form.SourceLine, label1, !polarity);
+            c.rb.EmitStore(c.resultStorage, c.cc.Game.One);
+            c.rb.Branch(label2);
+            c.rb.MarkLabel(label1);
+            c.rb.EmitStore(c.resultStorage, c.cc.Game.Zero);
+            c.rb.MarkLabel(label2);
+            return c.resultStorage;
+        }
+
+        [Builtin("NOT", Data = false)]
+        [Builtin("F?", Data = false)]
+        [Builtin("T?", Data = true)]
+        public static void TrueFalsePredOp(PredCall c, [Data] bool polarity, [NotNull] ZilObject condition)
+        {
+            c.cc.CompileCondition(c.rb, condition, c.form.SourceLine, c.label, polarity == c.polarity);
+        }
+
+        [NotNull]
+        [Builtin("OR", Data = false)]
+        [Builtin("AND", Data = true)]
+        public static IOperand AndOrValueOp(ValueCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, true, c.resultStorage);
+        }
+
+        [Builtin("OR", Data = false)]
+        [Builtin("AND", Data = true)]
+        public static void AndOrVoidOp(VoidCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, false, null);
+        }
+
+        [Builtin("OR", Data = false)]
+        [Builtin("AND", Data = true)]
+        public static void AndOrPredOp(PredCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            c.cc.CompileBoolean(c.rb, args, c.form.SourceLine, and, c.label, c.polarity);
+        }
+
+        [NotNull]
+        [Builtin("DO")]
+        public static IOperand DoLoopValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("DO")]
+        public static void DoLoopVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
+        [NotNull]
+        [Builtin("MAP-CONTENTS")]
+        public static IOperand MapContentsValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("MAP-CONTENTS")]
+        public static void MapContentsVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
+        [NotNull]
+        [Builtin("MAP-DIRECTIONS")]
+        public static IOperand MapDirectionsValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("MAP-DIRECTIONS")]
+        public static void MapDirectionsVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
+        [NotNull]
+        [Builtin("COND")]
+        public static IOperand CondValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("COND")]
+        public static void CondVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
+        [NotNull]
+        [Builtin("VERSION?")]
+        public static IOperand IfVersionValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("VERSION?")]
+        public static void IfVersionVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
+        [NotNull]
+        [Builtin("IFFLAG")]
+        public static IOperand IfFlagValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            return c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+        }
+
+        [Builtin("IFFLAG")]
+        public static void IfFlagVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        {
+            Debug.Assert(c.form.Rest != null);
+            c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, false, null);
+        }
+
         #endregion
 
         [Builtin("CHTYPE")]
@@ -2347,6 +2653,12 @@ namespace Zilf.Compiler.Builtins
 
             // TODO: check type?
             return value;
+        }
+
+        [Builtin("TELL")]
+        public static void TellVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] args)
+        {
+            c.cc.CompileTell(c.rb, c.form.SourceLine, args);
         }
     }
 }

@@ -66,21 +66,43 @@ namespace Zilf.Interpreter
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
-        class TypeMapEntry
+        abstract class TypeMapEntry
         {
-            public Type BuiltinType;
+            public Type BuiltinType { get; set; }
             public bool IsBuiltin => BuiltinType != null;
-            public PrimType PrimType;
-            public ChtypeDelegate ChtypeMethod;
+            public PrimType PrimType { get; set; }
+            public ChtypeDelegate ChtypeMethod { get; set; }
 
-            public ZilObject PrintType;
-            public PrintTypeDelegate PrintTypeDelegate;
+            public ZilObject PrintType { get; set; }
+            public PrintTypeDelegate PrintTypeDelegate { get; set; }
 
-            public ZilObject EvalType;
-            public EvalTypeDelegate EvalTypeDelegate;
+            public ZilObject EvalType { get; set; }
+            public EvalTypeDelegate EvalTypeDelegate { get; set; }
 
-            public ZilObject ApplyType;
-            public ApplyTypeDelegate ApplyTypeDelegate;
+            public ZilObject ApplyType { get; set; }
+            public ApplyTypeDelegate ApplyTypeDelegate { get; set; }
+        }
+
+        sealed class CustomTypeMapEntry : TypeMapEntry
+        {
+        }
+
+        sealed class StaticTypeMapEntry : TypeMapEntry, IStaticTypeMapEntry
+        {
+            public TypeMapEntry Clone()
+            {
+                return (TypeMapEntry)MemberwiseClone();
+            }
+        }
+
+        interface IStaticTypeMapEntry
+        {
+            [NotNull]
+            Type BuiltinType { get; }
+            PrimType PrimType { get; }
+
+            [NotNull]
+            TypeMapEntry Clone();
         }
 
         [NotNull]
@@ -103,7 +125,7 @@ namespace Zilf.Interpreter
         [NotNull]
         readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
         [NotNull]
-        readonly Dictionary<string, SubrDelegate> subrDelegates;
+        readonly Dictionary<string, (SubrDelegate del, MethodInfo mi, bool isFSubr)> subrDelegates;
         [NotNull]
         readonly ZEnvironment zenv;
 
@@ -162,7 +184,7 @@ namespace Zilf.Interpreter
             localEnvironment = new LocalEnvironment(this);
             globalValues = new Dictionary<ZilAtom, Binding>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
-            subrDelegates = new Dictionary<string, SubrDelegate>();
+            subrDelegates = new Dictionary<string, (SubrDelegate, MethodInfo, bool)>();
 
             zenv = new ZEnvironment(this);
 
@@ -358,34 +380,26 @@ namespace Zilf.Interpreter
         {
             Contract.Ensures(globalValues.Count > Contract.OldValue(globalValues.Count));
 
-            var descAtom = GetStdAtom(StdAtom.DESC);
-
             var methods = typeof(Subrs).GetMethods(BindingFlags.Static | BindingFlags.Public);
-            foreach (MethodInfo mi in methods)
+            foreach (var mi in methods)
             {
                 var attrs = mi.GetCustomAttributes<Subrs.SubrAttributeBase>(false).ToArray();
                 if (attrs.Length == 0)
                     continue;
 
-                var del = ArgDecoder.WrapMethodAsSubrDelegate(mi, this, out var desc);
+                var del = ArgDecoder.WrapMethod(mi, this);
 
                 foreach (var attr in attrs)
                 {
-                    string name = attr.Name ?? mi.Name;
+                    var baseName = attr.Name ?? mi.Name;
+                    var name = string.IsNullOrEmpty(attr.ObList) ? baseName : $"{baseName}!-{attr.ObList}";
 
-                    subrDelegates.Add(name, del);
+                    var isFSubr = attr is Subrs.FSubrAttribute;
+                    subrDelegates.Add(name, (del, mi, isFSubr));
 
-                    ZilSubr sub;
-                    if (attr is Subrs.FSubrAttribute)
-                        sub = new ZilFSubr(name, del);
-                    else
-                        sub = new ZilSubr(name, del);
-
-                    // these need to be on the root oblist
-                    var atom = rootObList[name];
-                    SetGlobalVal(atom, sub);
-
-                    PutProp(sub, descAtom, ZilString.FromString(desc));
+                    // these atoms need to be on the root oblist
+                    var atom = ZilAtom.Parse(name + "!-", this);
+                    SetGlobalVal(atom, isFSubr ? new ZilFSubr(name, del) : new ZilSubr(name, del));
                 }
             }
         }
@@ -396,7 +410,14 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(name != null);
             subrDelegates.TryGetValue(name, out var result);
-            return result;
+            return result.del;
+        }
+
+        [NotNull]
+        [Pure]
+        public IEnumerable<(string name, MethodInfo methodInfo, bool isFSubr)> GetSubrDefinitions()
+        {
+            return subrDelegates.Select(pair => (pair.Key, pair.Value.mi, pair.Value.isFSubr));
         }
 
         void InitConstants()
@@ -417,24 +438,24 @@ namespace Zilf.Interpreter
             AddZConstant(GetStdAtom(StdAtom.FATAL_VALUE), new ZilFix(2));
 
             // parts of speech
-            var parts = new[] {
-                new { N="P1?OBJECT", V=PartOfSpeech.None },     // there is no ObjectFirst
-                new { N="P1?VERB", V=PartOfSpeech.VerbFirst },
-                new { N="P1?ADJECTIVE", V=PartOfSpeech.AdjectiveFirst },
-                new { N="P1?DIRECTION", V=PartOfSpeech.DirectionFirst },
+            var parts = new[]
+            {
+                ("P1?OBJECT", PartOfSpeech.None), // there is no ObjectFirst
+                ("P1?VERB", PartOfSpeech.VerbFirst),
+                ("P1?ADJECTIVE", PartOfSpeech.AdjectiveFirst),
+                ("P1?DIRECTION", PartOfSpeech.DirectionFirst),
 
-                new { N="PS?BUZZ-WORD", V=PartOfSpeech.Buzzword },
-                new { N="PS?PREPOSITION", V=PartOfSpeech.Preposition },
-                new { N="PS?DIRECTION", V=PartOfSpeech.Direction },
-                new { N="PS?ADJECTIVE", V=PartOfSpeech.Adjective },
-                new { N="PS?VERB", V=PartOfSpeech.Verb },
-                new { N="PS?OBJECT", V=PartOfSpeech.Object }
+                ("PS?BUZZ-WORD", PartOfSpeech.Buzzword),
+                ("PS?PREPOSITION", PartOfSpeech.Preposition),
+                ("PS?DIRECTION", PartOfSpeech.Direction),
+                ("PS?ADJECTIVE", PartOfSpeech.Adjective),
+                ("PS?VERB", PartOfSpeech.Verb),
+                ("PS?OBJECT", PartOfSpeech.Object)
             };
 
-            foreach (var i in parts)
+            foreach (var (name, value) in parts)
             {
-                ZilAtom atom = rootObList[i.N];
-                AddZConstant(atom, new ZilFix((int)i.V));
+                AddZConstant(rootObList[name], new ZilFix((int)value));
             }
         }
 
@@ -443,22 +464,22 @@ namespace Zilf.Interpreter
             Contract.Ensures(globalValues.Count >= Contract.OldValue(globalValues.Count));
 
             var defaults = new[] {
-                new { N=StdAtom.SERIAL, V=0 }
+                (StdAtom.SERIAL, 0)
             };
 
-            foreach (var i in defaults)
+            foreach (var (name, value) in defaults)
             {
-                var atom = GetStdAtom(i.N);
-                if (GetZVal(atom) == null)
+                var atom = GetStdAtom(name);
+                if (GetZVal(atom) != null)
+                    continue;
+
+                try
                 {
-                    try
-                    {
-                        AddZConstant(atom, new ZilFix(i.V));
-                    }
-                    catch (DeclCheckError)
-                    {
-                        Debug.Assert(false, "default constant value doesn't match decl");
-                    }
+                    AddZConstant(atom, new ZilFix(value));
+                }
+                catch (DeclCheckError)
+                {
+                    Debug.Assert(false, "default constant value doesn't match decl");
                 }
             }
         }
@@ -931,10 +952,14 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
+        [NotNull]
+        static IReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap => InitStaticTypeMap();
+
+        [NotNull]
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
-        void InitTypeMap()
+        static Dictionary<StdAtom, IStaticTypeMapEntry> InitStaticTypeMap()
         {
-            Contract.Ensures(typeMap.Count > 0);
+            var result = new Dictionary<StdAtom, IStaticTypeMapEntry>();
 
             var query = from t in typeof(ZilObject).Assembly.GetTypes()
                         where typeof(ZilObject).IsAssignableFrom(t)
@@ -987,10 +1012,11 @@ namespace Zilf.Interpreter
 
                 ChtypeDelegate chtypeDelegate;
 
-                var chtypeMiQuery = from mi in r.Type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                                    let attrs = mi.GetCustomAttributes(typeof(ChtypeMethodAttribute), false)
-                                    where attrs.Length > 0
-                                    select mi;
+                var chtypeMiQuery =
+                    from mi in r.Type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                    let attrs = mi.GetCustomAttributes(typeof(ChtypeMethodAttribute), false)
+                    where attrs.Length > 0
+                    select mi;
                 var chtypeMethod = chtypeMiQuery.SingleOrDefault();
 
                 if (chtypeMethod != null)
@@ -1015,7 +1041,9 @@ namespace Zilf.Interpreter
                     if (chtypeCtor != null)
                     {
                         // adapt the constructor
-                        if (!chtypeCtor.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes.Skip(1)))
+                        if (!chtypeCtor.GetParameters()
+                            .Select(pi => pi.ParameterType)
+                            .SequenceEqual(chtypeParamTypes.Skip(1)))
                             throw new InvalidOperationException(
                                 $"Wrong parameters for ChtypeMethod constructor on type {r.Type.Name}");
 
@@ -1027,14 +1055,24 @@ namespace Zilf.Interpreter
                     }
                 }
 
-                var entry = new TypeMapEntry
+                var entry = new StaticTypeMapEntry
                 {
                     BuiltinType = r.Type,
                     PrimType = r.Attr.PrimType,
                     ChtypeMethod = chtypeDelegate
                 };
 
-                typeMap.Add(GetStdAtom(r.Attr.Name), entry);
+                result.Add(r.Attr.Name, entry);
+            }
+
+            return result;
+        }
+
+        void InitTypeMap()
+        {
+            foreach (var pair in StaticTypeMap)
+            {
+                typeMap.Add(GetStdAtom(pair.Key), pair.Value.Clone());
             }
 
             // default custom types
@@ -1082,7 +1120,7 @@ namespace Zilf.Interpreter
                     break;
             }
 
-            var entry = new TypeMapEntry
+            var entry = new CustomTypeMapEntry
             {
                 PrimType = primType,
                 ChtypeMethod = chtypeDelegate
@@ -1103,34 +1141,17 @@ namespace Zilf.Interpreter
         public IEnumerable<ZilAtom> RegisteredTypes => typeMap.Keys;
 
         [Pure]
-        public bool IsStructuredType([NotNull] ZilAtom atom)
+        public static bool IsStructuredType(StdAtom atom)
         {
-            Contract.Requires(atom != null);
-
-            if (typeMap.TryGetValue(atom, out var entry))
-            {
-                if (entry.IsBuiltin && typeof(IApplicable).IsAssignableFrom(entry.BuiltinType))
-                    return true;
-            }
-
-            return false;
+            return StaticTypeMap.TryGetValue(atom, out var entry) &&
+                   typeof(IStructure).IsAssignableFrom(entry.BuiltinType);
         }
 
         [Pure]
-        public bool IsApplicableType([NotNull] ZilAtom atom)
+        public static bool IsApplicableType(StdAtom atom)
         {
-            Contract.Requires(atom != null);
-
-            if (typeMap.TryGetValue(atom, out var entry))
-            {
-                if (entry.ApplyTypeDelegate != null)
-                    return true;
-
-                if (entry.IsBuiltin && typeof(IApplicable).IsAssignableFrom(entry.BuiltinType))
-                    return true;
-            }
-
-            return false;
+            return StaticTypeMap.TryGetValue(atom, out var entry) &&
+                   typeof(IApplicable).IsAssignableFrom(entry.BuiltinType);
         }
 
         /// <summary>
@@ -1143,6 +1164,12 @@ namespace Zilf.Interpreter
         {
             Contract.Requires(type != null);
             return typeMap[type].PrimType;
+        }
+
+        [Pure]
+        public static PrimType GetTypePrim(StdAtom type)
+        {
+            return StaticTypeMap[type].PrimType;
         }
 
         public enum SetTypeHandlerResult

@@ -148,186 +148,6 @@ namespace Zilf.Compiler
                     }
                 }
 
-                // built-in statements handled specially
-                ZilAtom atom;
-                IGlobalBuilder global;
-                ILocalBuilder local;
-                IObjectBuilder objbld;
-                IRoutineBuilder routine;
-                IVariable result;
-                IOperand operand;
-                switch (head.StdAtom)
-                {
-                    case StdAtom.GVAL:
-                        atom = form.Rest.First as ZilAtom;
-                        if (atom == null)
-                        {
-                            Context.HandleError(new CompilerError(form, CompilerMessages.Expected_An_Atom_After_0, "GVAL"));
-                            return wantResult ? Game.Zero : null;
-                        }
-
-                        // constant, global, object, or routine
-                        if (Constants.TryGetValue(atom, out operand))
-                            return operand;
-                        if (Globals.TryGetValue(atom, out global))
-                            return global;
-                        if (Objects.TryGetValue(atom, out objbld))
-                            return objbld;
-                        if (Routines.TryGetValue(atom, out routine))
-                            return routine;
-
-                        // soft global
-                        if (SoftGlobals.TryGetValue(atom, out var softGlobal))
-                        {
-                            Debug.Assert(SoftGlobalsTable != null, nameof(SoftGlobalsTable) + " != null");
-
-                            if (wantResult)
-                            {
-                                resultStorage = resultStorage ?? rb.Stack;
-                                rb.EmitBinary(
-                                    softGlobal.IsWord ? BinaryOp.GetWord : BinaryOp.GetByte,
-                                    SoftGlobalsTable,
-                                    Game.MakeOperand(softGlobal.Offset),
-                                    resultStorage);
-                                return resultStorage;
-                            }
-                            return null;
-                        }
-
-                        // quirks: local
-                        if (Locals.TryGetValue(atom, out local))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
-                                "global",
-                                atom,
-                                "local"));
-                            return local;
-                        }
-
-                        // error
-                        Context.HandleError(new CompilerError(form, CompilerMessages.Undefined_0_1, "global or constant", atom));
-                        return wantResult ? Game.Zero : null;
-                    case StdAtom.LVAL:
-                        atom = form.Rest.First as ZilAtom;
-                        if (atom == null)
-                        {
-                            Context.HandleError(new CompilerError(form, CompilerMessages.Expected_An_Atom_After_0, "LVAL"));
-                            return wantResult ? Game.Zero : null;
-                        }
-
-                        // local
-                        if (Locals.TryGetValue(atom, out local))
-                            return local;
-
-                        // quirks: constant, global, object, or routine
-                        if (Constants.TryGetValue(atom, out operand))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
-                                "local",
-                                atom,
-                                "constant"));
-                            return operand;
-                        }
-                        if (Globals.TryGetValue(atom, out global))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
-                                "local",
-                                atom,
-                                "global"));
-                            return global;
-                        }
-                        if (Objects.TryGetValue(atom, out objbld))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
-                                "local",
-                                atom,
-                                "object"));
-                            return objbld;
-                        }
-                        if (Routines.TryGetValue(atom, out routine))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages.No_Such_0_Variable_1_Using_The_2_Instead,
-                                "local",
-                                atom,
-                                "routine"));
-                            return routine;
-                        }
-
-                        // error
-                        Context.HandleError(new CompilerError(form, CompilerMessages.Undefined_0_1, "local", atom));
-                        return wantResult ? Game.Zero : null;
-
-                    case StdAtom.ITABLE:
-                    case StdAtom.TABLE:
-                    case StdAtom.PTABLE:
-                    case StdAtom.LTABLE:
-                    case StdAtom.PLTABLE:
-                        operand = CompileImpromptuTable(form);
-                        return wantResult ? operand : null;
-
-                    case StdAtom.PROG:
-                        return CompilePROG(rb, form.Rest, form.SourceLine, wantResult, resultStorage, "PROG", false, true);
-                    case StdAtom.REPEAT:
-                        return CompilePROG(rb, form.Rest, form.SourceLine, wantResult, resultStorage, "REPEAT", true, true);
-                    case StdAtom.BIND:
-                        return CompilePROG(rb, form.Rest, form.SourceLine, wantResult, resultStorage, "BIND", false, false);
-
-                    case StdAtom.DO:
-                        return CompileDO(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-                    case StdAtom.MAP_CONTENTS:
-                        return CompileMAP_CONTENTS(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-                    case StdAtom.MAP_DIRECTIONS:
-                        return CompileMAP_DIRECTIONS(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-
-                    case StdAtom.COND:
-                        return CompileCOND(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-
-                    case StdAtom.VERSION_P:
-                        return CompileVERSION_P(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-                    case StdAtom.IFFLAG:
-                        return CompileIFFLAG(rb, form.Rest, form.SourceLine, wantResult, resultStorage);
-
-                    case StdAtom.NOT:
-                    case StdAtom.F_P:
-                    case StdAtom.T_P:
-                        if (form.Rest.First == null || (form.Rest.Rest != null && !form.Rest.Rest.IsEmpty))
-                        {
-                            Context.HandleError(new CompilerError(
-                                form,
-                                CompilerMessages._0_Requires_1_Argument1s,
-                                head,
-                                new CountableString("exactly 1", false)));
-                            return Game.Zero;
-                        }
-                        resultStorage = resultStorage ?? rb.Stack;
-                        var label1 = rb.DefineLabel();
-                        var label2 = rb.DefineLabel();
-                        CompileCondition(rb, form.Rest.First, form.SourceLine, label1, head.StdAtom != StdAtom.T_P);
-                        rb.EmitStore(resultStorage, Game.One);
-                        rb.Branch(label2);
-                        rb.MarkLabel(label1);
-                        rb.EmitStore(resultStorage, Game.Zero);
-                        rb.MarkLabel(label2);
-                        return resultStorage;
-
-                    case StdAtom.OR:
-                    case StdAtom.AND:
-                        return CompileBoolean(rb, form.Rest, form.SourceLine, head.StdAtom == StdAtom.AND, wantResult, resultStorage);
-
-                    case StdAtom.TELL:
-                        return CompileTell(rb, form);
-                }
-
                 // routine calls
                 var obj = Context.GetZVal(Context.ZEnvironment.InternGlobalName(head));
 
@@ -349,12 +169,12 @@ namespace Zilf.Compiler
                         }
 
                         // compile routine call
-                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                        resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))
                         {
-                            rb.EmitCall(Routines[head], argOperands.AsArray(), result);
+                            rb.EmitCall(Routines[head], argOperands.AsArray(), resultStorage);
                         }
-                        return result;
+                        return resultStorage;
 
                     case ZilFalse _:
                         // this always returns 0. we can eliminate the call if none of the arguments have side effects.
@@ -363,14 +183,14 @@ namespace Zilf.Compiler
                         if (argsWithSideEffects.Length <= 0)
                             return Game.Zero;
 
-                        result = wantResult ? (resultStorage ?? rb.Stack) : null;
+                        resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
                         {
                             var operands = argOperands.AsArray();
                             if (operands.Any(o => o == rb.Stack))
-                                rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), result);
+                                rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), resultStorage);
                         }
-                        return result;
+                        return resultStorage;
 
                     default:
                         // unrecognized
@@ -627,21 +447,8 @@ namespace Zilf.Compiler
             }
         }
 
-        [NotNull]
-        IOperand CompileTell([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
+        internal void CompileTell([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] [ItemNotNull] ZilObject[] args)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Requires(form.SourceLine != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
-            if (form.IsEmpty)
-                return Game.One;
-
-            Debug.Assert(form.Rest != null);
-
-            var args = form.Rest.ToArray();
-
             int index = 0;
             while (index < args.Length)
             {
@@ -649,7 +456,7 @@ namespace Zilf.Compiler
                 bool handled = false;
                 foreach (var pattern in Context.ZEnvironment.TellPatterns)
                 {
-                    var result = pattern.Match(args, index, Context, form.SourceLine);
+                    var result = pattern.Match(args, index, Context, src);
                     if (result.Matched)
                     {
                         CompileForm(rb, result.Output, false, null);
@@ -685,7 +492,7 @@ namespace Zilf.Compiler
                     {
                         Debug.Assert(innerForm.Rest.First != null);
                         var transformed = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
-                        transformed.SourceLine = form.SourceLine;
+                        transformed.SourceLine = src;
                         var obj = CompileAsOperand(rb, transformed, innerForm.SourceLine);
                         rb.EmitPrint(PrintOp.Object, obj);
                         index++;
@@ -696,7 +503,7 @@ namespace Zilf.Compiler
                 // P?foo expr -> <PRINT <GETP expr ,P?foo>>
                 if (args[index] is ZilAtom prop && index + 1 < args.Length)
                 {
-                    var transformed = (ZilForm)Program.Parse(Context, form.SourceLine,
+                    var transformed = (ZilForm)Program.Parse(Context, src,
                         "<PRINT <GETP {0} ,{1}>>", args[index + 1], prop)
                         .Single();
                     CompileForm(rb, transformed, false, null);
@@ -705,12 +512,10 @@ namespace Zilf.Compiler
                 }
 
                 // otherwise, treat it as a packed string
-                var str = CompileAsOperand(rb, args[index], args[index].SourceLine ?? form.SourceLine);
+                var str = CompileAsOperand(rb, args[index], args[index].SourceLine ?? src);
                 rb.EmitPrint(PrintOp.PackedAddr, str);
                 index++;
             }
-
-            return Game.One;
         }
 
         bool HasSideEffects(ZilObject expr)

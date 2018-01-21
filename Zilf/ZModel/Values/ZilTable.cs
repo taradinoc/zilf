@@ -770,6 +770,7 @@ namespace Zilf.ZModel.Values
     [ContractClassFor(typeof(ZilTable))]
     [SuppressMessage("ReSharper", "AnnotationRedundancyInHierarchy")]
     [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+    [SuppressMessage("ReSharper", "AnnotateCanBeNullTypeMember")]
     abstract class ZilTableContract : ZilTable
     {
         public override ZilObject GetWord(Context ctx, int offset)
