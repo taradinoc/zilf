@@ -336,6 +336,8 @@ Returns:
               (ELSE <RFALSE>)>>
 >
 
+<DEFAULT-DEFINITION DESCRIBE-OBJECTS
+
 ;"Describes the objects in a room.
 
 Objects are described in four passes:
@@ -349,8 +351,6 @@ Uses:
 
 Args:
   RM: The room."
-
-<DEFAULT-DEFINITION DESCRIBE-OBJECTS
 
     <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
         <MAP-CONTENTS (I .RM)
@@ -400,7 +400,6 @@ Args:
                <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
                <TELL " here." CR>
                <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
->
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
     <T? <NOT <OR <==? .OBJ ,WINNER>
@@ -419,6 +418,8 @@ Args:
                            <GETP .OBJ ,P?FDESC>>
                       <GETP .OBJ ,P?LDESC>
                       <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
+
+>
 
 ;"Prints a (short) string with the first letter capitalized."
 <ROUTINE PRINT-CAP-STR (S "AUX" MAX C)
