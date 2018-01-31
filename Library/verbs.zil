@@ -349,54 +349,58 @@ Uses:
 
 Args:
   RM: The room."
-<ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
-    <MAP-CONTENTS (I .RM)
-        <COND
-            (<FSET? .I ,NDESCBIT>)
-            ;"objects with DESCFCNs"
-            (<SET P <GETP .I ,P?DESCFCN>>
-             <CRLF>
-             ;"The DESCFCN is responsible for listing the object's contents"
-             <APPLY .P ,M-OBJDESC>
-             <THIS-IS-IT .I>)
-            ;"objects with applicable FDESCs or LDESCs"
-            (<OR <AND <NOT <FSET? .I ,TOUCHBIT>>
-                      <SET P <GETP .I ,P?FDESC>>>
-                 <SET P <GETP .I ,P?LDESC>>>
-             <TELL CR .P CR>
-             <THIS-IS-IT .I>
-             ;"Describe contents if applicable"
-             <COND (<AND <SEE-INSIDE? .I> <FIRST? .I>>
-                    <DESCRIBE-CONTENTS .I>)>)>>
-    ;"See if there are any non fdesc, ndescbit, personbit objects in room"
-    <MAP-CONTENTS (I .RM)
-        <COND (<GENERIC-DESC? .I>
-               <SET N T>
-               <RETURN>)>>
-    ;"go through the N objects"
-    <COND (.N
-           <TELL CR "There ">
-           <LIST-OBJECTS .RM GENERIC-DESC? ,L-ISMANY>
-           <TELL " here." CR>
-           <CONTENTS-ARE-IT .RM GENERIC-DESC?>)>
-    ;"describe visible contents of generic-desc containers and surfaces"
-    <MAP-CONTENTS (I .RM)
-        <COND (<AND <SEE-INSIDE? .I>
-                    <GENERIC-DESC? .I>
-                    <FIRST? .I>>
-               <DESCRIBE-CONTENTS .I>)>>
-    ;"See if there are any NPCs"
-    <SET N <>>
-    <MAP-CONTENTS (I .RM)
-        <COND (<NPC-DESC? .I>
-               <SET N T>
-               <RETURN>)>>
-    ;"go through the N NPCs"
-    <COND (.N
-           <CRLF>
-           <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
-           <TELL " here." CR>
-           <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
+
+<DEFAULT-DEFINITION DESCRIBE-OBJECTS
+
+    <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
+        <MAP-CONTENTS (I .RM)
+            <COND
+                (<FSET? .I ,NDESCBIT>)
+                ;"objects with DESCFCNs"
+                (<SET P <GETP .I ,P?DESCFCN>>
+                 <CRLF>
+                 ;"The DESCFCN is responsible for listing the object's contents"
+                 <APPLY .P ,M-OBJDESC>
+                 <THIS-IS-IT .I>)
+                ;"objects with applicable FDESCs or LDESCs"
+                (<OR <AND <NOT <FSET? .I ,TOUCHBIT>>
+                          <SET P <GETP .I ,P?FDESC>>>
+                     <SET P <GETP .I ,P?LDESC>>>
+                 <TELL CR .P CR>
+                 <THIS-IS-IT .I>
+                 ;"Describe contents if applicable"
+                 <COND (<AND <SEE-INSIDE? .I> <FIRST? .I>>
+                        <DESCRIBE-CONTENTS .I>)>)>>
+        ;"See if there are any non fdesc, ndescbit, personbit objects in room"
+        <MAP-CONTENTS (I .RM)
+            <COND (<GENERIC-DESC? .I>
+                   <SET N T>
+                   <RETURN>)>>
+        ;"go through the N objects"
+        <COND (.N
+               <TELL CR "There ">
+               <LIST-OBJECTS .RM GENERIC-DESC? ,L-ISMANY>
+               <TELL " here." CR>
+               <CONTENTS-ARE-IT .RM GENERIC-DESC?>)>
+        ;"describe visible contents of generic-desc containers and surfaces"
+        <MAP-CONTENTS (I .RM)
+            <COND (<AND <SEE-INSIDE? .I>
+                        <GENERIC-DESC? .I>
+                        <FIRST? .I>>
+                   <DESCRIBE-CONTENTS .I>)>>
+        ;"See if there are any NPCs"
+        <SET N <>>
+        <MAP-CONTENTS (I .RM)
+            <COND (<NPC-DESC? .I>
+                   <SET N T>
+                   <RETURN>)>>
+        ;"go through the N NPCs"
+        <COND (.N
+               <CRLF>
+               <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
+               <TELL " here." CR>
+               <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
+>
 
 <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
     <T? <NOT <OR <==? .OBJ ,WINNER>
