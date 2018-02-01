@@ -401,23 +401,23 @@ Args:
                <TELL " here." CR>
                <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
 
-<ROUTINE GENERIC-DESC? (OBJ "AUX" P)
-    <T? <NOT <OR <==? .OBJ ,WINNER>
-                 <FSET? .OBJ ,NDESCBIT>
-                 <FSET? .OBJ ,PERSONBIT>
-                 <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
-                      <GETP .OBJ ,P?FDESC>>
-                 <GETP .OBJ ,P?LDESC>
-                 <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>
+    <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
+        <T? <NOT <OR <==? .OBJ ,WINNER>
+                     <FSET? .OBJ ,NDESCBIT>
+                     <FSET? .OBJ ,PERSONBIT>
+                     <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
+                          <GETP .OBJ ,P?FDESC>>
+                     <GETP .OBJ ,P?LDESC>
+                     <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>
 
-<ROUTINE NPC-DESC? (OBJ "AUX" P)
-    <T? <AND <FSET? .OBJ ,PERSONBIT>
-             <NOT <OR <==? .OBJ ,WINNER>
-                      <FSET? .OBJ ,NDESCBIT>
-                      <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
-                           <GETP .OBJ ,P?FDESC>>
-                      <GETP .OBJ ,P?LDESC>
-                      <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
+    <ROUTINE NPC-DESC? (OBJ "AUX" P)
+        <T? <AND <FSET? .OBJ ,PERSONBIT>
+                 <NOT <OR <==? .OBJ ,WINNER>
+                          <FSET? .OBJ ,NDESCBIT>
+                          <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
+                               <GETP .OBJ ,P?FDESC>>
+                          <GETP .OBJ ,P?LDESC>
+                          <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
 
 >
 
