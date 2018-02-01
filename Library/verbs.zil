@@ -1162,11 +1162,16 @@ Returns:
                  (ELSE <TELL "You devour " T ,PRSO "." CR>)>)
           (ELSE <TELL "That's hardly edible." CR>)>>
 
+<DEFMAC PRINT-GAME-BANNER ()
+    <COND (<GASSIGNED? GAME-TITLE>
+           #SPLICE (<VERSION? (ZIP) (ELSE <CRLF> <CRLF> <HLIGHT ,H-BOLD>)>
+                    <TELL ,GAME-TITLE CR>
+                    <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
+                    <TELL ,GAME-DESCRIPTION CR>))
+          (ELSE '<TELL ,GAME-BANNER CR>)>>
+
 <ROUTINE V-VERSION ()
-    <VERSION? (ZIP) (ELSE <CRLF> <CRLF> <HLIGHT ,H-BOLD>)>
-    <TELL ,GAME-TITLE CR>
-    <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
-    <TELL ,GAME-DESCRIPTION CR>
+    <PRINT-GAME-BANNER>
     <TELL "Release ">
     <PRINTN <BAND <LOWCORE RELEASEID> *3777*>>
     <TELL " / Serial number ">
