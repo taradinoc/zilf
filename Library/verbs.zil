@@ -1163,12 +1163,17 @@ Returns:
           (ELSE <TELL "That's hardly edible." CR>)>>
 
 <ROUTINE V-VERSION ()
-     <TELL ,GAME-BANNER "|Release ">
-     <PRINTN <BAND <LOWCORE RELEASEID> *3777*>>
-     <TELL " / Serial number ">
-     <LOWCORE-TABLE SERIAL 6 PRINTC>
-     <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
-     <CRLF>>
+    <VERSION? (ZIP) (ELSE <CRLF> <CRLF> <HLIGHT ,H-BOLD>)>
+    <TELL ,GAME-TITLE CR>
+    <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
+    <TELL ,GAME-DESCRIPTION CR>
+    <TELL "Release ">
+    <PRINTN <BAND <LOWCORE RELEASEID> *3777*>>
+    <TELL " / Serial number ">
+    <LOWCORE-TABLE SERIAL 6 PRINTC>
+    <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
+    <CRLF>
+>
 
 <ROUTINE V-THINK-ABOUT ()
     <COND (<PRSO? ,WINNER>
