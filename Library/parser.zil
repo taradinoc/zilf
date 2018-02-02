@@ -201,7 +201,7 @@ other versions. These macros let us write the same code for all versions."
 <GLOBAL PRSI <>>
 <GLOBAL PRSO-DIR <>>
 
-<DEFMAC VERB? ("ARGS" A)
+<DEFMAC VERB? ("ARGS" A "AUX" O)
     <SET O <MAPF ,LIST
         <FUNCTION (I)
             <FORM GVAL <PARSE <STRING "V?" <SPNAME .I>>>>>
