@@ -1164,7 +1164,7 @@ Returns:
 
 <DEFMAC PRINT-GAME-BANNER ()
     <COND (<GASSIGNED? GAME-TITLE>
-           #SPLICE (<VERSION? (ZIP) (ELSE <CRLF> <CRLF> <HLIGHT ,H-BOLD>)>
+           #SPLICE (<VERSION? (ZIP) (ELSE <HLIGHT ,H-BOLD>)>
                     <TELL ,GAME-TITLE CR>
                     <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
                     <TELL ,GAME-DESCRIPTION CR>))
