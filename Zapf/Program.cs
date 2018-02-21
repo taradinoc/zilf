@@ -1384,7 +1384,8 @@ General switches:
                     break;
 
                 case DebugMapDirective dmap:
-                    ctx.DebugFileMap[dmap.Key] = EvalExpr(ctx, dmap.Value);
+                    ctx.DebugFileMap[dmap.Key] =
+                        dmap.Value != null ? EvalExpr(ctx, dmap.Value) : new Symbol(ctx.Position);
                     break;
 
                 case DebugObjectDirective dobj:
