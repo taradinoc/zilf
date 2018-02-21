@@ -76,6 +76,7 @@ namespace Zapf.Parsing
                 { ".DEBUG-FILE", ParseDebugFileDirective },
                 { ".DEBUG-GLOBAL", ParseDebugGlobalDirective },
                 { ".DEBUG-LINE", ParseDebugLineDirective },
+                { ".DEBUG-MAP", ParseDebugMapDirective },
                 { ".DEBUG-OBJECT", ParseDebugObjectDirective },
                 { ".DEBUG-PROP", ParseDebugPropDirective },
                 { ".DEBUG-ROUTINE", ParseDebugRoutineDirective },
@@ -973,6 +974,15 @@ namespace Zapf.Parsing
             var column = ParseExpr();
             MatchEndOfDirective();
             return new DebugLineDirective(file, line, column);
+        }
+
+        [NotNull]
+        AsmLine ParseDebugMapDirective(Token head)
+        {
+            var key = MatchString();
+            var value = TryMatchEquals() ? ParseExpr() : null;
+            MatchEndOfDirective();
+            return new DebugMapDirective(key, value);
         }
 
         [NotNull]

@@ -16,16 +16,14 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     public sealed class DebugMapDirective : DebugDirective
     {
-        public DebugMapDirective([NotNull] string key, [NotNull] AsmExpr value)
+        public DebugMapDirective([NotNull] string key, [CanBeNull] AsmExpr value)
         {
             Key = key;
             Value = value;
@@ -33,7 +31,7 @@ namespace Zapf.Parsing.Directives
 
         [NotNull]
         public string Key { get; }
-        [NotNull]
+        [CanBeNull]
         public AsmExpr Value { get; }
     }
 }
