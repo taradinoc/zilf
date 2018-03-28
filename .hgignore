@@ -24,3 +24,10 @@ Testing/*.exe
 TestResults
 zapf.bat
 zilf.bat
+.vs
+_ReSharper.Caches
+*.pyc
+.vscode
+TestResultArchive
+Examples/**/*.code-workspace
+Examples/**/*.bat
