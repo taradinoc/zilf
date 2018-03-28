@@ -212,6 +212,7 @@ namespace Zilf.Compiler
             }
         }
 
+        // TODO: replace CompileStmt with CompileForm and (in loops) CompileClauseBody
         void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
         {
             Contract.Requires(rb != null);
