@@ -476,7 +476,7 @@ namespace Zilf.ZModel
 
         [NotNull]
         [ItemNotNull]
-        public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder()
+        public IEnumerable<ZilModelObject> ObjectsInDefinitionOrder(Func<ZilAtom, string> getGlobalDefinitionType)
         {
             /* first, collect objects and note the order(s) in which they were defined and mentioned,
              * where "mentioned" means either defined or used as the IN/LOC/GLOBAL of another object */
@@ -568,8 +568,18 @@ namespace Zilf.ZModel
                 }
                 else
                 {
-                    Contract.Assume(entry.InitialMention != null);
-                    ctx.HandleError(new CompilerError(entry.InitialMention, CompilerMessages.Mentioned_Object_0_Is_Never_Defined, entry.Name));
+                    Contract.Assert(entry.InitialMention != null);
+
+                    var prevDefType = getGlobalDefinitionType(entry.Name);
+                    if (prevDefType != null)
+                    {
+                        ctx.HandleError(new CompilerError(entry.InitialMention,
+                            CompilerMessages.Mentioned_Object_0_Is_Defined_Elsewhere_As_A_1, entry.Name, prevDefType));
+                        continue;
+                    }
+
+                    ctx.HandleError(new CompilerError(entry.InitialMention,
+                        CompilerMessages.Mentioned_Object_0_Is_Never_Defined, entry.Name));
                     yield return new ZilModelObject(entry.Name, new ZilList[0], false);
                 }
             }

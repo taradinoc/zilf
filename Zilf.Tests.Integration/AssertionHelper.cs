@@ -141,6 +141,20 @@ namespace Zilf.Tests.Integration
 
             return sb.ToString();
         }
+
+        protected void CheckWarningCount(int warningCount)
+        {
+            switch (expectWarnings)
+            {
+                case true:
+                    Assert.AreNotEqual(0, warningCount, "Expected at least one warning.");
+                    break;
+
+                case false:
+                    Assert.AreEqual(0, warningCount, "Expected no warnings.");
+                    break;
+            }
+        }
     }
 
     public sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
@@ -163,10 +177,8 @@ namespace Zilf.Tests.Integration
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
-            if (expectWarnings != null)
-            {
-                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
-            }
+
+            CheckWarningCount(result.WarningCount);
         }
 
         public void DoesNotThrow()
@@ -193,10 +205,7 @@ namespace Zilf.Tests.Integration
                 return;
             }
 
-            if (expectWarnings != null)
-            {
-                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
-            }
+            CheckWarningCount(result.WarningCount);
         }
     }
 
@@ -264,10 +273,9 @@ namespace Zilf.Tests.Integration
 
             var result = ZlrHelper.Run(testCode, null, compileOnly: true);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
-            if (expectWarnings != null)
-            {
-                Assert.AreEqual((bool)expectWarnings, result.WarningCount != 0);
-            }
+
+            CheckWarningCount(result.WarningCount);
+
             if (resultFilter != null)
             {
                 Assert.IsTrue(resultFilter(result), message ?? "Result filter failed");
@@ -303,16 +311,7 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
-            switch (expectWarnings)
-            {
-                case true:
-                    Assert.AreNotEqual(0, result.WarningCount, "Expected at least one warning.");
-                    break;
-
-                case false:
-                    Assert.AreEqual(0, result.WarningCount, "Expected no warnings.");
-                    break;
-            }
+            CheckWarningCount(result.WarningCount);
         }
 
         [AssertionMethod]
@@ -332,10 +331,7 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
                 "Output did not match. Expected pattern: " + pattern);
 
-            if (expectWarnings != null)
-            {
-                Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0);
-            }
+            CheckWarningCount(helper.WarningCount);
         }
     }
 

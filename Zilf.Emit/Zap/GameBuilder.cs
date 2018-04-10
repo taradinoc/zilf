@@ -495,6 +495,11 @@ namespace Zilf.Emit.Zap
         public INumericOperand One => ONE;
         public IConstantOperand VocabularyTable => VOCAB;
 
+        public bool IsGloballyDefined(string name, out string type)
+        {
+            return symbols.TryGetValue(name, out type);
+        }
+
         public void Finish()
         {
             // finish main file

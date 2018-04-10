@@ -189,6 +189,17 @@ namespace Zilf.Emit
         IConstantOperand VocabularyTable { get; }
 
         /// <summary>
+        /// Checks whether a name is in use as a global symbol.
+        /// </summary>
+        /// <param name="name">The name to check.</param>
+        /// <param name="type">The type of the existing symbol definition, or <see langword="null"/>
+        /// if the name is not in use.</param>
+        /// <returns><see langword="true"/> if a global symbol is defined with that name, or
+        /// <see langword="false"/> otherwise.</returns>
+        [ContractAnnotation("=> true, type: notnull; => false, type: null")]
+        bool IsGloballyDefined([NotNull] string name, [CanBeNull] out string type);
+
+        /// <summary>
         /// Writes the final output and closes the game builder.
         /// </summary>
         void Finish();
@@ -368,6 +379,14 @@ namespace Zilf.Emit
                 Contract.Ensures(Contract.Result<IConstantOperand>() != null);
                 return default(IConstantOperand);
             }
+        }
+
+        public bool IsGloballyDefined(string name, out string type)
+        {
+            Contract.Requires(name != null);
+            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out type) != null);
+            type = default(string);
+            return default(bool);
         }
 
         public void Finish()
