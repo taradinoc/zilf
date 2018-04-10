@@ -56,8 +56,8 @@ namespace Zilf.Diagnostics
         public const int Bare_Atom_0_Used_As_Operand_Is_Not_A_Global_Variable = 103;
         [Message("conditions in VERSION? clauses must be atoms")]
         public const int Conditions_In_In_VERSION_Clauses_Must_Be_Atoms = 104;
-        [Message("expected an atom after {0}")]
-        public const int Expected_An_Atom_After_0 = 105;
+        //[Message("expected an atom after {0}")]
+        //public const int Expected_An_Atom_After_0 = 105;
         [Message("expected binding list at start of {0}")]
         public const int Expected_Binding_List_At_Start_Of_0 = 106;
         [Message("FORM must start with an atom")]
@@ -117,6 +117,8 @@ namespace Zilf.Diagnostics
         public const int Undefined_0_1 = 207;
         [Message("{0} mismatch for '{1}': using {2} as before", Severity = Severity.Warning)]
         public const int _0_Mismatch_For_1_Using_2_As_Before = 208;
+        [Message("mentioned object '{0}' is defined elsewhere as a {1}")]
+        public const int Mentioned_Object_0_Is_Defined_Elsewhere_As_A_1 = 209;
 
         // Z-machine Structures - 0300
 
@@ -126,8 +128,8 @@ namespace Zilf.Diagnostics
         public const int Property_0_Is_Too_Long_Max_1_Byte1s = 301;
         [Message("PROPSPEC for property '{0}' returned a bad value: {1}")]
         public const int PROPSPEC_For_Property_0_Returned_A_Bad_Value_1 = 302;
-        [Message("value for '{0}' property must be {1}")]
-        public const int Value_For_0_Property_Must_Be_1 = 303;
+        //[Message("value for '{0}' property must be {1}")]
+        //public const int Value_For_0_Property_Must_Be_1 = 303;
         [Message("values for '{0}' property must be {1}")]
         public const int Values_For_0_Property_Must_Be_1 = 304;
         [Message("ONE-BYTE-PARTS-OF-SPEECH loses data for '{0}'", Severity = Severity.Warning)]

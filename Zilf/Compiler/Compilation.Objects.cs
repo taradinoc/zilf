@@ -524,7 +524,7 @@ namespace Zilf.Compiler
                 {
                     if (valueAtom == null)
                     {
-                        Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_0_Property_Must_Be_1, propName, "an atom"));
+                        Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                         continue;
                     }
                     if (Objects.TryGetValue(valueAtom, out var parent) == false)
@@ -580,7 +580,7 @@ namespace Zilf.Compiler
                         case StdAtom.DESC:
                             if (value.StdTypeAtom != StdAtom.STRING)
                             {
-                                Context.HandleError(new CompilerError(model, CompilerMessages.Value_For_0_Property_Must_Be_1, propName, "a STRING"));
+                                Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "strings"));
                                 continue;
                             }
                             ob.DescriptiveName = value.ToStringContext(Context, true);

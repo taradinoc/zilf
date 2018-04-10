@@ -595,7 +595,10 @@ namespace Zilf.Compiler
             // builders for objects
             lastObject = null;
 
-            foreach (var obj in Context.ZEnvironment.ObjectsInDefinitionOrder())
+            string GetGlobalSymbolType(ZilAtom atom) =>
+                Game.IsGloballyDefined(atom.Text, out var type) ? type : null;
+
+            foreach (var obj in Context.ZEnvironment.ObjectsInDefinitionOrder(GetGlobalSymbolType))
             {
                 lastObject = obj;
                 Objects.Add(obj.Name, Game.DefineObject(obj.Name.Text));

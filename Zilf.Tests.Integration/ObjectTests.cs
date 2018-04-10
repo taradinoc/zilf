@@ -541,5 +541,18 @@ namespace Zilf.Tests.Integration
                     "<FSET? ,FOO ,FOOBIT>",
                     "<FSET? ,FOO ,BARBIT>");
         }
+
+        [TestMethod]
+        public void Mentioning_A_Routine_As_An_Object_Should_Not_Throw()
+        {
+            AssertGlobals(
+                    @"<ROOM WEST-SIDE-OF-FISSURE
+                      (DESC ""West Side of Fissure"")
+                      (ACTION WEST-SIDE-OF-FISSURE-F)>",
+                    @"<ROUTINE WEST-SIDE-OF-FISSURE-F (RARG) <>>",
+                    @"<OBJECT DIAMONDS (DESC ""diamonds"") (IN WEST-SIDE-OF-FISSURE-F)>")
+                .WithoutWarnings()
+                .DoesNotCompile();
+        }
     }
 }
