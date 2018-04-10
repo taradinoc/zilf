@@ -2779,7 +2779,7 @@ Returns:
             <HLIGHT ,H-NORMAL>>
 
         ;"Fills the top row with spaces."
-        <ROUTINE FAKE-ERASE ("AUX" CNT WIDTH)
+        <ROUTINE FAKE-ERASE ()
             <CURSET 1 1>
             <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
             <CURSET 1 1>>)>
