@@ -567,5 +567,13 @@ namespace Zilf.Tests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("ATM", ctx), new ZilFix(100));
             TestHelpers.EvalAndAssert(ctx, "<INC ATM>", new ZilFix(101));
         }
+
+        [TestMethod]
+        public void ROUTINE_Does_Not_Allow_TUPLE_Or_ARGS()
+        {
+            TestHelpers.EvalAndCatch<InterpreterError>(@"<ROUTINE FOO (X ""TUPLE"" REST) .REST>");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(@"<ROUTINE BAR (Y ""ARGS"" REST) .REST>");
+        }
     }
 }
