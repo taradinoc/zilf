@@ -450,6 +450,19 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void FUNCTION_Calls_Should_Check_Argument_Counts()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, "<DEFINE FOO (A B C) <+ .A .B .C>>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO 1>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO 1 2>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO 1 2 3 4>");
+        }
+
+
+        [TestMethod]
         public void FUNCTION_ADECL_Parameters_Should_Set_Binding_DECLs()
         {
             var ctx = new Context();

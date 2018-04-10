@@ -628,6 +628,13 @@ namespace Zilf.Interpreter
                 while ((zr = GetOneOptional(eval, out _)) != null)
                     yield return zr.Value;
             }
+
+            /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
+            public void NoMoreArguments()
+            {
+                if (GetOneOptional(false, out _) != null)
+                    DoThrowWrongCount();
+            }
         }
 
         /// <summary>
@@ -733,6 +740,8 @@ namespace Zilf.Interpreter
                         ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
                         innerEnv.Rebind(varargsAtom, value, varargsDecl);
                     }
+
+                    evaluator.NoMoreArguments();
                 }
 
                 ZilActivation activation;
