@@ -878,5 +878,11 @@ namespace Zilf.Interpreter
 
         [CanBeNull]
         public ZilAtom ActivationAtom => activationAtom;
+
+        [CanBeNull]
+        public ZilAtom EnvironmentAtom => environmentAtom;
+
+        [CanBeNull]
+        public ZilAtom VarargsAtom => varargsAtom;
     }
 }

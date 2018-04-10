@@ -111,6 +111,14 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(
                     InterpreterMessages._0_Too_Many_Routine_Arguments_Only_1_Allowed_In_V2, "ROUTINE", maxArgsAllowed, ctx.ZEnvironment.ZVersion);
             }
+
+            if (rtn.ArgSpec.EnvironmentAtom != null || rtn.ArgSpec.VarargsAtom != null)
+            {
+                throw new InterpreterError(ctx.TopFrame.SourceLine,
+                    InterpreterMessages._0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments,
+                    "ROUTINE");
+            }
+
             if (rtn.ArgSpec.MaxArgCount > maxArgsAllowed)
             {
                 var affectedArgCount = rtn.ArgSpec.MaxArgCount - maxArgsAllowed;

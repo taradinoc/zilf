@@ -262,6 +262,8 @@ namespace Zilf.Diagnostics
         public const int _0_Word_Would_Be_Overloaded = 425;
         [Message("too many {0}: only {1} allowed in this vocab format")]
         public const int Too_Many_0_Only_1_Allowed_In_This_Vocab_Format = 426;
+        [Message("{0}: routines may not define \"BIND\", \"TUPLE\", or \"ARGS\" arguments")]
+        public const int _0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments = 427;
 
         // Modularity (package system, definitions sections) - 0500
 
