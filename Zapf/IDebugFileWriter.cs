@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Zapf
 {
-    struct LineRef
+    public struct LineRef
     {
         public LineRef(byte file, ushort line, byte col)
         {
@@ -61,12 +61,13 @@ namespace Zapf
         }
     }
 
-    interface IDebugFileWriter
+    public interface IDebugFileWriter
     {
         void Close();
 
         void StartRoutine(LineRef start, int address, string name, IEnumerable<string> locals);
         bool InRoutine { get; }
+        void RestartRoutine();
         void WriteLine(LineRef loc, int address);
         void EndRoutine(LineRef end, int address);
 

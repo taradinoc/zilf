@@ -1841,12 +1841,32 @@ General switches:
                         }
                         else if (sym.Value != ctx.Position)
                         {
-                            if (ctx.FinalPass)
-                                Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
-                                    name, sym.Value, ctx.Position);
+                            var expected = sym.Value;
 
-                            ctx.MeasureAgain = true;
+                            void CheckMismatch()
+                            {
+                                if (sym.Value == expected)
+                                    return;
+
+                                if (ctx.FinalPass)
+                                    Errors.ThrowFatal(node, "global label {0} seems to have moved: was {1}, now {2}",
+                                        name, expected, sym.Value);
+
+                                ctx.MeasureAgain = true;
+                            }
+
                             sym.Value = ctx.Position;
+
+                            if (ctx.InReassemblyScope)
+                            {
+                                // don't panic yet, since the value might be correct after reassembly.
+                                // just save the expected value and check it at the end of the reassembly scope.
+                                ctx.DeferGlobalLabelStabilityCheck(sym, CheckMismatch);
+                            }
+                            else
+                            {
+                                CheckMismatch();
+                            }
                         }
 
                         sym.Type = SymbolType.Label;

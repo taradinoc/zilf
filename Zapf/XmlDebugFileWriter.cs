@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
@@ -76,6 +77,12 @@ namespace Zapf
         }
 
         public bool InRoutine => inRoutine;
+
+        public void RestartRoutine()
+        {
+            // TODO: buffer sequence points and discard them when restarting the routine
+            throw new NotImplementedException();
+        }
 
         public void WriteLine(LineRef loc, int address)
         {

@@ -295,9 +295,9 @@ namespace Zilf.Tests.Integration
             };
 
             // run assembly
-            var success = assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate, out _, out int warningCount);
-            WarningCount += warningCount;
-            return success;
+            var result = assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
+            WarningCount += result.Context.WarningCount;
+            return result.Success;
         }
 
         [NotNull]
@@ -496,7 +496,7 @@ namespace Zilf.Tests.Integration
                 };
 
                 // run assembly
-                return assembler.Assemble(zapFileName, SStoryFileNameTemplate);
+                return assembler.Assemble(zapFileName, SStoryFileNameTemplate).Success;
             }
             finally
             {

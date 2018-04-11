@@ -32,6 +32,7 @@ namespace Zapf
 {
     delegate Stream OpenFileDelegate(string filename, bool writing);
     delegate bool FileExistsDelegate(string filename);
+    delegate IDebugFileWriter GetDebugWriterDelegate(Stream stream);
 
     class Context : IErrorSink, IDisposable
     {
@@ -86,6 +87,7 @@ namespace Zapf
 
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
+        public GetDebugWriterDelegate InterceptGetDebugWriter;
 
         char? LanguageEscapeChar { get; set; }
 
@@ -102,11 +104,45 @@ namespace Zapf
 
         int vocabStart, vocabRecSize, vocabKeySize;
 
-        int reassemblyNodeIndex = -1, reassemblyPosition = -1, reassemblyAbbrevPos;
+        /// <summary>
+        /// The node index where the reassembly scope started, or -1 if none.
+        /// </summary>
+        int reassemblyNodeIndex = -1;
+        /// <summary>
+        /// The story file position where the reassembly scope started, or -1 if none.
+        /// </summary>
+        int reassemblyPosition = -1;
+        /// <summary>
+        /// The position of the <see cref="AbbrevFinder"/> at the beginning of the
+        /// reassembly scope.
+        /// </summary>
+        int reassemblyAbbrevPos;
+        /// <summary>
+        /// The symbol of the function that owns the reassembly scope.
+        /// </summary>
         Symbol reassemblySymbol;
 
+        /// <summary>
+        /// The local labels that have been encountered in the current reassembly scope
+        /// before their definitions.
+        /// </summary>
+        /// <remarks>
+        /// When one of these labels is defined, we rewind to the beginning of the
+        /// reassembly scope and start again using the new value.
+        /// </remarks>
         [NotNull]
-        readonly Dictionary<string, bool> reassemblyLabels;
+        readonly Dictionary<string, bool> reassemblyLabels; // TODO: convert to HashSet
+
+        /// <summary>
+        /// The global labels that have been encountered in the current reassembly scope
+        /// with unexpected values, mapped to delegates that check the expected value and
+        /// handle mismatches.
+        /// </summary>
+        /// <remarks>
+        /// These are checked at the end of the reassembly scope.
+        /// </remarks>
+        [NotNull]
+        readonly Dictionary<Symbol, Action> deferredGlobalLabelChecks;
 
         public Context()
         {
@@ -120,6 +156,7 @@ namespace Zapf
 
             fileStack = new Stack<string>();
             reassemblyLabels = new Dictionary<string, bool>();
+            deferredGlobalLabelChecks = new Dictionary<Symbol, Action>();
 
             ZVersion = Program.DEFAULT_ZVERSION;
 
@@ -479,14 +516,18 @@ namespace Zapf
         public void OpenDebugFile()
         {
             var debugStream = OpenFile(DebugFile, true);
-            if (XmlDebugMode)
+
+            if (InterceptGetDebugWriter != null)
             {
-                DebugWriter = new XmlDebugFileWriter(debugStream);
+                DebugWriter = InterceptGetDebugWriter(debugStream);
+
+                if (DebugWriter != null)
+                    return;
             }
-            else
-            {
-                DebugWriter = new BinaryDebugFileWriter(debugStream);
-            }
+
+            DebugWriter = XmlDebugMode
+                ? (IDebugFileWriter)new XmlDebugFileWriter(debugStream)
+                : new BinaryDebugFileWriter(debugStream);
         }
 
         public void CloseDebugFile()
@@ -588,6 +629,7 @@ namespace Zapf
         public void BeginReassemblyScope(int nodeIndex, Symbol symbol)
         {
             reassemblyLabels.Clear();
+            deferredGlobalLabelChecks.Clear();
             reassemblyNodeIndex = nodeIndex;
             reassemblyPosition = position;
             reassemblyAbbrevPos = AbbrevFinder.Position;
@@ -606,6 +648,14 @@ namespace Zapf
         {
             Contract.Requires(label != null);
             reassemblyLabels[label] = true;
+        }
+
+        public void DeferGlobalLabelStabilityCheck([NotNull] Symbol sym, [NotNull] Action checkMismatch)
+        {
+            if (!deferredGlobalLabelChecks.ContainsKey(sym))
+            {
+                deferredGlobalLabelChecks.Add(sym, checkMismatch);
+            }
         }
 
         public int Reassemble([NotNull] string curLabel)
@@ -636,8 +686,10 @@ namespace Zapf
 
             // clean up reassembly state and rewind to the beginning of the scope
             reassemblyLabels.Clear();
+            deferredGlobalLabelChecks.Clear();
             Position = reassemblyPosition;
             AbbrevFinder.Rollback(reassemblyAbbrevPos);
+            DebugWriter?.RestartRoutine();
             return reassemblyNodeIndex;
         }
 
@@ -651,6 +703,16 @@ namespace Zapf
                 reassemblyAbbrevPos = 0;
                 reassemblySymbol = null;
                 LocalSymbols.Clear();
+
+                try
+                {
+                    foreach (var runDeferredCheck in deferredGlobalLabelChecks.Values)
+                        runDeferredCheck();
+                }
+                finally
+                {
+                    deferredGlobalLabelChecks.Clear();
+                }
             }
         }
 

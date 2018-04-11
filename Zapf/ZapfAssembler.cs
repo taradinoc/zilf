@@ -70,6 +70,20 @@ namespace Zapf
         public Context Context { get; set; }
     }
 
+    struct AssemblyResult
+    {
+        public AssemblyResult(bool success, Context context)
+        {
+            Success = success;
+            Context = context;
+        }
+
+        public static readonly AssemblyResult Failed = new AssemblyResult(false, null);
+
+        public bool Success { get; }
+        public Context Context { get; }
+    }
+
     sealed class ZapfAssembler
     {
         public event EventHandler<OpeningFileEventArgs> OpeningFile;
@@ -141,12 +155,7 @@ namespace Zapf
             return ctx;
         }
 
-        public bool Assemble(string inputFileName, string outputFileName)
-        {
-            return Assemble(inputFileName, outputFileName, out _, out _);
-        }
-
-        public bool Assemble(string inputFileName, string outputFileName, out int errorCount, out int warningCount)
+        public AssemblyResult Assemble(string inputFileName, string outputFileName)
         {
             var ctx = InitializeContext(inputFileName, outputFileName);
 
@@ -175,20 +184,17 @@ namespace Zapf
                     catch (FatalError fer)
                     {
                         ctx.HandleFatalError(fer);
-                        return false;
+                        return AssemblyResult.Failed;
                     }
                 } while (restart);
 
                 //XXX find abbreviations?
 
                 // done
-                return ctx.ErrorCount == 0;
+                return new AssemblyResult(ctx.ErrorCount == 0, ctx);
             }
             finally
             {
-                errorCount = ctx.ErrorCount;
-                warningCount = ctx.WarningCount;
-
                 ctx.CloseOutput();
                 ctx.CloseDebugFile();
             }
