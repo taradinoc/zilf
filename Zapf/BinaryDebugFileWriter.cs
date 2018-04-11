@@ -30,6 +30,7 @@ namespace Zapf
         ushort nextRoutineNumber;
         long routineStart = -1;
         int routinePoints = -1;
+        long rollbackPosition = -1;
 
         public BinaryDebugFileWriter(Stream debugStream)
         {
@@ -159,8 +160,15 @@ namespace Zapf
             WriteDebugWord(nextRoutineNumber);
             WriteDebugWord(0);      // # sequence points, filled in later
 
+            rollbackPosition = stream.Position;
             routinePoints = 0;
             routineStart = address;
+        }
+
+        public void RestartRoutine()
+        {
+            stream.Position = rollbackPosition;
+            routinePoints = 0;
         }
 
         public void EndRoutine(LineRef end, int address)
@@ -178,6 +186,8 @@ namespace Zapf
             WriteDebugWord(nextRoutineNumber++);
             WriteDebugLineRef(end);
             WriteDebugAddress(address);
+
+            rollbackPosition = -1;
         }
 
         #region Write Primitives

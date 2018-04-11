@@ -25,22 +25,67 @@ using JetBrains.Annotations;
 
 namespace Zapf.Tests
 {
+    struct AssemblyTestInput
+    {
+        [NotNull]
+        public string Code;
+
+        [CanBeNull, ItemNotNull]
+        public string[] Args;
+
+        [CanBeNull]
+        public IDebugFileWriter DebugWriter;
+    }
+
+    struct AssemblyTestOutput
+    {
+        public bool Success;
+
+        [NotNull]
+        public MemoryStream StoryFile;
+
+        [NotNull]
+        public IDictionary<string, Symbol> Symbols;
+    }
+
     static class TestHelper
     {
-        public static bool Assemble([NotNull] string code) => Assemble(code, out _);
+        public static bool Assemble([NotNull] string code) =>
+            Assemble(new AssemblyTestInput { Code = code }).Success;
 
         [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
         public static bool Assemble([NotNull] string code, [CanBeNull] out MemoryStream storyFile)
-            => Assemble(code, null, out storyFile);
+        {
+            var result = Assemble(new AssemblyTestInput { Code = code });
+            storyFile = result.StoryFile;
+            return result.Success;
+        }
 
         [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
-        public static bool Assemble([NotNull] string code, [CanBeNull] string[] args, [CanBeNull] out MemoryStream storyFile)
+        public static bool Assemble([NotNull] string code, [NotNull, ItemNotNull] string[] args,
+            [CanBeNull] out MemoryStream storyFile)
+        {
+            var result = Assemble(new AssemblyTestInput { Code = code, Args = args });
+            storyFile = result.StoryFile;
+            return result.Success;
+        }
+
+        [ContractAnnotation("=> false, symbols: null; => true, symbols: notnull")]
+        public static bool Assemble([NotNull] string code, [NotNull] IDebugFileWriter debugWriter,
+            [CanBeNull] out IDictionary<string, Symbol> symbols)
+        {
+            var result = Assemble(new AssemblyTestInput { Code = code, DebugWriter = debugWriter });
+            symbols = result.Symbols;
+            return result.Success;
+        }
+
+        public static AssemblyTestOutput Assemble(AssemblyTestInput input)
         {
             const string InputFileName = "Input.zap";
             const string OutputFileName = "Output.z#";
             var inputFiles = new Dictionary<string, string>
             {
-                { InputFileName, code }
+                { InputFileName, input.Code }
             };
             var outputFiles = new Dictionary<string, MemoryStream>();
 
@@ -69,8 +114,10 @@ namespace Zapf.Tests
                 e.Exists = inputFiles.ContainsKey(e.FileName);
             };
 
-            if (args != null)
+            if (input.Args != null)
             {
+                var args = input.Args;
+
                 assembler.InitializingContext += (sender, e) =>
                 {
                     var inFile = e.Context.InFile;
@@ -93,18 +140,34 @@ namespace Zapf.Tests
                 };
             }
 
-            // run assembly
-            if (assembler.Assemble(InputFileName, OutputFileName))
+            if (input.DebugWriter != null)
             {
-                storyFile = (from pair in outputFiles
-                             let ext = Path.GetExtension(pair.Key)
-                             where ext.Length == 3 && ext.StartsWith(".z")
-                             select pair.Value).Single();
-                return true;
+                var wtr = input.DebugWriter;
+
+                assembler.InitializingContext += (sender, e) =>
+                {
+                    e.Context.InterceptGetDebugWriter = _ => wtr;
+                };
             }
 
-            storyFile = null;
-            return false;
+            // run assembly
+            var result = assembler.Assemble(InputFileName, OutputFileName);
+            if (result.Success)
+            {
+                return new AssemblyTestOutput
+                {
+                    Success = true,
+
+                    StoryFile = (from pair in outputFiles
+                                 let ext = Path.GetExtension(pair.Key)
+                                 where ext.Length == 3 && ext.StartsWith(".z")
+                                 select pair.Value).Single(),
+
+                    Symbols = result.Context.GlobalSymbols
+                };
+            }
+
+            return new AssemblyTestOutput { Success = false };
         }
     }
 }
