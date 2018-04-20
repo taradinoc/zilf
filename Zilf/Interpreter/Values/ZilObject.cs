@@ -41,23 +41,21 @@ namespace Zilf.Interpreter.Values
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
 
-            if (selector is ZilFix fix)
+            switch (selector)
             {
-                var idx = fix.Value;
-                if (idx >= 0 && idx < templateParams.Length)
-                    return new[] { templateParams[idx] };
-            }
-            else if (selector is ZilAdecl adecl)
-            {
-                if (adecl.First is ZilFix idx &&
-                    idx.Value >= 0 &&
-                    idx.Value < templateParams.Length &&
-                    adecl.Second is ZilAtom atom &&
-                    atom.StdAtom == StdAtom.SPLICE &&
-                    templateParams[idx.Value] is IEnumerable<ZilObject> result)
-                {
+                case ZilFix fix
+                    when fix.Value >= 0 && fix.Value < templateParams.Length:
+
+                    return new[] { templateParams[fix.Value] };
+
+                case ZilAdecl adecl
+                    when adecl.First is ZilFix idx &&
+                         idx.Value >= 0 && idx.Value < templateParams.Length &&
+                         adecl.Second is ZilAtom atom &&
+                         atom.StdAtom == StdAtom.SPLICE &&
+                         templateParams[idx.Value] is IEnumerable<ZilObject> result:
+
                     return result;
-                }
             }
 
             throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "template reference", selector);

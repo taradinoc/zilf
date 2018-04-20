@@ -186,6 +186,7 @@
     <Compile Include="Diagnostics\InterpreterMessages.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interpreter\ApplicableExtensions.cs" />
+    <Compile Include="Language\Bang.cs" />
     <Compile Include="Language\Signatures\ZBuiltinSignature.cs" />
     <Compile Include="Language\Signatures\ConstrainedPart.cs" />
     <Compile Include="Language\Signatures\Constraint.cs" />
