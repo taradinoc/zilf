@@ -391,6 +391,7 @@
 
 <DEFINE GENERIC-WRITE (OBJ PRINC? WIDTH MAX-EXPR-WIDTH PER-LINE-PREFIX OUTPUT)
     <OUT .PER-LINE-PREFIX 0>
+    ;"TODO: don't print CRLF when PPRINT is being used as PRINTTYPE inside a larger object"
     <COND (.WIDTH <OUT ,CRLF-STRING <PP .OBJ 0>>)
           (ELSE <WR .OBJ 0>)>
     T>
