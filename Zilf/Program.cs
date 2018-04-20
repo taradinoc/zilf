@@ -517,12 +517,11 @@ Compiler switches:
 
             foreach (var po in parser.Parse(chars))
             {
+                if (po.IsIgnorable)
+                    continue;
+
                 switch (po.Type)
                 {
-                    case ParserOutputType.Comment:
-                        // skip
-                        break;
-
                     case ParserOutputType.Object:
                         yield return po.Object;
                         break;

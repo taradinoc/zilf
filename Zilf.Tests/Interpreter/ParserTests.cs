@@ -391,5 +391,41 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilFix(2), result[2].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[3].Type);
         }
+
+        [DataTestMethod]
+        [DataRow("!;bang-comment", ParserOutputType.Comment)]
+        [DataRow("!!<>", ParserOutputType.SyntaxError)]
+        [DataRow("(! !)", ParserOutputType.Object)]
+        [DataRow("(!)", ParserOutputType.Object)]
+        [DataRow("<!>", ParserOutputType.Object)]
+        [DataRow(@"!!\A", ParserOutputType.SyntaxError)]
+        [DataRow("!%FOO", ParserOutputType.Object)]
+        [DataRow("!%%FOO", ParserOutputType.EmptySplice)]
+        [DataRow("!#2 1010", ParserOutputType.Object)]
+        [DataRow("!'FOO", ParserOutputType.Object)]
+        public void TestParsingUglyStructures([NotNull] string input, [NotNull] object boxedExpectedType)
+        {
+            site.OnEvaluate = _ => new ZilFix(3);
+
+            var expectedType = (ParserOutputType)boxedExpectedType;
+            var parser = new Parser(site);
+            var results = parser.Parse(input).ToArray();
+            var resultStr = string.Join(", ", results.Select(r => r.ToString()));
+
+            if (expectedType == ParserOutputType.SyntaxError)
+            {
+                Assert.AreEqual(1, results.Length, "Expected 1 result but found [{0}]", resultStr);
+                Assert.AreEqual(expectedType, results[0].Type, "Expected result to be {0} but found {1}",
+                    expectedType, resultStr);
+            }
+            else
+            {
+                Assert.AreEqual(2, results.Length, "Expected 2 results but found [{0}]", resultStr);
+                Assert.AreEqual(expectedType, results[0].Type, "Expected first result to be {0} but found {1}",
+                    expectedType, resultStr);
+                Assert.AreEqual(ParserOutputType.EndOfInput, results[1].Type,
+                    "Expected second result to be {0} but found {1}", ParserOutput.EndOfInput, resultStr);
+            }
+        }
     }
 }
