@@ -345,7 +345,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("",
                 "<BIND (RESULT) <SET RESULT <FOO>> <PRINTN 1> .RESULT> <CRLF>")
                 .WithGlobal("<ROUTINE FOO () 123>")
-                .GeneratesCodeMatching(@"\A(?:(?!RESULT).)*\Z");
+                .GeneratesCodeNotMatching(@"RESULT");
         }
 
         [TestMethod]
@@ -358,14 +358,14 @@ namespace Zilf.Tests.Integration
                 .GeneratesCodeMatching("SET 'X,1");
 
             AssertRoutine("\"AUX\" X", "<COND (<PROG () .X> T)>")
-                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+                .GeneratesCodeNotMatching(@"PUSH");
         }
 
         [TestMethod]
         public void REPEAT_Last_Expression_Should_Not_Clutter_Stack()
         {
             AssertRoutine("", "<REPEAT () 123>")
-                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+                .GeneratesCodeNotMatching(@"PUSH");
         }
 
         #endregion

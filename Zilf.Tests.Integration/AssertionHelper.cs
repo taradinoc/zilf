@@ -214,7 +214,6 @@ namespace Zilf.Tests.Integration
     {
         [NotNull] protected abstract string Expression();
 
-        [AssertionMethod]
         public void GivesNumber([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
@@ -225,7 +224,6 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
-        [AssertionMethod]
         public void Outputs([NotNull] string expectedValue)
         {
             Contract.Requires(expectedValue != null);
@@ -236,7 +234,6 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
         }
 
-        [AssertionMethod]
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
             Contract.Requires(conditions != null);
@@ -260,7 +257,6 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
-        [AssertionMethod]
         public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
             [CanBeNull] string message = null)
         {
@@ -282,7 +278,6 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        [AssertionMethod]
         public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
         {
             var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
@@ -297,7 +292,6 @@ namespace Zilf.Tests.Integration
                 $"Expected diagnostic {attr.Prefix}{diagnosticCode:0000} was not produced");
         }
 
-        [AssertionMethod]
         public void Compiles()
         {
             var testCode =
@@ -314,10 +308,44 @@ namespace Zilf.Tests.Integration
             CheckWarningCount(result.WarningCount);
         }
 
-        [AssertionMethod]
-        public void GeneratesCodeMatching([NotNull] string pattern)
+        [NotNull]
+        public CodeMatchingResult GeneratesCodeMatching([NotNull] string pattern)
         {
             Contract.Requires(pattern != null);
+
+            return GeneratesCodeMatching(CheckOutputMatches(pattern));
+        }
+
+        [NotNull]
+        static Action<string> CheckOutputMatches(string pattern)
+        {
+            return output =>
+                Assert.IsTrue(
+                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                    "Output did not match. Expected pattern: " + pattern);
+        }
+
+        [NotNull]
+        public CodeMatchingResult GeneratesCodeNotMatching([NotNull] string pattern)
+        {
+            Contract.Requires(pattern != null);
+
+            return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
+        }
+
+        [NotNull]
+        static Action<string> CheckOutputDoesNotMatch(string pattern)
+        {
+            return output =>
+                Assert.IsFalse(
+                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                    "Output should not have matched. Anti-pattern: " + pattern);
+        }
+
+        [NotNull]
+        CodeMatchingResult GeneratesCodeMatching([NotNull] Action<string> checkGeneratedCode)
+        {
+            Contract.Requires(checkGeneratedCode != null);
 
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
@@ -328,10 +356,35 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(helper.Compile(), "Failed to compile");
 
             var output = helper.GetZapCode();
-            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
-                "Output did not match. Expected pattern: " + pattern);
+            checkGeneratedCode(output);
 
             CheckWarningCount(helper.WarningCount);
+
+            return new CodeMatchingResult(output);
+        }
+
+        public sealed class CodeMatchingResult
+        {
+            public string Output { get; }
+
+            public CodeMatchingResult(string output)
+            {
+                this.Output = output;
+            }
+
+            [NotNull]
+            public CodeMatchingResult AndMatching([NotNull] string pattern)
+            {
+                CheckOutputMatches(pattern)(Output);
+                return this;
+            }
+
+            [NotNull]
+            public CodeMatchingResult AndNotMatching([NotNull] string pattern)
+            {
+                CheckOutputDoesNotMatch(pattern)(Output);
+                return this;
+            }
         }
     }
 
