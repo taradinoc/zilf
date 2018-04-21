@@ -41,6 +41,7 @@ namespace Zilf.Tests.Integration
         protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
+        protected bool wantDebugInfo;
 
         protected AbstractAssertionHelper()
         {
@@ -132,6 +133,13 @@ namespace Zilf.Tests.Integration
         }
 
         [NotNull]
+        public TThis WithDebugInfo()
+        {
+            wantDebugInfo = true;
+            return (TThis)this;
+        }
+
+        [NotNull]
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -175,7 +183,7 @@ namespace Zilf.Tests.Integration
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarningCount(result.WarningCount);
@@ -192,7 +200,7 @@ namespace Zilf.Tests.Integration
 
             try
             {
-                result = ZlrHelper.Run(testCode, null, compileOnly: true);
+                result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             }
             catch (Exception ex)
             {
@@ -267,7 +275,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarningCount(result.WarningCount);
@@ -301,7 +309,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
@@ -353,7 +361,7 @@ namespace Zilf.Tests.Integration
                            "\t<QUIT>>";
 
             var helper = new ZlrHelper(testCode, null);
-            Assert.IsTrue(helper.Compile(), "Failed to compile");
+            Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
 
             var output = helper.GetZapCode();
             checkGeneratedCode(output);

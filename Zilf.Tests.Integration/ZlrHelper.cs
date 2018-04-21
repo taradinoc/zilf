@@ -85,14 +85,14 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false)
+        public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
         {
             Contract.Requires(code != null);
 
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
 
-            bool compiled = helper.Compile();
+            bool compiled = helper.Compile(wantDebugInfo);
             result.ErrorCount = helper.ErrorCount;
             result.WarningCount = helper.WarningCount;
             result.Diagnostics = helper.Diagnostics;
@@ -172,12 +172,12 @@ namespace Zilf.Tests.Integration
             Console.Error.WriteLine();
         }
 
-        public bool Compile()
+        public bool Compile(bool wantDebugInfo = false)
         {
-            return Compile(null);
+            return Compile(null, wantDebugInfo);
         }
 
-        bool Compile([CanBeNull] Action<FrontEnd> initializeFrontEnd)
+        bool Compile([CanBeNull] Action<FrontEnd> initializeFrontEnd, bool wantDebugInfo = false)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -220,7 +220,7 @@ namespace Zilf.Tests.Integration
 
             // run compilation
             PrintZilCode();
-            var result = frontEnd.Compile(SZilFileName, SMainZapFileName);
+            var result = frontEnd.Compile(SZilFileName, SMainZapFileName, wantDebugInfo);
             ErrorCount = result.ErrorCount;
             WarningCount = result.WarningCount;
             Diagnostics = result.Diagnostics;

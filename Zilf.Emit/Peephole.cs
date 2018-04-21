@@ -171,6 +171,19 @@ namespace Zilf.Emit
         TCode MergeIdentical(TCode a, TCode b);
 
         /// <summary>
+        /// Determines whether an instruction may be duplicated as part of an
+        /// optimization.
+        /// </summary>
+        /// <param name="c">The instruction.</param>
+        /// <returns><see langword="true"/> if the instruction may be duplicated.</returns>
+        /// <remarks>
+        /// The motivating use case is "optimize branch to terminator". This optimization
+        /// is always disabled for some instructions (via <see cref="PeepholeLineType.HeavyTerminator"/>),
+        /// but in some cases we need to disable it contextually as well.
+        /// </remarks>
+        bool CanDuplicate(TCode c);
+
+        /// <summary>
         /// Determines whether one branch instruction tests the same condition
         /// that has already been tested by an earlier branch instruction,
         /// assuming the second test happens immediately after the first.
@@ -547,10 +560,12 @@ namespace Zilf.Emit
                 }
 
                 // apply optimizations to each line
-                for (LinkedListNode<Line> node = lines.First; node != null; node = node.Next)
+                for (var node = lines.First; node != null; node = node.Next)
                 {
-                    Line line = node.Value;
+                    var line = node.Value;
                     bool delete = false;
+
+                    // TODO: refactor optimizations (wrap each one in a method or class)
 
                     // clear unused labels
                     if (line.Label != null && !usedLabels.ContainsKey(line.Label))
@@ -755,7 +770,8 @@ namespace Zilf.Emit
                             Trace("doom branch to next");
                         }
                         else if (line.Type == PeepholeLineType.BranchAlways &&
-                            line.TargetLine.Type == PeepholeLineType.Terminator)
+                            line.TargetLine.Type == PeepholeLineType.Terminator &&
+                            Combiner.CanDuplicate(line.TargetLine.Code))
                         {
                             // handle "branch to terminator" by replacing the branch with a copy of the terminator
                             var oldLabel = line.Label;
@@ -1051,6 +1067,11 @@ namespace Zilf.Emit
         public TCode MergeIdentical(TCode a, TCode b)
         {
             return default(TCode);
+        }
+
+        public bool CanDuplicate(TCode c)
+        {
+            return default(bool);
         }
 
         public SameTestResult AreSameTest(TCode a, TCode b)

@@ -232,10 +232,10 @@ namespace Zilf.Compiler
         }
 
         [NotNull]
-        Context NewContext(RunMode runMode)
+        Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
             Contract.Ensures(Contract.Result<Context>() != null);
-            var result = new Context { RunMode = runMode };
+            var result = new Context { RunMode = runMode, WantDebugInfo = wantDebugInfo };
 
             InitializeContext?.Invoke(this, new ContextEventArgs(result));
 
@@ -250,18 +250,12 @@ namespace Zilf.Compiler
             return f;
         }
 
-        public FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName)
+        public FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
         {
             Contract.Requires(inputFileName != null);
             Contract.Requires(outputFileName != null);
-            return Compile(inputFileName, outputFileName, false);
-        }
-
-        FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo)
-        {
-            Contract.Requires(inputFileName != null);
-            Contract.Requires(outputFileName != null);
-            return Compile(NewContext(RunMode.Compiler), inputFileName, outputFileName, wantDebugInfo);
+            var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
+            return Compile(ctx, inputFileName, outputFileName, wantDebugInfo);
         }
 
         internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)

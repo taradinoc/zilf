@@ -647,5 +647,31 @@ namespace Zilf.Tests.Integration
                 .WithGlobal(@"<OBJECT OBJ (FOO\\BAR 123)>")
                 .Outputs("123");
         }
+
+        [TestMethod]
+        public void Instructions_With_Debug_Line_Info_Should_Not_Be_Duplicated()
+        {
+            const string ArgSpec =
+                @"""OPT"" W PS (P1 -1) ""AUX"" F";
+            const string Body = @"
+                <COND (<0? .W> <RFALSE>)>
+                <SET F <GETB .W ,VOCAB-FL>>
+                <SET F <COND (<BTST .F .PS>
+                              <COND (<L? .P1 0>
+                                     <RTRUE>)
+                                    (<==? <BAND .F ,P1MASK> .P1>
+                                     <GETB .W ,VOCAB-V1>)
+                                    (ELSE <GETB .W ,VOCAB-V2>)>)>>
+                .F";
+
+            AssertRoutine(ArgSpec, Body)
+                .WithGlobal("<CONSTANT P1MASK 255>")
+                .WithGlobal("<CONSTANT VOCAB-FL 1>")
+                .WithGlobal("<CONSTANT VOCAB-V1 2>")
+                .WithGlobal("<CONSTANT VOCAB-V2 3>")
+                .WithDebugInfo()
+                .GeneratesCodeMatching(@"\.DEBUG-LINE")
+                .AndNotMatching(@"(\.DEBUG-LINE ([^\r\n]*)\r?\n).*\1");
+        }
     }
 }
