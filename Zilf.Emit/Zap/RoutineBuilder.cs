@@ -1254,7 +1254,7 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode {
                                 Instruction = newInstruction,
-                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText
+                                DebugText = MergeDebugText(matches[0].Code.DebugText, matches[1].Code.DebugText),
                             },
                             target ?? matches[1].Target,
                             type ?? matches[1].Type)
@@ -1618,6 +1618,16 @@ namespace Zilf.Emit.Zap
                 return new ZapCode { Instruction = new Instruction("JUMP") };
             }
 
+            [CanBeNull]
+            private static string MergeDebugText([CanBeNull] string text1, [CanBeNull] string text2)
+            {
+                return
+                    text1 == null ? text2
+                    : text2 == null ? text1
+                    : text1 == text2 ? text1
+                    : $"{text1}\r\n{INDENT}{text2}";
+            }
+
             public bool AreIdentical(ZapCode a, ZapCode b)
             {
                 return a.Instruction.Equals(b.Instruction);
@@ -1628,8 +1638,14 @@ namespace Zilf.Emit.Zap
                 return new ZapCode
                 {
                     Instruction = a.Instruction,
-                    DebugText = a.DebugText ?? b.DebugText
+                    DebugText = MergeDebugText(a.DebugText, b.DebugText),
                 };
+            }
+
+            public bool CanDuplicate(ZapCode c)
+            {
+                // don't duplicate instructions with debug info attached
+                return c.DebugText == null;
             }
 
             public SameTestResult AreSameTest(ZapCode a, ZapCode b)
