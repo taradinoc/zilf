@@ -721,15 +721,17 @@ Sets:
                         <=? <GETWORD? 2> ,W?\. ,W?THEN>>>)
               (ELSE
                <TRACE 4 "[saving for UNDO]" CR>
-               <SETG USAVE <ISAVE>>
-               <COND (<=? ,USAVE 2>
-                      <TELL "Previous turn undone." CR CR>
-                      <SETG WINNER .OW>
-                      <SETG HERE .OH>
-                      <SETG HERE-LIT .OHL>
-                      <V-LOOK>
-                      <SETG P-CONT 0>
-                      <AGAIN>)>)>>
+               <BIND ((RES <ISAVE>))
+                   <COND (<=? .RES 2>
+                          <TELL "Previous turn undone." CR CR>
+                          <SETG WINNER .OW>
+                          <SETG HERE .OH>
+                          <SETG HERE-LIT .OHL>
+                          <V-LOOK>
+                          <SETG P-CONT 0>
+                          <AGAIN>)
+                         (ELSE
+                          <SETG USAVE .RES>)>>)>>
 
     <COND (<0? ,P-CONT>
            ;"Handle OOPS"
