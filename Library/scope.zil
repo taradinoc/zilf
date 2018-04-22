@@ -79,9 +79,9 @@
     ,SCOPE-STAGES>
 
 ;"Define enough state for the most demanding stage"
-<CONSTANT SCOPE-STATE-SIZE %<MAPF ,MAX 2 ,SCOPE-STAGES>>
+<CONSTANT SCOPE-STATE-SIZE <MAPF ,MAX 2 ,SCOPE-STAGES>>
 <CONSTANT SCOPE-STATE <ITABLE NONE ,SCOPE-STATE-SIZE>>
-<CONSTANT SCOPE-CURRENT-STAGES-SIZE %<LENGTH ,SCOPE-STAGES>>
+<CONSTANT SCOPE-CURRENT-STAGES-SIZE <LENGTH ,SCOPE-STAGES>>
 <CONSTANT SCOPE-CURRENT-STAGES <ITABLE WORD ,SCOPE-CURRENT-STAGES-SIZE>>
 <GLOBAL SCOPE-CURRENT-STAGE -1>
 
@@ -95,7 +95,7 @@
       Or set them from search bits:
         [BITS .B]
       Or default to all stages in definition order (or use [BITS -1]).
-      
+
       To turn off the light requirement:
         [NO-LIGHT]"
     <SET OPTS <REST .VAR>>
@@ -150,7 +150,7 @@
 <ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
     ;"Special case: -1 means all stages in definition order."
     <COND (<=? -1 .BITS>
-           <PUT ,SCOPE-CURRENT-STAGES 0 %<LENGTH ,SCOPE-STAGES>>
+           <PUT ,SCOPE-CURRENT-STAGES 0 ,SCOPE-CURRENT-STAGES-SIZE>
            %<FORM PROG '()
                   !<MAPF ,LIST
                       <FUNCTION (I "AUX" (S <1 .I>))
