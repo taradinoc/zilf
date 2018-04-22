@@ -255,10 +255,11 @@ namespace Zilf.Compiler
             Contract.Requires(inputFileName != null);
             Contract.Requires(outputFileName != null);
             var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
-            return Compile(ctx, inputFileName, outputFileName, wantDebugInfo);
+            return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
 
-        internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
+        internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName,
+            [NotNull] string outputFileName, bool wantDebugInfo = false)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(inputFileName != null);
@@ -267,10 +268,10 @@ namespace Zilf.Compiler
         }
 
         // FIXME: not supported by R#, sadly...
-        [ContractAnnotation("wantCompile: true => outputFileName: notnull")]
-        [ContractAnnotation("wantCompile: false => outputFileName: null")]
+        //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
+        //[ContractAnnotation("wantCompile: false => outputFileName: null")]
         FrontEndResult InterpretOrCompile([NotNull] [ProvidesContext] Context ctx, [NotNull] string inputFileName,
-            string outputFileName, bool wantCompile, bool wantDebugInfo)
+            [CanBeNull] string outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             Contract.Requires(ctx != null);
             Contract.Requires(inputFileName != null);
