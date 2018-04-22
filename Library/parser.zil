@@ -2741,47 +2741,50 @@ Returns:
 <OR <GASSIGNED? DARKNESS-STATUS-TEXT>
     <SETG DARKNESS-STATUS-TEXT "Darkness">>
 
-<VERSION?
-    (ZIP
-        <DEFMAC INIT-STATUS-LINE () <>>
+<DEFAULT-DEFINITION STATUS-LINE
 
-        <ROUTINE UPDATE-STATUS-LINE ()
-            <WRAP-FOR-DARK-STATUS <USL>>>)
-    (T
-        ;"Splits the screen and clears a 1-line status line."
-        <ROUTINE INIT-STATUS-LINE ()
-            <SPLIT 1>
-            <CLEAR 1>>
+    <VERSION?
+        (ZIP
+            <DEFMAC INIT-STATUS-LINE () <>>
 
-        ;"Writes the location name, score, and turn count in the status line.
+            <ROUTINE UPDATE-STATUS-LINE ()
+                <WRAP-FOR-DARK-STATUS <USL>>>)
+        (T
+            ;"Splits the screen and clears a 1-line status line."
+            <ROUTINE INIT-STATUS-LINE ()
+                <SPLIT 1>
+                <CLEAR 1>>
 
-        Uses:
-          HERE
-          HERE-LIT
-          SCORE
-          MOVES"
-        <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
-            <SCREEN 1>
-            <HLIGHT ,H-INVERSE>
-            <FAKE-ERASE>
-            <TELL !\ >
-            <COND (,HERE-LIT <TELL D ,HERE>)
-                  (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
-            <SET WIDTH <LOWCORE SCRH>>
-            <CURSET 1 <- .WIDTH 22>>
-            <TELL "Score: ">
-            <PRINTN ,SCORE>
-            <CURSET 1 <- .WIDTH 10>>
-            <TELL "Moves: ">
-            <PRINTN ,MOVES>
-            <SCREEN 0>
-            <HLIGHT ,H-NORMAL>>
+            ;"Writes the location name, score, and turn count in the status line.
 
-        ;"Fills the top row with spaces."
-        <ROUTINE FAKE-ERASE ()
-            <CURSET 1 1>
-            <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
-            <CURSET 1 1>>)>
+            Uses:
+            HERE
+            HERE-LIT
+            SCORE
+            MOVES"
+            <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
+                <SCREEN 1>
+                <HLIGHT ,H-INVERSE>
+                <FAKE-ERASE>
+                <TELL !\ >
+                <COND (,HERE-LIT <TELL D ,HERE>)
+                      (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
+                <SET WIDTH <LOWCORE SCRH>>
+                <CURSET 1 <- .WIDTH 22>>
+                <TELL "Score: ">
+                <PRINTN ,SCORE>
+                <CURSET 1 <- .WIDTH 10>>
+                <TELL "Moves: ">
+                <PRINTN ,MOVES>
+                <SCREEN 0>
+                <HLIGHT ,H-NORMAL>>
+
+            ;"Fills the top row with spaces."
+            <ROUTINE FAKE-ERASE ()
+                <CURSET 1 1>
+                <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
+                <CURSET 1 1>>)>
+>
 
 ;"Prints a message and ends the game, prompting the player to restart,
 (possibly) undo, restore, or quit.
