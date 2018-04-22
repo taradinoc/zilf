@@ -29,7 +29,7 @@ using System.Text.RegularExpressions;
 
 namespace Zilf.Tests.Integration
 {
-    [TestClass, TestCategory("Compiler"), TestCategory("Slow")]
+    [TestClass, TestCategory("Compiler"), TestCategory("Slow"), TestCategory("Library")]
     public class FullProjectTests
     {
         const string ProjectsDirName = "FullTestProjects";
@@ -110,8 +110,8 @@ namespace Zilf.Tests.Integration
                 var massagedExpected = MassageText(File.ReadAllText(outputFile));
                 if (massagedActual != massagedExpected)
                 {
-                    string[] expectedLines = SplitLines(massagedExpected);
-                    string[] actualLines = SplitLines(massagedActual);
+                    var expectedLines = SplitLines(massagedExpected);
+                    var actualLines = SplitLines(massagedActual);
 
                     var diff = Diff.CalculateSections(expectedLines, actualLines);
                     int e = 0, a = 0;
