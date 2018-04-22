@@ -1056,7 +1056,7 @@ Sets:
     <DIROUT -3>
     <SET NL <GET ,TEMPTABLE 0>>
     ;"Shift LEXBUF up to make room (sacrificing the last word if needed)"
-    <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN %<- ,LEXBUF-SIZE 1>>)>
+    <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN <- ,LEXBUF-SIZE 1>>)>
     <COND (<L=? .N .LEN>
            <SET MIN <* .N 2>>
            <DO (I <* .LEN 2> .MIN -2)
@@ -1109,8 +1109,7 @@ Returns:
           (<AND <STARTS-NOUN-PHRASE? <GETWORD? 1>>
                 <SET P <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ T>>
                 <L? .P ,P-LEN>
-                ;"%<VOC> instead of ,W?\, in the next line to work around a syntax highlighting bug."
-                <=? <GETWORD? .P> %<VOC ",">>
+                <=? <GETWORD? .P> ,W?COMMA>
                 <OR <CHKWORD? <SET W <GETWORD? <+ .P 1>>> ,PS?VERB>
                     <CHKWORD? .W ,PS?DIRECTION>>>
            <TRACE 2 "[got ACTOR, VERB order syntax]" CR>
@@ -1798,7 +1797,7 @@ Returns:
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
                       <TELL "[taking ">
-                      <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>>
+                      <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? <+ ,L-PRSTABLE ,L-THE>>>
                       <TELL "]" CR>
                       <REPEAT ()
                           <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
@@ -1819,7 +1818,7 @@ Returns:
            <DO (I 1 .MAX)
                <COND (<FAILS-HAVE-CHECK? <GET/B .TBL .I>>
                       <TELL "You aren't holding ">
-                      <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+                      <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? <+ ,L-PRSTABLE ,L-THE ,L-OR>>
                       <TELL "." CR>
                       <SETG P-CONT 0>
                       <RFALSE>)>>)>
@@ -1879,7 +1878,7 @@ Returns:
     <DO (I 1 .CNT)
         <TRACE 4 "[considering " D <GET/B .TBL .I> "]" CR>
         <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
-               <LIST-OBJECTS .TBL ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
+               <LIST-OBJECTS .TBL ,NOT-VISIBLE? <+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
                <TELL " no longer here." CR>
                <TRACE-OUT>
                <SETG P-CONT 0>
@@ -2006,7 +2005,7 @@ Returns:
     <SET MODE <NP-MODE .NP>>
     <SET OBITS .BITS>
     <COND (<0? .MODE>
-           <SET .BITS <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>)>
+           <SET .BITS <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>)>
     <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
              " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
     <TRACE-IN>
@@ -2097,7 +2096,7 @@ Returns:
         <COND (<0? .NOUT>
                ;"This means ALL matched nothing, or BUT excluded everything.
                  Try expanding the search if we can."
-               <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
+               <SET F <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>
                <COND (<=? .BITS .F>
                       <TELL "There are none at all available!" CR>
                       <TRACE-OUT>
@@ -2154,7 +2153,7 @@ Returns:
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
     <TELL "Which do you mean, ">
-    <LIST-OBJECTS .TBL <> %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+    <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
     <TELL "?" CR>>
 
 ;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
@@ -2348,7 +2347,7 @@ Returns:
 
 ;"Copies a READBUF-like table."
 <ROUTINE COPY-READBUF (SRC DEST)
-    <COPY-TABLE .SRC .DEST %</ ,READBUF-SIZE 2>>>
+    <COPY-TABLE .SRC .DEST </ ,READBUF-SIZE 2>>>
 
 ;"Measures the length of a READBUF-like table (not including the null terminator on V3-4)."
 <ROUTINE READBUF-LENGTH (TBL)
