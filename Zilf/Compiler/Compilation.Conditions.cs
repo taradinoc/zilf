@@ -42,6 +42,7 @@ namespace Zilf.Compiler
             expr = expr.Unwrap(Context);
             var type = expr.StdTypeAtom;
 
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type)
             {
                 case StdAtom.FALSE:
@@ -141,7 +142,7 @@ namespace Zilf.Compiler
             {
                 if (operand is INumericOperand numericResult)
                 {
-                    if ((numericResult.Value != 0) == polarity)
+                    if (numericResult.Value != 0 == polarity)
                         rb.Branch(label);
                 }
                 else
@@ -252,11 +253,11 @@ namespace Zilf.Compiler
 
                 IVariable TempVarProvider()
                 {
-                    if (tempVar == null)
-                    {
-                        PushInnerLocal(rb, tempAtom);
-                        tempVar = Locals[tempAtom];
-                    }
+                    if (tempVar != null)
+                        return tempVar;
+
+                    PushInnerLocal(rb, tempAtom);
+                    tempVar = Locals[tempAtom];
                     return tempVar;
                 }
 
@@ -354,6 +355,7 @@ namespace Zilf.Compiler
             }
         }
 
+        // TODO: refactor COND-like control structures to share an implementation, a la CompileBoundedLoop
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
@@ -392,6 +394,7 @@ namespace Zilf.Compiler
                 var condition = clause.First.Unwrap(Context);
 
                 // if condition is always true (i.e. not a FORM or a FALSE), this is the "else" part
+                // ReSharper disable once SwitchStatementMissingSomeCases
                 switch (condition.StdTypeAtom)
                 {
                     case StdAtom.FORM:
@@ -424,7 +427,7 @@ namespace Zilf.Compiler
                     rb.EmitStore(resultStorage, clauseResult);
 
                 // jump to end
-                if (!clauses.IsEmpty || (wantResult && !elsePart))
+                if (!clauses.IsEmpty || wantResult && !elsePart)
                     rb.Branch(endLabel);
 
                 rb.MarkLabel(nextLabel);
@@ -473,21 +476,35 @@ namespace Zilf.Compiler
 
                 var stmt = clause.First.Unwrap(Context);
 
-                if (stmt is ZilForm form)
+                switch (stmt)
                 {
-                    MarkSequencePoint(rb, form);
+                    case ZilForm form:
+                        MarkSequencePoint(rb, form);
 
-                    result = CompileForm(
-                        rb,
-                        form,
-                        wantThisResult,
-                        wantThisResult ? resultStorage : null);
-                }
-                else if (wantThisResult)
-                {
-                    result = CompileConstant(stmt);
-                    if (result == null)
-                        throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                        result = CompileForm(
+                            rb,
+                            form,
+                            wantThisResult,
+                            wantThisResult ? resultStorage : null);
+                        break;
+
+                    case ZilList _:
+                        throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled)
+                            .Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND_Or_Loop));
+
+                    default:
+                        if (wantThisResult)
+                        {
+                            result = CompileConstant(stmt);
+
+                            if (result == null)
+                            {
+                                // TODO: show "expressions of this type cannot be compiled" warning even if wantResult is false?
+                                throw new CompilerError(stmt,
+                                    CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                            }
+                        }
+                        break;
                 }
 
                 clause = clause.Rest;
@@ -529,10 +546,11 @@ namespace Zilf.Compiler
 
                 // check version condition
                 int condVersion;
-                switch (condition.StdTypeAtom)
+                switch (condition)
                 {
-                    case StdAtom.ATOM:
-                        switch (((ZilAtom)condition).StdAtom)
+                    case ZilAtom atom:
+                        // ReSharper disable once SwitchStatementMissingSomeCases
+                        switch (atom.StdAtom)
                         {
                             case StdAtom.ZIP:
                                 condVersion = 3;
@@ -555,8 +573,8 @@ namespace Zilf.Compiler
                         }
                         break;
 
-                    case StdAtom.FIX:
-                        condVersion = ((ZilFix)condition).Value;
+                    case ZilFix fix:
+                        condVersion = fix.Value;
                         if (condVersion < 3 || condVersion > 8)
                             throw new CompilerError(CompilerMessages.Version_Number_Out_Of_Range_Must_Be_38);
                         break;
@@ -618,25 +636,29 @@ namespace Zilf.Compiler
                 Debug.Assert(clause.Rest != null);
 
                 ZilObject value, flag = clause.First;
-                bool match, isElse = false, isShadyElse = false;
-                var atom = flag as ZilAtom;
-                if (atom != null &&
-                    (value = Context.GetCompilationFlagValue(atom)) != null ||
-                    flag is ZilString str &&
-                    (value = Context.GetCompilationFlagValue(str.Text)) != null)
+                bool match, isElse = false;
+                ZilAtom shadyElseAtom = null;
+                //var atom = flag as ZilAtom;
+                switch (flag)
                 {
-                    // name of a defined compilation flag
-                    match = value.IsTrue;
-                }
-                else if (flag is ZilForm form)
-                {
-                    form = Subrs.SubstituteIfflagForm(Context, form);
-                    match = ((ZilObject)form.Eval(Context)).IsTrue;
-                }
-                else
-                {
-                    match = isElse = true;
-                    isShadyElse = atom != null && atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T;
+                    case ZilAtom atom when (value = Context.GetCompilationFlagValue(atom)) != null:
+                    case ZilString str when (value = Context.GetCompilationFlagValue(str.Text)) != null:
+                        // name of a defined compilation flag
+                        match = value.IsTrue;
+                        break;
+
+                    case ZilForm form:
+                        form = Subrs.SubstituteIfflagForm(Context, form);
+                        match = ((ZilObject)form.Eval(Context)).IsTrue;
+                        break;
+
+                    case ZilAtom atom when atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T:
+                        shadyElseAtom = atom;
+                        goto default;
+
+                    default:
+                        match = isElse = true;
+                        break;
                 }
 
                 // does this clause match?
@@ -647,19 +669,21 @@ namespace Zilf.Compiler
                 clause = clause.Rest;
                 var clauseResult = CompileClauseBody(rb, clause, wantResult, resultStorage);
 
-                if (isElse && !clauses.IsEmpty)
+                // warn if this is an else clause and there are more clauses below
+                if (!isElse || clauses.IsEmpty)
+                    return wantResult ? clauseResult : null;
+
+                var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
+
+                if (shadyElseAtom != null)
                 {
-                    var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
-                    if (isShadyElse)
-                    {
-                        Debug.Assert(atom != null);
-                        warning = warning.Combine(new CompilerError(
-                            flag.SourceLine,
-                            CompilerMessages.Undeclared_Compilation_Flag_0,
-                            atom));
-                    }
-                    Context.HandleError(warning);
+                    // if the else clause wasn't introduced with ELSE or T, it might not have been meant as an else clause
+                    warning = warning.Combine(new CompilerError(
+                        flag.SourceLine,
+                        CompilerMessages.Undeclared_Compilation_Flag_0,
+                        shadyElseAtom));
                 }
+                Context.HandleError(warning);
 
                 return wantResult ? clauseResult : null;
             }
