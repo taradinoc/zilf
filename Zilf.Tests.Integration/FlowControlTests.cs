@@ -209,6 +209,9 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("", "<DO (I 1 10) <COND (<==? .I 5> <RETURN <* .I 3>>)>>")
                 .GivesNumber("15");
+
+            AssertRoutine("\"AUX\" X", "<SET X <DO (I 1 10) <COND (<==? .I 5> <RETURN <* .I 3>>)>>> <* .X 10>")
+                .GivesNumber("150");
         }
 
         [TestMethod]
@@ -222,6 +225,17 @@ namespace Zilf.Tests.Integration
                 "  <TELL \", \">>")
                 .Outputs("1, 2, 3 o'clock, 4 o'clock, rock!");
         }
+
+        [TestMethod]
+        public void TestDO_EndClause_Misplaced()
+        {
+            AssertRoutine("",
+                "<DO (CNT 0 25 5)" +
+                "  <TELL N .CNT CR>" +
+                "  (END <TELL \"This message is never printed\">)>")
+                .DoesNotCompile();
+        }
+
 
         #endregion
 
@@ -302,6 +316,18 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<OBJECT W-ROOM (DESC \"west room\")>")
                 .InV3()
                 .Outputs("31 north room\n28 west room\n");
+        }
+
+        [TestMethod]
+        public void TestMAP_DIRECTIONS_WithEnd()
+        {
+            AssertRoutine("", "<MAP-DIRECTIONS (D P ,CENTER) (END <TELL \"done\" CR>) <TELL N .D \" \" D <GETB .P ,REXIT> CR>>")
+                .WithGlobal("<DIRECTIONS NORTH SOUTH EAST WEST>")
+                .WithGlobal("<OBJECT CENTER (NORTH TO N-ROOM) (WEST TO W-ROOM)>")
+                .WithGlobal("<OBJECT N-ROOM (DESC \"north room\")>")
+                .WithGlobal("<OBJECT W-ROOM (DESC \"west room\")>")
+                .InV3()
+                .Outputs("31 north room\n28 west room\ndone\n");
         }
 
         #endregion
