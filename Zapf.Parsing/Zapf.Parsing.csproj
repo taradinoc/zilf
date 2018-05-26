@@ -1,4 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Label="Globals">
+    <SccProjectName>&lt;Project Location In Database&gt;</SccProjectName>
+    <SccProvider>Mercurial Source Control Package</SccProvider>
+    <SccAuxPath>&lt;Source Control Database&gt;</SccAuxPath>
+    <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
+  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Product>ZILF</Product>
