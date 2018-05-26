@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -51,34 +50,28 @@ namespace Zilf.Language
         public CompilerError([NotNull] IProvideSourceLine sourceLine, int code)
            : this(sourceLine, code, null)
         {
-            Contract.Requires(sourceLine != null);
         }
 
         public CompilerError([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
-            Contract.Requires(node != null);
         }
 
         [UsedImplicitly]
         public CompilerError([NotNull] Diagnostic diagnostic)
             : base(diagnostic)
         {
-            Contract.Requires(diagnostic != null);
         }
 
         protected CompilerError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
 
         [NotNull]
         public static CompilerError WrongArgCount([NotNull] string name, [NotNull] IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(ranges != null);
             ArgCountHelpers.FormatArgCount(ranges, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
@@ -87,7 +80,6 @@ namespace Zilf.Language
         public static CompilerError WrongArgCount([NotNull] string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
-            Contract.Requires(name != null);
             ArgCountHelpers.FormatArgCount(range, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
@@ -95,7 +87,6 @@ namespace Zilf.Language
         [NotNull]
         static CompilerError WrongArgCount([NotNull] string name, CountableString cs, int? acceptableVersion)
         {
-            Contract.Requires(name != null);
             var error = new CompilerError(CompilerMessages._0_Requires_1_Argument1s, name, cs);
 
             if (acceptableVersion != null)

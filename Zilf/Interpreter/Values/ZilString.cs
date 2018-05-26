@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,8 +19,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -29,7 +27,6 @@ using JetBrains.Annotations;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.STRING, PrimType.STRING)]
-    [ContractClass(typeof(ZilStringContracts))]
     abstract class ZilString : ZilObject, IStructure
     {
         [NotNull]
@@ -39,8 +36,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilString FromString([NotNull] Context ctx, [NotNull] ZilString other)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(other != null);
 
             return new OriginalString(other.Text);
         }
@@ -59,8 +54,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static string Quote([NotNull] string text)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             var sb = new StringBuilder(text.Length + 2);
             sb.Append('"');
@@ -284,27 +277,6 @@ namespace Zilf.Interpreter.Values
             {
                 for (int i = offset; i < orig.Text.Length; i++)
                     yield return new ZilChar(orig.Text[i]);
-            }
-        }
-    }
-
-    [ContractClassFor(typeof(ZilString))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class ZilStringContracts : ZilString
-    {
-        public override string Text
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<string>() != null);
-                return default(string);
-            }
-
-            set
-            {
-                Contract.Requires(value != null);
-                Contract.Requires(value.Length == Text.Length);
-                Contract.Ensures(Text == value);
             }
         }
     }

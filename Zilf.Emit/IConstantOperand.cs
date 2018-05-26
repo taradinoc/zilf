@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,27 +16,12 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(IConstantOperandContracts))]
     public interface IConstantOperand : IOperand
     {
         [NotNull] IConstantOperand Add([NotNull] IConstantOperand other);
-    }
-
-    [ContractClassFor(typeof(IVariable))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IConstantOperandContracts : IConstantOperand
-    {
-        public IConstantOperand Add(IConstantOperand other)
-        {
-            Contract.Requires(other != null);
-            Contract.Ensures(Contract.Result<IConstantOperand>() != null);
-            return default(IConstantOperand);
-        }
     }
 }

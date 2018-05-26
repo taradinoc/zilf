@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -22,7 +22,6 @@ using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,15 +31,12 @@ namespace Zilf.Interpreter.Values
         public ZilDecl([ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
-            Contract.Requires(sequence != null);
         }
 
         [NotNull]
         [ChtypeMethod]
         public static ZilDecl FromList(Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilDecl>() != null);
             return new ZilDecl(list);
         }
 

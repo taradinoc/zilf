@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
@@ -28,7 +27,6 @@ namespace Zilf.Interpreter
         [ContractAnnotation("zo: null => null")]
         public static IApplicable AsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             if (zo == null)
                 return null;
 
@@ -43,7 +41,6 @@ namespace Zilf.Interpreter
         [ContractAnnotation("zo: null => false")]
         public static bool IsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             if (zo == null)
                 return false;
 

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,12 +17,10 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Diagnostics
 {
-    [ContractClass(typeof(SourceLineContract))]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISourceLine

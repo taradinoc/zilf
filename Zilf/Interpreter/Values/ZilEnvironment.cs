@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -33,8 +32,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilEnvironment FromAtom([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(atom != null);
 
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ENVIRONMENT");
         }

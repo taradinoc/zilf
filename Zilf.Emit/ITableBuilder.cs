@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,41 +16,15 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(ITableBuilderContracts))]
     public interface ITableBuilder : IConstantOperand
     {
         void AddByte(byte value);
         void AddByte([NotNull] IOperand value);
         void AddShort(short value);
         void AddShort([NotNull] IOperand value);
-    }
-
-    [ContractClassFor(typeof(ITableBuilder))]
-    abstract class ITableBuilderContracts : ITableBuilder
-    {
-        public abstract IConstantOperand Add(IConstantOperand other);
-
-        public void AddByte(byte value)
-        {
-        }
-
-        public void AddByte(IOperand value)
-        {
-            Contract.Requires(value != null);
-        }
-
-        public void AddShort(short value)
-        {
-        }
-
-        public void AddShort(IOperand value)
-        {
-            Contract.Requires(value != null);
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -30,8 +29,6 @@ namespace Zilf.Language
         public SyntaxError([NotNull] string filename, int line, [NotNull] string message)
             : base(new FileSourceLine(filename, line), InterpreterMessages.Syntax_Error_0, message)
         {
-            Contract.Requires(filename != null);
-            Contract.Requires(message != null);
         }
 
         protected SyntaxError([NotNull] SerializationInfo si, StreamingContext sc)

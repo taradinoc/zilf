@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
@@ -34,10 +33,6 @@ namespace Zilf.Compiler
         internal void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(expr != null);
-            Contract.Requires(src != null);
-            Contract.Requires(label != null);
 
             expr = expr.Unwrap(Context);
             var type = expr.StdTypeAtom;
@@ -155,10 +150,6 @@ namespace Zilf.Compiler
         internal void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
             bool and, [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Requires(label != null);
 
             if (args.Length == 0)
             {
@@ -215,10 +206,6 @@ namespace Zilf.Compiler
         internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src,
             bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             if (args.IsEmpty)
                 return and ? Game.One : Game.Zero;
@@ -246,8 +233,6 @@ namespace Zilf.Compiler
 
                 if (resultStorage == null)
                     resultStorage = rb.Stack;
-
-                Contract.Assert(resultStorage != null);
 
                 var nonStackResultStorage = resultStorage != rb.Stack ? resultStorage : null;
 
@@ -361,10 +346,6 @@ namespace Zilf.Compiler
         internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             var nextLabel = rb.DefineLabel();
             var endLabel = rb.DefineLabel();
@@ -372,8 +353,6 @@ namespace Zilf.Compiler
 
             if (resultStorage == null)
                 resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
 
             while (!clauses.IsEmpty)
             {
@@ -457,9 +436,6 @@ namespace Zilf.Compiler
         IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilList clause, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clause != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !Contract.OldValue(wantResult));
 
             if (clause.IsEmpty)
                 return Game.One;
@@ -518,15 +494,9 @@ namespace Zilf.Compiler
         internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             if (resultStorage == null)
                 resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
 
             while (!clauses.IsEmpty)
             {
@@ -611,15 +581,9 @@ namespace Zilf.Compiler
         internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             if (resultStorage == null)
                 resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
 
             while (!clauses.IsEmpty)
             {

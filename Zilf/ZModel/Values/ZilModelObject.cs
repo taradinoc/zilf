@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -43,7 +42,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilModelObject FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
 
             if (list.IsEmpty)
                 throw new InterpreterError(

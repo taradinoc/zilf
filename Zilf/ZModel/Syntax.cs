@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -57,9 +56,6 @@ namespace Zilf.ZModel
             [NotNull] ZilAtom action, [CanBeNull] ZilAtom preaction, [NotNull] ZilAtom actionName,
             [ItemNotNull] [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
         {
-            Contract.Requires(verb != null);
-            Contract.Requires(numObjects >= 0 & numObjects <= 2);
-            Contract.Requires(action != null);
 
             SourceLine = src;
 
@@ -85,10 +81,6 @@ namespace Zilf.ZModel
         [NotNull]
         public static Syntax Parse(ISourceLine src, [NotNull] IEnumerable<ZilObject> definition, [NotNull] Context ctx)
         {
-            // TODO: refactor this method or convert to a builder class
-            Contract.Requires(definition != null);
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<Syntax>() != null);
 
             int numObjects = 0;
             ZilAtom verb = null, prep1 = null, prep2 = null;
@@ -276,7 +268,6 @@ namespace Zilf.ZModel
 
             Syntax ValidateAndBuild()
             {
-                Contract.Assume(numObjects <= 2);
 
                 if (numObjects < 1)
                 {

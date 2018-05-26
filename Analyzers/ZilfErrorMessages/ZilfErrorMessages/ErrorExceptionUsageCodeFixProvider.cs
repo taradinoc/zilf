@@ -14,7 +14,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Formatting;
-using System.Diagnostics.Contracts;
 
 namespace ZilfErrorMessages
 {
@@ -314,7 +313,6 @@ namespace ZilfErrorMessages
             /// <exception cref="ArgumentException">Unknown scope</exception>
             public override async Task<CodeAction> GetFixAsync([NotNull] FixAllContext fixAllContext)
             {
-                Contract.Requires(fixAllContext != null);
                 var diagnosticsToFix = new List<KeyValuePair<Project, ImmutableArray<Diagnostic>>>();
                 const string TitleFormat = "Convert all messages in {0} {1} to diagnostic constants";
                 string fixAllTitle;
@@ -405,7 +403,6 @@ namespace ZilfErrorMessages
         static IEnumerable<LiteralCreation> MatchLiteralCreations(
             [NotNull] IEnumerable<ObjectCreationExpressionSyntax> creationExprs, SemanticModel semanticModel)
         {
-            Contract.Requires(creationExprs != null);
             foreach (var expr in creationExprs)
             {
                 if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(expr, semanticModel, out var literalCreation))

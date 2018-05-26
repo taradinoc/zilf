@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using JetBrains.Annotations;
 using Zapf.Parsing;
@@ -29,7 +28,6 @@ namespace Zapf
     {
         public OpeningFileEventArgs([NotNull] string filename, bool writing)
         {
-            Contract.Requires(filename != null);
             FileName = filename;
             Writing = writing;
         }
@@ -47,7 +45,6 @@ namespace Zapf
     {
         public CheckingFilePresenceEventArgs([NotNull] string filename)
         {
-            Contract.Requires(filename != null);
             FileName = filename;
         }
 
@@ -62,7 +59,6 @@ namespace Zapf
     {
         public InitializingContextEventArgs([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             Context = ctx;
         }
 
@@ -93,7 +89,6 @@ namespace Zapf
         [NotNull]
         Stream OpenFile([NotNull] string path, bool writing)
         {
-            Contract.Ensures(Contract.Result<Stream>() != null);
             var handler = OpeningFile;
             if (handler != null)
             {
@@ -130,8 +125,6 @@ namespace Zapf
         [NotNull]
         Context InitializeContext([NotNull] string inputFileName, [CanBeNull] string outputFileName)
         {
-            Contract.Requires(inputFileName != null);
-            Contract.Ensures(Contract.Result<Context>() != null);
 
             var ctx = new Context
             {

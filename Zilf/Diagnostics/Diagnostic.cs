@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using Zilf.Language;
 using JetBrains.Annotations;
@@ -58,10 +57,6 @@ namespace Zilf.Diagnostics
             [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
             [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] Diagnostic[] subDiagnostics)
         {
-            Contract.Requires(location != null);
-            Contract.Requires(codePrefix != null);
-            Contract.Requires(code >= 0);
-            Contract.Requires(messageFormat != null);
 
             Location = location;
             Severity = severity;
@@ -76,8 +71,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public Diagnostic WithSubDiagnostics([ItemNotNull] [NotNull] params Diagnostic[] newSubDiagnostics)
         {
-            Contract.Requires(newSubDiagnostics != null);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
             return new Diagnostic(
                 Location,
                 Severity,
@@ -163,7 +156,6 @@ namespace Zilf.Diagnostics
             [NotNull]
             static string HandleOther([CanBeNull] string format, [CanBeNull] object arg)
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 if (arg is IFormattable formattable)
                     return formattable.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
 
@@ -171,28 +163,11 @@ namespace Zilf.Diagnostics
             }
         }
     }
-
-    [ContractClass(typeof(IDiagnosticFactoryContracts))]
     public interface IDiagnosticFactory
     {
         [NotNull]
         Diagnostic GetDiagnostic([NotNull] ISourceLine location, int code, object[] messageArgs,
             string stackTrace, Diagnostic[] subDiagnostics);
-    }
-
-    [ContractClassFor(typeof(IDiagnosticFactory))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IDiagnosticFactoryContracts : IDiagnosticFactory
-    {
-        public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace, Diagnostic[] subDiagnostics)
-        {
-            Contract.Requires(location != null);
-            Contract.Requires(code >= 0);
-            Contract.Requires(subDiagnostics == null || Contract.ForAll(subDiagnostics, d => d != null));
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
-            return default(Diagnostic);
-        }
     }
 
     public static class DiagnosticFactoryExtensions
@@ -201,10 +176,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs)
         {
-            Contract.Requires(fac != null);
-            Contract.Requires(location != null);
-            Contract.Requires(code >= 0);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
             return fac.GetDiagnostic(location, code, messageArgs, null, null);
         }
 
@@ -212,10 +183,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs, string stackTrace)
         {
-            Contract.Requires(fac != null);
-            Contract.Requires(location != null);
-            Contract.Requires(code >= 0);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
             return fac.GetDiagnostic(location, code, messageArgs, stackTrace, null);
         }
     }
@@ -233,7 +200,6 @@ namespace Zilf.Diagnostics
         protected DiagnosticFactory()
         {
             var attrs = typeof(TMessageSet).GetCustomAttributes(typeof(MessageSetAttribute), false);
-            Contract.Assert(attrs.Length == 1);
 
             var attr = (MessageSetAttribute)attrs[0];
             prefix = attr.Prefix;
@@ -244,7 +210,6 @@ namespace Zilf.Diagnostics
                 {
                     var code = (int)field.GetValue(null);
                     var msgAttrs = field.GetCustomAttributes(typeof(MessageAttribute), false);
-                    Contract.Assert(msgAttrs.Length == 1);
 
                     messages.Add(code, (MessageAttribute)msgAttrs[0]);
                 }

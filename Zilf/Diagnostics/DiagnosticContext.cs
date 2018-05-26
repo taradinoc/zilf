@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -21,7 +21,6 @@ using System.Diagnostics;
 using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Diagnostics
 {
@@ -74,7 +73,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public static IDisposable Push([CanBeNull] ISourceLine sourceLine = null, [CanBeNull] Frame frame = null)
         {
-            Contract.Ensures(Contract.Result<IDisposable>() != null);
             var oldContext = Current;
 
             var newContext = new DiagnosticContext(

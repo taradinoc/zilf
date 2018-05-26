@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -40,9 +39,6 @@ namespace Zilf.Compiler
             [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(src != null);
-            Contract.Requires(name != null);
 
             if (args?.First == null)
             {
@@ -236,14 +232,11 @@ namespace Zilf.Compiler
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
         static ZilList TransformProgArgsIfImplementingDeferredReturn([NotNull] ZilList args)
         {
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilList>() != null);
 
             if (!(args.First is ZilList bindingList))
                 return args;
 
             Debug.Assert(args.First != null);
-            Debug.Assert(args.Rest != null);
 
             // ends with <LVAL atom>?
             if (!(args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
@@ -254,6 +247,7 @@ namespace Zilf.Compiler
                 return args;
 
             // atom is set earlier in the prog?
+            Debug.Assert(args.Rest != null);
             var setExpr = args.Rest
                 .OfType<ZilForm>()
                 .FirstOrDefault(
@@ -285,8 +279,6 @@ namespace Zilf.Compiler
         [NotNull]
         static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilListBase bindingList)
         {
-            Contract.Requires(bindingList != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilAtom>>() != null);
 
             return bindingList.EnumerateNonRecursive()
                 .Select(GetUninitializedAtomFromBindingListItem)
@@ -296,7 +288,6 @@ namespace Zilf.Compiler
         [CanBeNull]
         static ZilAtom GetUninitializedAtomFromBindingListItem([NotNull] ZilObject zo)
         {
-            Contract.Requires(zo != null);
 
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (zo.StdTypeAtom)
@@ -314,8 +305,6 @@ namespace Zilf.Compiler
 
         static bool RecursivelyContains([NotNull] ZilObject haystack, [NotNull] ZilObject needle)
         {
-            Contract.Requires(haystack != null);
-            Contract.Requires(needle != null);
 
             if (haystack == needle)
                 return true;

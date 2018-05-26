@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Diagnostics;
@@ -35,7 +34,6 @@ namespace Zilf.Language
         protected ZilErrorBase([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Contract.Requires(info != null);
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -89,8 +87,6 @@ namespace Zilf.Language
         public static T Combine<T>([NotNull] this T mainError, [NotNull] T subError)
             where T : ZilErrorBase
         {
-            Contract.Assert(mainError != null);
-            Contract.Assert(subError != null);
 
             var newDiag = mainError.Diagnostic.WithSubDiagnostics(subError.Diagnostic);
             return (T)Activator.CreateInstance(typeof(T), newDiag);
@@ -105,7 +101,6 @@ namespace Zilf.Language
         protected ZilError([NotNull] string message)
             : base(message)
         {
-            Contract.Requires(message != null);
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
@@ -113,7 +108,6 @@ namespace Zilf.Language
         protected ZilError([NotNull] string message, Exception innerException)
             : base(message, innerException)
         {
-            Contract.Requires(message != null);
             SourceLine = DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
@@ -121,7 +115,6 @@ namespace Zilf.Language
         protected ZilError([CanBeNull] ISourceLine src, [NotNull] string message)
             : base(message)
         {
-            Contract.Requires(message != null);
             SourceLine = src ?? DiagnosticContext.Current.SourceLine;
             Diagnostic = MakeLegacyDiagnostic(SourceLine, message);
         }
@@ -129,7 +122,6 @@ namespace Zilf.Language
         protected ZilError([NotNull] Diagnostic diag)
             : base(diag.ToString())
         {
-            Contract.Requires(diag != null);
             Diagnostic = diag;
             SourceLine = diag.Location;
         }
@@ -137,7 +129,6 @@ namespace Zilf.Language
         protected ZilError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
 
 #pragma warning disable RECS0108 // Warns about static fields in generic types
@@ -149,8 +140,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
         {
-            Contract.Requires(code >= 0);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
 
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine ?? DiagnosticContext.Current.SourceLine,
@@ -161,9 +150,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeLegacyDiagnostic([NotNull] ISourceLine sourceLine, [NotNull] string message)
         {
-            Contract.Requires(message != null);
-            Contract.Requires(sourceLine != null);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
 
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine,
@@ -205,7 +191,6 @@ namespace Zilf.Language
         protected ZilFatal([NotNull] Diagnostic diag)
             : base(diag.ToString())
         {
-            Contract.Requires(diag != null);
             Diagnostic = diag;
             SourceLine = diag.Location;
         }
@@ -213,7 +198,6 @@ namespace Zilf.Language
         protected ZilFatal([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
 
 #pragma warning disable RECS0108 // Warns about static fields in generic types
@@ -223,8 +207,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
         {
-            Contract.Requires(code >= 0);
-            Contract.Ensures(Contract.Result<Diagnostic>() != null);
 
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine ?? DiagnosticContext.Current.SourceLine,

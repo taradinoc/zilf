@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Interpreter.Values;
@@ -49,8 +48,6 @@ namespace Zilf.Compiler
 
         public static void WalkRoutineForms([NotNull] this ZilRoutine routine, [NotNull] Action<ZilForm> action)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(action != null);
 
             var children =
                 routine.ArgSpec.Select(ai => ai.DefaultValue)
@@ -81,7 +78,6 @@ namespace Zilf.Compiler
 
         public static bool IsVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
 
             if (expr is ZilForm form &&
                 form.First is ZilAtom atom &&
@@ -102,7 +98,6 @@ namespace Zilf.Compiler
 
         public static bool IsLocalVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
 
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
@@ -112,7 +107,6 @@ namespace Zilf.Compiler
 
         public static bool IsGlobalVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
 
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&

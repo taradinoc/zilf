@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
-
 namespace Zilf.Interpreter.Values
 {
     [BuiltinMeta]
@@ -26,7 +24,6 @@ namespace Zilf.Interpreter.Values
         internal ZilHash(ZilAtom type, PrimType primtype, ZilObject primvalue)
             : base(type, primtype, primvalue)
         {
-            Contract.Requires(!(primvalue is IStructure));
         }
 
         public override ZilObject GetPrimitive(Context ctx) => primValue;

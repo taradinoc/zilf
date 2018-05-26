@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,11 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
-
-using PureAttribute = System.Diagnostics.Contracts.PureAttribute;
 
 namespace Zilf.Interpreter.Values
 {
@@ -67,7 +64,6 @@ namespace Zilf.Interpreter.Values
 
         protected ZilListBase([NotNull] IEnumerable<ZilObject> sequence)
         {
-            Contract.Requires(sequence != null);
 
             using (var tor = sequence.GetEnumerator())
             {
@@ -86,26 +82,14 @@ namespace Zilf.Interpreter.Values
 
         protected ZilListBase(ZilObject first, ZilList rest)
         {
-            Contract.Requires((first == null && rest == null) || (first != null && rest != null));
-            Contract.Ensures(First == first);
-            Contract.Ensures(ReferenceEquals(Rest, rest));
 
             this.first = first;
             this.rest = rest;
         }
 
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
-        }
-
         [NotNull]
         protected ZilList MakeRest([NotNull] IEnumerator<ZilObject> tor)
         {
-            Contract.Requires(tor != null);
-            Contract.Ensures(Contract.Result<ZilList>() != null);
 
             if (tor.MoveNext())
             {
@@ -185,7 +169,6 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <returns></returns>
         [ItemCanBeNull]
-        [Pure]
         public IEnumerable<ZilObject> EnumerateNonRecursive()
         {
             var seen = new HashSet<ZilListBase>(ReferenceEqualityComparer<ZilListBase>.Instance);

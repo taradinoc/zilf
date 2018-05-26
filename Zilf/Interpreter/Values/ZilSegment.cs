@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,12 +19,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
-using System.Diagnostics;
 
 namespace Zilf.Interpreter.Values
 {
@@ -36,7 +34,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilSegment([NotNull] ZilObject obj)
         {
-            Contract.Requires(obj != null);
 
             if (obj is ZilForm objForm)
                 form = objForm;
@@ -44,18 +41,10 @@ namespace Zilf.Interpreter.Values
                 throw new ArgumentException("Segment must be based on a FORM");
         }
 
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(form != null);
-        }
-
         [NotNull]
         [ChtypeMethod]
         public static ZilSegment FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
 
             if (!(list is ZilForm form))
             {

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
@@ -40,13 +39,11 @@ namespace Zilf.Tests.Compiler
 
             public void SetInputFile([NotNull] string path, string content)
             {
-                Contract.Requires(path != null);
                 inputs[path] = content;
             }
 
             public void Compile([NotNull] string mainZilFile)
             {
-                Contract.Requires(mainZilFile != null);
                 var compiler = new FrontEnd();
 
                 compiler.CheckingFilePresence += (sender, e) =>

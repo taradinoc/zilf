@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.ZModel.Vocab;
@@ -64,9 +63,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string[] PrepImplications(bool compact, [ItemNotNull] [NotNull] params string[] wordAndIdConstantPairs)
         {
-            Contract.Requires(wordAndIdConstantPairs != null);
-            Contract.Requires(wordAndIdConstantPairs.Length % 2 == 0);
-            Contract.Ensures(Contract.Result<string[]>() != null);
 
             const string SCompactTest =
                 "<==? <GETB <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> {1}>";

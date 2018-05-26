@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
@@ -33,10 +32,6 @@ namespace Zilf.Compiler
         [NotNull]
         public IOperands CompileOperands([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] params ZilObject[] exprs)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(src != null);
-            Contract.Requires(exprs != null);
-            Contract.Ensures(Contract.Result<IOperands>() != null);
 
             int length = exprs.Length;
             var values = new IOperand[length];
@@ -127,10 +122,6 @@ namespace Zilf.Compiler
         [System.Diagnostics.Contracts.Pure]
         static bool LocalIsLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
-            Contract.Requires(exprs != null);
-            Contract.Requires(exprs.Length > 0);
-            Contract.Requires(localIdx >= 0);
-            Contract.Requires(localIdx < exprs.Length);
 
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
@@ -155,10 +146,6 @@ namespace Zilf.Compiler
 
         bool GlobalCouldBeLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
-            Contract.Requires(exprs != null);
-            Contract.Requires(exprs.Length > 0);
-            Contract.Requires(localIdx >= 0);
-            Contract.Requires(localIdx < exprs.Length);
 
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
@@ -183,8 +170,6 @@ namespace Zilf.Compiler
 
         bool CouldModifyGlobal([NotNull] ZilObject expr, [NotNull] ZilAtom globalAtom)
         {
-            Contract.Requires(expr != null);
-            Contract.Requires(globalAtom != null);
 
             if (!(expr is ZilListBase list))
                 return false;
@@ -222,14 +207,6 @@ namespace Zilf.Compiler
 
             public Operands([NotNull] Compilation compilation, [NotNull] IOperand[] values, [NotNull] bool[] temps, [NotNull] ZilAtom tempAtom)
             {
-                Contract.Requires(compilation != null);
-                Contract.Requires(values != null);
-                Contract.Requires(temps != null);
-                Contract.Requires(tempAtom != null);
-                Contract.Ensures(this.compilation == compilation);
-                Contract.Ensures(this.values == values);
-                Contract.Ensures(this.temps == temps);
-                Contract.Ensures(this.tempAtom == tempAtom);
 
                 this.compilation = compilation;
                 this.values = values;
@@ -249,7 +226,6 @@ namespace Zilf.Compiler
                 [System.Diagnostics.Contracts.Pure]
                 get
                 {
-                    Contract.Ensures(Contract.Result<int>() >= 0);
                     return values.Length;
                 }
             }
@@ -258,9 +234,6 @@ namespace Zilf.Compiler
             {
                 get
                 {
-                    Contract.Requires(index >= 0);
-                    Contract.Requires(index < Count);
-                    Contract.Ensures(Contract.Result<IOperand>() != null);
                     return values[index];
                 }
             }
@@ -268,7 +241,6 @@ namespace Zilf.Compiler
             [NotNull]
             public IOperand[] AsArray()
             {
-                Contract.Ensures(Contract.Result<IOperand[]>() != null);
                 return values;
             }
         }

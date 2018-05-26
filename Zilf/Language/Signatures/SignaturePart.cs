@@ -25,7 +25,7 @@ namespace Zilf.Language.Signatures
 {
     abstract class SignaturePart : ISignaturePart
     {
-        public ICustomAttributeProvider Source { get; set; }
+        public ICustomAttributeProvider Source => null;
         public string Name { get; set; }
 
         [NotNull]

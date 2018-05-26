@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -23,7 +23,6 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.ZModel.Values
 {
@@ -43,8 +42,6 @@ namespace Zilf.ZModel.Values
         public static ZilConstant FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilConstant>() != null);
             if (list.IsEmpty || list.Rest?.IsEmpty != false || list.Rest.Rest?.IsEmpty != true)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to CONSTANT", 2);
 

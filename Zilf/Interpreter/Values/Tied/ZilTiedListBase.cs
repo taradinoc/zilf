@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -23,12 +23,10 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values.Tied
 {
     [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
-    [ContractClass(typeof(ZilTiedListBaseContract))]
     abstract class ZilTiedListBase : ZilListoidBase
     {
         [NotNull]
@@ -55,7 +53,6 @@ namespace Zilf.Interpreter.Values.Tied
         [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilList(this);
         }
 
@@ -303,7 +300,6 @@ namespace Zilf.Interpreter.Values.Tied
             [NotNull]
             public override ZilObject GetPrimitive(Context ctx)
             {
-                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 return new ZilList(this);
             }
 
@@ -332,17 +328,6 @@ namespace Zilf.Interpreter.Values.Tied
                     ")",
                     zo => zo.ToStringContext(ctx, friendly));
             }
-        }
-    }
-
-    [ContractClassFor(typeof(ZilTiedListBase))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class ZilTiedListBaseContract : ZilTiedListBase
-    {
-        protected override TiedLayout GetLayout()
-        {
-            Contract.Ensures(Contract.Result<TiedLayout>() != null);
-            return default(TiedLayout);
         }
     }
 }

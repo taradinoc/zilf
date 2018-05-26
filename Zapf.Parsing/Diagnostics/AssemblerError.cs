@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using JetBrains.Annotations;
 
@@ -35,7 +34,6 @@ namespace Zapf.Parsing.Diagnostics
         protected AssemblerError([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Contract.Requires(info != null);
             Node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
         }
 

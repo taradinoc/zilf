@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -36,7 +35,6 @@ namespace Zilf.Compiler
         [CanBeNull]
         IOperand GetGlobalDefaultValue([NotNull] ZilGlobal global)
         {
-            Contract.Requires(global != null);
 
             if (global.Value == null)
                 return null;
@@ -84,8 +82,6 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError"></exception>
         void DoFunnyGlobals(int reservedGlobals, Queue<System.Action> globalInitializers)
         {
-            Contract.Requires(reservedGlobals >= 0);
-            Contract.Ensures(Contract.ForAll(Context.ZEnvironment.Globals, g => g.StorageType != GlobalStorageType.Any));
 
             // if all the globals fit into Z-machine globals, no need for a table
             int remaining = 240 - reservedGlobals;
@@ -269,7 +265,6 @@ namespace Zilf.Compiler
         [CanBeNull]
         public IOperand CompileConstant([NotNull] ZilObject expr, AmbiguousConstantMode mode)
         {
-            Contract.Requires(expr != null);
 
             ZilAtom atom;
 
@@ -316,7 +311,6 @@ namespace Zilf.Compiler
                     var table = (ZilTable)expr;
                     if (!Tables.TryGetValue(table, out var tb))
                     {
-                        Contract.Assert((table.Flags & TableFlags.TempTable) != 0);
                         tb = Game.DefineTable(table.Name, true);
                         Tables.Add(table, tb);
                     }

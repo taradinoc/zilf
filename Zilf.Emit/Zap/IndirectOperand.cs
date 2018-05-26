@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
-using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
@@ -27,13 +25,6 @@ namespace Zilf.Emit.Zap
         public IndirectOperand([NotNull] IVariable variable)
         {
             Variable = variable;
-        }
-
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Variable != null);
         }
 
         public IVariable Variable { get; }

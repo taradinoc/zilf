@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Language;
@@ -33,7 +32,6 @@ namespace Zilf.Interpreter.Values
         public ZilForm([NotNull] IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
-            Contract.Requires(sequence != null);
         }
 
         public ZilForm(ZilObject first, ZilList rest)
@@ -44,7 +42,6 @@ namespace Zilf.Interpreter.Values
         {
             get
             {
-                Contract.Ensures(Contract.Result<ISourceLine>() != null);
 
                 return base.SourceLine ?? SourceLines.Unknown;
             }
@@ -55,9 +52,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilForm FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilForm>() != null);
 
             return new ZilForm(list.First, list.Rest);
         }
@@ -69,7 +63,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         string ToString([NotNull] Func<ZilObject, string> convert)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             if (Recursion.TryLock(this))
             {
                 try
@@ -229,17 +222,12 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         static ZilForm DeepRewriteSourceInfo([NotNull] ZilForm other, [NotNull] ISourceLine src)
         {
-            Contract.Requires(other != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<ZilForm>() != null);
             return new ZilForm(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
         }
 
         static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
             [ItemNotNull] [NotNull] IEnumerable<ZilObject> contents, [NotNull] ISourceLine src)
         {
-            Contract.Requires(contents != null);
-            Contract.Requires(src != null);
             foreach (var item in contents)
             {
                 if (item is ZilForm form)

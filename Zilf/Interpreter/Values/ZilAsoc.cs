@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
@@ -39,8 +38,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilAsoc([NotNull] AsocResult[] results, int index)
         {
-            Contract.Requires(results != null);
-            Contract.Requires(index >= 0 && index < results.Length);
 
             this.results = results;
             this.index = index;
@@ -50,8 +47,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
 
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
         }
@@ -62,7 +57,6 @@ namespace Zilf.Interpreter.Values
 
         protected override TiedLayout GetLayout()
         {
-            Contract.Ensures(Contract.Result<TiedLayout>() != null);
             return TiedLayout.Create<ZilAsoc>(
                 x => x.Item,
                 x => x.Indicator,

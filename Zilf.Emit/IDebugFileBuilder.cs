@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,12 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(IDebugFileBuilderContracts))]
     public interface IDebugFileBuilder
     {
         /// <summary>
@@ -51,30 +49,5 @@ namespace Zilf.Emit
         /// <param name="point">The position corresponding to the next
         /// instruction emitted.</param>
         void MarkSequencePoint([NotNull] IRoutineBuilder routine, DebugLineRef point);
-    }
-
-    [ContractClassFor(typeof(IDebugFileBuilder))]
-    abstract class IDebugFileBuilderContracts : IDebugFileBuilder
-    {
-        public void MarkAction(IOperand action, string name)
-        {
-            Contract.Requires(action != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-        }
-
-        public void MarkObject(IObjectBuilder obj, DebugLineRef start, DebugLineRef end)
-        {
-            Contract.Requires(obj != null);
-        }
-
-        public void MarkRoutine(IRoutineBuilder routine, DebugLineRef start, DebugLineRef end)
-        {
-            Contract.Requires(routine != null);
-        }
-
-        public void MarkSequencePoint(IRoutineBuilder routine, DebugLineRef point)
-        {
-            Contract.Requires(routine != null);
-        }
     }
 }

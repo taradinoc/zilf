@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.Serialization;
 using Zilf.Interpreter.Values;
@@ -36,11 +35,6 @@ namespace Zilf.Interpreter
         [Subr("EMPTY?")]
         public static ZilObject EMPTY_P([NotNull] Context ctx, [NotNull] IStructure st)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return st.IsEmpty ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -62,10 +56,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject REST(Context ctx, [NotNull] IStructure st, int skip = 1)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var result = (ZilObject)st.GetRest(skip);
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements, "REST");
@@ -77,10 +67,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject BACK(Context ctx, [NotNull] IStructure st, int skip = 1)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             try
             {
                 var result = (ZilObject)st.GetBack(skip);
@@ -99,10 +85,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject TOP(Context ctx, [NotNull] IStructure st)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             try
             {
                 return (ZilObject)st.GetTop();
@@ -118,10 +100,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject GROW(Context ctx, [NotNull] IStructure st, int end, int beginning)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (end < 0 || beginning < 0)
             {
                 throw new InterpreterError(InterpreterMessages._0_Sizes_Must_Be_Nonnegative, "GROW");
@@ -147,10 +125,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject NTH(Context ctx, [NotNull] IStructure st, int idx)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             ZilObject result = st[idx - 1];
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "NTH");
@@ -163,10 +137,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject PUT(Context ctx, [NotNull] IStructure st, int idx, ZilObject newValue)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             try
             {
                 st[idx - 1] = newValue;
@@ -187,10 +157,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject OFFSET(Context ctx, int offset, [NotNull] ZilObject structurePattern, [CanBeNull] ZilObject valuePattern = null)
         {
-            Contract.Requires(structurePattern != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return new ZilOffset(offset, structurePattern, valuePattern ?? ctx.GetStdAtom(StdAtom.ANY));
         }
 
@@ -198,10 +164,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject INDEX(Context ctx, [NotNull] ZilOffset offset)
         {
-            Contract.Requires(offset != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return new ZilFix(offset.Index);
         }
 
@@ -209,10 +171,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject LENGTH(Context ctx, [NotNull] IStructure st)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return new ZilFix(st.GetLength());
         }
 
@@ -220,10 +178,6 @@ namespace Zilf.Interpreter
         [Subr("LENGTH?")]
         public static ZilObject LENGTH_P(Context ctx, [NotNull] IStructure st, int limit)
         {
-            Contract.Requires(st != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var length = st.GetLength(limit);
             return length != null ? new ZilFix((int)length) : ctx.FALSE;
         }
@@ -233,11 +187,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject PUTREST(Context ctx, [NotNull] ZilListoidBase list, [NotNull] ZilListoidBase newRest)
         {
-            Contract.Requires(list != null);
-            Contract.Requires(newRest != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (list.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTREST");
 
@@ -260,10 +209,6 @@ namespace Zilf.Interpreter
         public static ZilObject SUBSTRUC(Context ctx, [NotNull] IStructure from, int rest = 0, int? amount = null,
             [CanBeNull] IStructure dest = null)
         {
-            Contract.Requires(from != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (amount != null)
             {
                 var max = from.GetLength(rest + (int)amount);
@@ -358,11 +303,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MEMBER(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack)
         {
-            Contract.Requires(needle != null);
-            Contract.Requires(haystack != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformMember(ctx, needle, haystack, (a, b) => a.StructurallyEquals(b));
         }
 
@@ -370,11 +310,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MEMQ(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack)
         {
-            Contract.Requires(needle != null);
-            Contract.Requires(haystack != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformMember(ctx, needle, haystack, (a, b) => a.ExactlyEquals(b));
         }
 
@@ -382,12 +317,6 @@ namespace Zilf.Interpreter
         static ZilObject PerformMember(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack,
             [NotNull] Func<ZilObject, ZilObject, bool> equality)
         {
-            Contract.Requires(needle != null);
-            Contract.Requires(haystack != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-            Contract.Requires(equality != null);
-
             while (haystack != null && !haystack.IsEmpty)
             {
                 if (equality(needle, haystack.GetFirst()))
@@ -423,7 +352,6 @@ namespace Zilf.Interpreter
                 [NotNull] SerializationInfo info,
                 StreamingContext context) : base(info, context)
             {
-                Contract.Requires(info != null);
             }
         }
 
@@ -433,10 +361,6 @@ namespace Zilf.Interpreter
             [NotNull] ZilVector vector, int recordSize = 1, int keyOffset = 0,
             [CanBeNull] AdditionalSortParam[] additionalSorts = null)
         {
-            Contract.Requires(predicate != null);
-            Contract.Requires(vector != null);
-            SubrContracts(ctx);
-
             if (keyOffset < 0 || keyOffset >= recordSize)
                 throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
 
@@ -557,8 +481,6 @@ namespace Zilf.Interpreter
 
         static void RearrangeVector([NotNull] ZilVector vector, int recordSize, [NotNull] int[] desiredIndexOrder)
         {
-            Contract.Requires(vector != null);
-            Contract.Requires(desiredIndexOrder != null);
             var output = new List<ZilObject>(vector.GetLength());
 
             foreach (var srcIndex in desiredIndexOrder)

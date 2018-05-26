@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Common;
@@ -137,7 +136,6 @@ namespace Zilf.ZModel.Values
             [NotNull]
             public ZilObject ToZilObject()
             {
-                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 ZilObject result;
                 StdAtom head;
 
@@ -225,7 +223,6 @@ namespace Zilf.ZModel.Values
 
         ComplexPropDef([NotNull] IEnumerable<Pattern> patterns)
         {
-            Contract.Requires(patterns != null);
             this.patterns = new List<Pattern>(patterns);
         }
 
@@ -233,8 +230,6 @@ namespace Zilf.ZModel.Values
         [NotNull]
         public static ComplexPropDef Parse([NotNull] IEnumerable<ZilObject> spec)
         {
-            Contract.Requires(spec != null);
-            Contract.Ensures(Contract.Result<ComplexPropDef>() != null);
 
             var inputs = new List<InputElement>();
             var outputs = new List<OutputElement>();
@@ -319,7 +314,7 @@ namespace Zilf.ZModel.Values
 
                             Debug.Assert(elemList.Rest != null);
                             output = elemList.Rest.First;
-                            Contract.Assert(output != null);
+                            Debug.Assert(output != null);
                         }
 
                         switch (output)
@@ -403,7 +398,6 @@ namespace Zilf.ZModel.Values
 
         static OutputElement ConvertOutputForm([NotNull] ZilForm form, ZilAtom constant)
         {
-            Contract.Requires(form != null);
 
             // validate and parse
             if (!(form.First is ZilAtom head))
@@ -637,9 +631,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ComplexPropDef FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ComplexPropDef>() != null);
             return Parse(list);
         }
 
@@ -672,8 +663,6 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
         public void PreBuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, ElementPreBuilders preBuilders)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(prop != null);
             
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
@@ -696,9 +685,6 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
         public void BuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, [NotNull] ITableBuilder tb, ElementConverters converters)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(prop != null);
-            Contract.Requires(tb != null);
 
             var propName = (ZilAtom)prop.First;
 
@@ -726,11 +712,6 @@ namespace Zilf.ZModel.Values
         bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilList prop, [NotNull] InputElement[] inputs, int startIndex,
             [CanBeNull] Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(prop != null);
-            Contract.Requires(inputs != null);
-            Contract.Requires(startIndex >= 0 && startIndex < inputs.Length);
-            Contract.Ensures(Contract.ValueAtReturn(out prop) != null);
 
             for (int i = startIndex; i < inputs.Length; i++)
             {
@@ -761,7 +742,6 @@ namespace Zilf.ZModel.Values
                                 queue = new Queue<ZilObject>(1);
                                 captures.Add(atom, queue);
                             }
-                            Contract.Assume(queue != null);
                             queue.Enqueue(prop.First);
                         }
 
@@ -787,8 +767,6 @@ namespace Zilf.ZModel.Values
         [ContractAnnotation("decl: null => false")]
         static bool CheckInputDecl([NotNull] Context ctx, [NotNull] ZilObject value, [CanBeNull] ZilObject decl)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
 
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
@@ -819,11 +797,6 @@ namespace Zilf.ZModel.Values
         static bool PartialPreBuild([NotNull] Context ctx, [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures,
             ElementPreBuilders preBuilders, [NotNull] OutputElement[] outputs, int startIndex, ISourceLine src)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(captures != null);
-            Contract.Requires(outputs != null);
-            Contract.Requires(startIndex >= 0);
-            Contract.Requires(startIndex <= outputs.Length);
 
             for (int i = startIndex; i < outputs.Length; i++)
             {
@@ -863,22 +836,18 @@ namespace Zilf.ZModel.Values
                     switch (output.Type)
                     {
                         case OutputElementType.Adjective:
-                            Contract.Assert(atom != null);
                             preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.ADJ), src);
                             break;
 
                         case OutputElementType.Noun:
-                            Contract.Assert(atom != null);
                             preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.OBJECT), src);
                             break;
                             
                         case OutputElementType.Voc:
-                            Contract.Assert(atom != null);
                             preBuilders.CreateVocabWord(atom, output.PartOfSpeech, src);
                             break;
 
                         case OutputElementType.Global:
-                            Contract.Assert(atom != null);
                             preBuilders.ReserveGlobal(atom);
                             break;
                     }
@@ -892,12 +861,6 @@ namespace Zilf.ZModel.Values
             [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures, [NotNull] OutputElement[] outputs, int startIndex,
             ZilAtom propName, ISourceLine src)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tb != null);
-            Contract.Requires(captures != null);
-            Contract.Requires(outputs != null);
-            Contract.Requires(startIndex >= 0);
-            Contract.Requires(startIndex <= outputs.Length);
 
             for (int i = startIndex; i < outputs.Length; i++)
             {
@@ -948,7 +911,6 @@ namespace Zilf.ZModel.Values
                                     propName,
                                     capturedValue));
                                 capturedConstantValue = converters.CompileConstant(ctx.FALSE);
-                                Contract.Assume(capturedConstantValue != null);
                             }
                             capturedAtom = null;
                             break;

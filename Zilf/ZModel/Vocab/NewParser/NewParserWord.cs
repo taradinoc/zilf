@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
@@ -40,9 +39,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         public static NewParserWord FromVword([NotNull] Context ctx, [NotNull] ZilHash vword)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(vword != null);
-            Contract.Requires(vword.StdTypeAtom == StdAtom.VWORD);
 
             var form = new ZilForm(new ZilObject[]
             {

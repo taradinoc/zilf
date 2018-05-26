@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
@@ -40,9 +39,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static ZilEvalMacro FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilEvalMacro>() != null);
 
             if (list.First == null || list.Rest == null || list.Rest.First != null)
                 throw new InterpreterError(
@@ -102,8 +98,6 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
         public ZilResult Expand([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
 
             var applicable = WrappedValue.AsApplicable(ctx);
 
@@ -119,8 +113,6 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
         public ZilResult ExpandNoEval([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
 
             var applicable = WrappedValue.AsApplicable(ctx);
 

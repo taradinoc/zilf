@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -50,7 +49,6 @@ namespace Zilf.Compiler
 
         void DefineProperty([NotNull] ZilAtom prop)
         {
-            Contract.Requires(prop != null);
 
             if (!Properties.ContainsKey(prop))
             {
@@ -67,7 +65,6 @@ namespace Zilf.Compiler
 
         void DefineFlag([NotNull] ZilAtom flag)
         {
-            Contract.Requires(flag != null);
 
             if (!Flags.ContainsKey(flag))
             {
@@ -83,9 +80,6 @@ namespace Zilf.Compiler
 
         void DefineFlagAlias([NotNull] ZilAtom alias, [NotNull] ZilAtom original)
         {
-            Contract.Requires(alias != null);
-            Contract.Requires(original != null);
-            Contract.Ensures(Constants.ContainsKey(alias));
 
             if (!Flags.ContainsKey(alias))
             {
@@ -121,7 +115,6 @@ namespace Zilf.Compiler
         /// <param name="model">The object to examine.</param>
         void PreBuildObject([NotNull] ZilModelObject model)
         {
-            Contract.Requires(model != null);
 
             var globalsByName = Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
             var propertiesSoFar = new HashSet<ZilAtom>();
@@ -443,8 +436,6 @@ namespace Zilf.Compiler
         /// </remarks>
         void BuildObject([NotNull] ZilModelObject model, [NotNull] IObjectBuilder ob)
         {
-            Contract.Requires(model != null);
-            Contract.Requires(ob != null);
 
             var elementConverters = new ComplexPropDef.ElementConverters
             {
@@ -699,7 +690,6 @@ namespace Zilf.Compiler
                 {
                     // nothing special, just one or more words
                     var pb = Properties[propName];
-                    Contract.Assume(pb != null);
                     if (propBody.Rest.IsEmpty)
                     {
                         var word = CompileConstant(value);

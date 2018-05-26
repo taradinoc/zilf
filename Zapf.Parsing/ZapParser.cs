@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using JetBrains.Annotations;
 using Zapf.Parsing.Diagnostics;
@@ -37,7 +36,6 @@ namespace Zapf.Parsing
 
         public ZapParser(IErrorSink sink, [NotNull] IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
         {
-            Contract.Requires(opcodeDict != null);
 
             this.sink = sink;
             this.opcodeDict = opcodeDict;
@@ -107,8 +105,6 @@ namespace Zapf.Parsing
         /// <exception cref="SeriousError">Syntax error.</exception>
         public ParseResult Parse([NotNull] Stream stream, [NotNull] string filename)
         {
-            Contract.Requires(stream != null);
-            Contract.Requires(filename != null);
 
             toks = new Tokenizer(stream, filename);
             var output = new List<AsmLine>();

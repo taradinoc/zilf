@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,8 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.ZModel
@@ -34,12 +32,6 @@ namespace Zilf.ZModel
 
         Language(int id, string charset0, string charset1, string charset2, [NotNull] params char[] specialChars)
         {
-            Contract.Requires(id >= 0);
-            Contract.Requires(charset0 != null && charset0.Length == 26);
-            Contract.Requires(charset1 != null && charset1.Length == 26);
-            Contract.Requires(charset2 != null && charset2.Length == 24);
-            Contract.Requires(specialChars != null);
-            Contract.Requires(specialChars.Length % 2 == 0);
 
             Id = id;
             Charset0 = charset0;
@@ -53,19 +45,6 @@ namespace Zilf.ZModel
             }
 
             SpecialChars = specialCharDict;
-        }
-
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Id >= 0);
-            Contract.Invariant(Charset0 != null && Charset0.Length == 26);
-            Contract.Invariant(Charset1 != null && Charset1.Length == 26);
-            Contract.Invariant(Charset2 != null && Charset2.Length == 24);
-            Contract.Invariant(SpecialChars != null);
-            Contract.Invariant(Default != null);
-            Contract.Invariant(German != null);
         }
 
         [NotNull]
@@ -101,7 +80,6 @@ namespace Zilf.ZModel
         [System.Diagnostics.Contracts.Pure]
         public static Language Get([NotNull] string name)
         {
-            Contract.Requires(name != null);
 
             allLanguages.TryGetValue(name, out var result);
             return result;

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -35,11 +34,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject PRINT([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (channel == null)
             {
                 channel =
@@ -64,11 +58,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject PRIN1([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (channel == null)
             {
                 channel =
@@ -91,11 +80,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject PRINC([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (channel == null)
             {
                 channel =
@@ -118,10 +102,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject CRLF([NotNull] Context ctx, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (channel == null)
             {
                 channel =
@@ -142,10 +122,6 @@ namespace Zilf.Interpreter
         public static ZilObject PRINT_MANY([NotNull] Context ctx, ZilChannel channel,
             [Decl("<OR ATOM APPLICABLE>")] ZilObject printer, [NotNull] ZilObject[] items)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(items != null);
-            SubrContracts(ctx);
-
             if (printer is ZilAtom atom)
             {
                 printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
@@ -194,11 +170,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject IMAGE([NotNull] Context ctx, [NotNull] ZilFix ch, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(ch != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (channel == null)
             {
                 channel =
@@ -220,12 +191,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject OPEN([NotNull] Context ctx, [Decl("'\"READ\"")] string mode, [NotNull] string path)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(path != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-            Contract.Requires(mode == "READ");
-
             var result = new ZilFileChannel(ConvertPath(path), FileAccess.Read);
             result.Reset(ctx);
             return result;
@@ -234,8 +199,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static string ConvertPath([NotNull] string retroPath)
         {
-            Contract.Requires(retroPath != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             var match = RetroPathRE.Match(retroPath);
             if (match.Success)
@@ -247,11 +210,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject CLOSE([NotNull] Context ctx, [NotNull] ZilChannel channel)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(channel != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             channel.Close();
             return channel;
         }
@@ -260,11 +218,6 @@ namespace Zilf.Interpreter
         [Subr("FILE-LENGTH")]
         public static ZilObject FILE_LENGTH([NotNull] Context ctx, [NotNull] ZilChannel channel)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(channel != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var length = channel.GetFileLength();
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
         }
@@ -274,11 +227,6 @@ namespace Zilf.Interpreter
         public static ZilObject READSTRING([NotNull] Context ctx, [NotNull] ZilString dest, ZilChannel channel,
             [CanBeNull] [Decl("<OR FIX STRING>")] ZilObject maxLengthOrStopChars = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(dest != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // TODO: support 1- and 4-argument forms?
 
             int maxLength = dest.Text.Length;
@@ -288,8 +236,6 @@ namespace Zilf.Interpreter
             {
                 var maxLengthFix = maxLengthOrStopChars as ZilFix;
                 stopChars = maxLengthOrStopChars as ZilString;
-
-                Contract.Assert(maxLengthFix != null || stopChars != null);
 
                 if (maxLengthFix != null)
                     maxLength = Math.Min(maxLengthFix.Value, maxLength);
@@ -323,11 +269,6 @@ namespace Zilf.Interpreter
         [Subr("M-HPOS")]
         public static ZilObject M_HPOS([NotNull] Context ctx, [NotNull] ZilChannel channel)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(channel != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (!(channel is IChannelWithHPos hposChannel))
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "M-HPOS");
 
@@ -339,11 +280,6 @@ namespace Zilf.Interpreter
         [Subr("INDENT-TO")]
         public static ZilObject INDENT_TO([NotNull] Context ctx, [NotNull] ZilFix position, ZilChannel channel = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(position != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (position.Value < 0)
                 throw new InterpreterError(
                     InterpreterMessages._0_Expected_1,

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,8 +20,6 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -59,8 +57,6 @@ namespace Zilf.Tests.Integration
     {
         public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
-            Contract.Requires(code != null);
-            Contract.Requires(expectedOutput != null);
 
             var helper = new ZlrHelper(code, input);
             bool compiled;
@@ -87,7 +83,6 @@ namespace Zilf.Tests.Integration
 
         public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
         {
-            Contract.Requires(code != null);
 
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
@@ -143,7 +138,6 @@ namespace Zilf.Tests.Integration
 
         public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
-            Contract.Requires(code != null);
 
             this.code = code;
             this.input = input;
@@ -164,7 +158,6 @@ namespace Zilf.Tests.Integration
 
         void PrintZapCode([NotNull] string filename)
         {
-            Contract.Requires(filename != null);
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
             Console.Error.WriteLine("=== {0} ===", filename);
@@ -236,7 +229,6 @@ namespace Zilf.Tests.Integration
 
         public bool Compile([NotNull] out string compileOutput)
         {
-            Contract.Requires(compileOutput != null);
             var channel = new ZilStringChannel(FileAccess.Write);
 
             var compiled = Compile(fe =>
@@ -254,7 +246,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public string GetZapCode()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
 
             foreach (var stream in zilfOutputFiles.OrderBy(p => p.Key).Select(p => p.Value))
@@ -303,7 +294,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         string Execute()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             Debug.Assert(zapfOutputFile != null);
 
             var inputStream = input != null ? new MemoryStream(Encoding.UTF8.GetBytes(input)) : new MemoryStream();
@@ -351,9 +341,6 @@ namespace Zilf.Tests.Integration
 
         public FileBasedZlrHelper([NotNull] string codeFile, [ItemNotNull] [NotNull] string[] includeDirs, string inputFile)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(codeFile));
-            Contract.Requires(includeDirs != null);
-            Contract.Requires(Contract.ForAll(includeDirs, d => !string.IsNullOrWhiteSpace(d)));
 
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;
@@ -546,16 +533,6 @@ namespace Zilf.Tests.Integration
             {
                 inputStream.Dispose();
             }
-        }
-
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        private void ObjectInvariant()
-        {
-            Contract.Invariant(codeFile != null);
-            Contract.Invariant(zapFileName != null);
-            Contract.Invariant(includeDirs != null);
         }
     }
 }

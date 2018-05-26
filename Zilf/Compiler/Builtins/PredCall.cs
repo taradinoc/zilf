@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,11 +17,9 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
-using System.Diagnostics;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -43,27 +41,12 @@ namespace Zilf.Compiler.Builtins
         public PredCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] ILabel label, bool polarity)
             : this()
         {
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Requires(label != null);
 
             this.cc = cc;
             this.rb = rb;
             this.form = form;
             this.label = label;
             this.polarity = polarity;
-        }
-
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(cc != null);
-            Contract.Invariant(rb != null);
-            Contract.Invariant(form != null);
-            Contract.Invariant(label != null);
         }
     }
 #pragma warning restore IDE1006 // Naming Styles

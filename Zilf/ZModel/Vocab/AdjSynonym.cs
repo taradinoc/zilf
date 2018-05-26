@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Interpreter;
 
@@ -27,8 +26,6 @@ namespace Zilf.ZModel.Vocab
         public AdjSynonym([NotNull] IWord original, [NotNull] IWord synonym)
             : base(original, synonym)
         {
-            Contract.Requires(original != null);
-            Contract.Requires(synonym != null);
         }
 
         public override void Apply(Context ctx)

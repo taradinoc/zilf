@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
@@ -41,8 +40,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.Contracts.Pure]
         public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
-            Contract.Requires(first != null);
-            Contract.Requires(second != null);
 
             if (associations.TryGetValue(first, out var innerTable) && innerTable.TryGetValue(second, out var result))
                 return result;
@@ -59,8 +56,6 @@ namespace Zilf.Interpreter
         /// null to clear the association.</param>
         public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
         {
-            Contract.Requires(first != null);
-            Contract.Requires(second != null);
 
             if (value == null)
             {

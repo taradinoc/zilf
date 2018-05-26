@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -47,7 +46,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAtom FromAtom([NotNull] Context ctx, [NotNull] ZilAtom other)
         {
-            Contract.Requires(ctx != null);
 
             // we can't construct a new atom since it wouldn't be equal to the old one
             return other;
@@ -89,8 +87,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static ZilAtom Parse([NotNull] string text, [NotNull] Context ctx)
         {
-            Contract.Requires(text != null);
-            Contract.Requires(ctx != null);
 
             ZilAtom result;
             var idx = text.IndexOf("!-", StringComparison.Ordinal);
@@ -159,11 +155,6 @@ namespace Zilf.Interpreter.Values
 
         bool NeedsObListTrailer([ItemNotNull] [NotNull] [InstantHandle] IEnumerable<ZilObject> obListPath)
         {
-            // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
-            // thus, the trailer is only needed if (1) looking up that name returns a different atom first
-            // or (2) no atom by that name can be found in the path.
-
-            Contract.Requires(obListPath != null);
             // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
             // thus, the trailer is only needed if (1) looking up that name returns a different atom first
             // or (2) no atom by that name can be found in the path.
@@ -260,7 +251,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return this;
         }
     }

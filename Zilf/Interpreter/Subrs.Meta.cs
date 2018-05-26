@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
@@ -35,10 +34,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformLoadFile([NotNull] Context ctx, [NotNull] string file, [NotNull] string name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(file != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             try
             {
                 var newFile = ctx.FindIncludeFile(file);
@@ -69,12 +64,6 @@ namespace Zilf.Interpreter
         [Subr("XFLOAD")]
         public static ZilObject INSERT_FILE([NotNull] Context ctx, [NotNull] string file, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(file != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-         
             // we ignore arguments after the first
 
             return PerformLoadFile(ctx, file, "INSERT-FILE");
@@ -85,11 +74,6 @@ namespace Zilf.Interpreter
         [Subr("FILE-FLAGS")]
         public static ZilObject FILE_FLAGS([NotNull] Context ctx, [NotNull] ZilAtom[] flags)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(flags != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var newFlags = FileFlags.None;
 
             foreach (var atom in flags)
@@ -126,11 +110,6 @@ namespace Zilf.Interpreter
         [Subr("DELAY-DEFINITION")]
         public static ZilObject DELAY_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx); 
-            
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             if (ctx.GetProp(name, ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION)) != null)
@@ -144,11 +123,6 @@ namespace Zilf.Interpreter
         [FSubr("REPLACE-DEFINITION")]
         public static ZilResult REPLACE_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Requires(body != null);
-            SubrContracts(ctx);
-
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
@@ -181,9 +155,6 @@ namespace Zilf.Interpreter
         [FSubr("DEFAULT-DEFINITION")]
         public static ZilResult DEFAULT_DEFINITION([NotNull] Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            SubrContracts(ctx);
-
             name = ctx.ZEnvironment.InternGlobalName(name);
 
             var replaceAtom = ctx.GetStdAtom(StdAtom.REPLACE_DEFINITION);
@@ -224,10 +195,6 @@ namespace Zilf.Interpreter
         public static ZilObject COMPILATION_FLAG([NotNull] Context ctx,
             AtomParams.StringOrAtom name, [CanBeNull] ZilObject value = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, true);
             return atom;
@@ -238,11 +205,6 @@ namespace Zilf.Interpreter
         public static ZilObject COMPILATION_FLAG_DEFAULT([NotNull] Context ctx,
             AtomParams.StringOrAtom name, [NotNull] ZilObject value)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value);
             return atom;
@@ -253,10 +215,6 @@ namespace Zilf.Interpreter
         public static ZilObject COMPILATION_FLAG_VALUE([NotNull] Context ctx,
             AtomParams.StringOrAtom name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var atom = name.GetAtom(ctx);
             return ctx.GetCompilationFlagValue(atom) ?? ctx.FALSE;
         }
@@ -264,10 +222,6 @@ namespace Zilf.Interpreter
         [FSubr("IFFLAG")]
         public static ZilResult IFFLAG([NotNull] Context ctx, [NotNull] [Required] CondClause[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx);
-
             foreach (var clause in args)
             {
                 bool match;
@@ -322,9 +276,6 @@ namespace Zilf.Interpreter
         [NotNull]
         internal static ZilForm SubstituteIfflagForm([NotNull] Context ctx, [NotNull] ZilForm form)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(form != null);
-            Contract.Ensures(Contract.Result<ZilForm>() != null);
             var body = form.Select(zo =>
             {
                 ZilObject value;
@@ -346,9 +297,6 @@ namespace Zilf.Interpreter
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // TODO: measure actual CPU time
             return new ZilFix(1);
         }
@@ -356,9 +304,6 @@ namespace Zilf.Interpreter
         [Subr("QUIT")]
         public static ZilObject QUIT([NotNull] Context ctx, ZilObject exitCode = null)
         {
-            Contract.Requires(ctx != null);
-            SubrContracts(ctx);
-
             int code;
             switch (exitCode)
             {
@@ -387,10 +332,6 @@ namespace Zilf.Interpreter
         [Subr("SNAME")]
         public static ZilObject ID([NotNull] Context ctx, ZilObject arg)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return arg;
         }
 
@@ -412,11 +353,6 @@ namespace Zilf.Interpreter
         [Subr("PICFILE")]
         public static ZilObject SubrIgnored([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-            
             // nada
             return ctx.FALSE;
         }
@@ -426,11 +362,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject GC([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             System.GC.Collect();
             return ctx.TRUE;
         }
@@ -439,10 +370,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ERROR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx, args);
-
             throw new InterpreterError(
                 InterpreterMessages.UserSpecifiedError_0_1,
                 "ERROR",
@@ -455,8 +382,6 @@ namespace Zilf.Interpreter
         [Subr("DESC-BUILTINS", ObList = "YOMIN")]
         public static ZilObject DESCRIBE_BUILTINS([NotNull] Context ctx)
         {
-            SubrContracts(ctx);
-
             var result = new JObject();
 
             // Z-code builtins

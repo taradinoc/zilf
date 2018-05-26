@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using Zilf.Emit.Zap;
 using Zilf.Interpreter;
@@ -88,7 +87,6 @@ namespace Zilf.Compiler
         [NotNull]
         Stream OpenFile(string path, bool writing)
         {
-            Contract.Ensures(Contract.Result<Stream>() != null);
             var handler = OpeningFile;
             if (handler != null)
             {
@@ -146,8 +144,6 @@ namespace Zilf.Compiler
             /// <exception cref="ArgumentException">mainFile is not a file name.</exception>
             public ZapStreamFactory([NotNull] FrontEnd owner, [NotNull] string mainFile)
             {
-                Contract.Requires(owner != null);
-                Contract.Requires(mainFile != null);
                 this.owner = owner;
                 this.mainFile = mainFile;
 
@@ -167,31 +163,26 @@ namespace Zilf.Compiler
 
             public Stream CreateMainStream()
             {
-                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(mainFile, true);
             }
 
             public Stream CreateFrequentWordsStream()
             {
-                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(fwordsFile, true);
             }
 
             public Stream CreateDataStream()
             {
-                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(dataFile, true);
             }
 
             public Stream CreateStringStream()
             {
-                Contract.Ensures(Contract.Result<Stream>() != null);
                 return owner.OpenFile(stringFile, true);
             }
 
             public string GetMainFileName(bool withExt)
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 var result = mainFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
@@ -200,7 +191,6 @@ namespace Zilf.Compiler
 
             public string GetDataFileName(bool withExt)
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 var result = dataFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
@@ -209,7 +199,6 @@ namespace Zilf.Compiler
 
             public string GetFrequentWordsFileName(bool withExt)
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 var result = fwordsFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
@@ -218,7 +207,6 @@ namespace Zilf.Compiler
 
             public string GetStringFileName(bool withExt)
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 var result = stringFile;
                 if (!withExt)
                     result = Path.ChangeExtension(result, null);
@@ -234,7 +222,6 @@ namespace Zilf.Compiler
         [NotNull]
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
-            Contract.Ensures(Contract.Result<Context>() != null);
             var result = new Context { RunMode = runMode, WantDebugInfo = wantDebugInfo };
 
             InitializeContext?.Invoke(this, new ContextEventArgs(result));
@@ -244,16 +231,12 @@ namespace Zilf.Compiler
 
         internal FrontEndResult Interpret([NotNull] Context ctx, [NotNull] string inputFileName)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(inputFileName != null);
             var f = InterpretOrCompile(ctx, inputFileName, null, false, false);
             return f;
         }
 
         public FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
         {
-            Contract.Requires(inputFileName != null);
-            Contract.Requires(outputFileName != null);
             var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
             return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
@@ -261,9 +244,6 @@ namespace Zilf.Compiler
         internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName,
             [NotNull] string outputFileName, bool wantDebugInfo = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(inputFileName != null);
-            Contract.Requires(outputFileName != null);
             return InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
         }
 
@@ -273,9 +253,6 @@ namespace Zilf.Compiler
         FrontEndResult InterpretOrCompile([NotNull] [ProvidesContext] Context ctx, [NotNull] string inputFileName,
             [CanBeNull] string outputFileName, bool wantCompile, bool wantDebugInfo)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(inputFileName != null);
-            Contract.Requires(!wantCompile || outputFileName != null);
             var result = new FrontEndResult();
 
             Debug.Assert(!wantCompile || outputFileName != null);
@@ -333,8 +310,6 @@ namespace Zilf.Compiler
         [NotNull]
         static GameOptions MakeGameOptions([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<GameOptions>() != null);
 
             var zenv = ctx.ZEnvironment;
 

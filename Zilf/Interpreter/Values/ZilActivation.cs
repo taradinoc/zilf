@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -44,8 +43,6 @@ namespace Zilf.Interpreter.Values
         [ContractAnnotation("=> halt")]
         public static ZilActivation FromAtom([NotNull] Context ctx, [NotNull] ZilAtom name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
 
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
         }

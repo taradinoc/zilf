@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,10 +18,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Language;
-using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -45,24 +43,13 @@ namespace Zilf.Interpreter.Values
 
             public VectorStorage([NotNull] ZilObject[] items)
             {
-                Contract.Requires(items != null);
 
                 this.items = items;
-            }
-
-            [ContractInvariantMethod]
-            [Conditional("CONTRACTS_FULL")]
-            void ObjectInvariant()
-            {
-                Contract.Invariant(items != null);
-                Contract.Invariant(BaseOffset >= 0);
-                Contract.Invariant(BaseOffset <= items.Length);
             }
 
             [NotNull]
             public IEnumerable<ZilObject> GetSequence(int offset)
             {
-                Contract.Ensures(Contract.Result<IEnumerable<ZilObject>>() != null);
                 return items.Skip(offset + BaseOffset);
             }
 
@@ -98,8 +85,6 @@ namespace Zilf.Interpreter.Values
 
             public void Grow(int end, int beginning, ZilObject defaultValue)
             {
-                Contract.Requires(end >= 0);
-                Contract.Requires(beginning >= 0);
 
                 if (end > 0 || beginning > 0)
                 {
@@ -137,12 +122,10 @@ namespace Zilf.Interpreter.Values
         public ZilVector([NotNull] ZilVector other)
             : this(other.storage, other.offset)
         {
-            Contract.Requires(other != null);
         }
 
         ZilVector([NotNull] VectorStorage storage, int offset)
         {
-            Contract.Requires(storage != null);
 
             this.storage = storage;
             this.offset = offset;
@@ -150,7 +133,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilVector([NotNull] params ZilObject[] items)
         {
-            Contract.Requires(items != null);
 
             storage = new VectorStorage(items);
             offset = 0;

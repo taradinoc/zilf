@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -31,9 +30,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformArithmetic(int init, [NotNull] Func<int, int, int> op, [NotNull] int[] args)
         {
-            Contract.Requires(op != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
 
             switch (args.Length)
             {
@@ -59,11 +55,6 @@ namespace Zilf.Interpreter
         [Subr("+")]
         public static ZilObject Plus([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(0, (x, y) => x + y, args);
         }
 
@@ -71,11 +62,6 @@ namespace Zilf.Interpreter
         [Subr("-")]
         public static ZilObject Minus([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(0, (x, y) => x - y, args);
         }
 
@@ -83,11 +69,6 @@ namespace Zilf.Interpreter
         [Subr("*")]
         public static ZilObject Times([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(1, (x, y) => x * y, args);
         }
 
@@ -96,11 +77,6 @@ namespace Zilf.Interpreter
         [Subr("/")]
         public static ZilObject Divide([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             try
             {
                 return PerformArithmetic(1, (x, y) => x / y, args);
@@ -116,10 +92,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MOD([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             try
             {
                 return new ZilFix(a % b);
@@ -134,10 +106,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject LSH([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // "Logical shift", not left shift.
             // Positive shifts left, negative shifts right.
 
@@ -161,11 +129,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ORB([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(0, (x, y) => x | y, args);
         }
 
@@ -173,11 +136,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ANDB([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(-1, (x, y) => x & y, args);
         }
 
@@ -185,11 +143,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject XORB([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(0, (x, y) => x ^ y, args);
         }
 
@@ -197,10 +150,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject EQVB([NotNull] Context ctx, [NotNull] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx);
-
             return PerformArithmetic(-1, (x, y) => ~(x ^ y), args);
         }
 
@@ -208,10 +157,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MIN([NotNull] Context ctx, [NotNull] [Required] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx);
-
             return new ZilFix(args.Min());
         }
 
@@ -219,12 +164,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MAX([NotNull] Context ctx, [NotNull] [Required] int[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-
-            SubrContracts(ctx);
-
             return new ZilFix(args.Max());
         }
 
@@ -232,11 +171,6 @@ namespace Zilf.Interpreter
         [Subr("OR?")]
         public static ZilObject OR_P([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             ZilObject result = ctx.FALSE;
 
             foreach (ZilObject arg in args)
@@ -253,11 +187,6 @@ namespace Zilf.Interpreter
         [Subr("AND?")]
         public static ZilObject AND_P([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             ZilObject result = ctx.TRUE;
 
             foreach (ZilObject arg in args)
@@ -274,11 +203,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject NOT([NotNull] Context ctx, [NotNull] ZilObject arg)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(arg != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return arg.IsTrue ? ctx.FALSE : ctx.TRUE;
         }
 
@@ -286,12 +210,6 @@ namespace Zilf.Interpreter
         [Subr("=?")]
         public static ZilObject Eq_P([NotNull] Context ctx, [NotNull] ZilObject a, [NotNull] ZilObject b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(a != null);
-            Contract.Requires(b != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a.StructurallyEquals(b) ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -299,12 +217,6 @@ namespace Zilf.Interpreter
         [Subr("N=?")]
         public static ZilObject NEq_P([NotNull] Context ctx, [NotNull] ZilObject a, [NotNull] ZilObject b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(a != null);
-            Contract.Requires(b != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a.StructurallyEquals(b) ? ctx.FALSE : ctx.TRUE;
         }
 
@@ -312,12 +224,6 @@ namespace Zilf.Interpreter
         [Subr("==?")]
         public static ZilObject Eeq_P([NotNull] Context ctx, [NotNull] ZilObject a, [NotNull] ZilObject b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(a != null);
-            Contract.Requires(b != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a.ExactlyEquals(b) ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -325,12 +231,6 @@ namespace Zilf.Interpreter
         [Subr("N==?")]
         public static ZilObject NEeq_P([NotNull] Context ctx, [NotNull] ZilObject a, [NotNull] ZilObject b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(a != null);
-            Contract.Requires(b != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a.ExactlyEquals(b) ? ctx.FALSE : ctx.TRUE;
         }
 
@@ -338,10 +238,6 @@ namespace Zilf.Interpreter
         [Subr("L?")]
         public static ZilObject L_P([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a < b ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -349,10 +245,6 @@ namespace Zilf.Interpreter
         [Subr("L=?")]
         public static ZilObject LEq_P([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a <= b ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -360,10 +252,6 @@ namespace Zilf.Interpreter
         [Subr("G?")]
         public static ZilObject G_P([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a > b ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -371,10 +259,6 @@ namespace Zilf.Interpreter
         [Subr("G=?")]
         public static ZilObject GEq_P([NotNull] Context ctx, int a, int b)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return a >= b ? ctx.TRUE : ctx.FALSE;
         }
 
@@ -382,11 +266,6 @@ namespace Zilf.Interpreter
         [Subr("0?")]
         public static ZilObject Zero_P([NotNull] Context ctx, [NotNull] ZilObject arg)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(arg != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (arg is ZilFix fix && fix.Value == 0)
                 return ctx.TRUE;
 
@@ -397,11 +276,6 @@ namespace Zilf.Interpreter
         [Subr("1?")]
         public static ZilObject One_P([NotNull] Context ctx, [NotNull] ZilObject arg)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(arg != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (arg is ZilFix fix && fix.Value == 1)
                 return ctx.TRUE;
 

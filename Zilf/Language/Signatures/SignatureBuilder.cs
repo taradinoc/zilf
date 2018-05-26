@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
@@ -50,14 +49,12 @@ namespace Zilf.Language.Signatures
         [CanBeNull]
         public static SignaturePart MaybeConvertDecl([NotNull] DeclAttribute decl)
         {
-            Contract.Requires(decl != null);
             return MaybeConvertDecl(decl.Pattern);
         }
 
         [CanBeNull]
         public static SignaturePart MaybeConvertDecl([NotNull] string pattern)
         {
-            Contract.Requires(pattern != null);
 
             // TODO: this should parse the <OR...> instead of doing a hacky regex match
 
@@ -70,7 +67,12 @@ namespace Zilf.Language.Signatures
             if (!match.Success)
                 return null;
 
-            var alts = match.Groups[1].Captures.Cast<Capture>().Select(c => MaybeConvertDecl(c.Value)).ToArray();
+#if NET471
+            var captures = match.Groups[1].Captures.Cast<Capture>();
+#else
+            var captures = match.Groups[1].Captures;
+#endif
+            var alts = captures.Select(c => MaybeConvertDecl(c.Value)).ToArray();
             if (alts.Length > 0 && alts.All(a => a != null))
             {
                 return Alternatives(alts);

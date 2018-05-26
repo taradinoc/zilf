@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,12 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#undef TRACE_PEEPHOLE
-
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -88,7 +84,6 @@ namespace Zilf.Emit
 
         public CombinerResult(int linesConsumed, [NotNull] IEnumerable<CombinableLine<TCode>> newLines)
         {
-            Contract.Requires(newLines != null);
             LinesConsumed = linesConsumed;
             NewLines = newLines;
         }
@@ -134,8 +129,6 @@ namespace Zilf.Emit
         /// </summary>
         CausesNoOpIfPositive,
     }
-
-    [ContractClass(typeof(PeepholeCombinerContract<>))]
     interface IPeepholeCombiner<TCode>
     {
         /// <summary>
@@ -244,7 +237,6 @@ namespace Zilf.Emit
 
             public void CopyFrom([NotNull] Line other)
             {
-                Contract.Requires(other != null);
                 Label = other.Label;
                 Code = other.Code;
                 TargetLabel = other.TargetLabel;
@@ -323,7 +315,6 @@ namespace Zilf.Emit
         /// </exception>
         public void InsertBufferFirst([NotNull] PeepholeBuffer<TCode> other)
         {
-            Contract.Requires(other != null);
 
             // turn pending label into a label on our first line, or copy it if we have no lines
             if (other.pendingLabel != null)
@@ -553,7 +544,6 @@ namespace Zilf.Emit
                         if (line.TargetLine != null)
                         {
                             var targetNode = lines.Find(line.TargetLine);
-                            Contract.Assume(targetNode != null);
                             queue.Enqueue(targetNode);
                         }
                     }
@@ -639,7 +629,6 @@ namespace Zilf.Emit
 
                             var originalTarget = line.TargetLine;
                             var targetNode = lines.Find(originalTarget);
-                            Contract.Assume(targetNode?.Next != null);
 
                             var lineAfterTarget = targetNode.Next.Value;
 
@@ -977,7 +966,6 @@ namespace Zilf.Emit
                          * the function unless it's unreachable. */
                         if (line.Label != null /*&& next != null*/)
                         {
-                            Contract.Assert(next != null);
 
                             MarkReachable(next);
 
@@ -1041,52 +1029,6 @@ namespace Zilf.Emit
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-    }
-
-    [ContractClassFor(typeof(IPeepholeCombiner<>))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    [SuppressMessage("ReSharper", "AnnotateCanBeNullTypeMember")]
-    abstract class PeepholeCombinerContract<TCode> : IPeepholeCombiner<TCode>
-    {
-        public CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines)
-        {
-            return default(CombinerResult<TCode>);
-        }
-
-        public TCode SynthesizeBranchAlways()
-        {
-            return default(TCode);
-        }
-
-        public bool AreIdentical(TCode a, TCode b)
-        {
-            return default(bool);
-        }
-
-        public TCode MergeIdentical(TCode a, TCode b)
-        {
-            return default(TCode);
-        }
-
-        public bool CanDuplicate(TCode c)
-        {
-            return default(bool);
-        }
-
-        public SameTestResult AreSameTest(TCode a, TCode b)
-        {
-            return default(SameTestResult);
-        }
-
-        public ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b)
-        {
-            return default(ControlsConditionResult);
-        }
-
-        public ILabel NewLabel()
-        {
-            return default(ILabel);
         }
     }
 }

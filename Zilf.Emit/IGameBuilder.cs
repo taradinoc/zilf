@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,13 +18,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(IGameBuilderContracts))]
     public interface IGameBuilder : IDisposable
     {
         /// <summary>
@@ -203,195 +200,5 @@ namespace Zilf.Emit
         /// Writes the final output and closes the game builder.
         /// </summary>
         void Finish();
-    }
-
-    [ContractClassFor(typeof(IGameBuilder))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IGameBuilderContracts : IGameBuilder
-    {
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(MaxPropertyLength > 0);
-            Contract.Invariant(MaxProperties > 0);
-            Contract.Invariant(MaxFlags > 0);
-            Contract.Invariant(MaxCallArguments > 0);
-            Contract.Invariant(Zero != null);
-            Contract.Invariant(One != null);
-            Contract.Invariant(SelfInsertingBreaks != null);
-            Contract.Invariant(VocabularyTable != null);
-        }
-
-        public abstract void Dispose();
-
-        public IGameOptions Options
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IGameOptions>() != null);
-                return default(IGameOptions);
-            }
-        }
-
-        public IDebugFileBuilder DebugFile => null;
-
-        public IGlobalBuilder DefineGlobal(string name)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<IGlobalBuilder>() != null);
-            return default(IGlobalBuilder);
-        }
-
-        public ITableBuilder DefineTable(string name, bool pure)
-        {
-            Contract.Ensures(Contract.Result<ITableBuilder>() != null);
-            return default(ITableBuilder);
-        }
-
-        public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<IRoutineBuilder>() != null);
-            return default(IRoutineBuilder);
-        }
-
-        public IObjectBuilder DefineObject(string name)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<IObjectBuilder>() != null);
-            return default(IObjectBuilder);
-        }
-
-        public IPropertyBuilder DefineProperty(string name)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<IPropertyBuilder>() != null);
-            return default(IPropertyBuilder);
-        }
-
-        public IFlagBuilder DefineFlag(string name)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Ensures(Contract.Result<IFlagBuilder>() != null);
-            return default(IFlagBuilder);
-        }
-
-        public int MaxPropertyLength
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() > 0);
-                return default(int);
-            }
-        }
-
-        public int MaxProperties
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() > 0);
-                return default(int);
-            }
-        }
-
-        public int MaxFlags
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() > 0);
-                return default(int);
-            }
-        }
-
-        public int MaxCallArguments
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() > 0);
-                return default(int);
-            }
-        }
-
-        public INumericOperand Zero
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IOperand>() != null);
-                return default(INumericOperand);
-            }
-        }
-
-        public INumericOperand One
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IOperand>() != null);
-                return default(INumericOperand);
-            }
-        }
-
-        public INumericOperand MakeOperand(int value)
-        {
-            Contract.Ensures(Contract.Result<INumericOperand>() != null);
-            return default(INumericOperand);
-        }
-
-        public IOperand MakeOperand(string value)
-        {
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-            return default(IOperand);
-        }
-
-        public IOperand DefineConstant(string name, IOperand value)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(name));
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-            return default(IOperand);
-        }
-
-        public IWordBuilder DefineVocabularyWord(string word)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(word));
-            Contract.Ensures(Contract.Result<IWordBuilder>() != null);
-            return default(IWordBuilder);
-        }
-
-        public void RemoveVocabularyWord(string word)
-        {
-            Contract.Requires(!string.IsNullOrWhiteSpace(word));
-        }
-
-        public ICollection<char> SelfInsertingBreaks
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<ICollection<char>>() != null);
-                return default(ICollection<char>);
-            }
-        }
-
-        public IConstantOperand VocabularyTable
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<IConstantOperand>() != null);
-                return default(IConstantOperand);
-            }
-        }
-
-        public bool IsGloballyDefined(string name, out string type)
-        {
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out type) != null);
-            type = default(string);
-            return default(bool);
-        }
-
-        public void Finish()
-        {
-            // nada
-        }
     }
 }

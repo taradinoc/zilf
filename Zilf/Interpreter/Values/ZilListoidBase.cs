@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,8 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -31,13 +29,6 @@ namespace Zilf.Interpreter.Values
         public abstract ZilObject First { get; set; }
         [CanBeNull]
         public abstract ZilList Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
-
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant((First == null && Rest == null) || (First != null && Rest != null));
-        }
 
         public abstract bool IsEmpty { get; }
 

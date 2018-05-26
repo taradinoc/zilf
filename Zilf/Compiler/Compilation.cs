@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -25,7 +24,6 @@ using Zilf.Interpreter.Values;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
-using System.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -50,8 +48,6 @@ namespace Zilf.Compiler
 
         Compilation([NotNull] Context ctx, [NotNull] IGameBuilder game, bool wantDebugInfo)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(game != null);
 
             Context = ctx;
             Game = game;
@@ -66,16 +62,6 @@ namespace Zilf.Compiler
             Properties = new Dictionary<ZilAtom, IPropertyBuilder>(equalizer);
             Flags = new Dictionary<ZilAtom, IFlagBuilder>(equalizer);
             SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>(equalizer);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Context != null);
-            Contract.Invariant(Game != null);
         }
 
         [NotNull]
