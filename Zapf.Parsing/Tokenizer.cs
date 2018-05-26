@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
@@ -63,8 +62,6 @@ namespace Zapf.Parsing
 
         public Tokenizer([NotNull] Stream stream, [NotNull] string filename)
         {
-            Contract.Requires(stream != null);
-            Contract.Requires(filename != null);
 
             rdr = new StreamReader(stream);
             this.filename = filename;
@@ -198,7 +195,6 @@ namespace Zapf.Parsing
             }
 
             var length = sb.Length;
-            Contract.Assert(length > 0, "zero length symbol");
 
             result.Text = sb.ToString();
 

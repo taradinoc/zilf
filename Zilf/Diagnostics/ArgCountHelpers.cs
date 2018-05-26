@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using JetBrains.Annotations;
@@ -32,7 +31,6 @@ namespace Zilf.Diagnostics
 
         public CountableString([NotNull] string text, bool plural)
         {
-            Contract.Requires(text != null);
 
             Text = text;
             Plural = plural;
@@ -49,9 +47,6 @@ namespace Zilf.Diagnostics
         public static IEnumerable<T> Collapse<T>([NotNull] IEnumerable<T> sequence,
             [NotNull] Func<T, T, bool> match, [NotNull] Func<T, T, T> combine)
         {
-            Contract.Requires(sequence != null);
-            Contract.Requires(match != null);
-            Contract.Requires(combine != null);
             //Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
             using (var tor = sequence.GetEnumerator())
@@ -83,9 +78,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         static string EnglishJoin([NotNull] IEnumerable<string> sequence, [NotNull] string conjunction)
         {
-            Contract.Requires(sequence != null);
-            Contract.Requires(conjunction != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             var items = sequence.ToArray();
 
@@ -107,8 +99,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public static string FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges)
         {
-            Contract.Requires(ranges != null);
-            Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
 
             FormatArgCount(ranges, out var cs);
             return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
@@ -117,7 +107,6 @@ namespace Zilf.Diagnostics
         /// <exception cref="ArgumentException">No ranges provided</exception>
         public static void FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges, out CountableString result)
         {
-            Contract.Requires(ranges != null);
             var allCounts = new List<int>();
             bool uncapped = false;
             foreach (var r in ranges)

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
@@ -35,9 +34,6 @@ namespace Zilf.Tests.Interpreter
         [NotNull]
         static Syntax ParseSyntax([NotNull] Context ctx, [NotNull] string definition)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(definition));
-            Contract.Ensures(Contract.Result<Syntax>() != null);
 
             var defn = (ZilList)Program.Evaluate(ctx, definition, true);
             Debug.Assert(defn != null);

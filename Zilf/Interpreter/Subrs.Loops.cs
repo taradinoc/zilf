@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
@@ -93,10 +92,6 @@ namespace Zilf.Interpreter
             [CanBeNull] [Optional] ZilDecl bodyDecl,
             [NotNull] [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(body != null);
-            SubrContracts(ctx);
-
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "PROG", false, true);
         }
 
@@ -107,10 +102,6 @@ namespace Zilf.Interpreter
             [CanBeNull] [Optional] ZilDecl bodyDecl,
             [NotNull] [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(body != null);
-            SubrContracts(ctx);
-
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "REPEAT", true, true);
         }
 
@@ -121,10 +112,6 @@ namespace Zilf.Interpreter
             [CanBeNull] [Optional] ZilDecl bodyDecl,
             [ItemNotNull] [NotNull] [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(body != null);
-            SubrContracts(ctx);
-
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }
 
@@ -132,12 +119,6 @@ namespace Zilf.Interpreter
             BindingParams.BindingList bindings, [CanBeNull] ZilDecl bodyDecl, [ItemNotNull] [NotNull] ZilObject[] body,
             [NotNull] string name, bool repeat, bool catchy)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(body != null);
-            SubrContracts(ctx);
-            Contract.Requires(name != null);
-            Contract.Requires(body != null && body.Length > 0);
-
             using (var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG)))
             {
                 using (var innerEnv = ctx.PushEnvironment())
@@ -205,8 +186,6 @@ namespace Zilf.Interpreter
                         }
                     } while (repeat || again);
 
-                    Contract.Assert((ZilObject)result != null);
-
                     return result;
                 }
             }
@@ -216,8 +195,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilResult RETURN(Context ctx, ZilObject value = null, ZilActivation activation = null)
         {
-            SubrContracts(ctx);
-
             if (value == null)
                 value = ctx.TRUE;
 
@@ -235,8 +212,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilResult AGAIN(Context ctx, ZilActivation activation = null)
         {
-            SubrContracts(ctx);
-
             if (activation == null)
             {
                 activation = ctx.GetEnclosingProgActivation();

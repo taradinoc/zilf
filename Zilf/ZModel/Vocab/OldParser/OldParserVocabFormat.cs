@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -182,10 +182,10 @@ namespace Zilf.ZModel.Vocab.OldParser
             var preactionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
             var verbsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.VTBL));
 
-            Contract.Assert(prepositionsTable != null);
-            Contract.Assert(actionsTable != null);
-            Contract.Assert(preactionsTable != null);
-            Contract.Assert(verbsTable != null);
+            Debug.Assert(prepositionsTable != null);
+            Debug.Assert(actionsTable != null);
+            Debug.Assert(preactionsTable != null);
+            Debug.Assert(verbsTable != null);
 
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.PREPOSITIONS)).DefaultValue = prepositionsTable;
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.ACTIONS)).DefaultValue = actionsTable;

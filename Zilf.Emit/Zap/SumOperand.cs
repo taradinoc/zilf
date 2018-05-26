@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using JetBrains.Annotations;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
@@ -25,8 +24,6 @@ namespace Zilf.Emit.Zap
     {
         public SumOperand([NotNull] IConstantOperand left, [NotNull] IConstantOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
 
             Left = left;
             Right = right;
@@ -45,7 +42,6 @@ namespace Zilf.Emit.Zap
 
         public IConstantOperand Add(IConstantOperand other)
         {
-            Contract.Requires(other != null);
             return new SumOperand(this, other);
         }
     }

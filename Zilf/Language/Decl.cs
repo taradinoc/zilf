@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -30,26 +29,10 @@ using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
-    /// <summary>
-    /// Allows non-structured types to be checked against structure DECLs.
-    /// </summary>
-    [ContractClass(typeof(IProvideStructureForDeclCheckContract))]
     interface IProvideStructureForDeclCheck
     {
         [NotNull]
         IStructure GetStructureForDeclCheck([NotNull] Context ctx);
-    }
-
-    [ContractClassFor(typeof(IProvideStructureForDeclCheck))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IProvideStructureForDeclCheckContract : IProvideStructureForDeclCheck
-    {
-        public IStructure GetStructureForDeclCheck(Context ctx)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<IStructure>() != null);
-            return default(IStructure);
-        }
     }
 
     /// <summary>
@@ -64,20 +47,12 @@ namespace Zilf.Language
             [NotNull] string usage)
             : base(DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usage != null);
         }
 
         public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
             [NotNull] ZilObject pattern, string usage)
             : base(src, DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            Contract.Requires(src != null);
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
         }
 
         [StringFormatMethod("usageFormat")]
@@ -85,11 +60,6 @@ namespace Zilf.Language
             [NotNull] string usageFormat, [NotNull] object arg0)
             : this(ctx, value, pattern, string.Format(usageFormat, arg0))
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usageFormat != null);
-            Contract.Requires(arg0 != null);
         }
 
         [StringFormatMethod("usageFormat")]
@@ -97,18 +67,11 @@ namespace Zilf.Language
             [NotNull] ZilObject pattern, [NotNull] string usageFormat, [NotNull] object arg0)
             : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
         {
-            Contract.Requires(src != null);
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usageFormat != null);
-            Contract.Requires(arg0 != null);
         }
 
         protected DeclCheckError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
     }
 
@@ -119,9 +82,6 @@ namespace Zilf.Language
         public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
             bool ignoreErrors = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
 
             ZilAtom atom;
             bool segment = false;
@@ -279,9 +239,6 @@ namespace Zilf.Language
         static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment,
             bool ignoreErrors)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(structure != null);
-            Contract.Requires(pattern != null);
 
             Debug.Assert(pattern.First != null);
             Debug.Assert(pattern.Rest != null);

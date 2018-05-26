@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
@@ -31,7 +30,6 @@ namespace Zilf.ZModel.Values
     {
         public ZilWord([NotNull] ZilObject value)
         {
-            Contract.Requires(value != null);
 
             Value = value;
         }
@@ -49,9 +47,6 @@ namespace Zilf.ZModel.Values
         [NotNull]
         public static ZilWord FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilWord>() != null);
 
             if (list.First == null || list.Rest == null || !list.Rest.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to WORD", 1);

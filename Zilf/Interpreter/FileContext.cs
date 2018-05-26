@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
 
@@ -34,8 +33,6 @@ namespace Zilf.Interpreter
 
         public FileContext([NotNull] Context ctx, [NotNull] string path)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(path));
 
             Context = ctx;
             Parent = ctx.CurrentFile;

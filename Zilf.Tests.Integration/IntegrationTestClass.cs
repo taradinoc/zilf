@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using JetBrains.Annotations;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -29,8 +28,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
 
             return new GlobalsAssertionHelper(globals);
         }
@@ -38,8 +35,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
 
             return new RoutineAssertionHelper(argSpec, body);
         }
@@ -48,9 +43,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static string[] TreeImplications([ItemNotNull] [NotNull] string[] numbering, [ItemNotNull] [NotNull] params string[][] chains)
         {
-            Contract.Requires(numbering != null && numbering.Length > 0);
-            Contract.Requires(Contract.ForAll(numbering, n => !string.IsNullOrWhiteSpace(n)));
-            Contract.Requires(Contract.ForAll(chains, c => c.Length >= 2));
 
             var result = new List<string>();
 
@@ -63,7 +55,6 @@ namespace Zilf.Tests.Integration
 
             foreach (var chain in chains)
             {
-                Contract.Assert(chain.Length >= 2);
 
                 heads.Add(chain[0]);
                 result.Add($"<=? <FIRST? ,{chain[0]}> ,{chain[1]}>");
@@ -90,8 +81,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static EntryPointAssertionHelper AssertEntryPoint([NotNull] string argSpec, [NotNull] string body)
         {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
 
             return new EntryPointAssertionHelper(argSpec, body);
         }
@@ -99,8 +88,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static RawAssertionHelper AssertRaw([NotNull] string code)
         {
-            Contract.Requires(!string.IsNullOrEmpty(code));
-            Contract.Ensures(Contract.Result<RawAssertionHelper>() != null);
 
             return new RawAssertionHelper(code);
         }
@@ -108,8 +95,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static ExprAssertionHelper AssertExpr([NotNull] string expression)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(expression));
-            Contract.Ensures(Contract.Result<ExprAssertionHelper>() != null);
 
             return new ExprAssertionHelper(expression);
         }

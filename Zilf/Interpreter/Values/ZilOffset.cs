@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -37,7 +36,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public ZilOffset([NotNull] ZilVector vector)
         {
-            Contract.Requires(vector != null);
 
             if (vector.GetLength() != 3)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
@@ -52,8 +50,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilOffset(int index, [NotNull] ZilObject structurePattern, [NotNull] ZilObject valuePattern)
         {
-            Contract.Requires(structurePattern != null);
-            Contract.Requires(valuePattern != null);
             Index = index;
             StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
             ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
@@ -125,7 +121,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(new ZilFix(Index), StructurePattern, ValuePattern);
         }
 
@@ -134,7 +129,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public ZilObject GetFirst()
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilFix(Index);
         }
 

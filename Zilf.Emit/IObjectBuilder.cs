@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,13 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(IObjectBuilderContracts))]
     [PublicAPI]
     public interface IObjectBuilder : IConstantOperand
     {
@@ -40,42 +37,5 @@ namespace Zilf.Emit
         [NotNull] ITableBuilder AddComplexProperty([NotNull] IPropertyBuilder prop);
 
         void AddFlag([NotNull] IFlagBuilder flag);
-    }
-
-    [ContractClassFor(typeof(IObjectBuilder))]
-    [SuppressMessage("ReSharper", "NotNullMemberIsNotInitialized")]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IObjectBuilderContracts : IObjectBuilder
-    {
-        public string DescriptiveName { get; set; }
-        public IObjectBuilder Parent { get; set; }
-        public IObjectBuilder Child { get; set; }
-        public IObjectBuilder Sibling { get; set; }
-
-        public void AddByteProperty(IPropertyBuilder prop, IOperand value)
-        {
-            Contract.Requires(prop != null);
-            Contract.Requires(value != null);
-        }
-
-        public void AddWordProperty(IPropertyBuilder prop, IOperand value)
-        {
-            Contract.Requires(prop != null);
-            Contract.Requires(value != null);
-        }
-
-        public ITableBuilder AddComplexProperty(IPropertyBuilder prop)
-        {
-            Contract.Requires(prop != null);
-            Contract.Ensures(Contract.Result<ITableBuilder>() != null);
-            return default(ITableBuilder);
-        }
-
-        public void AddFlag(IFlagBuilder flag)
-        {
-            Contract.Requires(flag != null);
-        }
-
-        public abstract IConstantOperand Add(IConstantOperand other);
     }
 }

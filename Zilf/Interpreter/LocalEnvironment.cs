@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
 
@@ -42,7 +41,6 @@ namespace Zilf.Interpreter
         /// unless overridden by bindings created in the new environment with <see cref="Rebind"/>.</remarks>
         public LocalEnvironment([NotNull] Context ctx, [CanBeNull] LocalEnvironment parent = null)
         {
-            Contract.Requires(ctx != null);
             this.ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
             Parent = parent;
         }
@@ -71,7 +69,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.Contracts.Pure]
         Binding MaybeGetBinding([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
 
             if (bindings.ContainsKey(atom))
                 return bindings[atom];
@@ -82,8 +79,6 @@ namespace Zilf.Interpreter
         [NotNull]
         Binding GetOrCreateBinding([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<Binding>() != null);
 
             var result = MaybeGetBinding(atom);
 
@@ -105,7 +100,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.Contracts.Pure]
         public bool IsLocalBound([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
             return MaybeGetBinding(atom) != null;
         }
 
@@ -118,7 +112,6 @@ namespace Zilf.Interpreter
         [CanBeNull]
         public ZilObject GetLocalVal([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
             return MaybeGetBinding(atom)?.Value;
         }
 
@@ -133,7 +126,6 @@ namespace Zilf.Interpreter
         /// <exception cref="Zilf.Language.DeclCheckError"><paramref name="value"/> does not match the existing DECL for <paramref name="atom"/>.</exception>
         public void SetLocalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
-            Contract.Requires(atom != null);
             var binding = GetOrCreateBinding(atom);
 
             if (value != null)
@@ -158,7 +150,6 @@ namespace Zilf.Interpreter
         /// </remarks>
         public void Rebind([NotNull] ZilAtom atom, [CanBeNull] ZilObject value = null, [CanBeNull] ZilObject decl = null)
         {
-            Contract.Requires(atom != null);
             if (bindings.TryGetValue(atom, out var binding))
             {
                 binding.Value = value;

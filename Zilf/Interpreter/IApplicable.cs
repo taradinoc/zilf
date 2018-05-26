@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,18 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
-    /// <summary>
-    /// Provides a method to apply a <see cref="ZilObject"/>, such as a SUBR or FUNCTION,
-    /// to a set of arguments.
-    /// </summary>
-    [ContractClass(typeof(IApplicableContracts))]
     [ParamDesc("applicable")]
     interface IApplicable
     {
@@ -47,5 +40,4 @@ namespace Zilf.Interpreter
         /// <returns>The result of the application.</returns>
         ZilResult ApplyNoEval([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args);
     }
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
 }

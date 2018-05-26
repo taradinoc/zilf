@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -59,7 +58,6 @@ namespace Zilf.Compiler
 
             public TableElementOperand([NotNull] IOperand operand, bool? isWord)
             {
-                Contract.Requires(operand != null);
                 Operand = operand;
                 IsWord = isWord;
             }
@@ -67,8 +65,6 @@ namespace Zilf.Compiler
 
         void BuildTable([NotNull] ZilTable zt, [NotNull] ITableBuilder tb)
         {
-            Contract.Requires(zt != null);
-            Contract.Requires(tb != null);
 
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {

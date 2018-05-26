@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -237,8 +236,6 @@ namespace Zilf.Emit.Zap
                     throw new ArgumentException("Expected two operands for binary condition", nameof(right));
             }
 
-            Contract.Assert(leftVar || !unary);
-
             var instruction = new Instruction(opcode);
             if (unary)
             {
@@ -335,7 +332,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         static string OptResult([CanBeNull] IVariable result)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
 
             if (result == null)
                 return string.Empty;
@@ -1198,14 +1194,12 @@ namespace Zilf.Emit.Zap
 
             void BeginMatch([NotNull] IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                Contract.Requires(lines != null);
                 enumerator = lines.GetEnumerator();
                 matches = new List<CombinableLine<ZapCode>>();
             }
 
             bool Match([ItemNotNull] [NotNull] [InstantHandle] params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
-                Contract.Requires(criteria != null);
 
                 while (matches.Count < criteria.Length)
                 {
@@ -1556,7 +1550,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => b.Code.Instruction.Name == "ZERO?" && b.Code.Instruction.Operands[0].IsStack()))
                     {
-                        Contract.Assume(expr1 != null);
                         var constantValue = const1.Value;
 
                         if (constantValue == 0)
@@ -1582,10 +1575,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => IsBANDConstantWithStack(b.Code.Instruction, out const2, out destStr)))
                     {
-                        Contract.Assume(expr1 != null);
-                        Contract.Assume(const1 != null);
-                        Contract.Assume(const2 != null);
-                        Contract.Assume(destStr != null);
                         var combined = const1.Value & const2.Value;
                         return Combine2To1(
                             new Instruction("BAND", expr1, new NumericLiteral(combined)) { StoreTarget = destStr });
@@ -1595,10 +1584,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBORConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => IsBORConstantWithStack(b.Code.Instruction, out const2, out destStr)))
                     {
-                        Contract.Assume(expr1 != null);
-                        Contract.Assume(const1 != null);
-                        Contract.Assume(const2 != null);
-                        Contract.Assume(destStr != null);
                         var combined = const1.Value | const2.Value;
                         return Combine2To1(
                             new Instruction("BOR", expr1, new NumericLiteral(combined)) { StoreTarget = destStr });

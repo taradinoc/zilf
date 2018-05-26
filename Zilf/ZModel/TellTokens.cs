@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -47,8 +46,6 @@ namespace Zilf.ZModel
                 Captures = new List<ZilObject>();
             }
         }
-
-        [ContractClass(typeof(TokenContract))]
         abstract class Token
         {
             public abstract bool Match([NotNull] Context ctx, [NotNull] ZilObject input, [NotNull] MatchResult result);
@@ -123,7 +120,6 @@ namespace Zilf.ZModel
         /// <exception cref="InterpreterError">The pattern syntax is invalid.</exception>
         public static IEnumerable<TellPattern> Parse([NotNull] IEnumerable<ZilObject> spec)
         {
-            Contract.Requires(spec != null);
             var tokensSoFar = new List<Token>();
             int capturesSoFar = 0;
 
@@ -250,11 +246,6 @@ namespace Zilf.ZModel
         [NotNull]
         public ITellPatternMatchResult Match([NotNull] IList<ZilObject> input, int startIndex, [NotNull] Context ctx, [NotNull] ISourceLine src)
         {
-            Contract.Requires(input != null);
-            Contract.Requires(startIndex >= 0 && startIndex < input.Count);
-            Contract.Requires(ctx != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<ITellPatternMatchResult>() != null);
 
             var result = new MatchResult { Matched = false };
 
@@ -294,7 +285,6 @@ namespace Zilf.ZModel
 
         static bool IsSimpleOutputElement([NotNull] ZilObject obj)
         {
-            Contract.Requires(obj != null);
 
             if (obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse)
                 return true;
@@ -303,18 +293,6 @@ namespace Zilf.ZModel
                 return true;
 
             return false;
-        }
-
-        [ContractClassFor(typeof(Token))]
-        abstract class TokenContract : Token
-        {
-            public override bool Match(Context ctx, ZilObject input, MatchResult result)
-            {
-                Contract.Requires(ctx != null);
-                Contract.Requires(input != null);
-                Contract.Requires(result != null);
-                return default(bool);
-            }
         }
     }
 }

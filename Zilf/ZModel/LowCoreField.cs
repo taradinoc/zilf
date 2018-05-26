@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,8 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
@@ -33,23 +31,11 @@ namespace Zilf.ZModel
 
         LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
         {
-            Contract.Requires(offset >= 0);
-            Contract.Requires(minVersion >= 1);
-            Contract.Requires(maxVersion == null || maxVersion >= minVersion);
 
             Offset = offset;
             Flags = flags;
             MinVersion = minVersion;
             MaxVersion = maxVersion;
-        }
-
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Offset >= 0);
-            Contract.Invariant(MinVersion >= 1);
-            Contract.Invariant(MaxVersion == null || MaxVersion >= MinVersion);
         }
 
 #pragma warning disable RECS0070 // Redundant explicit argument name specification
@@ -114,7 +100,6 @@ namespace Zilf.ZModel
         [CanBeNull]
         public static LowCoreField Get([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
 
             allFields.TryGetValue(atom.Text, out var result);
             return result;

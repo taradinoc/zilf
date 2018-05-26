@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Emit.Zap
 {
@@ -76,7 +75,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         string GetFlagsString(int start)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
 
             foreach (var flag in flags)

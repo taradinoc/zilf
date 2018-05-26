@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -45,11 +44,6 @@ namespace Zilf.Interpreter
         [Subr("ROUTINE-FLAGS")]
         public static ZilObject ROUTINE_FLAGS([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilAtom[] flags)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(flags != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var newFlags = RoutineFlags.None;
 
             foreach (var atom in flags)
@@ -76,13 +70,6 @@ namespace Zilf.Interpreter
             [CanBeNull] [Optional] ZilAtom activationAtom, [NotNull] ZilList argList,
             [ItemNotNull] [NotNull] [Required] ZilObject[] body)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Requires(argList != null);
-            Contract.Requires(body != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var oldAtom = ctx.ZEnvironment.InternGlobalName(name);
             if (ctx.GetZVal(oldAtom) != null)
             {
@@ -217,10 +204,6 @@ namespace Zilf.Interpreter
         public static ZilResult CONSTANT([NotNull] Context ctx,
             AtomParams.AdeclOrAtom name, [NotNull] ZilObject value)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            SubrContracts(ctx);
-
             var atom = name.Atom;
             var zr = value.Eval(ctx);
             if (zr.ShouldPass())
@@ -263,9 +246,6 @@ namespace Zilf.Interpreter
             [CanBeNull] ZilAtom size = null)
 #pragma warning restore RECS0154 // Parameter is never used
         {
-            Contract.Requires(ctx != null);
-            SubrContracts(ctx);
-
             // typical form:  <GLOBAL atom-or-adecl default-value>
             // quirky form:   <GLOBAL atom-or-adecl default-value decl [size]>
             // TODO: use decl and size?
@@ -332,10 +312,6 @@ namespace Zilf.Interpreter
 #pragma warning restore RECS0154 // Parameter is never used
             [NotNull] DefineGlobalsParams.GlobalSpec[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx);
-
             foreach (var spec in args)
             {
                 var name = spec.Name.Atom;
@@ -385,11 +361,6 @@ namespace Zilf.Interpreter
         public static ZilObject OBJECT([NotNull] Context ctx, [NotNull] ZilAtom name,
             [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformObject(ctx, name, props, false);
         }
 
@@ -398,22 +369,12 @@ namespace Zilf.Interpreter
         public static ZilObject ROOM([NotNull] Context ctx, [NotNull] ZilAtom name,
             [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformObject(ctx, name, props, true);
         }
 
         [NotNull]
         static ZilObject PerformObject([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilList[] props, bool isRoom)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             string name = isRoom ? "ROOM" : "OBJECT";
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
@@ -437,11 +398,6 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult PROPDEF([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilObject defaultValue, ZilObject[] spec)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(atom != null);
-            Contract.Requires(defaultValue != null);
-            SubrContracts(ctx);
-
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
                 ctx.HandleError(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
 
@@ -464,9 +420,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ZSTART([NotNull] Context ctx, ZilAtom atom)
         {
-            Contract.Requires(ctx != null);
-            SubrContracts(ctx);
-
             ctx.ZEnvironment.EntryRoutineName = atom;
             return atom;
         }
@@ -477,12 +430,6 @@ namespace Zilf.Interpreter
         public static ZilObject BIT_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom first,
             [NotNull] [Required] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(first != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (ctx.ZEnvironment.TryGetBitSynonym(first, out var original))
                 first = original;
 
@@ -510,10 +457,6 @@ namespace Zilf.Interpreter
             [CanBeNull] [Optional, Decl("<LIST [REST ATOM]>")] ZilList flagList,
             ZilObject[] initializer)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // Syntax:
             //    <ITABLE [specifier] count [(flags...)] [init...]>
             // 'count' is a number of repetitions.
@@ -607,11 +550,6 @@ namespace Zilf.Interpreter
         static ZilTable PerformTable([NotNull] Context ctx, ZilList flagList, [ItemNotNull] [NotNull] ZilObject[] values,
             bool pure, bool wantLength)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(values != null);
-            Contract.Ensures(Contract.Result<ZilTable>() != null);
-            SubrContracts(ctx);
-
             // syntax:
             //    <[P][L]TABLE [(flags...)] values...>
 
@@ -725,9 +663,6 @@ namespace Zilf.Interpreter
 
         static void ValidateTablePattern([NotNull] string name, [NotNull] ZilObject[] pattern)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(Contract.ForAll(pattern, p => p != null));
 
             if (pattern.Length == 0)
                 throw new InterpreterError(InterpreterMessages._0_PATTERN_Must_Not_Be_Empty, name);
@@ -778,11 +713,6 @@ namespace Zilf.Interpreter
         public static ZilObject TABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
             [ItemNotNull] [NotNull] ZilObject[] values)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(values != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformTable(ctx, flagList, values, false, false);
         }
 
@@ -791,11 +721,6 @@ namespace Zilf.Interpreter
         public static ZilObject LTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
             [ItemNotNull] [NotNull] ZilObject[] values)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(values != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformTable(ctx, flagList, values, false, true);
         }
 
@@ -804,11 +729,6 @@ namespace Zilf.Interpreter
         public static ZilObject PTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
             [NotNull] ZilObject[] values)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(values != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformTable(ctx, flagList, values, true, false);
         }
 
@@ -817,11 +737,6 @@ namespace Zilf.Interpreter
         public static ZilObject PLTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
             [NotNull] ZilObject[] values)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(values != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformTable(ctx, flagList, values, true, true);
         }
 
@@ -830,11 +745,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ZGET([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tableish != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZGET");
 
@@ -863,12 +773,6 @@ namespace Zilf.Interpreter
         public static ZilObject ZPUT([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
             [NotNull] ZilObject newValue)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tableish != null);
-            Contract.Requires(newValue != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZPUT");
 
@@ -885,11 +789,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject GETB([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tableish != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "GETB");
 
@@ -917,12 +816,6 @@ namespace Zilf.Interpreter
         public static ZilObject PUTB([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
             [NotNull] ZilObject newValue)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tableish != null);
-            Contract.Requires(newValue != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "PUTB");
 
@@ -939,10 +832,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ZREST([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int bytes)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(tableish != null);
-            SubrContracts(ctx);
-
             if (bytes < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZREST");
 
@@ -964,11 +853,6 @@ namespace Zilf.Interpreter
             [NotNull] ZilObject versionExpr,
             [CanBeNull] [Decl("'TIME")] ZilAtom time = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(versionExpr != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var newVersion = ParseZVersion("VERSION", versionExpr);
 
             ctx.SetZVersion(newVersion);
@@ -986,9 +870,6 @@ namespace Zilf.Interpreter
 
         static int ParseZVersion([NotNull] string name, [NotNull] ZilObject expr)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(expr != null);
-            Contract.Ensures(Contract.Result<int>() >= 1 && Contract.Result<int>() <= 8);
 
             int newVersion;
             switch (expr)
@@ -1039,11 +920,6 @@ namespace Zilf.Interpreter
         [Subr("CHECK-VERSION?")]
         public static ZilObject CHECK_VERSION_P([NotNull] Context ctx, [NotNull] ZilObject versionExpr)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(versionExpr != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var version = ParseZVersion("CHECK-VERSION?", versionExpr);
             return ctx.ZEnvironment.ZVersion == version ? ctx.TRUE : ctx.FALSE;
         }
@@ -1052,10 +928,6 @@ namespace Zilf.Interpreter
         public static ZilResult VERSION_P([NotNull] Context ctx,
             [NotNull] CondClause[] clauses)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(clauses != null);
-            SubrContracts(ctx);
-
             var tAtom = ctx.GetStdAtom(StdAtom.T);
             var elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
 
@@ -1084,11 +956,6 @@ namespace Zilf.Interpreter
         [Subr("ORDER-OBJECTS?")]
         public static ZilObject ORDER_OBJECTS_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             switch (atom.StdAtom)
             {
                 case StdAtom.DEFINED:
@@ -1115,11 +982,6 @@ namespace Zilf.Interpreter
         [Subr("ORDER-TREE?")]
         public static ZilObject ORDER_TREE_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             switch (atom.StdAtom)
             {
                 case StdAtom.REVERSE_DEFINED:
@@ -1138,9 +1000,6 @@ namespace Zilf.Interpreter
             [Decl("'LAST")] ZilAtom order,
             [NotNull] [Required] ZilAtom[] objects)
         {
-            Contract.Requires(objects != null);
-            SubrContracts(ctx);
-
             foreach (var atom in objects)
             {
                 ctx.ZEnvironment.FlagsOrderedLast.Add(atom);
@@ -1154,11 +1013,6 @@ namespace Zilf.Interpreter
         [Subr("ZIP-OPTIONS")]
         public static ZilObject ZIP_OPTIONS([NotNull] Context ctx, [NotNull] ZilAtom[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             foreach (var atom in args)
             {
                 StdAtom flag;
@@ -1208,10 +1062,6 @@ namespace Zilf.Interpreter
         [Subr("LONG-WORDS?")]
         public static ZilObject LONG_WORDS_P([NotNull] Context ctx, bool enabled = true)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.LONG_WORDS),
                 enabled ? ctx.TRUE : ctx.FALSE, true);
             return ctx.TRUE;
@@ -1221,10 +1071,6 @@ namespace Zilf.Interpreter
         [Subr("FUNNY-GLOBALS?")]
         public static ZilObject FUNNY_GLOBALS_P([NotNull] Context ctx, bool enabled = true)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P),
                 enabled ? ctx.TRUE : ctx.FALSE);
             return ctx.TRUE;
@@ -1235,10 +1081,6 @@ namespace Zilf.Interpreter
         public static ZilObject CHRSET(Context ctx, int alphabetNum,
             [NotNull] [Required, Decl("<LIST [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
         {
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (alphabetNum < 0 || alphabetNum > 2)
                 throw new InterpreterError(InterpreterMessages._0_Alphabet_Number_Must_Be_Between_0_And_2, "CHRSET");
 
@@ -1295,10 +1137,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject LANGUAGE([NotNull] Context ctx, [NotNull] ZilAtom name, char escapeChar = '%', bool changeChrset = true)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
             var language = ZModel.Language.Get(name.Text) ??
                 throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "LANGUAGE", "language", name.Text);
 
@@ -1324,11 +1162,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject DIRECTIONS([NotNull] Context ctx, [NotNull] [Required] ZilAtom[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // if a PROPSPEC is set for DIRECTIONS, it'll be copied to the new direction properties
             var propspecAtom = ctx.GetStdAtom(StdAtom.PROPSPEC);
             var propspec = ctx.GetProp(ctx.GetStdAtom(StdAtom.DIRECTIONS), propspecAtom);
@@ -1350,11 +1183,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject BUZZ([NotNull] Context ctx, [NotNull] [Required] ZilAtom[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             foreach (ZilAtom arg in args)
                 ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.TopFrame.SourceLine));
 
@@ -1365,11 +1193,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject VOC([NotNull] Context ctx, [NotNull] string text, [CanBeNull] [Decl("<OR FALSE ATOM>")] ZilObject type = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             var atom = ZilAtom.Parse(text, ctx);
             ctx.ZEnvironment.GetVocab(atom);
 
@@ -1416,10 +1239,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject SYNTAX([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx, args);
-
             if (args.Length < 3)
                 throw ArgumentCountError.WrongCount(new FunctionCallSite("SYNTAX"), 3, null);
 
@@ -1437,14 +1256,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformSynonym([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms, [NotNull] Type synonymType)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Requires(Contract.ForAll(synonyms, s => s != null));
-            Contract.Requires(synonymType != null);
-
             if (ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord) == false)
             {
                 oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(original);
@@ -1474,12 +1285,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformSynonym(ctx, original, synonyms, typeof(Synonym));
         }
 
@@ -1487,12 +1292,6 @@ namespace Zilf.Interpreter
         [Subr("VERB-SYNONYM")]
         public static ZilObject VERB_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformSynonym(ctx, original, synonyms, typeof(VerbSynonym));
         }
 
@@ -1500,12 +1299,6 @@ namespace Zilf.Interpreter
         [Subr("PREP-SYNONYM")]
         public static ZilObject PREP_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformSynonym(ctx, original, synonyms, typeof(PrepSynonym));
         }
 
@@ -1513,12 +1306,6 @@ namespace Zilf.Interpreter
         [Subr("ADJ-SYNONYM")]
         public static ZilObject ADJ_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformSynonym(ctx, original, synonyms, typeof(AdjSynonym));
         }
 
@@ -1526,12 +1313,6 @@ namespace Zilf.Interpreter
         [Subr("DIR-SYNONYM")]
         public static ZilObject DIR_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(original != null);
-            Contract.Requires(synonyms != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformSynonym(ctx, original, synonyms, typeof(DirSynonym));
         }
 
@@ -1543,10 +1324,6 @@ namespace Zilf.Interpreter
         [FSubr("TELL-TOKENS")]
         public static ZilObject TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             ctx.ZEnvironment.TellPatterns.Clear();
             return ADD_TELL_TOKENS(ctx, args);
         }
@@ -1555,10 +1332,6 @@ namespace Zilf.Interpreter
         [FSubr("ADD-TELL-TOKENS")]
         public static ZilObject ADD_TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args));
             return ctx.TRUE;
         }
@@ -1577,9 +1350,6 @@ namespace Zilf.Interpreter
             [CanBeNull] ZilObject value = null,
             ZilFix flags = null)
         {
-            Contract.Requires(ctx != null);
-            SubrContracts(ctx);
-
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                 throw new InterpreterError(InterpreterMessages._0_Requires_NEWPARSER_Option, "NEW-ADD-WORD");
 

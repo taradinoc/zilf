@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -49,9 +48,6 @@ namespace Zilf.Interpreter
         [ChtypeMethod]
         public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ObList>() != null);
             var result = new ObList(ctx.IgnoreCase);
 
             while (!list.IsEmpty)
@@ -141,8 +137,6 @@ namespace Zilf.Interpreter
 
         internal void Add([NotNull] ZilAtom newAtom)
         {
-            Contract.Requires(newAtom != null);
-            Contract.Requires(newAtom.ObList == this);
 
             var key = newAtom.Text;
             if (ignoreCase)
@@ -153,8 +147,6 @@ namespace Zilf.Interpreter
 
         internal void Remove([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
-            Contract.Requires(atom.ObList != this);
 
             var key = atom.Text;
             if (ignoreCase)

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
@@ -37,7 +36,6 @@ namespace Zilf.Interpreter
 
         public void Add([NotNull] T value)
         {
-            Contract.Requires(value != null);
 
             var hashCode = value.GetHashCode();
 
@@ -63,7 +61,6 @@ namespace Zilf.Interpreter
 
         public void Remove([NotNull] T value)
         {
-            Contract.Requires(value != null);
 
             var hashCode = value.GetHashCode();
 

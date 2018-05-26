@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,15 +16,12 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
 using Zilf.Common.StringEncoding;
-using System.Diagnostics.Contracts;
 using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Instructions;
 
@@ -192,7 +189,6 @@ namespace Zapf
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
         public void WriteByte([NotNull] Symbol sym)
         {
-            Contract.Requires(sym != null);
             if (sym.Type == SymbolType.Unknown)
             {
                 if (FinalPass)
@@ -218,7 +214,6 @@ namespace Zapf
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
         public void WriteWord([NotNull] Symbol sym)
         {
-            Contract.Requires(sym != null);
             if (sym.Type == SymbolType.Unknown)
             {
                 if (FinalPass)
@@ -243,13 +238,11 @@ namespace Zapf
 
         public void WriteZString([NotNull] string str, bool withLength)
         {
-            Contract.Requires(str != null);
             WriteZString(str, withLength, StringEncoderMode.Normal);
         }
 
         public void WriteZString([NotNull] string str, bool withLength, StringEncoderMode mode)
         {
-            Contract.Requires(str != null);
             MaybeProcessEscapeChars(ref str);
 
             var zstr = StringEncoder.Encode(str, mode);
@@ -265,7 +258,6 @@ namespace Zapf
 
         void MaybeProcessEscapeChars([NotNull] ref string str)
         {
-            Contract.Requires(str != null);
 
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse      // false alarm!
             if (!(LanguageEscapeChar is char escape) || str.IndexOf((char)LanguageEscapeChar) < 0)
@@ -428,7 +420,6 @@ namespace Zapf
 
         int MapVocabAddress(int oldAddress, [NotNull] int[] newIndexes)
         {
-            Contract.Requires(newIndexes != null);
             var oldOffsetFromVocab = oldAddress - vocabStart;
             var oldIndex = oldOffsetFromVocab / vocabRecSize;
             var offsetWithinEntry = oldOffsetFromVocab % vocabRecSize;
@@ -638,7 +629,6 @@ namespace Zapf
 
         public bool CausesReassembly([NotNull] string label)
         {
-            Contract.Requires(label != null);
             return reassemblyLabels.ContainsKey(label);
         }
 
@@ -646,7 +636,6 @@ namespace Zapf
 
         public void MarkUnknownBranch([NotNull] string label)
         {
-            Contract.Requires(label != null);
             reassemblyLabels[label] = true;
         }
 
@@ -660,8 +649,6 @@ namespace Zapf
 
         public int Reassemble([NotNull] string curLabel)
         {
-            // define the current label, which is the one causing us to reassemble
-            Contract.Requires(curLabel != null);
             if (LocalSymbols.TryGetValue(curLabel, out var sym))
                 sym.Value = position;
             else
@@ -719,7 +706,6 @@ namespace Zapf
         /// <exception cref="SeriousError">The global variable moved unexpectedly between passes.</exception>
         public void AddGlobalVar([NotNull] string name)
         {
-            Contract.Requires(name != null);
             int num = 16 + globalVarCount++;
 
             if (GlobalSymbols.TryGetValue(name, out var sym) == false)
@@ -752,7 +738,6 @@ namespace Zapf
         /// <exception cref="SeriousError">The object was redefined.</exception>
         public void AddObject([NotNull] string name)
         {
-            Contract.Requires(name != null);
             int num = 1 + objectCount++;
 
             if (GlobalSymbols.TryGetValue(name, out var sym) == false)
@@ -846,7 +831,6 @@ namespace Zapf
 
         public void HandleWarning([NotNull] Warning warning)
         {
-            Contract.Requires(warning != null);
             WarningCount++;
 
             if (warning.Node != null)
@@ -857,7 +841,6 @@ namespace Zapf
 
         public void HandleSeriousError([NotNull] SeriousError ser)
         {
-            Contract.Requires(ser != null);
             ErrorCount++;
 
             if (ser.Node != null)
@@ -868,7 +851,6 @@ namespace Zapf
 
         public void HandleFatalError([NotNull] FatalError fer)
         {
-            Contract.Requires(fer != null);
             ErrorCount++;
 
             if (fer.Node != null)
@@ -947,32 +929,13 @@ namespace Zapf
             }
         }
 
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(StringEncoder != null);
-            Contract.Invariant(AbbrevFinder != null);
-            Contract.Invariant(LocalSymbols != null);
-            Contract.Invariant(GlobalSymbols != null);
-            Contract.Invariant(Fixups != null);
-            Contract.Invariant(DebugFileMap != null);
-            Contract.Invariant(fileStack != null);
-            Contract.Invariant(reassemblyLabels != null);
-        }
-
         public int GetHeaderValue([NotNull] string name, bool required)
         {
-            Contract.Requires(this != null);
-            Contract.Requires(name != null);
             return GetHeaderValue(name, null, required);
         }
 
         public int GetHeaderValue([NotNull] string name1, string name2, bool required)
         {
-            Contract.Requires(this != null);
-            Contract.Requires(name1 != null);
             if (GlobalSymbols.TryGetValue(name1, out var sym) ||
                 (name2 != null && GlobalSymbols.TryGetValue(name2, out sym)))
             {

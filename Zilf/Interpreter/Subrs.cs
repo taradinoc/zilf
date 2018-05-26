@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,9 +17,6 @@
  */
 
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
 
@@ -76,8 +73,6 @@ namespace Zilf.Interpreter
         {
             public MdlZilRedirectAttribute([NotNull] Type type, [NotNull] string target)
             {
-                Contract.Requires(type != null);
-                Contract.Requires(!string.IsNullOrWhiteSpace(target));
 
                 Type = type;
                 Target = target;
@@ -91,32 +86,5 @@ namespace Zilf.Interpreter
 
             public bool TopLevelOnly { get; set; }
         }
-
-#pragma warning disable ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
-        // ReSharper disable UnusedParameter.Local
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
-        [ContractAbbreviator]
-        [Conditional("CONTRACTS_FULL")]
-        [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
-        static void SubrContracts([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            //Contract.Requires(args.Length == 0 || Contract.ForAll(args, a => a != null));
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-        }
-
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "ctx")]
-        [ContractAbbreviator]
-        [Conditional("CONTRACTS_FULL")]
-        [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
-        static void SubrContracts([NotNull] Context ctx)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-        }
-        // ReSharper restore UnusedParameter.Local
-#pragma warning restore ContracsReSharperInterop_NotNullForContract // Element with not-null contract does not have a corresponding [NotNull] attribute.
     }
 }

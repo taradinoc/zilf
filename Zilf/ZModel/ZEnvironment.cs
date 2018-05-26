@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -167,13 +166,10 @@ namespace Zilf.ZModel
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 return charset0;
             }
             set
             {
-                Contract.Requires(value != null);
-                Contract.Ensures(zcharCountCache == null);
 
                 charset0 = value;
                 zcharCountCache = null;
@@ -185,13 +181,10 @@ namespace Zilf.ZModel
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 return charset1;
             }
             set
             {
-                Contract.Requires(value != null);
-                Contract.Ensures(zcharCountCache == null);
 
                 charset1 = value;
                 zcharCountCache = null;
@@ -203,13 +196,10 @@ namespace Zilf.ZModel
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 return charset2;
             }
             set
             {
-                Contract.Requires(value != null);
-                Contract.Ensures(zcharCountCache == null);
 
                 charset2 = value;
                 zcharCountCache = null;
@@ -231,12 +221,10 @@ namespace Zilf.ZModel
 
         public ZEnvironment([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
 
             this.ctx = ctx;
 
-            var defaultLang = Language.Get("DEFAULT");
-            Contract.Assume(defaultLang != null);
+            var defaultLang = Language.Default;
 
             Language = defaultLang;
             Charset0 = defaultLang.Charset0;
@@ -251,29 +239,6 @@ namespace Zilf.ZModel
             InternedGlobalNames = new Dictionary<ZilAtom, ZilAtom>(equalizer);
         }
 
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Language != null);
-            Contract.Invariant(Routines != null);
-            Contract.Invariant(ctx != null);
-            Contract.Invariant(Constants != null);
-            Contract.Invariant(Globals != null);
-            Contract.Invariant(Objects != null);
-            Contract.Invariant(Tables != null);
-            Contract.Invariant(PropertyDefaults != null);
-            Contract.Invariant(BitSynonyms != null);
-            Contract.Invariant(FlagsOrderedLast != null);
-            Contract.Invariant(Syntaxes != null);
-            Contract.Invariant(Vocabulary != null);
-            Contract.Invariant(Synonyms != null);
-            Contract.Invariant(Directions != null);
-            Contract.Invariant(Buzzwords != null);
-            Contract.Invariant(InternedGlobalNames != null);
-            Contract.Invariant(TellPatterns != null);
-        }
-
         /// <summary>
         /// Gets the vocab word corresponding to an atom, creating it if needed.
         /// </summary>
@@ -281,7 +246,6 @@ namespace Zilf.ZModel
         /// <returns></returns>
         public IWord GetVocab([NotNull] ZilAtom text)
         {
-            Contract.Requires(text != null);
             if (Vocabulary.TryGetValue(text, out var result) == false)
             {
                 result = VocabFormat.CreateWord(text);
@@ -294,8 +258,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabPreposition([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakePreposition(result, location);
             return result;
@@ -304,8 +266,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabAdjective([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakeAdjective(result, location);
             return result;
@@ -314,8 +274,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabNoun([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             ctx.ZEnvironment.VocabFormat.MakeObject(result, location);
             return result;
@@ -324,8 +282,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabBuzzword([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakeBuzzword(result, location);
             return result;
@@ -334,8 +290,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabVerb([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakeVerb(result, location);
             return result;
@@ -344,8 +298,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabDirection([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakeDirection(result, location);
             return result;
@@ -354,8 +306,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IWord GetVocabSyntaxPreposition([NotNull] ZilAtom text, [CanBeNull] ISourceLine location)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
             var result = GetVocab(text);
             VocabFormat.MakeSyntaxPreposition(result, location);
             return result;
@@ -434,7 +384,6 @@ namespace Zilf.ZModel
         [ItemNotNull]
         static IEnumerable<ZilAtom> ObjectNamesMentionedInProperty([NotNull] ZilList prop)
         {
-            Contract.Requires(prop != null);
             if (prop.First is ZilAtom atom && prop.Rest?.First != null)
             {
                 switch (atom.StdAtom)
@@ -568,7 +517,6 @@ namespace Zilf.ZModel
                 }
                 else
                 {
-                    Contract.Assert(entry.InitialMention != null);
 
                     var prevDefType = getGlobalDefinitionType(entry.Name);
                     if (prevDefType != null)
@@ -598,7 +546,6 @@ namespace Zilf.ZModel
         [CanBeNull]
         static ZilAtom GetObjectParentName([NotNull] ZilModelObject obj)
         {
-            Contract.Requires(obj != null);
 
             foreach (var p in obj.Properties)
             {
@@ -618,7 +565,6 @@ namespace Zilf.ZModel
         [NotNull]
         public IEnumerable<ZilModelObject> ObjectsInInsertionOrder()
         {
-            Contract.Ensures(Contract.Result<IEnumerable<ZilModelObject>>() != null);
             switch (TreeOrdering)
             {
                 case TreeOrdering.Default:
@@ -654,7 +600,6 @@ namespace Zilf.ZModel
 
         void MakeZcharCountCache()
         {
-            Contract.Ensures(zcharCountCache != null);
 
             if (zcharCountCache == null)
             {
@@ -686,7 +631,6 @@ namespace Zilf.ZModel
         /// <returns>The number of significant characters, between 0 and the length of the word (inclusive).</returns>
         int CountVocabZCharacters([NotNull] string word)
         {
-            Contract.Requires(word != null);
 
             MakeZcharCountCache();
 
@@ -709,7 +653,6 @@ namespace Zilf.ZModel
         /// to the first.</param>
         public void MergeVocabulary(Action<IWord, IWord> notifyMerge)
         {
-            Contract.Ensures(Vocabulary.Count <= Contract.OldValue(Vocabulary.Count));
 
             /* NOTE: words may end with incomplete multi-ZChar constructs that are still
              * significant for lexing, so even if the printed forms of two vocab words are
@@ -757,7 +700,6 @@ namespace Zilf.ZModel
 
             public EncodedWord([NotNull] byte[] data)
             {
-                Contract.Requires(data != null);
 
                 this.data = data;
             }
@@ -818,7 +760,6 @@ namespace Zilf.ZModel
 
         public bool IsLongWord([NotNull] IWord word)
         {
-            Contract.Requires(word != null);
 
             var text = word.Atom.Text.ToLowerInvariant();
             return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
@@ -827,8 +768,6 @@ namespace Zilf.ZModel
         [ContractAnnotation("=> false, original: null; => true, original: notnull")]
         public bool TryGetBitSynonym([NotNull] ZilAtom alias, [CanBeNull] out ZilAtom original)
         {
-            Contract.Requires(alias != null);
-            Contract.Ensures(Contract.ValueAtReturn(out original) != null || Contract.Result<bool>() == false);
 
             return BitSynonyms.TryGetValue(alias, out original);
         }
@@ -836,8 +775,6 @@ namespace Zilf.ZModel
         /// <exception cref="ArgumentException"><paramref name="alias"/> is already defined.</exception>
         public void AddBitSynonym([NotNull] ZilAtom alias, [NotNull] ZilAtom target)
         {
-            Contract.Requires(alias != null);
-            Contract.Requires(target != null);
 
             if (ctx.GetZVal(alias) != null)
             {
@@ -860,16 +797,12 @@ namespace Zilf.ZModel
 
         public void EnsureMinimumHeaderExtension(int words)
         {
-            Contract.Requires(words >= 0);
-            Contract.Ensures(HeaderExtensionWords >= Contract.OldValue(HeaderExtensionWords));
-            Contract.Ensures(HeaderExtensionWords >= words);
 
             HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
         }
 
         public ZilAtom InternGlobalName([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
             if (InternedGlobalNames.TryGetValue(atom, out var result))
                 return result;
 

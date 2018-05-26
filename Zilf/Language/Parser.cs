@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,8 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -39,7 +37,6 @@ namespace Zilf.Language
 
         public CharBuffer([NotNull] IEnumerable<char> source)
         {
-            Contract.Requires(source != null);
             this.source = source.GetEnumerator();
         }
 
@@ -76,7 +73,6 @@ namespace Zilf.Language
         protected ParserException([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Contract.Requires(info != null);
         }
     }
 
@@ -89,7 +85,6 @@ namespace Zilf.Language
         ExpectedButFound([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Contract.Requires(info != null);
         }
     }
 
@@ -107,11 +102,8 @@ namespace Zilf.Language
         ParsedNumberOverflowed([NotNull] SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Contract.Requires(info != null);
         }
     }
-
-    [ContractClass(typeof(ParserSiteContract))]
     interface IParserSite
     {
         [NotNull]
@@ -249,18 +241,15 @@ namespace Zilf.Language
         public Parser([NotNull] IParserSite site)
             : this(site, (ISourceLine)null, null)
         {
-            Contract.Requires(site != null);
         }
 
         public Parser([NotNull] IParserSite site, params ZilObject[] templateParams)
             : this(site, null, templateParams)
         {
-            Contract.Requires(site != null);
         }
 
         public Parser([NotNull] IParserSite site, ISourceLine srcOverride, params ZilObject[] templateParams)
         {
-            Contract.Requires(site != null);
 
             this.site = site;
             this.srcOverride = srcOverride;
@@ -272,16 +261,12 @@ namespace Zilf.Language
         [NotNull]
         public IEnumerable<ParserOutput> Parse([NotNull] IEnumerable<char> chars)
         {
-            Contract.Requires(chars != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ParserOutput>>() != null);
             return Parse(new CharBuffer(chars));
         }
 
         [NotNull]
         IEnumerable<ParserOutput> Parse([NotNull] CharBuffer chars)
         {
-            Contract.Requires(chars != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ParserOutput>>() != null);
             while (true)
             {
                 var po = ParseOne(chars, out var src);
@@ -367,11 +352,8 @@ namespace Zilf.Language
             }
         }
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         ParserOutput ParseOneNonAdecl(CharBuffer chars, [NotNull] out ISourceLine sourceLine)
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
-            Contract.Ensures(Contract.ValueAtReturn(out sourceLine) != null);
             try
             {
                 // handle whitespace
@@ -618,7 +600,6 @@ namespace Zilf.Language
 
         bool SkipWhitespace([NotNull] CharBuffer chars)
         {
-            Contract.Requires(chars != null);
             while (true)
             {
                 if (!chars.MoveNext())
@@ -679,7 +660,6 @@ namespace Zilf.Language
         [CanBeNull]
         ZilObject ParseCurrentAtomOrNumber([NotNull] CharBuffer chars)
         {
-            Contract.Requires(chars != null);
             var sb = new StringBuilder();
 
             bool run = true, backslash = false;
@@ -799,8 +779,6 @@ namespace Zilf.Language
         [NotNull]
         ZilString ParseCurrentString([NotNull] CharBuffer chars)
         {
-            Contract.Requires(chars != null);
-            Contract.Ensures(Contract.Result<ZilString>() != null);
             var sb = new StringBuilder();
 
             while (chars.MoveNext())
@@ -844,7 +822,6 @@ namespace Zilf.Language
         [NotNull]
         static string KetWanted(char ket1, char? ket2)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             return ket2 == null
                 ? $"'{ket1.Rebang()}'"
                 : $"'{ket1.Rebang()}' or '{((char)ket2).Rebang()}'";
@@ -853,9 +830,6 @@ namespace Zilf.Language
         [NotNull]
         T ParseCurrentStructure<T>([NotNull] CharBuffer chars, char ket1, char? ket2, [NotNull] Func<IList<ZilObject>, T> build)
         {
-            Contract.Requires(chars != null);
-            Contract.Requires(build != null);
-            Contract.Ensures(Contract.Result<T>() != null);
             var items = new List<ZilObject>();
 
             while (true)
@@ -938,50 +912,6 @@ namespace Zilf.Language
                     throw new UnhandledCaseException("after prefix");
             }
         }
-    }
-
-    [ContractClassFor(typeof(IParserSite))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class ParserSiteContract : IParserSite
-    {
-        public ZilAtom ParseAtom(string text)
-        {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<ZilAtom>() != null);
-            return default(ZilAtom);
-        }
-
-        public ZilAtom GetTypeAtom(ZilObject zo)
-        {
-            Contract.Requires(zo != null);
-            Contract.Ensures(Contract.Result<ZilAtom>() != null);
-            return default(ZilAtom);
-        }
-
-        public ZilObject ChangeType(ZilObject zo, ZilAtom type)
-        {
-            Contract.Requires(zo != null);
-            Contract.Requires(type != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            return default(ZilObject);
-        }
-
-        public ZilObject Evaluate(ZilObject zo)
-        {
-            Contract.Requires(zo != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            return default(ZilObject);
-        }
-
-        public ZilObject GetGlobalVal(ZilAtom atom)
-        {
-            Contract.Requires(atom != null);
-            return default(ZilObject);
-        }
-
-        public string CurrentFilePath => default(string);
-
-        public ZilObject FALSE => default(ZilObject);
     }
 
     static class CharExtensions

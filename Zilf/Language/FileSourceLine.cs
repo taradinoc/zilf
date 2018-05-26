@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Language
@@ -25,7 +24,6 @@ namespace Zilf.Language
     {
         public FileSourceLine([NotNull] string filename, int line)
         {
-            Contract.Requires(filename != null);
 
             FileName = filename;
             Line = line;

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,8 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
@@ -46,7 +44,6 @@ namespace Zilf.ZModel.Vocab
         [CanBeNull]
         public IOperand CompileConstant([NotNull] ZilObject zo)
         {
-            Contract.Requires(zo != null);
             return CompileConstantDelegate(zo);
         }
 
@@ -72,15 +69,12 @@ namespace Zilf.ZModel.Vocab
         [NotNull]
         public IGlobalBuilder GetGlobal([NotNull] ZilAtom name)
         {
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<IGlobalBuilder>() != null);
             return GetGlobalDelegate(name);
         }
 
         [CanBeNull]
         public IOperand CompileConstant([NotNull] ZilObject zo)
         {
-            Contract.Requires(zo != null);
             return CompileConstantDelegate(zo);
         }
 
@@ -93,8 +87,6 @@ namespace Zilf.ZModel.Vocab
             }
         }
     }
-
-    [ContractClass(typeof(IVocabFormatContracts))]
     [PublicAPI]
     interface IVocabFormat
     {
@@ -143,179 +135,5 @@ namespace Zilf.ZModel.Vocab
         byte GetDirectionValue([NotNull] IWord word);
 
         int MaxActionCount { get; }
-    }
-
-    [ContractClassFor(typeof(IVocabFormat))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IVocabFormatContracts : IVocabFormat
-    {
-        public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
-        {
-            Contract.Requires(helpers.IsValid);
-        }
-
-        public IWord CreateWord(ZilAtom text)
-        {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<IWord>() != null);
-            return null;
-        }
-
-        public byte GetAdjectiveValue(IWord word)
-        {
-            Contract.Requires(word != null);
-            return 0;
-        }
-
-        public byte GetDirectionValue(IWord word)
-        {
-            Contract.Requires(word != null);
-            return 0;
-        }
-
-        public string[] GetLateSyntaxTableNames()
-        {
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            return null;
-        }
-
-        public byte GetPrepositionValue(IWord word)
-        {
-            Contract.Requires(word != null);
-            return 0;
-        }
-
-        public string[] GetReservedGlobalNames()
-        {
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            return null;
-        }
-
-        public byte GetVerbValue(IWord word)
-        {
-            Contract.Requires(word != null);
-            return 0;
-        }
-
-        public IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word)
-        {
-            Contract.Requires(word != null);
-            Contract.Ensures(Contract.Result<IEnumerable<KeyValuePair<string, int>>>() != null);
-            return default(IEnumerable<KeyValuePair<string, int>>);
-        }
-
-        public bool IsAdjective(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsBuzzword(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsDirection(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsObject(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsPreposition(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsSynonym(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public bool IsVerb(IWord word)
-        {
-            Contract.Requires(word != null);
-            return false;
-        }
-
-        public void MakeAdjective(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakeBuzzword(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakeDirection(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakeObject(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakePreposition(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MakeSynonym(IWord synonym, IWord original)
-        {
-            Contract.Requires(synonym != null);
-            Contract.Requires(original != null);
-        }
-
-        public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech)
-        {
-            Contract.Requires(synonym != null);
-            Contract.Requires(original != null);
-            Contract.Requires(
-                partOfSpeech == PartOfSpeech.Adjective || partOfSpeech == PartOfSpeech.Direction ||
-                partOfSpeech == PartOfSpeech.Preposition || partOfSpeech == PartOfSpeech.Verb);
-        }
-
-        public void MakeVerb(IWord word, ISourceLine location)
-        {
-            Contract.Requires(word != null);
-        }
-
-        public void MergeWords(IWord dest, IWord src)
-        {
-            Contract.Requires(dest != null);
-            Contract.Requires(src != null);
-        }
-
-        public void WriteToBuilder(IWord word, IWordBuilder wb, WriteToBuilderHelpers helpers)
-        {
-            Contract.Requires(word != null);
-            Contract.Requires(wb != null);
-            Contract.Requires(helpers.IsValid);
-        }
-
-        public int MaxActionCount
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<int>() > 0);
-                return default(int);
-            }
-        }
     }
 }

@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -35,9 +34,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(str != null);
-            Contract.Ensures(Contract.Result<ZilFSubr>() != null);
 
             return FromString(ctx, str.ToStringContext(ctx, true));
         }
@@ -45,9 +41,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<ZilFSubr>() != null);
 
             var del = ctx.GetSubrDelegate(name);
             if (del != null)

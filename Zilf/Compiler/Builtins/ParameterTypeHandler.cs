@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +28,6 @@ using Zilf.Language.Signatures;
 
 namespace Zilf.Compiler.Builtins
 {
-    [ContractClass(typeof(ParameterTypeHandlerContract))]
     abstract class ParameterTypeHandler
     {
         public abstract BuiltinArg Process([NotNull] Compilation cc, [NotNull] [InstantHandle] Action<string> error,
@@ -285,19 +283,6 @@ namespace Zilf.Compiler.Builtins
                     SignatureBuilder.Identifier(pi.Name),
                     constraint);
             }
-        }
-    }
-
-    [ContractClassFor(typeof(ParameterTypeHandler))]
-    abstract class ParameterTypeHandlerContract : ParameterTypeHandler
-    {
-        public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
-        {
-            Contract.Requires(cc != null);
-            Contract.Requires(error != null);
-            Contract.Requires(arg != null);
-            Contract.Requires(pi != null);
-            return default(BuiltinArg);
         }
     }
 }

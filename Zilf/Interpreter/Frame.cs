@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,11 +17,9 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using JetBrains.Annotations;
-using System.Diagnostics;
 
 namespace Zilf.Interpreter
 {
@@ -35,20 +33,8 @@ namespace Zilf.Interpreter
 
         public abstract string Description { get; }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Context != null);
-            Contract.Invariant(SourceLine != null);
-        }
-
         protected Frame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(callingForm != null);
 
             Context = ctx;
             Parent = ctx.TopFrame;
@@ -57,8 +43,6 @@ namespace Zilf.Interpreter
 
         protected Frame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(sourceLine != null);
 
             Context = ctx;
             Parent = ctx.TopFrame;

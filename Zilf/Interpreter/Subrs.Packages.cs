@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -22,7 +22,6 @@ using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
@@ -34,10 +33,6 @@ namespace Zilf.Interpreter
         [Subr("ZZPACKAGE")]
         public static ZilObject PACKAGE([NotNull] Context ctx, [NotNull] string pname)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
             var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(externalAtom);
@@ -64,10 +59,6 @@ namespace Zilf.Interpreter
         [Subr("ZZSECTION")]
         public static ZilObject DEFINITIONS([NotNull] Context ctx, [NotNull] string pname)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
             var externalObList = ctx.GetProp(externalAtom, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(externalAtom);
@@ -89,10 +80,6 @@ namespace Zilf.Interpreter
         [Subr("ENDSECTION")]
         public static ZilObject ENDPACKAGE([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return ENDBLOCK(ctx);
         }
 
@@ -101,11 +88,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
                 currentObPath.GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
@@ -150,11 +132,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject RENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
                 currentObPath.GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
@@ -196,11 +173,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject USE([NotNull] Context ctx, [NotNull] string[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
         }
 
@@ -208,11 +180,6 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject INCLUDE([NotNull] Context ctx, [NotNull] string[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
@@ -220,10 +187,6 @@ namespace Zilf.Interpreter
         [Subr("USE-WHEN")]
         public static ZilObject USE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
-            Contract.Requires(condition != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (condition.IsTrue)
             {
                 return PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE);
@@ -235,10 +198,6 @@ namespace Zilf.Interpreter
         [Subr("INCLUDE-WHEN")]
         public static ZilObject INCLUDE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
-            Contract.Requires(condition != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (condition.IsTrue)
             {
                 return PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS);
@@ -249,11 +208,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformUse([NotNull] Context ctx, [NotNull] string[] args, string name, StdAtom requiredPackageType)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList obpath))
             {
                 throw new InterpreterError(
@@ -304,10 +258,6 @@ namespace Zilf.Interpreter
         [Subr("COMPILING?")]
         public static ZilObject COMPILING_P([NotNull] Context ctx, ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             // always true
             return ctx.TRUE;
         }

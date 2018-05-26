@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -40,7 +39,6 @@ namespace Zilf
 
         internal static int Main([ItemNotNull] [NotNull] string[] args)
         {
-            Contract.Requires(args != null);
             var ctx = ParseArgs(args, out var inFile, out var outFile);
 
             if (ctx == null)
@@ -119,7 +117,6 @@ namespace Zilf
             Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
         static void DoREPL([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             using (ctx.PushFileContext("<stdin>"))
             {
                 var sb = new StringBuilder();
@@ -227,7 +224,6 @@ namespace Zilf
         [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
         static Context ParseArgs([NotNull] string[] args, [CanBeNull] out string inFile, [CanBeNull] out string outFile)
         {
-            Contract.Requires(args != null);
 
             string newInFile = inFile = null;
             string newOutFile = outFile = null;
@@ -409,7 +405,6 @@ namespace Zilf
 
         static void AddImplicitIncludePaths([ItemNotNull] [NotNull] IList<string> includePaths, [CanBeNull] string inFile, RunMode mode)
         {
-            Contract.Requires(includePaths != null);
 
             if (inFile != null && mode != RunMode.Expression)
             {
@@ -492,8 +487,6 @@ Compiler switches:
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
 
             return Parse(ctx, null, chars, null);
         }
@@ -501,8 +494,6 @@ Compiler switches:
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
 
             return Parse(ctx, null, chars, templateParams);
         }
@@ -510,8 +501,6 @@ Compiler switches:
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, ISourceLine src, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
 
             var parser = new Parser(ctx, src, templateParams);
 
@@ -547,7 +536,6 @@ Compiler switches:
 
         static IEnumerable<char> ReadAllChars([NotNull] Stream stream)
         {
-            Contract.Requires(stream != null);
             using (var rdr = new StreamReader(stream))
             {
                 int c;
@@ -563,8 +551,6 @@ Compiler switches:
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] Stream stream, bool wantExceptions = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(stream != null);
 
             return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
         }
@@ -582,7 +568,6 @@ Compiler switches:
         [CanBeNull]
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, bool wantExceptions = false)
         {
-            Contract.Requires(ctx != null);
             try
             {
                 var ztree = Parse(ctx, chars);

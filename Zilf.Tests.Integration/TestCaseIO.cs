@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using JetBrains.Annotations;
 using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -33,7 +32,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public string CollectOutput()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
             string result = outputBuffer.ToString();
             outputBuffer.Length = 0;
             return result;
@@ -85,7 +83,6 @@ namespace Zilf.Tests.Integration
 
         void IZMachineIO.PutTextRectangle([ItemNotNull] [NotNull] string[] lines)
         {
-            Contract.Requires(lines != null);
             foreach (string line in lines)
                 outputBuffer.AppendLine(line);
         }
@@ -109,7 +106,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
-            Contract.Ensures(Contract.Result<Stream>() != null);
             saveStream = new MemoryStream();
             return saveStream;
         }
@@ -123,7 +119,6 @@ namespace Zilf.Tests.Integration
         [CanBeNull]
         Stream IZMachineIO.OpenAuxiliaryFile([NotNull] string name, int size, bool writing)
         {
-            Contract.Requires(name != null);
             return null;
         }
 

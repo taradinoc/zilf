@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
 
@@ -31,20 +29,9 @@ namespace Zilf.Interpreter
         [CanBeNull]
         public override string Description => CallingForm.First?.ToString();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(CallingForm != null);
-        }
-
         public CallFrame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
             : base(ctx, callingForm.SourceLine)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(callingForm != null);
 
             CallingForm = callingForm;
         }

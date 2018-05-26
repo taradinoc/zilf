@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -28,7 +28,6 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Compiler
 {
@@ -36,8 +35,6 @@ namespace Zilf.Compiler
     {
         public static void Compile([NotNull] Context ctx, [NotNull] IGameBuilder gb)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(gb != null);
             var compilation = new Compilation(ctx, gb, gb.DebugFile != null && ctx.WantDebugInfo);
             compilation.Compile();
         }
@@ -311,7 +308,6 @@ namespace Zilf.Compiler
 
         void PrepareReservedGlobalBuilders([ItemNotNull] [NotNull] string[] reservedGlobals)
         {
-            Contract.Requires(reservedGlobals != null);
 
             // implicitly defined globals
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
@@ -396,7 +392,6 @@ namespace Zilf.Compiler
         void PrepareAndCheckGlobalStorage([NotNull] [ItemNotNull] Queue<System.Action> globalInitializers,
             [ItemNotNull] [NotNull] out string[] reservedGlobals)
         {
-            Contract.Ensures(Contract.ValueAtReturn(out reservedGlobals) != null);
 
             // FUNNY-GLOBALS?
             reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
@@ -463,7 +458,6 @@ namespace Zilf.Compiler
 
         void PerformVocabMerges([NotNull] Dictionary<IWord, IWord> vocabMerges)
         {
-            Contract.Requires(vocabMerges != null);
             string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
 
             foreach (var pair in vocabMerges)
@@ -487,8 +481,6 @@ namespace Zilf.Compiler
         void PreparePunctuationAliasesAndPlanMerges([NotNull] Dictionary<string, string> punctWords,
             [NotNull] Dictionary<IWord, IWord> vocabMerges)
         {
-            Contract.Requires(punctWords != null);
-            Contract.Requires(vocabMerges != null);
 
             foreach (var pair in punctWords)
             {
@@ -513,11 +505,8 @@ namespace Zilf.Compiler
             }
         }
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         void PlanVocabMerges([NotNull] out Dictionary<IWord, IWord> vocabMerges)
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
-            Contract.Ensures(Contract.ValueAtReturn(out vocabMerges) != null);
             var merges = new Dictionary<IWord, IWord>();
             Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
             {
@@ -535,11 +524,8 @@ namespace Zilf.Compiler
             }
         }
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         void PreparePunctuationWords([NotNull] out Dictionary<string, string> punctWords)
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
-            Contract.Ensures(Contract.ValueAtReturn(out punctWords) != null);
 
             // vocabulary for punctuation
             punctWords = new Dictionary<string, string>

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,8 +19,6 @@
 using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -42,11 +40,6 @@ namespace Zilf.Tests.Integration
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
-
-        protected AbstractAssertionHelper()
-        {
-            Contract.Assume(GetType() == typeof(TThis));
-        }
 
         [NotNull]
         public TThis InV3()
@@ -224,7 +217,6 @@ namespace Zilf.Tests.Integration
 
         public void GivesNumber([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
 
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
@@ -234,7 +226,6 @@ namespace Zilf.Tests.Integration
 
         public void Outputs([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
 
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
@@ -244,9 +235,6 @@ namespace Zilf.Tests.Integration
 
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
-            Contract.Requires(conditions != null);
-            Contract.Requires(conditions.Length > 0);
-            Contract.Requires(Contract.ForAll(conditions, c => !string.IsNullOrWhiteSpace(c)));
 
             var sb = new StringBuilder();
             foreach (var c in conditions)
@@ -319,7 +307,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public CodeMatchingResult GeneratesCodeMatching([NotNull] string pattern)
         {
-            Contract.Requires(pattern != null);
 
             return GeneratesCodeMatching(CheckOutputMatches(pattern));
         }
@@ -336,7 +323,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public CodeMatchingResult GeneratesCodeNotMatching([NotNull] string pattern)
         {
-            Contract.Requires(pattern != null);
 
             return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
         }
@@ -353,7 +339,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         CodeMatchingResult GeneratesCodeMatching([NotNull] Action<string> checkGeneratedCode)
         {
-            Contract.Requires(checkGeneratedCode != null);
 
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
@@ -403,7 +388,6 @@ namespace Zilf.Tests.Integration
 
         public ExprAssertionHelper([NotNull] string expression)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(expression));
 
             this.expression = expression;
         }
@@ -423,8 +407,6 @@ namespace Zilf.Tests.Integration
 
         public RoutineAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
 
             this.argSpec = argSpec;
             this.body = body;
@@ -433,7 +415,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public RoutineAssertionHelper WhenCalledWith([NotNull] string testArguments)
         {
-            Contract.Requires(testArguments != null);
             arguments = testArguments;
             return this;
         }
@@ -453,8 +434,6 @@ namespace Zilf.Tests.Integration
     {
         public GlobalsAssertionHelper([ItemNotNull] [NotNull] params string[] globals)
         {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
 
             foreach (var g in globals)
                 miscGlobals.AppendLine(g);
@@ -473,22 +452,12 @@ namespace Zilf.Tests.Integration
 
         public RawAssertionHelper([NotNull] string code)
         {
-            Contract.Requires(code != null);
             this.code = code;
         }
 
         public void Outputs([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
             ZlrHelper.RunAndAssert(code, null, expectedValue);
-        }
-
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(code != null);
         }
     }
 }

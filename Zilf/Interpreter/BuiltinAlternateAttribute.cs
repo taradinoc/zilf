@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,8 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
-using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
@@ -32,7 +30,6 @@ namespace Zilf.Interpreter
     {
         public BuiltinAlternateAttribute(Type mainClass)
         {
-            Contract.Requires(mainClass != null && typeof(ZilObject).IsAssignableFrom(mainClass));
 
             MainType = mainClass;
         }

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,28 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
-    [ContractClass(typeof(IDiagnosticFormatterContracts))]
     public interface IDiagnosticFormatter
     {
         [NotNull]
         string Format([NotNull] Diagnostic diagnostic);
-    }
-
-    [ContractClassFor(typeof(IDiagnosticFormatter))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IDiagnosticFormatterContracts : IDiagnosticFormatter
-    {
-        public string Format(Diagnostic diagnostic)
-        {
-            Contract.Requires(diagnostic != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-            return default(string);
-        }
     }
 }

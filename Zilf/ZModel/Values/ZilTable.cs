@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,9 +17,6 @@
  */
 
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using System.Text;
 using JetBrains.Annotations;
@@ -52,7 +49,6 @@ namespace Zilf.ZModel.Values
     }
 
     [BuiltinType(StdAtom.TABLE, PrimType.TABLE)]
-    [ContractClass(typeof(ZilTableContract))]
     abstract class ZilTable : ZilObject, IProvideStructureForDeclCheck
     {
         [CanBeNull]
@@ -71,10 +67,8 @@ namespace Zilf.ZModel.Values
         public abstract void PutWord([NotNull] Context ctx, int offset, [NotNull] ZilObject value);
         public abstract void PutByte([NotNull] Context ctx, int offset, [NotNull] ZilObject value);
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         public abstract void CopyTo<T>([NotNull] T[] array, [NotNull] TableToArrayElementConverter<T> convert,
             [CanBeNull] T defaultFiller, [NotNull] Context ctx);
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
 
         [NotNull]
         protected abstract ZilTable AsNewTable();
@@ -87,8 +81,6 @@ namespace Zilf.ZModel.Values
         public static ZilTable Create(int repetitions, [CanBeNull] ZilObject[] initializer, TableFlags flags,
             [CanBeNull] ZilObject[] pattern)
         {
-            Contract.Requires(repetitions >= 0);
-            Contract.Requires(repetitions > 0 || initializer == null || initializer.Length == 0);
 
             return new OriginalTable(repetitions, initializer, flags, pattern);
         }
@@ -97,8 +89,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilTable FromTable([NotNull] Context ctx, [NotNull] ZilTable other)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(other != null);
 
             return other.AsNewTable();
         }
@@ -143,22 +133,11 @@ namespace Zilf.ZModel.Values
             public OriginalTable(int repetitions, [CanBeNull] ZilObject[] initializer, TableFlags flags,
                 [CanBeNull] ZilObject[] pattern)
             {
-                Contract.Requires(repetitions >= 0);
-                Contract.Requires(repetitions > 0 || initializer == null || initializer.Length == 0);
 
                 this.repetitions = repetitions;
                 this.initializer = initializer?.Length > 0 ? initializer : null;
                 this.flags = flags;
                 this.pattern = pattern;
-            }
-
-            [ContractInvariantMethod]
-            [Conditional("CONTRACTS_FULL")]
-            void ObjectInvariant()
-            {
-                Contract.Invariant(repetitions >= 0);
-                Contract.Invariant(repetitions > 0 || initializer == null);
-                Contract.Invariant(initializer == null || initializer.Length > 0);
             }
 
             [System.Diagnostics.Contracts.Pure]
@@ -359,10 +338,6 @@ namespace Zilf.ZModel.Values
 
             void ExpandInitializer([NotNull] ZilObject defaultValue)
             {
-                Contract.Requires(defaultValue != null);
-                Contract.Ensures(repetitions >= 0 && repetitions <= 1);
-                Contract.Ensures(initializer == null || initializer.Length > 0);
-                Contract.Ensures(ElementCount == Contract.OldValue(ElementCount));
 
                 if (repetitions == 0)
                 {
@@ -387,7 +362,6 @@ namespace Zilf.ZModel.Values
 
             void ExpandPattern([NotNull] Context ctx, int index, bool insert)
             {
-                Contract.Requires(ctx != null);
 
                 if (pattern?.Length > index)
                     return;
@@ -423,9 +397,6 @@ namespace Zilf.ZModel.Values
             /// is at the given offset, or <see langword="null"/> if the offset does not point to an element.</returns>
             internal int? ByteOffsetToIndex(int offset)
             {
-                Contract.Requires(offset >= 0);
-                Contract.Ensures(Contract.Result<int?>() == null || (Contract.Result<int?>().Value >= -1 && Contract.Result<int?>().Value < ElementCountWithoutLength));
-                Contract.Ensures(Contract.Result<int?>() >= 0 || HasLengthPrefix);
 
                 // account for initial length markers
                 if ((flags & TableFlags.ByteLength) != 0)
@@ -454,8 +425,6 @@ namespace Zilf.ZModel.Values
             [NotNull]
             private int[] GetElementToByteOffsets()
             {
-                Contract.Ensures(Contract.Result<int[]>() != null);
-                Contract.Ensures(Contract.ValueAtReturn(out elementToByteOffsets) != null);
 
                 if (elementToByteOffsets == null)
                 {
@@ -701,7 +670,6 @@ namespace Zilf.ZModel.Values
 
             public OffsetTable([NotNull] OriginalTable orig, int byteOffset)
             {
-                Contract.Requires(orig != null);
                 this.orig = orig;
                 this.byteOffset = byteOffset;
             }
@@ -756,70 +724,6 @@ namespace Zilf.ZModel.Values
             {
                 return new OffsetTable(orig, byteOffset + bytesToSkip);
             }
-
-            [ContractInvariantMethod]
-            [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-            [Conditional("CONTRACTS_FULL")]
-            private void ObjectInvariant()
-            {
-            Contract.Invariant(orig != null);
-            }
-        }
-    }
-
-    [ContractClassFor(typeof(ZilTable))]
-    [SuppressMessage("ReSharper", "AnnotationRedundancyInHierarchy")]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    [SuppressMessage("ReSharper", "AnnotateCanBeNullTypeMember")]
-    abstract class ZilTableContract : ZilTable
-    {
-        public override ZilObject GetWord(Context ctx, int offset)
-        {
-            Contract.Requires(ctx != null);
-            return default(ZilObject);
-        }
-
-        public override ZilObject GetByte(Context ctx, int offset)
-        {
-            Contract.Requires(ctx != null);
-            return default(ZilObject);
-        }
-
-        public override void PutWord(Context ctx, int offset, ZilObject value)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-        }
-
-        public override void PutByte(Context ctx, int offset, ZilObject value)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-        }
-
-        public override void CopyTo<T>([NotNull] T[] array, [NotNull] TableToArrayElementConverter<T> convert, T defaultFiller, [NotNull] Context ctx)
-        {
-            Contract.Requires(array != null);
-            Contract.Requires(convert != null);
-            Contract.Requires(defaultFiller != null);
-            Contract.Requires(ctx != null);
-        }
-
-        protected override ZilTable AsNewTable()
-        {
-            Contract.Ensures(Contract.Result<ZilTable>() != null);
-            return default(ZilTable);
-        }
-
-        public override ZilTable OffsetByBytes(int bytesToSkip)
-        {
-            return default(ZilTable);
-        }
-
-        protected override string ToString(Func<ZilObject, string> convert)
-        {
-            Contract.Requires(convert != null);
-            return default(string);
         }
     }
 }

@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,14 +18,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
-using System.Diagnostics;
 using Zilf.Common;
 
 namespace Zilf.Interpreter
@@ -97,9 +95,6 @@ namespace Zilf.Interpreter
         public static ArgSpec Parse([NotNull] string caller, [CanBeNull] ZilAtom targetName, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [CanBeNull] ZilDecl bodyDecl = null)
         {
-            Contract.Requires(caller != null);
-            Contract.Requires(argspec != null && Contract.ForAll(argspec, a => a != null));
-            Contract.Ensures(Contract.Result<ArgSpec>() != null);
 
             var optArgsStart = -1;
             var auxArgsStart = -1;
@@ -337,24 +332,6 @@ namespace Zilf.Interpreter
                 argAtoms.ToArray(), argDecls.ToArray(), argQuoted.ToArray(), argDefaults.ToArray());
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [ContractInvariantMethod]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(argAtoms != null && Contract.ForAll(argAtoms, a => a != null));
-            Contract.Invariant(argDecls != null && argDecls.Length == argAtoms.Length);
-            Contract.Invariant(argDefaults != null && argDefaults.Length == argAtoms.Length);
-            Contract.Invariant(argQuoted != null && argQuoted.Length == argAtoms.Length);
-            Contract.Invariant(argDefaults != null && argDefaults.Length == argAtoms.Length);
-            Contract.Invariant(optArgsStart >= 0 && optArgsStart <= argAtoms.Length);
-            Contract.Invariant(auxArgsStart >= optArgsStart && auxArgsStart <= argAtoms.Length);
-            Contract.Invariant(varargsAtom != null || !varargsQuoted);
-            Contract.Invariant(MinArgCount >= 0);
-            Contract.Invariant(MaxArgCount == null || MaxArgCount >= MinArgCount);
-        }
-
         public int MinArgCount => optArgsStart;
 
         public int? MaxArgCount => varargsAtom != null ? null : (int?)auxArgsStart;
@@ -382,8 +359,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public string ToString([NotNull] Func<ZilObject, string> convert)
         {
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder();
             sb.Append('(');
 
@@ -509,10 +484,6 @@ namespace Zilf.Interpreter
             public ArgEvaluator([NotNull] Context ctx, [NotNull] LocalEnvironment env, [NotNull] IEnumerable<ZilObject> rawArgs,
                 [NotNull] Action throwWrongCount)
             {
-                Contract.Requires(ctx != null);
-                Contract.Requires(env != null);
-                Contract.Requires(rawArgs != null);
-                Contract.Requires(throwWrongCount != null);
 
                 this.ctx = ctx;
                 this.env = env;
@@ -546,7 +517,6 @@ namespace Zilf.Interpreter
             [ContractAnnotation("=> src: notnull")]
             public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
-                Contract.Ensures(Contract.ValueAtReturn(out src) != null);
 
                 var result = GetOneOptional(eval, out src);
 
@@ -558,9 +528,8 @@ namespace Zilf.Interpreter
             }
 
             /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
-            public ZilResult? GetOneOptional(bool eval, out IProvideSourceLine src)
+            public ZilResult? GetOneOptional(bool eval, [CanBeNull] out IProvideSourceLine src)
             {
-                Contract.Ensures(Contract.ValueAtReturn(out src) != null || Contract.Result<ZilObject>() == null);
 
                 while (true)
                 {
@@ -597,7 +566,6 @@ namespace Zilf.Interpreter
                     if (enumerator.MoveNext())
                     {
                         var result = enumerator.Current;
-                        Contract.Assert(result != null);
 
                         if (!eval)
                         {
@@ -612,7 +580,7 @@ namespace Zilf.Interpreter
                         }
 
                         src = result;
-                        return result.Eval(ctx, env);
+                        return result?.Eval(ctx, env);
                     }
 
                     enumerator.Dispose();
@@ -656,10 +624,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Application BeginApply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            Contract.Requires(Contract.ForAll(args, a => a != null));
-            Contract.Ensures(Contract.Result<Application>() != null);
 
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
@@ -785,15 +749,12 @@ namespace Zilf.Interpreter
         /// <paramref name="ctx"/>.<see cref="Context.CheckDecls"/> is <see langword="true"/>.</exception>
         public void ValidateResult([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject result)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(result != null);
             ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", (object)name ?? "user-defined function");
         }
 
         [NotNull]
         public ZilList ToZilList()
         {
-            Contract.Ensures(Contract.Result<ZilList>() != null);
 
             return new ZilList(AsZilListBody());
         }

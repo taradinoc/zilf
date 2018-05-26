@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -27,7 +26,6 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
-    [ContractClass(typeof(ZilObjectContracts))]
     abstract class ZilObject : IProvideSourceLine, ISettableSourceLine
     {
         /// <summary>
@@ -160,8 +158,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public string ToStringContext([NotNull] Context ctx, bool friendly, bool ignorePrintType = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             if (!ignorePrintType)
             {
@@ -186,8 +182,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         protected virtual string ToStringContextImpl([NotNull] Context ctx, bool friendly)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             return ToString();
         }
@@ -202,7 +196,6 @@ namespace Zilf.Interpreter.Values
         public virtual ZilAtom GetTypeAtom([NotNull] Context ctx)
         {
             var stdAtom = StdTypeAtom;
-            Contract.Assert(stdAtom != StdAtom.None);
             return ctx.GetStdAtom(stdAtom);
         }
 
@@ -235,7 +228,6 @@ namespace Zilf.Interpreter.Values
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
         public ZilResult Eval([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment = null)
         {
-            Contract.Requires(ctx != null);
 
             var del = ctx.GetEvalTypeDelegate(GetTypeAtom(ctx));
 
@@ -265,10 +257,6 @@ namespace Zilf.Interpreter.Values
         /// CHTYPEd to the original type.</remarks>
         internal ZilResult EvalAsOtherType([NotNull] Context ctx, [NotNull] ZilAtom originalType)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(originalType != null);
-            Contract.Requires(ctx.IsRegisteredType(originalType));
-            Contract.Requires(ctx.GetTypePrim(originalType) == PrimType);
 
             return EvalImpl(ctx, null, originalType);
         }
@@ -294,7 +282,6 @@ namespace Zilf.Interpreter.Values
         protected virtual ZilResult EvalImpl([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment,
             [CanBeNull] ZilAtom originalType)
         {
-            Contract.Requires(ctx != null);
             return this;
         }
 
@@ -306,7 +293,6 @@ namespace Zilf.Interpreter.Values
         /// not a macro invocation.</returns>
         public virtual ZilResult Expand([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
 
             return this;
         }
@@ -348,10 +334,6 @@ namespace Zilf.Interpreter.Values
         /// <returns>The value of the last expression evaluated.</returns>
         public static ZilResult EvalProgram([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] prog)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(prog != null);
-            Contract.Requires(prog.Length > 0);
-            Contract.Requires(Contract.ForAll(prog, p => p != null));
 
             ZilResult result = null;
 
@@ -369,9 +351,6 @@ namespace Zilf.Interpreter.Values
         public static IEnumerable<ZilResult> ExpandOrEvalWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj,
             [CanBeNull] LocalEnvironment environment)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, environment);
@@ -399,9 +378,6 @@ namespace Zilf.Interpreter.Values
         public static IEnumerable<ZilResult> EvalSequence([NotNull] Context ctx, [ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence,
             [CanBeNull] LocalEnvironment environment = null)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(sequence != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo, environment));
         }
@@ -409,9 +385,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         protected static IEnumerable<ZilResult> ExpandWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilResult>>() != null);
 
             if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
@@ -429,11 +402,6 @@ namespace Zilf.Interpreter.Values
         protected static string SequenceToString([NotNull] IEnumerable<ZilObject> items,
             [NotNull] string start, [NotNull] string end, [NotNull] Func<ZilObject, string> convert)
         {
-            Contract.Requires(items != null);
-            Contract.Requires(start != null);
-            Contract.Requires(end != null);
-            Contract.Requires(convert != null);
-            Contract.Ensures(Contract.Result<string>() != null);
 
             var sb = new StringBuilder();
             sb.Append(start);

@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -217,10 +216,6 @@ namespace Zilf.Language.Signatures
         [NotNull]
         static SignaturePart ConstrainByType([NotNull] SignaturePart part, [NotNull] Type elementType)
         {
-            Contract.Requires(part != null);
-            Contract.Requires(elementType != null);
-            Contract.Requires(!elementType.IsArray);
-            Contract.Ensures(Contract.Result<ISignaturePart>() != null);
 
             System.Diagnostics.Debug.Assert(!elementType.IsArray);
 
@@ -296,8 +291,6 @@ namespace Zilf.Language.Signatures
         [NotNull]
         static string Hyphenate([NotNull] string s)
         {
-            Contract.Requires(s != null);
-            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder(s.Length);
             sb.Append(char.ToLowerInvariant(s[0]));
 

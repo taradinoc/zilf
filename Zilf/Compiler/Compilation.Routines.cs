@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -36,10 +35,6 @@ namespace Zilf.Compiler
         [NotNull]
         static ZilRoutine MaybeRewriteRoutine([NotNull] Context ctx, [NotNull] ZilRoutine origRoutine)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(origRoutine != null);
-            Contract.Requires(origRoutine.Name != null);
-            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
 
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
 
@@ -68,8 +63,6 @@ namespace Zilf.Compiler
 
         void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(rb != null);
 
             // give the user a chance to rewrite the routine
             routine = MaybeRewriteRoutine(Context, routine);
@@ -116,8 +109,6 @@ namespace Zilf.Compiler
             Locals.Clear();
             SpareLocals.Clear();
             OuterLocals.Clear();
-
-            Contract.Assume(Blocks.Count == 1);
             Blocks.Pop();
 
             // helper
@@ -221,8 +212,6 @@ namespace Zilf.Compiler
         // TODO: replace CompileStmt with CompileForm and (in loops) CompileClauseBody
         void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(stmt != null);
 
             stmt = stmt.Unwrap(Context);
 
@@ -260,8 +249,6 @@ namespace Zilf.Compiler
 
         void MarkSequencePoint([NotNull] IRoutineBuilder rb, [NotNull] IProvideSourceLine node)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(node != null);
 
             if (!WantDebugInfo || !(node.SourceLine is FileSourceLine fileSourceLine))
                 return;
@@ -282,9 +269,6 @@ namespace Zilf.Compiler
         [NotNull]
         public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
 
             if (Locals.TryGetValue(atom, out var prev))
             {
@@ -351,7 +335,6 @@ namespace Zilf.Compiler
 
         public void PopInnerLocal([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
 
             SpareLocals.Push(Locals[atom]);
 

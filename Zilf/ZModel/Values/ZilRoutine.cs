@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,9 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -40,8 +37,6 @@ namespace Zilf.ZModel.Values
         public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
         {
-            Contract.Requires(argspec != null);
-            Contract.Requires(body != null);
 
             Name = name;
             ArgSpec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
@@ -54,9 +49,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilRoutine FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
 
             if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(
@@ -74,7 +66,6 @@ namespace Zilf.ZModel.Values
 
         protected override TiedLayout GetLayout()
         {
-            Contract.Ensures(Contract.Result<TiedLayout>() != null);
             return TiedLayout.Create<ZilRoutine>(
                 x => x.ArgSpecAsList,
                 x => x.BodyAsList);
@@ -118,14 +109,6 @@ namespace Zilf.ZModel.Values
                     return false;
 
             return true;
-        }
-
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(body != null);
         }
 
         internal void ExpandInPlace([NotNull] Context ctx)

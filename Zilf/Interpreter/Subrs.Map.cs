@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
@@ -32,9 +31,6 @@ namespace Zilf.Interpreter
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, [ItemNotNull] [NotNull] IStructure[] structs)
         {
-            Contract.Requires(structs != null);
-            SubrContracts(ctx);
-
             return PerformMap(ctx, finalf, loopf, structs, true);
         }
 
@@ -43,18 +39,12 @@ namespace Zilf.Interpreter
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
             IApplicable loopf, [NotNull] [ItemNotNull] IStructure[] structs)
         {
-            Contract.Requires(structs != null);
-            SubrContracts(ctx);
-
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static ZilResult PerformMap([NotNull] Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
         {
-            Contract.Requires(structs != null);
-            SubrContracts(ctx);
-
             if (structs == null)
                 throw new ArgumentNullException(nameof(structs));
 
@@ -82,7 +72,6 @@ namespace Zilf.Interpreter
                         loopArgs[i] = (ZilObject)st;
 
                     structs[i] = st.GetRest(1);
-                    Contract.Assume(structs[i] != null);
                 }
 
                 if (i < numStructs)
@@ -133,24 +122,18 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilResult MAPRET(Context ctx, [NotNull] ZilObject[] args)
         {
-            SubrContracts(ctx, args);
-
             return ZilResult.MapRet(args);
         }
 
         [Subr]
         public static ZilResult MAPSTOP(Context ctx, [NotNull] ZilObject[] args)
         {
-            SubrContracts(ctx, args);
-
             return ZilResult.MapStop(args);
         }
 
         [Subr]
         public static ZilResult MAPLEAVE(Context ctx, [CanBeNull] ZilObject value = null)
         {
-            SubrContracts(ctx);
-
             return ZilResult.MapLeave(value ?? ctx.TRUE);
         }
     }

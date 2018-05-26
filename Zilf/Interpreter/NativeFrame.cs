@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using JetBrains.Annotations;
 
@@ -29,8 +28,6 @@ namespace Zilf.Interpreter
         public NativeFrame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
             : base(ctx, sourceLine)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(sourceLine != null);
 
             Description = description;
         }

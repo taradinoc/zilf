@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
@@ -48,11 +47,6 @@ namespace Zilf.Compiler
         internal IOperand CompileForm([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, bool wantResult,
             IVariable resultStorage)
         {
-            // TODO: split up this method
-
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
 
             using (DiagnosticContext.Push(form.SourceLine))
             {
@@ -209,10 +203,6 @@ namespace Zilf.Compiler
         public IOperand CompileAsOperand([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [CanBeNull] IVariable suggestion = null)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(expr != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
 
             expr = expr.Unwrap(Context);
 
@@ -281,12 +271,6 @@ namespace Zilf.Compiler
             [CanBeNull] IVariable resultStorage,
             [NotNull] ILabel label, bool polarity, [CanBeNull] Func<IVariable> tempVarProvider = null)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(expr != null);
-            Contract.Requires(label != null);
-            Contract.Requires(resultStorage != rb.Stack);
-            Contract.Requires(resultStorage != null || tempVarProvider != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
 
             expr = expr.Unwrap(Context);
             IOperand result = resultStorage;

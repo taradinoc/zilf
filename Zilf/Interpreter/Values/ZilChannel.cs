@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -21,7 +21,6 @@ using System.IO;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -38,8 +37,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChannel FromVector([NotNull] Context ctx, [NotNull] ZilVector vector)
         {
-            Contract.Requires(vector != null);
-            Contract.Requires(ctx != null);
 
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "CHANNEL");
         }
@@ -78,8 +75,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
                 ZilString.FromString(path));
         }
@@ -171,8 +166,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.STRING),
                 ZilString.FromString(sb.ToString()));
         }
@@ -211,7 +204,6 @@ namespace Zilf.Interpreter.Values
 
         public override int WriteString([NotNull] string s)
         {
-            Contract.Requires(s != null);
             sb.Append(s);
             return s.Length;
         }
@@ -235,8 +227,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.CONSOLE));
         }
 
@@ -274,7 +264,6 @@ namespace Zilf.Interpreter.Values
 
         public override int WriteString([NotNull] string s)
         {
-            Contract.Requires(s != null);
             Console.Write(s);
             return s.Length;
         }
