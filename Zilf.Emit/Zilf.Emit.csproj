@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Product>ZILF</Product>
     <Version>0.8</Version>
     <Authors>Jesse McGrew</Authors>
