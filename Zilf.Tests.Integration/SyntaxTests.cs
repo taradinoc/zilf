@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zilf.Diagnostics;
 
 namespace Zilf.Tests.Integration
 {
@@ -100,8 +99,7 @@ namespace Zilf.Tests.Integration
 
             AssertGlobals(globals)
                 .WithGlobal("<ROUTINE V-FOO () <>>")
-                .DoesNotCompile<InterpreterMessages>(
-                    InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                .DoesNotCompile("MDL0426", // too many {0}, only {1} allowed in this vocab format
                     d => d.GetFormattedMessage().Contains("verbs"));
         }
 
@@ -113,8 +111,7 @@ namespace Zilf.Tests.Integration
                 .ToArray();
 
             AssertGlobals(globals)
-                .DoesNotCompile<InterpreterMessages>(
-                    InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
+                .DoesNotCompile("MDL0426", // too many {0}, only {1} allowed in this vocab format
                     d => d.GetFormattedMessage().Contains("actions"));
         }
 

@@ -245,6 +245,12 @@ namespace Zilf.Interpreter
 
         public bool WantDebugInfo { get; set; }
 
+        public bool WarningsAsErrors
+        {
+            get => diagnostics.WarningsAsErrors;
+            set => diagnostics.WarningsAsErrors = value;
+        }
+
         public int ErrorCount => diagnostics.ErrorCount;
 
         public int WarningCount => diagnostics.WarningCount;

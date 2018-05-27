@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Diagnostics;
 
 namespace Zilf.Tests.Integration
 {
@@ -229,5 +230,20 @@ namespace Zilf.Tests.Integration
             builder.DoesNotCompile(r => r.ErrorCount == 101);
         }
 
+        [TestMethod]
+        public void Warnings_Can_Be_Converted_To_Errors()
+        {
+            AssertRoutine("", ".X")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithWarnings()
+                .GivesNumber("5");
+
+            AssertRoutine("", ".X")
+                .WithGlobal("<WARN-AS-ERROR? T>")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithoutWarnings()
+                .DoesNotCompile("ZIL0204", // no such {0} variable '{1}', using the {2} instead
+                    diag => diag.Severity == Severity.Error);
+        }
     }
 }

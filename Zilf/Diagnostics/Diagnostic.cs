@@ -40,28 +40,34 @@ namespace Zilf.Diagnostics
         public Severity Severity { get; }
         [NotNull]
         public string CodePrefix { get; }
-        public int Code { get; }
+        public int CodeNumber { get; }
+
+        [NotNull]
+        public string Code => $"{CodePrefix}{CodeNumber:0000}";
+
         [CanBeNull]
         public string StackTrace { get; }
         [NotNull]
         public IReadOnlyList<Diagnostic> SubDiagnostics { get; }
 
+        [NotNull]
         string MessageFormat { get; }
+        [NotNull]
         object[] MessageArgs { get; }
 
         static readonly object[] NoArguments = new object[0];
         static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
 
         public Diagnostic([NotNull] ISourceLine location, Severity severity,
-            [NotNull] string codePrefix, int code,
+            [NotNull] string codePrefix, int codeNumber,
             [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
-            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] Diagnostic[] subDiagnostics)
+            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] IReadOnlyList<Diagnostic> subDiagnostics)
         {
 
             Location = location;
             Severity = severity;
             CodePrefix = codePrefix;
-            Code = code;
+            CodeNumber = codeNumber;
             MessageFormat = messageFormat;
             MessageArgs = messageArgs ?? NoArguments;
             StackTrace = stackTrace;
@@ -75,11 +81,25 @@ namespace Zilf.Diagnostics
                 Location,
                 Severity,
                 CodePrefix,
-                Code,
+                CodeNumber,
                 MessageFormat,
                 MessageArgs,
                 StackTrace,
                 newSubDiagnostics);
+        }
+
+        [NotNull]
+        public Diagnostic WithSeverity(Severity newSeverity)
+        {
+            return new Diagnostic(
+                Location,
+                newSeverity,
+                CodePrefix,
+                CodeNumber,
+                MessageFormat,
+                MessageArgs,
+                StackTrace,
+                SubDiagnostics);
         }
 
         [NotNull]
@@ -95,7 +115,7 @@ namespace Zilf.Diagnostics
                 Location.SourceInfo,
                 Severity.ToString().ToLowerInvariant(),
                 CodePrefix,
-                Code,
+                CodeNumber,
                 string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs));
         }
 
@@ -107,50 +127,49 @@ namespace Zilf.Diagnostics
             {
             }
 
+            // ReSharper disable once AnnotationRedundancyInHierarchy (cross-platform conflict)
+            [CanBeNull]
             public object GetFormat(Type formatType)
             {
-                if (formatType == typeof(ICustomFormatter))
-                    return this;
-
-                return null;
+                return formatType == typeof(ICustomFormatter) ? this : null;
             }
 
             [NotNull]
             static readonly char[] Delimiter = { '|' };
 
-            /// <exception cref="ArgumentException">The "s" format was used with a <see cref="string"/> instead of a <see cref="CountableString"/>.</exception>
+            /// <inheritdoc />
+            /// <exception cref="T:System.ArgumentException">The "s" format was used with a <see cref="T:System.String" /> instead of a <see cref="T:Zilf.Diagnostics.CountableString" />.</exception>
             public string Format([CanBeNull] string format, [CanBeNull] object arg, [CanBeNull] IFormatProvider formatProvider)
             {
-                if (format != null && (format == "s" || format.StartsWith("s|", StringComparison.Ordinal)))
+                if (format == null || format != "s" && !format.StartsWith("s|", StringComparison.Ordinal))
+                    return HandleOther(format, arg);
+
+                bool plural;
+
+                switch (arg)
                 {
-                    bool plural;
+                    case int i:
+                        plural = i != 1;
+                        break;
 
-                    switch (arg)
-                    {
-                        case int i:
-                            plural = i != 1;
-                            break;
+                    case CountableString cs:
+                        plural = cs.Plural;
+                        break;
 
-                        case CountableString cs:
-                            plural = cs.Plural;
-                            break;
+                    case string _:
+                        throw new ArgumentException($"{{#:s}} format requires a {nameof(CountableString)}, not a string");
 
-                        case string _:
-                            throw new ArgumentException($"{{#:s}} format requires a {nameof(CountableString)}, not a string");
-
-                        default:
-                            return HandleOther(format, arg);
-                    }
-
-                    var parts = format.Split(Delimiter, 3);
-
-                    if (plural)
-                        return parts.Length >= 2 ? parts[1] : "s";
-
-                    return parts.Length >= 3 ? parts[2] : "";
+                    default:
+                        return HandleOther(format, arg);
                 }
 
-                return HandleOther(format, arg);
+                var parts = format.Split(Delimiter, 3);
+
+                if (plural)
+                    return parts.Length >= 2 ? parts[1] : "s";
+
+                return parts.Length >= 3 ? parts[2] : "";
+
             }
 
             [NotNull]

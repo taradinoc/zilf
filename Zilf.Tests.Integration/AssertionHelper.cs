@@ -18,9 +18,7 @@
 
 using JetBrains.Annotations;
 using System;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -274,18 +272,14 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
+        public void DoesNotCompile(string diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
         {
-            var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
-            Debug.Assert(attr != null, "No " + nameof(MessageSetAttribute) + " on " + typeof(TMessages).FullName);
-
-            var prefix = attr.Prefix;
             DoesNotCompile(res =>
                 {
-                    var diag = res.Diagnostics.FirstOrDefault(d => d.CodePrefix == prefix && d.Code == diagnosticCode);
+                    var diag = res.Diagnostics.FirstOrDefault(d => d.Code == diagnosticCode);
                     return diag != null && (diagFilter == null || diagFilter(diag));
                 },
-                $"Expected diagnostic {attr.Prefix}{diagnosticCode:0000} was not produced");
+                $"Expected diagnostic {diagnosticCode} was not produced");
         }
 
         public void Compiles()
