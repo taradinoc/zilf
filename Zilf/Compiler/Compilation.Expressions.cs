@@ -44,6 +44,9 @@ namespace Zilf.Compiler
         /// for the result, or another operand if the suggested location was not used,
         /// or null if a result was not produced.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: true => notnull")]
+        [ContractAnnotation("wantResult: false => null")]
+        [CanBeNull]
         internal IOperand CompileForm([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, bool wantResult,
             IVariable resultStorage)
         {
@@ -269,7 +272,7 @@ namespace Zilf.Compiler
         [ContractAnnotation("tempVarProvider: null => resultStorage: notnull")]
         internal IOperand CompileAsOperandWithBranch([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr,
             [CanBeNull] IVariable resultStorage,
-            [NotNull] ILabel label, bool polarity, [CanBeNull] Func<IVariable> tempVarProvider = null)
+            [NotNull] ILabel label, bool polarity, [CanBeNull] [InstantHandle] Func<IVariable> tempVarProvider = null)
         {
 
             expr = expr.Unwrap(Context);

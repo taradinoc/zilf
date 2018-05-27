@@ -786,16 +786,8 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 while (!wordFlagsList.IsEmpty)
                 {
-                    Debug.Assert(wordFlagsList.First != null);
-                    Debug.Assert(wordFlagsList.Rest != null);
-
-                    if (wordFlagsList.Rest.IsEmpty)
+                    if (!wordFlagsList.StartsWith(out ZilObject vword, out ZilObject flags))
                         throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
-
-                    var vword = wordFlagsList.First;
-                    var flags = wordFlagsList.Rest.First;
-                    wordFlagsList = wordFlagsList.Rest.Rest;
-                    Debug.Assert(wordFlagsList != null);
 
                     if (!seen.Add(vword))
                         continue;
@@ -806,8 +798,10 @@ namespace Zilf.ZModel.Vocab.NewParser
                     var zword = helpers.Vocabulary[word];
 
                     filtered.Add(zword);
-                    Debug.Assert(flags != null);
                     filtered.Add(helpers.CompileConstant(flags));
+
+                    wordFlagsList = wordFlagsList.GetRest(2);
+                    Debug.Assert(wordFlagsList != null);
                 }
 
                 wordFlagTable.AddShort((short)filtered.Count);

@@ -199,11 +199,7 @@ namespace Zilf.Interpreter.Values.Tied
         [NotNull]
         public sealed override ZilListoidBase Rest
         {
-            get
-            {
-                var rest = GetRest(1);
-                return rest == null ? new ZilList(null, null) : (ZilListoidBase)rest;
-            }
+            get => GetRest(1) ?? new ZilList(null, null);
             set => throw new NotSupportedException();
         }
 
@@ -240,7 +236,7 @@ namespace Zilf.Interpreter.Values.Tied
             return result;
         }
 
-        public sealed override IStructure GetRest(int skip)
+        public sealed override ZilListoidBase GetRest(int skip)
         {
             if (GetLength(skip) < skip)
                 return null;
@@ -303,7 +299,7 @@ namespace Zilf.Interpreter.Values.Tied
                 return new ZilList(this);
             }
 
-            public override IStructure GetRest(int skip)
+            public override ZilListoidBase GetRest(int skip)
             {
                 return GetLength(skip) < skip ? null : new Wrapper(orig, offset + skip);
             }

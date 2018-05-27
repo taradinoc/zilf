@@ -396,11 +396,11 @@ namespace Zilf.ZModel.Values
             return new ComplexPropDef(patterns);
         }
 
-        static OutputElement ConvertOutputForm([NotNull] ZilForm form, ZilAtom constant)
+        static OutputElement ConvertOutputForm([NotNull] ZilForm form, [CanBeNull] ZilAtom constant)
         {
 
             // validate and parse
-            if (!(form.First is ZilAtom head))
+            if (!form.StartsWith(out ZilAtom head))
             {
                 throw new InterpreterError(
                     form,
@@ -414,6 +414,7 @@ namespace Zilf.ZModel.Values
             int length = 2;
             OutputElementType type;
 
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (head.StdAtom)
             {
                 case StdAtom.BYTE:
@@ -455,54 +456,55 @@ namespace Zilf.ZModel.Values
                     break;
 
                 default:
-                    throw new InterpreterError(form, InterpreterMessages.FORM_In_PROPDEF_Output_Pattern_Must_Be_BYTE_WORD_STRING_OBJECT_ROOM_GLOBAL_NOUN_ADJ_Or_VOC);
+                    throw new InterpreterError(
+                        form,
+                        InterpreterMessages.FORM_In_PROPDEF_Output_Pattern_Must_Be_BYTE_WORD_STRING_OBJECT_ROOM_GLOBAL_NOUN_ADJ_Or_VOC);
             }
 
-            if (((IStructure)form).GetLength(length) != length)
+            if (!form.HasLength(length))
             {
-                throw new InterpreterError(form, InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1, head, length);
+                throw new InterpreterError(
+                    form,
+                    InterpreterMessages._0_FORM_In_PROPDEF_Output_Pattern_Must_Have_Length_1,
+                    head,
+                    length);
             }
 
             Debug.Assert(form.Rest?.Rest != null);
 
             ZilAtom outVariable;
             ZilFix outFix;
-            switch (form.Rest.First)
+            if (form.StartsWith(out ZilAtom _, out ZilObject zo) && zo.IsLVAL(out var atom))
             {
-                case ZilObject zo when zo.IsLVAL(out var atom):
-                    outVariable = atom;
-                    outFix = null;
-                    break;
-
-                case ZilFix fix:
-                    outVariable = null;
-                    outFix = fix;
-                    break;
-
-                default:
-                    throw new InterpreterError(
-                        form,
-                        InterpreterMessages._0_Expected_1,
-                        head + ": arg 1",
-                        "an LVAL or FIX");
+                outVariable = atom;
+                outFix = null;
+            }
+            else if (form.StartsWith(out ZilAtom _, out ZilFix fix))
+            {
+                outVariable = null;
+                outFix = fix;
+            }
+            else
+            {
+                throw new InterpreterError(
+                    form,
+                    InterpreterMessages._0_Expected_1,
+                    head + ": arg 1",
+                    "an LVAL or FIX");
             }
 
-            ZilAtom partOfSpeech = null;
-            if (head.StdAtom == StdAtom.VOC)
-            {
-                partOfSpeech = form.Rest.Rest.First as ZilAtom;
-                if (partOfSpeech == null)
-                {
-                    throw new InterpreterError(
-                        form,
-                        InterpreterMessages._0_Expected_1,
-                        head + ": arg 2",
-                        "an atom");
-                }
-            }
+            // VOC needs a third argument, part of speech
+            if (head.StdAtom != StdAtom.VOC)
+                return new OutputElement(type, constant, outVariable, null, outFix);
 
-            // done
-            return new OutputElement(type, constant, outVariable, partOfSpeech, outFix);
+            if (form[2] is ZilAtom partOfSpeech)
+                return new OutputElement(type, constant, outVariable, partOfSpeech, outFix);
+
+            throw new InterpreterError(
+                form,
+                InterpreterMessages._0_Expected_1,
+                head + ": arg 2",
+                "an atom");
         }
 
         /// <exception cref="InterpreterError">A constant was defined at conflicting positions across definitions.</exception>

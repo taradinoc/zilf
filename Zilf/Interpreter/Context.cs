@@ -300,10 +300,10 @@ namespace Zilf.Interpreter
         {
             var ids = (StdAtom[])Enum.GetValues(typeof(StdAtom));
 
-            StdAtom max = ids[ids.Length - 1];
+            var max = ids[ids.Length - 1];
             var newStdAtoms = new ZilAtom[(int)max + 1];
 
-            foreach (StdAtom sa in ids)
+            foreach (var sa in ids)
             {
                 if (sa != StdAtom.None)
                 {
@@ -478,6 +478,7 @@ namespace Zilf.Interpreter
 
             return stdAtoms[(int)id];
         }
+        [CanBeNull]
         public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
 
@@ -491,7 +492,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <param name="value">The value to be associated with the pair, or
         /// null to clear the association.</param>
-        public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, ZilObject value)
+        public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
         {
 
             associations.PutProp(first, second, value);
@@ -546,7 +547,7 @@ namespace Zilf.Interpreter
                                throw new InvalidOperationException("no parent environment to restore");
         }
 
-        public T ExecuteInEnvironment<T>(LocalEnvironment tempEnvironment, Func<T> func)
+        public T ExecuteInEnvironment<T>([NotNull] LocalEnvironment tempEnvironment, [NotNull] Func<T> func)
         {
             var prev = localEnvironment;
             try

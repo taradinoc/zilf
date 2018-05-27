@@ -52,6 +52,12 @@ namespace Zilf.Interpreter.Values
             Second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
+        public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilObject second)
+        {
+            first = this.First;
+            second = this.Second;
+        }
+
         public override bool StructurallyEquals(ZilObject obj)
         {
             return obj is ZilAdecl other && other.First.StructurallyEquals(First) && other.Second.StructurallyEquals(Second);

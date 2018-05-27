@@ -58,6 +58,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         public ZilAtom Atom { get; }
 
+        // TODO: change the type of NewParserWord.Inner? ZilHash isn't really a requirement
         [NotNull]
         public ZilHash Inner { get; }
 

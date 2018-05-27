@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
@@ -242,6 +241,13 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Indicates whether to interpret ambiguous expressions as constants.
+        /// </summary>
+        /// <remarks>
+        /// In particular, this indicates whether to interpret the name of a global variable
+        /// as a constant equal to the variable's index.
+        /// </remarks>
         public enum AmbiguousConstantMode
         {
             /// <summary>
@@ -321,24 +327,7 @@ namespace Zilf.Compiler
 
                 case StdAtom.FORM:
                     var form = (ZilForm)expr;
-                    if (form.First != Context.GetStdAtom(StdAtom.GVAL))
-                        return null;
-
-                    Debug.Assert(form.Rest != null);
-
-                    if (form.Rest.IsEmpty)
-                        return null;
-
-                    Debug.Assert(form.Rest.First != null);
-                    Debug.Assert(form.Rest.Rest != null);
-
-                    if (form.Rest.First.StdTypeAtom == StdAtom.ATOM &&
-                        form.Rest.Rest.IsEmpty)
-                    {
-                        return CompileConstant(form.Rest.First, AmbiguousConstantMode.Pessimistic);
-                    }
-
-                    return null;
+                    return form.IsGVAL(out atom) ? CompileConstant(atom, AmbiguousConstantMode.Pessimistic) : null;
 
                 case StdAtom.VOC:
                     atom = ZilAtom.Parse("W?" + ((ZilAtom)expr.GetPrimitive(Context)).Text, Context);

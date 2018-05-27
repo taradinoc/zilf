@@ -117,7 +117,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(
                     InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2,
                     "ENTRY",
-                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false),
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false),
                     string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
@@ -160,7 +160,10 @@ namespace Zilf.Interpreter
             var onWrongOblist = args.Where(a => a.ObList != internalObList && a.ObList != ctx.RootObList).ToList();
             if (onWrongOblist.Count > 0)
             {
-                throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2, "RENTRY", ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST)).ToStringContext(ctx, false), string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
+                throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2,
+                    "RENTRY",
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false),
+                    string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
             foreach (var atom in args)
