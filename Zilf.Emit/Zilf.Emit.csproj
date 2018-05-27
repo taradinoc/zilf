@@ -15,7 +15,10 @@
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="11.1.0.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="11.1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
