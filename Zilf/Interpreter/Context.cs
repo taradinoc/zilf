@@ -914,11 +914,16 @@ namespace Zilf.Interpreter
                 if (chtypeMethod != null)
                 {
                     // adapt the static method
-                    if (!chtypeMethod.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(chtypeParamTypes))
+                    var foundParamTypes = chtypeMethod.GetParameters().Select(pi => pi.ParameterType).ToArray();
+                    if (foundParamTypes.Length != chtypeParamTypes.Length ||
+                        foundParamTypes[0] != chtypeParamTypes[0] ||
+                        !foundParamTypes[1].IsAssignableFrom(chtypeParamTypes[1]))
+                    {
                         throw new InvalidOperationException(
                             $"Wrong parameters for static ChtypeMethod {chtypeMethod.Name} on type {r.Type.Name}\n" +
                             $"Expected: ({string.Join(", ", chtypeParamTypes.Select(t => t.Name))})\n" +
                             $"Actual: ({string.Join(", ", chtypeMethod.GetParameters().Select(pi => pi.ParameterType.Name))})");
+                    }
 
                     chtypeDelegate = adaptChtypeMethod(chtypeMethod);
                 }

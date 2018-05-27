@@ -241,7 +241,7 @@ namespace Zilf.Interpreter
 
                 switch (dest)
                 {
-                    case ZilList list:
+                    case ZilListoidBase list:
                         foreach (var item in primitive.Skip(rest).Take((int)amount))
                         {
                             if (list.IsEmpty)

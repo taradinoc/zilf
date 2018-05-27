@@ -547,7 +547,7 @@ namespace Zilf.Interpreter
         }
 
         [NotNull]
-        static ZilTable PerformTable([NotNull] Context ctx, ZilList flagList, [ItemNotNull] [NotNull] ZilObject[] values,
+        static ZilTable PerformTable([NotNull] Context ctx, ZilListoidBase flagList, [ItemNotNull] [NotNull] ZilObject[] values,
             bool pure, bool wantLength)
         {
             // syntax:

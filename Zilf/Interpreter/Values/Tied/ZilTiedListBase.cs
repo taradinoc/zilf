@@ -197,12 +197,12 @@ namespace Zilf.Interpreter.Values.Tied
 
         // ReSharper disable once AnnotationConflictInHierarchy
         [NotNull]
-        public sealed override ZilList Rest
+        public sealed override ZilListoidBase Rest
         {
             get
             {
                 var rest = GetRest(1);
-                return rest == null ? new ZilList(null, null) : new ZilList(rest);
+                return rest == null ? new ZilList(null, null) : (ZilListoidBase)rest;
             }
             set => throw new NotSupportedException();
         }
@@ -283,7 +283,7 @@ namespace Zilf.Interpreter.Values.Tied
 
             // ReSharper disable once AnnotationConflictInHierarchy
             [NotNull]
-            public override ZilList Rest
+            public override ZilListoidBase Rest
             {
                 get
                 {
@@ -305,10 +305,7 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override IStructure GetRest(int skip)
             {
-                if (GetLength(skip) < skip)
-                    return null;
-
-                return new Wrapper(orig, offset + skip);
+                return GetLength(skip) < skip ? null : new Wrapper(orig, offset + skip);
             }
 
             public override string ToString()

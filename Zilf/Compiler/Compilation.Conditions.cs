@@ -203,7 +203,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src,
+        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
             bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
         {
 
@@ -343,7 +343,7 @@ namespace Zilf.Compiler
         // TODO: refactor COND-like control structures to share an implementation, a la CompileBoundedLoop
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
 
@@ -356,7 +356,7 @@ namespace Zilf.Compiler
 
             while (!clauses.IsEmpty)
             {
-                var clause = clauses.First as ZilListBase;
+                var clause = clauses.First as ZilListoidBase;
                 clauses = clauses.Rest;
                 Debug.Assert(clauses != null);
 
@@ -433,7 +433,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilList clause, bool wantResult,
+        IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clause, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
 
@@ -491,7 +491,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
 
@@ -503,10 +503,10 @@ namespace Zilf.Compiler
                 Debug.Assert(clauses.First != null);
                 Debug.Assert(clauses.Rest != null);
 
-                var clause = clauses.First as ZilList;
+                var clause = clauses.First as ZilListoidBase;
                 clauses = clauses.Rest;
 
-                if (clause == null || clause.IsEmpty)
+                if (!(clause is ZilList) || clause.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
                 Debug.Assert(clause.First != null);
@@ -578,7 +578,7 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
 
@@ -590,10 +590,10 @@ namespace Zilf.Compiler
                 Debug.Assert(clauses.First != null);
                 Debug.Assert(clauses.Rest != null);
 
-                var clause = clauses.First as ZilList;
+                var clause = clauses.First as ZilListoidBase;
                 clauses = clauses.Rest;
 
-                if (clause == null || clause.IsEmpty)
+                if (!(clause is ZilList) || clause.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
                 Debug.Assert(clause.First != null);
