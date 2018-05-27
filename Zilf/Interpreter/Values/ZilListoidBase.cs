@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -28,7 +29,7 @@ namespace Zilf.Interpreter.Values
         [CanBeNull]
         public abstract ZilObject First { get; set; }
         [CanBeNull]
-        public abstract ZilList Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
+        public abstract ZilListoidBase Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
 
         public abstract bool IsEmpty { get; }
 
@@ -51,5 +52,40 @@ namespace Zilf.Interpreter.Values
         public abstract ZilObject this[int index] { get; set; }
         public abstract int GetLength();
         public abstract int? GetLength(int limit);
+
+        /// <summary>
+        /// Enumerates the items of the list, yielding a final <see langword="null"/> instead of repeating if the list is recursive.
+        /// </summary>
+        /// <returns></returns>
+        [ItemCanBeNull]
+        [System.Diagnostics.Contracts.Pure]
+        public IEnumerable<ZilObject> EnumerateNonRecursive()
+        {
+            var seen = new HashSet<ZilListoidBase>(ReferenceEqualityComparer<ZilListoidBase>.Instance);
+            var list = this;
+
+            while (!list.IsEmpty)
+            {
+                if (seen.Contains(list))
+                {
+                    yield return null;
+                    yield break;
+                }
+
+                seen.Add(list);
+                yield return list.First;
+                list = list.Rest;
+                Debug.Assert(list != null);
+            }
+        }
+
+        [NotNull]
+        public ZilList AsZilList()
+        {
+            if (this is ZilList list)
+                return list;
+
+            return new ZilList(First, Rest);
+        }
     }
 }

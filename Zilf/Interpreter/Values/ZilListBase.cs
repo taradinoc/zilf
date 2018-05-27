@@ -28,7 +28,7 @@ namespace Zilf.Interpreter.Values
     abstract class ZilListBase : ZilListoidBase
     {
         ZilObject first;
-        ZilList rest;
+        ZilListoidBase rest;
 
         public sealed override ZilObject First
         {
@@ -46,7 +46,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public sealed override ZilList Rest
+        public sealed override ZilListoidBase Rest
         {
             get => rest;
 
@@ -80,7 +80,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        protected ZilListBase(ZilObject first, ZilList rest)
+        protected ZilListBase(ZilObject first, ZilListoidBase rest)
         {
 
             this.first = first;
@@ -154,38 +154,13 @@ namespace Zilf.Interpreter.Values
 
         public sealed override IEnumerator<ZilObject> GetEnumerator()
         {
-            var r = this;
+            ZilListoidBase r = this;
 
             while (r.First != null)
             {
                 yield return r.First;
                 r = r.Rest;
                 Debug.Assert(r != null);
-            }
-        }
-
-        /// <summary>
-        /// Enumerates the items of the list, yielding a final <see langword="null"/> instead of repeating if the list is recursive.
-        /// </summary>
-        /// <returns></returns>
-        [ItemCanBeNull]
-        public IEnumerable<ZilObject> EnumerateNonRecursive()
-        {
-            var seen = new HashSet<ZilListBase>(ReferenceEqualityComparer<ZilListBase>.Instance);
-            var list = this;
-
-            while (!list.IsEmpty)
-            {
-                if (seen.Contains(list))
-                {
-                    yield return null;
-                    yield break;
-                }
-
-                seen.Add(list);
-                yield return list.First;
-                list = list.Rest;
-                Debug.Assert(list != null);
             }
         }
 
@@ -221,7 +196,7 @@ namespace Zilf.Interpreter.Values
 
         public sealed override IStructure GetRest(int skip)
         {
-            var result = this;
+            ZilListoidBase result = this;
             while (skip-- > 0 && result != null)
                 result = result.Rest;
             return result;

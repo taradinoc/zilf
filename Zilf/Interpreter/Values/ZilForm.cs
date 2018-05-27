@@ -34,7 +34,7 @@ namespace Zilf.Interpreter.Values
         {
         }
 
-        public ZilForm(ZilObject first, ZilList rest)
+        public ZilForm(ZilObject first, ZilListoidBase rest)
             : base(first, rest) { }
 
         [NotNull]

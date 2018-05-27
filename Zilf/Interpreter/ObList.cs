@@ -46,7 +46,7 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [NotNull]
         [ChtypeMethod]
-        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListBase list)
+        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListoidBase list)
         {
             var result = new ObList(ctx.IgnoreCase);
 

@@ -45,7 +45,7 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">The DECL syntax is invalid.</exception>
         public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GetAtomDeclPairs()
         {
-            ZilListBase list = this;
+            ZilListoidBase list = this;
 
             while (!list.IsEmpty)
             {

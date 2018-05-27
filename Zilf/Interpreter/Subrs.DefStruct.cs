@@ -768,7 +768,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    if (!(part is ZilList partList))
+                    if (!(part is ZilListoidBase partList && partList is ZilList))
                         throw new InterpreterError(InterpreterMessages._0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists, "DEFSTRUCT");
 
                     if (!(partList.First is ZilForm first) ||
@@ -810,12 +810,12 @@ namespace Zilf.Interpreter
 
                         case StdAtom.CONSTRUCTOR:
                             partList = partList.Rest;
-                            defaults.CustomCtorSpec = partList;
+                            defaults.CustomCtorSpec = partList.AsZilList();
                             break;
 
                         case StdAtom.INIT_ARGS:
                             partList = partList.Rest;
-                            defaults.InitArgs = partList;
+                            defaults.InitArgs = partList.AsZilList();
                             break;
 
                         default:

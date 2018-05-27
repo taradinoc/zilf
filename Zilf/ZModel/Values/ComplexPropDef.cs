@@ -709,7 +709,7 @@ namespace Zilf.ZModel.Values
 
         // may change prop even for an unsuccessful match
         // may not match the entire property (check prop.IsEmpty on return)
-        bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilList prop, [NotNull] InputElement[] inputs, int startIndex,
+        static bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilListoidBase prop, [NotNull] InputElement[] inputs, int startIndex,
             [CanBeNull] Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
 

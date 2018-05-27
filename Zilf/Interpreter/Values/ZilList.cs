@@ -30,7 +30,7 @@ namespace Zilf.Interpreter.Values
         {
         }
 
-        public ZilList(ZilObject first, ZilList rest)
+        public ZilList(ZilObject first, ZilListoidBase rest)
             : base(first, rest) { }
 
         [NotNull]

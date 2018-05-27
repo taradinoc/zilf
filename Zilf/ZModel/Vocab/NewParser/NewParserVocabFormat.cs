@@ -771,7 +771,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             {
                 var wordFlagsListObj = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
 
-                if (!(wordFlagsListObj is ZilList wordFlagsList))
+                if (!(wordFlagsListObj is ZilListoidBase wordFlagsList && wordFlagsList is ZilList))
                 {
                     throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }
