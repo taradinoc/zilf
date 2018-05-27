@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfErrorMessages.Vsix", "A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Parsing", "Zapf.Parsing\Zapf.Parsing.csproj", "{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MakeDist", "MakeDist\MakeDist.pyproj", "{B6BE475F-4F21-4FED-9F49-506DC59F140A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -147,6 +149,10 @@ Global
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.ActiveCfg = Release|Any CPU
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.Build.0 = Release|Any CPU
+		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
