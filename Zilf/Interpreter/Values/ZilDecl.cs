@@ -49,15 +49,11 @@ namespace Zilf.Interpreter.Values
 
             while (!list.IsEmpty)
             {
-                if (!(list.First is ZilList atoms) ||
-                    !atoms.All(a => a is ZilAtom) ||
-                    // ReSharper disable once PatternAlwaysOfType
-                    !(list.Rest?.First is ZilObject decl))
-                {
+                if (!list.StartsWith(out ZilList atoms, out ZilObject decl))
                     break;
-                }
 
-                Debug.Assert(list.Rest.Rest != null);
+                if (!atoms.All(a => a is ZilAtom))
+                    break;
 
                 foreach (var zo in atoms)
                 {
@@ -65,7 +61,8 @@ namespace Zilf.Interpreter.Values
                     yield return new KeyValuePair<ZilAtom, ZilObject>(atom, decl);
                 }
 
-                list = list.Rest.Rest;
+                list = list.GetRest(2);
+                Debug.Assert(list != null);
             }
 
             if (!list.IsEmpty)

@@ -50,31 +50,25 @@ namespace Zilf.Interpreter
         {
             var result = new ObList(ctx.IgnoreCase);
 
-            while (!list.IsEmpty)
+            while (list.IsCons(out var first, out var rest))
             {
-                Debug.Assert(list.First != null);
-                Debug.Assert(list.Rest != null);
-
-                if (list.First is ZilList pair)
+                if (first is ZilList pair)
                 {
-                    if (pair.First is ZilString key && pair.Rest?.First is ZilAtom value)
+                    if (!pair.HasLength(2))
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
+
+                    if (pair.Matches(out ZilString key, out ZilAtom value))
                     {
-                        Debug.Assert(pair.Rest.Rest != null);
-
-                        if (!pair.Rest.Rest.IsEmpty)
-                        {
-                            throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
-                        }
-
                         result[key.Text] = value;
                     }
                     else
                     {
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST",
+                            "string-atom pairs");
                     }
                 }
 
-                list = list.Rest;
+                list = rest;
             }
 
             return result;

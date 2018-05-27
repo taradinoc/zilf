@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Diagnostics;
@@ -27,6 +26,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using JetBrains.Annotations;
+using Zilf.Common;
 
 namespace Zilf.Compiler
 {
@@ -35,26 +35,26 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [CanBeNull] ZilListoidBase args,
+        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args,
             [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
 
-            if (args?.First == null)
+            if (!args.IsCons(out var first, out var rest))
             {
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
             }
 
-            if (args.First is ZilAtom activationAtom)
+            if (first is ZilAtom activationAtom)
             {
-                args = args.Rest;
+                args = rest;
             }
             else
             {
                 activationAtom = null;
             }
 
-            if (args?.First == null)
+            if (!args.IsCons(out var bindings, out var body) || !(bindings is ZilList bindingList))
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -81,57 +81,54 @@ namespace Zilf.Compiler
                  *       ...>
                  */
 
-                args = TransformProgArgsIfImplementingDeferredReturn(args);
+                TransformProgArgsIfImplementingDeferredReturn(ref bindingList, ref body);
             }
-
-            Debug.Assert(args.First != null);
-            Debug.Assert(args.Rest != null);
 
             // add new locals, if any
             var innerLocals = new Queue<ZilAtom>();
-            foreach (var obj in (ZilList)args.First)
+
+            void AddLocal(ZilAtom atom)
             {
-                ZilAtom atom;
+                innerLocals.Enqueue(atom);
+                PushInnerLocal(rb, atom);
+            }
 
-                // ReSharper disable once SwitchStatementMissingSomeCases
-                switch (obj.StdTypeAtom)
+            void AddLocalWithDefault(ZilAtom atom, ZilObject value)
+            {
+                innerLocals.Enqueue(atom);
+                var lb = PushInnerLocal(rb, atom);
+                var loc = CompileAsOperand(rb, value, src, lb);
+                if (loc != lb)
+                    rb.EmitStore(lb, loc);
+            }
+
+            foreach (var obj in bindingList)
+            {
+                switch (obj)
                 {
-                    case StdAtom.ATOM:
-                        atom = (ZilAtom)obj;
-                        innerLocals.Enqueue(atom);
-                        PushInnerLocal(rb, atom);
+                    case ZilAtom atom:
+                        AddLocal(atom);
                         break;
 
-                    case StdAtom.ADECL:
-                        atom = ((ZilAdecl)obj).First as ZilAtom;
-                        if (atom == null)
-                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
-                        innerLocals.Enqueue(atom);
-                        PushInnerLocal(rb, atom);
+                    case ZilAdecl adecl when adecl.First is ZilAtom atom:
+                        AddLocal(atom);
                         break;
 
-                    case StdAtom.LIST:
-                        var list = (ZilList)obj;
-                        if (list.First == null || list.Rest?.First == null || list.Rest.Rest?.First != null)
-                        {
-                            throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
-                        }
-                        atom = list.First as ZilAtom;
-                        if (atom == null)
-                        {
-                            if (list.First is ZilAdecl adecl)
-                                atom = adecl.First as ZilAtom;
-                        }
-                        var value = list.Rest.First;
-                        if (atom == null)
-                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
-                        innerLocals.Enqueue(atom);
-                        var lb = PushInnerLocal(rb, atom);
-                        var loc = CompileAsOperand(rb, value, src, lb);
-                        if (loc != lb)
-                            rb.EmitStore(lb, loc);
+                    case ZilList list when !list.HasLength(2):
+                        throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
+
+                    case ZilList list when list.Matches(out ZilAtom atom, out ZilObject value):
+                        AddLocalWithDefault(atom, value);
                         break;
 
+                    case ZilList list when list.Matches(out ZilAdecl adecl, out ZilObject value) && adecl.First is ZilAtom atom:
+                        AddLocalWithDefault(atom, value);
+                        break;
+
+                    case ZilAdecl _:
+                    case ZilList _:
+                        throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
+                        
                     default:
                         throw new CompilerError(CompilerMessages.Elements_Of_Binding_List_Must_Be_Atoms_Or_Lists);
                 }
@@ -159,13 +156,11 @@ namespace Zilf.Compiler
             try
             {
                 // generate code for prog body
-                args = args.Rest;
-
                 IOperand result;
 
                 if (wantResult)
                 {
-                    var clauseResult = CompileClauseBody(rb, args, !repeat, resultStorage);
+                    var clauseResult = CompileClauseBody(rb, body, !repeat, resultStorage);
 
                     /* The resultStorage we pass to CompileClauseBody (like any other method) is just
                      * a hint, so clauseResult might be different if the result is easily accessible.
@@ -207,7 +202,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    CompileClauseBody(rb, args, false, null);
+                    CompileClauseBody(rb, body, false, null);
                     result = null;
                 }
 
@@ -228,52 +223,40 @@ namespace Zilf.Compiler
             }
         }
 
-        [NotNull]
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        static ZilListoidBase TransformProgArgsIfImplementingDeferredReturn([NotNull] ZilListoidBase args)
+        static void TransformProgArgsIfImplementingDeferredReturn([NotNull] ref ZilList bindingList, [NotNull] ref ZilListoidBase body)
         {
-
-            if (!(args.First is ZilList bindingList))
-                return args;
-
-            Debug.Assert(args.First != null);
-
             // ends with <LVAL atom>?
-            if (!(args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
-                return args;
+            if (!(body.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
+                return;
 
             // atom is bound in the prog?
             if (!GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
-                return args;
+                return;
 
             // atom is set earlier in the prog?
-            Debug.Assert(args.Rest != null);
-            var setExpr = args.Rest
-                .OfType<ZilForm>()
+            var setExpr = body.OfType<ZilForm>()
                 .FirstOrDefault(
-                    form => ((IStructure)form).GetLength(3) == 3 &&
+                    form => form.HasLength(3) &&
                             (form.First as ZilAtom)?.StdAtom == StdAtom.SET &&
                             form.Rest?.First == atom);
 
             if (setExpr == null)
-                return args;
+                return;
 
             // atom is not referenced anywhere else?
-            if (!args.Rest.All(zo =>
+            if (!body.All(zo =>
                 ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
-                return args;
+                return;
 
             // we got a winner!
-            var newBindingList = new ZilList(
+            bindingList = new ZilList(
                 bindingList.Where(zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
 
-            var newBody = new ZilList(
-                args.Rest
+            body = new ZilList(
+                body
                     .Where(zo => !ReferenceEquals(zo, lastExpr))
                     .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
-
-            return new ZilList(newBindingList, newBody);
-
         }
 
         [NotNull]
@@ -438,34 +421,29 @@ namespace Zilf.Compiler
         {
             // extract loop spec ("binding list", although we don't care about the bindings here)
             // TODO: allow activation atoms in bounded loops?
-            if (!(args.First is ZilList spec))
+            if (!args.IsCons(out var first, out var rest) || !(first is ZilList spec))
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, builder.Name);
             }
-
-            Debug.Assert(args.Rest != null);
 
             // instantiate the loop and let it check binding syntax
             var blc = new BoundedLoopContext(this, spec, src);
 
             using (var loop = builder.MakeLoop(blc))
             {
-                // look for an end block
+                // look for the optional end statements
                 ZilListoidBase body;
-                if (args.Rest.First is ZilList endStmts)
+                if (rest.StartsWith(out ZilList endStmts))
                 {
-                    Debug.Assert(args.Rest.Rest != null);
-                    body = args.Rest.Rest;
+                    (_, body) = rest;
                 }
                 else
                 {
-                    body = args.Rest;
-                    endStmts = null;
+                    body = rest;
                 }
 
                 // create block
-                if (wantResult && resultStorage == null)
-                    resultStorage = rb.Stack;
+                resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
 
                 var block = new Block
                 {
@@ -536,33 +514,25 @@ namespace Zilf.Compiler
 
             public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                var specLength = blc.spec.GetLength(4);
-                if (specLength < 3 || specLength == null)
+                if (!blc.spec.HasLength(3, 4))
                 {
                     throw new CompilerError(
                         blc.src,
                         CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
-                        "DO",
+                        Name,
                         new CountableString("3 or 4", true));
                 }
 
-                Debug.Assert(blc.spec.First != null);
-                Debug.Assert(blc.spec.Rest != null);
-                Debug.Assert(blc.spec.Rest.First != null);
-                Debug.Assert(blc.spec.Rest.Rest != null);
-                Debug.Assert(blc.spec.Rest.Rest.First != null);
-                Debug.Assert(blc.spec.Rest.Rest.Rest != null);
-
-                var atom = blc.spec.First as ZilAtom ??
-                       throw new CompilerError(
-                           blc.src,
-                           CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2,
-                           "DO",
-                           "first",
-                           "an atom");
-                var start = blc.spec.Rest.First;
-                var end = blc.spec.Rest.Rest.First;
-                var inc = blc.spec.Rest.Rest.Rest.First;
+                if (!blc.spec.Matches(out ZilAtom atom, out ZilObject start, out ZilObject end, out ZilObject inc) &&
+                    !blc.spec.Matches(out atom, out start, out end))
+                {
+                    throw new CompilerError(
+                        blc.src,
+                        CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2,
+                        Name,
+                        "first",
+                        "an atom");
+                }
 
                 return new Loop(blc, atom, start, end, inc);
             }
@@ -680,8 +650,17 @@ namespace Zilf.Compiler
 
             public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                var specLength = ((IStructure)blc.spec).GetLength(3);
-                if (specLength < 2 || specLength == null)
+                if (blc.spec.Matches(out ZilAtom atom, out ZilAtom nextAtom, out ZilObject container))
+                    return new TwoVarLoop(blc, atom, nextAtom, container);
+
+                if (blc.spec.Matches(out atom, out container))
+                    return new OneVarLoop(blc, atom, container);
+
+                // throw an appropriate error
+                var matched = blc.spec.Matches(out ZilObject atomObj, out ZilObject nextAtomObj, out container) ||
+                              blc.spec.Matches(out atomObj, out container);
+
+                if (!matched)
                 {
                     throw new CompilerError(
                         CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
@@ -689,30 +668,14 @@ namespace Zilf.Compiler
                         new CountableString("2 or 3", true));
                 }
 
-                if (!(blc.spec.First is ZilAtom atom))
-                {
+                if (!(atomObj is ZilAtom))
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
-                }
 
-                Debug.Assert(blc.spec.Rest != null);
+                if (nextAtomObj != null && !(nextAtomObj is ZilAtom))
+                    throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "middle", "an atom");
 
-                if (specLength == 3)
-                {
-                    if (!(blc.spec.Rest.First is ZilAtom nextAtom))
-                        throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "middle", "an atom");
-
-                    Debug.Assert(blc.spec.Rest.Rest != null);
-
-                    var container = blc.spec.Rest.Rest.First;
-                    Debug.Assert(container != null);
-                    return new TwoVarLoop(blc, atom, nextAtom, container);
-                }
-                else
-                {
-                    var container = blc.spec.Rest.First;
-                    Debug.Assert(container != null);
-                    return new OneVarLoop(blc, atom, container);
-                }
+                // shouldn't get here
+                throw new UnreachableCodeException();
             }
 
             abstract class LoopBase : BoundedLoop
@@ -825,27 +788,32 @@ namespace Zilf.Compiler
 
             public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                if (blc.spec.GetLength(3) != 3)
-                    throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, Name);
+                if (blc.spec.Matches(out ZilAtom dirAtom, out ZilAtom ptAtom, out ZilObject room) &&
+                    (room.IsLVAL(out _) || room.IsGVAL(out _)))
+                {
+                    return new Loop(blc, dirAtom, ptAtom, room);
+                }
 
-                var dirAtom =
-                    blc.spec.First as ZilAtom ??
+                // throw an appropriate error
+                var matched = blc.spec.Matches(out ZilObject dirObj, out ZilObject ptObj, out room);
+
+                if (!matched)
+                    throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, Name, 3);
+
+                if (!(dirObj is ZilAtom))
                     throw new CompilerError(
                         CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "first", "an atom");
 
-                var ptAtom =
-                    blc.spec.Rest?.First as ZilAtom ??
+                if (!(ptObj is ZilAtom))
                     throw new CompilerError(
                         CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "middle", "an atom");
 
-                var room = blc.spec.Rest.Rest?.First;
-                if (room == null || !room.IsLVAL(out _) && !room.IsGVAL(out _))
-                {
+                if (!room.IsLVAL(out _) && !room.IsGVAL(out _))
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "last",
                         "an LVAL or GVAL");
-                }
 
-                return new Loop(blc, dirAtom, ptAtom, room);
+                // shouldn't get here
+                throw new UnreachableCodeException();
             }
 
             private class Loop : BoundedLoop

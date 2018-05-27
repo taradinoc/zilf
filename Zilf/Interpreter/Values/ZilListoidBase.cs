@@ -31,7 +31,27 @@ namespace Zilf.Interpreter.Values
         [CanBeNull]
         public abstract ZilListoidBase Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
 
+        public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilListoidBase rest)
+        {
+            if (IsEmpty)
+                throw new InvalidOperationException("Cannot deconstruct an empty list");
+
+            Debug.Assert(this.First != null && this.Rest != null);
+
+            first = this.First;
+            rest = this.Rest;
+        }
+
         public abstract bool IsEmpty { get; }
+
+        [ContractAnnotation("=> true, first: notnull, rest: notnull")]
+        [ContractAnnotation("=> false, first: null, rest: null")]
+        public bool IsCons([CanBeNull] out ZilObject first, [CanBeNull] out ZilListoidBase rest)
+        {
+            (first, rest) = (this.First, this.Rest);
+            Debug.Assert(first == null && rest == null || first != null && rest != null);
+            return first != null;
+        }
 
         public sealed override PrimType PrimType => PrimType.LIST;
 
@@ -42,7 +62,9 @@ namespace Zilf.Interpreter.Values
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
         public ZilObject GetFirst() => First;
-        public abstract IStructure GetRest(int skip);
+        IStructure IStructure.GetRest(int skip) => GetRest(skip);
+        [CanBeNull]
+        public abstract ZilListoidBase GetRest(int skip);
         public IStructure GetBack(int skip) => throw new NotSupportedException();
         public IStructure GetTop() => throw new NotSupportedException();
         public void Grow(int end, int beginning, ZilObject defaultValue) =>

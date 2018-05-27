@@ -342,7 +342,7 @@ namespace Zilf.ZModel
             if (list == null)
                 return null;
 
-            if (list.Rest?.First is ZilAtom atom && list.Rest.Rest?.IsEmpty == true)
+            if (list.HasLength(2) && list[1] is ZilAtom atom)
                 return atom;
 
             throw new InterpreterError(

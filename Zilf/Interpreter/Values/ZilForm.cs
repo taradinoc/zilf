@@ -157,63 +157,70 @@ namespace Zilf.Interpreter.Values
 
         public override ZilResult Expand(Context ctx)
         {
-            ZilObject target;
-
             if (First == null || Rest == null)
                 return this;
 
-            if (First is ZilAtom fa)
+            ZilObject target;
+            bool usedGlobal, usedLocal;
+            switch (First)
             {
-                target = ctx.GetGlobalVal(fa) ?? ctx.GetLocalVal(fa);
-            }
-            else
-            {
-                target = First;
-            }
+                case ZilAtom fa when (target = ctx.GetGlobalVal(fa)) != null:
+                    usedGlobal = true;
+                    usedLocal = false;
+                    break;
 
-            if (target != null && target.StdTypeAtom == StdAtom.MACRO)
-            {
-                using (var frame = ctx.PushFrame(this))
-                using (DiagnosticContext.Push(SourceLine, frame))
-                {
-                    var result = ((ZilEvalMacro)target).Expand(ctx, Rest.ToArray());
-                    if (result.ShouldPass())
-                        return result;
+                case ZilAtom fa when (target = ctx.GetLocalVal(fa)) != null:
+                    usedLocal = true;
+                    usedGlobal = false;
+                    break;
 
-                    if (!((ZilObject)result is ZilForm resultForm) || ReferenceEquals(resultForm, this))
-                        return result;
-
-                    // set the source info on the expansion to match the macro invocation
-                    resultForm = DeepRewriteSourceInfo(resultForm, SourceLine);
-                    return resultForm.Expand(ctx);
-                }
+                default:
+                    target = First;
+                    usedGlobal = usedLocal = false;
+                    break;
             }
 
-            if (target is ZilFix)
+            switch (target)
             {
-                // TODO: is rewriting in place really the right behavior here?
-
-                if (Rest.First != null)
-                {
-                    Debug.Assert(Rest.Rest != null);
-
-                    if (Rest.Rest.First == null)
+                case ZilEvalMacro macro:
+                    using (var frame = ctx.PushFrame(this))
+                    using (DiagnosticContext.Push(SourceLine, frame))
                     {
-                        // <1 FOO> => <GET FOO 1>
-                        Rest = new ZilList(Rest.First,
-                            new ZilList(First,
-                                new ZilList(null, null)));
-                        First = ctx.GetStdAtom(StdAtom.GET);
+                        var result = macro.Expand(ctx, Rest.ToArray());
+                        if (result.ShouldPass())
+                            return result;
+
+                        if (!((ZilObject)result is ZilForm resultForm) || ReferenceEquals(resultForm, this))
+                            return result;
+
+                        // set the source info on the expansion to match the macro invocation
+                        resultForm = DeepRewriteSourceInfo(resultForm, SourceLine);
+                        return resultForm.Expand(ctx);
                     }
-                    else
+
+                case ZilFix _:
+                    // TODO: is rewriting in place really the right behavior here?
+
+                    // if First was an atom, we need to make it an LVAL/GVAL
+                    var index = usedGlobal ? ctx.ChangeType(First, ctx.GetStdAtom(StdAtom.GVAL))
+                        : usedLocal ? ctx.ChangeType(First, ctx.GetStdAtom(StdAtom.LVAL))
+                        : First;
+
+                    if (this.Matches(out ZilObject _, out ZilObject structure, out ZilObject item))
                     {
                         // <1 FOO BAR> => <PUT FOO 1 BAR>
-                        Rest = new ZilList(Rest.First,
-                            new ZilList(First,
-                                Rest.Rest));
                         First = ctx.GetStdAtom(StdAtom.PUT);
+                        Rest = new ZilList(structure,
+                            new ZilList(index, new ZilList(item, new ZilList(null, null))));
                     }
-                }
+                    else if (this.Matches(out ZilObject _, out structure))
+                    {
+
+                        // <1 FOO> => <GET FOO 1>
+                        First = ctx.GetStdAtom(StdAtom.GET);
+                        Rest = new ZilList(structure, new ZilList(index, new ZilList(null, null)));
+                    }
+                    break;
             }
 
             return this;

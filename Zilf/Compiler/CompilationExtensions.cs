@@ -114,45 +114,40 @@ namespace Zilf.Compiler
                 (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG);
         }
 
-        public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
+        public static bool ModifiesLocal([NotNull] this ZilObject expr, [NotNull] ZilAtom localAtom)
         {
-            if (expr is ZilListBase list)
-            {
-                if (list is ZilForm)
-                {
-                    if (list.First is ZilAtom atom &&
-                        (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                        list.Rest?.First == localAtom)
-                    {
-                        return true;
-                    }
-                }
+            if (!(expr is ZilListBase list))
+                return false;
 
-                return list.Any(zo => ModifiesLocal(zo, localAtom));
+            if (list is ZilForm &&
+                list.First is ZilAtom atom &&
+                (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
+                list.Rest?.First == localAtom)
+            {
+                return true;
             }
 
-            return false;
+            return list.Any(zo => ModifiesLocal(zo, localAtom));
         }
 
-        public static bool IsPredicate(this ZilObject zo, int zversion)
+        public static bool IsPredicate([NotNull] this ZilObject zo, int zversion)
         {
-            if (zo is ZilForm form && form.First is ZilAtom head)
+            if (!(zo is ZilForm form) || !(form.First is ZilAtom head))
+                return false;
+
+            Debug.Assert(form.Rest != null);
+
+            // ReSharper disable once SwitchStatementMissingSomeCases
+            switch (head.StdAtom)
             {
-                Debug.Assert(form.Rest != null);
+                case StdAtom.AND:
+                case StdAtom.OR:
+                case StdAtom.NOT:
+                    return form.Rest.All(a => a.IsPredicate(zversion));
 
-                switch (head.StdAtom)
-                {
-                    case StdAtom.AND:
-                    case StdAtom.OR:
-                    case StdAtom.NOT:
-                        return form.Rest.All(a => a.IsPredicate(zversion));
-
-                    default:
-                        return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
-                }
+                default:
+                    return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
             }
-
-            return false;
         }
 
         /// <summary>

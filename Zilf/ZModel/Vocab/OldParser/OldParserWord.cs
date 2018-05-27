@@ -101,12 +101,12 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        bool IsNewVoc([NotNull] Context ctx)
+        static bool IsNewVoc([NotNull] Context ctx)
         {
             return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
         }
 
-        bool IsCompactVocab([NotNull] Context ctx)
+        static bool IsCompactVocab([NotNull] Context ctx)
         {
             return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
         }

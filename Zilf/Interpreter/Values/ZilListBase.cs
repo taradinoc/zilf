@@ -194,7 +194,7 @@ namespace Zilf.Interpreter.Values
             return Rest.StructurallyEquals(other.Rest);
         }
 
-        public sealed override IStructure GetRest(int skip)
+        public sealed override ZilListoidBase GetRest(int skip)
         {
             ZilListoidBase result = this;
             while (skip-- > 0 && result != null)

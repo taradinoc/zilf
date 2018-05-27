@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -258,17 +259,14 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-        [CanBeNull]
+        [NotNull]
         static object CompileBuiltinCall<TCall>([NotNull] string name, [NotNull] Compilation cc,
             [NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase form, TCall call)
             where TCall : struct
         {
 
-            Debug.Assert(form.Rest != null, "form.Rest != null");
-
             int zversion = cc.Context.ZEnvironment.ZVersion;
-            var argList = form.Rest;
-            var args = argList.ToArray();
+            var args = form.Skip(1).ToArray();
             var candidateSpecs = builtins[name].Where(s =>
             {
                 Debug.Assert(s != null, nameof(s) + " != null");
@@ -338,7 +336,9 @@ namespace Zilf.Compiler.Builtins
                 }
                 catch (TargetInvocationException ex) when (ex.InnerException is ZilError zex)
                 {
-                    throw zex;
+                    ExceptionDispatchInfo.Capture(zex).Throw();
+                    // ReSharper disable once HeuristicUnreachableCode
+                    throw new UnreachableCodeException();
                 }
             }
         }
@@ -348,10 +348,8 @@ namespace Zilf.Compiler.Builtins
             [CanBeNull] IVariable resultStorage)
         {
 
-            var result = (IOperand)CompileBuiltinCall(name, cc, rb, form,
+            return (IOperand)CompileBuiltinCall(name, cc, rb, form,
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
-            Debug.Assert(result != null, nameof(result) + " != null");
-            return result;
         }
 
         public static void CompileVoidCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
@@ -1760,8 +1758,7 @@ namespace Zilf.Compiler.Builtins
             [CanBeNull] IOperand interval = null, [CanBeNull] [Routine] IOperand routine = null)
         {
 
-            Debug.Assert(c.form.Rest != null);
-            if (c.form.Rest.First is ZilFix fix && fix.Value != 1)
+            if (c.form.StartsWith(out ZilObject _, out ZilFix fix) && fix.Value != 1)
             {
                 return c.HandleMessage(
                     CompilerMessages._0_Argument_1_2,
@@ -2105,7 +2102,7 @@ namespace Zilf.Compiler.Builtins
 
             if (fieldSpec is ZilList list)
             {
-                if (list.GetLength(2) != 2)
+                if (!list.HasLength(2))
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_List_Must_Have_2_Elements, name));
                     return false;
@@ -2259,7 +2256,8 @@ namespace Zilf.Compiler.Builtins
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
-            return c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
+            var (_, progBody) = c.form;
+            return c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
         }
 
         [Builtin("PROG", Data = StdAtom.PROG)]
@@ -2269,7 +2267,8 @@ namespace Zilf.Compiler.Builtins
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
-            c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
+            var (_, progBody) = c.form;
+            c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
         }
 
         [NotNull]
