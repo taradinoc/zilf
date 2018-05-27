@@ -140,8 +140,14 @@ def make_dist() -> str:
         d.add_glob('library/', 'Library/*.mud')
         d.add_glob('library/', 'Library/*.zil')
 
-        d.add_glob('sample/', 'Examples/*.zil')
         d.add_glob('sample/advent/', 'Examples/advent/*.zil')
+
+        d.add_glob('sample/cloak/', 'Examples/cloak/*.zil')
+
+        d.add_glob('sample/cloak_plus/', 'Examples/cloak_plus/*.md')
+        d.add_glob('sample/cloak_plus/', 'Examples/cloak_plus/*.zil')
+
+        d.add_glob('sample/empty/', 'Examples/empty/*.zil')
 
     return output
 
