@@ -15,6 +15,7 @@
     <Description>The ZIL Implementation You Really, Really Like.</Description>
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
     <CodeAnalysisRuleSet>Zilf.ruleset</CodeAnalysisRuleSet>
+    <Deterministic>false</Deterministic>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0.0" />
