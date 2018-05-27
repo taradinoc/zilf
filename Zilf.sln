@@ -22,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf", "Zilf\Zilf.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf", "Zapf\Zapf.csproj", "{C4379053-B0C7-4826-AC41-CEA59A743B15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf.Tests", "Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
 EndProject
@@ -34,7 +34,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests", "Zilf.Tests\Zi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests.Integration", "Zilf.Tests.Integration\Zilf.Tests.Integration.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zapf.Tests", "Zapf.Tests\Zapf.Tests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Tests", "Zapf.Tests\Zapf.Tests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common", "Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
 EndProject
