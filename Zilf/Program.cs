@@ -228,7 +228,7 @@ namespace Zilf
             string newInFile = inFile = null;
             string newOutFile = outFile = null;
 
-            bool traceRoutines = false, debugInfo = false;
+            bool traceRoutines = false, debugInfo = false, warningsAsErrors = false;
             bool? caseSensitive = null;
             RunMode? mode = null;
             bool? quiet = null;
@@ -249,6 +249,7 @@ namespace Zilf
             {
                 TraceRoutines = traceRoutines,
                 WantDebugInfo = debugInfo,
+                WarningsAsErrors = warningsAsErrors,
                 RunMode = mode.Value,
                 Quiet = quiet.Value
             };
@@ -314,6 +315,10 @@ namespace Zilf
                                 return false;
                             }
 
+                            break;
+
+                        case "-we":
+                            warningsAsErrors = true;
                             break;
 
                         case "-?":
@@ -480,7 +485,8 @@ General switches:
   -ip dir               add dir to include path (may be repeated)
 Compiler switches:
   -tr                   trace routine calls at runtime
-  -d                    include debug information");
+  -d                    include debug information
+  -we                   treat warnings as errors");
         }
 
         // TODO: move Parse somewhere more sensible

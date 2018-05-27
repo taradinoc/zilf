@@ -376,6 +376,14 @@ namespace Zilf.Interpreter
                 string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
         }
 
+        [NotNull]
+        [Subr("WARN-AS-ERROR?")]
+        public static ZilObject WARN_AS_ERROR_P([NotNull] Context ctx, bool enabled = true)
+        {
+            ctx.WarningsAsErrors = enabled;
+            return ctx.TRUE;
+        }
+
         #region IDE Help
 
         [NotNull]

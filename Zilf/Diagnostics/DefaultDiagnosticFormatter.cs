@@ -27,12 +27,12 @@ namespace Zilf.Diagnostics
         {
             var sb = new StringBuilder(80);
 
-            sb.Append($"[{diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.CodePrefix}{diagnostic.Code:0000}] {diagnostic.Location.SourceInfo}: ");
+            sb.Append($"[{diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.CodePrefix}{diagnostic.CodeNumber:0000}] {diagnostic.Location.SourceInfo}: ");
             sb.Append(diagnostic.GetFormattedMessage());
 
             foreach (var sd in diagnostic.SubDiagnostics)
             {
-                sb.Append($"\n  [{sd.Severity.ToString().ToLowerInvariant()} {sd.CodePrefix}{sd.Code:0000}] ");
+                sb.Append($"\n  [{sd.Severity.ToString().ToLowerInvariant()} {sd.CodePrefix}{sd.CodeNumber:0000}] ");
                 sb.Append(sd.GetFormattedMessage());
             }
 
