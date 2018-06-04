@@ -31,30 +31,39 @@ namespace Zilf.Tests.Interpreter
         {
             var set = new WeakCountingSet<object>();
 
-            var foo = new object();
-            var bar = new object();
+            // keep foo and bar inside a local function to make sure there are no stray references
+            void Helper()
+            {
+                var foo = new object();
+                var bar = new object();
 
-            set.Add(foo);
-            set.Add(foo);
+                set.Add(foo);
+                set.Add(foo);
 
-            set.Add(bar);
-            set.Add(bar);
-            set.Remove(bar);
-            set.Add(bar);
-            set.Remove(bar);
+                set.Add(bar);
+                set.Add(bar);
+                set.Remove(bar);
+                set.Add(bar);
+                set.Remove(bar);
 
-            CollectionAssert.AreEquivalent(new[] { foo, bar }, set.ToArray());
+                CollectionAssert.AreEquivalent(new[] { foo, bar }, set.ToArray());
 
-            set.Remove(bar);
+                set.Remove(bar);
 
-            CollectionAssert.AreEquivalent(new[] { foo }, set.ToArray());
+                CollectionAssert.AreEquivalent(new[] { foo }, set.ToArray());
+            }
 
-            // ReSharper disable RedundantAssignment
-            foo = bar = null;
-            // ReSharper restore RedundantAssignment
-            GC.Collect();
+            Helper();
+
+            DoFullBlockingGC();
 
             CollectionAssert.AreEqual(new object[] { }, set.ToArray());
+        }
+
+        static void DoFullBlockingGC()
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            GC.WaitForPendingFinalizers();
         }
     }
 }
