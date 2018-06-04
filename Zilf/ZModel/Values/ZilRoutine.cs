@@ -151,12 +151,15 @@ namespace Zilf.ZModel.Values
                         if (expanded is IMayExpandAfterEvaluation expandAfter &&
                             expandAfter.ShouldExpandAfterEvaluation)
                         {
-                            return expandAfter.ExpandAfterEvaluation().AsResultSequence().Select(SetSourceLine);
+                            return expandAfter.ExpandAfterEvaluation().AsResultSequence()
+                                .Select(SetSourceLine)
+                                .Select(xo => ReferenceEquals(xo, form) ? xo : new ZilMacroResult(xo));
                         }
                         else if (!ReferenceEquals(expanded, form))
                         {
                             expanded.SourceLine = zo.SourceLine;
-                            return RecursiveExpandWithSplice(expanded);
+                            return RecursiveExpandWithSplice(expanded)
+                                .Select(xo => new ZilMacroResult(xo));
                         }
                         else
                         {
@@ -169,7 +172,9 @@ namespace Zilf.ZModel.Values
                         break;
 
                     default:
-                        return ExpandWithSplice(ctx, zo).Select(SetSourceLine);
+                        return ExpandWithSplice(ctx, zo)
+                            .Select(SetSourceLine)
+                            .Select(xo => ReferenceEquals(xo, zo) ? xo : new ZilMacroResult(xo));
                 }
 
                 result.SourceLine = zo.SourceLine;

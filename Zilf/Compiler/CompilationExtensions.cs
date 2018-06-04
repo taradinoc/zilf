@@ -181,6 +181,10 @@ namespace Zilf.Compiler
                                         .Single());
                             break;
 
+                        case ZilMacroResult macroResult:
+                            zo = macroResult.Inner;
+                            break;
+
                         default:
                             return zo;
                     }

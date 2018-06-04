@@ -344,12 +344,40 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void COND_With_False_Condition_From_Macro_Or_Constant_Should_Not_Warn()
+        {
+            AssertRoutine("",
+                "<COND (<DO-IT?> <TELL \"do it\">) (,DO-OTHER? <TELL \"do other\">)>")
+                .WithGlobal("<DEFMAC DO-IT? () <>>")
+                .WithGlobal("<CONSTANT DO-OTHER? <>>")
+                .WithoutWarnings()
+                .Compiles();
+
+            // ... but should still warn if the condition was a literal
+            AssertRoutine("",
+                "<COND (<> <TELL \"done\">)>")
+                .WithWarnings()
+                .Compiles();
+        }
+
+        [TestMethod]
+        public void AND_In_Void_Context_With_Macro_At_End_Should_Work()
+        {
+            AssertRoutine("",
+                "<AND <FOO> <BAR>> <RETURN>")
+                .WithGlobal("<ROUTINE FOO () T>")
+                .WithGlobal("<DEFMAC BAR () '<PRINTN 42>>")
+                .Outputs("42");
+        }
+
+        [TestMethod]
         public void COND_Should_Allow_Macro_Clauses()
         {
             AssertRoutine("",
                 "<COND <LIVE-CONDITION> <DEAD-CONDITION> <IF-IN-ZILCH (<=? 2 2> <TELL \"2\">)> <IFN-IN-ZILCH (<=? 3 3> <TELL \"3\">)> (T <TELL \"end\">)>")
                 .WithGlobal("<DEFMAC LIVE-CONDITION () '(<=? 0 1> <TELL \"nope\">)>")
                 .WithGlobal("<DEFMAC DEAD-CONDITION () '<>>")
+                .WithoutWarnings()
                 .Outputs("2");
         }
 
