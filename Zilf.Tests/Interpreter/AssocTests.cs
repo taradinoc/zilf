@@ -67,16 +67,26 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var foo = ZilString.FromString("FOO");
-            ctx.PutProp(foo, ctx.TRUE, ctx.TRUE);
+            // allocate the string in a different function to make sure there are no stray references to it
+            WeakReference<ZilString> Helper()
+            {
+                var foo = ZilString.FromString("FOO");
+                ctx.PutProp(foo, ctx.TRUE, ctx.TRUE);
 
-            var weakRef = new WeakReference<ZilString>(foo);
-            // ReSharper disable once RedundantAssignment
-            foo = null;
+                return new WeakReference<ZilString>(foo);
+            }
 
-            GC.Collect();
+            var weakRef = Helper();
 
-            Assert.IsFalse(weakRef.TryGetTarget(out foo), "Object was not garbage collected");
+            DoFullBlockingGC();
+
+            Assert.IsFalse(weakRef.TryGetTarget(out _), "Object was not garbage collected");
+        }
+
+        static void DoFullBlockingGC()
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            GC.WaitForPendingFinalizers();
         }
 
         // TODO: test that <ASSOCIATIONS> doesn't keep every association alive... GC makes this hard to unit test but it seems to work correctly in release
