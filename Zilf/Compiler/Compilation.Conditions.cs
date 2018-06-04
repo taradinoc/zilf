@@ -215,9 +215,7 @@ namespace Zilf.Compiler
                 if (wantResult)
                     return CompileAsOperand(rb, first, src, resultStorage);
 
-                if (first is ZilForm form)
-                    CompileForm(rb, form, false, resultStorage);
-
+                CompileStmt(rb, first, false);
                 return Game.Zero;
             }
 
@@ -240,9 +238,7 @@ namespace Zilf.Compiler
                     (first, rest) = rest;
                 }
 
-                if (first is ZilForm form)
-                    CompileForm(rb, form, false, null);
-
+                CompileStmt(rb, first, false);
                 rb.MarkLabel(lastLabel);
 
                 return Game.Zero;
@@ -348,10 +344,11 @@ namespace Zilf.Compiler
             resultStorage = resultStorage ?? rb.Stack;
             while (!clauses.IsEmpty)
             {
-                ZilObject clause, condition;
+                ZilObject clause, origCondition, condition;
                 ZilListoidBase body;
 
                 (clause, clauses) = clauses;
+                clause = clause.Unwrap(Context);
 
                 switch (clause)
                 {
@@ -364,9 +361,8 @@ namespace Zilf.Compiler
                         throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
 
                     case ZilListoidBase list:
-                        var (first, rest) = list;
-                        condition = first.Unwrap(Context);
-                        body = rest;
+                        (origCondition, body) = list;
+                        condition = origCondition.Unwrap(Context);
                         break;
                 }
 
@@ -381,7 +377,11 @@ namespace Zilf.Compiler
 
                     case ZilFalse _:
                         // never true
-                        Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1, "COND", "false"));
+                        if (!(origCondition is ZilMacroResult))
+                        {
+                            Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1,
+                                "COND", "false"));
+                        }
                         continue;
 
                     case ZilAtom atom when atom.StdAtom == StdAtom.T || atom.StdAtom == StdAtom.ELSE:

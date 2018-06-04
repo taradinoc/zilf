@@ -271,28 +271,24 @@ namespace Zilf.Compiler
         [CanBeNull]
         public IOperand CompileConstant([NotNull] ZilObject expr, AmbiguousConstantMode mode)
         {
-
-            ZilAtom atom;
-
-            switch (expr.StdTypeAtom)
+            switch (expr.Unwrap(Context))
             {
-                case StdAtom.FIX:
-                    return Game.MakeOperand(((ZilFix)expr).Value);
+                case ZilFix fix:
+                    return Game.MakeOperand(fix.Value);
 
-                case StdAtom.BYTE:
-                    return Game.MakeOperand(((ZilFix)((ZilHash)expr).GetPrimitive(Context)).Value);
+                case ZilHash hash when hash.StdTypeAtom == StdAtom.BYTE && hash.GetPrimitive(Context) is ZilFix fix:
+                    return Game.MakeOperand(fix.Value);
 
-                case StdAtom.WORD:
-                    return CompileConstant(((ZilWord)expr).Value);
+                case ZilWord word:
+                    return CompileConstant(word.Value);
 
-                case StdAtom.STRING:
-                    return Game.MakeOperand(TranslateString(((ZilString)expr).Text, Context));
+                case ZilString str:
+                    return Game.MakeOperand(TranslateString(str.Text, Context));
 
-                case StdAtom.CHARACTER:
-                    return Game.MakeOperand((byte)((ZilChar)expr).Char);
+                case ZilChar ch:
+                    return Game.MakeOperand((byte)ch.Char);
 
-                case StdAtom.ATOM:
-                    atom = (ZilAtom)expr;
+                case ZilAtom atom:
                     if (atom.StdAtom == StdAtom.T)
                         return Game.One;
                     if (Routines.TryGetValue(atom, out var routine))
@@ -310,28 +306,26 @@ namespace Zilf.Compiler
                     }
                     return null;
 
-                case StdAtom.FALSE:
+                case ZilFalse _:
                     return Game.Zero;
 
-                case StdAtom.TABLE:
-                    var table = (ZilTable)expr;
-                    if (!Tables.TryGetValue(table, out var tb))
-                    {
-                        tb = Game.DefineTable(table.Name, true);
-                        Tables.Add(table, tb);
-                    }
+                case ZilTable table:
+                    if (Tables.TryGetValue(table, out var tb))
+                        return tb;
+
+                    tb = Game.DefineTable(table.Name, true);
+                    Tables.Add(table, tb);
                     return tb;
 
-                case StdAtom.CONSTANT:
-                    return CompileConstant(((ZilConstant)expr).Value);
+                case ZilConstant constant:
+                    return CompileConstant(constant.Value);
 
-                case StdAtom.FORM:
-                    var form = (ZilForm)expr;
-                    return form.IsGVAL(out atom) ? CompileConstant(atom, AmbiguousConstantMode.Pessimistic) : null;
+                case ZilForm form:
+                    return form.IsGVAL(out ZilAtom globalAtom) ? CompileConstant(globalAtom, AmbiguousConstantMode.Pessimistic) : null;
 
-                case StdAtom.VOC:
-                    atom = ZilAtom.Parse("W?" + ((ZilAtom)expr.GetPrimitive(Context)).Text, Context);
-                    if (Constants.TryGetValue(atom, out operand))
+                case ZilHash hash when hash.StdTypeAtom == StdAtom.VOC && hash.GetPrimitive(Context) is ZilAtom primAtom:
+                    var wordAtom = ZilAtom.Parse("W?" + primAtom.Text, Context);
+                    if (Constants.TryGetValue(wordAtom, out operand))
                         return operand;
                     return null;
 
