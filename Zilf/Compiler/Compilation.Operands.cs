@@ -32,10 +32,9 @@ namespace Zilf.Compiler
         [NotNull]
         public IOperands CompileOperands([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] params ZilObject[] exprs)
         {
-
             int length = exprs.Length;
             var values = new IOperand[length];
-            bool[] temps = new bool[length];
+            var temps = new bool[length];
             var tempAtom = ZilAtom.Parse("?TMP", Context);
 
             // find the index of the last expr with side effects (or -1)
@@ -122,7 +121,6 @@ namespace Zilf.Compiler
         [System.Diagnostics.Contracts.Pure]
         static bool LocalIsLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
-
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
 
@@ -146,7 +144,6 @@ namespace Zilf.Compiler
 
         bool GlobalCouldBeLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
         {
-
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
 
@@ -170,7 +167,6 @@ namespace Zilf.Compiler
 
         bool CouldModifyGlobal([NotNull] ZilObject expr, [NotNull] ZilAtom globalAtom)
         {
-
             if (!(expr is ZilListBase list))
                 return false;
 
@@ -207,7 +203,6 @@ namespace Zilf.Compiler
 
             public Operands([NotNull] Compilation compilation, [NotNull] IOperand[] values, [NotNull] bool[] temps, [NotNull] ZilAtom tempAtom)
             {
-
                 this.compilation = compilation;
                 this.values = values;
                 this.temps = temps;
@@ -224,25 +219,13 @@ namespace Zilf.Compiler
             public int Count
             {
                 [System.Diagnostics.Contracts.Pure]
-                get
-                {
-                    return values.Length;
-                }
+                get => values.Length;
             }
 
-            public IOperand this[int index]
-            {
-                get
-                {
-                    return values[index];
-                }
-            }
+            public IOperand this[int index] => values[index];
 
             [NotNull]
-            public IOperand[] AsArray()
-            {
-                return values;
-            }
+            public IOperand[] AsArray() => values;
         }
     }
 }

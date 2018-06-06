@@ -125,7 +125,6 @@ namespace Zapf
         [NotNull]
         Context InitializeContext([NotNull] string inputFileName, [CanBeNull] string outputFileName)
         {
-
             var ctx = new Context
             {
                 Quiet = true,

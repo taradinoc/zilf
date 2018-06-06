@@ -199,11 +199,8 @@ namespace Zilf.Interpreter
         [NotNull]
         static string ConvertPath([NotNull] string retroPath)
         {
-
             var match = RetroPathRE.Match(retroPath);
-            if (match.Success)
-                return match.Groups["filename"].Value;
-            return retroPath;
+            return match.Success ? match.Groups["filename"].Value : retroPath;
         }
 
         [NotNull]

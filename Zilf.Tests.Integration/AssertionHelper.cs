@@ -215,7 +215,6 @@ namespace Zilf.Tests.Integration
 
         public void GivesNumber([NotNull] string expectedValue)
         {
-
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
@@ -224,7 +223,6 @@ namespace Zilf.Tests.Integration
 
         public void Outputs([NotNull] string expectedValue)
         {
-
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
 
@@ -233,7 +231,6 @@ namespace Zilf.Tests.Integration
 
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
-
             var sb = new StringBuilder();
             foreach (var c in conditions)
             {
@@ -301,7 +298,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public CodeMatchingResult GeneratesCodeMatching([NotNull] string pattern)
         {
-
             return GeneratesCodeMatching(CheckOutputMatches(pattern));
         }
 
@@ -317,7 +313,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public CodeMatchingResult GeneratesCodeNotMatching([NotNull] string pattern)
         {
-
             return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
         }
 
@@ -333,7 +328,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         CodeMatchingResult GeneratesCodeMatching([NotNull] Action<string> checkGeneratedCode)
         {
-
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
                            $"\t{Expression()}\r\n" +
@@ -382,7 +376,6 @@ namespace Zilf.Tests.Integration
 
         public ExprAssertionHelper([NotNull] string expression)
         {
-
             this.expression = expression;
         }
 
@@ -401,7 +394,6 @@ namespace Zilf.Tests.Integration
 
         public RoutineAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
-
             this.argSpec = argSpec;
             this.body = body;
         }
@@ -428,7 +420,6 @@ namespace Zilf.Tests.Integration
     {
         public GlobalsAssertionHelper([ItemNotNull] [NotNull] params string[] globals)
         {
-
             foreach (var g in globals)
                 miscGlobals.AppendLine(g);
         }

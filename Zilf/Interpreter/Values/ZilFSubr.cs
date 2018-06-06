@@ -34,14 +34,12 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
         {
-
             return FromString(ctx, str.ToStringContext(ctx, true));
         }
 
         [NotNull]
         public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
         {
-
             var del = ctx.GetSubrDelegate(name);
             if (del != null)
             {

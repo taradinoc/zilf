@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -61,16 +62,13 @@ namespace Zilf.Interpreter.Values
 
         #region IApplicable Members
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
             if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-            {
                 return ApplyNoEval(ctx, args);
-            }
-            else
-            {
-                return zr;
-            }
+
+            return zr;
         }
 
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)

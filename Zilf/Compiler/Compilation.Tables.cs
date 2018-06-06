@@ -65,10 +65,9 @@ namespace Zilf.Compiler
 
         void BuildTable([NotNull] ZilTable zt, [NotNull] ITableBuilder tb)
         {
-
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {
-                IOperand[] values = new IOperand[zt.ElementCount];
+                var values = new IOperand[zt.ElementCount];
                 zt.CopyTo(values, (zo, isWord) => CompileConstant(zo), Game.Zero, Context);
 
                 tb.AddByte((byte)(zt.ElementCount / 3));

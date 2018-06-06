@@ -40,7 +40,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChar FromFix([NotNull] Context ctx, [NotNull] ZilFix fix)
         {
-
             return new ZilChar(fix.Value);
         }
 
@@ -53,10 +52,7 @@ namespace Zilf.Interpreter.Values
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            if (friendly)
-                return Char.ToString();
-
-            return ToString();
+            return friendly ? Char.ToString() : ToString();
         }
 
         public override StdAtom StdTypeAtom => StdAtom.CHARACTER;

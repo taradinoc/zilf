@@ -81,7 +81,6 @@ namespace Zilf.ZModel.Values
         public static ZilTable Create(int repetitions, [CanBeNull] ZilObject[] initializer, TableFlags flags,
             [CanBeNull] ZilObject[] pattern)
         {
-
             return new OriginalTable(repetitions, initializer, flags, pattern);
         }
 
@@ -89,7 +88,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilTable FromTable([NotNull] Context ctx, [NotNull] ZilTable other)
         {
-
             return other.AsNewTable();
         }
 
@@ -133,7 +131,6 @@ namespace Zilf.ZModel.Values
             public OriginalTable(int repetitions, [CanBeNull] ZilObject[] initializer, TableFlags flags,
                 [CanBeNull] ZilObject[] pattern)
             {
-
                 this.repetitions = repetitions;
                 this.initializer = initializer?.Length > 0 ? initializer : null;
                 this.flags = flags;
@@ -273,7 +270,7 @@ namespace Zilf.ZModel.Values
 
                 if (initializer != null)
                 {
-                    foreach (ZilObject obj in initializer)
+                    foreach (var obj in initializer)
                     {
                         sb.Append(' ');
                         sb.Append(convert(obj));
@@ -338,7 +335,6 @@ namespace Zilf.ZModel.Values
 
             void ExpandInitializer([NotNull] ZilObject defaultValue)
             {
-
                 if (repetitions == 0)
                 {
                     initializer = null;
@@ -362,7 +358,6 @@ namespace Zilf.ZModel.Values
 
             void ExpandPattern([NotNull] Context ctx, int index, bool insert)
             {
-
                 if (pattern?.Length > index)
                     return;
 
@@ -397,7 +392,6 @@ namespace Zilf.ZModel.Values
             /// is at the given offset, or <see langword="null"/> if the offset does not point to an element.</returns>
             internal int? ByteOffsetToIndex(int offset)
             {
-
                 // account for initial length markers
                 if ((flags & TableFlags.ByteLength) != 0)
                 {
@@ -425,7 +419,6 @@ namespace Zilf.ZModel.Values
             [NotNull]
             private int[] GetElementToByteOffsets()
             {
-
                 if (elementToByteOffsets == null)
                 {
                     elementToByteOffsets = new int[ElementCountWithoutLength];

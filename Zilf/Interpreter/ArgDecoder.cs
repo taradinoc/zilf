@@ -427,12 +427,7 @@ namespace Zilf.Interpreter
             }
 
             var second = OverrideParamDesc(fields[1]);
-            if (second != null)
-            {
-                return SignatureBuilder.Quote(second);
-            }
-
-            return null;
+            return second != null ? SignatureBuilder.Quote(second) : null;
         }
 
         [NotNull]
@@ -800,7 +795,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static Constraint ZilObjectTypeToConstraint([NotNull] Type paramType)
         {
-
             if (paramType == typeof(IStructure))
                 return Constraint.Structured;
 
@@ -995,7 +989,6 @@ namespace Zilf.Interpreter
         // TODO: cache the result
         static DecodingStepInfo PrepareOneStructured(Context ctx, [NotNull] Type structType)
         {
-
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>().TypeAtom;
 
             var stepInfos = PrepareStepsFromStruct(ctx, structType, out var fields, out var lowerBound, out var upperBound);
@@ -1078,7 +1071,6 @@ namespace Zilf.Interpreter
         static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, [NotNull] Type structType,
             [ItemNotNull] [NotNull] out FieldInfo[] fields, out int lowerBound, out int? upperBound)
         {
-
             fields = GetStructFieldsInOrder(structType);
             var stepInfos = new DecodingStepInfo[fields.Length];
             lowerBound = 0;
@@ -1115,7 +1107,6 @@ namespace Zilf.Interpreter
         // TODO: cache the result?
         static DecodingStepInfo PrepareOneEither([NotNull] Context ctx, [NotNull] string name, [ItemNotNull] [NotNull] Type[] inputTypes)
         {
-
             var choices = new DecodingStep[inputTypes.Length];
             var choiceConstraints = new Constraint[inputTypes.Length];
             int? lowerBound = null;
@@ -1198,7 +1189,6 @@ namespace Zilf.Interpreter
         // TODO: cache the result?
         static DecodingStepInfo PrepareOneSequence(Context ctx, [NotNull] Type seqType)
         {
-
             var stepInfos = PrepareStepsFromStruct(ctx, seqType, out var fields, out var lowerBound, out var upperBound);
 
             var result = new DecodingStepInfo
@@ -1269,7 +1259,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public static ArgDecoder FromMethodInfo([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx)
         {
-
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
 
@@ -1288,7 +1277,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public static SubrDelegate WrapMethod([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx)
         {
-
             return WrapMethod(methodInfo, ctx, null);
         }
 
@@ -1296,7 +1284,6 @@ namespace Zilf.Interpreter
         static SubrDelegate WrapMethod([NotNull] MethodInfo methodInfo, [NotNull] [ProvidesContext] Context ctx,
             [CanBeNull] Dictionary<MethodInfo, SubrDelegate> alreadyDone)
         {
-
             var parameters = methodInfo.GetParameters();
 
             if (parameters.Length == 3 &&

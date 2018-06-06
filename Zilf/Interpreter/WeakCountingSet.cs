@@ -36,14 +36,13 @@ namespace Zilf.Interpreter
 
         public void Add([NotNull] T value)
         {
-
             var hashCode = value.GetHashCode();
 
             if (buckets.TryGetValue(hashCode, out var bucket))
             {
                 foreach (var cell in bucket)
                 {
-                    if (cell.Ref.TryGetTarget(out T existingValue) && existingValue.Equals(value))
+                    if (cell.Ref.TryGetTarget(out var existingValue) && existingValue.Equals(value))
                     {
                         cell.Count++;
                         return;
@@ -61,7 +60,6 @@ namespace Zilf.Interpreter
 
         public void Remove([NotNull] T value)
         {
-
             var hashCode = value.GetHashCode();
 
             if (buckets.TryGetValue(hashCode, out var bucket))
@@ -70,7 +68,7 @@ namespace Zilf.Interpreter
                 {
                     var cell = bucket[i];
 
-                    if (cell.Ref.TryGetTarget(out T existingValue) && existingValue.Equals(value))
+                    if (cell.Ref.TryGetTarget(out var existingValue) && existingValue.Equals(value))
                     {
                         cell.Count--;
 
@@ -89,7 +87,7 @@ namespace Zilf.Interpreter
             {
                 foreach (var cell in pair.Value)
                 {
-                    if (cell.Ref.TryGetTarget(out T value))
+                    if (cell.Ref.TryGetTarget(out var value))
                         yield return value;
                 }
             }

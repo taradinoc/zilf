@@ -28,14 +28,12 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [NotNull] params string[] globals)
         {
-
             return new GlobalsAssertionHelper(globals);
         }
 
         [NotNull]
         protected static RoutineAssertionHelper AssertRoutine([NotNull] string argSpec, [NotNull] string body)
         {
-
             return new RoutineAssertionHelper(argSpec, body);
         }
 
@@ -43,7 +41,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static string[] TreeImplications([ItemNotNull] [NotNull] string[] numbering, [ItemNotNull] [NotNull] params string[][] chains)
         {
-
             var result = new List<string>();
 
             for (int i = 0; i < numbering.Length; i++)
@@ -55,7 +52,6 @@ namespace Zilf.Tests.Integration
 
             foreach (var chain in chains)
             {
-
                 heads.Add(chain[0]);
                 result.Add($"<=? <FIRST? ,{chain[0]}> ,{chain[1]}>");
 
@@ -81,21 +77,18 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected static EntryPointAssertionHelper AssertEntryPoint([NotNull] string argSpec, [NotNull] string body)
         {
-
             return new EntryPointAssertionHelper(argSpec, body);
         }
 
         [NotNull]
         protected static RawAssertionHelper AssertRaw([NotNull] string code)
         {
-
             return new RawAssertionHelper(code);
         }
 
         [NotNull]
         protected static ExprAssertionHelper AssertExpr([NotNull] string expression)
         {
-
             return new ExprAssertionHelper(expression);
         }
     }

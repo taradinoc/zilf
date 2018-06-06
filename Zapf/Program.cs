@@ -124,7 +124,7 @@ namespace Zapf
                 Console.WriteLine("        ; Frequent words file for {0}", Path.GetFileName(ctx.InFile));
                 Console.WriteLine();
                 int num = 1, totalSavings = 0;
-                foreach (AbbrevFinder.Result r in ctx.AbbrevFinder.GetResults(maxAbbrevs))
+                foreach (var r in ctx.AbbrevFinder.GetResults(maxAbbrevs))
                 {
                     Console.WriteLine("        .FSTR FSTR?{0},\"{1}\"\t\t; {2}x, saved {3}",
                         num++, SanitizeString(r.Text), r.Count, r.Score);
@@ -214,7 +214,7 @@ namespace Zapf
             if (zversion == 7 || zversion == 8)
                 effectiveVersion = 5;
 
-            foreach (FieldInfo fi in fields)
+            foreach (var fi in fields)
             {
                 var attrs = fi.GetCustomAttributes(typeof(ZOpAttribute), false);
                 foreach (ZOpAttribute attr in attrs)
@@ -591,12 +591,11 @@ General switches:
                 Errors.ThrowSerious("ENDLOD must be after IMPURE");
         }
 
+        [CanBeNull]
         static Symbol GetDebugMapValue([NotNull] Context ctx, [NotNull] string name)
         {
-            if (ctx.GlobalSymbols.TryGetValue(name, out var sym))
-                return sym;
-            else
-                return null;
+            ctx.GlobalSymbols.TryGetValue(name, out var sym);
+            return sym;
         }
 
         static void FinalizeOutput([NotNull] Context ctx)
@@ -778,7 +777,7 @@ General switches:
                     try
                     {
                         var insertedRoots = ReadRootsFromFile(ctx, insertedFile);
-                        foreach (AsmLine insertedNode in ReadAllCode(ctx, insertedRoots))
+                        foreach (var insertedNode in ReadAllCode(ctx, insertedRoots))
                             if (insertedNode is EndiDirective || insertedNode is EndDirective)
                                 break;
                             else

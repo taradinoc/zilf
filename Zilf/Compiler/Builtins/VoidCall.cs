@@ -38,7 +38,6 @@ namespace Zilf.Compiler.Builtins
         public VoidCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
             : this()
         {
-
             this.cc = cc;
             this.rb = rb;
             this.form = form;

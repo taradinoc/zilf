@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -36,7 +37,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public ZilOffset([NotNull] ZilVector vector)
         {
-
             if (vector.GetLength() != 3)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
 
@@ -217,6 +217,7 @@ namespace Zilf.Interpreter.Values
             return GetEnumerator();
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
             if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
@@ -230,26 +231,24 @@ namespace Zilf.Interpreter.Values
         {
             try
             {
-                if (args.Length == 1)
+                switch (args.Length)
                 {
-                    ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
-                    var result = Subrs.NTH(ctx, (IStructure)args[0], Index);
-                    ctx.MaybeCheckDecl(result, ValuePattern, "element {0}", Index);
-                    return result;
+                    case 1:
+                        ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
+                        var result = Subrs.NTH(ctx, (IStructure)args[0], Index);
+                        ctx.MaybeCheckDecl(result, ValuePattern, "element {0}", Index);
+                        return result;
+                    case 2:
+                        ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
+                        ctx.MaybeCheckDecl(args[1], ValuePattern, "argument {0}", 2);
+                        return Subrs.PUT(ctx, (IStructure)args[0], Index, args[1]);
+                    default:
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Expected_1_After_2,
+                            InterpreterMessages.NoFunction,
+                            "1 or 2 args",
+                            "the OFFSET");
                 }
-
-                if (args.Length == 2)
-                {
-                    ctx.MaybeCheckDecl(args[0], StructurePattern, "argument {0}", 1);
-                    ctx.MaybeCheckDecl(args[1], ValuePattern, "argument {0}", 2);
-                    return Subrs.PUT(ctx, (IStructure)args[0], Index, args[1]);
-                }
-
-                throw new InterpreterError(
-                    InterpreterMessages._0_Expected_1_After_2,
-                    InterpreterMessages.NoFunction,
-                    "1 or 2 args",
-                    "the OFFSET");
             }
             catch (InvalidCastException)
             {

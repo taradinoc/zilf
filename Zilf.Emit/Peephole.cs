@@ -315,7 +315,6 @@ namespace Zilf.Emit
         /// </exception>
         public void InsertBufferFirst([NotNull] PeepholeBuffer<TCode> other)
         {
-
             // turn pending label into a label on our first line, or copy it if we have no lines
             if (other.pendingLabel != null)
             {
@@ -401,7 +400,7 @@ namespace Zilf.Emit
         {
             Optimize();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
                 handler(line.Label, line.Code, line.TargetLabel, line.Type);
         }
 
@@ -418,7 +417,7 @@ namespace Zilf.Emit
                 Console.WriteLine();
             }
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.Label != null)
                     Console.Write("{0}:", line.Label);
@@ -431,7 +430,7 @@ namespace Zilf.Emit
 
                 Console.Write(' ');
 
-                ILabel targetLabel = line.TargetLabel;
+                var targetLabel = line.TargetLabel;
                 if (targetLabel != null && aliases.ContainsKey(targetLabel))
                     targetLabel = aliases[targetLabel];
 
@@ -469,7 +468,7 @@ namespace Zilf.Emit
             // apply alias mappings and link lines to each other
             var labelMap = new Dictionary<ILabel, Line>();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.Label != null)
                     labelMap.Add(line.Label, line);
@@ -479,7 +478,7 @@ namespace Zilf.Emit
 
             aliases.Clear();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.TargetLabel != null)
                 {
@@ -734,7 +733,7 @@ namespace Zilf.Emit
 
                             var newLine = new Line(
                                 null,
-                                Combiner == null ? default(TCode) : Combiner.SynthesizeBranchAlways(),
+                                Combiner == null ? default : Combiner.SynthesizeBranchAlways(),
                                 line.TargetLabel,
                                 PeepholeLineType.BranchAlways)
                             {
@@ -966,7 +965,6 @@ namespace Zilf.Emit
                          * the function unless it's unreachable. */
                         if (line.Label != null /*&& next != null*/)
                         {
-
                             MarkReachable(next);
 
                             // update references to this label

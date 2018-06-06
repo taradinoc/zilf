@@ -48,7 +48,6 @@ namespace Zilf.Compiler
 
         Compilation([NotNull] Context ctx, [NotNull] IGameBuilder game, bool wantDebugInfo)
         {
-
             Context = ctx;
             Game = game;
             WantDebugInfo = wantDebugInfo;

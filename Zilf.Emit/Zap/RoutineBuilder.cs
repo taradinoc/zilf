@@ -332,7 +332,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         static string OptResult([CanBeNull] IVariable result)
         {
-
             if (result == null)
                 return string.Empty;
 
@@ -458,24 +457,18 @@ namespace Zilf.Emit.Zap
 
         public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable result)
         {
-            // optimize special cases
-            if (op == BinaryOp.Add &&
-                (left == game.One && right == result || right == game.One && left == result))
+            switch (op)
             {
-                AddLine(new Instruction("INC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
-                return;
-            }
-
-            if (op == BinaryOp.Sub && left == result && right == game.One)
-            {
-                AddLine(new Instruction("DEC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
-                return;
-            }
-
-            if (op == BinaryOp.StoreIndirect && right == Stack && game.zversion != 6)
-            {
-                AddLine(new Instruction("POP", left.ToAsmExpr()), null, PeepholeLineType.Plain);
-                return;
+                // optimize special cases
+                case BinaryOp.Add when left == game.One && right == result || right == game.One && left == result:
+                    AddLine(new Instruction("INC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
+                    return;
+                case BinaryOp.Sub when left == result && right == game.One:
+                    AddLine(new Instruction("DEC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
+                    return;
+                case BinaryOp.StoreIndirect when right == Stack && game.zversion != 6:
+                    AddLine(new Instruction("POP", left.ToAsmExpr()), null, PeepholeLineType.Plain);
+                    return;
             }
 
             string opcode;
@@ -1126,18 +1119,14 @@ namespace Zilf.Emit.Zap
                 if (code.DebugText != null)
                     game.WriteOutput(INDENT + code.DebugText);
 
-                if (type == PeepholeLineType.BranchAlways)
+                switch (type)
                 {
-                    if (dest == RTRUE)
-                    {
+                    case PeepholeLineType.BranchAlways when dest == RTRUE:
                         game.WriteOutput(INDENT + "RTRUE");
                         return;
-                    }
-                    if (dest == RFALSE)
-                    {
+                    case PeepholeLineType.BranchAlways when dest == RFALSE:
                         game.WriteOutput(INDENT + "RFALSE");
                         return;
-                    }
                 }
 
                 if (code.Instruction.Name == "CRLF+RTRUE")
@@ -1200,7 +1189,6 @@ namespace Zilf.Emit.Zap
 
             bool Match([ItemNotNull] [NotNull] [InstantHandle] params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
-
                 while (matches.Count < criteria.Length)
                 {
                     if (enumerator.MoveNext() == false)
@@ -1389,23 +1377,20 @@ namespace Zilf.Emit.Zap
             [ContractAnnotation("=> true, dest: notnull; => false, dest: null")]
             static bool IsPopToVariable([NotNull] Instruction inst, out string dest)
             {
-                if (inst.Name == "POP")
+                switch (inst.Name)
                 {
-                    if (inst.Operands.Count == 1 && inst.Operands[0] is QuoteExpr quote)
-                    {
+                    case "POP" when inst.Operands.Count == 1 && inst.Operands[0] is QuoteExpr quote:
                         dest = quote.Inner.ToString();
                         return true;
-                    }
 
-                    if (inst.Operands.Count == 0 && inst.StoreTarget != null)
-                    {
+                    case "POP" when inst.Operands.Count == 0 && inst.StoreTarget != null:
                         dest = inst.StoreTarget;
                         return true;
-                    }
-                }
 
-                dest = null;
-                return false;
+                    default:
+                        dest = null;
+                        return false;
+                }
             }
 
             /// <inheritdoc />

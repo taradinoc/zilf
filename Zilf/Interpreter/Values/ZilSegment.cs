@@ -34,7 +34,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilSegment([NotNull] ZilObject obj)
         {
-
             if (obj is ZilForm objForm)
                 form = objForm;
             else
@@ -45,7 +44,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilSegment FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             if (!(list is ZilForm form))
             {
                 form = new ZilForm(list) { SourceLine = SourceLines.Chtyped };

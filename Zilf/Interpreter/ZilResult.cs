@@ -117,7 +117,7 @@ namespace Zilf.Interpreter
 
         public bool ShouldPass()
         {
-            ZilResult dummy = default(ZilResult);
+            ZilResult dummy = default;
             return ShouldPass(null, ref dummy);
         }
 
@@ -232,7 +232,7 @@ namespace Zilf.Interpreter
             }
 
             array = list.ToArray();
-            result = default(ZilResult);
+            result = default;
             return true;
         }
 

@@ -63,7 +63,6 @@ namespace Zilf.Language
         COMPACT_VOCABULARY_P,
         [Atom("COMPILATION-FLAGS")]
         COMPILATION_FLAGS,
-        COND,
         CONSOLE,
         CONSTANT,
         CONSTRUCTOR,
@@ -86,7 +85,6 @@ namespace Zilf.Language
         DISPLAY_OPS_P,
         [Atom("DLESS?")]
         DLESS_P,
-        DO,
         [Atom("DO-FUNNY-GLOBALS?")]
         DO_FUNNY_GLOBALS_P,
         [Atom("DO-FUNNY-RETURN?")]
@@ -95,8 +93,6 @@ namespace Zilf.Language
         ENVIRONMENT,
         EVAL,
         EZIP,
-        [Atom("F?")]
-        F_P,
         FALSE,
         [Atom("FALSE-VALUE")]
         FALSE_VALUE,
@@ -120,7 +116,6 @@ namespace Zilf.Language
         HAVE,
         HELD,
         HERE,
-        IFFLAG,
         [Atom("IGRTR?")]
         IGRTR_P,
         IN,
@@ -133,7 +128,6 @@ namespace Zilf.Language
         INIT_ARGS,
         INITIAL,
         INTERRUPTS,
-        ITABLE,
         KERNEL,
         [Atom("LAST-OBJECT")]
         LAST_OBJECT,
@@ -150,7 +144,6 @@ namespace Zilf.Language
         LONG_WORDS,
         [Atom("LOW-DIRECTION")]
         LOW_DIRECTION,
-        LTABLE,
         LVAL,
         MACRO,
         [Atom("MAKE-VERB-DATA")]
@@ -158,10 +151,6 @@ namespace Zilf.Language
         [Atom("MAKE-VWORD")]
         MAKE_VWORD,
         MANY,
-        [Atom("MAP-CONTENTS")]
-        MAP_CONTENTS,
-        [Atom("MAP-DIRECTIONS")]
-        MAP_DIRECTIONS,
         [Atom("MDL-ZIL?")]
         MDL_ZIL_P,
         MENU,
@@ -196,7 +185,6 @@ namespace Zilf.Language
         PARTICLE,
         PATBL,
         PATTERN,
-        PLTABLE,
         [Atom("PLUS-MODE")]
         PLUS_MODE,
         PREACTIONS,
@@ -216,7 +204,6 @@ namespace Zilf.Language
         PRSTBL,
         PRTBL,
         PSEUDO,
-        PTABLE,
         PURE,
         PUT,
         QUOTE,
@@ -267,14 +254,11 @@ namespace Zilf.Language
         SUBR,
         SYNONYM,
         T,
-        [Atom("T?")]
-        T_P,
         TABLE,
         TADJ,
         TAKE,
         TBUZZ,
         TDIR,
-        TELL,
         [Atom("TEMP-TABLE")]
         TEMP_TABLE,
         TOBJECT,
@@ -303,8 +287,6 @@ namespace Zilf.Language
         [Atom("VERB-STUFF-ID")]
         VERB_STUFF_ID,
         VERBS,
-        [Atom("VERSION?")]
-        VERSION_P,
         VOC,
         VOCAB,
         VTBL,

@@ -346,7 +346,7 @@ namespace Zilf.Interpreter
         {
             var sb = new StringBuilder();
 
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 sb.Append(arg.ToStringContext(ctx, true));
             }

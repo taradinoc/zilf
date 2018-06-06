@@ -57,7 +57,6 @@ namespace Zilf.Tests.Integration
     {
         public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
         {
-
             var helper = new ZlrHelper(code, input);
             bool compiled;
             string compileOutput;
@@ -83,7 +82,6 @@ namespace Zilf.Tests.Integration
 
         public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
         {
-
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
 
@@ -138,7 +136,6 @@ namespace Zilf.Tests.Integration
 
         public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
-
             this.code = code;
             this.input = input;
         }
@@ -341,7 +338,6 @@ namespace Zilf.Tests.Integration
 
         public FileBasedZlrHelper([NotNull] string codeFile, [ItemNotNull] [NotNull] string[] includeDirs, string inputFile)
         {
-
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;
             this.inputFile = inputFile;

@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -511,7 +512,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [ContractAnnotation("=> false, verbStuffId: null; => true, verbStuffId: notnull")]
         bool TryGetVerbStuffId([CanBeNull] ZilObject verbStuff, [CanBeNull] out ZilObject verbStuffId)
         {
-
             if (verbStuff == null)
             {
                 verbStuffId = null;
@@ -582,7 +582,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         internal ZilObject NewAddWord([NotNull] ZilAtom name, ZilAtom type, [CanBeNull] ZilObject value, [NotNull] ZilFix flags)
         {
-
             bool typeProvided;
 
             if (type == null)
@@ -700,7 +699,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         static ZilFix TranslateType([NotNull] Context ctx, [NotNull] ZilAtom type)
         {
-
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type.StdAtom)
             {
@@ -750,6 +748,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return classification;
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public string[] GetLateSyntaxTableNames()
         {
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))

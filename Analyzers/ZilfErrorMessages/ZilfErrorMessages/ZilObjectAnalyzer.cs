@@ -165,28 +165,28 @@ namespace ZilfErrorMessages
 
             var containingType = method.ContainingType;
 
-            if (containingType.Name == "CollectionAssert" &&
-                containingType.ContainingNamespace.ToString() == "Microsoft.VisualStudio.TestTools.UnitTesting")
+            switch (containingType.Name)
             {
-                switch (method.Name)
-                {
-                    case "AreEqual":
-                    case "AreEquivalent":
-                    case "Contains":
-                    case "AreNotEqual":
-                    case "AreNotEquivalent":
-                    case "DoesNotContain":
-                        return true;
-                }
-            }
-            else if (containingType.Name == "Enumerable" &&
-                     containingType.ContainingNamespace.ToString() == "System.Linq")
-            {
-                switch (method.Name)
-                {
-                    case "SequenceEqual":
-                        return true;
-                }
+                case "CollectionAssert" when containingType.ContainingNamespace.ToString() == "Microsoft.VisualStudio.TestTools.UnitTesting":
+                    switch (method.Name)
+                    {
+                        case "AreEqual":
+                        case "AreEquivalent":
+                        case "Contains":
+                        case "AreNotEqual":
+                        case "AreNotEquivalent":
+                        case "DoesNotContain":
+                            return true;
+                    }
+                    break;
+
+                case "Enumerable" when containingType.ContainingNamespace.ToString() == "System.Linq":
+                    switch (method.Name)
+                    {
+                        case "SequenceEqual":
+                            return true;
+                    }
+                    break;
             }
 
             return false;

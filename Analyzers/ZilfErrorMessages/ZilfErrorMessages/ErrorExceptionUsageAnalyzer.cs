@@ -102,7 +102,7 @@ namespace ZilfErrorMessages
 
         static bool TryExtractFormatAndArgs(
             ExpressionSyntax expressionToReplace, [NotNull] SemanticModel semanticModel,
-            out string newMessageFormat, out ImmutableList<ExpressionSyntax> newMessageArgs)
+            [CanBeNull] out string newMessageFormat, out ImmutableList<ExpressionSyntax> newMessageArgs)
         {
             string format;
             ImmutableList<ExpressionSyntax> newArgs;

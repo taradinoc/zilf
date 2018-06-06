@@ -39,7 +39,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         public static NewParserWord FromVword([NotNull] Context ctx, [NotNull] ZilHash vword)
         {
-
             var form = new ZilForm(new ZilObject[]
             {
                 ctx.GetStdAtom(StdAtom.WORD_LEXICAL_WORD),

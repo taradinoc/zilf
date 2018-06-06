@@ -56,7 +56,6 @@ namespace Zilf.ZModel
             [NotNull] ZilAtom action, [CanBeNull] ZilAtom preaction, [NotNull] ZilAtom actionName,
             [ItemNotNull] [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
         {
-
             SourceLine = src;
 
             Verb = verb;
@@ -81,7 +80,6 @@ namespace Zilf.ZModel
         [NotNull]
         public static Syntax Parse(ISourceLine src, [NotNull] IEnumerable<ZilObject> definition, [NotNull] Context ctx)
         {
-
             int numObjects = 0;
             ZilAtom verb = null, prep1 = null, prep2 = null;
             ZilAtom action = null, preaction = null, actionName = null;
@@ -90,7 +88,7 @@ namespace Zilf.ZModel
             int rhsCount = 0;
 
             // main parsing
-            foreach (ZilObject obj in definition)
+            foreach (var obj in definition)
             {
                 if (verb == null)
                 {
@@ -132,10 +130,9 @@ namespace Zilf.ZModel
             // helpers...
             void HandleLeftSideList(ZilList list)
             {
-                if (list.First is ZilAtom atom)
+                switch (list.First)
                 {
-                    if (numObjects == 0)
-                    {
+                    case ZilAtom atom when numObjects == 0:
                         // could be a list of synonyms, but could also be a mistake (scope/find flags in the wrong place)
                         switch (atom.StdAtom)
                         {
@@ -159,34 +156,27 @@ namespace Zilf.ZModel
                                 syns = list;
                                 break;
                         }
-                    }
-                    else
-                    {
-                        if (atom.StdAtom == StdAtom.FIND)
-                        {
-                            if ((numObjects == 1 && find1 != null) || find2 != null)
-                                throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "FIND lists");
-                            if (numObjects == 1)
-                                find1 = list;
-                            else
-                                find2 = list;
-                        }
+                        break;
+
+                    case ZilAtom atom when atom.StdAtom == StdAtom.FIND:
+                        if ((numObjects == 1 && find1 != null) || find2 != null)
+                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "FIND lists");
+                        if (numObjects == 1)
+                            find1 = list;
                         else
-                        {
-                            if (numObjects == 1)
-                            {
-                                bits1 = bits1 != null ? new ZilList(bits1.Concat(list)) : list;
-                            }
-                            else
-                            {
-                                bits2 = bits2 != null ? new ZilList(bits2.Concat(list)) : list;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "list", "syntax definition", "an atom");
+                            find2 = list;
+                        break;
+
+                    case ZilAtom _ when numObjects == 1:
+                        bits1 = bits1 != null ? new ZilList(bits1.Concat(list)) : list;
+                        break;
+
+                    case ZilAtom _:
+                        bits2 = bits2 != null ? new ZilList(bits2.Concat(list)) : list;
+                        break;
+
+                    default:
+                        throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "list", "syntax definition", "an atom");
                 }
             }
 
@@ -268,7 +258,6 @@ namespace Zilf.ZModel
 
             Syntax ValidateAndBuild()
             {
-
                 if (numObjects < 1)
                 {
                     prep1 = null;

@@ -38,7 +38,6 @@ namespace Zilf.Interpreter.Values
 
         public ZilAsoc([NotNull] AsocResult[] results, int index)
         {
-
             this.results = results;
             this.index = index;
         }
@@ -47,7 +46,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
         }
 
@@ -66,10 +64,7 @@ namespace Zilf.Interpreter.Values
         [CanBeNull]
         public ZilAsoc GetNext()
         {
-            if (index + 1 < results.Length)
-                return new ZilAsoc(results, index + 1);
-
-            return null;
+            return index + 1 < results.Length ? new ZilAsoc(results, index + 1) : null;
         }
 
         public override StdAtom StdTypeAtom => StdAtom.ASOC;

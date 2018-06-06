@@ -35,7 +35,6 @@ namespace Zilf.Compiler
         [NotNull]
         static ZilRoutine MaybeRewriteRoutine([NotNull] Context ctx, [NotNull] ZilRoutine origRoutine)
         {
-
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
 
             Debug.Assert(origRoutine.Name != null);
@@ -63,7 +62,6 @@ namespace Zilf.Compiler
 
         void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
-
             // give the user a chance to rewrite the routine
             routine = MaybeRewriteRoutine(Context, routine);
 
@@ -212,7 +210,6 @@ namespace Zilf.Compiler
         // TODO: replace CompileStmt with CompileForm and (in loops) CompileClauseBody
         void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
         {
-
             stmt = stmt.Unwrap(Context);
 
             switch (stmt)
@@ -249,7 +246,6 @@ namespace Zilf.Compiler
 
         void MarkSequencePoint([NotNull] IRoutineBuilder rb, [NotNull] IProvideSourceLine node)
         {
-
             if (!WantDebugInfo || !(node.SourceLine is FileSourceLine fileSourceLine))
                 return;
 
@@ -269,7 +265,6 @@ namespace Zilf.Compiler
         [NotNull]
         public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom)
         {
-
             if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
@@ -335,7 +330,6 @@ namespace Zilf.Compiler
 
         public void PopInnerLocal([NotNull] ZilAtom atom)
         {
-
             SpareLocals.Push(Locals[atom]);
 
             if (OuterLocals.TryGetValue(atom, out var stk))

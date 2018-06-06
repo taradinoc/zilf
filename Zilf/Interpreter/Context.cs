@@ -110,7 +110,7 @@ namespace Zilf.Interpreter
         readonly List<string> includePaths;
 
         [NotNull]
-        readonly ObList rootObList, packageObList, compilationFlagsObList, hooksObList;
+        readonly ObList rootObList, compilationFlagsObList, hooksObList;
         [NotNull]
         readonly Stack<ZilObject> previousObPaths;
         [NotNull]
@@ -174,7 +174,7 @@ namespace Zilf.Interpreter
             PutProp(GetStdAtom(StdAtom.ROOT), GetStdAtom(StdAtom.OBLIST), rootObList);
 
             // now we can use MakeObList
-            packageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
+            PackageObList = MakeObList(GetStdAtom(StdAtom.PACKAGE));
             compilationFlagsObList = MakeObList(GetStdAtom(StdAtom.COMPILATION_FLAGS));
             hooksObList = MakeObList(MakeObList(GetStdAtom(StdAtom.ZILF))["HOOKS"]);
             previousObPaths = new Stack<ZilObject>();
@@ -228,7 +228,7 @@ namespace Zilf.Interpreter
         public ObList RootObList => rootObList;
 
         [NotNull]
-        public ObList PackageObList => packageObList;
+        public ObList PackageObList { get; }
 
         public bool CheckDecls { get; set; }
 
@@ -273,7 +273,6 @@ namespace Zilf.Interpreter
 
         public Stream OpenFile([NotNull] string filename, bool writing)
         {
-
             var intercept = InterceptOpenFile;
             if (intercept != null)
                 return intercept(filename, writing);
@@ -286,12 +285,7 @@ namespace Zilf.Interpreter
 
         public bool FileExists([NotNull] string filename)
         {
-
-            var intercept = InterceptFileExists;
-            if (intercept != null)
-                return intercept(filename);
-
-            return File.Exists(filename);
+            return InterceptFileExists?.Invoke(filename) ?? File.Exists(filename);
         }
 
         [ItemNotNull]
@@ -350,7 +344,6 @@ namespace Zilf.Interpreter
 
         void InitSubrs()
         {
-
             var methods = typeof(Subrs).GetMethods(BindingFlags.Static | BindingFlags.Public);
             foreach (var mi in methods)
             {
@@ -390,7 +383,6 @@ namespace Zilf.Interpreter
 
         void InitConstants()
         {
-
             // compile-time constants
             SetGlobalVal(GetStdAtom(StdAtom.ZILCH), TRUE);
             SetGlobalVal(GetStdAtom(StdAtom.ZILF), TRUE);
@@ -428,7 +420,6 @@ namespace Zilf.Interpreter
 
         public void SetDefaultConstants()
         {
-
             var defaults = new[] {
                 (StdAtom.SERIAL, 0)
             };
@@ -454,7 +445,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public ZilConstant AddZConstant([NotNull] ZilAtom atom, [NotNull] ZilObject value)
         {
-
             if (GetZVal(atom) != null)
                 Redefine(atom);
 
@@ -475,13 +465,11 @@ namespace Zilf.Interpreter
         [NotNull]
         public ZilAtom GetStdAtom(StdAtom id)
         {
-
             return stdAtoms[(int)id];
         }
         [CanBeNull]
         public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
-
             return associations.GetProp(first, second);
         }
 
@@ -494,7 +482,6 @@ namespace Zilf.Interpreter
         /// null to clear the association.</param>
         public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
         {
-
             associations.PutProp(first, second, value);
         }
 
@@ -505,7 +492,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public AsocResult[] GetAllAssociations()
         {
-
             return associations.ToArray();
         }
 
@@ -528,14 +514,12 @@ namespace Zilf.Interpreter
         /// <exception cref="DeclCheckError">value does not match the existing DECL for atom.</exception>
         public void SetLocalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
-
             localEnvironment.SetLocalVal(atom, value);
         }
 
         [NotNull]
         public LocalEnvironment PushEnvironment()
         {
-
             var result = new LocalEnvironment(this, localEnvironment);
             localEnvironment = result;
             return result;
@@ -601,7 +585,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public Frame PushFrame([NotNull] ZilForm callingForm)
         {
-
             var result = new CallFrame(this, callingForm);
             TopFrame = result;
             return result;
@@ -610,7 +593,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public Frame PushFrame([NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
         {
-
             var result = new NativeFrame(this, sourceLine, description);
             TopFrame = result;
             return result;
@@ -629,7 +611,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public FileContext PushFileContext([NotNull] string path)
         {
-
             var result = new FileContext(this, path);
             CurrentFile = result;
             return result;
@@ -658,7 +639,6 @@ namespace Zilf.Interpreter
         [ContractAnnotation("create: true => notnull")]
         public Binding GetGlobalBinding([NotNull] ZilAtom atom, bool create)
         {
-
             globalValues.TryGetValue(atom, out var binding);
 
             if (binding == null && create)
@@ -678,7 +658,6 @@ namespace Zilf.Interpreter
         /// <exception cref="DeclCheckError"><paramref name="value"/> does not match the DECL for <paramref name="atom"/>.</exception>
         public void SetGlobalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
         {
-
             if (value != null)
             {
                 var binding = GetGlobalBinding(atom, true);
@@ -726,9 +705,10 @@ namespace Zilf.Interpreter
             if (pattern != null && CheckDecls && !Decl.Check(this, value, pattern))
                 throw new DeclCheckError(this, value, pattern, usageFormat, arg0);
         }
+
+        [CanBeNull]
         public ZilObject GetZVal([NotNull] ZilAtom atom)
         {
-
             return GetProp(atom, GetStdAtom(StdAtom.ZVAL));
         }
 
@@ -741,7 +721,6 @@ namespace Zilf.Interpreter
         /// but also raises the <see cref="ZValChanged"/> event.</remarks>
         public void SetZVal([NotNull] ZilAtom atom, ZilObject value)
         {
-
             PutProp(atom, GetStdAtom(StdAtom.ZVAL), value);
             ZValChanged?.Invoke(this, new ZValEventArgs(atom, value));
         }
@@ -761,7 +740,6 @@ namespace Zilf.Interpreter
 
         public void Redefine([NotNull] ZilAtom atom)
         {
-
             zenv.InternedGlobalNames.Remove(atom);
 
             var obj = GetZVal(atom);
@@ -789,7 +767,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public string FindIncludeFile([NotNull] string name)
         {
-
             foreach (var path in includePaths)
             {
                 var combined = Path.Combine(path, name);
@@ -836,7 +813,6 @@ namespace Zilf.Interpreter
         static ChtypeDelegate AdaptChtypeCtor<T>([NotNull] ConstructorInfo ci)
             where T : ZilObject
         {
-
             var param1 = Expression.Parameter(typeof(Context), "ctx");
             var param2 = Expression.Parameter(typeof(ZilObject), "primValue");
             var expr = Expression.Lambda<ChtypeDelegate>(
@@ -999,7 +975,6 @@ namespace Zilf.Interpreter
 
         public void RegisterType([NotNull] ZilAtom atom, PrimType primType)
         {
-
             ChtypeDelegate chtypeDelegate;
 
             // use ZilStructuredHash for structured primtypes
@@ -1061,7 +1036,6 @@ namespace Zilf.Interpreter
 
         public SetTypeHandlerResult SetPrintType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
-
             return SetTypeHandler(type, handler,
                 StdAtom.PRINT,
                 e => e.PrintType,
@@ -1085,7 +1059,6 @@ namespace Zilf.Interpreter
 
         public SetTypeHandlerResult SetEvalType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
-
             return SetTypeHandler(type, handler,
                 StdAtom.EVAL,
                 e => e.EvalType,
@@ -1104,7 +1077,6 @@ namespace Zilf.Interpreter
 
         public SetTypeHandlerResult SetApplyType([NotNull] ZilAtom type, [NotNull] ZilObject handler)
         {
-
             return SetTypeHandler(type, handler,
                 StdAtom.APPLY,
                 e => e.ApplyType,
@@ -1140,7 +1112,6 @@ namespace Zilf.Interpreter
             Func<Context, ZilAtom, IApplicable, TDelegate> makeDelegateFromApplicable)
             where TDelegate : class
         {
-
             var entry = typeMap[type];
 
             if (handler is ZilAtom otherType)
@@ -1195,42 +1166,36 @@ namespace Zilf.Interpreter
 
         public ZilObject GetPrintType([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.PrintType;
         }
 
         public PrintTypeDelegate GetPrintTypeDelegate([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.PrintTypeDelegate;
         }
 
         public ZilObject GetEvalType([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.EvalType;
         }
 
         public EvalTypeDelegate GetEvalTypeDelegate([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.EvalTypeDelegate;
         }
 
         public ZilObject GetApplyType([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.ApplyType;
         }
 
         public ApplyTypeDelegate GetApplyTypeDelegate([NotNull] ZilAtom type)
         {
-
             var entry = typeMap[type];
             return entry.ApplyTypeDelegate;
         }
@@ -1247,32 +1212,29 @@ namespace Zilf.Interpreter
                 return value;
 
             // TODO: standardize special cases
-
-            /* hacky special cases for GVAL and LVAL:
-             * <CHTYPE FOO GVAL> gives '<GVAL FOO> rather than #GVAL FOO
-             * <CHTYPE ,FOO ATOM> gives FOO
-             */
-            if (newType.StdAtom == StdAtom.GVAL || newType.StdAtom == StdAtom.LVAL)
+            switch (newType.StdAtom)
             {
-                if (value.PrimType != PrimType.ATOM)
-                    throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
+                /* hacky special cases for GVAL and LVAL:
+                 * <CHTYPE FOO GVAL> gives '<GVAL FOO> rather than #GVAL FOO
+                 * <CHTYPE '<GVAL FOO> ATOM> gives FOO
+                 */
+                case StdAtom.GVAL:
+                case StdAtom.LVAL:
+                    if (value.PrimType != PrimType.ATOM)
+                        throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
 
-                return new ZilForm(new[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
-            }
+                    return new ZilForm(new[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
 
-            if (newType.StdAtom == StdAtom.ATOM && value.StdTypeAtom == StdAtom.FORM)
-            {
-                if (value.IsGVAL(out var atom) || value.IsLVAL(out atom))
-                    return atom;
+                case StdAtom.ATOM when value.StdTypeAtom == StdAtom.FORM:
+                    if (value.IsGVAL(out var atom) || value.IsLVAL(out atom))
+                        return atom;
 
-                throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "ATOM", "ATOM, GVAL, or LVAL");
-            }
+                    throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "ATOM", "ATOM, GVAL, or LVAL");
 
-            // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
-            if (newType.StdAtom == StdAtom.TABLE && value.PrimType == PrimType.VECTOR)
-            {
-                var vector = (ZilVector)value.GetPrimitive(this);
-                return ZilTable.Create(1, vector.ToArray(), 0, null);
+                // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
+                case StdAtom.TABLE when value.PrimType == PrimType.VECTOR:
+                    var vector = (ZilVector)value.GetPrimitive(this);
+                    return ZilTable.Create(1, vector.ToArray(), 0, null);
             }
 
             // look it up in the typemap
@@ -1328,7 +1290,6 @@ B * <PRINTB .X>
 
         public void DefineCompilationFlag([NotNull] ZilAtom name, [NotNull] ZilObject value, bool redefine = false)
         {
-
             if (GetCompilationFlagValue(name) == null)
             {
                 SetCompilationFlagValue(name, value);
@@ -1445,7 +1406,6 @@ B * <PRINTB .X>
 
         void InitPropDef(StdAtom propName, [NotNull] string def)
         {
-
             Program.Evaluate(this, "<BLOCK (<ROOT>)>");
             ZilVector vector;
             try
@@ -1463,7 +1423,6 @@ B * <PRINTB .X>
 
         public void SetPropDef([NotNull] ZilAtom propName, [NotNull] ComplexPropDef pattern)
         {
-
             foreach (var pair in pattern.GetConstants(this))
             {
                 AddZConstant(pair.Key, new ZilFix(pair.Value));
@@ -1474,7 +1433,6 @@ B * <PRINTB .X>
         [NotNull]
         public Stream OpenChannelStream([NotNull] string path, FileAccess fileAccess)
         {
-
             if (TopFrame.SourceLine is FileSourceLine fileSourceLine)
             {
                 var dir = Path.GetDirectoryName(fileSourceLine.FileName);
@@ -1507,7 +1465,6 @@ B * <PRINTB .X>
         /// <param name="newObPath">A list to serve as the new LVAL of OBLIST.</param>
         public void PushObPath([NotNull] ZilList newObPath)
         {
-
             var atom = GetStdAtom(StdAtom.OBLIST);
             var old = GetLocalVal(atom) ?? new ZilList(null, null);
 

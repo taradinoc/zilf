@@ -310,7 +310,6 @@ namespace Zilf.Compiler
         [NotNull]
         static GameOptions MakeGameOptions([NotNull] Context ctx)
         {
-
             var zenv = ctx.ZEnvironment;
 
             switch (zenv.ZVersion)

@@ -89,7 +89,7 @@ namespace Zilf.Tests.Integration
 
         bool IZMachineIO.Transcripting
         {
-            get { return false; }
+            get => false;
             set { /* nada */}
         }
 
@@ -125,10 +125,7 @@ namespace Zilf.Tests.Integration
         [CanBeNull]
         Stream IZMachineIO.OpenCommandFile(bool writing)
         {
-            if (writing)
-                return null;
-
-            return inputStream;
+            return writing ? null : inputStream;
         }
 
         void IZMachineIO.SetTextStyle(TextStyle style)
@@ -182,7 +179,7 @@ namespace Zilf.Tests.Integration
 
         bool IZMachineIO.ForceFixedPitch
         {
-            get { return true; }
+            get => true;
             set { /* nada */ }
         }
 
@@ -196,7 +193,7 @@ namespace Zilf.Tests.Integration
 
         bool IZMachineIO.ScrollFromBottom
         {
-            get { return false; }
+            get => false;
             set { /* nada */ }
         }
 
@@ -241,7 +238,7 @@ namespace Zilf.Tests.Integration
 
         bool IZMachineIO.Buffering
         {
-            get { return false; }
+            get => false;
             set { /* nada */ }
         }
 

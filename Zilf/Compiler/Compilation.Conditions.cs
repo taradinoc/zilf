@@ -32,7 +32,6 @@ namespace Zilf.Compiler
         internal void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [NotNull] ILabel label, bool polarity)
         {
-
             expr = expr.Unwrap(Context);
             var type = expr.StdTypeAtom;
 
@@ -149,7 +148,6 @@ namespace Zilf.Compiler
         internal void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
             bool and, [NotNull] ILabel label, bool polarity)
         {
-
             if (args.Length == 0)
             {
                 // <AND> is true, <OR> is false
@@ -206,7 +204,6 @@ namespace Zilf.Compiler
         internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
             bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-
             if (!args.IsCons(out var first, out var rest))
                 return and ? Game.One : Game.Zero;
 
@@ -336,7 +333,6 @@ namespace Zilf.Compiler
         internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-
             var nextLabel = rb.DefineLabel();
             var endLabel = rb.DefineLabel();
             bool elsePart = false;
@@ -432,7 +428,6 @@ namespace Zilf.Compiler
         IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clause, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
-
             if (clause.IsEmpty)
                 return Game.One;
 
@@ -489,7 +484,6 @@ namespace Zilf.Compiler
         internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-
             resultStorage = resultStorage ?? rb.Stack;
             while (!clauses.IsEmpty)
             {
@@ -568,7 +562,6 @@ namespace Zilf.Compiler
         internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-
             resultStorage = resultStorage ?? rb.Stack;
 
             while (!clauses.IsEmpty)

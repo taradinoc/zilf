@@ -62,7 +62,6 @@ namespace Zapf.Parsing
 
         public Tokenizer([NotNull] Stream stream, [NotNull] string filename)
         {
-
             rdr = new StreamReader(stream);
             this.filename = filename;
         }
@@ -104,7 +103,7 @@ namespace Zapf.Parsing
                 return temp;
             }
 
-            Token result = new Token
+            var result = new Token
             {
                 Filename = filename,
                 Line = line

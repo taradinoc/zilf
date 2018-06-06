@@ -51,37 +51,38 @@ namespace Zilf
                 Console.WriteLine(RetrieveLinkerTimestamp());
             }
 
-            if (ctx.RunMode == RunMode.Interactive)
+            switch (ctx.RunMode)
             {
-                DoREPL(ctx);
-            }
-            else if (ctx.RunMode == RunMode.Expression)
-            {
-                using (ctx.PushFileContext("<cmdline>"))
-                {
-                    Console.WriteLine(Evaluate(ctx, inFile));
-                    if (ctx.ErrorCount > 0)
-                        return 2;
-                }
-            }
-            else
-            {
-                // interpreter or compiler
+                case RunMode.Interactive:
+                    DoREPL(ctx);
+                    return 0;
 
+                case RunMode.Expression:
+                    using (ctx.PushFileContext("<cmdline>"))
+                    {
+                        Console.WriteLine(Evaluate(ctx, inFile));
+                        if (ctx.ErrorCount > 0)
+                            return 2;
+                    }
+                    return 0;
+
+                case RunMode.Compiler:
+                    Debug.Assert(outFile != null);
+                    return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo));
+
+                case RunMode.Interpreter:
+                    return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inFile));
+
+                default:
+                    throw new UnreachableCodeException();
+            }
+
+            int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
+            {
                 var frontEnd = new FrontEnd();
                 try
                 {
-                    FrontEndResult result;
-
-                    if (ctx.RunMode == RunMode.Compiler)
-                    {
-                        Debug.Assert(outFile != null);
-                        result = frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo);
-                    }
-                    else
-                    {
-                        result = frontEnd.Interpret(ctx, inFile);
-                    }
+                    var result = func(frontEnd);
 
                     if (result.WarningCount > 0)
                     {
@@ -108,9 +109,9 @@ namespace Zilf
                     Console.Error.WriteLine("I/O error: " + ex.Message);
                     return 1;
                 }
-            }
 
-            return 0;
+                return 0;
+            }
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
@@ -205,7 +206,7 @@ namespace Zilf
             string filePath = Assembly.GetCallingAssembly().Location;
             const int c_PeHeaderOffset = 60;
             const int c_LinkerTimestampOffset = 8;
-            byte[] b = new byte[2048];
+            var b = new byte[2048];
 
             using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -224,7 +225,6 @@ namespace Zilf
         [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
         static Context ParseArgs([NotNull] string[] args, [CanBeNull] out string inFile, [CanBeNull] out string outFile)
         {
-
             string newInFile = inFile = null;
             string newOutFile = outFile = null;
 
@@ -410,7 +410,6 @@ namespace Zilf
 
         static void AddImplicitIncludePaths([ItemNotNull] [NotNull] IList<string> includePaths, [CanBeNull] string inFile, RunMode mode)
         {
-
             if (inFile != null && mode != RunMode.Expression)
             {
                 includePaths.Insert(0, Path.GetDirectoryName(Path.GetFullPath(inFile)));
@@ -493,21 +492,18 @@ Compiler switches:
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars)
         {
-
             return Parse(ctx, null, chars, null);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-
             return Parse(ctx, null, chars, templateParams);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, ISourceLine src, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-
             var parser = new Parser(ctx, src, templateParams);
 
             foreach (var po in parser.Parse(chars))
@@ -557,7 +553,6 @@ Compiler switches:
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] Stream stream, bool wantExceptions = false)
         {
-
             return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
         }
 

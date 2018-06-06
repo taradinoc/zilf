@@ -38,7 +38,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public ZilAdecl([NotNull] ZilVector vector)
         {
-
             if (vector.GetLength() != 2)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to ADECL", 2);
 

@@ -36,7 +36,6 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-
         #region Z-Code: Routines, Objects, Constants, Globals
 
         /// <exception cref="InterpreterError">Unrecognized flag.</exception>
@@ -663,7 +662,6 @@ namespace Zilf.Interpreter
 
         static void ValidateTablePattern([NotNull] string name, [NotNull] ZilObject[] pattern)
         {
-
             if (pattern.Length == 0)
                 throw new InterpreterError(InterpreterMessages._0_PATTERN_Must_Not_Be_Empty, name);
 
@@ -870,7 +868,6 @@ namespace Zilf.Interpreter
 
         static int ParseZVersion([NotNull] string name, [NotNull] ZilObject expr)
         {
-
             int newVersion;
             switch (expr)
             {
@@ -1167,7 +1164,7 @@ namespace Zilf.Interpreter
             var propspec = ctx.GetProp(ctx.GetStdAtom(StdAtom.DIRECTIONS), propspecAtom);
 
             ctx.ZEnvironment.Directions.Clear();
-            foreach (ZilAtom arg in args)
+            foreach (var arg in args)
             {
                 ctx.ZEnvironment.Directions.Add(arg);
                 ctx.ZEnvironment.GetVocabDirection(arg, ctx.TopFrame.SourceLine);
@@ -1183,7 +1180,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject BUZZ([NotNull] Context ctx, [NotNull] [Required] ZilAtom[] args)
         {
-            foreach (ZilAtom arg in args)
+            foreach (var arg in args)
                 ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.TopFrame.SourceLine));
 
             return ctx.TRUE;
@@ -1262,7 +1259,7 @@ namespace Zilf.Interpreter
                 ctx.ZEnvironment.Vocabulary.Add(original, oldWord);
             }
 
-            object[] ctorArgs = new object[2];
+            var ctorArgs = new object[2];
             ctorArgs[0] = oldWord;
 
             foreach (var synonym in synonyms)

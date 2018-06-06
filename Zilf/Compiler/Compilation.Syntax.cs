@@ -47,7 +47,6 @@ namespace Zilf.Compiler
 
         void BuildOldFormatSyntaxTables([NotNull] IDictionary<string, ITableBuilder> tables)
         {
-
             // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
             var verbTable = Game.DefineTable("VTBL", true);
             var actionTable = Game.DefineTable("ATBL", true);
@@ -80,12 +79,12 @@ namespace Zilf.Compiler
 
                 // make two passes over the syntax line definitions:
                 // first in definition order to create/validate the Actions, second in reverse order to emit the syntax lines
-                foreach (Syntax line in verb)
+                foreach (var line in verb)
                 {
                     ValidateAction(actions, line);
                 }
 
-                foreach (Syntax line in verb.Reverse())
+                foreach (var line in verb.Reverse())
                 {
                     if (actions.TryGetValue(line.ActionName, out var act) == false)
                     {
@@ -156,7 +155,7 @@ namespace Zilf.Compiler
             var actquery = from a in actions
                            orderby a.Value.Index
                            select a.Value;
-            foreach (Action act in actquery)
+            foreach (var act in actquery)
             {
                 actionTable.AddShort(act.Routine);
                 preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
@@ -261,7 +260,7 @@ namespace Zilf.Compiler
             var actquery = from a in actions
                            orderby a.Value.Index
                            select a.Value;
-            foreach (Action act in actquery)
+            foreach (var act in actquery)
             {
                 actionTable.AddShort(act.Routine);
                 preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
@@ -297,7 +296,7 @@ namespace Zilf.Compiler
                             Routines.TryGetValue(line.Preaction, out preRoutine) == false)
                             throw new CompilerError(CompilerMessages.Undefined_0_1, "preaction routine", line.Preaction);
 
-                        ZilAtom actionName = line.ActionName;
+                        var actionName = line.ActionName;
                         int index = Context.ZEnvironment.NextAction++;
 
                         if (index >= Context.ZEnvironment.VocabFormat.MaxActionCount)
@@ -337,7 +336,6 @@ namespace Zilf.Compiler
         void WarnIfActionRoutineDiffers([NotNull] Syntax line, [NotNull] string description,
             [CanBeNull] ZilAtom thisRoutineName, [CanBeNull] ZilAtom lastRoutineName)
         {
-
             if (thisRoutineName != lastRoutineName)
                 Context.HandleError(new CompilerError(line.SourceLine,
                     CompilerMessages._0_Mismatch_For_1_Using_2_As_Before,
@@ -354,7 +352,6 @@ namespace Zilf.Compiler
         /// 
         void DefineWord([NotNull] IWord word)
         {
-
             string rawWord = word.Atom.Text;
 
             if (!Vocabulary.ContainsKey(word))
@@ -393,7 +390,6 @@ namespace Zilf.Compiler
         [ContractAnnotation("notnull => notnull")]
         IOperand GetPreposition([CanBeNull] IWord word)
         {
-
             if (word == null)
                 return null;
 

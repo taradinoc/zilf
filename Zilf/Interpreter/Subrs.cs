@@ -73,7 +73,6 @@ namespace Zilf.Interpreter
         {
             public MdlZilRedirectAttribute([NotNull] Type type, [NotNull] string target)
             {
-
                 Type = type;
                 Target = target;
             }

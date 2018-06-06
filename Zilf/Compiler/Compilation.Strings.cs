@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -45,7 +46,6 @@ namespace Zilf.Compiler
         [NotNull]
         public static string TranslateString(string str, [NotNull] Context ctx)
         {
-
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
                 str,
@@ -53,6 +53,7 @@ namespace Zilf.Compiler
                 GetSpacesMode(ctx));
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         static StringSpacesMode GetSpacesMode([NotNull] Context ctx)
         {
             if (ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P))

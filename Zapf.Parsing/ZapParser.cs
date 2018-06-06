@@ -36,7 +36,6 @@ namespace Zapf.Parsing
 
         public ZapParser(IErrorSink sink, [NotNull] IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
         {
-
             this.sink = sink;
             this.opcodeDict = opcodeDict;
 
@@ -105,7 +104,6 @@ namespace Zapf.Parsing
         /// <exception cref="SeriousError">Syntax error.</exception>
         public ParseResult Parse([NotNull] Stream stream, [NotNull] string filename)
         {
-
             toks = new Tokenizer(stream, filename);
             var output = new List<AsmLine>();
 
@@ -457,7 +455,7 @@ namespace Zapf.Parsing
                     return new EqualsDirective(head.Text, expr);
                 }
 
-                if (directiveDict.TryGetValue(head.Text, out DirectiveParseHandler handler))
+                if (directiveDict.TryGetValue(head.Text, out var handler))
                 {
                     return handler(head);
                 }

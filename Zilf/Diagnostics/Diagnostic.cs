@@ -63,7 +63,6 @@ namespace Zilf.Diagnostics
             [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
             [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] IReadOnlyList<Diagnostic> subDiagnostics)
         {
-
             Location = location;
             Severity = severity;
             CodePrefix = codePrefix;

@@ -250,7 +250,6 @@ namespace Zilf.Language
 
         public Parser([NotNull] IParserSite site, ISourceLine srcOverride, params ZilObject[] templateParams)
         {
-
             this.site = site;
             this.srcOverride = srcOverride;
             this.templateParams = templateParams;

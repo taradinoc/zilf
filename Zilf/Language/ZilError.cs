@@ -87,7 +87,6 @@ namespace Zilf.Language
         public static T Combine<T>([NotNull] this T mainError, [NotNull] T subError)
             where T : ZilErrorBase
         {
-
             var newDiag = mainError.Diagnostic.WithSubDiagnostics(subError.Diagnostic);
             return (T)Activator.CreateInstance(typeof(T), newDiag);
         }
@@ -140,7 +139,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
         {
-
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine ?? DiagnosticContext.Current.SourceLine,
                 code,
@@ -150,7 +148,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeLegacyDiagnostic([NotNull] ISourceLine sourceLine, [NotNull] string message)
         {
-
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine,
                 LegacyErrorCode,
@@ -207,7 +204,6 @@ namespace Zilf.Language
         [NotNull]
         protected static Diagnostic MakeDiagnostic([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] [CanBeNull] object[] messageArgs = null)
         {
-
             return DiagnosticFactory.GetDiagnostic(
                 sourceLine ?? DiagnosticContext.Current.SourceLine,
                 code,

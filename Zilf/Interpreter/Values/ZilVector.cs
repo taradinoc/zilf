@@ -43,7 +43,6 @@ namespace Zilf.Interpreter.Values
 
             public VectorStorage([NotNull] ZilObject[] items)
             {
-
                 this.items = items;
             }
 
@@ -85,7 +84,6 @@ namespace Zilf.Interpreter.Values
 
             public void Grow(int end, int beginning, ZilObject defaultValue)
             {
-
                 if (end > 0 || beginning > 0)
                 {
                     var newItems = new ZilObject[items.Length + end + beginning];
@@ -126,14 +124,12 @@ namespace Zilf.Interpreter.Values
 
         ZilVector([NotNull] VectorStorage storage, int offset)
         {
-
             this.storage = storage;
             this.offset = offset;
         }
 
         public ZilVector([NotNull] params ZilObject[] items)
         {
-
             storage = new VectorStorage(items);
             offset = 0;
         }
@@ -187,7 +183,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilResult result = EvalSequence(ctx, this, environment).ToZilVectorResult(SourceLine);
+            var result = EvalSequence(ctx, this, environment).ToZilVectorResult(SourceLine);
             if (result.ShouldPass())
                 return result;
 
@@ -226,20 +222,12 @@ namespace Zilf.Interpreter.Values
 
         public IStructure GetBack(int skip)
         {
-            if (offset + storage.BaseOffset >= skip)
-            {
-                return new ZilVector(storage, offset - skip);
-            }
-            return null;
+            return offset + storage.BaseOffset >= skip ? new ZilVector(storage, offset - skip) : null;
         }
 
         public IStructure GetTop()
         {
-            if (offset == -storage.BaseOffset)
-            {
-                return this;
-            }
-            return new ZilVector(storage, -storage.BaseOffset);
+            return offset == -storage.BaseOffset ? this : new ZilVector(storage, -storage.BaseOffset);
         }
 
         public void Grow(int end, int beginning, ZilObject defaultValue)

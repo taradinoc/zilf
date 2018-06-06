@@ -69,9 +69,17 @@ namespace Zilf.ZModel
         [NotNull]
         public readonly List<ZilTable> Tables = new List<ZilTable>();
 
+        /// <summary>
+        /// Maps property names to default property values.
+        /// (Note: keys are compared by name, not by reference.)
+        /// </summary>
         [NotNull]
         public readonly Dictionary<ZilAtom, ZilObject> PropertyDefaults;
 
+        /// <summary>
+        /// Maps flag aliases to original flags.
+        /// (Note: keys are compared by name, not by reference.)
+        /// </summary>
         [NotNull]
         public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms;
 
@@ -83,6 +91,10 @@ namespace Zilf.ZModel
         [NotNull]
         public readonly List<Syntax> Syntaxes = new List<Syntax>();
 
+        /// <summary>
+        /// Maps vocab word atoms to parser-specific word structures.
+        /// (Note: keys are compared by name, not by reference.)
+        /// </summary>
         [NotNull]
         public readonly Dictionary<ZilAtom, IWord> Vocabulary;
 
@@ -97,6 +109,17 @@ namespace Zilf.ZModel
         [NotNull]
         public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
 
+        /// <summary>
+        /// Maps global symbol atoms to the first atom used to define a
+        /// global symbol with that name.
+        /// (Note: keys are compared by name, not by reference.)
+        /// </summary>
+        /// <remarks>
+        /// This is used for most named ZIL entities that aren't local to a routine:
+        /// routines, constants, global variables, objects, flags,
+        /// definition sections, etc.
+        /// </remarks>
+        /// <seealso cref="InternGlobalName"/>
         [NotNull]
         public readonly Dictionary<ZilAtom, ZilAtom> InternedGlobalNames;
 
@@ -139,6 +162,15 @@ namespace Zilf.ZModel
             return (candidate >= rangeMin) && (rangeMax == null || candidate <= rangeMax);
         }
 
+        /// <summary>
+        /// Compares the selected Z-machine version number against a range,
+        /// treating versions 7 and 8 the same as 5.
+        /// </summary>
+        /// <param name="rangeMin">The minimum allowed version.</param>
+        /// <param name="rangeMax">The maximum allowed version,
+        /// or null to allow any version above <paramref name="rangeMin"/>.</param>
+        /// <returns><see langword="true"/> if <see cref="ZVersion"/> is within the range;
+        /// otherwise <see langword="false"/>.</returns>
         public bool VersionMatches(int rangeMin, int? rangeMax)
         {
             return VersionMatches(ZVersion, rangeMin, rangeMax);
@@ -164,13 +196,10 @@ namespace Zilf.ZModel
         [NotNull]
         public string Charset0
         {
-            get
-            {
-                return charset0;
-            }
+            get => charset0;
+
             set
             {
-
                 charset0 = value;
                 zcharCountCache = null;
             }
@@ -179,13 +208,10 @@ namespace Zilf.ZModel
         [NotNull]
         public string Charset1
         {
-            get
-            {
-                return charset1;
-            }
+            get => charset1;
+
             set
             {
-
                 charset1 = value;
                 zcharCountCache = null;
             }
@@ -194,13 +220,10 @@ namespace Zilf.ZModel
         [NotNull]
         public string Charset2
         {
-            get
-            {
-                return charset2;
-            }
+            get => charset2;
+
             set
             {
-
                 charset2 = value;
                 zcharCountCache = null;
             }
@@ -221,7 +244,6 @@ namespace Zilf.ZModel
 
         public ZEnvironment([NotNull] Context ctx)
         {
-
             this.ctx = ctx;
 
             var defaultLang = Language.Default;
@@ -517,7 +539,6 @@ namespace Zilf.ZModel
                 }
                 else
                 {
-
                     var prevDefType = getGlobalDefinitionType(entry.Name);
                     if (prevDefType != null)
                     {
@@ -546,7 +567,6 @@ namespace Zilf.ZModel
         [CanBeNull]
         static ZilAtom GetObjectParentName([NotNull] ZilModelObject obj)
         {
-
             foreach (var p in obj.Properties)
             {
                 if (p.First is ZilAtom name &&
@@ -600,7 +620,6 @@ namespace Zilf.ZModel
 
         void MakeZcharCountCache()
         {
-
             if (zcharCountCache == null)
             {
                 // Charset 0 takes one Z-char.
@@ -631,7 +650,6 @@ namespace Zilf.ZModel
         /// <returns>The number of significant characters, between 0 and the length of the word (inclusive).</returns>
         int CountVocabZCharacters([NotNull] string word)
         {
-
             MakeZcharCountCache();
 
             int result = 0;
@@ -653,7 +671,6 @@ namespace Zilf.ZModel
         /// to the first.</param>
         public void MergeVocabulary(Action<IWord, IWord> notifyMerge)
         {
-
             /* NOTE: words may end with incomplete multi-ZChar constructs that are still
              * significant for lexing, so even if the printed forms of two vocab words are
              * the same, they may still be distinguishable.
@@ -700,7 +717,6 @@ namespace Zilf.ZModel
 
             public EncodedWord([NotNull] byte[] data)
             {
-
                 this.data = data;
             }
 
@@ -760,7 +776,6 @@ namespace Zilf.ZModel
 
         public bool IsLongWord([NotNull] IWord word)
         {
-
             var text = word.Atom.Text.ToLowerInvariant();
             return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
         }
@@ -768,14 +783,12 @@ namespace Zilf.ZModel
         [ContractAnnotation("=> false, original: null; => true, original: notnull")]
         public bool TryGetBitSynonym([NotNull] ZilAtom alias, [CanBeNull] out ZilAtom original)
         {
-
             return BitSynonyms.TryGetValue(alias, out original);
         }
 
         /// <exception cref="ArgumentException"><paramref name="alias"/> is already defined.</exception>
         public void AddBitSynonym([NotNull] ZilAtom alias, [NotNull] ZilAtom target)
         {
-
             if (ctx.GetZVal(alias) != null)
             {
                 throw new ArgumentException("Alias is already defined", nameof(alias));
@@ -797,7 +810,6 @@ namespace Zilf.ZModel
 
         public void EnsureMinimumHeaderExtension(int words)
         {
-
             HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
         }
 
