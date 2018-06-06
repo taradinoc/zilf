@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using JetBrains.Annotations;
@@ -437,29 +438,57 @@ namespace Zilf
 
                     if (Directory.Exists(candidate))
                     {
-                        includePaths.Add(candidate);
                         found = true;
+                        foreach (var path in RecursiveLibraryIncludePaths(candidate))
+                            includePaths.Add(path);
                         break;
                     }
                 }
 
                 if (!found)
                 {
-                    var segment = Path.GetFileName(zilfDir);
-                    Debug.Assert(segment != null);
+                    zilfDir += Path.DirectorySeparatorChar;
+                    var pos = strippables.Max(strippable =>
+                        zilfDir.LastIndexOf(Path.DirectorySeparatorChar + strippable + Path.DirectorySeparatorChar,
+                            StringComparison.InvariantCultureIgnoreCase));
 
-                    if (strippables.Contains(segment.ToLowerInvariant()))
+                    if (pos >= 0)
                     {
-                        // strip last segment and keep looking
-                        zilfDir = Path.GetDirectoryName(zilfDir);
-                        if (zilfDir != null)
-                        {
+                        // remove part after split point and keep looking
+                        zilfDir = zilfDir.Substring(0, pos);
+
+                        if (!string.IsNullOrEmpty(zilfDir))
                             continue;
-                        }
                     }
                 }
 
                 break;
+            }
+
+            IEnumerable<string> RecursiveLibraryIncludePaths(string parent)
+            {
+                var first = Enumerable.Repeat(parent, 1);
+
+                bool Excluded(string name)
+                {
+                    switch (name.ToLowerInvariant())
+                    {
+                        case "test":
+                        case "tests":
+                        case var _ when name[0] == '.' || name[0] == '_':
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                var rest = from subdir in Directory.EnumerateDirectories(parent)
+                           let name = Path.GetFileName(subdir)
+                           where !Excluded(name)
+                           from result in RecursiveLibraryIncludePaths(subdir)
+                           select result;
+
+                return first.Concat(rest);
             }
         }
 
