@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics;
 using JetBrains.Annotations;
 using Zilf.Compiler;
 using Zilf.Language;

@@ -37,7 +37,6 @@ namespace Zilf.ZModel.Values
         public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
         {
-
             Name = name;
             ArgSpec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
             this.body = body.ToArray();
@@ -49,7 +48,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilRoutine FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s,

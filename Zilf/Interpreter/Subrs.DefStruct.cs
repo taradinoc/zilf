@@ -304,7 +304,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject MakeDefstructDecl([NotNull] Context ctx, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields)
         {
-
             if (ctx == null)
                 throw new ArgumentNullException(nameof(ctx));
             if (baseType == null)
@@ -325,7 +324,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructCustomCtorMacro([NotNull] Context ctx, ZilAtom ctorName, [NotNull] ZilAtom typeName, [NotNull] ZilAtom baseType,
             [NotNull] List<DefStructField> fields, [NotNull] ZilList initArgs, int startOffset, [NotNull] ArgSpec argspec)
         {
-
             // {0} = constructor name
             // {1} = type name
             // {2} = argspec
@@ -422,7 +420,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject DefaultForDecl([NotNull] Context ctx, [NotNull] ZilObject decl)
         {
-
             foreach (var zo in LikelyDefaults(ctx))
             {
                 // decl might be invalid if the struct references a NEWTYPE that hasn't been defined yet
@@ -435,7 +432,6 @@ namespace Zilf.Interpreter
 
         static IEnumerable<ZilObject> LikelyDefaults([NotNull] Context ctx)
         {
-
             yield return ctx.FALSE;
             yield return ZilFix.Zero;
             yield return new ZilList(null, null);
@@ -447,7 +443,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructCtorMacro([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields,
             [NotNull] ZilList initArgs, int startOffset)
         {
-
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
             // in which case we want to return:
@@ -606,7 +601,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructAccessMacro([NotNull] Context ctx, [NotNull] ZilAtom structName, DefStructDefaults defaults,
             DefStructField field)
         {
-
             // {0} = field name
             // {1} = struct name
             // {2} = PUT atom
@@ -735,7 +729,6 @@ namespace Zilf.Interpreter
         // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
         static void ParseDefStructDefaults([NotNull] Context ctx, [NotNull] ZilList fileDefaults, ref DefStructDefaults defaults)
         {
-
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
             foreach (var part in fileDefaults)

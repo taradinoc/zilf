@@ -50,13 +50,13 @@ namespace Zilf.Compiler
             PrepareEarlyRoutineBuilders();
             PreparePropertyBuilders();
             PrepareHighestFlagBuilders();
-            PrepareObjectBuilders(out ZilModelObject lastObject);
+            PrepareObjectBuilders(out var lastObject);
             PrepareTableBuilders();
 
             PrepareSelfInsertingBreaks();
-            PreparePunctuationWords(out Dictionary<string, string> punctWords);
+            PreparePunctuationWords(out var punctWords);
             PrepareBuzzWords();
-            PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges);
+            PlanVocabMerges(out var vocabMerges);
             DefineVocabWords();
             PreparePunctuationAliasesAndPlanMerges(punctWords, vocabMerges);
             PerformVocabMerges(vocabMerges);
@@ -69,9 +69,9 @@ namespace Zilf.Compiler
 
             var globalInitializers = new Queue<System.Action>(Context.ZEnvironment.Globals.Count + 10);
 
-            PrepareAndCheckGlobalStorage(globalInitializers, out string[] reservedGlobals);
+            PrepareAndCheckGlobalStorage(globalInitializers, out var reservedGlobals);
             PrepareConstantBuilders(lastObject);
-            PrepareLongWordTableBuilder(out ITableBuilder longWordTable);
+            PrepareLongWordTableBuilder(out var longWordTable);
             PrepareVocabConstant();
             PrepareHardGlobalBuilders(globalInitializers);
             PrepareReservedGlobalBuilders(reservedGlobals);
@@ -93,7 +93,7 @@ namespace Zilf.Compiler
 
             BuildObjects();
 
-            BuildVocabWords(longWordTable, out Queue<IWord> longWords);
+            BuildVocabWords(longWordTable, out var longWords);
 
             BuildLongWordTable(longWordTable, longWords);
             BuildLateSyntaxTables();
@@ -308,7 +308,6 @@ namespace Zilf.Compiler
 
         void PrepareReservedGlobalBuilders([ItemNotNull] [NotNull] string[] reservedGlobals)
         {
-
             // implicitly defined globals
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
             foreach (var name in reservedGlobals)
@@ -392,7 +391,6 @@ namespace Zilf.Compiler
         void PrepareAndCheckGlobalStorage([NotNull] [ItemNotNull] Queue<System.Action> globalInitializers,
             [ItemNotNull] [NotNull] out string[] reservedGlobals)
         {
-
             // FUNNY-GLOBALS?
             reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
             if (Context.GetGlobalOption(StdAtom.DO_FUNNY_GLOBALS_P))
@@ -481,7 +479,6 @@ namespace Zilf.Compiler
         void PreparePunctuationAliasesAndPlanMerges([NotNull] Dictionary<string, string> punctWords,
             [NotNull] Dictionary<IWord, IWord> vocabMerges)
         {
-
             foreach (var pair in punctWords)
             {
                 var nameAtom = ZilAtom.Parse(pair.Key, Context);
@@ -526,7 +523,6 @@ namespace Zilf.Compiler
 
         void PreparePunctuationWords([NotNull] out Dictionary<string, string> punctWords)
         {
-
             // vocabulary for punctuation
             punctWords = new Dictionary<string, string>
             {

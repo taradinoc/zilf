@@ -40,11 +40,7 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ISourceLine SourceLine
         {
-            get
-            {
-
-                return base.SourceLine ?? SourceLines.Unknown;
-            }
+            get => base.SourceLine ?? SourceLines.Unknown;
             set => base.SourceLine = value;
         }
 
@@ -52,7 +48,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilForm FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             return new ZilForm(list.First, list.Rest);
         }
 
@@ -215,7 +210,6 @@ namespace Zilf.Interpreter.Values
                     }
                     else if (this.Matches(out ZilObject _, out structure))
                     {
-
                         // <1 FOO> => <GET FOO 1>
                         First = ctx.GetStdAtom(StdAtom.GET);
                         Rest = new ZilList(structure, new ZilList(index, new ZilList(null, null)));

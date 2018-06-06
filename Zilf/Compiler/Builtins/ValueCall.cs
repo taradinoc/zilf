@@ -41,7 +41,6 @@ namespace Zilf.Compiler.Builtins
         public ValueCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] IVariable resultStorage)
             : this()
         {
-
             this.cc = cc;
             this.rb = rb;
             this.form = form;

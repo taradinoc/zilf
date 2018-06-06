@@ -246,7 +246,6 @@ namespace Zilf.ZModel
         [NotNull]
         public ITellPatternMatchResult Match([NotNull] IList<ZilObject> input, int startIndex, [NotNull] Context ctx, [NotNull] ISourceLine src)
         {
-
             var result = new MatchResult { Matched = false };
 
             if (input.Count - startIndex < tokens.Length)
@@ -285,14 +284,8 @@ namespace Zilf.ZModel
 
         static bool IsSimpleOutputElement([NotNull] ZilObject obj)
         {
-
-            if (obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse)
-                return true;
-
-            if (obj.IsLVAL(out _) || obj.IsGVAL(out _))
-                return true;
-
-            return false;
+            return obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse ||
+                   obj.IsLVAL(out _) || obj.IsGVAL(out _);
         }
     }
 }

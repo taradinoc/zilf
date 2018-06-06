@@ -199,9 +199,7 @@ namespace Zilf.ZModel.Values
                 }
 
                 if (Constant != null)
-                {
-                    return new ZilList(new[] { Constant, result });
-                }
+                    result = new ZilList(new[] { Constant, result });
 
                 return result;
             }
@@ -230,7 +228,6 @@ namespace Zilf.ZModel.Values
         [NotNull]
         public static ComplexPropDef Parse([NotNull] IEnumerable<ZilObject> spec)
         {
-
             var inputs = new List<InputElement>();
             var outputs = new List<OutputElement>();
             var patterns = new List<Pattern>();
@@ -398,7 +395,6 @@ namespace Zilf.ZModel.Values
 
         static OutputElement ConvertOutputForm([NotNull] ZilForm form, [CanBeNull] ZilAtom constant)
         {
-
             // validate and parse
             if (!form.StartsWith(out ZilAtom head))
             {
@@ -687,7 +683,6 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
         public void BuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, [NotNull] ITableBuilder tb, ElementConverters converters)
         {
-
             var propName = (ZilAtom)prop.First;
 
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
@@ -714,7 +709,6 @@ namespace Zilf.ZModel.Values
         static bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilListoidBase prop, [NotNull] InputElement[] inputs, int startIndex,
             [CanBeNull] Dictionary<ZilAtom, Queue<ZilObject>> captures)
         {
-
             for (int i = startIndex; i < inputs.Length; i++)
             {
                 var input = inputs[i];
@@ -769,7 +763,6 @@ namespace Zilf.ZModel.Values
         [ContractAnnotation("decl: null => false")]
         static bool CheckInputDecl([NotNull] Context ctx, [NotNull] ZilObject value, [CanBeNull] ZilObject decl)
         {
-
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
                 value = constant.Value;
@@ -799,7 +792,6 @@ namespace Zilf.ZModel.Values
         static bool PartialPreBuild([NotNull] Context ctx, [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures,
             ElementPreBuilders preBuilders, [NotNull] OutputElement[] outputs, int startIndex, ISourceLine src)
         {
-
             for (int i = startIndex; i < outputs.Length; i++)
             {
                 var output = outputs[i];
@@ -863,7 +855,6 @@ namespace Zilf.ZModel.Values
             [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures, [NotNull] OutputElement[] outputs, int startIndex,
             ZilAtom propName, ISourceLine src)
         {
-
             for (int i = startIndex; i < outputs.Length; i++)
             {
                 var output = outputs[i];

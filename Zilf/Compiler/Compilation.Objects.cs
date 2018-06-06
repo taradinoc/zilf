@@ -49,7 +49,6 @@ namespace Zilf.Compiler
 
         void DefineProperty([NotNull] ZilAtom prop)
         {
-
             if (!Properties.ContainsKey(prop))
             {
                 // create property builder
@@ -65,7 +64,6 @@ namespace Zilf.Compiler
 
         void DefineFlag([NotNull] ZilAtom flag)
         {
-
             if (!Flags.ContainsKey(flag))
             {
                 // create flag builder
@@ -80,7 +78,6 @@ namespace Zilf.Compiler
 
         void DefineFlagAlias([NotNull] ZilAtom alias, [NotNull] ZilAtom original)
         {
-
             if (!Flags.ContainsKey(alias))
             {
                 var fb = Flags[original];
@@ -115,7 +112,6 @@ namespace Zilf.Compiler
         /// <param name="model">The object to examine.</param>
         void PreBuildObject([NotNull] ZilModelObject model)
         {
-
             var globalsByName = Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
             var propertiesSoFar = new HashSet<ZilAtom>();
 
@@ -431,7 +427,6 @@ namespace Zilf.Compiler
         /// </remarks>
         void BuildObject([NotNull] ZilModelObject model, [NotNull] IObjectBuilder ob)
         {
-
             var elementConverters = new ComplexPropDef.ElementConverters
             {
                 CompileConstant = CompileConstant,

@@ -63,23 +63,19 @@ namespace Zilf.Interpreter
         /// <summary>
         /// Gets the parent environment, or <see langword="null"/> if the environment was created without inheritance.
         /// </summary>
+        [CanBeNull]
         public LocalEnvironment Parent { get; }
 
         [CanBeNull]
         [System.Diagnostics.Contracts.Pure]
         Binding MaybeGetBinding([NotNull] ZilAtom atom)
         {
-
-            if (bindings.ContainsKey(atom))
-                return bindings[atom];
-
-            return Parent?.MaybeGetBinding(atom);
+            return bindings.TryGetValue(atom, out var result) ? result : Parent?.MaybeGetBinding(atom);
         }
 
         [NotNull]
         Binding GetOrCreateBinding([NotNull] ZilAtom atom)
         {
-
             var result = MaybeGetBinding(atom);
 
             if (result == null)

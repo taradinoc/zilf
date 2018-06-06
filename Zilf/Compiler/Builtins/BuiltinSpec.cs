@@ -43,7 +43,6 @@ namespace Zilf.Compiler.Builtins
         // ReSharper disable once NotNullMemberIsNotInitialized
         public BuiltinSpec([NotNull] BuiltinAttribute attr, [NotNull] MethodInfo method)
         {
-
             try
             {
                 Attr = attr;
@@ -175,10 +174,7 @@ namespace Zilf.Compiler.Builtins
             if (argCount < MinArgs || (MaxArgs != null && argCount > MaxArgs))
                 return false;
 
-            if (callType != null && CallType != callType)
-                return false;
-
-            return true;
+            return callType == null || callType == this.CallType;
         }
     }
 }

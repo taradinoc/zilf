@@ -48,7 +48,6 @@ namespace Zilf.Compiler
 
         public static void WalkRoutineForms([NotNull] this ZilRoutine routine, [NotNull] Action<ZilForm> action)
         {
-
             var children =
                 routine.ArgSpec.Select(ai => ai.DefaultValue)
                 .Concat(routine.Body);
@@ -78,7 +77,6 @@ namespace Zilf.Compiler
 
         public static bool IsVariableRef([NotNull] this ZilObject expr)
         {
-
             if (expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom)
@@ -98,7 +96,6 @@ namespace Zilf.Compiler
 
         public static bool IsLocalVariableRef([NotNull] this ZilObject expr)
         {
-
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom &&
@@ -107,7 +104,6 @@ namespace Zilf.Compiler
 
         public static bool IsGlobalVariableRef([NotNull] this ZilObject expr)
         {
-
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom &&

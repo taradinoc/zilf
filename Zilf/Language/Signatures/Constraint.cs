@@ -60,52 +60,53 @@ namespace Zilf.Language.Signatures
         [NotNull]
         public static Constraint FromDecl([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject pattern)
         {
-            if (pattern is ZilForm form)
+            switch (pattern)
             {
-                if (form.First is ZilAtom head)
-                {
-                    Debug.Assert(form.Rest != null);
-
-                    switch (head.StdAtom)
+                case ZilForm form:
+                    if (form.First is ZilAtom head)
                     {
-                        case StdAtom.OR:
-                            return form.Rest
-                                .Select(zo => FromDecl(ctx, zo))
-                                .Aggregate(Forbidden, (a, b) => Disjunction.From(a, b));
+                        Debug.Assert(form.Rest != null);
 
-                        case StdAtom.PRIMTYPE:
-                            Debug.Assert(form.Rest.First != null);
-                            return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
+                        switch (head.StdAtom)
+                        {
+                            case StdAtom.OR:
+                                return form.Rest
+                                    .Select(zo => FromDecl(ctx, zo))
+                                    .Aggregate(Forbidden, Disjunction.From);
+
+                            case StdAtom.PRIMTYPE:
+                                Debug.Assert(form.Rest.First != null);
+                                return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
+
+                            case StdAtom.None:
+                                break;
+
+                            // XXX may need to combine this with a contents constraint
+                            //default:
+                            //    return OfType(head.StdAtom);
+                        }
+                    }
+                    break;
+
+                case ZilAtom atom:
+                    switch (atom.StdAtom)
+                    {
+                        case StdAtom.ANY:
+                            return AnyObject;
+
+                        case StdAtom.APPLICABLE:
+                            return Applicable;
+
+                        case StdAtom.STRUCTURED:
+                            return Structured;
 
                         case StdAtom.None:
                             break;
 
-                        // XXX may need to combine this with a contents constraint
-                        //default:
-                        //    return OfType(head.StdAtom);
+                        default:
+                            return OfType(atom.StdAtom);
                     }
-                }
-            }
-
-            if (pattern is ZilAtom atom)
-            {
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.ANY:
-                        return AnyObject;
-
-                    case StdAtom.APPLICABLE:
-                        return Applicable;
-
-                    case StdAtom.STRUCTURED:
-                        return Structured;
-
-                    case StdAtom.None:
-                        break;
-
-                    default:
-                        return OfType(atom.StdAtom);
-                }
+                    break;
             }
 
             return new DeclConstraint(pattern);

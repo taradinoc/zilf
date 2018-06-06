@@ -63,9 +63,9 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult OR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            ZilObject resultObj = ctx.FALSE;
+            var resultObj = ctx.FALSE;
 
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 var result = arg.Eval(ctx);
                 if (result.ShouldPass())
@@ -83,9 +83,9 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult AND([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
         {
-            ZilObject resultObj = ctx.TRUE;
+            var resultObj = ctx.TRUE;
 
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 var result = arg.Eval(ctx);
                 if (result.ShouldPass())

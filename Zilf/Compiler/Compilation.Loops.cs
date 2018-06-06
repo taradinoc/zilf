@@ -39,7 +39,6 @@ namespace Zilf.Compiler
             [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
-
             if (!args.IsCons(out var first, out var rest))
             {
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
@@ -262,7 +261,6 @@ namespace Zilf.Compiler
         [NotNull]
         static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilListBase bindingList)
         {
-
             return bindingList.EnumerateNonRecursive()
                 .Select(GetUninitializedAtomFromBindingListItem)
                 .Where(a => a != null);
@@ -271,7 +269,6 @@ namespace Zilf.Compiler
         [CanBeNull]
         static ZilAtom GetUninitializedAtomFromBindingListItem([NotNull] ZilObject zo)
         {
-
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (zo.StdTypeAtom)
             {
@@ -288,7 +285,6 @@ namespace Zilf.Compiler
 
         static bool RecursivelyContains([NotNull] ZilObject haystack, [NotNull] ZilObject needle)
         {
-
             if (haystack == needle)
                 return true;
 

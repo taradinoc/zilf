@@ -41,7 +41,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilModelObject FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             if (!list.IsCons(out var first, out var rest))
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s, 

@@ -24,7 +24,6 @@ namespace Zilf.Emit.Zap
     {
         public SumOperand([NotNull] IConstantOperand left, [NotNull] IConstantOperand right)
         {
-
             Left = left;
             Right = right;
         }

@@ -28,7 +28,6 @@ namespace Zilf.Interpreter
         public NativeFrame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
             : base(ctx, sourceLine)
         {
-
             Description = description;
         }
     }

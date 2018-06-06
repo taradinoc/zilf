@@ -31,14 +31,12 @@ namespace Zilf.ZModel.Vocab
 
         public Synonym([NotNull] IWord original, [NotNull] IWord synonym)
         {
-
             OriginalWord = original;
             SynonymWord = synonym;
         }
 
         public virtual void Apply([NotNull] Context ctx)
         {
-
             ctx.ZEnvironment.VocabFormat.MakeSynonym(SynonymWord, OriginalWord);
         }
     }

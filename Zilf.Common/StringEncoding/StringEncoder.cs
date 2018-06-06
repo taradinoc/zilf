@@ -48,10 +48,7 @@ namespace Zilf.Common.StringEncoding
             public int Compare(AbbrevEntry x, AbbrevEntry y)
             {
                 int d = y.Pattern.Text.Length - x.Pattern.Text.Length;
-                if (d != 0)
-                    return d;
-
-                return string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
+                return d != 0 ? d : string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
             }
         }
 
@@ -64,7 +61,6 @@ namespace Zilf.Common.StringEncoding
 
         readonly List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
         static readonly AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
-        bool frozen;
 
         public StringEncoder()
         {
@@ -72,12 +68,12 @@ namespace Zilf.Common.StringEncoding
             charset = DefaultCharset.Select(s => s.Select(UnicodeTranslation.ToZscii).ToArray()).ToArray();
         }
 
-        public bool Frozen => frozen;
+        public bool Frozen { get; private set; }
 
         /// <exception cref="InvalidOperationException">Too late to add abbreviations, or too many abbreviations.</exception>
         public void AddAbbreviation(string str)
         {
-            if (frozen)
+            if (Frozen)
                 throw new InvalidOperationException("Too late to add abbreviations");
             if (abbrevs.Count >= 96)
                 throw new InvalidOperationException("Too many abbreviations");
@@ -101,7 +97,7 @@ namespace Zilf.Common.StringEncoding
             var noAbbrevs = mode == StringEncoderMode.NoAbbreviations;
 
             if (!noAbbrevs)
-                frozen = true;
+                Frozen = true;
 
             var temp = new List<byte>();
             var sb = new StringBuilder(str);
@@ -192,7 +188,7 @@ namespace Zilf.Common.StringEncoding
                 resultSize = size.Value * 2 / 3;
             }
 
-            byte[] result = new byte[Math.Min(resultSize, temp.Count * 2 / 3)];
+            var result = new byte[Math.Min(resultSize, temp.Count * 2 / 3)];
 
             for (int i = 0, t = 0; i < result.Length; )
             {
@@ -210,7 +206,7 @@ namespace Zilf.Common.StringEncoding
         /// <exception cref="InvalidOperationException">Too late to change charset.</exception>
         public void SetCharset(int charsetNum, IEnumerable<byte> characters)
         {
-            if (frozen)
+            if (Frozen)
                 throw new InvalidOperationException("Too late to change charset");
 
             var cs = new List<byte>(26);

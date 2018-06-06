@@ -20,6 +20,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
+using Zilf.Common;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -106,24 +107,28 @@ namespace Zilf.Interpreter
             [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
             [NotNull] ObList oblist)
         {
-            if (stringOrAtom is string str)
+            switch (stringOrAtom)
             {
-                if (oblist.Contains(str))
+                case string str when oblist.Contains(str):
                     throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT", str);
 
-                return oblist[str];
+                case string str:
+                    return oblist[str];
+
+                case ZilAtom atom when atom.ObList != null:
+                    throw new InterpreterError(InterpreterMessages._0_Atom_1_Is_Already_On_An_OBLIST, "INSERT",
+                        atom.ToStringContext(ctx, false));
+
+                case ZilAtom atom when oblist.Contains(atom.Text):
+                    throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT",
+                        atom.Text);
+
+                case ZilAtom atom:
+                    atom.ObList = oblist;
+                    return atom;
             }
 
-            var atom = (ZilAtom)stringOrAtom;
-
-            if (atom.ObList != null)
-                throw new InterpreterError(InterpreterMessages._0_Atom_1_Is_Already_On_An_OBLIST, "INSERT", atom.ToStringContext(ctx, false));
-
-            if (oblist.Contains(atom.Text))
-                throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "INSERT", atom.Text);
-
-            atom.ObList = oblist;
-            return atom;
+            throw new UnreachableCodeException();
         }
 
 #pragma warning disable CS0649
@@ -425,17 +430,7 @@ namespace Zilf.Interpreter
         public static ZilResult GETPROP([NotNull] Context ctx, [NotNull] ZilObject item, [NotNull] ZilObject indicator,
             [CanBeNull] ZilObject defaultValue = null)
         {
-            var result = ctx.GetProp(item, indicator);
-
-            if (result != null)
-            {
-                return result;
-            }
-            if (defaultValue != null)
-            {
-                return defaultValue.Eval(ctx);
-            }
-            return ctx.FALSE;
+            return ctx.GetProp(item, indicator) ?? defaultValue?.Eval(ctx) ?? ctx.FALSE;
         }
 
         [NotNull]
@@ -462,11 +457,7 @@ namespace Zilf.Interpreter
         {
             var results = ctx.GetAllAssociations();
 
-            if (results.Length > 0)
-            {
-                return new ZilAsoc(results, 0);
-            }
-            return ctx.FALSE;
+            return results.Length > 0 ? new ZilAsoc(results, 0) : ctx.FALSE;
         }
 
         [NotNull]

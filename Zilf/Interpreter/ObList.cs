@@ -52,20 +52,18 @@ namespace Zilf.Interpreter
 
             while (list.IsCons(out var first, out var rest))
             {
-                if (first is ZilList pair)
+                switch (first)
                 {
-                    if (!pair.HasLength(2))
+                    case ZilList pair when pair.Matches(out ZilString key, out ZilAtom value):
+                        result[key.Text] = value;
+                        break;
+
+                    case ZilList pair when !pair.HasLength(2):
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
 
-                    if (pair.Matches(out ZilString key, out ZilAtom value))
-                    {
-                        result[key.Text] = value;
-                    }
-                    else
-                    {
+                    case ZilList _:
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST",
                             "string-atom pairs");
-                    }
                 }
 
                 list = rest;
@@ -131,7 +129,6 @@ namespace Zilf.Interpreter
 
         internal void Add([NotNull] ZilAtom newAtom)
         {
-
             var key = newAtom.Text;
             if (ignoreCase)
                 key = key.ToUpperInvariant();
@@ -141,7 +138,6 @@ namespace Zilf.Interpreter
 
         internal void Remove([NotNull] ZilAtom atom)
         {
-
             var key = atom.Text;
             if (ignoreCase)
                 key = key.ToUpperInvariant();

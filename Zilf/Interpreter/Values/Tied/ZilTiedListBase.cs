@@ -238,10 +238,7 @@ namespace Zilf.Interpreter.Values.Tied
 
         public sealed override ZilListoidBase GetRest(int skip)
         {
-            if (GetLength(skip) < skip)
-                return null;
-
-            return new Wrapper(this, skip);
+            return this.HasLengthAtLeast(skip) ? new Wrapper(this, skip) : null;
         }
 
         [BuiltinAlternate(typeof(ZilList))]

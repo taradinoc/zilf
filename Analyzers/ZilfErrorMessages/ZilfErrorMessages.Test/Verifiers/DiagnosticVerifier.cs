@@ -84,7 +84,7 @@ namespace TestHelper
         /// <param name="language">The language of the classes represented by the source strings</param>
         /// <param name="analyzer">The analyzer to be run on the source code</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        async Task VerifyDiagnosticsAsync([NotNull] string[] sources, [NotNull] string language, DiagnosticAnalyzer analyzer, [NotNull] params DiagnosticResult[] expected)
+        static async Task VerifyDiagnosticsAsync([NotNull] string[] sources, [NotNull] string language, DiagnosticAnalyzer analyzer, [NotNull] params DiagnosticResult[] expected)
         {
             var diagnostics = await GetSortedDiagnosticsAsync(sources, language, analyzer).ConfigureAwait(false);
             VerifyDiagnosticResults(diagnostics, analyzer, expected);

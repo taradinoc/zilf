@@ -37,7 +37,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilList FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             return new ZilList(list.First, list.Rest);
         }
 
@@ -47,7 +46,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilResult result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
+            var result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
             if (result.ShouldPass())
                 return result;
 

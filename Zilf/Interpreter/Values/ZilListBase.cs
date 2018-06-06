@@ -64,7 +64,6 @@ namespace Zilf.Interpreter.Values
 
         protected ZilListBase([NotNull] IEnumerable<ZilObject> sequence)
         {
-
             using (var tor = sequence.GetEnumerator())
             {
                 if (tor.MoveNext())
@@ -82,15 +81,13 @@ namespace Zilf.Interpreter.Values
 
         protected ZilListBase(ZilObject first, ZilListoidBase rest)
         {
-
             this.first = first;
             this.rest = rest;
         }
 
         [NotNull]
-        protected ZilList MakeRest([NotNull] IEnumerator<ZilObject> tor)
+        protected static ZilList MakeRest([NotNull] IEnumerator<ZilObject> tor)
         {
-
             if (tor.MoveNext())
             {
                 var cur = tor.Current;

@@ -41,7 +41,6 @@ namespace Zilf.Compiler.Builtins
         public PredCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] ILabel label, bool polarity)
             : this()
         {
-
             this.cc = cc;
             this.rb = rb;
             this.form = form;

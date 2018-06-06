@@ -30,7 +30,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject PerformArithmetic(int init, [NotNull] Func<int, int, int> op, [NotNull] int[] args)
         {
-
             switch (args.Length)
             {
                 case 0:
@@ -171,9 +170,9 @@ namespace Zilf.Interpreter
         [Subr("OR?")]
         public static ZilObject OR_P([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
         {
-            ZilObject result = ctx.FALSE;
+            var result = ctx.FALSE;
 
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 result = arg;
                 if (result.IsTrue)
@@ -187,9 +186,9 @@ namespace Zilf.Interpreter
         [Subr("AND?")]
         public static ZilObject AND_P([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            ZilObject result = ctx.TRUE;
+            var result = ctx.TRUE;
 
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 result = arg;
                 if (!result.IsTrue)

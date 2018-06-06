@@ -46,7 +46,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilAtom FromAtom([NotNull] Context ctx, [NotNull] ZilAtom other)
         {
-
             // we can't construct a new atom since it wouldn't be equal to the old one
             return other;
         }
@@ -87,7 +86,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static ZilAtom Parse([NotNull] string text, [NotNull] Context ctx)
         {
-
             ZilAtom result;
             var idx = text.IndexOf("!-", StringComparison.Ordinal);
 

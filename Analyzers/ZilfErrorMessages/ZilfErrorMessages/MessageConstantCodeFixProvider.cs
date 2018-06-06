@@ -210,7 +210,8 @@ namespace ZilfErrorMessages
             return new PendingReplacement(location.Document, argumentListExpr, newArgumentListExpr);
         }
 
-        public static string IncrementFormatTokens(string format)
+        [NotNull]
+        public static string IncrementFormatTokens([NotNull] string format)
         {
             return MessageConstantAnalyzer.FormatTokenRegex.Replace(
                 format,

@@ -10,7 +10,6 @@ namespace ZilfErrorMessages.Test
     [TestClass, TestCategory("Analyzers")]
     public class ZilObjectTests : DiagnosticVerifier
     {
-
         //No diagnostics expected to show up
         [TestMethod]
         [Timeout(10000)]

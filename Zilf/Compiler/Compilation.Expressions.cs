@@ -18,6 +18,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
@@ -50,7 +51,6 @@ namespace Zilf.Compiler
         internal IOperand CompileForm([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, bool wantResult,
             IVariable resultStorage)
         {
-
             using (DiagnosticContext.Push(form.SourceLine))
             {
                 var unwrapped = form.Unwrap(Context);
@@ -206,7 +206,6 @@ namespace Zilf.Compiler
         public IOperand CompileAsOperand([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [CanBeNull] IVariable suggestion = null)
         {
-
             expr = expr.Unwrap(Context);
 
             var constant = CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
@@ -274,7 +273,6 @@ namespace Zilf.Compiler
             [CanBeNull] IVariable resultStorage,
             [NotNull] ILabel label, bool polarity, [CanBeNull] [InstantHandle] Func<IVariable> tempVarProvider = null)
         {
-
             expr = expr.Unwrap(Context);
             IOperand result = resultStorage;
 
@@ -456,55 +454,51 @@ namespace Zilf.Compiler
                 if (handled)
                     continue;
 
-                // literal string -> PRINTI
-                if (args[index] is ZilString zstr)
+                switch (args[index])
                 {
-                    rb.EmitPrint(TranslateString(zstr.Text, Context), false);
-                    index++;
-                    continue;
-                }
+                    // literal string -> PRINTI
+                    case ZilString zstr:
+                        rb.EmitPrint(TranslateString(zstr.Text, Context), false);
+                        index++;
+                        continue;
 
-                // literal character -> PRINTC
-                if (args[index] is ZilChar zch)
-                {
-                    rb.EmitPrint(PrintOp.Character, Game.MakeOperand(zch.Char));
-                    index++;
-                    continue;
-                }
+                    // literal character -> PRINTC
+                    case ZilChar zch:
+                        rb.EmitPrint(PrintOp.Character, Game.MakeOperand(zch.Char));
+                        index++;
+                        continue;
 
-                // <QUOTE foo> -> <PRINTD ,foo>
-                if (args[index] is ZilForm innerForm)
-                {
-                    if (innerForm.First is ZilAtom atom && atom.StdAtom == StdAtom.QUOTE && innerForm.Rest != null && !innerForm.Rest.IsEmpty)
-                    {
+                    // <QUOTE foo> -> <PRINTD ,foo>
+                    case ZilForm innerForm when innerForm.First is ZilAtom atom && atom.StdAtom == StdAtom.QUOTE &&
+                                                innerForm.Rest != null && !innerForm.Rest.IsEmpty:
                         Debug.Assert(innerForm.Rest.First != null);
-                        var transformed = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
-                        transformed.SourceLine = src;
-                        var obj = CompileAsOperand(rb, transformed, innerForm.SourceLine);
+                        var newGval = Context.ChangeType(innerForm.Rest.First, Context.GetStdAtom(StdAtom.GVAL));
+                        newGval.SourceLine = src;
+                        var obj = CompileAsOperand(rb, newGval, innerForm.SourceLine);
                         rb.EmitPrint(PrintOp.Object, obj);
                         index++;
                         continue;
-                    }
-                }
 
-                // P?foo expr -> <PRINT <GETP expr ,P?foo>>
-                if (args[index] is ZilAtom prop && index + 1 < args.Length)
-                {
-                    var transformed = (ZilForm)Program.Parse(Context, src,
-                        "<PRINT <GETP {0} ,{1}>>", args[index + 1], prop)
-                        .Single();
-                    CompileForm(rb, transformed, false, null);
-                    index += 2;
-                    continue;
-                }
+                    // P?foo expr -> <PRINT <GETP expr ,P?foo>>
+                    case ZilAtom prop when index + 1 < args.Length:
+                        var newForm = (ZilForm)Program.Parse(Context, src,
+                                "<PRINT <GETP {0} ,{1}>>", args[index + 1], prop)
+                            .Single();
+                        CompileForm(rb, newForm, false, null);
+                        index += 2;
+                        continue;
 
-                // otherwise, treat it as a packed string
-                var str = CompileAsOperand(rb, args[index], args[index].SourceLine ?? src);
-                rb.EmitPrint(PrintOp.PackedAddr, str);
-                index++;
+                    // otherwise, treat it as a packed string
+                    default:
+                        var str = CompileAsOperand(rb, args[index], args[index].SourceLine ?? src);
+                        rb.EmitPrint(PrintOp.PackedAddr, str);
+                        index++;
+                        break;
+                }
             }
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         bool HasSideEffects(ZilObject expr)
         {
             // only forms can have side effects

@@ -49,7 +49,6 @@ namespace Zilf.Interpreter.Values
             [NotNull] [ItemNotNull] IEnumerable<ZilObject> argspec, ZilDecl decl,
             [ItemNotNull] [NotNull] IEnumerable<ZilObject> body)
         {
-
             this.argspec = ArgSpec.Parse(caller, name, activationAtom, argspec, decl);
             this.body = body.ToArray();
         }
@@ -58,7 +57,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static ZilFunction FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-
             var functionSubr = ctx.GetSubrDelegate("FUNCTION");
             Debug.Assert(functionSubr != null);
             return (ZilFunction)functionSubr.Invoke("FUNCTION", ctx, list.ToArray());

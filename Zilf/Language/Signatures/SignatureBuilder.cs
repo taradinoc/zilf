@@ -55,7 +55,6 @@ namespace Zilf.Language.Signatures
         [CanBeNull]
         public static SignaturePart MaybeConvertDecl([NotNull] string pattern)
         {
-
             // TODO: this should parse the <OR...> instead of doing a hacky regex match
 
             if (pattern.StartsWith("'", StringComparison.Ordinal))

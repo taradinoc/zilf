@@ -30,7 +30,6 @@ namespace Zilf.Interpreter
     {
         public BuiltinAlternateAttribute(Type mainClass)
         {
-
             MainType = mainClass;
         }
 

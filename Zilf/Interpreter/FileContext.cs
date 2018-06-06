@@ -33,7 +33,6 @@ namespace Zilf.Interpreter
 
         public FileContext([NotNull] Context ctx, [NotNull] string path)
         {
-
             Context = ctx;
             Parent = ctx.CurrentFile;
             Path = path;

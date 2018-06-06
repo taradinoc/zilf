@@ -40,7 +40,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.Contracts.Pure]
         public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
-
             if (associations.TryGetValue(first, out var innerTable) && innerTable.TryGetValue(second, out var result))
                 return result;
 
@@ -56,7 +55,6 @@ namespace Zilf.Interpreter
         /// null to clear the association.</param>
         public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
         {
-
             if (value == null)
             {
                 if (associations.TryGetValue(first, out var innerTable))

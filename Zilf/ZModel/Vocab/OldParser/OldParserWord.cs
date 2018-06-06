@@ -118,7 +118,6 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// <returns>true if the new part of speech should set the First flag.</returns>
         bool ShouldSetFirst([NotNull] Context ctx)
         {
-
             // if no parts of speech are set yet, this is easy
             if (PartOfSpeech == PartOfSpeech.None)
                 return true;
@@ -156,7 +155,6 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// </remarks>
         void CheckTooMany([NotNull] Context ctx)
         {
-
             var b = (byte)(PartOfSpeech & ~PartOfSpeech.FirstMask);
             byte count = 0;
 
@@ -269,7 +267,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetObject(ISourceLine location)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Object) == 0)
             {
                 // there is no PartOfSpeech.ObjectFirst, so don't change the First flags
@@ -282,7 +279,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetVerb([NotNull] Context ctx, ISourceLine location, byte value)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -296,7 +292,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetAdjective([NotNull] Context ctx, ISourceLine location, byte value)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
                 if (ctx.ZEnvironment.ZVersion < 4 && ShouldSetFirst(ctx))
@@ -310,7 +305,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetDirection([NotNull] Context ctx, ISourceLine location, byte value)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
                 if (ShouldSetFirst(ctx))
@@ -324,7 +318,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetBuzzword([NotNull] Context ctx, ISourceLine location, byte value)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Buzzword) == 0)
             {
                 // buzzword value comes before everything but preposition, except in CompactVocab
@@ -339,7 +332,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void SetPreposition([NotNull] Context ctx, ISourceLine location, byte value)
         {
-
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
                 // preposition value is always first, except in CompactVocab
@@ -354,7 +346,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         void UnsetPartOfSpeech([NotNull] Context ctx, PartOfSpeech part)
         {
-
             var query = from pair in speechValues
                         where pair.Key != part
                         orderby pair.Key
@@ -417,7 +408,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void WriteToBuilder([NotNull] Context ctx, [NotNull] IWordBuilder wb, [NotNull] DirIndexToPropertyOperandDelegate dirIndexToPropertyOperand)
         {
-
             // discard excess parts of speech if needed
             CheckTooMany(ctx);
 
@@ -512,7 +502,6 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void Merge([NotNull] Context ctx, [NotNull] OldParserWord other)
         {
-
             if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
                 SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));
 

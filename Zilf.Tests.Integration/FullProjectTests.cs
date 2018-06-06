@@ -150,7 +150,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string MassageText([NotNull] string text)
         {
-
             text = SerialNumberRegex.Replace(text, "######");
             text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
             return text;
@@ -159,7 +158,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string[] SplitLines([NotNull] string text)
         {
-
             var lines = text.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {

@@ -63,7 +63,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string[] PrepImplications(bool compact, [ItemNotNull] [NotNull] params string[] wordAndIdConstantPairs)
         {
-
             const string SCompactTest =
                 "<==? <GETB <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> {1}>";
             const string SNonCompactTest =

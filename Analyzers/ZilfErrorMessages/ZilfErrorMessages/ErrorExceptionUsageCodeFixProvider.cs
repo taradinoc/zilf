@@ -71,7 +71,7 @@ namespace ZilfErrorMessages
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        async Task<Solution> ConvertMessagesToConstantsAsync([NotNull] Document document, [NotNull] LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        static async Task<Solution> ConvertMessagesToConstantsAsync([NotNull] Document document, [NotNull] LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var invocations = PlanInvocations(creations, severity);
             return await ApplyInvocationsAsync(
@@ -330,7 +330,7 @@ namespace ZilfErrorMessages
                     case FixAllScope.Project:
                         {
                             var project = fixAllContext.Project;
-                            ImmutableArray<Diagnostic> diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
+                            var diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
                             diagnosticsToFix.Add(new KeyValuePair<Project, ImmutableArray<Diagnostic>>(fixAllContext.Project, diagnostics));
                             fixAllTitle = string.Format(TitleFormat, "project", fixAllContext.Project.Name);
                             break;
@@ -340,7 +340,7 @@ namespace ZilfErrorMessages
                         {
                             foreach (var project in fixAllContext.Solution.Projects)
                             {
-                                ImmutableArray<Diagnostic> diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
+                                var diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
                                 diagnosticsToFix.Add(new KeyValuePair<Project, ImmutableArray<Diagnostic>>(project, diagnostics));
                             }
 

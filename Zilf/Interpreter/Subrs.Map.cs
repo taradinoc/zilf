@@ -51,7 +51,7 @@ namespace Zilf.Interpreter
             var finalf_app = finalf.AsApplicable(ctx);
 
             int numStructs = structs.Length;
-            ZilObject[] loopArgs = new ZilObject[numStructs];
+            var loopArgs = new ZilObject[numStructs];
 
             var results = new List<ZilObject>();
             bool running = true;

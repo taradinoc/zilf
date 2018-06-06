@@ -36,7 +36,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilString FromString([NotNull] Context ctx, [NotNull] ZilString other)
         {
-
             return new OriginalString(other.Text);
         }
 
@@ -54,7 +53,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public static string Quote([NotNull] string text)
         {
-
             var sb = new StringBuilder(text.Length + 2);
             sb.Append('"');
 

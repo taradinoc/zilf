@@ -82,7 +82,6 @@ namespace Zilf.Language
         public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
             bool ignoreErrors = false)
         {
-
             switch (pattern)
             {
                 case ZilAtom atom:
@@ -231,7 +230,6 @@ namespace Zilf.Language
         static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure,
             [NotNull] ZilListoidBase elements, bool segment, bool ignoreErrors)
         {
-
             foreach (var subpattern in elements)
             {
                 ZilObject first;

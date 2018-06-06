@@ -31,7 +31,6 @@ namespace Zilf.Diagnostics
 
         public CountableString([NotNull] string text, bool plural)
         {
-
             Text = text;
             Plural = plural;
         }
@@ -78,7 +77,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         static string EnglishJoin([NotNull] IEnumerable<string> sequence, [NotNull] string conjunction)
         {
-
             var items = sequence.ToArray();
 
             switch (items.Length)
@@ -99,7 +97,6 @@ namespace Zilf.Diagnostics
         [NotNull]
         public static string FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges)
         {
-
             FormatArgCount(ranges, out var cs);
             return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }

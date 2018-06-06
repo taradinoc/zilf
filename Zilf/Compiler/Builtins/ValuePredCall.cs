@@ -46,7 +46,6 @@ namespace Zilf.Compiler.Builtins
             [NotNull] IVariable resultStorage, [NotNull] ILabel label, bool polarity)
             : this()
         {
-
             this.cc = cc;
             this.rb = rb;
             this.form = form;

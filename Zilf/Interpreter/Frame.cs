@@ -35,7 +35,6 @@ namespace Zilf.Interpreter
 
         protected Frame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
         {
-
             Context = ctx;
             Parent = ctx.TopFrame;
             SourceLine = callingForm.SourceLine;
@@ -43,7 +42,6 @@ namespace Zilf.Interpreter
 
         protected Frame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine)
         {
-
             Context = ctx;
             Parent = ctx.TopFrame;
             SourceLine = sourceLine;

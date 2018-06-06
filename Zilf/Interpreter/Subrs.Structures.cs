@@ -125,7 +125,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject NTH(Context ctx, [NotNull] IStructure st, int idx)
         {
-            ZilObject result = st[idx - 1];
+            var result = st[idx - 1];
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "NTH");
 

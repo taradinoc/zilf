@@ -24,7 +24,6 @@ namespace Zilf.Language
     {
         public FileSourceLine([NotNull] string filename, int line)
         {
-
             FileName = filename;
             Line = line;
         }

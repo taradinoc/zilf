@@ -31,7 +31,6 @@ namespace Zilf.ZModel
 
         LowCoreField(int offset, LowCoreFlags flags = LowCoreFlags.None, int minVersion = 3, int? maxVersion = null)
         {
-
             Offset = offset;
             Flags = flags;
             MinVersion = minVersion;
@@ -100,7 +99,6 @@ namespace Zilf.ZModel
         [CanBeNull]
         public static LowCoreField Get([NotNull] ZilAtom atom)
         {
-
             allFields.TryGetValue(atom.Text, out var result);
             return result;
         }

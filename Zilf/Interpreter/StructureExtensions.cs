@@ -69,7 +69,7 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
+            obj1 = default;
             return false;
         }
 
@@ -97,8 +97,8 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
+            obj1 = default;
+            obj2 = default;
             return false;
         }
 
@@ -131,9 +131,9 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
-            obj3 = default(T3);
+            obj1 = default;
+            obj2 = default;
+            obj3 = default;
             return false;
         }
 
@@ -171,10 +171,10 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
-            obj3 = default(T3);
-            obj4 = default(T4);
+            obj1 = default;
+            obj2 = default;
+            obj3 = default;
+            obj4 = default;
             return false;
         }
 
@@ -202,7 +202,7 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
+            obj1 = default;
             return false;
         }
 
@@ -230,8 +230,8 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
+            obj1 = default;
+            obj2 = default;
             return false;
         }
 
@@ -264,9 +264,9 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
-            obj3 = default(T3);
+            obj1 = default;
+            obj2 = default;
+            obj3 = default;
             return false;
         }
 
@@ -304,10 +304,10 @@ namespace Zilf.Interpreter
                 return true;
             }
 
-            obj1 = default(T1);
-            obj2 = default(T2);
-            obj3 = default(T3);
-            obj4 = default(T4);
+            obj1 = default;
+            obj2 = default;
+            obj3 = default;
+            obj4 = default;
             return false;
         }
 

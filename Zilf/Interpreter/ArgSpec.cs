@@ -95,7 +95,6 @@ namespace Zilf.Interpreter
         public static ArgSpec Parse([NotNull] string caller, [CanBeNull] ZilAtom targetName, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [CanBeNull] ZilDecl bodyDecl = null)
         {
-
             var optArgsStart = -1;
             var auxArgsStart = -1;
 
@@ -484,7 +483,6 @@ namespace Zilf.Interpreter
             public ArgEvaluator([NotNull] Context ctx, [NotNull] LocalEnvironment env, [NotNull] IEnumerable<ZilObject> rawArgs,
                 [NotNull] Action throwWrongCount)
             {
-
                 this.ctx = ctx;
                 this.env = env;
                 this.throwWrongCount = throwWrongCount;
@@ -517,7 +515,6 @@ namespace Zilf.Interpreter
             [ContractAnnotation("=> src: notnull")]
             public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
-
                 var result = GetOneOptional(eval, out src);
 
                 if (result != null)
@@ -530,7 +527,6 @@ namespace Zilf.Interpreter
             /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
             public ZilResult? GetOneOptional(bool eval, [CanBeNull] out IProvideSourceLine src)
             {
-
                 while (true)
                 {
                     if (enumerator == null)
@@ -624,7 +620,6 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Application BeginApply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
         {
-
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
 
@@ -755,7 +750,6 @@ namespace Zilf.Interpreter
         [NotNull]
         public ZilList ToZilList()
         {
-
             return new ZilList(AsZilListBody());
         }
 

@@ -50,7 +50,6 @@ namespace Zilf.Interpreter
             [CanBeNull] ZilAtom activationAtom,
             [NotNull] ZilList argList, ZilDecl decl, [NotNull] ZilObject[] body, [NotNull] string subrName)
         {
-
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
 

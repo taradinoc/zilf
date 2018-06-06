@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
@@ -189,15 +190,20 @@ namespace Zapf
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
         public void WriteByte([NotNull] Symbol sym)
         {
-            if (sym.Type == SymbolType.Unknown)
+            switch (sym.Type)
             {
-                if (FinalPass)
+                case SymbolType.Unknown when FinalPass:
                     Errors.ThrowSerious("undefined symbol");
-                else
+                    break;
+
+                case SymbolType.Unknown:
                     WriteByte(0);
+                    break;
+
+                default:
+                    WriteByte((byte)sym.Value);
+                    break;
             }
-            else
-                WriteByte((byte)sym.Value);
         }
 
         public void WriteWord(ushort w)
@@ -214,15 +220,20 @@ namespace Zapf
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
         public void WriteWord([NotNull] Symbol sym)
         {
-            if (sym.Type == SymbolType.Unknown)
+            switch (sym.Type)
             {
-                if (FinalPass)
+                case SymbolType.Unknown when FinalPass:
                     Errors.ThrowSerious("undefined symbol");
-                else
+                    break;
+
+                case SymbolType.Unknown:
                     WriteWord(0);
+                    break;
+
+                default:
+                    WriteWord((ushort)sym.Value);
+                    break;
             }
-            else
-                WriteWord((ushort)sym.Value);
         }
 
         /// <exception cref="InvalidOperationException">The object file is closed.</exception>
@@ -236,12 +247,7 @@ namespace Zapf
             return (byte)stream.ReadByte();
         }
 
-        public void WriteZString([NotNull] string str, bool withLength)
-        {
-            WriteZString(str, withLength, StringEncoderMode.Normal);
-        }
-
-        public void WriteZString([NotNull] string str, bool withLength, StringEncoderMode mode)
+        public void WriteZString([NotNull] string str, bool withLength, StringEncoderMode mode = StringEncoderMode.Normal)
         {
             MaybeProcessEscapeChars(ref str);
 
@@ -258,7 +264,6 @@ namespace Zapf
 
         void MaybeProcessEscapeChars([NotNull] ref string str)
         {
-
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse      // false alarm!
             if (!(LanguageEscapeChar is char escape) || str.IndexOf((char)LanguageEscapeChar) < 0)
                 return;
@@ -463,7 +468,7 @@ namespace Zapf
         [CanBeNull]
         string VocabLabel(int index)
         {
-            foreach (Symbol sym in GlobalSymbols.Values)
+            foreach (var sym in GlobalSymbols.Values)
             {
                 if (sym.Type == SymbolType.Label && sym.Value >= vocabStart && sym.Value < position)
                 {
@@ -877,6 +882,7 @@ namespace Zapf
             return intercept?.Invoke(filename) ?? File.Exists(filename);
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public string FindInsertedFile(string name)
         {
             if (FileExists(name))

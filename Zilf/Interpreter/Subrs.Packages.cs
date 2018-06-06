@@ -190,22 +190,14 @@ namespace Zilf.Interpreter
         [Subr("USE-WHEN")]
         public static ZilObject USE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
-            if (condition.IsTrue)
-            {
-                return PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE);
-            }
-            return condition;
+            return condition.IsTrue ? PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE) : condition;
         }
 
         [NotNull]
         [Subr("INCLUDE-WHEN")]
         public static ZilObject INCLUDE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
         {
-            if (condition.IsTrue)
-            {
-                return PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS);
-            }
-            return condition;
+            return condition.IsTrue ? PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS) : condition;
         }
 
         [NotNull]

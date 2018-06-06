@@ -216,7 +216,6 @@ namespace Zilf.Language.Signatures
         [NotNull]
         static SignaturePart ConstrainByType([NotNull] SignaturePart part, [NotNull] Type elementType)
         {
-
             System.Diagnostics.Debug.Assert(!elementType.IsArray);
 
             // treat Nullable<Foo> as an optional Foo

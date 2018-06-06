@@ -34,7 +34,6 @@ namespace Zilf.Compiler
         [CanBeNull]
         IOperand GetGlobalDefaultValue([NotNull] ZilGlobal global)
         {
-
             if (global.Value == null)
                 return null;
 
@@ -81,7 +80,6 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError"></exception>
         void DoFunnyGlobals(int reservedGlobals, Queue<System.Action> globalInitializers)
         {
-
             // if all the globals fit into Z-machine globals, no need for a table
             int remaining = 240 - reservedGlobals;
 
@@ -321,7 +319,7 @@ namespace Zilf.Compiler
                     return CompileConstant(constant.Value);
 
                 case ZilForm form:
-                    return form.IsGVAL(out ZilAtom globalAtom) ? CompileConstant(globalAtom, AmbiguousConstantMode.Pessimistic) : null;
+                    return form.IsGVAL(out var globalAtom) ? CompileConstant(globalAtom, AmbiguousConstantMode.Pessimistic) : null;
 
                 case ZilHash hash when hash.StdTypeAtom == StdAtom.VOC && hash.GetPrimitive(Context) is ZilAtom primAtom:
                     var wordAtom = ZilAtom.Parse("W?" + primAtom.Text, Context);

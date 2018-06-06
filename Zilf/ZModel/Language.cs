@@ -32,7 +32,6 @@ namespace Zilf.ZModel
 
         Language(int id, string charset0, string charset1, string charset2, [NotNull] params char[] specialChars)
         {
-
             Id = id;
             Charset0 = charset0;
             Charset1 = charset1;
@@ -80,7 +79,6 @@ namespace Zilf.ZModel
         [System.Diagnostics.Contracts.Pure]
         public static Language Get([NotNull] string name)
         {
-
             allLanguages.TryGetValue(name, out var result);
             return result;
         }

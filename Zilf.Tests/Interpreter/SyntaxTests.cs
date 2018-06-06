@@ -34,7 +34,6 @@ namespace Zilf.Tests.Interpreter
         [NotNull]
         static Syntax ParseSyntax([NotNull] Context ctx, [NotNull] string definition)
         {
-
             var defn = (ZilList)Program.Evaluate(ctx, definition, true);
             Debug.Assert(defn != null);
 

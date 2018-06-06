@@ -44,21 +44,12 @@ namespace Zilf.Tests.Interpreter
                 }));
 
             TestHelpers.EvalAndAssert("<MEMQ 5 '[3 4 5 6 7]>",
-                new ZilVector(new ZilObject[]
-                {
-                    new ZilFix(5),
-                    new ZilFix(6),
-                    new ZilFix(7)
-                }));
+                new ZilVector(new ZilFix(5), new ZilFix(6), new ZilFix(7)));
 
             // use value comparison for LVAL/GVAL, but not other structures
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<MEMQ '.C '[.A .B .C .D]>",
-                new ZilVector(new ZilObject[]
-                {
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("C", ctx) }),
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("D", ctx) }),
-                }));
+                new ZilVector(new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("C", ctx) }), new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("D", ctx) })));
 
             TestHelpers.EvalAndAssert(ctx, "<MEMQ '<FOO C> '[<FOO A> <FOO B> <FOO C> <FOO D>]>",
                 ctx.FALSE);
@@ -75,11 +66,7 @@ namespace Zilf.Tests.Interpreter
                 }));
 
             TestHelpers.EvalAndAssert("<MEMBER '(5) '[3 4 (5) 6 7]>",
-                new ZilVector(new ZilObject[] {
-                            new ZilList(new ZilObject[] { new ZilFix(5) }),
-                            new ZilFix(6),
-                            new ZilFix(7)
-                        }));
+                new ZilVector(new ZilList(new ZilObject[] { new ZilFix(5) }), new ZilFix(6), new ZilFix(7)));
         }
 
         [TestMethod]
@@ -97,11 +84,7 @@ namespace Zilf.Tests.Interpreter
         public void TestIVECTOR()
         {
             TestHelpers.EvalAndAssert("<IVECTOR 3 123>",
-                new ZilVector(new ZilObject[] {
-                    new ZilFix(123),
-                    new ZilFix(123),
-                    new ZilFix(123)
-                }));
+                new ZilVector(new ZilFix(123), new ZilFix(123), new ZilFix(123)));
         }
 
         [TestMethod]
@@ -130,7 +113,7 @@ namespace Zilf.Tests.Interpreter
                 pointAtom);
 
             // put values into existing object, setting any omitted fields to default values (unless the default is NONE!)
-            var vector = new ZilVector(new ZilObject[] { new ZilFix(123), new ZilFix(456), new ZilFix(789), new ZilFix(1011) });
+            var vector = new ZilVector(new ZilFix(123), new ZilFix(456), new ZilFix(789), new ZilFix(1011));
             ctx.SetLocalVal(ZilAtom.Parse("MY-VECTOR", ctx),
                 new ZilStructuredHash(pointAtom, PrimType.VECTOR, vector));
             TestHelpers.EvalAndAssert(ctx, "<MAKE-POINT 'POINT .MY-VECTOR 'POINT-Y 999 'POINT-X 888>",
@@ -399,9 +382,7 @@ namespace Zilf.Tests.Interpreter
         public void IVECTOR_Should_Evaluate_Initializer_Each_Time()
         {
             TestHelpers.EvalAndAssert("<SET X 0> <IVECTOR 3 '<SET X <+ .X 1>>>",
-                new ZilVector(new ZilObject[] {
-                    new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                }));
+                new ZilVector(new ZilFix(1), new ZilFix(2), new ZilFix(3)));
         }
 
         [TestMethod]

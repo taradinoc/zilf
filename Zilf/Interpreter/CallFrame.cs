@@ -32,7 +32,6 @@ namespace Zilf.Interpreter
         public CallFrame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
             : base(ctx, callingForm.SourceLine)
         {
-
             CallingForm = callingForm;
         }
     }
