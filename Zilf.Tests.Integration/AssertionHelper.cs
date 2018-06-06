@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,11 +18,7 @@
 
 using JetBrains.Annotations;
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -41,11 +37,7 @@ namespace Zilf.Tests.Integration
         protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
         protected bool wantCompileOutput;
-
-        protected AbstractAssertionHelper()
-        {
-            Contract.Assume(GetType() == typeof(TThis));
-        }
+        protected bool wantDebugInfo;
 
         [NotNull]
         public TThis InV3()
@@ -132,6 +124,13 @@ namespace Zilf.Tests.Integration
         }
 
         [NotNull]
+        public TThis WithDebugInfo()
+        {
+            wantDebugInfo = true;
+            return (TThis)this;
+        }
+
+        [NotNull]
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -175,7 +174,7 @@ namespace Zilf.Tests.Integration
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarningCount(result.WarningCount);
@@ -192,7 +191,7 @@ namespace Zilf.Tests.Integration
 
             try
             {
-                result = ZlrHelper.Run(testCode, null, compileOnly: true);
+                result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             }
             catch (Exception ex)
             {
@@ -214,35 +213,24 @@ namespace Zilf.Tests.Integration
     {
         [NotNull] protected abstract string Expression();
 
-        [AssertionMethod]
         public void GivesNumber([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
-
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
         }
 
-        [AssertionMethod]
         public void Outputs([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
-
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
 
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
         }
 
-        [AssertionMethod]
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
         {
-            Contract.Requires(conditions != null);
-            Contract.Requires(conditions.Length > 0);
-            Contract.Requires(Contract.ForAll(conditions, c => !string.IsNullOrWhiteSpace(c)));
-
             var sb = new StringBuilder();
             foreach (var c in conditions)
             {
@@ -260,7 +248,6 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
         }
 
-        [AssertionMethod]
         public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
             [CanBeNull] string message = null)
         {
@@ -271,7 +258,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarningCount(result.WarningCount);
@@ -282,22 +269,16 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        [AssertionMethod]
-        public void DoesNotCompile<TMessages>(int diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
+        public void DoesNotCompile(string diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
         {
-            var attr = typeof(TMessages).GetCustomAttribute<MessageSetAttribute>();
-            Debug.Assert(attr != null, "No " + nameof(MessageSetAttribute) + " on " + typeof(TMessages).FullName);
-
-            var prefix = attr.Prefix;
             DoesNotCompile(res =>
                 {
-                    var diag = res.Diagnostics.FirstOrDefault(d => d.CodePrefix == prefix && d.Code == diagnosticCode);
+                    var diag = res.Diagnostics.FirstOrDefault(d => d.Code == diagnosticCode);
                     return diag != null && (diagFilter == null || diagFilter(diag));
                 },
-                $"Expected diagnostic {attr.Prefix}{diagnosticCode:0000} was not produced");
+                $"Expected diagnostic {diagnosticCode} was not produced");
         }
 
-        [AssertionMethod]
         public void Compiles()
         {
             var testCode =
@@ -307,31 +288,84 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true);
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
             CheckWarningCount(result.WarningCount);
         }
 
-        [AssertionMethod]
-        public void GeneratesCodeMatching([NotNull] string pattern)
+        [NotNull]
+        public CodeMatchingResult GeneratesCodeMatching([NotNull] string pattern)
         {
-            Contract.Requires(pattern != null);
+            return GeneratesCodeMatching(CheckOutputMatches(pattern));
+        }
 
+        [NotNull]
+        static Action<string> CheckOutputMatches(string pattern)
+        {
+            return output =>
+                Assert.IsTrue(
+                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                    "Output did not match. Expected pattern: " + pattern);
+        }
+
+        [NotNull]
+        public CodeMatchingResult GeneratesCodeNotMatching([NotNull] string pattern)
+        {
+            return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
+        }
+
+        [NotNull]
+        static Action<string> CheckOutputDoesNotMatch(string pattern)
+        {
+            return output =>
+                Assert.IsFalse(
+                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                    "Output should not have matched. Anti-pattern: " + pattern);
+        }
+
+        [NotNull]
+        CodeMatchingResult GeneratesCodeMatching([NotNull] Action<string> checkGeneratedCode)
+        {
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
                            $"\t{Expression()}\r\n" +
                            "\t<QUIT>>";
 
             var helper = new ZlrHelper(testCode, null);
-            Assert.IsTrue(helper.Compile(), "Failed to compile");
+            Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
 
             var output = helper.GetZapCode();
-            Assert.IsTrue(Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
-                "Output did not match. Expected pattern: " + pattern);
+            checkGeneratedCode(output);
 
             CheckWarningCount(helper.WarningCount);
+
+            return new CodeMatchingResult(output);
+        }
+
+        public sealed class CodeMatchingResult
+        {
+            public string Output { get; }
+
+            public CodeMatchingResult(string output)
+            {
+                this.Output = output;
+            }
+
+            [NotNull]
+            public CodeMatchingResult AndMatching([NotNull] string pattern)
+            {
+                CheckOutputMatches(pattern)(Output);
+                return this;
+            }
+
+            [NotNull]
+            public CodeMatchingResult AndNotMatching([NotNull] string pattern)
+            {
+                CheckOutputDoesNotMatch(pattern)(Output);
+                return this;
+            }
         }
     }
 
@@ -342,8 +376,6 @@ namespace Zilf.Tests.Integration
 
         public ExprAssertionHelper([NotNull] string expression)
         {
-            Contract.Requires(!string.IsNullOrWhiteSpace(expression));
-
             this.expression = expression;
         }
 
@@ -362,9 +394,6 @@ namespace Zilf.Tests.Integration
 
         public RoutineAssertionHelper([NotNull] string argSpec, [NotNull] string body)
         {
-            Contract.Requires(argSpec != null);
-            Contract.Requires(!string.IsNullOrWhiteSpace(body));
-
             this.argSpec = argSpec;
             this.body = body;
         }
@@ -372,7 +401,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public RoutineAssertionHelper WhenCalledWith([NotNull] string testArguments)
         {
-            Contract.Requires(testArguments != null);
             arguments = testArguments;
             return this;
         }
@@ -392,9 +420,6 @@ namespace Zilf.Tests.Integration
     {
         public GlobalsAssertionHelper([ItemNotNull] [NotNull] params string[] globals)
         {
-            Contract.Requires(globals != null && globals.Length > 0);
-            Contract.Requires(Contract.ForAll(globals, c => !string.IsNullOrWhiteSpace(c)));
-
             foreach (var g in globals)
                 miscGlobals.AppendLine(g);
         }
@@ -412,22 +437,12 @@ namespace Zilf.Tests.Integration
 
         public RawAssertionHelper([NotNull] string code)
         {
-            Contract.Requires(code != null);
             this.code = code;
         }
 
         public void Outputs([NotNull] string expectedValue)
         {
-            Contract.Requires(expectedValue != null);
             ZlrHelper.RunAndAssert(code, null, expectedValue);
-        }
-
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(code != null);
         }
     }
 }

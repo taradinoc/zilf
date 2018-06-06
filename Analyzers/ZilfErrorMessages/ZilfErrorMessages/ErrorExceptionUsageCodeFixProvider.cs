@@ -14,7 +14,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Formatting;
-using System.Diagnostics.Contracts;
 
 namespace ZilfErrorMessages
 {
@@ -72,7 +71,7 @@ namespace ZilfErrorMessages
             public Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax;
         }
 
-        async Task<Solution> ConvertMessagesToConstantsAsync([NotNull] Document document, [NotNull] LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        static async Task<Solution> ConvertMessagesToConstantsAsync([NotNull] Document document, [NotNull] LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var invocations = PlanInvocations(creations, severity);
             return await ApplyInvocationsAsync(
@@ -314,7 +313,6 @@ namespace ZilfErrorMessages
             /// <exception cref="ArgumentException">Unknown scope</exception>
             public override async Task<CodeAction> GetFixAsync([NotNull] FixAllContext fixAllContext)
             {
-                Contract.Requires(fixAllContext != null);
                 var diagnosticsToFix = new List<KeyValuePair<Project, ImmutableArray<Diagnostic>>>();
                 const string TitleFormat = "Convert all messages in {0} {1} to diagnostic constants";
                 string fixAllTitle;
@@ -332,7 +330,7 @@ namespace ZilfErrorMessages
                     case FixAllScope.Project:
                         {
                             var project = fixAllContext.Project;
-                            ImmutableArray<Diagnostic> diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
+                            var diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
                             diagnosticsToFix.Add(new KeyValuePair<Project, ImmutableArray<Diagnostic>>(fixAllContext.Project, diagnostics));
                             fixAllTitle = string.Format(TitleFormat, "project", fixAllContext.Project.Name);
                             break;
@@ -342,7 +340,7 @@ namespace ZilfErrorMessages
                         {
                             foreach (var project in fixAllContext.Solution.Projects)
                             {
-                                ImmutableArray<Diagnostic> diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
+                                var diagnostics = await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false);
                                 diagnosticsToFix.Add(new KeyValuePair<Project, ImmutableArray<Diagnostic>>(project, diagnostics));
                             }
 
@@ -405,7 +403,6 @@ namespace ZilfErrorMessages
         static IEnumerable<LiteralCreation> MatchLiteralCreations(
             [NotNull] IEnumerable<ObjectCreationExpressionSyntax> creationExprs, SemanticModel semanticModel)
         {
-            Contract.Requires(creationExprs != null);
             foreach (var expr in creationExprs)
             {
                 if (ErrorExceptionUsageAnalyzer.TryMatchLiteralCreation(expr, semanticModel, out var literalCreation))

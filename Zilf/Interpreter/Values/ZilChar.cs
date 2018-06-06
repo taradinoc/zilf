@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using JetBrains.Annotations;
 
@@ -41,9 +40,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilChar FromFix([NotNull] Context ctx, [NotNull] ZilFix fix)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(fix != null);
-
             return new ZilChar(fix.Value);
         }
 
@@ -56,10 +52,7 @@ namespace Zilf.Interpreter.Values
 
         protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
-            if (friendly)
-                return Char.ToString();
-
-            return ToString();
+            return friendly ? Char.ToString() : ToString();
         }
 
         public override StdAtom StdTypeAtom => StdAtom.CHARACTER;

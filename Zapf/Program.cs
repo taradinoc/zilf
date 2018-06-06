@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -26,7 +26,6 @@ using System.Text;
 using JetBrains.Annotations;
 using Zapf.Parsing;
 using Zilf.Common.StringEncoding;
-using System.Diagnostics.Contracts;
 using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Directives;
 using Zapf.Parsing.Expressions;
@@ -44,8 +43,6 @@ namespace Zapf
 
         public static int Main([ItemNotNull] [NotNull] string[] args)
         {
-            // parse command line
-            Contract.Requires(args != null);
             var ctx = ParseArgs(args);
             if (ctx == null)
             {
@@ -119,7 +116,6 @@ namespace Zapf
 
         static void FindAndPrintAbbreviations([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             if (ctx.AbbreviateMode)
             {
                 const int maxAbbrevs = 96;
@@ -128,7 +124,7 @@ namespace Zapf
                 Console.WriteLine("        ; Frequent words file for {0}", Path.GetFileName(ctx.InFile));
                 Console.WriteLine();
                 int num = 1, totalSavings = 0;
-                foreach (AbbrevFinder.Result r in ctx.AbbrevFinder.GetResults(maxAbbrevs))
+                foreach (var r in ctx.AbbrevFinder.GetResults(maxAbbrevs))
                 {
                     Console.WriteLine("        .FSTR FSTR?{0},\"{1}\"\t\t; {2}x, saved {3}",
                         num++, SanitizeString(r.Text), r.Count, r.Score);
@@ -153,7 +149,6 @@ namespace Zapf
 
         static void PrintLabelAddresses([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             if (ctx.ListAddresses)
             {
                 Console.Error.WriteLine();
@@ -198,8 +193,6 @@ namespace Zapf
         [NotNull]
         static string SanitizeString(string text)
         {
-            // escape '"' as '""'
-            Contract.Ensures(Contract.Result<string>() != null);
             var sb = new StringBuilder(text);
 
             for (int i = sb.Length - 1; i >= 0; i--)
@@ -213,7 +206,6 @@ namespace Zapf
         internal static Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> MakeOpcodeDict(
             int zversion, bool inform)
         {
-            Contract.Ensures(Contract.Result<Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>>() != null);
             var fields = typeof(Opcodes).GetFields(BindingFlags.Static | BindingFlags.Public);
             var result = new Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>(fields.Length);
 
@@ -222,7 +214,7 @@ namespace Zapf
             if (zversion == 7 || zversion == 8)
                 effectiveVersion = 5;
 
-            foreach (FieldInfo fi in fields)
+            foreach (var fi in fields)
             {
                 var attrs = fi.GetCustomAttributes(typeof(ZOpAttribute), false);
                 foreach (ZOpAttribute attr in attrs)
@@ -240,7 +232,6 @@ namespace Zapf
         [CanBeNull]
         internal static Context ParseArgs([ItemNotNull] [NotNull] IReadOnlyList<string> args)
         {
-            Contract.Requires(args != null);
             var result = new Context();
 
             for (int i = 0; i < args.Count; i++)
@@ -345,8 +336,6 @@ General switches:
         /// <exception cref="FatalError">An <see cref="IOException"/> occurred while reading the input file(s).</exception>
         internal static void Assemble([NotNull] Context ctx)
         {
-            // read in all source code
-            Contract.Requires(ctx != null);
             List<AsmLine> file;
             ctx.PushFile(ctx.InFile);
             try
@@ -558,8 +547,6 @@ General switches:
 
         static void WriteHeader([NotNull] Context ctx, bool strict)
         {
-            // Z-code version and flags 1 byte
-            Contract.Requires(ctx != null);
             ctx.WriteByte(ctx.ZVersion);
             ctx.WriteByte(ctx.ZFlags);
             // release number
@@ -604,19 +591,15 @@ General switches:
                 Errors.ThrowSerious("ENDLOD must be after IMPURE");
         }
 
+        [CanBeNull]
         static Symbol GetDebugMapValue([NotNull] Context ctx, [NotNull] string name)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            if (ctx.GlobalSymbols.TryGetValue(name, out var sym))
-                return sym;
-            else
-                return null;
+            ctx.GlobalSymbols.TryGetValue(name, out var sym);
+            return sym;
         }
 
         static void FinalizeOutput([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             const int MINSIZE = 512;
 
             // pad file to a minimum size (for the benefit of tools that assume one)
@@ -780,7 +763,6 @@ General switches:
 
         static IEnumerable<AsmLine> ReadAllCode(Context ctx, [NotNull] IEnumerable<AsmLine> roots)
         {
-            Contract.Requires(roots != null);
             foreach (var node in roots)
             {
                 if (node is InsertDirective insert)
@@ -795,7 +777,7 @@ General switches:
                     try
                     {
                         var insertedRoots = ReadRootsFromFile(ctx, insertedFile);
-                        foreach (AsmLine insertedNode in ReadAllCode(ctx, insertedRoots))
+                        foreach (var insertedNode in ReadAllCode(ctx, insertedRoots))
                             if (insertedNode is EndiDirective || insertedNode is EndDirective)
                                 break;
                             else
@@ -815,9 +797,6 @@ General switches:
 
         static IEnumerable<AsmLine> ReadRootsFromFile([NotNull] Context ctx, [NotNull] string path)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(ctx.OpcodeDict != null);
-            Contract.Requires(path != null);
             using (var stream = ctx.OpenFile(path, false))
             {
                 Debug.Assert(ctx.OpcodeDict != null);
@@ -1299,8 +1278,6 @@ General switches:
 
         static void HandleDebugDirective([NotNull] Context ctx, [NotNull] DebugDirective node)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(node != null);
             Debug.Assert(ctx.DebugWriter != null);
 
             if (ctx.DebugWriter.InRoutine &&
@@ -1428,8 +1405,6 @@ General switches:
 
         static void BeginFunction([NotNull] [ProvidesContext] Context ctx, [NotNull] FunctDirective node, int nodeIndex)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(node != null);
             var localNames = new List<string>();
             var localValues = new List<ushort>();
             bool gotDefaultValues = false;
@@ -1508,7 +1483,6 @@ General switches:
 
         static void AlignPacked([NotNull] Context ctx, ref int offset)
         {
-            Contract.Requires(ctx != null);
             if (ctx.UsePackingOffsets && offset == 0)
             {
                 // offset has to be a multiple of 8, and at least 8 bytes before the current position so its packed address is nonzero
@@ -1524,20 +1498,16 @@ General switches:
 
         static void AlignRoutine([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             AlignPacked(ctx, ref ctx.FunctionsOffset);
         }
 
         static void AlignString([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             AlignPacked(ctx, ref ctx.StringsOffset);
         }
 
         static void PackString([NotNull] Context ctx, [NotNull] GstrDirective node)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(node != null);
             string name = node.Name;
 
             AlignString(ctx);
@@ -1568,8 +1538,6 @@ General switches:
 
         static void AddAbbreviation([NotNull] Context ctx, [NotNull] FstrDirective node)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(node != null);
             if (ctx.StringEncoder.Frozen)
                 Errors.ThrowSerious(node, "abbreviations must be defined before strings");
 
@@ -1598,8 +1566,6 @@ General switches:
 
         static void HandleInstruction([NotNull] Context ctx, [NotNull] Instruction node)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(node != null);
             Debug.Assert(ctx.OpcodeDict != null);
             var pair = ctx.OpcodeDict[node.Name];
             ushort opcode = pair.Key;
@@ -1817,7 +1783,6 @@ General switches:
 
         static void HandleLabel([NotNull] Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
         {
-            Contract.Requires(ctx != null);
             Symbol sym;
             string name;
 

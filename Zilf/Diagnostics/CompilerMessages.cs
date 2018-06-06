@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -94,8 +94,8 @@ namespace Zilf.Diagnostics
         public const int Unrecognized_0_1 = 122;
         [Message("expressions of this type cannot be compiled")]
         public const int Expressions_Of_This_Type_Cannot_Be_Compiled = 123;
-        [Message("misplaced bracket in COND?", Severity = Severity.Info)]
-        public const int Misplaced_Bracket_In_COND = 124;
+        [Message("misplaced bracket in COND or loop?", Severity = Severity.Info)]
+        public const int Misplaced_Bracket_In_COND_Or_Loop = 124;
 
         // Definitions - 0200
 

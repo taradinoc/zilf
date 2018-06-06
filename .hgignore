@@ -31,3 +31,5 @@ _ReSharper.Caches
 TestResultArchive
 Examples/**/*.code-workspace
 Examples/**/*.bat
+.mypy_cache
+venv

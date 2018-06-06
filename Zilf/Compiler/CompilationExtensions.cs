@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Interpreter.Values;
@@ -49,9 +48,6 @@ namespace Zilf.Compiler
 
         public static void WalkRoutineForms([NotNull] this ZilRoutine routine, [NotNull] Action<ZilForm> action)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(action != null);
-
             var children =
                 routine.ArgSpec.Select(ai => ai.DefaultValue)
                 .Concat(routine.Body);
@@ -81,8 +77,6 @@ namespace Zilf.Compiler
 
         public static bool IsVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
-
             if (expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom)
@@ -102,8 +96,6 @@ namespace Zilf.Compiler
 
         public static bool IsLocalVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
-
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom &&
@@ -112,53 +104,46 @@ namespace Zilf.Compiler
 
         public static bool IsGlobalVariableRef([NotNull] this ZilObject expr)
         {
-            Contract.Requires(expr != null);
-
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
                 form.Rest?.First is ZilAtom &&
                 (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG);
         }
 
-        public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
+        public static bool ModifiesLocal([NotNull] this ZilObject expr, [NotNull] ZilAtom localAtom)
         {
-            if (expr is ZilListBase list)
-            {
-                if (list is ZilForm)
-                {
-                    if (list.First is ZilAtom atom &&
-                        (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
-                        list.Rest?.First == localAtom)
-                    {
-                        return true;
-                    }
-                }
+            if (!(expr is ZilListBase list))
+                return false;
 
-                return list.Any(zo => ModifiesLocal(zo, localAtom));
+            if (list is ZilForm &&
+                list.First is ZilAtom atom &&
+                (atom.StdAtom == StdAtom.SET || atom.StdAtom == StdAtom.SETG) &&
+                list.Rest?.First == localAtom)
+            {
+                return true;
             }
 
-            return false;
+            return list.Any(zo => ModifiesLocal(zo, localAtom));
         }
 
-        public static bool IsPredicate(this ZilObject zo, int zversion)
+        public static bool IsPredicate([NotNull] this ZilObject zo, int zversion)
         {
-            if (zo is ZilForm form && form.First is ZilAtom head)
+            if (!(zo is ZilForm form) || !(form.First is ZilAtom head))
+                return false;
+
+            Debug.Assert(form.Rest != null);
+
+            // ReSharper disable once SwitchStatementMissingSomeCases
+            switch (head.StdAtom)
             {
-                Debug.Assert(form.Rest != null);
+                case StdAtom.AND:
+                case StdAtom.OR:
+                case StdAtom.NOT:
+                    return form.Rest.All(a => a.IsPredicate(zversion));
 
-                switch (head.StdAtom)
-                {
-                    case StdAtom.AND:
-                    case StdAtom.OR:
-                    case StdAtom.NOT:
-                        return form.Rest.All(a => a.IsPredicate(zversion));
-
-                    default:
-                        return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
-                }
+                default:
+                    return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
             }
-
-            return false;
         }
 
         /// <summary>
@@ -190,6 +175,10 @@ namespace Zilf.Compiler
                                 .FirstOrCombine(zos =>
                                     Program.Parse(ctx, src, "<BIND () {0:SPLICE}>", new ZilList(zos))
                                         .Single());
+                            break;
+
+                        case ZilMacroResult macroResult:
+                            zo = macroResult.Inner;
                             break;
 
                         default:

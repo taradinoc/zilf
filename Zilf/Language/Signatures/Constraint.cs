@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Interpreter;
@@ -44,8 +43,6 @@ namespace Zilf.Language.Signatures
         void VisitStructuredConstraint();
         void VisitTypeConstraint(StdAtom type);
     }
-
-    [ContractClass(typeof(ConstraintContract))]
     abstract class Constraint : IConstraint
     {
         public static readonly Constraint AnyObject = new AnyObjectConstraint();
@@ -63,55 +60,53 @@ namespace Zilf.Language.Signatures
         [NotNull]
         public static Constraint FromDecl([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject pattern)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(pattern != null);
-            Contract.Ensures(Contract.Result<Constraint>() != null);
-            if (pattern is ZilForm form)
+            switch (pattern)
             {
-                if (form.First is ZilAtom head)
-                {
-                    Debug.Assert(form.Rest != null);
-
-                    switch (head.StdAtom)
+                case ZilForm form:
+                    if (form.First is ZilAtom head)
                     {
-                        case StdAtom.OR:
-                            return form.Rest
-                                .Select(zo => FromDecl(ctx, zo))
-                                .Aggregate(Forbidden, (a, b) => Disjunction.From(a, b));
+                        Debug.Assert(form.Rest != null);
 
-                        case StdAtom.PRIMTYPE:
-                            Debug.Assert(form.Rest.First != null);
-                            return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
+                        switch (head.StdAtom)
+                        {
+                            case StdAtom.OR:
+                                return form.Rest
+                                    .Select(zo => FromDecl(ctx, zo))
+                                    .Aggregate(Forbidden, Disjunction.From);
+
+                            case StdAtom.PRIMTYPE:
+                                Debug.Assert(form.Rest.First != null);
+                                return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
+
+                            case StdAtom.None:
+                                break;
+
+                            // XXX may need to combine this with a contents constraint
+                            //default:
+                            //    return OfType(head.StdAtom);
+                        }
+                    }
+                    break;
+
+                case ZilAtom atom:
+                    switch (atom.StdAtom)
+                    {
+                        case StdAtom.ANY:
+                            return AnyObject;
+
+                        case StdAtom.APPLICABLE:
+                            return Applicable;
+
+                        case StdAtom.STRUCTURED:
+                            return Structured;
 
                         case StdAtom.None:
                             break;
 
-                        // XXX may need to combine this with a contents constraint
-                        //default:
-                        //    return OfType(head.StdAtom);
+                        default:
+                            return OfType(atom.StdAtom);
                     }
-                }
-            }
-
-            if (pattern is ZilAtom atom)
-            {
-                switch (atom.StdAtom)
-                {
-                    case StdAtom.ANY:
-                        return AnyObject;
-
-                    case StdAtom.APPLICABLE:
-                        return Applicable;
-
-                    case StdAtom.STRUCTURED:
-                        return Structured;
-
-                    case StdAtom.None:
-                        break;
-
-                    default:
-                        return OfType(atom.StdAtom);
-                }
+                    break;
             }
 
             return new DeclConstraint(pattern);
@@ -120,8 +115,6 @@ namespace Zilf.Language.Signatures
         [NotNull]
         public Constraint And([NotNull] Constraint other)
         {
-            Contract.Requires(other != null);
-            Contract.Ensures(Contract.Result<Constraint>() != null);
             switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
             {
                 case CompareOutcome.Looser:
@@ -138,8 +131,6 @@ namespace Zilf.Language.Signatures
         [NotNull]
         public Constraint Or([NotNull] Constraint other)
         {
-            Contract.Requires(other != null);
-            Contract.Ensures(Contract.Result<Constraint>() != null);
             switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
             {
                 case CompareOutcome.Looser:
@@ -155,7 +146,6 @@ namespace Zilf.Language.Signatures
 
         protected CompareOutcome? CompareTo([NotNull] Constraint other)
         {
-            Contract.Requires(other != null);
             return CompareImpl(other) ?? Invert(other.CompareImpl(this));
         }
 
@@ -191,12 +181,7 @@ namespace Zilf.Language.Signatures
         [NotNull]
         static string EnglishList([ItemNotNull] [NotNull] IEnumerable<string> items, [NotNull] string connector)
         {
-            Contract.Requires(items != null);
-            Contract.Requires(connector != null);
-            Contract.Ensures(Contract.Result<string>() != null);
             var array = items.ToArray();
-
-            Contract.Assert(array.Length > 0);
 
             switch (array.Length)
             {
@@ -450,9 +435,6 @@ namespace Zilf.Language.Signatures
             public static Conjunction From([NotNull] Constraint left,
                 [NotNull] Constraint right)
             {
-                Contract.Requires(left != null);
-                Contract.Requires(right != null);
-                Contract.Ensures(Contract.Result<Conjunction>() != null);
                 var parts = new List<Constraint>();
 
                 if (left is Conjunction lc)
@@ -570,9 +552,6 @@ namespace Zilf.Language.Signatures
             public static Disjunction From([NotNull] Constraint left,
                 [NotNull] Constraint right)
             {
-                Contract.Requires(left != null);
-                Contract.Requires(right != null);
-                Contract.Ensures(Contract.Result<Disjunction>() != null);
                 var parts = new List<Constraint>();
 
                 if (left is Disjunction ld)
@@ -675,23 +654,6 @@ namespace Zilf.Language.Signatures
             }
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitDisjunctionConstraint(Constraints);
-        }
-
-        [ContractClassFor(typeof(Constraint))]
-        internal abstract class ConstraintContract : Constraint
-        {
-            protected override CompareOutcome? CompareImpl(Constraint other)
-            {
-                Contract.Requires(other != null);
-                return default(CompareOutcome?);
-            }
-
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                Contract.Requires(ctx != null);
-                Contract.Requires(arg != null);
-                return default(bool);
-            }
         }
     }
 }

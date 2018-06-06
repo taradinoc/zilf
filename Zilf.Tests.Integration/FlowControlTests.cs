@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -209,6 +209,9 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("", "<DO (I 1 10) <COND (<==? .I 5> <RETURN <* .I 3>>)>>")
                 .GivesNumber("15");
+
+            AssertRoutine("\"AUX\" X", "<SET X <DO (I 1 10) <COND (<==? .I 5> <RETURN <* .I 3>>)>>> <* .X 10>")
+                .GivesNumber("150");
         }
 
         [TestMethod]
@@ -222,6 +225,17 @@ namespace Zilf.Tests.Integration
                 "  <TELL \", \">>")
                 .Outputs("1, 2, 3 o'clock, 4 o'clock, rock!");
         }
+
+        [TestMethod]
+        public void TestDO_EndClause_Misplaced()
+        {
+            AssertRoutine("",
+                "<DO (CNT 0 25 5)" +
+                "  <TELL N .CNT CR>" +
+                "  (END <TELL \"This message is never printed\">)>")
+                .DoesNotCompile();
+        }
+
 
         #endregion
 
@@ -304,6 +318,18 @@ namespace Zilf.Tests.Integration
                 .Outputs("31 north room\n28 west room\n");
         }
 
+        [TestMethod]
+        public void TestMAP_DIRECTIONS_WithEnd()
+        {
+            AssertRoutine("", "<MAP-DIRECTIONS (D P ,CENTER) (END <TELL \"done\" CR>) <TELL N .D \" \" D <GETB .P ,REXIT> CR>>")
+                .WithGlobal("<DIRECTIONS NORTH SOUTH EAST WEST>")
+                .WithGlobal("<OBJECT CENTER (NORTH TO N-ROOM) (WEST TO W-ROOM)>")
+                .WithGlobal("<OBJECT N-ROOM (DESC \"north room\")>")
+                .WithGlobal("<OBJECT W-ROOM (DESC \"west room\")>")
+                .InV3()
+                .Outputs("31 north room\n28 west room\ndone\n");
+        }
+
         #endregion
 
         #region COND
@@ -318,12 +344,40 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void COND_With_False_Condition_From_Macro_Or_Constant_Should_Not_Warn()
+        {
+            AssertRoutine("",
+                "<COND (<DO-IT?> <TELL \"do it\">) (,DO-OTHER? <TELL \"do other\">)>")
+                .WithGlobal("<DEFMAC DO-IT? () <>>")
+                .WithGlobal("<CONSTANT DO-OTHER? <>>")
+                .WithoutWarnings()
+                .Compiles();
+
+            // ... but should still warn if the condition was a literal
+            AssertRoutine("",
+                "<COND (<> <TELL \"done\">)>")
+                .WithWarnings()
+                .Compiles();
+        }
+
+        [TestMethod]
+        public void AND_In_Void_Context_With_Macro_At_End_Should_Work()
+        {
+            AssertRoutine("",
+                "<AND <FOO> <BAR>> <RETURN>")
+                .WithGlobal("<ROUTINE FOO () T>")
+                .WithGlobal("<DEFMAC BAR () '<PRINTN 42>>")
+                .Outputs("42");
+        }
+
+        [TestMethod]
         public void COND_Should_Allow_Macro_Clauses()
         {
             AssertRoutine("",
                 "<COND <LIVE-CONDITION> <DEAD-CONDITION> <IF-IN-ZILCH (<=? 2 2> <TELL \"2\">)> <IFN-IN-ZILCH (<=? 3 3> <TELL \"3\">)> (T <TELL \"end\">)>")
                 .WithGlobal("<DEFMAC LIVE-CONDITION () '(<=? 0 1> <TELL \"nope\">)>")
                 .WithGlobal("<DEFMAC DEAD-CONDITION () '<>>")
+                .WithoutWarnings()
                 .Outputs("2");
         }
 
@@ -345,7 +399,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("",
                 "<BIND (RESULT) <SET RESULT <FOO>> <PRINTN 1> .RESULT> <CRLF>")
                 .WithGlobal("<ROUTINE FOO () 123>")
-                .GeneratesCodeMatching(@"\A(?:(?!RESULT).)*\Z");
+                .GeneratesCodeNotMatching(@"RESULT");
         }
 
         [TestMethod]
@@ -358,14 +412,14 @@ namespace Zilf.Tests.Integration
                 .GeneratesCodeMatching("SET 'X,1");
 
             AssertRoutine("\"AUX\" X", "<COND (<PROG () .X> T)>")
-                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+                .GeneratesCodeNotMatching(@"PUSH");
         }
 
         [TestMethod]
         public void REPEAT_Last_Expression_Should_Not_Clutter_Stack()
         {
             AssertRoutine("", "<REPEAT () 123>")
-                .GeneratesCodeMatching(@"\A(?:(?!PUSH).)*\Z");
+                .GeneratesCodeNotMatching(@"PUSH");
         }
 
         #endregion

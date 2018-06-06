@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -36,6 +36,8 @@ namespace Zilf.Diagnostics
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
         public int WarningCount => Diagnostics.Count(d => d.Severity == Severity.Warning);
 
+        public bool WarningsAsErrors { get; set; }
+
         [NotNull]
         public IDiagnosticFormatter Formatter { get; }
         [NotNull]
@@ -51,6 +53,11 @@ namespace Zilf.Diagnostics
 
         public void Handle([NotNull] Diagnostic diag)
         {
+            if (WarningsAsErrors && diag.Severity == Severity.Warning)
+            {
+                diag = diag.WithSeverity(Severity.Error);
+            }
+
             diagnostics.Add(diag);
 
             if (diag.Severity == Severity.Error)

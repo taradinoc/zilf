@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
@@ -34,14 +32,10 @@ namespace Zilf.Compiler
         internal void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
             [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(expr != null);
-            Contract.Requires(src != null);
-            Contract.Requires(label != null);
-
             expr = expr.Unwrap(Context);
             var type = expr.StdTypeAtom;
 
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type)
             {
                 case StdAtom.FALSE:
@@ -141,7 +135,7 @@ namespace Zilf.Compiler
             {
                 if (operand is INumericOperand numericResult)
                 {
-                    if ((numericResult.Value != 0) == polarity)
+                    if (numericResult.Value != 0 == polarity)
                         rb.Branch(label);
                 }
                 else
@@ -154,11 +148,6 @@ namespace Zilf.Compiler
         internal void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
             bool and, [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Requires(label != null);
-
             if (args.Length == 0)
             {
                 // <AND> is true, <OR> is false
@@ -211,220 +200,205 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src,
+        [ContractAnnotation("wantResult: false => canbenull")]
+        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
             bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
-
-            if (args.IsEmpty)
+            if (!args.IsCons(out var first, out var rest))
                 return and ? Game.One : Game.Zero;
 
-            Debug.Assert(args.First != null);
-            Debug.Assert(args.Rest != null);
-
-            if (args.Rest.IsEmpty)
+            if (rest.IsEmpty)
             {
                 if (wantResult)
-                    return CompileAsOperand(rb, args.First, src, resultStorage);
+                    return CompileAsOperand(rb, first, src, resultStorage);
 
-                if (args.First is ZilForm form)
-                    return CompileForm(rb, form, false, resultStorage);
+                CompileStmt(rb, first, false);
+                return Game.Zero;
+            }
+
+            ILabel lastLabel;
+
+            if (!wantResult)
+            {
+                // easy path - don't need to preserve the values
+                lastLabel = rb.DefineLabel();
+
+                while (!rest.IsEmpty)
+                {
+                    var nextLabel = rb.DefineLabel();
+
+                    CompileCondition(rb, first, src, nextLabel, and);
+
+                    rb.Branch(lastLabel);
+                    rb.MarkLabel(nextLabel);
+
+                    (first, rest) = rest;
+                }
+
+                CompileStmt(rb, first, false);
+                rb.MarkLabel(lastLabel);
 
                 return Game.Zero;
             }
 
-            if (wantResult)
+            // hard path - need to preserve the values and return the last one evaluated
+            var tempAtom = ZilAtom.Parse("?TMP", Context);
+            lastLabel = rb.DefineLabel();
+            IVariable tempVar = null;
+            ILabel trueLabel = null;
+
+            resultStorage = resultStorage ?? rb.Stack;
+            var nonStackResultStorage = resultStorage == rb.Stack ? null : resultStorage;
+
+            IVariable TempVarProvider()
             {
-                var tempAtom = ZilAtom.Parse("?TMP", Context);
-                var lastLabel = rb.DefineLabel();
-                IVariable tempVar = null;
-                ILabel trueLabel = null;
-
-                if (resultStorage == null)
-                    resultStorage = rb.Stack;
-
-                Contract.Assert(resultStorage != null);
-
-                var nonStackResultStorage = resultStorage != rb.Stack ? resultStorage : null;
-
-                IVariable TempVarProvider()
-                {
-                    if (tempVar == null)
-                    {
-                        PushInnerLocal(rb, tempAtom);
-                        tempVar = Locals[tempAtom];
-                    }
+                if (tempVar != null)
                     return tempVar;
-                }
 
-                ILabel TrueLabelProvider()
+                PushInnerLocal(rb, tempAtom);
+                tempVar = Locals[tempAtom];
+                return tempVar;
+            }
+
+            ILabel TrueLabelProvider()
+            {
+                return trueLabel ?? (trueLabel = rb.DefineLabel());
+            }
+
+            IOperand result;
+            while (!rest.IsEmpty)
+            {
+                var nextLabel = rb.DefineLabel();
+
+                /* TODO: use "value or predicate" context here - if the expr is naturally a predicate,
+                 * branch to a final label and synthesize the value without using a temp var,
+                 * otherwise use the returned value */
+
+                if (and)
                 {
-                    return trueLabel ?? (trueLabel = rb.DefineLabel());
+                    // for AND we only need the result of the last expr; otherwise we only care about truth value
+                    CompileCondition(rb, first, src, nextLabel, true);
+                    rb.EmitStore(resultStorage, Game.Zero);
+                    rb.Branch(lastLabel);
                 }
-
-                IOperand result;
-                while (!args.Rest.IsEmpty)
+                else
                 {
-                    var nextLabel = rb.DefineLabel();
-
-                    /* TODO: use "value or predicate" context here - if the expr is naturally a predicate,
-                     * branch to a final label and synthesize the value without using a temp var,
-                     * otherwise use the returned value */
-
-                    if (and)
+                    // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
+                    // however, if the expr is a predicate anyway, we can branch out of the OR if it's true;
+                    // otherwise fall through to the next expr
+                    if (first.IsPredicate(Context.ZEnvironment.ZVersion))
                     {
-                        // for AND we only need the result of the last expr; otherwise we only care about truth value
-                        CompileCondition(rb, args.First, src, nextLabel, true);
-                        rb.EmitStore(resultStorage, Game.Zero);
-                        rb.Branch(lastLabel);
+                        CompileCondition(rb, first, src, TrueLabelProvider(), true);
+                        // fall through to nextLabel
                     }
                     else
                     {
-                        // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
-                        // however, if the expr is a predicate anyway, we can branch out of the OR if it's true;
-                        // otherwise fall through to the next expr
-                        if (args.First.IsPredicate(Context.ZEnvironment.ZVersion))
-                        {
-                            CompileCondition(rb, args.First, src, TrueLabelProvider(), true);
-                            // fall through to nextLabel
-                        }
-                        else
-                        {
-                            result = CompileAsOperandWithBranch(rb, args.First, nonStackResultStorage, nextLabel, false, TempVarProvider);
+                        result = CompileAsOperandWithBranch(rb, first, nonStackResultStorage, nextLabel, false,
+                            TempVarProvider);
 
-                            if (result != resultStorage)
-                                rb.EmitStore(resultStorage, result);
+                        if (result != resultStorage)
+                            rb.EmitStore(resultStorage, result);
 
-                            rb.Branch(lastLabel);
-                        }
+                        rb.Branch(lastLabel);
                     }
-
-                    rb.MarkLabel(nextLabel);
-
-                    args = args.Rest;
-                    Debug.Assert(args.First != null);
-                    Debug.Assert(args.Rest != null);
                 }
 
-                result = CompileAsOperand(rb, args.First, src, resultStorage);
-                if (result != resultStorage)
-                    rb.EmitStore(resultStorage, result);
+                rb.MarkLabel(nextLabel);
 
-                if (trueLabel != null)
-                {
-                    rb.Branch(lastLabel);
-                    rb.MarkLabel(trueLabel);
-                    rb.EmitStore(resultStorage, Game.One);
-                }
-
-                rb.MarkLabel(lastLabel);
-
-                if (tempVar != null)
-                    PopInnerLocal(tempAtom);
-
-                return resultStorage;
+                (first, rest) = rest;
             }
-            else
+
+            result = CompileAsOperand(rb, first, src, resultStorage);
+            if (result != resultStorage)
+                rb.EmitStore(resultStorage, result);
+
+            if (trueLabel != null)
             {
-                var lastLabel = rb.DefineLabel();
-
-                while (!args.Rest.IsEmpty)
-                {
-                    var nextLabel = rb.DefineLabel();
-
-                    CompileCondition(rb, args.First, src, nextLabel, and);
-
-                    rb.Branch(lastLabel);
-                    rb.MarkLabel(nextLabel);
-
-                    args = args.Rest;
-                    Debug.Assert(args.First != null);
-                    Debug.Assert(args.Rest != null);
-                }
-
-                if (args.First is ZilForm form)
-                    CompileForm(rb, form, false, null);
-
-                rb.MarkLabel(lastLabel);
-
-                return Game.Zero;
+                rb.Branch(lastLabel);
+                rb.MarkLabel(trueLabel);
+                rb.EmitStore(resultStorage, Game.One);
             }
+
+            rb.MarkLabel(lastLabel);
+
+            if (tempVar != null)
+                PopInnerLocal(tempAtom);
+
+            return resultStorage;
         }
 
+        // TODO: refactor COND-like control structures to share an implementation, a la CompileBoundedLoop
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListBase clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
-
             var nextLabel = rb.DefineLabel();
             var endLabel = rb.DefineLabel();
             bool elsePart = false;
 
-            if (resultStorage == null)
-                resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
-
+            resultStorage = resultStorage ?? rb.Stack;
             while (!clauses.IsEmpty)
             {
-                var clause = clauses.First as ZilListBase;
-                clauses = clauses.Rest;
-                Debug.Assert(clauses != null);
+                ZilObject clause, origCondition, condition;
+                ZilListoidBase body;
 
-                // previously, FALSE was only allowed when returned by a macro call, but now we expand macros before generating any code
-                if (clause is ZilFalse)
-                    continue;
+                (clause, clauses) = clauses;
+                clause = clause.Unwrap(Context);
 
-                if (clause == null || clause.IsEmpty)
-                    throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
+                switch (clause)
+                {
+                    case ZilFalse _:
+                        // previously, FALSE was only allowed when returned by a macro call, but now we expand macros before generating any code
+                        continue;
 
-                Debug.Assert(clause.First != null);
-                Debug.Assert(clause.Rest != null);
+                    case ZilListoidBase list when list.IsEmpty:
+                    default:
+                        throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
 
-                var condition = clause.First.Unwrap(Context);
+                    case ZilListoidBase list:
+                        (origCondition, body) = list;
+                        condition = origCondition.Unwrap(Context);
+                        break;
+                }
 
                 // if condition is always true (i.e. not a FORM or a FALSE), this is the "else" part
-                switch (condition.StdTypeAtom)
+                switch (condition)
                 {
-                    case StdAtom.FORM:
+                    case ZilForm _:
                         // must be evaluated
                         MarkSequencePoint(rb, condition);
                         CompileCondition(rb, condition, condition.SourceLine, nextLabel, false);
                         break;
 
-                    case StdAtom.FALSE:
+                    case ZilFalse _:
                         // never true
-                        Context.HandleError(new CompilerError(clause, CompilerMessages._0_Condition_Is_Always_1, "COND", "false"));
+                        if (!(origCondition is ZilMacroResult))
+                        {
+                            Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1,
+                                "COND", "false"));
+                        }
                         continue;
 
+                    case ZilAtom atom when atom.StdAtom == StdAtom.T || atom.StdAtom == StdAtom.ELSE:
+                        // non-shady else part
+                        elsePart = true;
+                        break;
+
                     default:
-                        // always true
-                        if (!(condition is ZilAtom atom &&
-                              (atom.StdAtom == StdAtom.T || atom.StdAtom == StdAtom.ELSE)))
-                        {
-                            Context.HandleError(new CompilerError(clause, CompilerMessages._0_Condition_Is_Always_1,
-                                "COND", "true"));
-                        }
+                        // shady else part (always true, but not T or ELSE)
+                        Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1, "COND", "true"));
                         elsePart = true;
                         break;
                 }
 
                 // emit code for clause
-                clause = clause.Rest;
-                var clauseResult = CompileClauseBody(rb, (ZilList)clause, wantResult, resultStorage);
+                var clauseResult = CompileClauseBody(rb, body, wantResult, resultStorage);
                 if (wantResult && clauseResult != resultStorage)
                     rb.EmitStore(resultStorage, clauseResult);
 
                 // jump to end
-                if (!clauses.IsEmpty || (wantResult && !elsePart))
+                if (!clauses.IsEmpty || wantResult && !elsePart)
                     rb.Branch(endLabel);
 
                 rb.MarkLabel(nextLabel);
@@ -451,13 +425,9 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilList clause, bool wantResult,
+        IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clause, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clause != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !Contract.OldValue(wantResult));
-
             if (clause.IsEmpty)
                 return Game.One;
 
@@ -465,32 +435,45 @@ namespace Zilf.Compiler
 
             do
             {
-                Debug.Assert(clause.First != null);
-                Debug.Assert(clause.Rest != null);
+                var (first, rest) = clause;
 
                 // only want the result of the last statement (if any)
-                bool wantThisResult = wantResult && clause.Rest.IsEmpty;
+                bool wantThisResult = wantResult && rest.IsEmpty;
 
-                var stmt = clause.First.Unwrap(Context);
+                var stmt = first.Unwrap(Context);
 
-                if (stmt is ZilForm form)
+                switch (stmt)
                 {
-                    MarkSequencePoint(rb, form);
+                    case ZilForm form:
+                        MarkSequencePoint(rb, form);
 
-                    result = CompileForm(
-                        rb,
-                        form,
-                        wantThisResult,
-                        wantThisResult ? resultStorage : null);
-                }
-                else if (wantThisResult)
-                {
-                    result = CompileConstant(stmt);
-                    if (result == null)
-                        throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                        result = CompileForm(
+                            rb,
+                            form,
+                            wantThisResult,
+                            wantThisResult ? resultStorage : null);
+                        break;
+
+                    case ZilList _:
+                        throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled)
+                            .Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND_Or_Loop));
+
+                    default:
+                        if (wantThisResult)
+                        {
+                            result = CompileConstant(stmt);
+
+                            if (result == null)
+                            {
+                                // TODO: show "expressions of this type cannot be compiled" warning even if wantResult is false?
+                                throw new CompilerError(stmt,
+                                    CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                            }
+                        }
+                        break;
                 }
 
-                clause = clause.Rest;
+                clause = rest;
             } while (!clause.IsEmpty);
 
             return result;
@@ -498,41 +481,28 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
-
-            if (resultStorage == null)
-                resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
-
+            resultStorage = resultStorage ?? rb.Stack;
             while (!clauses.IsEmpty)
             {
-                Debug.Assert(clauses.First != null);
-                Debug.Assert(clauses.Rest != null);
+                ZilObject clause;
 
-                var clause = clauses.First as ZilList;
-                clauses = clauses.Rest;
+                (clause, clauses) = clauses;
 
-                if (clause == null || clause.IsEmpty)
+                if (!(clause is ZilListoidBase list) || list.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
-                Debug.Assert(clause.First != null);
-                Debug.Assert(clause.Rest != null);
-
-                var condition = clause.First;
+                var (condition, body) = list;
 
                 // check version condition
                 int condVersion;
-                switch (condition.StdTypeAtom)
+                switch (condition)
                 {
-                    case StdAtom.ATOM:
-                        switch (((ZilAtom)condition).StdAtom)
+                    case ZilAtom atom:
+                        // ReSharper disable once SwitchStatementMissingSomeCases
+                        switch (atom.StdAtom)
                         {
                             case StdAtom.ZIP:
                                 condVersion = 3;
@@ -555,8 +525,8 @@ namespace Zilf.Compiler
                         }
                         break;
 
-                    case StdAtom.FIX:
-                        condVersion = ((ZilFix)condition).Value;
+                    case ZilFix fix:
+                        condVersion = fix.Value;
                         if (condVersion < 3 || condVersion > 8)
                             throw new CompilerError(CompilerMessages.Version_Number_Out_Of_Range_Must_Be_38);
                         break;
@@ -570,8 +540,7 @@ namespace Zilf.Compiler
                     continue;
 
                 // emit code for clause
-                clause = clause.Rest;
-                var clauseResult = CompileClauseBody(rb, clause, wantResult, resultStorage);
+                var clauseResult = CompileClauseBody(rb, body, wantResult, resultStorage);
 
                 if (condVersion == 0 && !clauses.IsEmpty)
                 {
@@ -590,53 +559,46 @@ namespace Zilf.Compiler
 
         [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilList clauses, [NotNull] ISourceLine src,
+        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(clauses != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
-
-            if (resultStorage == null)
-                resultStorage = rb.Stack;
-
-            Contract.Assert(resultStorage != null);
+            resultStorage = resultStorage ?? rb.Stack;
 
             while (!clauses.IsEmpty)
             {
-                Debug.Assert(clauses.First != null);
-                Debug.Assert(clauses.Rest != null);
+                ZilObject clause;
 
-                var clause = clauses.First as ZilList;
-                clauses = clauses.Rest;
+                (clause, clauses) = clauses;
 
-                if (clause == null || clause.IsEmpty)
+                if (!(clause is ZilListoidBase list) || list.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
-                Debug.Assert(clause.First != null);
-                Debug.Assert(clause.Rest != null);
+                var (flag, body) = list;
 
-                ZilObject value, flag = clause.First;
-                bool match, isElse = false, isShadyElse = false;
-                var atom = flag as ZilAtom;
-                if (atom != null &&
-                    (value = Context.GetCompilationFlagValue(atom)) != null ||
-                    flag is ZilString str &&
-                    (value = Context.GetCompilationFlagValue(str.Text)) != null)
+                ZilObject value;
+                bool match, isElse = false;
+                ZilAtom shadyElseAtom = null;
+
+                switch (flag)
                 {
-                    // name of a defined compilation flag
-                    match = value.IsTrue;
-                }
-                else if (flag is ZilForm form)
-                {
-                    form = Subrs.SubstituteIfflagForm(Context, form);
-                    match = ((ZilObject)form.Eval(Context)).IsTrue;
-                }
-                else
-                {
-                    match = isElse = true;
-                    isShadyElse = atom != null && atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T;
+                    case ZilAtom atom when (value = Context.GetCompilationFlagValue(atom)) != null:
+                    case ZilString str when (value = Context.GetCompilationFlagValue(str.Text)) != null:
+                        // name of a defined compilation flag
+                        match = value.IsTrue;
+                        break;
+
+                    case ZilForm form:
+                        form = Subrs.SubstituteIfflagForm(Context, form);
+                        match = ((ZilObject)form.Eval(Context)).IsTrue;
+                        break;
+
+                    case ZilAtom atom when atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T:
+                        shadyElseAtom = atom;
+                        goto default;
+
+                    default:
+                        match = isElse = true;
+                        break;
                 }
 
                 // does this clause match?
@@ -644,22 +606,23 @@ namespace Zilf.Compiler
                     continue;
 
                 // emit code for clause
-                clause = clause.Rest;
-                var clauseResult = CompileClauseBody(rb, clause, wantResult, resultStorage);
+                var clauseResult = CompileClauseBody(rb, body, wantResult, resultStorage);
 
-                if (isElse && !clauses.IsEmpty)
+                // warn if this is an else clause and there are more clauses below
+                if (!isElse || clauses.IsEmpty)
+                    return wantResult ? clauseResult : null;
+
+                var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
+
+                if (shadyElseAtom != null)
                 {
-                    var warning = new CompilerError(src, CompilerMessages._0_Clauses_After_Else_Part_Will_Never_Be_Evaluated, "IFFLAG");
-                    if (isShadyElse)
-                    {
-                        Debug.Assert(atom != null);
-                        warning = warning.Combine(new CompilerError(
-                            flag.SourceLine,
-                            CompilerMessages.Undeclared_Compilation_Flag_0,
-                            atom));
-                    }
-                    Context.HandleError(warning);
+                    // if the else clause wasn't introduced with ELSE or T, it might not have been meant as an else clause
+                    warning = warning.Combine(new CompilerError(
+                        flag.SourceLine,
+                        CompilerMessages.Undeclared_Compilation_Flag_0,
+                        shadyElseAtom));
                 }
+                Context.HandleError(warning);
 
                 return wantResult ? clauseResult : null;
             }

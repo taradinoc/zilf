@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -22,7 +22,6 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.ZModel.Values
 {
@@ -44,17 +43,13 @@ namespace Zilf.ZModel.Values
         public static ZilGlobal FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
 #pragma warning restore RECS0154 // Parameter is never used
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilGlobal>() != null);
-            if (list.IsEmpty || list.Rest?.IsEmpty != false || list.Rest.Rest?.IsEmpty != true)
+            if (!list.HasLength(2))
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to GLOBAL", 2);
 
-            if (!(list.First is ZilAtom name))
+            if (!list.Matches(out ZilAtom nameAtom, out ZilObject value))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to GLOBAL", "an atom");
 
-            var value = list.Rest.First;
-
-            return new ZilGlobal(name, value);
+            return new ZilGlobal(nameAtom, value);
         }
 
         [NotNull]

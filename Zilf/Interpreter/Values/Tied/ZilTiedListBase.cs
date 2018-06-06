@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -23,12 +23,10 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values.Tied
 {
     [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
-    [ContractClass(typeof(ZilTiedListBaseContract))]
     abstract class ZilTiedListBase : ZilListoidBase
     {
         [NotNull]
@@ -55,7 +53,6 @@ namespace Zilf.Interpreter.Values.Tied
         [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilList(this);
         }
 
@@ -200,13 +197,9 @@ namespace Zilf.Interpreter.Values.Tied
 
         // ReSharper disable once AnnotationConflictInHierarchy
         [NotNull]
-        public sealed override ZilList Rest
+        public sealed override ZilListoidBase Rest
         {
-            get
-            {
-                var rest = GetRest(1);
-                return rest == null ? new ZilList(null, null) : new ZilList(rest);
-            }
+            get => GetRest(1) ?? new ZilList(null, null);
             set => throw new NotSupportedException();
         }
 
@@ -243,12 +236,9 @@ namespace Zilf.Interpreter.Values.Tied
             return result;
         }
 
-        public sealed override IStructure GetRest(int skip)
+        public sealed override ZilListoidBase GetRest(int skip)
         {
-            if (GetLength(skip) < skip)
-                return null;
-
-            return new Wrapper(this, skip);
+            return this.HasLengthAtLeast(skip) ? new Wrapper(this, skip) : null;
         }
 
         [BuiltinAlternate(typeof(ZilList))]
@@ -286,7 +276,7 @@ namespace Zilf.Interpreter.Values.Tied
 
             // ReSharper disable once AnnotationConflictInHierarchy
             [NotNull]
-            public override ZilList Rest
+            public override ZilListoidBase Rest
             {
                 get
                 {
@@ -303,16 +293,12 @@ namespace Zilf.Interpreter.Values.Tied
             [NotNull]
             public override ZilObject GetPrimitive(Context ctx)
             {
-                Contract.Ensures(Contract.Result<ZilObject>() != null);
                 return new ZilList(this);
             }
 
-            public override IStructure GetRest(int skip)
+            public override ZilListoidBase GetRest(int skip)
             {
-                if (GetLength(skip) < skip)
-                    return null;
-
-                return new Wrapper(orig, offset + skip);
+                return GetLength(skip) < skip ? null : new Wrapper(orig, offset + skip);
             }
 
             public override string ToString()
@@ -332,17 +318,6 @@ namespace Zilf.Interpreter.Values.Tied
                     ")",
                     zo => zo.ToStringContext(ctx, friendly));
             }
-        }
-    }
-
-    [ContractClassFor(typeof(ZilTiedListBase))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class ZilTiedListBaseContract : ZilTiedListBase
-    {
-        protected override TiedLayout GetLayout()
-        {
-            Contract.Ensures(Contract.Result<TiedLayout>() != null);
-            return default(TiedLayout);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -41,7 +40,6 @@ namespace Zilf
 
         internal static int Main([ItemNotNull] [NotNull] string[] args)
         {
-            Contract.Requires(args != null);
             var ctx = ParseArgs(args, out var inFile, out var outFile);
 
             if (ctx == null)
@@ -54,37 +52,38 @@ namespace Zilf
                 Console.WriteLine(RetrieveLinkerTimestamp());
             }
 
-            if (ctx.RunMode == RunMode.Interactive)
+            switch (ctx.RunMode)
             {
-                DoREPL(ctx);
-            }
-            else if (ctx.RunMode == RunMode.Expression)
-            {
-                using (ctx.PushFileContext("<cmdline>"))
-                {
-                    Console.WriteLine(Evaluate(ctx, inFile));
-                    if (ctx.ErrorCount > 0)
-                        return 2;
-                }
-            }
-            else
-            {
-                // interpreter or compiler
+                case RunMode.Interactive:
+                    DoREPL(ctx);
+                    return 0;
 
+                case RunMode.Expression:
+                    using (ctx.PushFileContext("<cmdline>"))
+                    {
+                        Console.WriteLine(Evaluate(ctx, inFile));
+                        if (ctx.ErrorCount > 0)
+                            return 2;
+                    }
+                    return 0;
+
+                case RunMode.Compiler:
+                    Debug.Assert(outFile != null);
+                    return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo));
+
+                case RunMode.Interpreter:
+                    return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inFile));
+
+                default:
+                    throw new UnreachableCodeException();
+            }
+
+            int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
+            {
                 var frontEnd = new FrontEnd();
                 try
                 {
-                    FrontEndResult result;
-
-                    if (ctx.RunMode == RunMode.Compiler)
-                    {
-                        Debug.Assert(outFile != null);
-                        result = frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo);
-                    }
-                    else
-                    {
-                        result = frontEnd.Interpret(ctx, inFile);
-                    }
+                    var result = func(frontEnd);
 
                     if (result.WarningCount > 0)
                     {
@@ -111,16 +110,15 @@ namespace Zilf
                     Console.Error.WriteLine("I/O error: " + ex.Message);
                     return 1;
                 }
-            }
 
-            return 0;
+                return 0;
+            }
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
         static void DoREPL([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             using (ctx.PushFileContext("<stdin>"))
             {
                 var sb = new StringBuilder();
@@ -209,7 +207,7 @@ namespace Zilf
             string filePath = Assembly.GetCallingAssembly().Location;
             const int c_PeHeaderOffset = 60;
             const int c_LinkerTimestampOffset = 8;
-            byte[] b = new byte[2048];
+            var b = new byte[2048];
 
             using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -228,12 +226,10 @@ namespace Zilf
         [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
         static Context ParseArgs([NotNull] string[] args, [CanBeNull] out string inFile, [CanBeNull] out string outFile)
         {
-            Contract.Requires(args != null);
-
             string newInFile = inFile = null;
             string newOutFile = outFile = null;
 
-            bool traceRoutines = false, debugInfo = false;
+            bool traceRoutines = false, debugInfo = false, warningsAsErrors = false;
             bool? caseSensitive = null;
             RunMode? mode = null;
             bool? quiet = null;
@@ -254,6 +250,7 @@ namespace Zilf
             {
                 TraceRoutines = traceRoutines,
                 WantDebugInfo = debugInfo,
+                WarningsAsErrors = warningsAsErrors,
                 RunMode = mode.Value,
                 Quiet = quiet.Value
             };
@@ -319,6 +316,10 @@ namespace Zilf
                                 return false;
                             }
 
+                            break;
+
+                        case "-we":
+                            warningsAsErrors = true;
                             break;
 
                         case "-?":
@@ -410,8 +411,6 @@ namespace Zilf
 
         static void AddImplicitIncludePaths([ItemNotNull] [NotNull] IList<string> includePaths, [CanBeNull] string inFile, RunMode mode)
         {
-            Contract.Requires(includePaths != null);
-
             if (inFile != null && mode != RunMode.Expression)
             {
                 includePaths.Insert(0, Path.GetDirectoryName(Path.GetFullPath(inFile)));
@@ -514,34 +513,26 @@ General switches:
   -ip dir               add dir to include path (may be repeated)
 Compiler switches:
   -tr                   trace routine calls at runtime
-  -d                    include debug information");
+  -d                    include debug information
+  -we                   treat warnings as errors");
         }
 
         // TODO: move Parse somewhere more sensible
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
-
             return Parse(ctx, null, chars, null);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
-
             return Parse(ctx, null, chars, templateParams);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, ISourceLine src, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(chars != null);
-
             var parser = new Parser(ctx, src, templateParams);
 
             foreach (var po in parser.Parse(chars))
@@ -576,7 +567,6 @@ Compiler switches:
 
         static IEnumerable<char> ReadAllChars([NotNull] Stream stream)
         {
-            Contract.Requires(stream != null);
             using (var rdr = new StreamReader(stream))
             {
                 int c;
@@ -592,9 +582,6 @@ Compiler switches:
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] Stream stream, bool wantExceptions = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(stream != null);
-
             return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
         }
 
@@ -611,7 +598,6 @@ Compiler switches:
         [CanBeNull]
         public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, bool wantExceptions = false)
         {
-            Contract.Requires(ctx != null);
             try
             {
                 var ztree = Parse(ctx, chars);

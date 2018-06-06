@@ -11,7 +11,6 @@ namespace ZilfErrorMessages.Test
     [TestClass, TestCategory("Analyzers")]
     public class MessageConstantTests : CodeFixVerifier
     {
-
         //No diagnostics expected to show up
         [TestMethod]
         [Timeout(10000)]

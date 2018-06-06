@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -30,26 +29,10 @@ using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
-    /// <summary>
-    /// Allows non-structured types to be checked against structure DECLs.
-    /// </summary>
-    [ContractClass(typeof(IProvideStructureForDeclCheckContract))]
     interface IProvideStructureForDeclCheck
     {
         [NotNull]
         IStructure GetStructureForDeclCheck([NotNull] Context ctx);
-    }
-
-    [ContractClassFor(typeof(IProvideStructureForDeclCheck))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    abstract class IProvideStructureForDeclCheckContract : IProvideStructureForDeclCheck
-    {
-        public IStructure GetStructureForDeclCheck(Context ctx)
-        {
-            Contract.Requires(ctx != null);
-            Contract.Ensures(Contract.Result<IStructure>() != null);
-            return default(IStructure);
-        }
     }
 
     /// <summary>
@@ -64,20 +47,12 @@ namespace Zilf.Language
             [NotNull] string usage)
             : base(DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usage != null);
         }
 
         public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
             [NotNull] ZilObject pattern, string usage)
             : base(src, DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
-            Contract.Requires(src != null);
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
         }
 
         [StringFormatMethod("usageFormat")]
@@ -85,11 +60,6 @@ namespace Zilf.Language
             [NotNull] string usageFormat, [NotNull] object arg0)
             : this(ctx, value, pattern, string.Format(usageFormat, arg0))
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usageFormat != null);
-            Contract.Requires(arg0 != null);
         }
 
         [StringFormatMethod("usageFormat")]
@@ -97,18 +67,11 @@ namespace Zilf.Language
             [NotNull] ZilObject pattern, [NotNull] string usageFormat, [NotNull] object arg0)
             : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
         {
-            Contract.Requires(src != null);
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-            Contract.Requires(usageFormat != null);
-            Contract.Requires(arg0 != null);
         }
 
         protected DeclCheckError([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
     }
 
@@ -119,17 +82,10 @@ namespace Zilf.Language
         public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
             bool ignoreErrors = false)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(value != null);
-            Contract.Requires(pattern != null);
-
-            ZilAtom atom;
-            bool segment = false;
-
-            switch (pattern.StdTypeAtom)
+            switch (pattern)
             {
-                case StdAtom.ATOM:
-                    atom = (ZilAtom)pattern;
+                case ZilAtom atom:
+                    // ReSharper disable once SwitchStatementMissingSomeCases
                     switch (atom.StdAtom)
                     {
                         case StdAtom.ANY:
@@ -155,11 +111,8 @@ namespace Zilf.Language
                                     return true;
 
                                 // special cases: a raw TABLE value can substitute for a TABLE-based type, or VECTOR
-                                if (typeAtom.StdAtom == StdAtom.TABLE &&
-                                    (atom.StdAtom == StdAtom.VECTOR || ctx.GetTypePrim(atom) == PrimType.TABLE))
-                                    return true;
-
-                                return false;
+                                return typeAtom.StdAtom == StdAtom.TABLE &&
+                                       (atom.StdAtom == StdAtom.VECTOR || ctx.GetTypePrim(atom) == PrimType.TABLE);
                             }
 
                             // ...or aliases
@@ -167,6 +120,7 @@ namespace Zilf.Language
                                 return Check(ctx, value, aliased, ignoreErrors);
 
                             // special cases for GVAL and LVAL
+                            // ReSharper disable once SwitchStatementMissingSomeCases
                             switch (atom.StdAtom)
                             {
                                 case StdAtom.GVAL:
@@ -176,67 +130,20 @@ namespace Zilf.Language
                                     return value.IsLVAL(out _);
 
                                 default:
-                                    if (ignoreErrors)
-                                        return false;
-
-                                    throw new InterpreterError(
-                                        InterpreterMessages.Unrecognized_0_1,
-                                        "atom in DECL pattern",
-                                        atom);
+                                    return ignoreErrors
+                                        ? false
+                                        : throw new InterpreterError(
+                                            InterpreterMessages.Unrecognized_0_1,
+                                            "atom in DECL pattern",
+                                            atom);
                             }
                     }
 
-                case StdAtom.SEGMENT:
-                    pattern = ((ZilSegment)pattern).Form;
-                    segment = true;
-                    goto case StdAtom.FORM;
+                case ZilSegment seg:
+                    return CheckFormOrSegment(ctx, value, seg.Form, true, ignoreErrors);
 
-                case StdAtom.FORM:
-                    var form = (ZilForm)pattern;
-                    var first = form.First;
-
-                    // special forms
-                    atom = first as ZilAtom;
-                    if (atom != null)
-                    {
-                        Debug.Assert(form.Rest != null);
-
-                        switch (atom.StdAtom)
-                        {
-                            case StdAtom.OR:
-                                return form.Rest.Any(subpattern => Check(ctx, value, subpattern, ignoreErrors));
-
-                            case StdAtom.QUOTE:
-                                return form.Rest.First?.StructurallyEquals(value) ?? false;
-
-                            case StdAtom.PRIMTYPE when form.Rest.First is ZilAtom primType:
-                                // special case for GVAL and LVAL, which can substitute for <PRIMTYPE ATOM>
-                                return
-                                    value.PrimType == ctx.GetTypePrim(primType) ||
-                                    (primType.StdAtom == StdAtom.ATOM &&
-                                     (value.IsGVAL(out _) || value.IsLVAL(out _)));
-                        }
-                    }
-
-                    // structure form: first pattern element is a DECL matched against the whole structure
-                    // (usually a type atom), remaining elements are matched against the structure elements
-                    if (first == null || !Check(ctx, value, first, ignoreErrors))
-                        return false;
-
-                    if (value is IStructure valueAsStructure)
-                    {
-                        // yay
-                    }
-                    else if (value is IProvideStructureForDeclCheck structProvider)
-                    {
-                        valueAsStructure = structProvider.GetStructureForDeclCheck(ctx);
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
-                    return CheckElements(ctx, valueAsStructure, (ZilForm)pattern, segment, ignoreErrors);
+                case ZilForm form:
+                    return CheckFormOrSegment(ctx, value, form, false, ignoreErrors);
 
                 default:
                     if (ignoreErrors)
@@ -247,6 +154,50 @@ namespace Zilf.Language
                         "value in DECL pattern",
                         pattern.ToStringContext(ctx, false));
             }
+        }
+
+        static bool CheckFormOrSegment([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilForm form,
+            bool segment, bool ignoreErrors)
+        {
+            var (first, rest) = form;
+
+            // special forms
+            // ReSharper disable once SwitchStatementMissingSomeCases
+            switch ((first as ZilAtom)?.StdAtom)
+            {
+                case StdAtom.OR:
+                    return rest.Any(subpattern => Check(ctx, value, subpattern, ignoreErrors));
+
+                case StdAtom.QUOTE:
+                    return rest.First?.StructurallyEquals(value) ?? false;
+
+                case StdAtom.PRIMTYPE when rest.First is ZilAtom primType:
+                    // special case for GVAL and LVAL, which can substitute for <PRIMTYPE ATOM>
+                    return
+                        value.PrimType == ctx.GetTypePrim(primType) ||
+                        primType.StdAtom == StdAtom.ATOM &&
+                        (value.IsGVAL(out _) || value.IsLVAL(out _));
+            }
+
+            // structure form: first pattern element is a DECL matched against the whole structure
+            // (usually a type atom), remaining elements are matched against the structure elements
+            if (first == null || !Check(ctx, value, first, ignoreErrors))
+                return false;
+
+            if (value is IStructure valueAsStructure)
+            {
+                // yay
+            }
+            else if (value is IProvideStructureForDeclCheck structProvider)
+            {
+                valueAsStructure = structProvider.GetStructureForDeclCheck(ctx);
+            }
+            else
+            {
+                return false;
+            }
+
+            return CheckElements(ctx, valueAsStructure, rest, segment, ignoreErrors);
         }
 
         [ContractAnnotation("=> true, decl: notnull; => false, decl: null")]
@@ -276,17 +227,10 @@ namespace Zilf.Language
             return value != null;
         }
 
-        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure, [NotNull] ZilForm pattern, bool segment,
-            bool ignoreErrors)
+        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure,
+            [NotNull] ZilListoidBase elements, bool segment, bool ignoreErrors)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(structure != null);
-            Contract.Requires(pattern != null);
-
-            Debug.Assert(pattern.First != null);
-            Debug.Assert(pattern.Rest != null);
-
-            foreach (var subpattern in pattern.Rest)
+            foreach (var subpattern in elements)
             {
                 ZilObject first;
 
@@ -297,6 +241,7 @@ namespace Zilf.Language
                     {
                         int i;
 
+                        // ReSharper disable once SwitchStatementMissingSomeCases
                         switch (atom.StdAtom)
                         {
                             case StdAtom.REST:

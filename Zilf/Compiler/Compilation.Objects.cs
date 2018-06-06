@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -50,8 +49,6 @@ namespace Zilf.Compiler
 
         void DefineProperty([NotNull] ZilAtom prop)
         {
-            Contract.Requires(prop != null);
-
             if (!Properties.ContainsKey(prop))
             {
                 // create property builder
@@ -67,8 +64,6 @@ namespace Zilf.Compiler
 
         void DefineFlag([NotNull] ZilAtom flag)
         {
-            Contract.Requires(flag != null);
-
             if (!Flags.ContainsKey(flag))
             {
                 // create flag builder
@@ -83,10 +78,6 @@ namespace Zilf.Compiler
 
         void DefineFlagAlias([NotNull] ZilAtom alias, [NotNull] ZilAtom original)
         {
-            Contract.Requires(alias != null);
-            Contract.Requires(original != null);
-            Contract.Ensures(Constants.ContainsKey(alias));
-
             if (!Flags.ContainsKey(alias))
             {
                 var fb = Flags[original];
@@ -121,8 +112,6 @@ namespace Zilf.Compiler
         /// <param name="model">The object to examine.</param>
         void PreBuildObject([NotNull] ZilModelObject model)
         {
-            Contract.Requires(model != null);
-
             var globalsByName = Context.ZEnvironment.Globals.ToDictionary(g => g.Name);
             var propertiesSoFar = new HashSet<ZilAtom>();
 
@@ -130,6 +119,7 @@ namespace Zilf.Compiler
             {
                 CreateVocabWord = (atom, partOfSpeech, src) =>
                 {
+                    // ReSharper disable once SwitchStatementMissingSomeCases
                     switch (partOfSpeech.StdAtom)
                     {
                         case StdAtom.ADJ:
@@ -183,7 +173,7 @@ namespace Zilf.Compiler
                 using (DiagnosticContext.Push(prop.SourceLine))
                 {
                     // the first element must be an atom identifying the property
-                    if (!(prop.First is ZilAtom atom))
+                    if (!prop.IsCons(out var first, out var propBody) || !(first is ZilAtom atom))
                     {
                         Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                         continue;
@@ -192,34 +182,41 @@ namespace Zilf.Compiler
                     ZilAtom uniquePropertyName;
 
                     // exclude phony built-in properties
-                    /* we also detect directions here, which are tricky for a few reasons:
-                     * - they can be implicitly defined by a property spec that looks sufficiently direction-like
-                     * - (IN ROOMS) is not a direction, even if IN is explicitly defined as a direction -- but (IN "string") is!
-                     * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
-                     *   is a pattern for directions
-                     */
                     bool phony;
                     bool? isSynonym = null;
                     Synonym synonym = null;
-                    var definedDirection = Context.ZEnvironment.Directions.Contains(atom);
 
-                    /* There are a few ways to write a property that ZILF will recognize as a direction.
+                    /* We also detect direction properties here, which are tricky for a few reasons:
+                     * - They can be implicitly defined by a property spec that looks sufficiently direction-like.
+                     * - (IN ROOMS) is not a direction, even if IN has been explicitly defined as a direction...
+                     *   but (IN "string") is!
+                     * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
+                     *   is a pattern for directions.
+                     *
+                     * Thus, there are a few ways to write a property that ZILF will recognize as a direction.
+                     *
                      * If the property name has already been defined as one (e.g. by <DIRECTIONS>), you can either:
                      *   - Put two or more values after the property name: (NORTH TO FOREST), (NORTH 123 456)
                      *   - Put one value after the property name that isn't an atom: (NORTH "You can't go that way.")
+                     *
                      * If it hasn't been defined as a direction, you can still implicitly define it right here:
                      *   - Put two or more values after the property name, *and* match the PROPDEF for DIRECTIONS:
                      *     (STARBOARD TO BRIG), (PORT SORRY "You can't jump that far.")
                      */
-                    if (prop.Rest?.Rest != null &&
-                        (!prop.Rest.Rest.IsEmpty || definedDirection && !(prop.Rest.First is ZilAtom)) &&
-                        (definedDirection || directionPattern != null && directionPattern.Matches(Context, prop)))
+
+                    var isKnownDirectionName = Context.ZEnvironment.Directions.Contains(atom);
+
+                    var isDirectionProp = isKnownDirectionName
+                        ? propBody.HasLengthAtLeast(2) || !(propBody.IsEmpty || propBody.First is ZilAtom)
+                        : propBody.HasLengthAtLeast(2) && directionPattern?.Matches(Context, prop) == true;
+
+                    if (isDirectionProp)
                     {
                         // it's a direction
                         phony = false;
 
                         // could be a new implicitly defined direction
-                        if (!Context.ZEnvironment.Directions.Contains(atom))
+                        if (!isKnownDirectionName)
                         {
                             synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
 
@@ -228,8 +225,7 @@ namespace Zilf.Compiler
                                 isSynonym = false;
                                 Context.ZEnvironment.Directions.Add(atom);
                                 Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine);
-                                if (directionPattern != null)
-                                    Context.SetPropDef(atom, directionPattern);
+                                Context.SetPropDef(atom, directionPattern);
                                 uniquePropertyName = atom;
                             }
                             else
@@ -245,6 +241,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
+                        // ReSharper disable once SwitchStatementMissingSomeCases
                         switch (atom.StdAtom)
                         {
                             case StdAtom.DESC:
@@ -253,7 +250,7 @@ namespace Zilf.Compiler
                                 break;
                             case StdAtom.IN:
                                 // (IN FOO) is a location, but (IN "foo") is a property
-                                if (prop.Rest.First is ZilAtom)
+                                if (propBody.First is ZilAtom)
                                     goto case StdAtom.LOC;
                                 goto default;
                             case StdAtom.LOC:
@@ -336,32 +333,30 @@ namespace Zilf.Compiler
                             var form = new ZilForm(new[] { propspec, prop }) { SourceLine = prop.SourceLine };
                             var specOutput = (ZilObject)form.Eval(Context);
 
-                            // ReSharper disable once PatternAlwaysOfType
-                            if (specOutput is ZilList list && list.Rest is ZilList propBody && !propBody.IsEmpty)
+                            if (specOutput is ZilListoidBase list && list.StdTypeAtom == StdAtom.LIST &&
+                                list.Rest is var customBody && !customBody.IsEmpty)
                             {
                                 // replace the property body with the propspec's output
-                                prop.Rest = propBody;
+                                prop.Rest = customBody;
                             }
                             else
                             {
-                                Context.HandleError(new CompilerError(model, CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
+                                Context.HandleError(new CompilerError(model,
+                                    CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
                             }
                         }
                     }
                     else
                     {
+                        // ReSharper disable once SwitchStatementMissingSomeCases
                         switch (atom.StdAtom)
                         {
                             case StdAtom.SYNONYM:
-                                foreach (var obj in prop.Rest)
+                                foreach (var word in propBody.OfType<ZilAtom>())
                                 {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
                                     try
                                     {
-                                        Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabNoun(word, prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -371,15 +366,11 @@ namespace Zilf.Compiler
                                 break;
 
                             case StdAtom.ADJECTIVE:
-                                foreach (var obj in prop.Rest)
+                                foreach (var word in propBody.OfType<ZilAtom>())
                                 {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
                                     try
                                     {
-                                        Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabAdjective(word, prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -389,14 +380,11 @@ namespace Zilf.Compiler
                                 break;
 
                             case StdAtom.PSEUDO:
-                                foreach (var obj in prop.Rest)
+                                foreach (var word in propBody.OfType<ZilString>())
                                 {
-                                    if (!(obj is ZilString str))
-                                        continue;
-
                                     try
                                     {
-                                        Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), prop.SourceLine);
+                                        Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(word.Text, Context), prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -406,17 +394,13 @@ namespace Zilf.Compiler
                                 break;
 
                             case StdAtom.FLAGS:
-                                foreach (var obj in prop.Rest)
+                                foreach (var word in propBody.OfType<ZilAtom>())
                                 {
-                                    atom = obj as ZilAtom;
-                                    if (atom == null)
-                                        continue;
-
                                     try
                                     {
-                                        DefineFlag(Context.ZEnvironment.TryGetBitSynonym(atom, out var original)
+                                        DefineFlag(Context.ZEnvironment.TryGetBitSynonym(word, out var original)
                                             ? original
-                                            : atom);
+                                            : word);
                                     }
                                     catch (ZilError ex)
                                     {
@@ -443,9 +427,6 @@ namespace Zilf.Compiler
         /// </remarks>
         void BuildObject([NotNull] ZilModelObject model, [NotNull] IObjectBuilder ob)
         {
-            Contract.Requires(model != null);
-            Contract.Requires(ob != null);
-
             var elementConverters = new ComplexPropDef.ElementConverters
             {
                 CompileConstant = CompileConstant,
@@ -464,6 +445,7 @@ namespace Zilf.Compiler
                 {
                     IWord word;
 
+                    // ReSharper disable once SwitchStatementMissingSomeCases
                     switch (partOfSpeech.StdAtom)
                     {
                         case StdAtom.ADJ:
@@ -509,8 +491,7 @@ namespace Zilf.Compiler
                 bool noSpecialCases = false;
 
                 // the first element must be an atom identifying the property
-                var propBody = prop.Rest;
-                if (!(prop.First is ZilAtom propName))
+                if (!prop.IsCons(out var first, out var propBody) || !(first is ZilAtom propName))
                 {
                     Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                     continue;
@@ -575,6 +556,7 @@ namespace Zilf.Compiler
                 bool handled = false;
                 if (!noSpecialCases)
                 {
+                    // ReSharper disable once SwitchStatementMissingSomeCases
                     switch (propName.StdAtom)
                     {
                         case StdAtom.DESC:
@@ -599,7 +581,7 @@ namespace Zilf.Compiler
                                 if (Context.ZEnvironment.TryGetBitSynonym(atom, out var original))
                                     atom = original;
 
-                                IFlagBuilder fb = Flags[atom];
+                                var fb = Flags[atom];
                                 ob.AddFlag(fb);
                             }
                             // skip the length validation
@@ -608,7 +590,7 @@ namespace Zilf.Compiler
                         case StdAtom.SYNONYM:
                             handled = true;
                             tb = ob.AddComplexProperty(Properties[propName]);
-                            foreach (ZilObject obj in propBody)
+                            foreach (var obj in propBody)
                             {
                                 if (!(obj is ZilAtom atom))
                                 {
@@ -617,7 +599,7 @@ namespace Zilf.Compiler
                                 }
 
                                 var word = Context.ZEnvironment.GetVocabNoun(atom, prop.SourceLine);
-                                IWordBuilder wb = Vocabulary[word];
+                                var wb = Vocabulary[word];
                                 tb.AddShort(wb);
                                 length += 2;
                             }
@@ -626,7 +608,7 @@ namespace Zilf.Compiler
                         case StdAtom.ADJECTIVE:
                             handled = true;
                             tb = ob.AddComplexProperty(Properties[propName]);
-                            foreach (ZilObject obj in propBody)
+                            foreach (var obj in propBody)
                             {
                                 if (!(obj is ZilAtom atom))
                                 {
@@ -635,7 +617,7 @@ namespace Zilf.Compiler
                                 }
 
                                 var word = Context.ZEnvironment.GetVocabAdjective(atom, prop.SourceLine);
-                                IWordBuilder wb = Vocabulary[word];
+                                var wb = Vocabulary[word];
                                 if (Context.ZEnvironment.ZVersion == 3)
                                 {
                                     tb.AddByte(Constants[ZilAtom.Parse("A?" + word.Atom.Text, Context)]);
@@ -652,12 +634,12 @@ namespace Zilf.Compiler
                         case StdAtom.PSEUDO:
                             handled = true;
                             tb = ob.AddComplexProperty(Properties[propName]);
-                            foreach (ZilObject obj in propBody)
+                            foreach (var obj in propBody)
                             {
                                 if (obj is ZilString str)
                                 {
                                     var word = Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), prop.SourceLine);
-                                    IWordBuilder wb = Vocabulary[word];
+                                    var wb = Vocabulary[word];
                                     tb.AddShort(wb);
                                 }
                                 else
@@ -673,7 +655,7 @@ namespace Zilf.Compiler
                             {
                                 handled = true;
                                 tb = ob.AddComplexProperty(Properties[propName]);
-                                foreach (ZilObject obj in propBody)
+                                foreach (var obj in propBody)
                                 {
                                     if (!(obj is ZilAtom atom))
                                     {
@@ -699,7 +681,6 @@ namespace Zilf.Compiler
                 {
                     // nothing special, just one or more words
                     var pb = Properties[propName];
-                    Contract.Assume(pb != null);
                     if (propBody.Rest.IsEmpty)
                     {
                         var word = CompileConstant(value);
@@ -719,7 +700,7 @@ namespace Zilf.Compiler
                     else
                     {
                         tb = ob.AddComplexProperty(pb);
-                        foreach (ZilObject obj in propBody)
+                        foreach (var obj in propBody)
                         {
                             var word = CompileConstant(obj);
                             if (word == null)

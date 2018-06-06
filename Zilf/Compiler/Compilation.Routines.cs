@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -36,11 +35,6 @@ namespace Zilf.Compiler
         [NotNull]
         static ZilRoutine MaybeRewriteRoutine([NotNull] Context ctx, [NotNull] ZilRoutine origRoutine)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(origRoutine != null);
-            Contract.Requires(origRoutine.Name != null);
-            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
-
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
 
             Debug.Assert(origRoutine.Name != null);
@@ -68,9 +62,6 @@ namespace Zilf.Compiler
 
         void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(rb != null);
-
             // give the user a chance to rewrite the routine
             routine = MaybeRewriteRoutine(Context, routine);
 
@@ -116,8 +107,6 @@ namespace Zilf.Compiler
             Locals.Clear();
             SpareLocals.Clear();
             OuterLocals.Clear();
-
-            Contract.Assume(Blocks.Count == 1);
             Blocks.Pop();
 
             // helper
@@ -184,30 +173,36 @@ namespace Zilf.Compiler
                     if (arg.DefaultValue == null)
                         continue;
 
+                    Debug.Assert(arg.Type == ArgItem.ArgType.Optional || arg.Type == ArgItem.ArgType.Auxiliary);
+
                     lb.DefaultValue = CompileConstant(arg.DefaultValue);
                     if (lb.DefaultValue != null)
                         continue;
 
-                    // not a constant
-                    if (arg.Type == ArgItem.ArgType.Optional)
+                    ILabel nextLabel = null;
+
+                    // ReSharper disable once SwitchStatementMissingSomeCases
+                    switch (arg.Type)
                     {
-                        if (!rb.HasArgCount)
+                        case ArgItem.ArgType.Optional when !rb.HasArgCount:
+                            // not a constant
                             throw new CompilerError(routine.SourceLine,
                                 CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
 
-                        var nextLabel = rb.DefineLabel();
-                        rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
-                        var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
-                        if (val != lb)
-                            rb.EmitStore(lb, val);
+                        case ArgItem.ArgType.Optional:
+                            nextLabel = rb.DefineLabel();
+                            rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
+                            goto default;
+
+                        default:
+                            var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
+                            if (val != lb)
+                                rb.EmitStore(lb, val);
+                            break;
+                    }
+
+                    if (nextLabel != null)
                         rb.MarkLabel(nextLabel);
-                    }
-                    else
-                    {
-                        var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
-                        if (val != lb)
-                            rb.EmitStore(lb, val);
-                    }
                 }
             }
         }
@@ -215,50 +210,48 @@ namespace Zilf.Compiler
         // TODO: replace CompileStmt with CompileForm and (in loops) CompileClauseBody
         void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(stmt != null);
-
             stmt = stmt.Unwrap(Context);
 
-            if (stmt is ZilForm form)
+            switch (stmt)
             {
-                MarkSequencePoint(rb, form);
+                case ZilForm form:
+                    MarkSequencePoint(rb, form);
 
-                var result = CompileForm(rb, form, wantResult, null);
+                    var result = CompileForm(rb, form, wantResult, null);
 
-                if (wantResult)
-                    rb.Return(result);
+                    if (wantResult)
+                        rb.Return(result);
+                    break;
+
+                case ZilList _:
+                    throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled)
+                        .Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND_Or_Loop));
+
+                default:
+                    if (wantResult)
+                    {
+                        var value = CompileConstant(stmt);
+
+                        if (value == null)
+                        {
+                            // TODO: show "expressions of this type cannot be compiled" warning even if wantResult is false?
+                            throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                        }
+
+                        rb.Return(value);
+                    }
+                    break;
             }
-            else if (wantResult)
-            {
-                var value = CompileConstant(stmt);
-                if (value == null)
-                {
-                    var error = new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
-                    if (stmt is ZilList)
-                        error = error.Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND));
-                    throw error;
-                }
-
-                rb.Return(value);
-            }
-            //else
-            //{
-            // TODO: warning message when skipping non-forms inside a routine?
-            //}
         }
 
         void MarkSequencePoint([NotNull] IRoutineBuilder rb, [NotNull] IProvideSourceLine node)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(node != null);
+            if (!WantDebugInfo || !(node.SourceLine is FileSourceLine fileSourceLine))
+                return;
 
-            if (WantDebugInfo && node.SourceLine is FileSourceLine fileSourceLine)
-            {
-                Debug.Assert(Game.DebugFile != null);
-                Game.DebugFile.MarkSequencePoint(rb,
-                    new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
-            }
+            Debug.Assert(Game.DebugFile != null);
+            Game.DebugFile.MarkSequencePoint(rb,
+                new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
         }
 
         /// <summary>
@@ -272,10 +265,6 @@ namespace Zilf.Compiler
         [NotNull]
         public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(atom != null);
-            Contract.Ensures(Contract.Result<ILocalBuilder>() != null);
-
             if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
@@ -341,8 +330,6 @@ namespace Zilf.Compiler
 
         public void PopInnerLocal([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
-
             SpareLocals.Push(Locals[atom]);
 
             if (OuterLocals.TryGetValue(atom, out var stk))

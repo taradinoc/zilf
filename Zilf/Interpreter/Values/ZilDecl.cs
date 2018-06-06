@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -22,7 +22,6 @@ using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,15 +31,12 @@ namespace Zilf.Interpreter.Values
         public ZilDecl([ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
-            Contract.Requires(sequence != null);
         }
 
         [NotNull]
         [ChtypeMethod]
         public static ZilDecl FromList(Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilDecl>() != null);
             return new ZilDecl(list);
         }
 
@@ -49,19 +45,15 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">The DECL syntax is invalid.</exception>
         public IEnumerable<KeyValuePair<ZilAtom, ZilObject>> GetAtomDeclPairs()
         {
-            ZilListBase list = this;
+            ZilListoidBase list = this;
 
             while (!list.IsEmpty)
             {
-                if (!(list.First is ZilList atoms) ||
-                    !atoms.All(a => a is ZilAtom) ||
-                    // ReSharper disable once PatternAlwaysOfType
-                    !(list.Rest?.First is ZilObject decl))
-                {
+                if (!list.StartsWith(out ZilList atoms, out ZilObject decl))
                     break;
-                }
 
-                Debug.Assert(list.Rest.Rest != null);
+                if (!atoms.All(a => a is ZilAtom))
+                    break;
 
                 foreach (var zo in atoms)
                 {
@@ -69,7 +61,8 @@ namespace Zilf.Interpreter.Values
                     yield return new KeyValuePair<ZilAtom, ZilObject>(atom, decl);
                 }
 
-                list = list.Rest.Rest;
+                list = list.GetRest(2);
+                Debug.Assert(list != null);
             }
 
             if (!list.IsEmpty)

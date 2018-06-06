@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -48,7 +47,6 @@ namespace Zilf.Tests.Interpreter
         [NotNull]
         static MethodInfo GetMethod([NotNull] string name)
         {
-            Contract.Requires(name != null);
             return typeof(ArgDecoderTests).GetMethod(
                        name,
                        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic) ??
@@ -699,7 +697,6 @@ namespace Zilf.Tests.Interpreter
         [ContractAnnotation("=> null")]
         static ZilObject Dummy_MdlZilRedirect_From([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             return ctx.FALSE;
         }
 

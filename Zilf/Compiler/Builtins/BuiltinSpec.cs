@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -44,9 +43,6 @@ namespace Zilf.Compiler.Builtins
         // ReSharper disable once NotNullMemberIsNotInitialized
         public BuiltinSpec([NotNull] BuiltinAttribute attr, [NotNull] MethodInfo method)
         {
-            Contract.Requires(attr != null);
-            Contract.Requires(method != null);
-
             try
             {
                 Attr = attr;
@@ -178,10 +174,7 @@ namespace Zilf.Compiler.Builtins
             if (argCount < MinArgs || (MaxArgs != null && argCount > MaxArgs))
                 return false;
 
-            if (callType != null && CallType != callType)
-                return false;
-
-            return true;
+            return callType == null || callType == this.CallType;
         }
     }
 }

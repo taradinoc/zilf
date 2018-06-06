@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,16 +18,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    /// <summary>
-    /// Provides methods common to structured types (LIST, STRING, possibly others).
-    /// </summary>
-    [ContractClass(typeof(IStructureContracts))]
     [ParamDesc("structure")]
     interface IStructure : IEnumerable<ZilObject>
     {
@@ -63,9 +58,7 @@ namespace Zilf.Interpreter
         /// <exception cref="System.NotSupportedException">The operation is not supported by this
         /// structure type.</exception>
         [NotNull]
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         IStructure GetTop();
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
 
         /// <summary>
         /// Increases the size of the structure by adding elements at either end.

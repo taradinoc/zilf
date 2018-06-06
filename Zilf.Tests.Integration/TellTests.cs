@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -95,6 +95,13 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void CR_In_String_Should_Be_Ignored()
+        {
+            AssertRoutine("", "<TELL \"First line.\r\nSecond line.\r\nLast line.\">")
+                .Outputs("First line. Second line. Last line.");
+        }
+
+        [TestMethod]
         public void CRLF_CHARACTER_Should_Affect_String_Translation()
         {
             AssertRoutine("", "<TELL \"foo^bar\">")
@@ -126,7 +133,6 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<FILE-FLAGS SENTENCE-ENDS?>")
                 .Outputs("Hi.\u000bHi.\u000b Hi.\n  Hi!\u000bHi?\u000bHi.  Hi.\n");
         }
-
 
         [TestMethod]
         public void CHRSET_Should_Affect_Text_Decoding()

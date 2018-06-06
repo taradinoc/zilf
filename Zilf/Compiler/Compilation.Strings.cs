@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -46,8 +46,6 @@ namespace Zilf.Compiler
         [NotNull]
         public static string TranslateString(string str, [NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
                 str,
@@ -55,6 +53,7 @@ namespace Zilf.Compiler
                 GetSpacesMode(ctx));
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         static StringSpacesMode GetSpacesMode([NotNull] Context ctx)
         {
             if (ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P))

@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -47,38 +46,27 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [NotNull]
         [ChtypeMethod]
-        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListBase list)
+        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListoidBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ObList>() != null);
             var result = new ObList(ctx.IgnoreCase);
 
-            while (!list.IsEmpty)
+            while (list.IsCons(out var first, out var rest))
             {
-                Debug.Assert(list.First != null);
-                Debug.Assert(list.Rest != null);
-
-                if (list.First is ZilList pair)
+                switch (first)
                 {
-                    if (pair.First is ZilString key && pair.Rest?.First is ZilAtom value)
-                    {
-                        Debug.Assert(pair.Rest.Rest != null);
-
-                        if (!pair.Rest.Rest.IsEmpty)
-                        {
-                            throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
-                        }
-
+                    case ZilList pair when pair.Matches(out ZilString key, out ZilAtom value):
                         result[key.Text] = value;
-                    }
-                    else
-                    {
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST", "string-atom pairs");
-                    }
+                        break;
+
+                    case ZilList pair when !pair.HasLength(2):
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
+
+                    case ZilList _:
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST",
+                            "string-atom pairs");
                 }
 
-                list = list.Rest;
+                list = rest;
             }
 
             return result;
@@ -141,9 +129,6 @@ namespace Zilf.Interpreter
 
         internal void Add([NotNull] ZilAtom newAtom)
         {
-            Contract.Requires(newAtom != null);
-            Contract.Requires(newAtom.ObList == this);
-
             var key = newAtom.Text;
             if (ignoreCase)
                 key = key.ToUpperInvariant();
@@ -153,9 +138,6 @@ namespace Zilf.Interpreter
 
         internal void Remove([NotNull] ZilAtom atom)
         {
-            Contract.Requires(atom != null);
-            Contract.Requires(atom.ObList != this);
-
             var key = atom.Text;
             if (ignoreCase)
                 key = key.ToUpperInvariant();

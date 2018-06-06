@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -83,7 +82,6 @@ namespace Zilf.Tests.Interpreter
 
             public void AddStdAtom([NotNull] string name, StdAtom stdAtom)
             {
-                Contract.Requires(name != null);
                 atoms.Add(name, new ZilAtom(name, null, stdAtom));
             }
         }

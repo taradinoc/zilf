@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,9 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -40,9 +37,6 @@ namespace Zilf.ZModel.Values
         public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
             [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
         {
-            Contract.Requires(argspec != null);
-            Contract.Requires(body != null);
-
             Name = name;
             ArgSpec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
             this.body = body.ToArray();
@@ -54,10 +48,6 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilRoutine FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilRoutine>() != null);
-
             if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s,
@@ -74,7 +64,6 @@ namespace Zilf.ZModel.Values
 
         protected override TiedLayout GetLayout()
         {
-            Contract.Ensures(Contract.Result<TiedLayout>() != null);
             return TiedLayout.Create<ZilRoutine>(
                 x => x.ArgSpecAsList,
                 x => x.BodyAsList);
@@ -120,14 +109,6 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        [ContractInvariantMethod]
-        [SuppressMessage("Microsoft.Performance", "CA1822: MarkMembersAsStatic", Justification = "Required for code contracts.")]
-        [Conditional("CONTRACTS_FULL")]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(body != null);
-        }
-
         internal void ExpandInPlace([NotNull] Context ctx)
         {
             IEnumerable<ZilObject> RecursiveExpandWithSplice(ZilObject zo)
@@ -168,12 +149,15 @@ namespace Zilf.ZModel.Values
                         if (expanded is IMayExpandAfterEvaluation expandAfter &&
                             expandAfter.ShouldExpandAfterEvaluation)
                         {
-                            return expandAfter.ExpandAfterEvaluation().AsResultSequence().Select(SetSourceLine);
+                            return expandAfter.ExpandAfterEvaluation().AsResultSequence()
+                                .Select(SetSourceLine)
+                                .Select(xo => ReferenceEquals(xo, form) ? xo : new ZilMacroResult(xo));
                         }
                         else if (!ReferenceEquals(expanded, form))
                         {
                             expanded.SourceLine = zo.SourceLine;
-                            return RecursiveExpandWithSplice(expanded);
+                            return RecursiveExpandWithSplice(expanded)
+                                .Select(xo => new ZilMacroResult(xo));
                         }
                         else
                         {
@@ -186,7 +170,9 @@ namespace Zilf.ZModel.Values
                         break;
 
                     default:
-                        return ExpandWithSplice(ctx, zo).Select(SetSourceLine);
+                        return ExpandWithSplice(ctx, zo)
+                            .Select(SetSourceLine)
+                            .Select(xo => ReferenceEquals(xo, zo) ? xo : new ZilMacroResult(xo));
                 }
 
                 result.SourceLine = zo.SourceLine;

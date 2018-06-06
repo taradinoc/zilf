@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,28 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [ContractClass(typeof(IIndirectOperandContracts))]
     public interface IIndirectOperand : IConstantOperand
     {
         [NotNull]
         IVariable Variable { get; }
-    }
-
-    [ContractClassFor(typeof(IIndirectOperand))]
-    abstract class IIndirectOperandContracts : IIndirectOperand
-    {
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(Variable != null);
-        }
-
-        public abstract IVariable Variable { get; }
-        public abstract IConstantOperand Add(IConstantOperand other);
     }
 }

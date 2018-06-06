@@ -11,7 +11,6 @@ namespace ZilfErrorMessages.Test
     [TestClass, TestCategory("Analyzers")]
     public class ErrorExceptionUsageTests : CodeFixVerifier
     {
-
         //No diagnostics expected to show up
         [TestMethod]
         public async Task ErrorExceptionUsageAnalyzer_NotTriggered()

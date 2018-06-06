@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -50,26 +49,22 @@ namespace Zilf.Language
         public CompilerFatal([NotNull] IProvideSourceLine sourceLine, int code)
            : this(sourceLine, code, null)
         {
-            Contract.Requires(sourceLine != null);
         }
 
         public CompilerFatal([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
-            Contract.Requires(node != null);
         }
 
         [UsedImplicitly]
         public CompilerFatal([NotNull] Diagnostic diagnostic)
             : base(diagnostic)
         {
-            Contract.Requires(diagnostic != null);
         }
 
         protected CompilerFatal([NotNull] SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
-            Contract.Requires(si != null);
         }
     }
 }

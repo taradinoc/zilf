@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,20 +16,18 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern alias DL;
-using DL::DiffLib;
+using DiffLib;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Zilf.Tests.Integration
 {
-    [TestClass, TestCategory("Compiler"), TestCategory("Slow")]
+    [TestClass, TestCategory("Compiler"), TestCategory("Slow"), TestCategory("Library")]
     public class FullProjectTests
     {
         const string ProjectsDirName = "FullTestProjects";
@@ -69,7 +67,6 @@ namespace Zilf.Tests.Integration
         [UsedImplicitly]
         static IEnumerable<string[]> GetProjects()
         {
-            Contract.Ensures(Contract.Result<IEnumerable<string[]>>() != null);
             return from dir in Directory.EnumerateDirectories(projectsDir, "*", SearchOption.AllDirectories)
                    let baseName = Path.GetFileName(dir)
                    let mainZilFile = Path.Combine(dir, baseName + ".zil")
@@ -83,9 +80,6 @@ namespace Zilf.Tests.Integration
         [Timeout(PerTestTimeoutMilliseconds)]
         public void TestProjects([NotNull] string baseName, [NotNull] string dir, [NotNull] string mainZilFile)
         {
-            Contract.Requires(dir != null);
-            Contract.Requires(baseName != null);
-            Contract.Requires(mainZilFile != null);
             Console.WriteLine("Testing {0}", dir);
 
             var outputFile = Path.Combine(dir, baseName + ".output.txt");
@@ -110,8 +104,8 @@ namespace Zilf.Tests.Integration
                 var massagedExpected = MassageText(File.ReadAllText(outputFile));
                 if (massagedActual != massagedExpected)
                 {
-                    string[] expectedLines = SplitLines(massagedExpected);
-                    string[] actualLines = SplitLines(massagedActual);
+                    var expectedLines = SplitLines(massagedExpected);
+                    var actualLines = SplitLines(massagedActual);
 
                     var diff = Diff.CalculateSections(expectedLines, actualLines);
                     int e = 0, a = 0;
@@ -128,7 +122,6 @@ namespace Zilf.Tests.Integration
 
                             for (int m = a; m < a + change.LengthInCollection2; m++)
                             {
-                                Contract.Assume(m >= 0); // prevent spurious "Array access might be below lower bound"
                                 Console.WriteLine("+{0}", actualLines[m]);
                             }
 
@@ -157,9 +150,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string MassageText([NotNull] string text)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
             text = SerialNumberRegex.Replace(text, "######");
             text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
             return text;
@@ -168,9 +158,6 @@ namespace Zilf.Tests.Integration
         [NotNull]
         static string[] SplitLines([NotNull] string text)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<string[]>() != null);
-
             var lines = text.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {

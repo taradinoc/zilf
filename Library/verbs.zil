@@ -397,7 +397,7 @@ Args:
         ;"go through the N NPCs"
         <COND (.N
                <CRLF>
-               <LIST-OBJECTS .RM NPC-DESC? %<+ ,L-SUFFIX ,L-CAP>>
+               <LIST-OBJECTS .RM NPC-DESC? <+ ,L-SUFFIX ,L-CAP>>
                <TELL " here." CR>
                <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
 
@@ -421,6 +421,12 @@ Args:
 
 >
 
+<DEFMAC UPPERCASE-CHAR ('C)
+    <FORM BIND <LIST <LIST ?TMP .C>>
+        '<COND (<AND <G=? .?TMP !\a> <L=? .?TMP !\z>>
+                <- .?TMP 32>)
+               (ELSE .?TMP)>>>
+
 ;"Prints a (short) string with the first letter capitalized."
 <ROUTINE PRINT-CAP-STR (S "AUX" MAX C)
     <DIROUT 3 ,TEMPTABLE>
@@ -431,8 +437,7 @@ Args:
            <INC MAX>
            <DO (I 2 .MAX)
                <SET C <GETB ,TEMPTABLE .I>>
-               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
-                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <AND <=? .I 2> <SET C <UPPERCASE-CHAR .C>>>
                <PRINTC .C>>)>>
 
 ;"Prints an object name with the first letter capitalized."
@@ -445,8 +450,7 @@ Args:
            <INC MAX>
            <DO (I 2 .MAX)
                <SET C <GETB ,TEMPTABLE .I>>
-               <COND (<AND <=? .I 2> <G=? .C !\a> <L=? .C !\z>>
-                      <SET C <- .C %<- <ASCII !\a> <ASCII !\A>>>>)>
+               <AND <=? .I 2> <SET C <UPPERCASE-CHAR .C>>>
                <PRINTC .C>>)>>
 
 ;"Implements <TELL A .OBJ>."
@@ -1177,8 +1181,7 @@ Returns:
     <TELL " / Serial number ">
     <LOWCORE-TABLE SERIAL 6 PRINTC>
     <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
-    <CRLF>
->
+    <CRLF>>
 
 <ROUTINE V-THINK-ABOUT ()
     <COND (<PRSO? ,WINNER>
@@ -1585,7 +1588,7 @@ Returns:
 
     <CONSTANT FLAG-NAMES
         <PLTABLE
-            %<MAPF <FUNCTION ("TUPLE" A) <CHTYPE .A SPLICE>>
+            !<MAPF ,LIST
                    <FUNCTION (FLAG) <MAPRET .FLAG <SPNAME .FLAG>>>
                    ,KNOWN-FLAGS>>>
 

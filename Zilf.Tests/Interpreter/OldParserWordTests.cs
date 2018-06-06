@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Emit;
@@ -66,14 +65,12 @@ namespace Zilf.Tests.Interpreter
         /// <item>verbValue (the value to use when setting PartOfSpeech.Verb), and</item>
         /// <item>prepValue (the value to use when setting PartOfSpeech.Preposition).</item>
         /// </list></param>
-        void Test_Keep_VP_Values(int zversion, bool newVoc, [NotNull] Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
+        static void Test_Keep_VP_Values(int zversion, bool newVoc, [NotNull] Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
-            Contract.Requires(setPartsOfSpeech != null);
             CreateWordInContext(zversion, newVoc, out var ctx, out var word);
 
             // set parts of speech
             const byte VERB_VALUE = 115, PREPOSITION_VALUE = 200;
-            Contract.Assume(VERB_VALUE != PREPOSITION_VALUE);
 
             setPartsOfSpeech(ctx, word, VERB_VALUE, PREPOSITION_VALUE);
 
@@ -91,9 +88,6 @@ namespace Zilf.Tests.Interpreter
         /// <param name="word">Returns a new OldParserWord ("FOO") added to the context's ObList.</param>
         static void CreateWordInContext(int zversion, bool newVoc, [NotNull] out Context ctx, [NotNull] out OldParserWord word)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(word != null);
-
             // set up context
             ctx = new Context();
             ctx.ZEnvironment.ZVersion = zversion;
@@ -397,7 +391,7 @@ namespace Zilf.Tests.Interpreter
             public IConstantOperand Add(IConstantOperand other)
             {
                 Assert.Fail("IWordBuilder.Add shouldn't be called");
-                return default(IConstantOperand);
+                return default;
             }
         }
 

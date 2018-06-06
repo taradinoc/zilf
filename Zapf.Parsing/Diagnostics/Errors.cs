@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.Contracts;
 using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Diagnostics
@@ -25,40 +24,28 @@ namespace Zapf.Parsing.Diagnostics
     {
         public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string message)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(message != null);
             sink.HandleWarning(new Warning(node, message));
         }
 
         [StringFormatMethod("format")]
         public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             Warn(sink, node, string.Format(format, args));
         }
 
         public static void Serious([NotNull] IErrorSink sink, [NotNull] string message)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(message != null);
             Serious(sink, null, message);
         }
 
         [StringFormatMethod("format")]
         public static void Serious([NotNull] IErrorSink sink, [NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             Serious(sink, string.Format(format, args));
         }
 
         public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string message)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(message != null);
             sink.HandleSeriousError(new SeriousError(node, message));
         }
 
@@ -66,17 +53,12 @@ namespace Zapf.Parsing.Diagnostics
         public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string format,
             [NotNull] params object[] args)
         {
-            Contract.Requires(sink != null);
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             Serious(sink, node, string.Format(format, args));
         }
 
         [NotNull]
         public static SeriousError MakeSerious(ISourceLine node, [NotNull] string message)
         {
-            Contract.Requires(message != null);
-            Contract.Ensures(Contract.Result<SeriousError>() != null);
             return new SeriousError(node, message);
         }
 
@@ -84,9 +66,6 @@ namespace Zapf.Parsing.Diagnostics
         [StringFormatMethod("format")]
         public static SeriousError MakeSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<SeriousError>() != null);
             return MakeSerious(node, string.Format(format, args));
         }
 
@@ -94,7 +73,6 @@ namespace Zapf.Parsing.Diagnostics
         [ContractAnnotation("=> halt")]
         public static void ThrowSerious([NotNull] string message)
         {
-            Contract.Requires(message != null);
             ThrowSerious(null, message);
         }
 
@@ -103,8 +81,6 @@ namespace Zapf.Parsing.Diagnostics
         [StringFormatMethod("format")]
         public static void ThrowSerious([NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             ThrowSerious(null, format, args);
         }
 
@@ -112,7 +88,6 @@ namespace Zapf.Parsing.Diagnostics
         [ContractAnnotation("=> halt")]
         public static void ThrowSerious(ISourceLine node, [NotNull] string message)
         {
-            Contract.Requires(message != null);
             throw MakeSerious(node, message);
         }
 
@@ -121,8 +96,6 @@ namespace Zapf.Parsing.Diagnostics
         [StringFormatMethod("format")]
         public static void ThrowSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             throw MakeSerious(node, format, args);
         }
 
@@ -130,7 +103,6 @@ namespace Zapf.Parsing.Diagnostics
         [ContractAnnotation("=> halt")]
         public static void ThrowFatal([NotNull] string message)
         {
-            Contract.Requires(message != null);
             ThrowFatal(null, message);
         }
 
@@ -139,8 +111,6 @@ namespace Zapf.Parsing.Diagnostics
         [StringFormatMethod("format")]
         public static void ThrowFatal([NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             ThrowFatal(null, format, args);
         }
 
@@ -148,7 +118,6 @@ namespace Zapf.Parsing.Diagnostics
         [ContractAnnotation("=> halt")]
         public static void ThrowFatal(ISourceLine node, [NotNull] string message)
         {
-            Contract.Requires(message != null);
             throw new FatalError(node, message);
         }
 
@@ -157,8 +126,6 @@ namespace Zapf.Parsing.Diagnostics
         [StringFormatMethod("format")]
         public static void ThrowFatal(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
         {
-            Contract.Requires(format != null);
-            Contract.Requires(args != null);
             ThrowFatal(node, string.Format(format, args));
         }
     }

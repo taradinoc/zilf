@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -92,7 +92,7 @@ namespace Zapf
 
         static readonly char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
 
-        IEnumerable<string> FindWords([NotNull] string text)
+        static IEnumerable<string> FindWords([NotNull] string text)
         {
             int wordStart = -1;
             bool inWord = false;
@@ -115,16 +115,13 @@ namespace Zapf
                 }
                 else
                 {
-                    if (c == ' ')
-                    {
-                        continue;
-                    }
-                    else
+                    if (c != ' ')
                     {
                         inWord = true;
                         wordStart = i;
-                        continue;
                     }
+
+                    continue;
                 }
 
                 // found a word

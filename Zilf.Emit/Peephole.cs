@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,12 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#undef TRACE_PEEPHOLE
-
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -88,7 +84,6 @@ namespace Zilf.Emit
 
         public CombinerResult(int linesConsumed, [NotNull] IEnumerable<CombinableLine<TCode>> newLines)
         {
-            Contract.Requires(newLines != null);
             LinesConsumed = linesConsumed;
             NewLines = newLines;
         }
@@ -134,8 +129,6 @@ namespace Zilf.Emit
         /// </summary>
         CausesNoOpIfPositive,
     }
-
-    [ContractClass(typeof(PeepholeCombinerContract<>))]
     interface IPeepholeCombiner<TCode>
     {
         /// <summary>
@@ -169,6 +162,19 @@ namespace Zilf.Emit
         /// <param name="b">The second instruction.</param>
         /// <returns>The merged instruction.</returns>
         TCode MergeIdentical(TCode a, TCode b);
+
+        /// <summary>
+        /// Determines whether an instruction may be duplicated as part of an
+        /// optimization.
+        /// </summary>
+        /// <param name="c">The instruction.</param>
+        /// <returns><see langword="true"/> if the instruction may be duplicated.</returns>
+        /// <remarks>
+        /// The motivating use case is "optimize branch to terminator". This optimization
+        /// is always disabled for some instructions (via <see cref="PeepholeLineType.HeavyTerminator"/>),
+        /// but in some cases we need to disable it contextually as well.
+        /// </remarks>
+        bool CanDuplicate(TCode c);
 
         /// <summary>
         /// Determines whether one branch instruction tests the same condition
@@ -231,7 +237,6 @@ namespace Zilf.Emit
 
             public void CopyFrom([NotNull] Line other)
             {
-                Contract.Requires(other != null);
                 Label = other.Label;
                 Code = other.Code;
                 TargetLabel = other.TargetLabel;
@@ -310,8 +315,6 @@ namespace Zilf.Emit
         /// </exception>
         public void InsertBufferFirst([NotNull] PeepholeBuffer<TCode> other)
         {
-            Contract.Requires(other != null);
-
             // turn pending label into a label on our first line, or copy it if we have no lines
             if (other.pendingLabel != null)
             {
@@ -397,7 +400,7 @@ namespace Zilf.Emit
         {
             Optimize();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
                 handler(line.Label, line.Code, line.TargetLabel, line.Type);
         }
 
@@ -414,7 +417,7 @@ namespace Zilf.Emit
                 Console.WriteLine();
             }
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.Label != null)
                     Console.Write("{0}:", line.Label);
@@ -427,7 +430,7 @@ namespace Zilf.Emit
 
                 Console.Write(' ');
 
-                ILabel targetLabel = line.TargetLabel;
+                var targetLabel = line.TargetLabel;
                 if (targetLabel != null && aliases.ContainsKey(targetLabel))
                     targetLabel = aliases[targetLabel];
 
@@ -465,7 +468,7 @@ namespace Zilf.Emit
             // apply alias mappings and link lines to each other
             var labelMap = new Dictionary<ILabel, Line>();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.Label != null)
                     labelMap.Add(line.Label, line);
@@ -475,7 +478,7 @@ namespace Zilf.Emit
 
             aliases.Clear();
 
-            foreach (Line line in lines)
+            foreach (var line in lines)
             {
                 if (line.TargetLabel != null)
                 {
@@ -540,17 +543,18 @@ namespace Zilf.Emit
                         if (line.TargetLine != null)
                         {
                             var targetNode = lines.Find(line.TargetLine);
-                            Contract.Assume(targetNode != null);
                             queue.Enqueue(targetNode);
                         }
                     }
                 }
 
                 // apply optimizations to each line
-                for (LinkedListNode<Line> node = lines.First; node != null; node = node.Next)
+                for (var node = lines.First; node != null; node = node.Next)
                 {
-                    Line line = node.Value;
+                    var line = node.Value;
                     bool delete = false;
+
+                    // TODO: refactor optimizations (wrap each one in a method or class)
 
                     // clear unused labels
                     if (line.Label != null && !usedLabels.ContainsKey(line.Label))
@@ -624,7 +628,6 @@ namespace Zilf.Emit
 
                             var originalTarget = line.TargetLine;
                             var targetNode = lines.Find(originalTarget);
-                            Contract.Assume(targetNode?.Next != null);
 
                             var lineAfterTarget = targetNode.Next.Value;
 
@@ -730,7 +733,7 @@ namespace Zilf.Emit
 
                             var newLine = new Line(
                                 null,
-                                Combiner == null ? default(TCode) : Combiner.SynthesizeBranchAlways(),
+                                Combiner == null ? default : Combiner.SynthesizeBranchAlways(),
                                 line.TargetLabel,
                                 PeepholeLineType.BranchAlways)
                             {
@@ -755,7 +758,8 @@ namespace Zilf.Emit
                             Trace("doom branch to next");
                         }
                         else if (line.Type == PeepholeLineType.BranchAlways &&
-                            line.TargetLine.Type == PeepholeLineType.Terminator)
+                            line.TargetLine.Type == PeepholeLineType.Terminator &&
+                            Combiner.CanDuplicate(line.TargetLine.Code))
                         {
                             // handle "branch to terminator" by replacing the branch with a copy of the terminator
                             var oldLabel = line.Label;
@@ -961,8 +965,6 @@ namespace Zilf.Emit
                          * the function unless it's unreachable. */
                         if (line.Label != null /*&& next != null*/)
                         {
-                            Contract.Assert(next != null);
-
                             MarkReachable(next);
 
                             // update references to this label
@@ -1025,47 +1027,6 @@ namespace Zilf.Emit
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-    }
-
-    [ContractClassFor(typeof(IPeepholeCombiner<>))]
-    [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-    [SuppressMessage("ReSharper", "AnnotateCanBeNullTypeMember")]
-    abstract class PeepholeCombinerContract<TCode> : IPeepholeCombiner<TCode>
-    {
-        public CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines)
-        {
-            return default(CombinerResult<TCode>);
-        }
-
-        public TCode SynthesizeBranchAlways()
-        {
-            return default(TCode);
-        }
-
-        public bool AreIdentical(TCode a, TCode b)
-        {
-            return default(bool);
-        }
-
-        public TCode MergeIdentical(TCode a, TCode b)
-        {
-            return default(TCode);
-        }
-
-        public SameTestResult AreSameTest(TCode a, TCode b)
-        {
-            return default(SameTestResult);
-        }
-
-        public ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b)
-        {
-            return default(ControlsConditionResult);
-        }
-
-        public ILabel NewLabel()
-        {
-            return default(ILabel);
         }
     }
 }

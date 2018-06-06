@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -21,7 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler")]
-    public class HelloTests
+    public class HelloTests : IntegrationTestClass
     {
         [TestMethod]
         public void HelloWorld_V3()
@@ -35,7 +35,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
 
         [TestMethod]
@@ -65,7 +65,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
 
         [TestMethod]
@@ -79,7 +79,7 @@ namespace Zilf.Tests.Integration
     <CRLF>
     <QUIT>>";
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
 
         [TestMethod]
@@ -94,7 +94,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
 
         [TestMethod]
@@ -109,7 +109,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            ZlrHelper.RunAndAssert(code, null, expectedOutput);
+            AssertRaw(code).Outputs(expectedOutput);
         }
     }
 }

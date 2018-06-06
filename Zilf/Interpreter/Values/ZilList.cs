@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using JetBrains.Annotations;
 
@@ -29,20 +28,15 @@ namespace Zilf.Interpreter.Values
         public ZilList([NotNull] IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
-            Contract.Requires(sequence != null);
         }
 
-        public ZilList(ZilObject first, ZilList rest)
+        public ZilList(ZilObject first, ZilListoidBase rest)
             : base(first, rest) { }
 
         [NotNull]
         [ChtypeMethod]
         public static ZilList FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ZilList>() != null);
-
             return new ZilList(list.First, list.Rest);
         }
 
@@ -52,7 +46,7 @@ namespace Zilf.Interpreter.Values
 
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
-            ZilResult result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
+            var result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
             if (result.ShouldPass())
                 return result;
 

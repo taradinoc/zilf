@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using System.Diagnostics.Contracts;
 
 namespace Zilf.Interpreter
 {
@@ -28,9 +27,6 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult COND(Context ctx, [NotNull] [Required] CondClause[] clauses)
         {
-            Contract.Requires(clauses != null);
-            SubrContracts(ctx);
-
             ZilResult result = null;
 
             foreach (var clause in clauses)
@@ -67,13 +63,9 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult OR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx, args);
+            var resultObj = ctx.FALSE;
 
-            ZilObject resultObj = ctx.FALSE;
-
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 var result = arg.Eval(ctx);
                 if (result.ShouldPass())
@@ -91,13 +83,9 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilResult AND([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(args != null);
-            SubrContracts(ctx, args);
+            var resultObj = ctx.TRUE;
 
-            ZilObject resultObj = ctx.TRUE;
-
-            foreach (ZilObject arg in args)
+            foreach (var arg in args)
             {
                 var result = arg.Eval(ctx);
                 if (result.ShouldPass())

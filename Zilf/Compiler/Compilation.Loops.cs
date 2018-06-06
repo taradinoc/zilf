@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,10 +16,9 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -27,6 +26,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using JetBrains.Annotations;
+using Zilf.Common;
 
 namespace Zilf.Compiler
 {
@@ -35,29 +35,25 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [CanBeNull] ZilList args,
+        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args,
             [NotNull] ISourceLine src,
             bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(src != null);
-            Contract.Requires(name != null);
-
-            if (args?.First == null)
+            if (!args.IsCons(out var first, out var rest))
             {
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
             }
 
-            if (args.First is ZilAtom activationAtom)
+            if (first is ZilAtom activationAtom)
             {
-                args = args.Rest;
+                args = rest;
             }
             else
             {
                 activationAtom = null;
             }
 
-            if (args?.First == null)
+            if (!args.IsCons(out var bindings, out var body) || !(bindings is ZilList bindingList))
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -84,56 +80,54 @@ namespace Zilf.Compiler
                  *       ...>
                  */
 
-                args = TransformProgArgsIfImplementingDeferredReturn(args);
+                TransformProgArgsIfImplementingDeferredReturn(ref bindingList, ref body);
             }
-
-            Debug.Assert(args.First != null);
-            Debug.Assert(args.Rest != null);
 
             // add new locals, if any
             var innerLocals = new Queue<ZilAtom>();
-            foreach (var obj in (ZilList)args.First)
+
+            void AddLocal(ZilAtom atom)
             {
-                ZilAtom atom;
+                innerLocals.Enqueue(atom);
+                PushInnerLocal(rb, atom);
+            }
 
-                switch (obj.StdTypeAtom)
+            void AddLocalWithDefault(ZilAtom atom, ZilObject value)
+            {
+                innerLocals.Enqueue(atom);
+                var lb = PushInnerLocal(rb, atom);
+                var loc = CompileAsOperand(rb, value, src, lb);
+                if (loc != lb)
+                    rb.EmitStore(lb, loc);
+            }
+
+            foreach (var obj in bindingList)
+            {
+                switch (obj)
                 {
-                    case StdAtom.ATOM:
-                        atom = (ZilAtom)obj;
-                        innerLocals.Enqueue(atom);
-                        PushInnerLocal(rb, atom);
+                    case ZilAtom atom:
+                        AddLocal(atom);
                         break;
 
-                    case StdAtom.ADECL:
-                        atom = ((ZilAdecl)obj).First as ZilAtom;
-                        if (atom == null)
-                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
-                        innerLocals.Enqueue(atom);
-                        PushInnerLocal(rb, atom);
+                    case ZilAdecl adecl when adecl.First is ZilAtom atom:
+                        AddLocal(atom);
                         break;
 
-                    case StdAtom.LIST:
-                        var list = (ZilList)obj;
-                        if (list.First == null || list.Rest?.First == null || list.Rest.Rest?.First != null)
-                        {
-                            throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
-                        }
-                        atom = list.First as ZilAtom;
-                        if (atom == null)
-                        {
-                            if (list.First is ZilAdecl adecl)
-                                atom = adecl.First as ZilAtom;
-                        }
-                        var value = list.Rest.First;
-                        if (atom == null)
-                            throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
-                        innerLocals.Enqueue(atom);
-                        var lb = PushInnerLocal(rb, atom);
-                        var loc = CompileAsOperand(rb, value, src, lb);
-                        if (loc != lb)
-                            rb.EmitStore(lb, loc);
+                    case ZilList list when !list.HasLength(2):
+                        throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
+
+                    case ZilList list when list.Matches(out ZilAtom atom, out ZilObject value):
+                        AddLocalWithDefault(atom, value);
                         break;
 
+                    case ZilList list when list.Matches(out ZilAdecl adecl, out ZilObject value) && adecl.First is ZilAtom atom:
+                        AddLocalWithDefault(atom, value);
+                        break;
+
+                    case ZilAdecl _:
+                    case ZilList _:
+                        throw new CompilerError(CompilerMessages.Invalid_Atom_Binding);
+                        
                     default:
                         throw new CompilerError(CompilerMessages.Elements_Of_Binding_List_Must_Be_Atoms_Or_Lists);
                 }
@@ -161,13 +155,11 @@ namespace Zilf.Compiler
             try
             {
                 // generate code for prog body
-                args = args.Rest;
-
                 IOperand result;
 
                 if (wantResult)
                 {
-                    var clauseResult = CompileClauseBody(rb, args, !repeat, resultStorage);
+                    var clauseResult = CompileClauseBody(rb, body, !repeat, resultStorage);
 
                     /* The resultStorage we pass to CompileClauseBody (like any other method) is just
                      * a hint, so clauseResult might be different if the result is easily accessible.
@@ -209,7 +201,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    CompileClauseBody(rb, args, false, null);
+                    CompileClauseBody(rb, body, false, null);
                     result = null;
                 }
 
@@ -230,62 +222,45 @@ namespace Zilf.Compiler
             }
         }
 
-        [NotNull]
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        static ZilList TransformProgArgsIfImplementingDeferredReturn([NotNull] ZilList args)
+        static void TransformProgArgsIfImplementingDeferredReturn([NotNull] ref ZilList bindingList, [NotNull] ref ZilListoidBase body)
         {
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<ZilList>() != null);
-
-            if (!(args.First is ZilList bindingList))
-                return args;
-
-            Debug.Assert(args.First != null);
-            Debug.Assert(args.Rest != null);
-
             // ends with <LVAL atom>?
-            if (!(args.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
-                return args;
+            if (!(body.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
+                return;
 
             // atom is bound in the prog?
             if (!GetUninitializedAtomsFromBindingList(bindingList).Contains(atom))
-                return args;
+                return;
 
             // atom is set earlier in the prog?
-            var setExpr = args.Rest
-                .OfType<ZilForm>()
+            var setExpr = body.OfType<ZilForm>()
                 .FirstOrDefault(
-                    form => ((IStructure)form).GetLength(3) == 3 &&
+                    form => form.HasLength(3) &&
                             (form.First as ZilAtom)?.StdAtom == StdAtom.SET &&
                             form.Rest?.First == atom);
 
             if (setExpr == null)
-                return args;
+                return;
 
             // atom is not referenced anywhere else?
-            if (!args.Rest.All(zo =>
+            if (!body.All(zo =>
                 ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
-                return args;
+                return;
 
             // we got a winner!
-            var newBindingList = new ZilList(
+            bindingList = new ZilList(
                 bindingList.Where(zo => GetUninitializedAtomFromBindingListItem(zo) != atom));
 
-            var newBody = new ZilList(
-                args.Rest
+            body = new ZilList(
+                body
                     .Where(zo => !ReferenceEquals(zo, lastExpr))
                     .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
-
-            return new ZilList(newBindingList, newBody);
-
         }
 
         [NotNull]
-        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilList bindingList)
+        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilListBase bindingList)
         {
-            Contract.Requires(bindingList != null);
-            Contract.Ensures(Contract.Result<IEnumerable<ZilAtom>>() != null);
-
             return bindingList.EnumerateNonRecursive()
                 .Select(GetUninitializedAtomFromBindingListItem)
                 .Where(a => a != null);
@@ -294,8 +269,7 @@ namespace Zilf.Compiler
         [CanBeNull]
         static ZilAtom GetUninitializedAtomFromBindingListItem([NotNull] ZilObject zo)
         {
-            Contract.Requires(zo != null);
-
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (zo.StdTypeAtom)
             {
                 case StdAtom.ATOM:
@@ -311,9 +285,6 @@ namespace Zilf.Compiler
 
         static bool RecursivelyContains([NotNull] ZilObject haystack, [NotNull] ZilObject needle)
         {
-            Contract.Requires(haystack != null);
-            Contract.Requires(needle != null);
-
             if (haystack == needle)
                 return true;
 
@@ -321,448 +292,572 @@ namespace Zilf.Compiler
                 sequence.Any(zo => RecursivelyContains(zo, needle));
         }
 
-        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: false => null")]
-        [ContractAnnotation("wantResult: true => notnull")]
-        [SuppressMessage("Microsoft.Contracts", "TestAlwaysEvaluatingToAConstant", Justification = "block.Flags can be changed by other methods")]
-        internal IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-            // ReSharper disable once UnusedParameter.Local
-            [CanBeNull] IVariable resultStorage)
+        private interface IBoundedLoopBuilder
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+            /// <summary>
+            /// The name of the loop statement, for use in diagnostics.
+            /// </summary>
+            [NotNull]
+            string Name { get; }
 
-            // TODO: use resultStorage here (see CompilePROG)
+            /// <summary>
+            /// Validates the loop syntax and constructs an instance of <see cref="IBoundedLoop"/>.
+            /// </summary>
+            /// <param name="blc"></param>
+            /// <returns></returns>
+            /// <exception cref="CompilerError">The loop syntax was incorrect.</exception>
+            [NotNull]
+            IBoundedLoop MakeLoop(BoundedLoopContext blc);
+        }
 
-            // parse binding list
-            if (!(args.First is ZilList spec))
+        private struct BoundedLoopContext
+        {
+            public readonly Compilation cc;
+            public readonly ZilList spec;
+            public readonly ISourceLine src;
+
+            public BoundedLoopContext([NotNull] Compilation cc, [NotNull] ZilList spec, [NotNull] ISourceLine src)
             {
-                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "DO");
+                this.cc = cc;
+                this.spec = spec;
+                this.src = src;
+            }
+        }
+
+        private interface IBoundedLoop : IDisposable
+        {
+            /// <summary>
+            /// Emit code to be executed before the again label.
+            /// </summary>
+            /// <param name="rb"></param>
+            /// <param name="block"></param>
+            /// <param name="exhaustedLabel"></param>
+            /// <remarks>
+            /// This code should initialize the counter.
+            /// </remarks>
+            void BeforeBlock([NotNull] IRoutineBuilder rb, [NotNull] Block block, [NotNull] ILabel exhaustedLabel);
+
+            /// <summary>
+            /// Emit code to be executed before the loop body on each iteration.
+            /// </summary>
+            /// <remarks>
+            /// For a pre-check loop, this code should branch to the exhausted label to
+            /// terminate the loop, or (optionally) advance the counter and branch to the
+            /// again label to skip the iteration.
+            /// </remarks>
+            void BeforeBody();
+
+            /// <summary>
+            /// Emit code to be executed after the loop body on each iteration.
+            /// </summary>
+            /// <remarks>
+            /// <para>This code should advance the counter.</para>
+            /// <para>For a pre-check loop, it should unconditionally branch
+            /// to the again label.</para>
+            /// <para>For a post-check loop, it should conditionally branch to
+            /// the again label to continue to the next iteration, or fall through
+            /// to the exhausted label to terminate the loop.</para>
+            /// </remarks>
+            void AfterBody();
+        }
+
+        private abstract class BoundedLoop : IBoundedLoop
+        {
+            readonly BoundedLoopContext blc;
+
+            protected BoundedLoop(BoundedLoopContext blc)
+            {
+                this.blc = blc;
             }
 
-            Debug.Assert(args.Rest != null);
+#pragma warning disable IDE1006 // Naming Styles
+            // ReSharper disable InconsistentNaming
+            [ProvidesContext]
+            protected Compilation cc => blc.cc;
+            [ProvidesContext]
+            protected ISourceLine src => blc.src;
+            // ReSharper restore InconsistentNaming
+#pragma warning restore IDE1006 // Naming Styles
 
-            var specLength = spec.GetLength(4);
-            if (specLength < 3 || specLength == null)
+            IRoutineBuilder rb;
+            ILabel againLabel, exhaustedLabel;
+
+            public abstract void Dispose();
+            protected abstract void EmitBeforeBlock([NotNull] IRoutineBuilder rb, [NotNull] ILabel exhaustedLabel);
+            protected abstract void EmitBeforeBody([NotNull] IRoutineBuilder rb, [NotNull] ILabel againLabel, [NotNull] ILabel exhaustedLabel);
+            protected abstract void EmitAfterBody([NotNull] IRoutineBuilder rb, [NotNull] ILabel againLabel);
+
+            public void BeforeBlock(IRoutineBuilder rb, Block block, ILabel exhaustedLabel)
             {
-                throw new CompilerError(
-                    CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
-                    "DO",
-                    new CountableString("3 or 4", true));
+                this.rb = rb;
+                this.againLabel = block.AgainLabel;
+                this.exhaustedLabel = exhaustedLabel;
+
+                EmitBeforeBlock(rb, exhaustedLabel);
             }
 
-            Debug.Assert(spec.First != null);
-            Debug.Assert(spec.Rest != null);
-            Debug.Assert(spec.Rest.First != null);
-            Debug.Assert(spec.Rest.Rest != null);
-            Debug.Assert(spec.Rest.Rest.First != null);
-            Debug.Assert(spec.Rest.Rest.Rest != null);
-
-            if (!(spec.First is ZilAtom atom))
+            public void BeforeBody()
             {
-                throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "DO", "first", "an atom");
+                EmitBeforeBody(rb, againLabel, exhaustedLabel);
             }
 
-            var start = spec.Rest.First;
-            var end = spec.Rest.Rest.First;
-
-            // look for an end block
-            var body = args.Rest;
-            if (body.First is ZilList endStmts)
+            public void AfterBody()
             {
-                body = body.Rest;
+                EmitAfterBody(rb, againLabel);
             }
-            else
+        }
+
+        [CanBeNull]
+        [ContractAnnotation("wantResult: true, resultStorage: notnull => notnull")]
+        [ContractAnnotation("wantResult: false, resultStorage: null => canbenull")]
+        private IOperand CompileBoundedLoop(
+            [NotNull] IRoutineBuilder rb, [NotNull] IBoundedLoopBuilder builder,
+            [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
+            bool wantResult, [CanBeNull] IVariable resultStorage)
+        {
+            // extract loop spec ("binding list", although we don't care about the bindings here)
+            // TODO: allow activation atoms in bounded loops?
+            if (!args.IsCons(out var first, out var rest) || !(first is ZilList spec))
             {
-                endStmts = null;
-            }
-
-            // create block
-            var block = new Block
-            {
-                AgainLabel = rb.DefineLabel(),
-                ReturnLabel = rb.DefineLabel(),
-                Flags = wantResult ? BlockFlags.WantResult : 0
-            };
-
-            Blocks.Push(block);
-
-            var exhaustedLabel = rb.DefineLabel();
-
-            // initialize counter
-            var counter = PushInnerLocal(rb, atom);
-            var operand = CompileAsOperand(rb, start, src, counter);
-            if (operand != counter)
-                rb.EmitStore(counter, operand);
-
-            rb.MarkLabel(block.AgainLabel);
-
-            // test and branch before the body, if end is a (non-[GL]VAL) FORM
-            bool testFirst;
-            if (end.IsNonVariableForm())
-            {
-                CompileCondition(rb, end, end.SourceLine, exhaustedLabel, true);
-                testFirst = true;
-            }
-            else
-            {
-                testFirst = false;
+                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, builder.Name);
             }
 
-            // body
-            while (body != null && !body.IsEmpty)
+            // instantiate the loop and let it check binding syntax
+            var blc = new BoundedLoopContext(this, spec, src);
+
+            using (var loop = builder.MakeLoop(blc))
             {
-                Debug.Assert(body.First != null);
-
-                // ignore the results of all statements
-                CompileStmt(rb, body.First, false);
-                body = body.Rest;
-            }
-
-            // increment
-            bool down;
-            if (specLength == 4)
-            {
-                Debug.Assert(spec.Rest.Rest.Rest.First != null);
-                Debug.Assert(spec.Rest.Rest.Rest.Rest != null);
-
-                var inc = spec.Rest.Rest.Rest.First;
-                int incValue;
-
-                if (inc is ZilFix fix && (incValue = fix.Value) < 0)
+                // look for the optional end statements
+                ZilListoidBase body;
+                if (rest.StartsWith(out ZilList endStmts))
                 {
-                    rb.EmitBinary(BinaryOp.Sub, counter, Game.MakeOperand(-incValue), counter);
-                    down = true;
-                }
-                else if (inc.IsNonVariableForm())
-                {
-                    operand = CompileAsOperand(rb, inc, src, counter);
-                    if (operand != counter)
-                        rb.EmitStore(counter, operand);
-                    down = false;
+                    (_, body) = rest;
                 }
                 else
                 {
-                    operand = CompileAsOperand(rb, inc, src);
-                    rb.EmitBinary(BinaryOp.Add, counter, operand, counter);
-                    down = false;
+                    body = rest;
                 }
+
+                // create block
+                resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
+
+                var block = new Block
+                {
+                    AgainLabel = rb.DefineLabel(),
+                    ResultStorage = resultStorage,
+                    ReturnLabel = rb.DefineLabel(),
+                    Flags = wantResult ? BlockFlags.WantResult : 0
+                };
+
+                Blocks.Push(block);
+                try
+                {
+                    var exhaustedLabel = rb.DefineLabel();
+
+                    // let the loop initialize counters, etc.
+                    loop.BeforeBlock(rb, block, exhaustedLabel);
+
+                    // mark the top of the block ("again" label) and let the loop add prechecks, etc.
+                    rb.MarkLabel(block.AgainLabel);
+                    loop.BeforeBody();
+
+                    // compile the body
+                    CompileClauseBody(rb, body, false, null);
+
+                    // let the loop add postchecks, etc., and mark the end of the block ("exhausted" label)
+                    loop.AfterBody();
+
+                    rb.MarkLabel(exhaustedLabel);
+
+                    // compile the end statements if present, and provide a return value if requested
+                    if (endStmts != null)
+                        CompileClauseBody(rb, endStmts, false, null);
+
+                    if (wantResult)
+                        rb.EmitStore(resultStorage, Game.One);
+
+                    // if <RETURN> was used inside the loop, mark the return label
+                    if ((block.Flags & BlockFlags.Returned) != 0)
+                        rb.MarkLabel(block.ReturnLabel);
+                }
+                finally
+                {
+                    Blocks.Pop();
+                }
+
+                return wantResult ? resultStorage : null;
             }
-            else
-            {
-                down = start is ZilFix fix1 && end is ZilFix fix2 && fix2.Value < fix1.Value;
-                rb.EmitBinary(down ? BinaryOp.Sub : BinaryOp.Add, counter, Game.One, counter);
-            }
-
-            // test and branch after the body, if end is GVAL/LVAL or a constant
-            if (!testFirst)
-            {
-                operand = CompileAsOperand(rb, end, src);
-                rb.Branch(down ? Condition.Less : Condition.Greater, counter, operand, block.AgainLabel, false);
-            }
-            else
-            {
-                rb.Branch(block.AgainLabel);
-            }
-
-            // exhausted label, end statements, provide a return value if we need one
-            rb.MarkLabel(exhaustedLabel);
-
-            while (endStmts != null && !endStmts.IsEmpty)
-            {
-                Debug.Assert(endStmts.First != null);
-
-                CompileStmt(rb, endStmts.First, false);
-                endStmts = endStmts.Rest;
-            }
-
-            if (wantResult)
-                rb.EmitStore(rb.Stack, Game.One);
-
-            // clean up block and counter
-            if ((block.Flags & BlockFlags.Returned) != 0)   // Code Contracts message is suppressed on this line (see attribute)
-                rb.MarkLabel(block.ReturnLabel);
-
-            PopInnerLocal(atom);
-
-            Blocks.Pop();
-
-            return wantResult ? rb.Stack : null;
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-            // ReSharper disable once UnusedParameter.Local
+        internal IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+            return CompileBoundedLoop(rb, DoLoop.Builder, args, src, wantResult, resultStorage);
+        }
 
-            // TODO: use resultStorage here (see CompilePROG)
+        private class DoLoop : IBoundedLoopBuilder
+        {
+            public static readonly IBoundedLoopBuilder Builder = new DoLoop();
 
-            // parse binding list
-            if (!(args.First is ZilList spec))
+            private DoLoop()
             {
-                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-CONTENTS");
             }
 
-            Debug.Assert(args.Rest != null);
+            public string Name => "DO";
 
-            var specLength = ((IStructure)spec).GetLength(3);
-            if (specLength < 2 || specLength == null)
+            public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                throw new CompilerError(
-                    CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
-                    "MAP-CONTENTS",
-                    new CountableString("2 or 3", true));
-            }
-
-            if (!(spec.First is ZilAtom atom))
-            {
-                throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
-            }
-
-            Debug.Assert(spec.Rest != null);
-
-            ZilAtom nextAtom;
-            ZilObject container;
-            if (specLength == 3)
-            {
-                nextAtom = spec.Rest.First as ZilAtom;
-                if (nextAtom == null)
+                if (!blc.spec.HasLength(3, 4))
                 {
+                    throw new CompilerError(
+                        blc.src,
+                        CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
+                        Name,
+                        new CountableString("3 or 4", true));
+                }
+
+                if (!blc.spec.Matches(out ZilAtom atom, out ZilObject start, out ZilObject end, out ZilObject inc) &&
+                    !blc.spec.Matches(out atom, out start, out end))
+                {
+                    throw new CompilerError(
+                        blc.src,
+                        CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2,
+                        Name,
+                        "first",
+                        "an atom");
+                }
+
+                return new Loop(blc, atom, start, end, inc);
+            }
+
+            private class Loop : BoundedLoop
+            {
+                readonly ZilAtom atom;
+                readonly ZilObject start, end, inc;
+                bool precheck;
+                ILocalBuilder counter;
+
+                public Loop(BoundedLoopContext blc, ZilAtom atom, ZilObject start, ZilObject end, ZilObject inc)
+                    : base(blc)
+                {
+                    this.atom = atom;
+                    this.start = start;
+                    this.end = end;
+                    this.inc = inc;
+                }
+
+                public override void Dispose()
+                {
+                    if (counter != null)
+                        cc.PopInnerLocal(atom);
+                }
+
+                protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
+                {
+                    // initialize counter
+                    this.counter = cc.PushInnerLocal(rb, atom);
+                    var operand = cc.CompileAsOperand(rb, start, src, counter);
+                    if (operand != counter)
+                        rb.EmitStore(counter, operand);
+                }
+
+                protected override void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel)
+                {
+                    // test and branch before the body, if end is a (non-[GL]VAL) FORM
+                    if (end.IsNonVariableForm())
+                    {
+                        cc.CompileCondition(rb, end, end.SourceLine, exhaustedLabel, true);
+                        precheck = true;
+                    }
+                    else
+                    {
+                        precheck = false;
+                    }
+                }
+
+                protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
+                {
+                    // increment
+                    bool down;
+                    if (inc != null)
+                    {
+                        int incValue;
+
+                        if (inc is ZilFix fix && (incValue = fix.Value) < 0)
+                        {
+                            rb.EmitBinary(BinaryOp.Sub, counter, cc.Game.MakeOperand(-incValue), counter);
+                            down = true;
+                        }
+                        else if (inc.IsNonVariableForm())
+                        {
+                            var operand = cc.CompileAsOperand(rb, inc, src, counter);
+                            if (operand != counter)
+                                rb.EmitStore(counter, operand);
+                            down = false;
+                        }
+                        else
+                        {
+                            var operand = cc.CompileAsOperand(rb, inc, src);
+                            rb.EmitBinary(BinaryOp.Add, counter, operand, counter);
+                            down = false;
+                        }
+                    }
+                    else
+                    {
+                        down = start is ZilFix fix1 && end is ZilFix fix2 && fix2.Value < fix1.Value;
+                        rb.EmitBinary(down ? BinaryOp.Sub : BinaryOp.Add, counter, cc.Game.One, counter);
+                    }
+
+                    // test and branch after the body, if end is GVAL/LVAL or a constant
+                    if (!precheck)
+                    {
+                        var operand = cc.CompileAsOperand(rb, end, src);
+                        rb.Branch(down ? Condition.Less : Condition.Greater, counter, operand, againLabel, false);
+                    }
+                    else
+                    {
+                        rb.Branch(againLabel);
+                    }
+                }
+            }
+        }
+
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
+        [ContractAnnotation("wantResult: false => null")]
+        [ContractAnnotation("wantResult: true => notnull")]
+        internal IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
+            [CanBeNull] IVariable resultStorage)
+        {
+            return CompileBoundedLoop(rb, MapContentsLoop.Builder, args, src, wantResult, resultStorage);
+        }
+
+        private class MapContentsLoop : IBoundedLoopBuilder
+        {
+            public static readonly IBoundedLoopBuilder Builder = new MapContentsLoop();
+
+            private MapContentsLoop()
+            {
+            }
+
+            public string Name => "MAP-CONTENTS";
+
+            public IBoundedLoop MakeLoop(BoundedLoopContext blc)
+            {
+                if (blc.spec.Matches(out ZilAtom atom, out ZilAtom nextAtom, out ZilObject container))
+                    return new TwoVarLoop(blc, atom, nextAtom, container);
+
+                if (blc.spec.Matches(out atom, out container))
+                    return new OneVarLoop(blc, atom, container);
+
+                // throw an appropriate error
+                var matched = blc.spec.Matches(out ZilObject atomObj, out ZilObject nextAtomObj, out container) ||
+                              blc.spec.Matches(out atomObj, out container);
+
+                if (!matched)
+                {
+                    throw new CompilerError(
+                        CompilerMessages._0_Expected_1_Element1s_In_Binding_List,
+                        "MAP-CONTENTS",
+                        new CountableString("2 or 3", true));
+                }
+
+                if (!(atomObj is ZilAtom))
+                    throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
+
+                if (nextAtomObj != null && !(nextAtomObj is ZilAtom))
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "middle", "an atom");
-                }
 
-                Debug.Assert(spec.Rest.Rest != null);
-
-                container = spec.Rest.Rest.First;
-            }
-            else
-            {
-                nextAtom = null;
-                container = spec.Rest.First;
-            }
-            Contract.Assume(container != null);
-
-            // look for an end block
-            var body = args.Rest;
-            if (body.First is ZilList endStmts)
-            {
-                body = body.Rest;
-            }
-            else
-            {
-                endStmts = null;
+                // shouldn't get here
+                throw new UnreachableCodeException();
             }
 
-            // create block
-            var block = new Block
+            abstract class LoopBase : BoundedLoop
             {
-                AgainLabel = rb.DefineLabel(),
-                ReturnLabel = rb.DefineLabel(),
-                Flags = wantResult ? BlockFlags.WantResult : 0
-            };
+                [NotNull]
+                readonly ZilAtom atom;
 
-            Blocks.Push(block);
+                [NotNull]
+                readonly ZilObject container;
 
-            var exhaustedLabel = rb.DefineLabel();
+                protected ILocalBuilder counter;
 
-            // initialize counter
-            var counter = PushInnerLocal(rb, atom);
-            var operand = CompileAsOperand(rb, container, src);
-            rb.EmitGetChild(operand, counter, exhaustedLabel, false);
-
-            rb.MarkLabel(block.AgainLabel);
-
-            // loop over the objects using one or two variables
-            if (nextAtom != null)
-            {
-                // initialize next
-                var next = PushInnerLocal(rb, nextAtom);
-                var tempLabel = rb.DefineLabel();
-                rb.EmitGetSibling(counter, next, tempLabel, true);
-                rb.MarkLabel(tempLabel);
-
-                // body
-                while (body != null && !body.IsEmpty)
+                protected LoopBase(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilObject container)
+                    : base(blc)
                 {
-                    Debug.Assert(body.First != null);
-
-                    // ignore the results of all statements
-                    CompileStmt(rb, body.First, false);
-                    body = body.Rest;
+                    this.atom = atom;
+                    this.container = container;
                 }
 
-                // next object
-                rb.EmitStore(counter, next);
-                rb.BranchIfZero(counter, block.AgainLabel, false);
-
-                // clean up next
-                PopInnerLocal(nextAtom);
-            }
-            else
-            {
-                // body
-                while (body != null && !body.IsEmpty)
+                public override void Dispose()
                 {
-                    Debug.Assert(body.First != null);
-
-                    // ignore the results of all statements
-                    CompileStmt(rb, body.First, false);
-                    body = body.Rest;
+                    if (counter != null)
+                        cc.PopInnerLocal(atom);
                 }
 
-                // next object
-                rb.EmitGetSibling(counter, counter, block.AgainLabel, true);
+                protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
+                {
+                    // initialize counter
+                    counter = cc.PushInnerLocal(rb, atom);
+                    var operand = cc.CompileAsOperand(rb, container, src);
+                    rb.EmitGetChild(operand, counter, exhaustedLabel, false);
+                }
             }
 
-            // exhausted label, end statements, provide a return value if we need one
-            rb.MarkLabel(exhaustedLabel);
-
-            while (endStmts != null && !endStmts.IsEmpty)
+            private class OneVarLoop : LoopBase
             {
-                Debug.Assert(endStmts.First != null);
-                CompileStmt(rb, endStmts.First, false);
-                endStmts = endStmts.Rest;
+                public OneVarLoop(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilObject container)
+                    : base(blc, atom, container)
+                {
+                }
+
+                protected override void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel)
+                {
+                    // nada
+                }
+
+                protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
+                {
+                    // next object
+                    rb.EmitGetSibling(counter, counter, againLabel, true);
+                }
             }
 
-            if (wantResult)
-                rb.EmitStore(rb.Stack, Game.One);
+            private class TwoVarLoop : LoopBase
+            {
+                [NotNull]
+                readonly ZilAtom nextAtom;
 
-            // clean up block and counter
-            rb.MarkLabel(block.ReturnLabel);
+                ILocalBuilder next;
 
-            PopInnerLocal(atom);
+                public TwoVarLoop(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilAtom nextAtom, [NotNull] ZilObject container)
+                    : base(blc, atom, container)
+                {
+                    this.nextAtom = nextAtom;
+                }
 
-            Blocks.Pop();
+                public override void Dispose()
+                {
+                    if (next != null)
+                        cc.PopInnerLocal(nextAtom);
 
-            return wantResult ? rb.Stack : null;
+                    base.Dispose();
+                }
+
+                protected override void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel)
+                {
+                    // initialize next
+                    next = cc.PushInnerLocal(rb, nextAtom);
+                    var tempLabel = rb.DefineLabel();
+                    rb.EmitGetSibling(counter, next, tempLabel, true);
+                    rb.MarkLabel(tempLabel);
+                }
+
+                protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
+                {
+                    rb.EmitStore(counter, next);
+                    rb.BranchIfZero(counter, againLabel, false);
+                }
+            }
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilList args, [NotNull] ISourceLine src, bool wantResult,
-            // ReSharper disable once UnusedParameter.Local
+        internal IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
             [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(rb != null);
-            Contract.Requires(args != null);
-            Contract.Requires(src != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null || !wantResult);
+            return CompileBoundedLoop(rb, MapDirectionsLoop.Builder, args, src, wantResult, resultStorage);
+        }
 
-            // TODO: use resultStorage here (see CompilePROG)
+        private class MapDirectionsLoop : IBoundedLoopBuilder
+        {
+            public static readonly IBoundedLoopBuilder Builder = new MapDirectionsLoop();
 
-            // parse binding list
-            if (!(args.First is ZilList spec))
+            private MapDirectionsLoop()
             {
-                throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, "MAP-DIRECTIONS");
             }
 
-            Debug.Assert(args.Rest != null);
+            public string Name => "MAP-DIRECTIONS";
 
-            var specLength = spec.GetLength(3);
-            if (specLength != 3)
+            public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, "MAP-DIRECTIONS", 3);
+                if (blc.spec.Matches(out ZilAtom dirAtom, out ZilAtom ptAtom, out ZilObject room) &&
+                    (room.IsLVAL(out _) || room.IsGVAL(out _)))
+                {
+                    return new Loop(blc, dirAtom, ptAtom, room);
+                }
+
+                // throw an appropriate error
+                var matched = blc.spec.Matches(out ZilObject dirObj, out ZilObject ptObj, out room);
+
+                if (!matched)
+                    throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, Name, 3);
+
+                if (!(dirObj is ZilAtom))
+                    throw new CompilerError(
+                        CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "first", "an atom");
+
+                if (!(ptObj is ZilAtom))
+                    throw new CompilerError(
+                        CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "middle", "an atom");
+
+                if (!room.IsLVAL(out _) && !room.IsGVAL(out _))
+                    throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "last",
+                        "an LVAL or GVAL");
+
+                // shouldn't get here
+                throw new UnreachableCodeException();
             }
 
-            if (!(spec.First is ZilAtom dirAtom))
+            private class Loop : BoundedLoop
             {
-                throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "first", "an atom");
+                readonly ZilAtom dirAtom, ptAtom;
+                readonly ZilObject room;
+                ILocalBuilder counter;
+
+                public Loop(BoundedLoopContext blc, [NotNull] ZilAtom dirAtom, [NotNull] ZilAtom ptAtom,
+                    [NotNull] ZilObject room)
+                    : base(blc)
+                {
+                    this.dirAtom = dirAtom;
+                    this.ptAtom = ptAtom;
+                    this.room = room;
+                }
+
+                public override void Dispose()
+                {
+                    if (counter != null)
+                        cc.PopInnerLocal(dirAtom);
+                }
+
+                protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
+                {
+                    // initialize counter
+                    counter = cc.PushInnerLocal(rb, dirAtom);
+                    rb.EmitStore(counter, cc.Game.MakeOperand(cc.Game.MaxProperties + 1));
+                }
+
+                protected override void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel)
+                {
+                    // exit loop if no more directions
+                    rb.Branch(Condition.DecCheck, counter,
+                        cc.Constants[cc.Context.GetStdAtom(StdAtom.LOW_DIRECTION)], exhaustedLabel, true);
+
+                    // get next prop table
+                    var propTable = cc.PushInnerLocal(rb, ptAtom);
+                    var roomOperand = cc.CompileAsOperand(rb, room, src);
+                    rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
+                    rb.BranchIfZero(propTable, againLabel, true);
+                }
+
+                protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
+                {
+                    rb.Branch(againLabel);
+                }
             }
-
-            if (!(spec.Rest?.First is ZilAtom ptAtom))
-            {
-                throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "middle", "an atom");
-            }
-
-            Debug.Assert(spec.Rest.Rest != null);
-
-            var room = spec.Rest.Rest.First;
-            if (room == null || !room.IsLVAL(out _) && !room.IsGVAL(out _))
-            {
-                throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-DIRECTIONS", "last", "an LVAL or GVAL");
-            }
-
-            // look for an end block
-            var body = args.Rest;
-            if (body.First is ZilList endStmts)
-            {
-                body = body.Rest;
-            }
-            else
-            {
-                endStmts = null;
-            }
-
-            // create block
-            var block = new Block
-            {
-                AgainLabel = rb.DefineLabel(),
-                ReturnLabel = rb.DefineLabel(),
-                Flags = wantResult ? BlockFlags.WantResult : 0
-            };
-
-            Blocks.Push(block);
-
-            var exhaustedLabel = rb.DefineLabel();
-
-            // initialize counter
-            var counter = PushInnerLocal(rb, dirAtom);
-            rb.EmitStore(counter, Game.MakeOperand(Game.MaxProperties + 1));
-
-            rb.MarkLabel(block.AgainLabel);
-
-            rb.Branch(Condition.DecCheck, counter,
-                Constants[Context.GetStdAtom(StdAtom.LOW_DIRECTION)], exhaustedLabel, true);
-
-            var propTable = PushInnerLocal(rb, ptAtom);
-            var roomOperand = CompileAsOperand(rb, room, src);
-            rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
-            rb.BranchIfZero(propTable, block.AgainLabel, true);
-
-            // body
-            while (body != null && !body.IsEmpty)
-            {
-                Debug.Assert(body.First != null);
-                // ignore the results of all statements
-                CompileStmt(rb, body.First, false);
-                body = body.Rest;
-            }
-
-            // loop
-            rb.Branch(block.AgainLabel);
-
-            // end statements
-            while (endStmts != null && !endStmts.IsEmpty)
-            {
-                Debug.Assert(endStmts.First != null);
-                CompileStmt(rb, endStmts.First, false);
-                endStmts = endStmts.Rest;
-            }
-
-            // exhausted label, provide a return value if we need one
-            rb.MarkLabel(exhaustedLabel);
-            if (wantResult)
-                rb.EmitStore(rb.Stack, Game.One);
-
-            // clean up block and variables
-            rb.MarkLabel(block.ReturnLabel);
-
-            PopInnerLocal(ptAtom);
-            PopInnerLocal(dirAtom);
-
-            Blocks.Pop();
-
-            return wantResult ? rb.Stack : null;
         }
     }
 }

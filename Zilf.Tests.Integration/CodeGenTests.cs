@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -176,7 +176,7 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("\"AUX\" X", "<OR <EQUAL? .X 123> <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!PUSH|ZERO\?).)*\Z");
+                .GeneratesCodeNotMatching(@"PUSH|ZERO\?");
         }
 
         [TestMethod]
@@ -184,7 +184,7 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("\"AUX\" X Y", "<SET Y <OR <EQUAL? .X 123> <FOO>>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!ZERO\?).)*\Z");
+                .GeneratesCodeNotMatching(@"ZERO\?");
         }
 
         [TestMethod]
@@ -206,7 +206,7 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("\"AUX\" A", "<AND .A <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -215,7 +215,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("\"AUX\" A", "<AND <OR <0? .A> <FOO>> <BAR>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
                 .WithGlobal("<ROUTINE BAR () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -223,7 +223,7 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("\"AUX\" A", "<OR .A <FOO>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -240,7 +240,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("\"AUX\" A", "<OR <SET A <FOO>> <BAR>>")
                 .WithGlobal("<ROUTINE FOO () <>>")
                 .WithGlobal("<ROUTINE BAR () <>>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -293,7 +293,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("", "<FOO> 456")
                 .WithGlobal("<ROUTINE FOO () 123>")
                 .InV3()
-                .GeneratesCodeMatching(@"\A(?:(?!FSTACK).)*\Z");
+                .GeneratesCodeNotMatching(@"FSTACK");
         }
 
         [TestMethod]
@@ -312,7 +312,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("", "<FOO> 456")
                 .WithGlobal("<ROUTINE FOO () 123>")
                 .InV4()
-                .GeneratesCodeMatching(@"\A(?:(?!FSTACK).)*\Z");
+                .GeneratesCodeNotMatching(@"FSTACK");
         }
 
         [TestMethod]
@@ -348,7 +348,7 @@ namespace Zilf.Tests.Integration
                 "<BIND ((Z 0)) <COND (<G? <SET X <BAR>> <SET Y <FOO>>> <RFALSE>)>>")
                 .WithGlobal("<ROUTINE FOO () 123>")
                 .WithGlobal("<ROUTINE BAR () 456>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
 
             // this one should, since X is modified in a subsequent arg
             AssertRoutine("\"AUX\" X Y",
@@ -376,7 +376,7 @@ namespace Zilf.Tests.Integration
                 "<ROUTINE V-TELL () <>>",
                 @"<CONSTANT \,TELLTAB1 <ITABLE 1>>",
                 @"<GLOBAL \,TELLTAB2 <ITABLE 1>>")
-                .GeneratesCodeMatching(@"\A(?:(?!,TELL).)*\Z");
+                .GeneratesCodeNotMatching(@",TELL");
         }
 
         [TestMethod]
@@ -581,7 +581,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<CONSTANT TRANSBIT 4>")
                 .WithGlobal("<CONSTANT OPENABLEBIT 5>")
                 .WhenCalledWith("<>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -602,7 +602,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<CONSTANT TRANSBIT 4>")
                 .WithGlobal("<CONSTANT OPENABLEBIT 5>")
                 .WhenCalledWith("<>")
-                .GeneratesCodeMatching(@"\A(?:(?!\?TMP).)*\Z");
+                .GeneratesCodeNotMatching(@"\?TMP");
         }
 
         [TestMethod]
@@ -648,5 +648,30 @@ namespace Zilf.Tests.Integration
                 .Outputs("123");
         }
 
+        [TestMethod]
+        public void Instructions_With_Debug_Line_Info_Should_Not_Be_Duplicated()
+        {
+            const string ArgSpec =
+                @"""OPT"" W PS (P1 -1) ""AUX"" F";
+            const string Body = @"
+                <COND (<0? .W> <RFALSE>)>
+                <SET F <GETB .W ,VOCAB-FL>>
+                <SET F <COND (<BTST .F .PS>
+                              <COND (<L? .P1 0>
+                                     <RTRUE>)
+                                    (<==? <BAND .F ,P1MASK> .P1>
+                                     <GETB .W ,VOCAB-V1>)
+                                    (ELSE <GETB .W ,VOCAB-V2>)>)>>
+                .F";
+
+            AssertRoutine(ArgSpec, Body)
+                .WithGlobal("<CONSTANT P1MASK 255>")
+                .WithGlobal("<CONSTANT VOCAB-FL 1>")
+                .WithGlobal("<CONSTANT VOCAB-V1 2>")
+                .WithGlobal("<CONSTANT VOCAB-V2 3>")
+                .WithDebugInfo()
+                .GeneratesCodeMatching(@"\.DEBUG-LINE")
+                .AndNotMatching(@"(\.DEBUG-LINE ([^\r\n]*)\r?\n).*\1");
+        }
     }
 }

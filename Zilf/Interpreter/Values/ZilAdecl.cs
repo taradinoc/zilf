@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,7 +20,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -39,8 +38,6 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public ZilAdecl([NotNull] ZilVector vector)
         {
-            Contract.Requires(vector != null);
-
             if (vector.GetLength() != 2)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to ADECL", 2);
 
@@ -50,10 +47,14 @@ namespace Zilf.Interpreter.Values
 
         public ZilAdecl([NotNull] ZilObject first, [NotNull] ZilObject second)
         {
-            Contract.Requires(first != null);
-            Contract.Requires(second != null);
             First = first ?? throw new ArgumentNullException(nameof(first));
             Second = second ?? throw new ArgumentNullException(nameof(second));
+        }
+
+        public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilObject second)
+        {
+            first = this.First;
+            second = this.Second;
         }
 
         public override bool StructurallyEquals(ZilObject obj)
@@ -89,7 +90,6 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
             return new ZilVector(First, Second);
         }
 

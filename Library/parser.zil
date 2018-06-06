@@ -310,7 +310,7 @@ Args:
     (OOPS-CONT FIX 'OFFSET 5 'NTH GETB 'PUT PUTB)
                             ;"Value of P-CONT before parsing the failed command">
 
-<CONSTANT P-OOPS-DATA 
+<CONSTANT P-OOPS-DATA
     <MAKE-OOPS-RECORD 'OOPS-RECORD <TABLE 0 0 <BYTE 0> <BYTE 0>>>>
 
 <MAPF <>
@@ -318,7 +318,7 @@ Args:
         <EVAL <FORM DEFMAC <PARSE <STRING "P-" <SPNAME .FIELD>>> '("ARGS" A)
                     <FORM FORM .FIELD '',P-OOPS-DATA '!.A>>>>
     '(OOPS-WN OOPS-CONT OOPS-O-REASON OOPS-WINNER)>
-            
+
 "Structured types for storing noun phrases.
 
  NOUN-PHRASE:
@@ -702,17 +702,17 @@ Sets:
            <SETG HERE <LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
            <READLINE T>)>
-    
+
     <IF-DEBUG <SETG TRACE-INDENT 0>>
     <TRACE-DO 1 <DUMPBUFS> ;<DUMPLINE>>
     <TRACE-IN>
-    
+
     <SETG P-LEN <GETB ,LEXBUF 1>>
     <COND (<0? ,P-LEN>
            <TELL "..." CR>
            <SETG P-CONT 0>
            <RFALSE>)>
-    
+
     ;"Save undo state unless this looks like an undo command"
     <IF-UNDO
         <COND (<AND <G=? ,P-LEN 1>
@@ -721,17 +721,19 @@ Sets:
                         <=? <GETWORD? 2> ,W?\. ,W?THEN>>>)
               (ELSE
                <TRACE 4 "[saving for UNDO]" CR>
-               <SETG USAVE <ISAVE>>
-               <COND (<=? ,USAVE 2>
-                      <TELL "Previous turn undone." CR CR>
-                      <SETG WINNER .OW>
-                      <SETG HERE .OH>
-                      <SETG HERE-LIT .OHL>
-                      <V-LOOK>
-                      <SETG P-CONT 0>
-                      <AGAIN>)>)>>
+               <BIND ((RES <ISAVE>))
+                   <COND (<=? .RES 2>
+                          <TELL "Previous turn undone." CR CR>
+                          <SETG WINNER .OW>
+                          <SETG HERE .OH>
+                          <SETG HERE-LIT .OHL>
+                          <V-LOOK>
+                          <SETG P-CONT 0>
+                          <AGAIN>)
+                         (ELSE
+                          <SETG USAVE .RES>)>>)>>
 
-    <COND (<0? ,P-CONT>    
+    <COND (<0? ,P-CONT>
            ;"Handle OOPS"
            <COND (<AND ,P-LEN <=? <GETWORD? 1> ,W?OOPS>>
                   <COND (<=? ,P-LEN 2>
@@ -749,12 +751,12 @@ Sets:
                         (ELSE
                          <TELL "You can only correct one word at a time." CR>
                          <RFALSE>)>)>)>
-    
+
     <SET KEEP 0>
     <P-OOPS-WN 0>
     <P-OOPS-CONT 0>
     <P-OOPS-O-REASON ,P-O-REASON>
-    
+
     <COND (<0? ,P-CONT>
            ;"Save command in edit buffer for OOPS"
            <COND (<N=? ,READBUF ,EDIT-READBUF>
@@ -798,7 +800,7 @@ Sets:
                     (\,TELL HAL THEN OPEN THE POD BAY DOOR)."
                   <COND (<CONVERT-ORDER-TO-TELL?>
                          <SETG P-LEN <GETB ,LEXBUF 1>>)>)>)>
-    
+
     ;"Identify parts of speech, parse noun phrases"
     <COND (<N=? .O-R ,O-RES-SET-NP ,O-RES-SET-PRSTBL>
            <SETG P-V <>>
@@ -880,9 +882,9 @@ Sets:
                       <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
-           
+
            <SETG P-NOBJ .NOBJ>
- 
+
            <TRACE-OUT>
            <TRACE 1 "[sentence: V=" MATCHING-WORD ,P-V ,PS?VERB ,P1?VERB "(" N ,P-V ") NOBJ=" N ,P-NOBJ
                  " P1=" MATCHING-WORD ,P-P1 ,PS?PREPOSITION 0 "(" N ,P-P1
@@ -890,7 +892,7 @@ Sets:
                  " P2=" MATCHING-WORD ,P-P2 ,PS?PREPOSITION 0 "(" N ,P-P2
                  ") IOBJS=+" N <NP-YCNT ,P-NP-IOBJ> "-" N <NP-NCNT ,P-NP-IOBJ> "]" CR>
            <TRACE-IN>
- 
+
            ;"If we have a direction and nothing else except maybe a WALK verb, it's
              a movement command."
            <COND (<AND .DIR
@@ -947,7 +949,7 @@ Sets:
 <DEFAULT-DEFINITION RESET-WINNER
     <DEFMAC RESET-WINNER ()
         '<SETG WINNER ,PLAYER>>
-    
+
     <DEFMAC ORDERING? ()
         '<N=? ,WINNER ,PLAYER>>>
 
@@ -1056,7 +1058,7 @@ Sets:
     <DIROUT -3>
     <SET NL <GET ,TEMPTABLE 0>>
     ;"Shift LEXBUF up to make room (sacrificing the last word if needed)"
-    <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN %<- ,LEXBUF-SIZE 1>>)>
+    <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN <- ,LEXBUF-SIZE 1>>)>
     <COND (<L=? .N .LEN>
            <SET MIN <* .N 2>>
            <DO (I <* .LEN 2> .MIN -2)
@@ -1109,8 +1111,7 @@ Returns:
           (<AND <STARTS-NOUN-PHRASE? <GETWORD? 1>>
                 <SET P <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ T>>
                 <L? .P ,P-LEN>
-                ;"%<VOC> instead of ,W?\, in the next line to work around a syntax highlighting bug."
-                <=? <GETWORD? .P> %<VOC ",">>
+                <=? <GETWORD? .P> ,W?COMMA>
                 <OR <CHKWORD? <SET W <GETWORD? <+ .P 1>>> ,PS?VERB>
                     <CHKWORD? .W ,PS?DIRECTION>>>
            <TRACE 2 "[got ACTOR, VERB order syntax]" CR>
@@ -1242,9 +1243,9 @@ Returns:
 <VERSION?
     (ZIP
         ;"Copies a number of words from one table to another.
-        
+
         If the tables overlap, the result is undefined.
-        
+
         Args:
           SRC: A pointer to the source table.
           DEST: A pointer to the destination table.
@@ -1253,11 +1254,11 @@ Returns:
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
                 <PUT .DEST .I <GET .SRC .I>>>>
-        
+
         ;"Copies a number of bytes from one table to another.
-        
+
         If the tables overlap, the result is undefined.
-        
+
         Args:
           SRC: A pointer to the source table.
           DEST: A pointer to the destination table.
@@ -1282,7 +1283,7 @@ Returns:
             <COND (<TYPE? .LEN FIX> <SET BYTES <* .LEN 2>>)
                   (ELSE <SET BYTES <FORM * .LEN 2>>)>
             <FORM COPYT .SRC .DEST .BYTES>>
-        
+
         <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
             <FORM COPYT .SRC .DEST .LEN>>)>
 
@@ -1325,13 +1326,13 @@ Returns:
   If parsing is successful, returns a positive number: the number of the first word that is
   not part of the noun phrase, which will be one greater than P-LEN if the noun phrase consumes
   the rest of the command.
-  
+
   If parsing fails, returns zero, prints an error message (unless SILENT? is true) and may
   leave NP in an invalid state."
 <ROUTINE PARSE-NOUN-PHRASE (WN NP "OPT" (SILENT? <>) "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT SPEC-WN)
     <TRACE 3 "[PARSE-NOUN-PHRASE starting at word " N .WN "]" CR>
     <TRACE-IN>
-    
+
     <SET SPEC <NP-YSPEC .NP 1>>
     <NP-NCNT .NP 0>
     <REPEAT ()
@@ -1444,7 +1445,7 @@ Returns:
                joined by OF. When we see OF before a word that could start a new
                noun phrase, we forget the current noun, so SMALL PIECE OF TASTY PIE
                parses as SMALL TASTY PIE (which in turn parses as SMALL PIE)."
-             <TRACE 4 "[OF at word " N .WN ", clearing noun]" CR> 
+             <TRACE 4 "[OF at word " N .WN ", clearing noun]" CR>
              <SET NOUN <>>)
             ;"skip buzzwords"
             (<CHKWORD? .W ,PS?BUZZ-WORD>
@@ -1562,7 +1563,7 @@ Returns:
             this is an exact match."
           (<AND <=? ,P-NOBJ .NOBJ> <=? ,P-P1 .PREP1> <=? ,P-P2 .PREP2>>
            <TRACE 2 "[exact match]" CR>
-           <TRACE-OUT> 
+           <TRACE-OUT>
            <RTRUE>)
           ;"If object count >= expected count, this can't match."
           (<G=? ,P-NOBJ .NOBJ>
@@ -1643,7 +1644,7 @@ Returns:
 <ROUTINE FIND-OBJECTS (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
     <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N .SNOBJ ", we have " N ,P-NOBJ "]" CR>
     <TRACE-IN>
-    
+
     ;"Direct object (PRSO)"
     <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
     <COND (<L? .SNOBJ 1>
@@ -1798,7 +1799,7 @@ Returns:
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
                       <TELL "[taking ">
-                      <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? %<+ ,L-PRSTABLE ,L-THE>>>
+                      <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? <+ ,L-PRSTABLE ,L-THE>>>
                       <TELL "]" CR>
                       <REPEAT ()
                           <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
@@ -1819,7 +1820,7 @@ Returns:
            <DO (I 1 .MAX)
                <COND (<FAILS-HAVE-CHECK? <GET/B .TBL .I>>
                       <TELL "You aren't holding ">
-                      <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+                      <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? <+ ,L-PRSTABLE ,L-THE ,L-OR>>
                       <TELL "." CR>
                       <SETG P-CONT 0>
                       <RFALSE>)>>)>
@@ -1879,7 +1880,7 @@ Returns:
     <DO (I 1 .CNT)
         <TRACE 4 "[considering " D <GET/B .TBL .I> "]" CR>
         <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
-               <LIST-OBJECTS .TBL ,NOT-VISIBLE? %<+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
+               <LIST-OBJECTS .TBL ,NOT-VISIBLE? <+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
                <TELL " no longer here." CR>
                <TRACE-OUT>
                <SETG P-CONT 0>
@@ -2006,7 +2007,7 @@ Returns:
     <SET MODE <NP-MODE .NP>>
     <SET OBITS .BITS>
     <COND (<0? .MODE>
-           <SET .BITS <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>)>
+           <SET .BITS <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>)>
     <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
              " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
     <TRACE-IN>
@@ -2097,7 +2098,7 @@ Returns:
         <COND (<0? .NOUT>
                ;"This means ALL matched nothing, or BUT excluded everything.
                  Try expanding the search if we can."
-               <SET F <ORB .BITS %<ORB ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>>
+               <SET F <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>
                <COND (<=? .BITS .F>
                       <TELL "There are none at all available!" CR>
                       <TRACE-OUT>
@@ -2154,7 +2155,7 @@ Returns:
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
     <TELL "Which do you mean, ">
-    <LIST-OBJECTS .TBL <> %<+ ,L-PRSTABLE ,L-THE ,L-OR>>
+    <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
     <TELL "?" CR>>
 
 ;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
@@ -2348,7 +2349,7 @@ Returns:
 
 ;"Copies a READBUF-like table."
 <ROUTINE COPY-READBUF (SRC DEST)
-    <COPY-TABLE .SRC .DEST %</ ,READBUF-SIZE 2>>>
+    <COPY-TABLE .SRC .DEST </ ,READBUF-SIZE 2>>>
 
 ;"Measures the length of a READBUF-like table (not including the null terminator on V3-4)."
 <ROUTINE READBUF-LENGTH (TBL)
@@ -2389,9 +2390,9 @@ Sets (contents):
 
 Example:
   <WITH-GLOBAL ((WINNER <FOO>)) <BAR>>
-  
+
   Expands to:
-  
+
   <BIND ((ORIG?WINNER ,WINNER))
       <SETG WINNER <FOO>>
       <BAR>
@@ -2433,7 +2434,7 @@ Example:
      ;"If unlit, change HERE to 'Darkness' temporarily."
      <DEFMAC DO-READ ('RB 'LB)
          <EXPAND <FORM WRAP-FOR-DARK-STATUS <FORM READ .RB .LB>>>>
-     
+
      <DEFMAC WRAP-FOR-DARK-STATUS ('F)
          <FORM BIND '((OHERE ,HERE))
              '<COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
@@ -2738,51 +2739,54 @@ Returns:
     <RETURN .MSG>>
 
 ;"The game can override this with SETG. It doesn't go through DARKNESS-F, since
-  it has to be a constant on V3."
+ it has to be a constant on V3."
 <OR <GASSIGNED? DARKNESS-STATUS-TEXT>
     <SETG DARKNESS-STATUS-TEXT "Darkness">>
 
-<VERSION?
-    (ZIP
-        <DEFMAC INIT-STATUS-LINE () <>>
-        
-        <ROUTINE UPDATE-STATUS-LINE ()
-            <WRAP-FOR-DARK-STATUS <USL>>>)
-    (T
-        ;"Splits the screen and clears a 1-line status line."
-        <ROUTINE INIT-STATUS-LINE ()
-            <SPLIT 1>
-            <CLEAR 1>>
+<DEFAULT-DEFINITION STATUS-LINE
 
-        ;"Writes the location name, score, and turn count in the status line.
-        
-        Uses:
-          HERE
-          HERE-LIT
-          SCORE
-          MOVES"
-        <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
-            <SCREEN 1>
-            <HLIGHT ,H-INVERSE>
-            <FAKE-ERASE>
-            <TELL !\ >
-            <COND (,HERE-LIT <TELL D ,HERE>)
-                  (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
-            <SET WIDTH <LOWCORE SCRH>>
-            <CURSET 1 <- .WIDTH 22>>
-            <TELL "Score: ">
-            <PRINTN ,SCORE>
-            <CURSET 1 <- .WIDTH 10>>
-            <TELL "Moves: ">
-            <PRINTN ,MOVES>
-            <SCREEN 0>
-            <HLIGHT ,H-NORMAL>>
+    <VERSION?
+        (ZIP
+            <DEFMAC INIT-STATUS-LINE () <>>
 
-        ;"Fills the top row with spaces."
-        <ROUTINE FAKE-ERASE ()
-            <CURSET 1 1>
-            <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
-            <CURSET 1 1>>)>
+            <ROUTINE UPDATE-STATUS-LINE ()
+                <WRAP-FOR-DARK-STATUS <USL>>>)
+        (T
+            ;"Splits the screen and clears a 1-line status line."
+            <ROUTINE INIT-STATUS-LINE ()
+                <SPLIT 1>
+                <CLEAR 1>>
+
+            ;"Writes the location name, score, and turn count in the status line.
+
+            Uses:
+            HERE
+            HERE-LIT
+            SCORE
+            MOVES"
+            <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
+                <SCREEN 1>
+                <HLIGHT ,H-INVERSE>
+                <FAKE-ERASE>
+                <TELL !\ >
+                <COND (,HERE-LIT <TELL D ,HERE>)
+                      (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
+                <SET WIDTH <LOWCORE SCRH>>
+                <CURSET 1 <- .WIDTH 22>>
+                <TELL "Score: ">
+                <PRINTN ,SCORE>
+                <CURSET 1 <- .WIDTH 10>>
+                <TELL "Moves: ">
+                <PRINTN ,MOVES>
+                <SCREEN 0>
+                <HLIGHT ,H-NORMAL>>
+
+            ;"Fills the top row with spaces."
+            <ROUTINE FAKE-ERASE ()
+                <CURSET 1 1>
+                <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
+                <CURSET 1 1>>)>
+>
 
 ;"Prints a message and ends the game, prompting the player to restart,
 (possibly) undo, restore, or quit.
@@ -2837,7 +2841,7 @@ Returns:
 
 <DEFAULT-DEFINITION RESURRECT?
     ;"Optionally gives the player a chance to resume the game after JIGS-UP.
-    
+
     Returns:
       True if JIGS-UP should return to its caller; the function should change
       the game state as needed for this to make sense. False if JIGS-UP should
@@ -2892,14 +2896,14 @@ Returns:
 <VERSION?
     (ZIP
         ;"Reads one character from the user.
-        
+
         In V3, this uses line input since there is no character input. Only
         the first character entered is used.
 
         Sets (contents):
           READBUF
           LEXBUF
-        
+
         Returns:
           The ZSCII code of the character entered."
         <DEFMAC GETONECHAR ()

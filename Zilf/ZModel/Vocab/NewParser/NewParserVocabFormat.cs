@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -40,7 +40,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         /// <exception cref="InterpreterError">At least one value was duplicated between ADJ, BUZZ, DIR, NOUN, PREP, and VERB.</exception>
         public NewParserVocabFormat([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
             this.ctx = ctx;
 
             adjClass = TranslateType(ctx, ctx.GetStdAtom(StdAtom.TADJ)).Value;
@@ -461,8 +460,6 @@ namespace Zilf.ZModel.Vocab.NewParser
                 {
                     if (verbStuffId.StdTypeAtom == StdAtom.VWORD)
                         verbStuffId = NewParserWord.FromVword(ctx, (ZilHash)verbStuffId).Atom;
-
-                    Contract.Assert(verbStuffId != null);
                     var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
                     var actConstant = helpers.CompileConstant(actTableAtom);
                     Debug.Assert(actConstant != null);
@@ -515,8 +512,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [ContractAnnotation("=> false, verbStuffId: null; => true, verbStuffId: notnull")]
         bool TryGetVerbStuffId([CanBeNull] ZilObject verbStuff, [CanBeNull] out ZilObject verbStuffId)
         {
-            Contract.Ensures(!Contract.Result<bool>() || Contract.ValueAtReturn(out verbStuffId) != null);
-
             if (verbStuff == null)
             {
                 verbStuffId = null;
@@ -587,9 +582,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         internal ZilObject NewAddWord([NotNull] ZilAtom name, ZilAtom type, [CanBeNull] ZilObject value, [NotNull] ZilFix flags)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(flags != null);
-
             bool typeProvided;
 
             if (type == null)
@@ -707,10 +699,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         [NotNull]
         static ZilFix TranslateType([NotNull] Context ctx, [NotNull] ZilAtom type)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(type != null);
-            Contract.Ensures(Contract.Result<ZilFix>() != null);
-
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type.StdAtom)
             {
@@ -760,6 +748,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return classification;
         }
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public string[] GetLateSyntaxTableNames()
         {
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
@@ -773,9 +762,6 @@ namespace Zilf.ZModel.Vocab.NewParser
             var actionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
             var preactionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
 
-            Contract.Assert(actionsTable != null);
-            Contract.Assert(preactionsTable != null);
-
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.ACTIONS)).DefaultValue = actionsTable;
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.PREACTIONS)).DefaultValue = preactionsTable;
 
@@ -784,13 +770,13 @@ namespace Zilf.ZModel.Vocab.NewParser
             {
                 var wordFlagsListObj = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
 
-                if (!(wordFlagsListObj is ZilList wordFlagsList))
+                if (!(wordFlagsListObj is ZilListoidBase wordFlagsList && wordFlagsList is ZilList))
                 {
                     throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }
 
                 var wordFlagTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.WORD_FLAG_TABLE));
-                Contract.Assert(wordFlagTable != null);
+                Debug.Assert(wordFlagTable != null);
 
                 // WORD-FLAGS-LIST may contain duplicates: (W?FOO 96 W?BAR 1 W?FOO 32)
                 // only the first appearance of each word will be kept
@@ -799,16 +785,8 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 while (!wordFlagsList.IsEmpty)
                 {
-                    Debug.Assert(wordFlagsList.First != null);
-                    Debug.Assert(wordFlagsList.Rest != null);
-
-                    if (wordFlagsList.Rest.IsEmpty)
+                    if (!wordFlagsList.StartsWith(out ZilObject vword, out ZilObject flags))
                         throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
-
-                    var vword = wordFlagsList.First;
-                    var flags = wordFlagsList.Rest.First;
-                    wordFlagsList = wordFlagsList.Rest.Rest;
-                    Debug.Assert(wordFlagsList != null);
 
                     if (!seen.Add(vword))
                         continue;
@@ -819,8 +797,10 @@ namespace Zilf.ZModel.Vocab.NewParser
                     var zword = helpers.Vocabulary[word];
 
                     filtered.Add(zword);
-                    Debug.Assert(flags != null);
                     filtered.Add(helpers.CompileConstant(flags));
+
+                    wordFlagsList = wordFlagsList.GetRest(2);
+                    Debug.Assert(wordFlagsList != null);
                 }
 
                 wordFlagTable.AddShort((short)filtered.Count);

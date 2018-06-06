@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -43,29 +41,26 @@ namespace Zilf.ZModel.Values
         [ChtypeMethod]
         public static ZilModelObject FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
         {
-            Contract.Requires(ctx != null);
-
-            if (list.IsEmpty)
+            if (!list.IsCons(out var first, out var rest))
                 throw new InterpreterError(
                     InterpreterMessages._0_Must_Have_1_Element1s, 
                     "list coerced to OBJECT",
                     new CountableString("at least 1", false));
 
-            if (!(list.First is ZilAtom objectOrRoom))
+            if (!(first is ZilAtom objectOrRoom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
-            if (!(list.Rest?.First is ZilAtom atom))
+            if (!rest.IsCons(out first, out var props) || !(first is ZilAtom atom))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 2, "list coerced to OBJECT", "an atom");
 
-            Debug.Assert(list.Rest.Rest != null);
-            if (!list.Rest.Rest.All(zo => zo is ZilList))
+            if (!props.All(zo => zo is ZilList))
                 throw new InterpreterError(
                     InterpreterMessages._0_In_1_Must_Be_2,
                     "elements after first",
                     "list coerced to OBJECT",
                     "lists");
 
-            return new ZilModelObject(atom, list.Rest.Rest.Cast<ZilList>().ToArray(), objectOrRoom.StdAtom == StdAtom.ROOM);
+            return new ZilModelObject(atom, props.Cast<ZilList>().ToArray(), objectOrRoom.StdAtom == StdAtom.ROOM);
         }
 
         [NotNull]

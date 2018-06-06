@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -20,9 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -163,23 +163,12 @@ namespace Zilf.Compiler.Builtins
             [NotNull] Compilation cc, [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
             [ItemNotNull] [NotNull] IReadOnlyList<ZilObject> args, [NotNull] [InstantHandle] InvalidArgumentDelegate error)
         {
-            Contract.Requires(cc != null);
-            Contract.Requires(spec != null);
-            Contract.Requires(builtinParamInfos != null);
-            Contract.Requires(builtinParamInfos.Length >= 1);
-            Contract.Requires(args != null);
-            Contract.Requires(error != null);
-            Contract.Ensures(Contract.Result<IList<BuiltinArg>>() != null);
-            Contract.Ensures(Contract.Result<IList<BuiltinArg>>().Count == args.Count);
-
             // args may be short (for optional params)
 
             var result = new List<BuiltinArg>(args.Count);
 
             for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Count; i++, j++)
             {
-                Contract.Assume(j < builtinParamInfos.Length);
-
                 var pi = builtinParamInfos[j];
 
                 void InnerError(string msg)
@@ -221,15 +210,6 @@ namespace Zilf.Compiler.Builtins
             [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
             [NotNull] object call, [NotNull] IList<BuiltinArg> args)
         {
-            Contract.Requires(spec != null);
-            Contract.Requires(builtinParamInfos != null);
-            Contract.Requires(builtinParamInfos.Length >= 1);
-            Contract.Requires(spec.Attr.Data == null || builtinParamInfos.Length >= 2);
-            Contract.Requires(call != null);
-            Contract.Requires(args != null);
-            Contract.Requires(Contract.ForAll(args, a => a.Type == BuiltinArgType.Operand));
-            Contract.Ensures(Contract.Result<List<object>>().Count == builtinParamInfos.Length);
-
             /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
              * due to optional arguments and params arrays. */
 
@@ -246,8 +226,6 @@ namespace Zilf.Compiler.Builtins
             // operands
             for (int j = 0; i < builtinParamInfos.Length; i++, j++)
             {
-                Contract.Assume(i < builtinParamInfos.Length);
-
                 var pi = builtinParamInfos[i];
 
                 if (pi.ParameterType == typeof(IOperand[]))
@@ -277,27 +255,18 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-        [CanBeNull]
+        [NotNull]
         static object CompileBuiltinCall<TCall>([NotNull] string name, [NotNull] Compilation cc,
             [NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase form, TCall call)
             where TCall : struct
         {
-            Contract.Requires(name != null);
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-
-            Debug.Assert(form.Rest != null, "form.Rest != null");
-
             int zversion = cc.Context.ZEnvironment.ZVersion;
-            var argList = form.Rest;
-            var args = argList.ToArray();
+            var args = form.Skip(1).ToArray();
             var candidateSpecs = builtins[name].Where(s =>
             {
                 Debug.Assert(s != null, nameof(s) + " != null");
                 return s.AppliesTo(zversion, args.Length, typeof(TCall));
             }).ToArray();
-            Contract.Assume(candidateSpecs.Length >= 1);
 
             // find the best matching spec, if there's more than one
             BuiltinSpec spec;
@@ -362,7 +331,9 @@ namespace Zilf.Compiler.Builtins
                 }
                 catch (TargetInvocationException ex) when (ex.InnerException is ZilError zex)
                 {
-                    throw zex;
+                    ExceptionDispatchInfo.Capture(zex).Throw();
+                    // ReSharper disable once HeuristicUnreachableCode
+                    throw new UnreachableCodeException();
                 }
             }
         }
@@ -371,48 +342,23 @@ namespace Zilf.Compiler.Builtins
         public static IOperand CompileValueCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
             [CanBeNull] IVariable resultStorage)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
-            var result = (IOperand)CompileBuiltinCall(name, cc, rb, form,
+            return (IOperand)CompileBuiltinCall(name, cc, rb, form,
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
-            Debug.Assert(result != null, nameof(result) + " != null");
-            return result;
         }
 
         public static void CompileVoidCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-
             CompileBuiltinCall(name, cc, rb, form, new VoidCall(cc, rb, form));
         }
 
         public static void CompilePredCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Requires(label != null);
-
             CompileBuiltinCall(name, cc, rb, form, new PredCall(cc, rb, form, label, polarity));
         }
 
         public static void CompileValuePredCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
             [CanBeNull] IVariable resultStorage, [NotNull] ILabel label, bool polarity)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(cc != null);
-            Contract.Requires(rb != null);
-            Contract.Requires(form != null);
-            Contract.Requires(label != null);
-
             CompileBuiltinCall(name, cc, rb, form,
                 new ValuePredCall(cc, rb, form, resultStorage ?? rb.Stack, label, polarity));
         }
@@ -429,10 +375,6 @@ namespace Zilf.Compiler.Builtins
             PredCall c, [NotNull] IOperand arg1, [NotNull] IOperand arg2,
             [ItemNotNull] [NotNull] params IOperand[] restOfArgs)
         {
-            Contract.Requires(arg1 != null);
-            Contract.Requires(arg2 != null);
-            Contract.Requires(restOfArgs != null);
-
             if (arg1 is INumericOperand num1)
             {
                 var value = num1.Value;
@@ -577,10 +519,6 @@ namespace Zilf.Compiler.Builtins
             PredCall c, [NotNull] IOperand arg1, [NotNull] IOperand arg2,
             [NotNull] params IOperand[] restOfArgs)
         {
-            Contract.Requires(arg1 != null);
-            Contract.Requires(arg2 != null);
-            Contract.Requires(restOfArgs != null);
-
             var innerCall = new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity);
             VarargsEqualityOp(innerCall, arg1, arg2, restOfArgs);
         }
@@ -599,10 +537,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Data] TernaryOp op,
             [NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(center != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
@@ -612,9 +546,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Data] TernaryOp op,
             [NotNull] IOperand left, [NotNull] IOperand center, [CanBeNull] IOperand right = null)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(center != null);
-
             c.rb.EmitTernary(op, left, center, right ?? c.cc.Game.Zero, null);
         }
 
@@ -624,10 +555,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Data] TernaryOp op,
             [Table][NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(center != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
@@ -636,10 +563,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Data] TernaryOp op,
             [Object][NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(center != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
@@ -648,10 +571,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Data] TernaryOp op,
             [Table][NotNull] IOperand left, [Table][NotNull] IOperand center, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(center != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
@@ -667,10 +586,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand BinaryValueOp(
             ValueCall c, [Data] BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (left is INumericOperand nleft && right is INumericOperand nright)
             {
                 switch (op)
@@ -697,10 +612,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand BinaryXorOp(ValueCall c, [NotNull] ZilObject left, [NotNull] ZilObject right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             ZilObject value;
             if (left is ZilFix lf && lf.Value == -1)
             {
@@ -735,13 +646,7 @@ namespace Zilf.Compiler.Builtins
         public static IOperand ArithmeticOp(
             ValueCall c, [Data] BinaryOp op, [ItemNotNull] [NotNull] params IOperand[] args)
         {
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
-            GetArithmeticInfo(op,
-                out short initialValue,
-                out Func<short, short, short> operation,
-                out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary);
+            GetArithmeticInfo(op, out var initialValue, out var operation, out var compileUnary);
 
             // can we evaluate the whole operation at compile time?
             if (args.Length > 0)
@@ -779,9 +684,6 @@ namespace Zilf.Compiler.Builtins
             [NotNull] out Func<short, short, short> operation,
             [NotNull] out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
         {
-            Contract.Requires(operation != null);
-            Contract.Requires(compileUnary != null);
-
             // a delegate implementing the actual arithmetic operation
             switch (op)
             {
@@ -809,17 +711,18 @@ namespace Zilf.Compiler.Builtins
 
             // the initial value, which is returned as-is if there are no args,
             // or possibly combined with the single arg if there's only one
-            if (op == BinaryOp.Mul || op == BinaryOp.Div)
+            switch (op)
             {
-                initialValue = 1;
-            }
-            else if (op == BinaryOp.And)
-            {
-                initialValue = -1;
-            }
-            else
-            {
-                initialValue = 0;
+                case BinaryOp.Mul:
+                case BinaryOp.Div:
+                    initialValue = 1;
+                    break;
+                case BinaryOp.And:
+                    initialValue = -1;
+                    break;
+                default:
+                    initialValue = 0;
+                    break;
             }
 
             // another delegate describing how to combine the initial value
@@ -859,11 +762,6 @@ namespace Zilf.Compiler.Builtins
         static IOperand FoldConstantArithmetic([NotNull] Compilation cc, short init, [NotNull] Func<short, short, short> op,
             [ItemNotNull] [NotNull] IOperand[] args)
         {
-            Contract.Requires(cc != null);
-            Contract.Requires(op != null);
-            Contract.Requires(args != null);
-            Contract.Requires(args.Length > 0);
-
             // make sure all args are constants
             foreach (var arg in args)
                 if (!(arg is INumericOperand))
@@ -882,9 +780,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("BAND", "ANDB")]
         public static void BinaryAndPredOp(PredCall c, [NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             var nleft = left as INumericOperand;
             var nright = right as INumericOperand;
 
@@ -940,20 +835,16 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand RestOp(ValueCall c, [NotNull] IOperand left, [CanBeNull] IOperand right = null)
         {
-            Contract.Requires(left != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             // if left and right are constants, we can add them at assembly time
             if (left is IConstantOperand lconst)
             {
-                if (right is IConstantOperand rconst)
+                switch (right)
                 {
-                    return lconst.Add(rconst);
-                }
+                    case IConstantOperand rconst:
+                        return lconst.Add(rconst);
 
-                if (right == null)
-                {
-                    return lconst.Add(c.cc.Game.One);
+                    case null:
+                        return lconst.Add(c.cc.Game.One);
                 }
             }
 
@@ -964,9 +855,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand BackOp(ValueCall c, [NotNull] IOperand left, [CanBeNull] IOperand right = null)
         {
-            Contract.Requires(left != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             return ArithmeticOp(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
         }
 
@@ -978,9 +866,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryVoidOp(
             VoidCall c, [Data] BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitBinary(op, left, right, null);
         }
 
@@ -988,8 +873,6 @@ namespace Zilf.Compiler.Builtins
         public static void CursetVoidOp(VoidCall c, [NotNull] IOperand line, [CanBeNull] IOperand column = null,
             [CanBeNull] IOperand window = null)
         {
-            Contract.Requires(line != null);
-
             if (window != null)
             {
                 Debug.Assert(column != null);
@@ -1007,9 +890,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryPredOp(
             PredCall c, [Data] Condition cond, [NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             if (left is INumericOperand nleft && right is INumericOperand nright)
             {
                 bool branch;
@@ -1041,9 +921,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryMenuOp(
             PredCall c, [NotNull] IOperand menuId, [Table][NotNull] IOperand table)
         {
-            Contract.Requires(menuId != null);
-            Contract.Requires(table != null);
-
             c.rb.Branch(Condition.MakeMenu, menuId, table, c.label, c.polarity);
         }
 
@@ -1052,9 +929,6 @@ namespace Zilf.Compiler.Builtins
         public static void NegatedBinaryPredOp(
             PredCall c, [Data] Condition cond, [NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             BinaryPredOp(new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity), cond, left, right);
         }
 
@@ -1063,18 +937,12 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
         [Builtin("PICINF", MinVersion = 6, HasSideEffect = true)]
         public static void PicinfPredOp(PredCall c, [NotNull] IOperand left, [Table][NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.Branch(Condition.PictureData, left, right, c.label, c.polarity);
         }
 
@@ -1083,8 +951,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable][NotNull] SoftGlobal left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
             Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
 
             var offset = c.cc.Game.MakeOperand(left.Offset);
@@ -1121,10 +987,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand BinaryObjectValueOp(
             ValueCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
         }
@@ -1134,9 +996,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryObjectVoidOp(
             VoidCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitBinary(op, left, right, null);
         }
 
@@ -1144,9 +1003,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryObjectPredOp(
             PredCall c, [Data] Condition cond, [Object][NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
@@ -1154,9 +1010,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryObjectObjectPredOp(
             PredCall c, [Data] Condition cond, [Object][NotNull] IOperand left, [Object][NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
@@ -1164,9 +1017,6 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryObjectObjectVoidOp(
             VoidCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [Object][NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-
             c.rb.EmitBinary(op, left, right, null);
         }
 
@@ -1176,10 +1026,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand BinaryObjectToTableValueOp(
             ValueCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
         }
@@ -1190,10 +1036,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand BinaryTableValueOp(
             ValueCall c, [Data] BinaryOp op, [Table][NotNull] IOperand left, [NotNull] IOperand right)
         {
-            Contract.Requires(left != null);
-            Contract.Requires(right != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
         }
@@ -1210,9 +1052,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand UnaryValueOp(
             ValueCall c, [Data] UnaryOp op, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (op == UnaryOp.Not && value is INumericOperand num)
             {
                 return c.cc.Game.MakeOperand((short)(~num.Value));
@@ -1234,16 +1073,12 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryVoidOp(
             VoidCall c, [Data] UnaryOp op, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             c.rb.EmitUnary(op, value, null);
         }
 
         [Builtin("ZERO?", "0?")]
         public static void ZeroPredOp(PredCall c, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             if (value is INumericOperand num)
             {
                 if ((num.Value == 0) == c.polarity)
@@ -1258,8 +1093,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("1?")]
         public static void OnePredOp(PredCall c, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             if (value is INumericOperand num)
             {
                 if ((num.Value == 1) == c.polarity)
@@ -1276,9 +1109,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand UnaryObjectValueOp(
             ValueCall c, [Data] UnaryOp op, [Object][NotNull] IOperand obj)
         {
-            Contract.Requires(obj != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitUnary(op, obj, c.resultStorage);
             return c.resultStorage;
         }
@@ -1288,8 +1118,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryObjectValuePredOp(
             ValuePredCall c, [Data] bool sibling, [Object][NotNull] IOperand obj)
         {
-            Contract.Requires(obj != null);
-
             if (sibling)
                 c.rb.EmitGetSibling(obj, c.resultStorage, c.label, c.polarity);
             else
@@ -1301,9 +1129,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand UnaryTableValueOp(
             ValueCall c, [Data] UnaryOp op, [Table][NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitUnary(op, value, c.resultStorage);
             return c.resultStorage;
         }
@@ -1312,8 +1137,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryObjectVoidOp(
             VoidCall c, [Data] UnaryOp op, [Object][NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             c.rb.EmitUnary(op, value, null);
         }
 
@@ -1321,8 +1144,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable][NotNull] IVariable var)
         {
-            Contract.Requires(var != null);
-
             c.rb.Branch(cond, var, null, c.label, c.polarity);
         }
 
@@ -1330,8 +1151,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("ASSIGNED?", MinVersion = 5)]
         public static void SoftGlobalAssignedOp(PredCall c, [Variable][NotNull] SoftGlobal var)
         {
-            Contract.Requires(var != null);
-
             // globals are never "assigned" in this sense
             if (!c.polarity)
                 c.rb.Branch(c.label);
@@ -1344,8 +1163,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryTableVoidOp(
             VoidCall c, [Data] UnaryOp op, [Table][NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             c.rb.EmitUnary(op, value, null);
         }
 
@@ -1362,8 +1179,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryPrintVoidOp(
             VoidCall c, [Data] PrintOp op, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             c.rb.EmitPrint(op, value);
         }
 
@@ -1372,10 +1187,6 @@ namespace Zilf.Compiler.Builtins
             VoidCall c, [Table] [NotNull] IOperand table, [NotNull] IOperand width,
             [CanBeNull] IOperand height = null, [CanBeNull] IOperand skip = null)
         {
-            Contract.Requires(table != null);
-            Contract.Requires(width != null);
-            Contract.Requires(height != null || skip == null);
-
             c.rb.EmitPrintTable(table, width, height, skip);
         }
 
@@ -1384,8 +1195,6 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryPrintStringOp(
             VoidCall c, [Data] bool crlfRtrue, [NotNull] string text)
         {
-            Contract.Requires(text != null);
-
             c.rb.EmitPrint(text, crlfRtrue);
         }
 
@@ -1405,10 +1214,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand SetValueOp(
             ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] [NotNull] IVariable dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             // in value context, we need to be able to return the newly set value,
             // so dest is IVariable. this means <SET <fancy-expression> value> isn't
             // supported in value context.
@@ -1434,10 +1239,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand SetValueOp(
             ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] [NotNull] SoftGlobal dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.rb.Stack);
 
             Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
@@ -1464,10 +1265,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand SetgValueOp(
             ValueCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IVariable dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             return SetValueOp(c, dest, value);
         }
 
@@ -1477,10 +1274,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand SetgValueOp(
             ValueCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             return SetValueOp(c, dest, value);
         }
 
@@ -1489,9 +1282,6 @@ namespace Zilf.Compiler.Builtins
         public static void SetVoidOp(
             VoidCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] IOperand dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
             // in void context, we don't need to return the newly set value, so we
             // can support <SET <fancy-expression> value>.
 
@@ -1534,11 +1324,7 @@ namespace Zilf.Compiler.Builtins
         public static void SetVoidOp(
             VoidCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
-            Contract.Assume(c.cc.SoftGlobalsTable != null);
-
+            Debug.Assert(c.cc.SoftGlobalsTable != null);
             c.rb.EmitTernary(
                 dest.IsWord ? TernaryOp.PutWord : TernaryOp.PutByte,
                 c.cc.SoftGlobalsTable,
@@ -1552,9 +1338,6 @@ namespace Zilf.Compiler.Builtins
         public static void SetgVoidOp(
             VoidCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IOperand dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
             SetVoidOp(c, dest, value);
         }
 
@@ -1563,9 +1346,6 @@ namespace Zilf.Compiler.Builtins
         public static void SetgVoidOp(
             VoidCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
             SetVoidOp(c, dest, value);
         }
 
@@ -1574,9 +1354,6 @@ namespace Zilf.Compiler.Builtins
         public static void SetPredOp(
             PredCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] IVariable dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
             // see note in SetValueOp regarding dest being IVariable
             c.cc.CompileAsOperandWithBranch(c.rb, value, dest, c.label, c.polarity);
         }
@@ -1586,9 +1363,6 @@ namespace Zilf.Compiler.Builtins
         public static void SetgPredOp(
             PredCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IVariable dest, [NotNull] ZilObject value)
         {
-            Contract.Requires(dest != null);
-            Contract.Requires(value != null);
-
             SetPredOp(c, dest, value);
         }
 
@@ -1598,9 +1372,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
         {
-            Contract.Requires(victim != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
             return victim;
         }
@@ -1611,9 +1382,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] SoftGlobal victim)
         {
-            Contract.Requires(victim != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             var offset = c.cc.Game.MakeOperand(victim.Offset);
 
             Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
@@ -1639,8 +1407,6 @@ namespace Zilf.Compiler.Builtins
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
         {
-            Contract.Requires(victim != null);
-
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
         }
 
@@ -1649,8 +1415,6 @@ namespace Zilf.Compiler.Builtins
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] SoftGlobal victim)
         {
-            Contract.Requires(victim != null);
-
             var offset = c.cc.Game.MakeOperand(victim.Offset);
 
             Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
@@ -1672,17 +1436,12 @@ namespace Zilf.Compiler.Builtins
         [Builtin("PUSH", HasSideEffect = true)]
         public static void PushVoidOp(VoidCall c, [NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-
             c.rb.EmitStore(c.rb.Stack, value);
         }
 
         [Builtin("XPUSH", MinVersion = 6, HasSideEffect = true)]
         public static void XpushPredOp(PredCall c, [NotNull] IOperand value, [NotNull] IOperand stack)
         {
-            Contract.Requires(value != null);
-            Contract.Requires(stack != null);
-
             c.rb.EmitPushUserStack(value, stack, c.label, c.polarity);
         }
 
@@ -1690,7 +1449,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("POP", MinVersion = 6, HasSideEffect = true)]
         public static IOperand PopValueOp(ValueCall c, [CanBeNull] IOperand stack = null)
         {
-            Contract.Ensures(Contract.Result<IOperand>() != null);
             if (stack == null)
                 c.rb.EmitStore(c.resultStorage, c.rb.Stack);
             else
@@ -1702,7 +1460,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("FSTACK", MinVersion = 6, HasSideEffect = true)]
         public static void FstackVoidOp(VoidCall c, [NotNull] IOperand count, [CanBeNull] IOperand stack = null)
         {
-            Contract.Requires(count != null);
             if (stack == null)
                 c.rb.EmitUnary(UnaryOp.FlushStack, count, null);
             else
@@ -1725,9 +1482,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand ValueOp_Operand(ValueCall c, [Variable][NotNull] IOperand value)
         {
-            Contract.Requires(value != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitUnary(UnaryOp.LoadIndirect, value, c.resultStorage);
             return c.resultStorage;
         }
@@ -1852,8 +1606,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
         {
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitNullary(op, c.resultStorage);
             return c.resultStorage;
         }
@@ -1905,8 +1657,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("READ", "ZREAD", MaxVersion = 3, HasSideEffect = true)]
         public static void ReadOp_V3(VoidCall c, [NotNull] IOperand text, IOperand parse)
         {
-            Contract.Requires(text != null);
-
             c.rb.EmitRead(text, parse, null, null, null);
         }
 
@@ -1914,10 +1664,6 @@ namespace Zilf.Compiler.Builtins
         public static void ReadOp_V4(VoidCall c, [NotNull] IOperand text, [NotNull] IOperand parse,
             [CanBeNull] IOperand time = null, [CanBeNull] [Routine] IOperand routine = null)
         {
-            Contract.Requires(text != null);
-            Contract.Requires(parse != null);
-            Contract.Requires(time != null || routine == null);
-
             c.rb.EmitRead(text, parse, time, routine, null);
         }
 
@@ -1927,11 +1673,6 @@ namespace Zilf.Compiler.Builtins
             [CanBeNull] IOperand parse = null, [CanBeNull] IOperand time = null,
             [CanBeNull] [Routine] IOperand routine = null)
         {
-            Contract.Requires(text != null);
-            Contract.Requires(parse != null || time == null);
-            Contract.Requires(time != null || routine == null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             c.rb.EmitRead(text, parse, time, routine, c.resultStorage);
             return c.resultStorage;
         }
@@ -1941,11 +1682,7 @@ namespace Zilf.Compiler.Builtins
         public static IOperand InputOp(ValueCall c, [NotNull] IOperand dummy,
             [CanBeNull] IOperand interval = null, [CanBeNull] [Routine] IOperand routine = null)
         {
-            Contract.Requires(dummy != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
-            Debug.Assert(c.form.Rest != null);
-            if (c.form.Rest.First is ZilFix fix && fix.Value != 1)
+            if (c.form.StartsWith(out ZilObject _, out ZilFix fix) && fix.Value != 1)
             {
                 return c.HandleMessage(
                     CompilerMessages._0_Argument_1_2,
@@ -1970,9 +1707,6 @@ namespace Zilf.Compiler.Builtins
         public static void SoundOp_V3(VoidCall c, [NotNull] IOperand number,
             [CanBeNull] IOperand effect = null, [CanBeNull] IOperand volume = null)
         {
-            Contract.Requires(number != null);
-            Contract.Requires(effect != null || volume == null);
-
             c.rb.EmitPlaySound(number, effect, volume, null);
         }
 
@@ -1981,10 +1715,6 @@ namespace Zilf.Compiler.Builtins
             [CanBeNull] IOperand effect = null, [CanBeNull] IOperand volume = null,
             [CanBeNull] [Routine] IOperand routine = null)
         {
-            Contract.Requires(number != null);
-            Contract.Requires(effect != null || volume == null);
-            Contract.Requires(volume != null || routine == null);
-
             c.rb.EmitPlaySound(number, effect, volume, routine);
         }
 
@@ -1997,11 +1727,6 @@ namespace Zilf.Compiler.Builtins
             [Table][NotNull] IOperand src, [NotNull] IOperand length,
             [NotNull] IOperand srcOffset, [Table][NotNull] IOperand dest)
         {
-            Contract.Requires(src != null);
-            Contract.Requires(length != null);
-            Contract.Requires(srcOffset != null);
-            Contract.Requires(dest != null);
-
             c.rb.EmitEncodeText(src, length, srcOffset, dest);
         }
 
@@ -2010,10 +1735,6 @@ namespace Zilf.Compiler.Builtins
             [Table][NotNull] IOperand text, [Table][NotNull] IOperand parse,
             [CanBeNull] [Table] IOperand dictionary = null, [CanBeNull] IOperand flag = null)
         {
-            Contract.Requires(text != null);
-            Contract.Requires(parse != null);
-            Contract.Requires(dictionary != null || flag == null);
-
             c.rb.EmitTokenize(text, parse, dictionary, flag);
         }
 
@@ -2040,7 +1761,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand RestoreOp_V4(ValueCall c)
         {
-            Contract.Ensures(Contract.Result<IOperand>() != null);
             if (c.rb.HasStoreSave)
             {
                 c.rb.EmitRestore(c.resultStorage);
@@ -2055,11 +1775,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand RestoreOp_V5(ValueCall c, [Table][NotNull] IOperand table,
             [NotNull] IOperand bytes, [Table][NotNull] IOperand name)
         {
-            Contract.Requires(table != null);
-            Contract.Requires(bytes != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (c.rb.HasExtendedSave)
             {
                 c.rb.EmitRestore(table, bytes, name, c.resultStorage);
@@ -2087,7 +1802,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand SaveOp_V4(ValueCall c)
         {
-            Contract.Ensures(Contract.Result<IOperand>() != null);
             if (c.rb.HasStoreSave)
             {
                 c.rb.EmitSave(c.resultStorage);
@@ -2102,11 +1816,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand SaveOp_V5(ValueCall c, [Table][NotNull] IOperand table,
             [NotNull] IOperand bytes, [Table][NotNull] IOperand name)
         {
-            Contract.Requires(table != null);
-            Contract.Requires(bytes != null);
-            Contract.Requires(name != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (c.rb.HasExtendedSave)
             {
                 c.rb.EmitSave(table, bytes, name, c.resultStorage);
@@ -2226,10 +1935,6 @@ namespace Zilf.Compiler.Builtins
         public static IOperand CallValueOp(ValueCall c,
             [Routine][NotNull] IOperand routine, [NotNull] params IOperand[] args)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(args != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
                 return c.HandleMessage(
@@ -2245,9 +1950,6 @@ namespace Zilf.Compiler.Builtins
         public static void CallVoidOp(VoidCall c,
             [Routine][NotNull] IOperand routine, [NotNull] params IOperand[] args)
         {
-            Contract.Requires(routine != null);
-            Contract.Requires(args != null);
-
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
                 c.HandleMessage(
@@ -2268,10 +1970,6 @@ namespace Zilf.Compiler.Builtins
         public static void IntblValuePredOp_V4(ValuePredCall c,
             [NotNull] IOperand value, [Table][NotNull] IOperand table, [NotNull] IOperand length)
         {
-            Contract.Requires(value != null);
-            Contract.Requires(table != null);
-            Contract.Requires(length != null);
-
             c.rb.EmitScanTable(value, table, length, null, c.resultStorage, c.label, c.polarity);
         }
 
@@ -2280,24 +1978,12 @@ namespace Zilf.Compiler.Builtins
         public static void IntblValuePredOp_V5(ValuePredCall c,
             [NotNull] IOperand value, [Table][NotNull] IOperand table, [NotNull] IOperand length, [CanBeNull] IOperand form = null)
         {
-            Contract.Requires(value != null);
-            Contract.Requires(table != null);
-            Contract.Requires(length != null);
-
             c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
         }
 
         static bool TryGetLowCoreField([NotNull] string name, [NotNull] Context ctx, [NotNull] ISourceLine src, [NotNull] ZilObject fieldSpec, bool writing,
             out int offset, out LowCoreFlags flags, out int minVersion)
         {
-            Contract.Requires(name != null);
-            Contract.Requires(ctx != null);
-            Contract.Requires(src != null);
-            Contract.Requires(fieldSpec != null);
-            Contract.Ensures(Contract.ValueAtReturn(out offset) >= 0);
-            Contract.Ensures(Contract.ValueAtReturn(out minVersion) >= 0);
-            Contract.Ensures(Contract.ValueAtReturn(out minVersion) >= 1 || Contract.Result<bool>() == false);
-
             offset = 0;
             flags = LowCoreFlags.None;
             minVersion = 0;
@@ -2329,7 +2015,7 @@ namespace Zilf.Compiler.Builtins
 
             if (fieldSpec is ZilList list)
             {
-                if (list.GetLength(2) != 2)
+                if (!list.HasLength(2))
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_List_Must_Have_2_Elements, name));
                     return false;
@@ -2385,9 +2071,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand LowCoreReadOp(ValueCall c, [NotNull] ZilObject fieldSpec)
         {
-            Contract.Requires(fieldSpec != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return c.cc.Game.Zero;
 
@@ -2410,9 +2093,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LOWCORE", HasSideEffect = true)]
         public static void LowCoreWriteOp(VoidCall c, [NotNull] ZilObject fieldSpec, [NotNull] IOperand newValue)
         {
-            Contract.Requires(fieldSpec != null);
-            Contract.Requires(newValue != null);
-
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out var offset, out var flags, out _))
                 return;
 
@@ -2434,9 +2114,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
         public static void LowCoreTableOp(VoidCall c, [NotNull] ZilObject fieldSpec, int length, [NotNull] ZilAtom handler)
         {
-            Contract.Requires(fieldSpec != null);
-            Contract.Requires(handler != null);
-
             if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return;
 
@@ -2489,7 +2166,8 @@ namespace Zilf.Compiler.Builtins
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
-            return c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
+            var (_, progBody) = c.form;
+            return c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
         }
 
         [Builtin("PROG", Data = StdAtom.PROG)]
@@ -2499,7 +2177,8 @@ namespace Zilf.Compiler.Builtins
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
-            c.cc.CompilePROG(c.rb, c.form.Rest, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
+            var (_, progBody) = c.form;
+            c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
         }
 
         [NotNull]
@@ -2647,10 +2326,6 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         public static IOperand ChtypeValueOp(ValueCall c, [NotNull] IOperand value, [NotNull] ZilAtom type)
         {
-            Contract.Requires(value != null);
-            Contract.Requires(type != null);
-            Contract.Ensures(Contract.Result<IOperand>() != null);
-
             // TODO: check type?
             return value;
         }

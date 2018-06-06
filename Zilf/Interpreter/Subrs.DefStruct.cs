@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -36,9 +35,6 @@ namespace Zilf.Interpreter
         [FSubr("SET-DEFSTRUCT-FILE-DEFAULTS")]
         public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx, args);
-
             var defaults = new ZilList(args);
             ctx.CurrentFile.DefStructDefaults = defaults;
             return defaults;
@@ -185,13 +181,6 @@ namespace Zilf.Interpreter
             [NotNull] [Required]
             DefStructParams.FieldSpecList[] fieldSpecs)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Requires(baseTypeOrDefaults != null);
-            Contract.Requires(fieldSpecs != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-            SubrContracts(ctx);
-
             // new type name
             if (ctx.IsRegisteredType(name))
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFSTRUCT", name);
@@ -315,8 +304,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject MakeDefstructDecl([NotNull] Context ctx, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields)
         {
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-
             if (ctx == null)
                 throw new ArgumentNullException(nameof(ctx));
             if (baseType == null)
@@ -337,13 +324,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructCustomCtorMacro([NotNull] Context ctx, ZilAtom ctorName, [NotNull] ZilAtom typeName, [NotNull] ZilAtom baseType,
             [NotNull] List<DefStructField> fields, [NotNull] ZilList initArgs, int startOffset, [NotNull] ArgSpec argspec)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(typeName != null);
-            Contract.Requires(baseType != null);
-            Contract.Requires(fields != null);
-            Contract.Requires(initArgs != null);
-            Contract.Requires(argspec != null);
-
             // {0} = constructor name
             // {1} = type name
             // {2} = argspec
@@ -440,10 +420,6 @@ namespace Zilf.Interpreter
         [NotNull]
         static ZilObject DefaultForDecl([NotNull] Context ctx, [NotNull] ZilObject decl)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(decl != null);
-            Contract.Ensures(Contract.Result<ZilObject>() != null);
-
             foreach (var zo in LikelyDefaults(ctx))
             {
                 // decl might be invalid if the struct references a NEWTYPE that hasn't been defined yet
@@ -456,8 +432,6 @@ namespace Zilf.Interpreter
 
         static IEnumerable<ZilObject> LikelyDefaults([NotNull] Context ctx)
         {
-            Contract.Requires(ctx != null);
-
             yield return ctx.FALSE;
             yield return ZilFix.Zero;
             yield return new ZilList(null, null);
@@ -469,12 +443,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructCtorMacro([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields,
             [NotNull] ZilList initArgs, int startOffset)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(name != null);
-            Contract.Requires(baseType != null);
-            Contract.Requires(fields != null);
-            Contract.Requires(initArgs != null);
-
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
             // in which case we want to return:
@@ -633,9 +601,6 @@ namespace Zilf.Interpreter
         static ZilObject MakeDefstructAccessMacro([NotNull] Context ctx, [NotNull] ZilAtom structName, DefStructDefaults defaults,
             DefStructField field)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(structName != null);
-
             // {0} = field name
             // {1} = struct name
             // {2} = PUT atom
@@ -764,9 +729,6 @@ namespace Zilf.Interpreter
         // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
         static void ParseDefStructDefaults([NotNull] Context ctx, [NotNull] ZilList fileDefaults, ref DefStructDefaults defaults)
         {
-            Contract.Requires(ctx != null);
-            Contract.Requires(fileDefaults != null);
-
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
             foreach (var part in fileDefaults)
@@ -799,7 +761,7 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    if (!(part is ZilList partList))
+                    if (!(part is ZilListoidBase partList && partList is ZilList))
                         throw new InterpreterError(InterpreterMessages._0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists, "DEFSTRUCT");
 
                     if (!(partList.First is ZilForm first) ||
@@ -841,12 +803,12 @@ namespace Zilf.Interpreter
 
                         case StdAtom.CONSTRUCTOR:
                             partList = partList.Rest;
-                            defaults.CustomCtorSpec = partList;
+                            defaults.CustomCtorSpec = partList.AsZilList();
                             break;
 
                         case StdAtom.INIT_ARGS:
                             partList = partList.Rest;
-                            defaults.InitArgs = partList;
+                            defaults.InitArgs = partList.AsZilList();
                             break;
 
                         default:

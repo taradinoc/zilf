@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -237,8 +236,6 @@ namespace Zilf.Emit.Zap
                     throw new ArgumentException("Expected two operands for binary condition", nameof(right));
             }
 
-            Contract.Assert(leftVar || !unary);
-
             var instruction = new Instruction(opcode);
             if (unary)
             {
@@ -335,8 +332,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         static string OptResult([CanBeNull] IVariable result)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
-
             if (result == null)
                 return string.Empty;
 
@@ -462,24 +457,18 @@ namespace Zilf.Emit.Zap
 
         public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable result)
         {
-            // optimize special cases
-            if (op == BinaryOp.Add &&
-                (left == game.One && right == result || right == game.One && left == result))
+            switch (op)
             {
-                AddLine(new Instruction("INC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
-                return;
-            }
-
-            if (op == BinaryOp.Sub && left == result && right == game.One)
-            {
-                AddLine(new Instruction("DEC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
-                return;
-            }
-
-            if (op == BinaryOp.StoreIndirect && right == Stack && game.zversion != 6)
-            {
-                AddLine(new Instruction("POP", left.ToAsmExpr()), null, PeepholeLineType.Plain);
-                return;
+                // optimize special cases
+                case BinaryOp.Add when left == game.One && right == result || right == game.One && left == result:
+                    AddLine(new Instruction("INC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
+                    return;
+                case BinaryOp.Sub when left == result && right == game.One:
+                    AddLine(new Instruction("DEC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
+                    return;
+                case BinaryOp.StoreIndirect when right == Stack && game.zversion != 6:
+                    AddLine(new Instruction("POP", left.ToAsmExpr()), null, PeepholeLineType.Plain);
+                    return;
             }
 
             string opcode;
@@ -1130,18 +1119,14 @@ namespace Zilf.Emit.Zap
                 if (code.DebugText != null)
                     game.WriteOutput(INDENT + code.DebugText);
 
-                if (type == PeepholeLineType.BranchAlways)
+                switch (type)
                 {
-                    if (dest == RTRUE)
-                    {
+                    case PeepholeLineType.BranchAlways when dest == RTRUE:
                         game.WriteOutput(INDENT + "RTRUE");
                         return;
-                    }
-                    if (dest == RFALSE)
-                    {
+                    case PeepholeLineType.BranchAlways when dest == RFALSE:
                         game.WriteOutput(INDENT + "RFALSE");
                         return;
-                    }
                 }
 
                 if (code.Instruction.Name == "CRLF+RTRUE")
@@ -1198,15 +1183,12 @@ namespace Zilf.Emit.Zap
 
             void BeginMatch([NotNull] IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                Contract.Requires(lines != null);
                 enumerator = lines.GetEnumerator();
                 matches = new List<CombinableLine<ZapCode>>();
             }
 
             bool Match([ItemNotNull] [NotNull] [InstantHandle] params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
-                Contract.Requires(criteria != null);
-
                 while (matches.Count < criteria.Length)
                 {
                     if (enumerator.MoveNext() == false)
@@ -1254,7 +1236,7 @@ namespace Zilf.Emit.Zap
                             matches[0].Label,
                             new ZapCode {
                                 Instruction = newInstruction,
-                                DebugText = matches[0].Code.DebugText ?? matches[1].Code.DebugText
+                                DebugText = MergeDebugText(matches[0].Code.DebugText, matches[1].Code.DebugText),
                             },
                             target ?? matches[1].Target,
                             type ?? matches[1].Type)
@@ -1395,23 +1377,20 @@ namespace Zilf.Emit.Zap
             [ContractAnnotation("=> true, dest: notnull; => false, dest: null")]
             static bool IsPopToVariable([NotNull] Instruction inst, out string dest)
             {
-                if (inst.Name == "POP")
+                switch (inst.Name)
                 {
-                    if (inst.Operands.Count == 1 && inst.Operands[0] is QuoteExpr quote)
-                    {
+                    case "POP" when inst.Operands.Count == 1 && inst.Operands[0] is QuoteExpr quote:
                         dest = quote.Inner.ToString();
                         return true;
-                    }
 
-                    if (inst.Operands.Count == 0 && inst.StoreTarget != null)
-                    {
+                    case "POP" when inst.Operands.Count == 0 && inst.StoreTarget != null:
                         dest = inst.StoreTarget;
                         return true;
-                    }
-                }
 
-                dest = null;
-                return false;
+                    default:
+                        dest = null;
+                        return false;
+                }
             }
 
             /// <inheritdoc />
@@ -1556,7 +1535,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => b.Code.Instruction.Name == "ZERO?" && b.Code.Instruction.Operands[0].IsStack()))
                     {
-                        Contract.Assume(expr1 != null);
                         var constantValue = const1.Value;
 
                         if (constantValue == 0)
@@ -1582,10 +1560,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => IsBANDConstantWithStack(b.Code.Instruction, out const2, out destStr)))
                     {
-                        Contract.Assume(expr1 != null);
-                        Contract.Assume(const1 != null);
-                        Contract.Assume(const2 != null);
-                        Contract.Assume(destStr != null);
                         var combined = const1.Value & const2.Value;
                         return Combine2To1(
                             new Instruction("BAND", expr1, new NumericLiteral(combined)) { StoreTarget = destStr });
@@ -1595,10 +1569,6 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsBORConstantToStack(a.Code.Instruction, out expr1, out const1),
                         b => IsBORConstantWithStack(b.Code.Instruction, out const2, out destStr)))
                     {
-                        Contract.Assume(expr1 != null);
-                        Contract.Assume(const1 != null);
-                        Contract.Assume(const2 != null);
-                        Contract.Assume(destStr != null);
                         var combined = const1.Value | const2.Value;
                         return Combine2To1(
                             new Instruction("BOR", expr1, new NumericLiteral(combined)) { StoreTarget = destStr });
@@ -1618,6 +1588,16 @@ namespace Zilf.Emit.Zap
                 return new ZapCode { Instruction = new Instruction("JUMP") };
             }
 
+            [CanBeNull]
+            private static string MergeDebugText([CanBeNull] string text1, [CanBeNull] string text2)
+            {
+                return
+                    text1 == null ? text2
+                    : text2 == null ? text1
+                    : text1 == text2 ? text1
+                    : $"{text1}\r\n{INDENT}{text2}";
+            }
+
             public bool AreIdentical(ZapCode a, ZapCode b)
             {
                 return a.Instruction.Equals(b.Instruction);
@@ -1628,8 +1608,14 @@ namespace Zilf.Emit.Zap
                 return new ZapCode
                 {
                     Instruction = a.Instruction,
-                    DebugText = a.DebugText ?? b.DebugText
+                    DebugText = MergeDebugText(a.DebugText, b.DebugText),
                 };
+            }
+
+            public bool CanDuplicate(ZapCode c)
+            {
+                // don't duplicate instructions with debug info attached
+                return c.DebugText == null;
             }
 
             public SameTestResult AreSameTest(ZapCode a, ZapCode b)

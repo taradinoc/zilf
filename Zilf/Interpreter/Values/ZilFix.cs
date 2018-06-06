@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,7 +17,7 @@
  */
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -40,7 +40,6 @@ namespace Zilf.Interpreter.Values
         public ZilFix([NotNull] ZilFix other)
             : this(other.value)
         {
-            Contract.Requires(other != null);
         }
 
         public int Value => value;
@@ -63,16 +62,13 @@ namespace Zilf.Interpreter.Values
 
         #region IApplicable Members
 
+        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
             if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-            {
                 return ApplyNoEval(ctx, args);
-            }
-            else
-            {
-                return zr;
-            }
+
+            return zr;
         }
 
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)

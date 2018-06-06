@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,8 +18,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using Zapf;
-using Zapf.Parsing;
 using Zapf.Parsing.Instructions;
 
 namespace Dezapf

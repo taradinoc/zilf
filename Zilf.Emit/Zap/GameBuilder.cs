@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Jesse McGrew
+﻿/* Copyright 2010-2018 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -22,7 +22,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
-using System.Diagnostics.Contracts;
 using Zilf.Common.StringEncoding;
 
 namespace Zilf.Emit.Zap
@@ -70,7 +69,6 @@ namespace Zilf.Emit.Zap
         public GameBuilder(int zversion, [NotNull] IZapStreamFactory streamFactory, bool wantDebugInfo,
             [CanBeNull] GameOptions options = null)
         {
-            Contract.Requires(streamFactory != null);
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
             this.zversion = zversion;
@@ -120,12 +118,8 @@ namespace Zilf.Emit.Zap
             }
         }
 
-#pragma warning disable ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         static void GetOptionsTypeForZVersion(int zversion, [NotNull] out Type requiredOptionsType, [NotNull] out Type concreteOptionsType)
-#pragma warning restore ContracsReSharperInterop_ContractForNotNull // Element with [NotNull] attribute does not have a corresponding not-null contract.
         {
-            Contract.Ensures(Contract.ValueAtReturn(out requiredOptionsType) != null);
-            Contract.Ensures(Contract.ValueAtReturn(out concreteOptionsType) != null);
             switch (zversion)
             {
                 case 3:
@@ -244,8 +238,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         static string ExpandChrSet([CanBeNull] string alphabet)
         {
-            Contract.Ensures(Contract.Result<string>() != null);
-
             var sb = new StringBuilder(100);
             if (alphabet == null)
                 alphabet = "";
@@ -408,9 +400,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         public static string SanitizeString([NotNull] string text)
         {
-            Contract.Requires(text != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
             // escape '"' as '""'
             var sb = new StringBuilder(text);
 
@@ -424,9 +413,6 @@ namespace Zilf.Emit.Zap
         [NotNull]
         public static string SanitizeSymbol([NotNull] string symbol)
         {
-            Contract.Requires(symbol != null);
-            Contract.Ensures(Contract.Result<string>() != null);
-
             switch (symbol)
             {
                 case ".":
@@ -717,7 +703,7 @@ namespace Zilf.Emit.Zap
             if (objects.Count > 0)
                 writer.WriteLine();
 
-            foreach (ObjectBuilder ob in objects)
+            foreach (var ob in objects)
                 writer.WriteLine(INDENT + ".OBJECT {0},{1},{2}{3},{4},{5},{6},{7}",
                     ob.SymbolicName,
                     ob.Flags1,
@@ -731,7 +717,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".ENDT");
 
             // property tables
-            foreach (ObjectBuilder ob in objects)
+            foreach (var ob in objects)
             {
                 writer.WriteLine();
                 writer.WriteLine("?PTBL?{0}:: .TABLE", ob.SymbolicName);
@@ -745,7 +731,7 @@ namespace Zilf.Emit.Zap
             var curIndex = globals.FindIndex(g => g.Name == name);
             if (curIndex >= 0 && curIndex != index)
             {
-                GlobalBuilder gb = globals[curIndex];
+                var gb = globals[curIndex];
                 globals.RemoveAt(curIndex);
                 globals.Insert(index, gb);
             }
@@ -774,7 +760,7 @@ namespace Zilf.Emit.Zap
         void FinishImpureTables()
         {
             // impure user tables
-            foreach (TableBuilder tb in impureTables)
+            foreach (var tb in impureTables)
             {
                 writer.WriteLine();
                 writer.WriteLine("{0}:: .TABLE {1}", tb.Name, tb.Size);
