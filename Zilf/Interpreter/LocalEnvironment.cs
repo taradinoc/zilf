@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Zilf.Interpreter.Values;
 using JetBrains.Annotations;
 
@@ -29,7 +30,10 @@ namespace Zilf.Interpreter
     /// </summary>
     class LocalEnvironment : IDisposable
     {
+        [NotNull]
         readonly Context ctx;
+
+        [NotNull]
         readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
 
         /// <summary>
@@ -158,6 +162,21 @@ namespace Zilf.Interpreter
 
             if (decl != null)
                 binding.Decl = decl;
+        }
+
+        [ItemNotNull]
+        private IEnumerable<LocalEnvironment> GetLookupPath()
+        {
+            yield return this;
+
+            for (var p = Parent; p != null; p = p.Parent)
+                yield return p;
+        }
+
+        [NotNull, ItemNotNull]
+        public IEnumerable<ZilAtom> GetVisibleAtoms()
+        {
+            return GetLookupPath().SelectMany(env => env.bindings.Keys).Distinct();
         }
     }
 }

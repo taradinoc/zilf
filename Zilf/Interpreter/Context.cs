@@ -651,6 +651,13 @@ namespace Zilf.Interpreter
         }
 
         /// <summary>
+        /// Gets all the globally bound atoms and their values.
+        /// </summary>
+        /// <returns>A sequence of key-value pairs.</returns>
+        [NotNull]
+        public IEnumerable<KeyValuePair<ZilAtom, Binding>> GetGlobalBindings() => globalValues;
+
+        /// <summary>
         /// Sets or clears the global value assigned to an atom.
         /// </summary>
         /// <param name="atom">The atom.</param>

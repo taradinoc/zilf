@@ -25,6 +25,7 @@
     </PackageReference>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.1.0" />
+    <PackageReference Include="ReadLine" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />
