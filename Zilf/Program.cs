@@ -120,6 +120,7 @@ namespace Zilf
         static void DoREPL([NotNull] Context ctx)
         {
             using (ctx.PushFileContext("<stdin>"))
+            using (new Completer(ctx).Attach())
             {
                 var sb = new StringBuilder();
 
@@ -127,12 +128,9 @@ namespace Zilf
 
                 while (true)
                 {
-                    if (!ctx.Quiet)
-                        Console.Write(sb.Length == 0 ? "> " : ">> ");
-
                     try
                     {
-                        var line = Console.ReadLine();
+                        var line = ReadLine.Read(sb.Length == 0 ? "> " : ">> ");
 
                         if (line == null)
                             break;
