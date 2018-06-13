@@ -122,6 +122,8 @@ namespace Zilf
             using (ctx.PushFileContext("<stdin>"))
             using (new Completer(ctx).Attach())
             {
+                ReadLine.HistoryEnabled = true;
+
                 var sb = new StringBuilder();
 
                 int angles = 0, rounds = 0, squares = 0, quotes = 0;
