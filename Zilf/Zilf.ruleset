@@ -91,5 +91,6 @@
     <Rule Id="RECS0158" Action="Warning" />
     <Rule Id="RECS0159" Action="Warning" />
     <Rule Id="RECS0164" Action="Warning" />
+    <Rule Id="IDE1003" Action="None" />
   </Rules>
 </RuleSet>

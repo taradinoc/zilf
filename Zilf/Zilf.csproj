@@ -24,7 +24,7 @@
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="ReadLine" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
@@ -41,7 +41,7 @@
     <None Include="Zilf.ruleset" />
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\Analyzers\ZilfErrorMessages\ZilfErrorMessages\bin\Debug\ZilfErrorMessages.dll" />
+    <Analyzer Include="..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\netstandard2.0\ZilfAnalyzers.dll" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
