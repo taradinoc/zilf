@@ -1100,7 +1100,7 @@ namespace Zilf.Interpreter
         static FieldInfo[] GetStructFieldsInOrder([NotNull] Type structType)
         {
             return structType.GetFields()
-                .OrderBy(f => Marshal.OffsetOf(structType, f.Name).ToInt64())
+                .OrderBy(f => f.MetadataToken)
                 .ToArray();
         }
 
