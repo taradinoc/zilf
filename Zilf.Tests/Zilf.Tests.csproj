@@ -30,9 +30,15 @@
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>
+
+  <!-- only use the analyzer if it's been built for this target -->
+  <PropertyGroup>
+    <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+  </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\netstandard2.0\ZilfAnalyzers.dll" />
+    <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />
   </ItemGroup>
+
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -40,9 +40,15 @@
     </None>
     <None Include="Zilf.ruleset" />
   </ItemGroup>
+
+  <!-- only use the analyzer if it's been built for this target -->
+  <PropertyGroup>
+    <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+  </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\netstandard2.0\ZilfAnalyzers.dll" />
+    <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />
   </ItemGroup>
+
   <ItemGroup>
     <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
       <Link>CustomDictionary.xml</Link>
