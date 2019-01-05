@@ -70,6 +70,10 @@
                        <=? <PTSIZE .PT> ,UEXIT>>
                   <TELL CT ,ROBOT " leaves." CR>
                   <MOVE ,ROBOT <GET/B .PT ,EXIT-RM>>)
+                 (<AND <VERB? PUSH>
+                       <PRSO? ,PLAYER>>
+                  <TELL CT ,ROBOT " pushes you into the hallway." CR>
+                  <GOTO ,HALLWAY>)
                  (ELSE
                   <TELL "The robot doesn't respond." CR>)>)>>
 
@@ -161,5 +165,11 @@
     <EXPECT "The robot picks up the red cube.|">
     <COMMAND [AGAIN]>
     <EXPECT "The robot already has the red cube.|">>
+
+<TEST-CASE ("GOTO during order")
+    <COMMAND [ROBOT \, PUSH ME]>
+    <EXPECT "The robot pushes you into the hallway.|Hallway|">
+    <CHECK <IN? ,PLAYER ,HALLWAY>>
+    <CHECK <IN? ,ROBOT ,STARTROOM>>>
 
 <TEST-GO ,STARTROOM>

@@ -2594,14 +2594,17 @@ If the old and/or new location is dark, DARKNESS-F will be given a chance to
 print the room introduction before DESCRIBE-ROOM and DESCRIBE-OBJECTS.
 
 Uses:
-  WINNER
+  RESET-WINNER
 
 Sets:
   HERE
 
 Args:
   RM: The room to move into."
-<ROUTINE GOTO (RM "AUX" WAS-LIT F)
+<ROUTINE GOTO (RM "AUX" WAS-LIT F (OWINNER <>))
+    <COND (<ORDERING?>
+           <SET OWINNER ,WINNER>
+           <RESET-WINNER>)>
     <SET WAS-LIT ,HERE-LIT>
     <SETG HERE .RM>
     <MOVE ,WINNER ,HERE>
@@ -2621,7 +2624,8 @@ Args:
            <SET F T>)>
     <COND (<AND <NOT .F> <DESCRIBE-ROOM ,HERE>>
            <DESCRIBE-OBJECTS ,HERE>)>
-    <COND (,HERE-LIT <FSET ,HERE ,TOUCHBIT>)>>
+    <COND (,HERE-LIT <FSET ,HERE ,TOUCHBIT>)>
+    <COND (.OWINNER <SETG WINNER .OWINNER>)>>
 
 "Misc Routines"
 
