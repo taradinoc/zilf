@@ -215,7 +215,7 @@ namespace Zilf.Compiler.Builtins
                     return new BuiltinArg(BuiltinArgType.Operand, null);
                 }
 
-                return new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr.Text, cc.Context));
+                return new BuiltinArg(BuiltinArgType.Operand, Compilation.TranslateString(zstr, cc.Context));
             }
 
             public override SignaturePart ToSignaturePart(ParameterInfo pi)

@@ -458,7 +458,7 @@ namespace Zilf.Compiler
                 {
                     // literal string -> PRINTI
                     case ZilString zstr:
-                        rb.EmitPrint(TranslateString(zstr.Text, Context), false);
+                        rb.EmitPrint(TranslateString(zstr, Context), false);
                         index++;
                         continue;
 

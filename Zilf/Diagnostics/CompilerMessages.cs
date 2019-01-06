@@ -165,6 +165,8 @@ namespace Zilf.Diagnostics
         public const int _0_Field_1_Is_Not_Supported_In_This_Zmachine_Version = 408;
         [Message("{0}: field '{1}' is not a word field: {1}")]
         public const int _0_Field_1_Is_Not_A_Word_Field = 409;
+        [Message("ZSCII {0} ({1}) cannot be safely printed in Z-machine version {2}", Severity = Severity.Warning)]
+        public const int ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2 = 410;
 
         // Misc - 0500
 
