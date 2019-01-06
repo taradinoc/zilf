@@ -1,0 +1,18 @@
+{
+    "terminal.integrated.env.windows": {
+        "ZILF_SLN_PATH": "${workspaceFolder}\\..",
+    },
+    "terminal.integrated.shellArgs.windows": [
+        "-NoExit",
+        "-File",
+        "tests\\test.ps1"
+    ],
+    "files.exclude": {
+        "**/*.orig": true,
+        "**/*.exe": true,
+        "**/*.dll": true,
+        "tests/*.zap": true,
+        "tests/*.dbg": true,
+        "tests/*.z[1-8]": true,
+    }
+}

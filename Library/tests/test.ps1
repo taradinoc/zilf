@@ -1,7 +1,9 @@
-$zilfPath = "..\..\Zilf\bin\Debug\zilf.exe"
-$zapfPath = "..\..\Zapf\bin\Debug\zapf.exe"
-$czlrPath = ".\ConsoleZLR.exe"
-$includeDir = ".."
+$slnDir = if (Test-Path env:ZILF_SLN_PATH) { $env:ZILF_SLN_PATH } else { "..\..\.." }
+$zilfPath = $slnDir + "\Zilf\bin\Debug\net471\zilf.exe"
+$zapfPath = $slnDir + "\Zapf\bin\Debug\net471\zapf.exe"
+$czlrPath = $slnDir + "\Library\tests\ConsoleZLR.exe"
+$includeDir = $slnDir + "\Library"
+$testsDir = $slnDir + "\Library\tests"
 
 function Invoke-Zilf {
     param ([string]$SrcFile = $(throw "SrcFile parameter is required."))
@@ -14,6 +16,8 @@ function Invoke-Zilf {
     }
 }
 
+Set-Alias izilf Invoke-Zilf
+
 function Invoke-Zapf {
     param ([string]$SrcFile = $(throw "SrcFile parameter is required."))
     $output = (& $zapfPath $SrcFile 2>&1)
@@ -25,16 +29,20 @@ function Invoke-Zapf {
     }
 }
 
+Set-Alias izapf Invoke-Zapf
+
 function Invoke-ZLR {
     param ([string]$StoryFile = $(throw "StoryFile parameter is required."))
     & $czlrPath -nowait -dumb $StoryFile
 }
 
+Set-Alias izlr Invoke-ZLR
+
 function Test-Scenario {
     param ($TestName = $(throw "TestName parameter is required."),
            [switch]$Silent = $false)
 
-    $testFile = ".\test-" + $TestName + ".zil"
+    $testFile = $testsDir + "\test-" + $TestName + ".zil"
 
     Write-Progress -Activity "Testing $TestName" -Status "Compiling $testFile" -Id 1
     if (Invoke-Zilf $testFile) {
@@ -60,13 +68,16 @@ function Test-Scenario {
 }
 
 Set-Alias test Test-Scenario
+Set-Alias ts Test-Scenario
 
-function Get-ScenarioNames {
-    Get-ChildItem test-*.zil | ForEach-Object { $_.Name -replace '^test-(.*)\.zil$', '$1' }
+function Get-Scenarios {
+    Get-ChildItem ($testsDir + "\test-*.zil") | ForEach-Object { $_.Name -replace '^.*test-(.*)\.zil$', '$1' }
 }
 
+Set-Alias gss Get-Scenarios
+
 function Test-Scenarios {
-    $testNames = Get-ScenarioNames
+    $testNames = Get-Scenarios
     $completed = 0
 
     foreach ($t in $testNames) {
@@ -81,3 +92,4 @@ function Test-Scenarios {
 }
 
 Set-Alias testall Test-Scenarios
+Set-Alias tss Test-Scenarios
