@@ -44,7 +44,7 @@ namespace Zilf.Compiler.Builtins
         [NotNull]
         static readonly ILookup<string, BuiltinSpec> builtins =
             (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
-             from a in mi?.GetCustomAttributes<BuiltinAttribute>()
+             from a in mi.GetCustomAttributes<BuiltinAttribute>()
              from name in a.Names
              select new { Name = name, Attr = a, Method = mi })
             .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
@@ -114,13 +114,16 @@ namespace Zilf.Compiler.Builtins
         {
             // is there a match with this zversion but any arg count?
             var wrongArgCount =
-                builtins[name].Where(s =>
+                builtins[name]
+                    .Where(s =>
                     {
                         Debug.Assert(s != null, nameof(s) + " != null");
                         return ZEnvironment.VersionMatches(
-                            zversion, s.Attr.MinVersion, s.Attr.MaxVersion);
+                            zversion,
+                            s.Attr.MinVersion,
+                            s.Attr.MaxVersion);
                     })
-                .ToArray();
+                    .ToArray();
             if (wrongArgCount.Length > 0)
             {
                 var counts = wrongArgCount.Select(s =>
@@ -182,8 +185,8 @@ namespace Zilf.Compiler.Builtins
                     result.Add(handler.Process(cc, InnerError, args[i], pi));
                 }
                 else if (pi.ParameterType.IsArray &&
-                    pi.ParameterType.GetElementType() is Type t &&
-                    ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
+                         pi.ParameterType.GetElementType() is Type t &&
+                         ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
                 {
                     // consume all remaining arguments
                     while (i < args.Count)
@@ -305,9 +308,9 @@ namespace Zilf.Compiler.Builtins
             // extract the arguments that need evaluation, and remember their original indexes
             var needEval =
                 validatedArgs
-                .Select((a, oidx) => new { a, oidx })
-                .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
-                .ToArray();
+                    .Select((a, oidx) => new { a, oidx })
+                    .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
+                    .ToArray();
             var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
 
             // generate code for arguments

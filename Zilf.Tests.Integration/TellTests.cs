@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -43,21 +44,21 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void Tell_Builtin_Should_Support_New_Tokens()
         {
-            AssertRoutine("", "<TELL DBL 21 CRLF WUTEVA \"hello\" GLOB WUTEVA 45 CR MAC1 MAC2>")
+            AssertRoutine("", @"<TELL DBL 21 CRLF WUTEVA ""hello"" GLOB WUTEVA 45 CR MAC1 MAC2>")
                 .WithGlobal(
-                    "<TELL-TOKENS " +
-                    "  (CR CRLF)        <CRLF>" +
-                    "  DBL *            <PRINT-DBL .X>" +
-                    "  WUTEVA *:STRING  <PRINTI .X>" +
-                    "  WUTEVA *:FIX     <PRINTN .X>" +
-                    "  GLOB             <PRINTN ,GLOB>" +
-                    "  MAC1             <PRINT-MAC-1>" +
-                    "  MAC2             <PRINT-MAC-2>>")
-                .WithGlobal("<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>")
-                .WithGlobal("<GLOBAL GLOB 123>")
-                .WithGlobal("<DEFMAC PRINT-MAC-1 () '<PRINT \"macro\">>")
-                .WithGlobal("<DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT \"mac\"> <PRINT \"ro\">)>")
-                .Outputs("42\nhello12345\nmacromacro");
+                    @"<TELL-TOKENS " +
+                    @"  (CR CRLF)        <CRLF>" +
+                    @"  DBL *            <PRINT-DBL .X>" +
+                    @"  WUTEVA *:STRING  <PRINTI .X>" +
+                    @"  WUTEVA *:FIX     <PRINTN .X>" +
+                    @"  GLOB             <PRINTN ,GLOB>" +
+                    @"  MAC1             <PRINT-MAC-1>" +
+                    @"  MAC2             <PRINT-MAC-2>>")
+                .WithGlobal(@"<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>")
+                .WithGlobal(@"<GLOBAL GLOB 123>")
+                .WithGlobal(@"<DEFMAC PRINT-MAC-1 () '<PRINT ""macro"">>")
+                .WithGlobal(@"<DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT ""mac""> <PRINT ""ro"">)>")
+                .Outputs("42\n" + "hello12345\n" + @"macromacro");
         }
 
         [TestMethod]
@@ -144,9 +145,9 @@ namespace Zilf.Tests.Integration
              *   z=6   i=23  l=20
              * 1 00110 10111 10100
              */
-            AssertRoutine("", "<PRINTB ,MYTEXT>")
-                .WithGlobal("<CHRSET 0 \"zyxwvutsrqponmlkjihgfedcba\">")
-                .WithGlobal("<CONSTANT MYTEXT <TABLE #2 1001101011110100>>")
+            AssertRoutine("", @"<PRINTB ,MYTEXT>")
+                .WithGlobal(@"<CHRSET 0 ""zyxwvutsrqponmlkjihgfedcba"">")
+                .WithGlobal(@"<CONSTANT MYTEXT <TABLE #2 1001101011110100>>")
                 .InV5()
                 .Outputs("zil");
         }
@@ -155,11 +156,11 @@ namespace Zilf.Tests.Integration
         public void CHRSET_Should_Affect_Text_Encoding()
         {
             AssertRoutine("",
-                "<PRINT ,MYTEXT> <CRLF> " +
-                "<PRINTN <- <GET <* 4 ,MYTEXT> 0> ,ENCODED-TEXT>>")
-                .WithGlobal("<CHRSET 0 \"zyxwvutsrqponmlkjihgfedcba\">")
-                .WithGlobal("<CONSTANT MYTEXT \"zil\">")
-                .WithGlobal("<CONSTANT ENCODED-TEXT #2 1001101011110100>")
+                    @"<PRINT ,MYTEXT> <CRLF> " +
+                    @"<PRINTN <- <GET <* 4 ,MYTEXT> 0> ,ENCODED-TEXT>>")
+                .WithGlobal(@"<CHRSET 0 ""zyxwvutsrqponmlkjihgfedcba"">")
+                .WithGlobal(@"<CONSTANT MYTEXT ""zil"">")
+                .WithGlobal(@"<CONSTANT ENCODED-TEXT #2 1001101011110100>")
                 .InV5()
                 .Outputs("zil\n0");
         }
@@ -168,20 +169,20 @@ namespace Zilf.Tests.Integration
         public void LANGUAGE_Should_Affect_Text_Encoding()
         {
             AssertRoutine("",
-                "<TELL \"%>M%obeltr%agerf%u%se%<\">")
-                .WithGlobal("<LANGUAGE GERMAN>")
+                    @"<TELL ""%>M%obeltr%agerf%u%se%<"">")
+                .WithGlobal(@"<LANGUAGE GERMAN>")
                 .InV5()
-                .Outputs("»Möbelträgerfüße«");
+                .Outputs(@"»Möbelträgerfüße«");
         }
 
         [TestMethod]
         public void LANGUAGE_Should_Affect_Vocabulary_Encoding()
         {
             AssertRoutine("", @"<PRINTB ,W?\%A\%S>")
-                .WithGlobal("<LANGUAGE GERMAN>")
+                .WithGlobal(@"<LANGUAGE GERMAN>")
                 .WithGlobal(@"<OBJECT FOO (SYNONYM \%A\%S)>")
                 .InV5()
-                .Outputs("äß");
+                .Outputs(@"äß");
         }
     }
 }

@@ -45,15 +45,14 @@ namespace Zilf.Tests.Integration
         public void RETURN_With_Activation_Can_Return_From_Outer_Block()
         {
             AssertRoutine("\"AUX\" X",
-                "<SET X <PROG OUTER () <PROG () <RETURN 123 .OUTER> 456> 789>> <PRINTN .X>")
+                    "<SET X <PROG OUTER () <PROG () <RETURN 123 .OUTER> 456> 789>> <PRINTN .X>")
                 .Outputs("123");
         }
 
         [TestMethod]
         public void RETURN_Inside_BIND_Should_Return_From_Outer_Block()
         {
-            AssertRoutine("",
-                "<PROG () <+ 3 <PROG () <BIND () <RETURN 120>> 456>>>")
+            AssertRoutine("", "<PROG () <+ 3 <PROG () <BIND () <RETURN 120>> 456>>>")
                 .GivesNumber("123");
         }
 
@@ -61,20 +60,17 @@ namespace Zilf.Tests.Integration
         public void RETURN_With_Activation_In_Void_Context_Should_Not_Warn()
         {
             // activation + simple value => no warning
-            AssertRoutine("",
-                "<PROG FOO () <RETURN <> .FOO> <QUIT>> 123")
+            AssertRoutine("", "<PROG FOO () <RETURN <> .FOO> <QUIT>> 123")
                 .WithoutWarnings()
                 .GivesNumber("123");
 
             // no activation + simple value => warning
-            AssertRoutine("",
-                "<PROG () <RETURN <>> <QUIT>> 123")
+            AssertRoutine("", "<PROG () <RETURN <>> <QUIT>> 123")
                 .WithWarnings()
                 .GivesNumber("123");
 
             // activation + other value => warning
-            AssertRoutine("",
-                "<PROG FOO () <RETURN 9 .FOO> <QUIT>> 123")
+            AssertRoutine("", "<PROG FOO () <RETURN 9 .FOO> <QUIT>> 123")
                 .WithWarnings()
                 .GivesNumber("123");
         }
@@ -82,14 +78,12 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void RETURN_With_DO_FUNNY_RETURN_True_Or_High_Version_Should_Exit_Routine()
         {
-            AssertRoutine("\"AUX\" X",
-                "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <RETURN 123>>> <* .X 2>")
                 .WithGlobal("<SETG DO-FUNNY-RETURN? T>")
                 .InV3()
                 .GivesNumber("123");
 
-            AssertRoutine("\"AUX\" X",
-                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <RETURN 123>>> <* .X 2>")
                 .InV5()
                 .GivesNumber("123");
         }
@@ -97,14 +91,12 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void RETURN_With_DO_FUNNY_RETURN_False_Or_Low_Version_Should_Exit_Block()
         {
-            AssertRoutine("\"AUX\" X",
-                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <RETURN 123>>> <* .X 2>")
                 .WithGlobal("<SETG DO-FUNNY-RETURN? <>>")
                 .InV5()
                 .GivesNumber("246");
 
-            AssertRoutine("\"AUX\" X",
-                    "<SET X <PROG () <RETURN 123>>> <* .X 2>")
+            AssertRoutine("\"AUX\" X", "<SET X <PROG () <RETURN 123>>> <* .X 2>")
                 .InV3()
                 .GivesNumber("246");
         }
@@ -218,11 +210,10 @@ namespace Zilf.Tests.Integration
         public void TestDO_EndClause()
         {
             AssertRoutine("",
-                "<DO (I 1 4) " +
-                "  (<TELL \"rock!\">) " +
-                "  <TELL N .I> " +
-                "  <COND (<G=? .I 3> <TELL \" o'clock\">)> " +
-                "  <TELL \", \">>")
+                    @"<DO (I 1 4) (<TELL ""rock!"">)
+                               <TELL N .I>
+                               <COND (<G=? .I 3> <TELL "" o'clock"">)>
+                               <TELL "", "">>")
                 .Outputs("1, 2, 3 o'clock, 4 o'clock, rock!");
         }
 
@@ -230,9 +221,9 @@ namespace Zilf.Tests.Integration
         public void TestDO_EndClause_Misplaced()
         {
             AssertRoutine("",
-                "<DO (CNT 0 25 5)" +
-                "  <TELL N .CNT CR>" +
-                "  (END <TELL \"This message is never printed\">)>")
+                    @"<DO (CNT 0 25 5)
+                               <TELL N .CNT CR>
+                               (END <TELL ""This message is never printed"">)>")
                 .DoesNotCompile();
         }
 
@@ -256,12 +247,12 @@ namespace Zilf.Tests.Integration
         public void TestMAP_CONTENTS_WithNext()
         {
             AssertRoutine("", "<MAP-CONTENTS (F N ,TABLE) <REMOVE .F> <PRINTD .F> <PRINTI \", \"> <PRINTD? .N> <CRLF>>")
-               .WithGlobal("<ROUTINE PRINTD? (OBJ) <COND (.OBJ <PRINTD .OBJ>) (ELSE <PRINTI \"nothing\">)>>")
-               .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
-               .WithGlobal("<OBJECT APPLE (IN TABLE) (DESC \"apple\")>")
-               .WithGlobal("<OBJECT CHERRY (IN TABLE) (DESC \"cherry\")>")
-               .WithGlobal("<OBJECT BANANA (IN TABLE) (DESC \"banana\")>")
-               .Outputs("apple, banana\nbanana, cherry\ncherry, nothing\n");
+                .WithGlobal("<ROUTINE PRINTD? (OBJ) <COND (.OBJ <PRINTD .OBJ>) (ELSE <PRINTI \"nothing\">)>>")
+                .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
+                .WithGlobal("<OBJECT APPLE (IN TABLE) (DESC \"apple\")>")
+                .WithGlobal("<OBJECT CHERRY (IN TABLE) (DESC \"cherry\")>")
+                .WithGlobal("<OBJECT BANANA (IN TABLE) (DESC \"banana\")>")
+                .Outputs("apple, banana\nbanana, cherry\ncherry, nothing\n");
         }
 
         [TestMethod]
@@ -309,7 +300,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void TestMAP_DIRECTIONS()
         {
-            AssertRoutine("", "<MAP-DIRECTIONS (D P ,CENTER) <TELL N .D \" \" D <GETB .P ,REXIT> CR>>")
+            AssertRoutine("", @"<MAP-DIRECTIONS (D P ,CENTER) <TELL N .D "" "" D <GETB .P ,REXIT> CR>>")
                 .WithGlobal("<DIRECTIONS NORTH SOUTH EAST WEST>")
                 .WithGlobal("<OBJECT CENTER (NORTH TO N-ROOM) (WEST TO W-ROOM)>")
                 .WithGlobal("<OBJECT N-ROOM (DESC \"north room\")>")
@@ -321,7 +312,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void TestMAP_DIRECTIONS_WithEnd()
         {
-            AssertRoutine("", "<MAP-DIRECTIONS (D P ,CENTER) (END <TELL \"done\" CR>) <TELL N .D \" \" D <GETB .P ,REXIT> CR>>")
+            AssertRoutine("", @"<MAP-DIRECTIONS (D P ,CENTER) (END <TELL ""done"" CR>) <TELL N .D "" "" D <GETB .P ,REXIT> CR>>")
                 .WithGlobal("<DIRECTIONS NORTH SOUTH EAST WEST>")
                 .WithGlobal("<OBJECT CENTER (NORTH TO N-ROOM) (WEST TO W-ROOM)>")
                 .WithGlobal("<OBJECT N-ROOM (DESC \"north room\")>")
@@ -337,8 +328,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void COND_With_Parts_After_T_Should_Warn()
         {
-            AssertRoutine("",
-                "<COND (<=? 0 1> <TELL \"nope\">) (T <TELL \"ok\">) (<=? 0 0> <TELL \"too late\">)>")
+            AssertRoutine("", "<COND (<=? 0 1> <TELL \"nope\">) (T <TELL \"ok\">) (<=? 0 0> <TELL \"too late\">)>")
                 .WithWarnings()
                 .Compiles();
         }
@@ -347,7 +337,7 @@ namespace Zilf.Tests.Integration
         public void COND_With_False_Condition_From_Macro_Or_Constant_Should_Not_Warn()
         {
             AssertRoutine("",
-                "<COND (<DO-IT?> <TELL \"do it\">) (,DO-OTHER? <TELL \"do other\">)>")
+                    "<COND (<DO-IT?> <TELL \"do it\">) (,DO-OTHER? <TELL \"do other\">)>")
                 .WithGlobal("<DEFMAC DO-IT? () <>>")
                 .WithGlobal("<CONSTANT DO-OTHER? <>>")
                 .WithoutWarnings()
@@ -355,7 +345,7 @@ namespace Zilf.Tests.Integration
 
             // ... but should still warn if the condition was a literal
             AssertRoutine("",
-                "<COND (<> <TELL \"done\">)>")
+                    "<COND (<> <TELL \"done\">)>")
                 .WithWarnings()
                 .Compiles();
         }
@@ -364,7 +354,7 @@ namespace Zilf.Tests.Integration
         public void AND_In_Void_Context_With_Macro_At_End_Should_Work()
         {
             AssertRoutine("",
-                "<AND <FOO> <BAR>> <RETURN>")
+                    "<AND <FOO> <BAR>> <RETURN>")
                 .WithGlobal("<ROUTINE FOO () T>")
                 .WithGlobal("<DEFMAC BAR () '<PRINTN 42>>")
                 .Outputs("42");
@@ -374,7 +364,7 @@ namespace Zilf.Tests.Integration
         public void COND_Should_Allow_Macro_Clauses()
         {
             AssertRoutine("",
-                "<COND <LIVE-CONDITION> <DEAD-CONDITION> <IF-IN-ZILCH (<=? 2 2> <TELL \"2\">)> <IFN-IN-ZILCH (<=? 3 3> <TELL \"3\">)> (T <TELL \"end\">)>")
+                    "<COND <LIVE-CONDITION> <DEAD-CONDITION> <IF-IN-ZILCH (<=? 2 2> <TELL \"2\">)> <IFN-IN-ZILCH (<=? 3 3> <TELL \"3\">)> (T <TELL \"end\">)>")
                 .WithGlobal("<DEFMAC LIVE-CONDITION () '(<=? 0 1> <TELL \"nope\">)>")
                 .WithGlobal("<DEFMAC DEAD-CONDITION () '<>>")
                 .WithoutWarnings()
@@ -385,7 +375,7 @@ namespace Zilf.Tests.Integration
         public void Constants_In_COND_Clause_Should_Only_Be_Stored_If_At_End()
         {
             AssertRoutine("\"AUX\" (A 0)",
-                "<SET A <COND (T 123 <PRINTN .A> 456)>>")
+                    "<SET A <COND (T 123 <PRINTN .A> 456)>>")
                 .Outputs("0");
         }
 
@@ -396,8 +386,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void BIND_Deferred_Return_Pattern_In_Void_Context_Should_Not_Use_A_Variable()
         {
-            AssertRoutine("",
-                "<BIND (RESULT) <SET RESULT <FOO>> <PRINTN 1> .RESULT> <CRLF>")
+            AssertRoutine("", "<BIND (RESULT) <SET RESULT <FOO>> <PRINTN 1> .RESULT> <CRLF>")
                 .WithGlobal("<ROUTINE FOO () 123>")
                 .GeneratesCodeNotMatching(@"RESULT");
         }
@@ -430,7 +419,7 @@ namespace Zilf.Tests.Integration
         public void VERSION_P_With_Parts_After_T_Should_Warn()
         {
             AssertRoutine("",
-                "<VERSION? (ZIP <TELL \"classic\">) (T <TELL \"extended\">) (XZIP <TELL \"too late\">)>")
+                    @"<VERSION? (ZIP <TELL ""classic"">) (T <TELL ""extended"">) (XZIP <TELL ""too late"">)>")
                 .InV5()
                 .WithWarnings()
                 .Compiles();
@@ -443,18 +432,15 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void Routine_With_Too_Many_Required_Arguments_For_Platform_Should_Not_Compile()
         {
-            AssertGlobals(
-                "<ROUTINE FOO (A B C D) <>>")
+            AssertGlobals("<ROUTINE FOO (A B C D) <>>")
                 .InV3()
                 .DoesNotCompile();
 
-            AssertGlobals(
-                "<ROUTINE FOO (A B C D) <>>")
+            AssertGlobals("<ROUTINE FOO (A B C D) <>>")
                 .InV5()
                 .Compiles();
 
-            AssertGlobals(
-                "<ROUTINE FOO (A B C D E F G H) <>>")
+            AssertGlobals("<ROUTINE FOO (A B C D E F G H) <>>")
                 .InV5()
                 .DoesNotCompile();
         }
@@ -549,8 +535,8 @@ namespace Zilf.Tests.Integration
         public void GO_Routine_With_SETG_Indirect_Involving_Stack_Should_Not_Throw()
         {
             AssertEntryPoint("", @"<SETG <+ ,VARNUM 1> <* ,VARVAL 2>>")
-                .WithGlobal("<GLOBAL VARNUM 16>")
-                .WithGlobal("<GLOBAL VARVAL 100>")
+                .WithGlobal(@"<GLOBAL VARNUM 16>")
+                .WithGlobal(@"<GLOBAL VARVAL 100>")
                 .DoesNotThrow();
         }
         
