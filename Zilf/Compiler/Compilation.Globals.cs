@@ -281,7 +281,7 @@ namespace Zilf.Compiler
                     return CompileConstant(word.Value);
 
                 case ZilString str:
-                    return Game.MakeOperand(TranslateString(str.Text, Context));
+                    return Game.MakeOperand(TranslateString(str, Context));
 
                 case ZilChar ch:
                     return Game.MakeOperand((byte)ch.Char);

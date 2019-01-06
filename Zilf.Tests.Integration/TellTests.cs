@@ -136,6 +136,38 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void Unprintable_Characters_In_Strings_Should_Warn()
+        {
+            const string SCodeWithTab = "<TELL \"foo\tbar\" CR>";
+            const string SCodeWithBackspace = "<TELL \"foo\x0008bar\" CR>";
+            const string SCodeWithCtrlZ = "<TELL \"foo\x001abar\" CR>";
+
+            // tab is legal in V6...
+            AssertRoutine("", SCodeWithTab)
+                .InV6()
+                .WithoutWarnings()
+                .Compiles();
+
+            // ...but not in V5
+            AssertRoutine("", SCodeWithTab)
+                .InV5()
+                .WithWarnings("ZIL0410")
+                .Compiles();
+
+            // backspace is never legal
+            AssertRoutine("", SCodeWithBackspace)
+                .WithWarnings("ZIL0410")
+                .Compiles();
+
+            // nor is ^Z
+            AssertRoutine("", SCodeWithCtrlZ)
+                .WithWarnings("ZIL0410")
+                .Compiles();
+        }
+
+
+        [TestMethod]
+        [SuppressMessage("ReSharper", "CommentTypo")]
         public void CHRSET_Should_Affect_Text_Decoding()
         {
             /*     1         2         3 

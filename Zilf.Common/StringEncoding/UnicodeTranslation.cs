@@ -16,7 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Zilf.Common.StringEncoding
 {
@@ -24,78 +30,46 @@ namespace Zilf.Common.StringEncoding
     {
         public static byte ToZscii(char c) => Table.TryGetValue(c, out byte b) ? b : (byte)c;
 
-        public static readonly IReadOnlyDictionary<char, byte> Table =
-            new Dictionary<char, byte>(69)
+        public static readonly IReadOnlyDictionary<char, byte> Table = MakeDefaultUnicodeTable();
+
+        private static IReadOnlyDictionary<char, byte> MakeDefaultUnicodeTable()
+        {
+            //                           1    1         1         1         1         2         2         2
+            //                           5    6         7         8         9         0         1         2
+            //                           567890123456789012345678901234567890123456789012345678901234567890123
+            const string SExtraChars = @"äöüÄÖÜß»«ëïÿËÏáéíóúýÁÉÍÓÚÝàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛåÅøØãñõÃÑÕæÆçÇþðÞÐ£œŒ¡¿";
+
+            var result = new Dictionary<char, byte>(SExtraChars.Length);
+            byte value = 155;
+
+            foreach (var c in SExtraChars)
+                result.Add(c, value++);
+
+            Debug.Assert(value - 1 == 223);
+
+            return result;
+        }
+
+        public static bool IsPrintable(byte zscii, int zversion)
+        {
+            switch (zscii)
             {
-                { 'ä', 155 },
-                { 'ö', 156 },
-                { 'ü', 157 },
-                { 'Ä', 158 },
-                { 'Ö', 159 },
-                { 'Ü', 160 },
-                { 'ß', 161 },
-                { '»', 162 },
-                { '«', 163 },
-                { 'ë', 164 },
-                { 'ï', 165 },
-                { 'ÿ', 166 },
-                { 'Ë', 167 },
-                { 'Ï', 168 },
-                { 'á', 169 },
-                { 'é', 170 },
-                { 'í', 171 },
-                { 'ó', 172 },
-                { 'ú', 173 },
-                { 'ý', 174 },
-                { 'Á', 175 },
-                { 'É', 176 },
-                { 'Í', 177 },
-                { 'Ó', 178 },
-                { 'Ú', 179 },
-                { 'Ý', 180 },
-                { 'à', 181 },
-                { 'è', 182 },
-                { 'ì', 183 },
-                { 'ò', 184 },
-                { 'ù', 185 },
-                { 'À', 186 },
-                { 'È', 187 },
-                { 'Ì', 188 },
-                { 'Ò', 189 },
-                { 'Ù', 190 },
-                { 'â', 191 },
-                { 'ê', 192 },
-                { 'î', 193 },
-                { 'ô', 194 },
-                { 'û', 195 },
-                { 'Â', 196 },
-                { 'Ê', 197 },
-                { 'Î', 198 },
-                { 'Ô', 199 },
-                { 'Û', 200 },
-                { 'å', 201 },
-                { 'Å', 202 },
-                { 'ø', 203 },
-                { 'Ø', 204 },
-                { 'ã', 205 },
-                { 'ñ', 206 },
-                { 'õ', 207 },
-                { 'Ã', 208 },
-                { 'Ñ', 209 },
-                { 'Õ', 210 },
-                { 'æ', 211 },
-                { 'Æ', 212 },
-                { 'ç', 213 },
-                { 'Ç', 214 },
-                { 'þ', 215 },
-                { 'ð', 216 },
-                { 'Þ', 217 },
-                { 'Ð', 218 },
-                { '£', 219 },
-                { 'œ', 220 },
-                { 'Œ', 221 },
-                { '¡', 222 },
-                { '¿', 223 }
-            };
+                case 9:
+                case 11:
+                    // only printable in V6
+                    return zversion == 6;
+
+                case 0:
+                case 13:
+                case var _ when zscii >= 32 && zscii <= 126:
+                case var _ when zscii >= 155 && zscii <= 251:
+                    // printable in all versions
+                    return true;
+
+                default:
+                    // unprintable
+                    return false;
+            }
+        }
     }
 }

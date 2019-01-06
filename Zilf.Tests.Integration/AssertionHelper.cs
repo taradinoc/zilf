@@ -36,6 +36,8 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
         protected bool? expectWarnings;
+        [CanBeNull]
+        protected string[] warningCodes;
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 
@@ -106,6 +108,15 @@ namespace Zilf.Tests.Integration
         public TThis WithWarnings()
         {
             expectWarnings = true;
+            warningCodes = null;
+            return (TThis)this;
+        }
+
+        [NotNull]
+        public TThis WithWarnings(params string[] expectedWarningCodes)
+        {
+            expectWarnings = true;
+            warningCodes = expectedWarningCodes;
             return (TThis)this;
         }
 
@@ -113,6 +124,7 @@ namespace Zilf.Tests.Integration
         public TThis WithoutWarnings()
         {
             expectWarnings = false;
+            warningCodes = null;
             return (TThis)this;
         }
 
@@ -141,12 +153,25 @@ namespace Zilf.Tests.Integration
             return sb.ToString();
         }
 
-        protected void CheckWarningCount(int warningCount)
+        protected void CheckWarnings(ZlrHelperRunResult res)
         {
+            var warningCount = res.WarningCount;
+
             switch (expectWarnings)
             {
                 case true:
                     Assert.AreNotEqual(0, warningCount, "Expected at least one warning.");
+
+                    if (warningCodes != null)
+                    {
+                        foreach (var code in warningCodes)
+                        {
+                            if (res.Diagnostics.All(d => d.Code != code && d.SubDiagnostics.All(s => s.Code != code)))
+                            {
+                                Assert.Fail("Expected diagnostic with code '{0}'.", code);
+                            }
+                        }
+                    }
                     break;
 
                 case false:
@@ -177,7 +202,7 @@ namespace Zilf.Tests.Integration
             var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
-            CheckWarningCount(result.WarningCount);
+            CheckWarnings(result);
         }
 
         public void DoesNotThrow()
@@ -204,7 +229,7 @@ namespace Zilf.Tests.Integration
                 return;
             }
 
-            CheckWarningCount(result.WarningCount);
+            CheckWarnings(result);
         }
     }
 
@@ -261,7 +286,7 @@ namespace Zilf.Tests.Integration
             var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
-            CheckWarningCount(result.WarningCount);
+            CheckWarnings(result);
 
             if (resultFilter != null)
             {
@@ -292,7 +317,7 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
-            CheckWarningCount(result.WarningCount);
+            CheckWarnings(result);
         }
 
         [NotNull]
@@ -339,7 +364,11 @@ namespace Zilf.Tests.Integration
             var output = helper.GetZapCode();
             checkGeneratedCode(output);
 
-            CheckWarningCount(helper.WarningCount);
+            CheckWarnings(new ZlrHelperRunResult
+            {
+                WarningCount = helper.WarningCount,
+                Diagnostics = helper.Diagnostics,
+            });
 
             return new CodeMatchingResult(output);
         }

@@ -22,6 +22,8 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using JetBrains.Annotations;
+using Zilf.Common.StringEncoding;
+using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -44,11 +46,12 @@ namespace Zilf.Compiler
         }
 
         [NotNull]
-        public static string TranslateString(string str, [NotNull] Context ctx)
+        public static string TranslateString([NotNull] ZilString zstr, [NotNull] Context ctx)
         {
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
-                str,
+                zstr,
+                ctx,
                 crlfChar?.Char ?? '|',
                 GetSpacesMode(ctx));
         }
@@ -68,17 +71,52 @@ namespace Zilf.Compiler
         const char SentenceSpaceChar = '\u000b';
 
         [NotNull]
-        static string TranslateString(string str, char crlfChar, StringSpacesMode spacesMode)
+        static string TranslateString([NotNull] ZilString zstr, [NotNull] Context ctx, char crlfChar, StringSpacesMode spacesMode)
         {
             // strip CR/LF and ensure 1 space afterward, translate crlfChar to LF,
             // and collapse two spaces after '.' or crlfChar into one
-            var sb = new StringBuilder(str);
+            var sb = new StringBuilder(zstr.Text);
             char? last = null;
             bool sawDotSpace = false;
+
+            var zversion = ctx.ZEnvironment.ZVersion;
+
+            string DescribeChar(byte zscii)
+            {
+                switch (zscii)
+                {
+                    case 8:
+                        return "backspace";
+                    case 9:
+                        return "tab";
+                    case 11:
+                        return "sentence space";
+                    case 27:
+                        return "escape";
+                    case var _ when zscii < 32:
+                        return "^" + (char)(zscii + 64);
+                    case var _ when zscii < 127:
+                        return "'" + (char)zscii + "'";
+                    default:
+                        return null;
+                }
+            }
 
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
+                byte b = UnicodeTranslation.ToZscii(c);
+
+                if (!UnicodeTranslation.IsPrintable(b, zversion))
+                {
+                    var warning = new CompilerError(zstr,
+                        CompilerMessages.ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2,
+                        b,
+                        DescribeChar(b),
+                        zversion);
+
+                    ctx.HandleError(warning);
+                }
 
                 switch (spacesMode)
                 {
