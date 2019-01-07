@@ -48,7 +48,7 @@ namespace Zilf.Common.StringEncoding
             public int Compare(AbbrevEntry x, AbbrevEntry y)
             {
                 int d = y.Pattern.Text.Length - x.Pattern.Text.Length;
-                return d != 0 ? d : string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
+                return d != 0 ? d : String.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
             }
         }
 
@@ -221,6 +221,32 @@ namespace Zilf.Common.StringEncoding
                 cs.RemoveRange(0, 2);
 
             charset[charsetNum] = cs.ToArray();
+        }
+
+        public static bool IsPrintable(byte zscii, int zversion)
+        {
+            switch (zscii)
+            {
+                case 9:
+                case 11:
+                    // only printable in V6
+                    return zversion == 6;
+
+                case 10:
+                    // technically unprintable, but in encoded strings we translate it to a printable newline
+                    return true;
+
+                case 0:
+                case 13:
+                case var _ when zscii >= 32 && zscii <= 126:
+                case var _ when zscii >= 155 && zscii <= 251:
+                    // printable in all versions
+                    return true;
+
+                default:
+                    // unprintable
+                    return false;
+            }
         }
     }
 }

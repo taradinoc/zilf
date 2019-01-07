@@ -49,27 +49,5 @@ namespace Zilf.Common.StringEncoding
 
             return result;
         }
-
-        public static bool IsPrintable(byte zscii, int zversion)
-        {
-            switch (zscii)
-            {
-                case 9:
-                case 11:
-                    // only printable in V6
-                    return zversion == 6;
-
-                case 0:
-                case 13:
-                case var _ when zscii >= 32 && zscii <= 126:
-                case var _ when zscii >= 155 && zscii <= 251:
-                    // printable in all versions
-                    return true;
-
-                default:
-                    // unprintable
-                    return false;
-            }
-        }
     }
 }

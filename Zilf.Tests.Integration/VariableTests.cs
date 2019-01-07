@@ -154,10 +154,11 @@ namespace Zilf.Tests.Integration
             for (int i = 1; i <= NumGlobals; i++)
                 myGlobals.Add(string.Format("<GLOBAL MY-GLOBAL-{0} {0}>", i));
 
-            myGlobals.Add("<ROUTINE PRINTGN (GN) <PRINTN .GN>>");
+            myGlobals.Add(@"<ROUTINE PRINTGN (GN) <PRINTN .GN>>");
 
-            AssertRoutine("", "<PRINTGN MY-GLOBAL-400>")
+            AssertRoutine("", @"<PRINTGN MY-GLOBAL-400>")
                 .WithGlobal(string.Join("\n", myGlobals))
+                .WithWarnings("ZIL0200" /* bare atom as global index */)
                 .GeneratesCodeMatching(@"\.GVAR MY-GLOBAL-400=");
         }
 

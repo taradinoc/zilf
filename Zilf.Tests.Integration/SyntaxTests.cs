@@ -28,14 +28,13 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void First_Preaction_Definition_Per_Action_Name_Should_Persist()
         {
-            AssertRoutine("", "<TELL " +
-                    "N <=? <GET ,ACTIONS ,V?FOO> ,V-FOO> CR " +
-                    "N <=? <GET ,ACTIONS ,V?FOO-WITH> ,V-FOO> CR " +
-                    "N <=? <GET ,ACTIONS ,V?BAR> ,V-BAR> CR " +
-                    "N <=? <GET ,PREACTIONS ,V?FOO> ,PRE-FOO> CR " +
-                    "N <=? <GET ,PREACTIONS ,V?FOO-WITH> <>> CR " +
-                    "N <=? <GET ,PREACTIONS ,V?BAR> <>> CR " +
-                    ">")
+            AssertRoutine("",
+                    @"<TELL N <=? <GET ,ACTIONS ,V?FOO> ,V-FOO> CR" +
+                    @" N <=? <GET ,ACTIONS ,V?FOO-WITH> ,V-FOO> CR" +
+                    @" N <=? <GET ,ACTIONS ,V?BAR> ,V-BAR> CR" +
+                    @" N <=? <GET ,PREACTIONS ,V?FOO> ,PRE-FOO> CR" +
+                    @" N <=? <GET ,PREACTIONS ,V?FOO-WITH> <>> CR" +
+                    @" N <=? <GET ,PREACTIONS ,V?BAR> <>> CR>")
                 .WithGlobal("<ROUTINE V-FOO () <>>")
                 .WithGlobal("<ROUTINE V-BAR () <>>")
                 .WithGlobal("<ROUTINE PRE-FOO () <>>")
@@ -47,6 +46,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<SYNTAX FOO OBJECT WITH OBJECT = V-FOO <> FOO-WITH>")
                 .WithGlobal("<SYNTAX BAR = V-BAR>")
                 .WithGlobal("<SYNTAX BAR OBJECT = V-BAR PRE-BAR>")
+                .WithWarnings("ZIL0208")
                 .Outputs("1\n1\n1\n1\n1\n1\n");
         }
 
@@ -64,18 +64,18 @@ namespace Zilf.Tests.Integration
         public void NEW_SFLAGS_Defines_New_Scope_Flags()
         {
             AssertGlobals(
-                @"<ROUTINE GET-OPTS1 (ACT ""AUX"" (ST <GET ,VERBS <- 255 .ACT>>)) <GETB .ST 6>>",
-                "<CONSTANT SEARCH-DO-TAKE 1>",
-                "<CONSTANT SEARCH-MUST-HAVE 2>",
-                "<CONSTANT SEARCH-MANY 4>",
-                "<CONSTANT SEARCH-STANDARD 8>",
-                "<CONSTANT SEARCH-OPTIONAL 16>",
-                "<CONSTANT SEARCH-ALL ,SEARCH-STANDARD>",
-                @"<SETG NEW-SFLAGS [""STANDARD"" ,SEARCH-STANDARD ""OPTIONAL"" ,SEARCH-OPTIONAL]>",
-                "<ROUTINE V-DUMMY () <>>",
-                "<SYNTAX FOO OBJECT (OPTIONAL) = V-DUMMY>",
-                "<SYNTAX BAR OBJECT (HAVE) = V-DUMMY>",
-                "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>")
+                    @"<ROUTINE GET-OPTS1 (ACT ""AUX"" (ST <GET ,VERBS <- 255 .ACT>>)) <GETB .ST 6>>",
+                    "<CONSTANT SEARCH-DO-TAKE 1>",
+                    "<CONSTANT SEARCH-MUST-HAVE 2>",
+                    "<CONSTANT SEARCH-MANY 4>",
+                    "<CONSTANT SEARCH-STANDARD 8>",
+                    "<CONSTANT SEARCH-OPTIONAL 16>",
+                    "<CONSTANT SEARCH-ALL ,SEARCH-STANDARD>",
+                    @"<SETG NEW-SFLAGS [""STANDARD"" ,SEARCH-STANDARD ""OPTIONAL"" ,SEARCH-OPTIONAL]>",
+                    "<ROUTINE V-DUMMY () <>>",
+                    "<SYNTAX FOO OBJECT (OPTIONAL) = V-DUMMY>",
+                    "<SYNTAX BAR OBJECT (HAVE) = V-DUMMY>",
+                    "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>")
                 .Implies(
                     "<=? <GET-OPTS1 ,ACT?FOO> ,SEARCH-OPTIONAL>",
                     "<=? <GET-OPTS1 ,ACT?BAR> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE>>",
@@ -86,7 +86,7 @@ namespace Zilf.Tests.Integration
         public void Late_Syntax_Tables_Can_Be_Referenced_From_Macros()
         {
             AssertRoutine("", "<PRINTN <FOO>>")
-                .WithGlobal("<DEFMAC FOO () <FORM REST ,PRTBL 1>>")
+                .WithGlobal(@"<DEFMAC FOO () <FORM REST ,PRTBL 1>>")
                 .Compiles();
         }
 

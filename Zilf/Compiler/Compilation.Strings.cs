@@ -107,7 +107,7 @@ namespace Zilf.Compiler
                 char c = sb[i];
                 byte b = UnicodeTranslation.ToZscii(c);
 
-                if (!UnicodeTranslation.IsPrintable(b, zversion))
+                if (!StringEncoder.IsPrintable(b, zversion))
                 {
                     var warning = new CompilerError(zstr,
                         CompilerMessages.ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2,
