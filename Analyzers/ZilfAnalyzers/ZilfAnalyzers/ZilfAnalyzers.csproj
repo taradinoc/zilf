@@ -23,8 +23,8 @@
   </PropertyGroup>
    
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.8.2" PrivateAssets="all" />
+    <PackageReference Include="JetBrains.Annotations" Version="2018.2.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.10.0" PrivateAssets="all" />
     <!--<PackageReference Update="NETStandard.Library" PrivateAssets="all" />-->
   </ItemGroup>
 
