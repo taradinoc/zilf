@@ -35,7 +35,7 @@ namespace Zilf.Tests.Integration
         protected readonly StringBuilder miscGlobals = new StringBuilder();
         [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
-        protected bool? expectWarnings;
+        protected bool? expectWarnings = false;
         [CanBeNull]
         protected string[] warningCodes;
         protected bool wantCompileOutput;
@@ -124,6 +124,14 @@ namespace Zilf.Tests.Integration
         public TThis WithoutWarnings()
         {
             expectWarnings = false;
+            warningCodes = null;
+            return (TThis)this;
+        }
+
+        [NotNull]
+        public TThis IgnoringWarnings()
+        {
+            expectWarnings = null;
             warningCodes = null;
             return (TThis)this;
         }
