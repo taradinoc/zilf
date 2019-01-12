@@ -454,7 +454,7 @@ namespace Zilf.Compiler.Builtins
                 if (arg1 == c.rb.Stack)
                 {
                     tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                    var tempLocal = c.cc.PushInnerLocal(c.rb, tempAtom);
+                    var tempLocal = c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary);
                     c.rb.EmitStore(tempLocal, arg1);
                     arg1 = tempLocal;
                 }
@@ -940,6 +940,7 @@ namespace Zilf.Compiler.Builtins
         public static void BinaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable left, [NotNull] IOperand right)
         {
+            c.cc.MarkVariableAsReadAndWritten(left);
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
@@ -1147,6 +1148,7 @@ namespace Zilf.Compiler.Builtins
         public static void UnaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable][NotNull] IVariable var)
         {
+            c.cc.MarkVariableAsRead(var);
             c.rb.Branch(cond, var, null, c.label, c.polarity);
         }
 
@@ -1230,6 +1232,8 @@ namespace Zilf.Compiler.Builtins
              *   return STACK       ;value is left on stack
              */
 
+            c.cc.MarkVariableAsWritten(dest);
+
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, dest);
             if (storage != dest)
                 c.rb.EmitStore(dest, storage);
@@ -1291,6 +1295,7 @@ namespace Zilf.Compiler.Builtins
             if (dest is IIndirectOperand ind)
             {
                 var destVar = ind.Variable;
+                c.cc.MarkVariableAsWritten(destVar);
                 var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, destVar);
                 if (storage != destVar)
                     c.rb.EmitStore(destVar, storage);
@@ -1302,10 +1307,10 @@ namespace Zilf.Compiler.Builtins
                     if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                     {
                         var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                        c.cc.PushInnerLocal(c.rb, tempAtom);
+                        c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary);
                         try
                         {
-                            var tempLocal = c.cc.Locals[tempAtom];
+                            var tempLocal = c.cc.Locals[tempAtom].LocalBuilder;
                             c.rb.EmitStore(tempLocal, operands[0]);
                             c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, tempLocal, null);
                         }
@@ -1358,6 +1363,7 @@ namespace Zilf.Compiler.Builtins
             PredCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] IVariable dest, [NotNull] ZilObject value)
         {
             // see note in SetValueOp regarding dest being IVariable
+            c.cc.MarkVariableAsWritten(dest);
             c.cc.CompileAsOperandWithBranch(c.rb, value, dest, c.label, c.polarity);
         }
 
@@ -1375,6 +1381,7 @@ namespace Zilf.Compiler.Builtins
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
         {
+            c.cc.MarkVariableAsReadAndWritten(victim);
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
             return victim;
         }
@@ -1410,6 +1417,7 @@ namespace Zilf.Compiler.Builtins
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
             [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
         {
+            c.cc.MarkVariableAsReadAndWritten(victim);
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
         }
 
@@ -1478,6 +1486,7 @@ namespace Zilf.Compiler.Builtins
                 return c.resultStorage;
             }
 
+            c.cc.MarkVariableAsRead(var);
             return var;
         }
 
@@ -1517,7 +1526,7 @@ namespace Zilf.Compiler.Builtins
             }
 
             // quirks: local
-            if (c.cc.Locals.TryGetValue(atom, out var local))
+            if (c.cc.Locals.TryGetValue(atom, out var lbr))
             {
                 c.cc.Context.HandleError(new CompilerError(
                     c.form,
@@ -1525,7 +1534,8 @@ namespace Zilf.Compiler.Builtins
                     "global",
                     atom,
                     "local"));
-                return local;
+                c.cc.MarkVariableAsRead(lbr);
+                return lbr.LocalBuilder;
             }
 
             // error
@@ -1542,8 +1552,11 @@ namespace Zilf.Compiler.Builtins
         public static IOperand LvalOp(ValueCall c, [NotNull] ZilAtom atom)
         {
             // local
-            if (c.cc.Locals.TryGetValue(atom, out var local))
-                return local;
+            if (c.cc.Locals.TryGetValue(atom, out var lbr))
+            {
+                c.cc.MarkVariableAsRead(lbr);
+                return lbr.LocalBuilder;
+            }
 
             // quirks: constant, global, object, or routine
             if (c.cc.Constants.TryGetValue(atom, out var operand))
@@ -2126,7 +2139,7 @@ namespace Zilf.Compiler.Builtins
             }
 
             var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-            var lb = c.cc.PushInnerLocal(c.rb, tmpAtom);
+            var lb = c.cc.PushInnerLocal(c.rb, tmpAtom, LocalBindingType.CompilerTemporary);
             try
             {
                 c.rb.EmitStore(lb, c.cc.Game.MakeOperand(offset));

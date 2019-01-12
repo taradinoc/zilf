@@ -499,7 +499,7 @@ namespace Zilf.Compiler
         }
 
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
-        bool HasSideEffects(ZilObject expr)
+        public bool HasSideEffects(ZilObject expr)
         {
             // only forms can have side effects
             if (!(expr is ZilForm form))

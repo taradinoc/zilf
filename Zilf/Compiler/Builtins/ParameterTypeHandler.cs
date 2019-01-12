@@ -68,13 +68,13 @@ namespace Zilf.Compiler.Builtins
                 // prefer global over local
                 if (cc.Globals.TryGetValue(atom, out var gb))
                     return new VariableRef(gb);
-                if (cc.Locals.TryGetValue(atom, out var lb))
-                    return new VariableRef(lb);
+                if (cc.Locals.TryGetValue(atom, out var lbr))
+                    return new VariableRef(lbr.LocalBuilder);
             }
             else
             {
-                if (cc.Locals.TryGetValue(atom, out var lb))
-                    return new VariableRef(lb);
+                if (cc.Locals.TryGetValue(atom, out var lbr))
+                    return new VariableRef(lbr.LocalBuilder);
                 if (cc.Globals.TryGetValue(atom, out var gb))
                     return new VariableRef(gb);
             }

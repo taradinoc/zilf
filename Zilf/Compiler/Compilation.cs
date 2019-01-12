@@ -63,14 +63,18 @@ namespace Zilf.Compiler
             SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>(equalizer);
         }
 
+        // TODO: helper class for managing local variables
         [NotNull]
-        public readonly Dictionary<ZilAtom, ILocalBuilder> Locals = new Dictionary<ZilAtom, ILocalBuilder>();
+        public readonly Dictionary<ZilAtom, LocalBindingRecord> Locals = new Dictionary<ZilAtom, LocalBindingRecord>();
+        [NotNull]
+        public readonly List<LocalBindingRecord> AllLocalBindingRecords = new List<LocalBindingRecord>();
         [NotNull]
         public readonly HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
         [NotNull]
         public readonly Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
         [NotNull]
-        public readonly Dictionary<ZilAtom, Stack<ILocalBuilder>> OuterLocals = new Dictionary<ZilAtom, Stack<ILocalBuilder>>();
+        public readonly Dictionary<ZilAtom, Stack<LocalBindingRecord>> OuterLocals = new Dictionary<ZilAtom, Stack<LocalBindingRecord>>();
+
         [NotNull]
         public readonly Stack<Block> Blocks = new Stack<Block>();
 

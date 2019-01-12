@@ -55,7 +55,9 @@ namespace Zilf.Tests.Integration
 
     sealed class ZlrHelper : IDisposable
     {
-        public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput, bool? expectWarnings = null, bool wantCompileOutput = false)
+        public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput,
+            IEnumerable<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)> warningChecks = null,
+            bool wantCompileOutput = false)
         {
             var helper = new ZlrHelper(code, input);
             bool compiled;
@@ -71,10 +73,11 @@ namespace Zilf.Tests.Integration
             }
             Assert.IsTrue(compiled, "Failed to compile");
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");
-            if (expectWarnings != null)
+            if (warningChecks != null)
             {
-                Assert.AreEqual((bool)expectWarnings, helper.WarningCount != 0,
-                    (bool)expectWarnings ? "Expected warnings" : "Expected no warnings");
+                foreach (var (check, message) in warningChecks)
+                    if (!check(helper.Diagnostics))
+                        Assert.Fail(message);
             }
             string actualOutput = compileOutput + helper.Execute();
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");

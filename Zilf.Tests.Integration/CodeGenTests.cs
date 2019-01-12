@@ -154,7 +154,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void TestBranchToSameCondition()
         {
-            AssertRoutine("\"AUX\" I P",
+            AssertRoutine("\"AUX\" P",
 @"<OBJECTLOOP I ,HERE
     <COND (<AND <NOT <FSET? .I ,TOUCHBIT>> <SET P <GETP .I ,P?FDESC>>>
 		   <PRINT .P> <CRLF>)>>")

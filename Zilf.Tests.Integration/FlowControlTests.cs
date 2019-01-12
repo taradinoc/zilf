@@ -450,17 +450,17 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("\"OPT\" A B C D", "<>")
                 .InV3()
-                .WithWarnings()
+                .WithWarnings("MDL0417")
                 .Compiles();
 
             AssertRoutine("\"OPT\" A B C D", "<>")
                 .InV5()
-                .WithoutWarnings()
+                .WithoutWarnings("MDL0417")
                 .Compiles();
 
             AssertRoutine("\"OPT\" A B C D E F G H", "<>")
                 .InV5()
-                .WithWarnings()
+                .WithWarnings("MDL0417")
                 .Compiles();
         }
 

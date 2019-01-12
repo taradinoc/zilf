@@ -18,6 +18,7 @@
 
 using JetBrains.Annotations;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -35,9 +36,9 @@ namespace Zilf.Tests.Integration
         protected readonly StringBuilder miscGlobals = new StringBuilder();
         [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
-        protected bool? expectWarnings = false;
-        [CanBeNull]
-        protected string[] warningCodes;
+        [NotNull]
+        protected readonly List<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)> warningChecks =
+            new List<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)>();
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 
@@ -107,32 +108,50 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public TThis WithWarnings()
         {
-            expectWarnings = true;
-            warningCodes = null;
+            warningChecks.Add((diags => diags.Any(d => d.Severity == Severity.Warning),
+                "Expected a nonzero number of warnings."));
             return (TThis)this;
         }
 
-        [NotNull]
-        public TThis WithWarnings(params string[] expectedWarningCodes)
+        private static bool DiagnosticCodeMatches([NotNull] Diagnostic diag, [NotNull] string code)
         {
-            expectWarnings = true;
-            warningCodes = expectedWarningCodes;
+            return diag.Code == code || diag.SubDiagnostics.Any(d => DiagnosticCodeMatches(d, code));
+        }
+
+        [NotNull]
+        public TThis WithWarnings([NotNull] params string[] expectedWarningCodes)
+        {
+            foreach (var code in expectedWarningCodes)
+            {
+                warningChecks.Add((diags => diags.Any(d => DiagnosticCodeMatches(d, code)),
+                    $"Expected a diagnostic with code '{code}'."));
+            }
             return (TThis)this;
         }
 
         [NotNull]
         public TThis WithoutWarnings()
         {
-            expectWarnings = false;
-            warningCodes = null;
+            warningChecks.Add((diags => diags.All(d => d.Severity != Severity.Warning),
+                "Expected no warnings."));
+            return (TThis)this;
+        }
+
+        [NotNull]
+        public TThis WithoutWarnings(params string[] unexpectedWarningCodes)
+        {
+            foreach (var code in unexpectedWarningCodes)
+            {
+                warningChecks.Add((diags => !diags.Any(d => DiagnosticCodeMatches(d, code)),
+                    $"Expected no diagnostic with code '{code}'."));
+            }
             return (TThis)this;
         }
 
         [NotNull]
         public TThis IgnoringWarnings()
         {
-            expectWarnings = null;
-            warningCodes = null;
+            warningChecks.Clear();
             return (TThis)this;
         }
 
@@ -163,29 +182,9 @@ namespace Zilf.Tests.Integration
 
         protected void CheckWarnings(ZlrHelperRunResult res)
         {
-            var warningCount = res.WarningCount;
-
-            switch (expectWarnings)
-            {
-                case true:
-                    Assert.AreNotEqual(0, warningCount, "Expected at least one warning.");
-
-                    if (warningCodes != null)
-                    {
-                        foreach (var code in warningCodes)
-                        {
-                            if (res.Diagnostics.All(d => d.Code != code && d.SubDiagnostics.All(s => s.Code != code)))
-                            {
-                                Assert.Fail("Expected diagnostic with code '{0}'.", code);
-                            }
-                        }
-                    }
-                    break;
-
-                case false:
-                    Assert.AreEqual(0, warningCount, "Expected no warnings.");
-                    break;
-            }
+            foreach (var (check, message) in warningChecks)
+                if (!check(res.Diagnostics))
+                    Assert.Fail(message);
         }
     }
 
@@ -251,7 +250,7 @@ namespace Zilf.Tests.Integration
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks);
         }
 
         public void Outputs([NotNull] string expectedValue)
@@ -259,7 +258,7 @@ namespace Zilf.Tests.Integration
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, expectWarnings, wantCompileOutput);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
         }
 
         public void Implies([ItemNotNull] [NotNull] params string[] conditions)
@@ -278,7 +277,7 @@ namespace Zilf.Tests.Integration
                 $"<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {sb} .FAILS>\r\n" +
                 "<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", expectWarnings);
+            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", warningChecks);
         }
 
         public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
