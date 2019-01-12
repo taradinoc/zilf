@@ -119,6 +119,8 @@ namespace Zilf.Diagnostics
         public const int _0_Mismatch_For_1_Using_2_As_Before = 208;
         [Message("mentioned object '{0}' is defined elsewhere as a {1}")]
         public const int Mentioned_Object_0_Is_Defined_Elsewhere_As_A_1 = 209;
+        [Message("local variable '{0}' is never used", Severity = Severity.Warning)]
+        public const int Local_Variable_0_Is_Never_Used = 210;
 
         // Z-machine Structures - 0300
 

@@ -19,6 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Emit;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -60,21 +62,27 @@ namespace Zilf.Compiler
             }
         }
 
+        void ClearLocalsAndBlocks()
+        {
+            Locals.Clear();
+            AllLocalBindingRecords.Clear();
+            TempLocalNames.Clear();
+            SpareLocals.Clear();
+            OuterLocals.Clear();
+        }
+
         void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
             // give the user a chance to rewrite the routine
             routine = MaybeRewriteRoutine(Context, routine);
 
             // set up arguments and locals
-            Locals.Clear();
-            TempLocalNames.Clear();
-            SpareLocals.Clear();
-            OuterLocals.Clear();
+            ClearLocalsAndBlocks();
 
             if (Context.TraceRoutines)
                 rb.EmitPrint("[" + routine.Name, false);
 
-            DefineParametersFromArgSpec();
+            DefineLocalsFromArgSpec();
 
             if (Context.TraceRoutines)
                 rb.EmitPrint("]\n", false);
@@ -104,55 +112,17 @@ namespace Zilf.Compiler
                 rb.EmitQuit();
 
             // clean up
-            Locals.Clear();
-            SpareLocals.Clear();
-            OuterLocals.Clear();
-            Blocks.Pop();
+            WarnAboutUnusedLocals();
+            ClearLocalsAndBlocks();
 
-            // helper
-            void DefineParametersFromArgSpec()
+            // helpers
+            void DefineLocalsFromArgSpec()
             {
                 foreach (var arg in routine.ArgSpec)
                 {
-                    ILocalBuilder lb;
-
                     var originalArgName = arg.Atom;
                     var uniqueArgName = MakeUniqueVariableName(originalArgName);
 
-                    // TODO: report error if "NAME", "BIND", "ARGS", "TUPLE", or quoted args are used
-                    switch (arg.Type)
-                    {
-                        case ArgItem.ArgType.Required:
-                            try
-                            {
-                                lb = rb.DefineRequiredParameter(uniqueArgName.Text);
-                            }
-                            catch (InvalidOperationException)
-                            {
-                                throw new CompilerError(
-                                    CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
-                            }
-
-                            if (traceRoutines)
-                            {
-                                rb.EmitPrint(" " + originalArgName + "=", false);
-                                rb.EmitPrint(PrintOp.Number, lb);
-                            }
-                            break;
-
-                        case ArgItem.ArgType.Optional:
-                            lb = rb.DefineOptionalParameter(uniqueArgName.Text);
-                            break;
-
-                        case ArgItem.ArgType.Auxiliary:
-                            lb = rb.DefineLocal(uniqueArgName.Text);
-                            break;
-
-                        default:
-                            throw UnhandledCaseException.FromEnum(arg.Type);
-                    }
-
-                    Locals.Add(originalArgName, lb);
                     if (uniqueArgName != originalArgName)
                     {
                         /* When a parameter has to be renamed because of a conflict, use TempLocalNames
@@ -170,39 +140,116 @@ namespace Zilf.Compiler
                         TempLocalNames.Add(uniqueArgName);
                     }
 
-                    if (arg.DefaultValue == null)
-                        continue;
+                    var lb = MakeLocalBuilder(arg, uniqueArgName.Text);
 
-                    Debug.Assert(arg.Type == ArgItem.ArgType.Optional || arg.Type == ArgItem.ArgType.Auxiliary);
-
-                    lb.DefaultValue = CompileConstant(arg.DefaultValue);
-                    if (lb.DefaultValue != null)
-                        continue;
-
-                    ILabel nextLabel = null;
-
-                    // ReSharper disable once SwitchStatementMissingSomeCases
-                    switch (arg.Type)
+                    if (traceRoutines && arg.Type == ArgItem.ArgType.Required)
                     {
-                        case ArgItem.ArgType.Optional when !rb.HasArgCount:
-                            // not a constant
-                            throw new CompilerError(routine.SourceLine,
-                                CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
-
-                        case ArgItem.ArgType.Optional:
-                            nextLabel = rb.DefineLabel();
-                            rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
-                            goto default;
-
-                        default:
-                            var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
-                            if (val != lb)
-                                rb.EmitStore(lb, val);
-                            break;
+                        // TODO: print OPT parameters when tracing routine execution too
+                        rb.EmitPrint(" " + originalArgName + "=", false);
+                        rb.EmitPrint(PrintOp.Number, lb);
                     }
 
-                    if (nextLabel != null)
-                        rb.MarkLabel(nextLabel);
+                    var lbr = new LocalBindingRecord(arg.Type.ToLocalBindingType(), originalArgName, lb);
+                    Locals.Add(originalArgName, lbr);
+                    AllLocalBindingRecords.Add(lbr);
+
+                    SetOrEmitDefaultValue(lb, arg);
+                }
+            }
+
+            ILocalBuilder MakeLocalBuilder(ArgItem arg, string uniqueArgName)
+            {
+                ILocalBuilder lb;
+
+                switch (arg.Type)
+                {
+                    case ArgItem.ArgType.Required:
+                        try
+                        {
+                            lb = rb.DefineRequiredParameter(uniqueArgName);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            throw new CompilerError(
+                                CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
+                        }
+                        break;
+
+                    case ArgItem.ArgType.Optional:
+                        lb = rb.DefineOptionalParameter(uniqueArgName);
+                        break;
+
+                    case ArgItem.ArgType.Auxiliary:
+                        lb = rb.DefineLocal(uniqueArgName);
+                        break;
+
+                    default:
+                        throw UnhandledCaseException.FromEnum(arg.Type);
+                }
+
+                return lb;
+            }
+
+            void SetOrEmitDefaultValue(ILocalBuilder lb, ArgItem arg)
+            {
+                if (arg.DefaultValue == null)
+                    return;
+
+                Debug.Assert(arg.Type == ArgItem.ArgType.Optional || arg.Type == ArgItem.ArgType.Auxiliary);
+
+                // setting any default value counts as a write
+                MarkVariableAsWritten(lb);
+
+                lb.DefaultValue = CompileConstant(arg.DefaultValue);
+                if (lb.DefaultValue != null)
+                    return;
+
+                ILabel nextLabel = null;
+
+                // ReSharper disable once SwitchStatementMissingSomeCases
+                switch (arg.Type)
+                {
+                    case ArgItem.ArgType.Optional when !rb.HasArgCount:
+                        // not a constant
+                        throw new CompilerError(routine.SourceLine,
+                            CompilerMessages.Optional_Args_With_Nonconstant_Defaults_Not_Supported_For_This_Target);
+
+                    case ArgItem.ArgType.Optional:
+                        nextLabel = rb.DefineLabel();
+                        rb.Branch(Condition.ArgProvided, lb, null, nextLabel, true);
+                        goto default;
+
+                    default:
+                        var val = CompileAsOperand(rb, arg.DefaultValue, routine.SourceLine, lb);
+                        if (val != lb)
+                            rb.EmitStore(lb, val);
+                        break;
+                }
+
+                if (nextLabel != null)
+                    rb.MarkLabel(nextLabel);
+            }
+
+            void WarnAboutUnusedLocals()
+            {
+                foreach (var lbr in AllLocalBindingRecords)
+                {
+                    if (lbr.IsEverRead || lbr.IsEverWritten)
+                        continue;
+
+                    if (lbr.Type == LocalBindingType.CompilerTemporary)
+                        continue;
+
+                    //XXX not sure about this
+                    if (lbr.Type == LocalBindingType.RoutineRequired)
+                        continue;
+
+                    var warning = new CompilerError(
+                        lbr.Definition,
+                        CompilerMessages.Local_Variable_0_Is_Never_Used,
+                        lbr.BoundName);
+
+                    Context.HandleError(warning);
                 }
             }
         }
@@ -259,18 +306,19 @@ namespace Zilf.Compiler
         /// </summary>
         /// <param name="rb"></param>
         /// <param name="atom"></param>
-        /// 
+        /// <param name="reason"></param>
         /// <returns></returns>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [NotNull]
-        public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom)
+        public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom,
+            LocalBindingType reason)
         {
             if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
                 if (OuterLocals.TryGetValue(atom, out var stk) == false)
                 {
-                    stk = new Stack<ILocalBuilder>();
+                    stk = new Stack<LocalBindingRecord>();
                     OuterLocals.Add(atom, stk);
                 }
                 stk.Push(prev);
@@ -299,7 +347,9 @@ namespace Zilf.Compiler
                 TempLocalNames.Add(tempName);
             }
 
-            Locals[atom] = result;
+            var lbr = new LocalBindingRecord(reason, atom, result);
+            Locals[atom] = lbr;
+            AllLocalBindingRecords.Add(lbr);
             return result;
         }
 
@@ -330,7 +380,7 @@ namespace Zilf.Compiler
 
         public void PopInnerLocal([NotNull] ZilAtom atom)
         {
-            SpareLocals.Push(Locals[atom]);
+            SpareLocals.Push(Locals[atom].LocalBuilder);
 
             if (OuterLocals.TryGetValue(atom, out var stk))
             {
@@ -341,5 +391,32 @@ namespace Zilf.Compiler
             else
                 Locals.Remove(atom);
         }
+
+        void FindAndMarkVariable(IVariable var, Action<LocalBindingRecord> markAction)
+        {
+            if (!(var is ILocalBuilder))
+                return;
+
+            var lbr = Locals.Values.First(r => r.LocalBuilder == var);
+            markAction(lbr);
+        }
+
+        public void MarkVariableAsRead([NotNull] LocalBindingRecord lbr) =>
+            lbr.IsEverRead = true;
+
+        public void MarkVariableAsRead(IVariable var) =>
+            FindAndMarkVariable(var, MarkVariableAsRead);
+
+        public void MarkVariableAsWritten([NotNull] LocalBindingRecord lbr) =>
+            lbr.IsEverWritten = true;
+
+        public void MarkVariableAsWritten(IVariable var) =>
+            FindAndMarkVariable(var, MarkVariableAsWritten);
+
+        public void MarkVariableAsReadAndWritten([NotNull] LocalBindingRecord lbr) =>
+            lbr.IsEverRead = lbr.IsEverWritten = true;
+
+        public void MarkVariableAsReadAndWritten(IVariable var) =>
+            FindAndMarkVariable(var, MarkVariableAsReadAndWritten);
     }
 }

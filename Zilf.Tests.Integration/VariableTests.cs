@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -212,5 +213,44 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<ROUTINE BUMP-IT (FOO) <PROG ((FOO 1000)) <SETG FOO <+ ,FOO .FOO>>>>")
                 .GivesNumber("1123");
         }
+
+        [TestMethod]
+        public void Unused_Locals_Should_Warn()
+        {
+            const string SWarningCode = "ZIL0210";
+
+            // unreferenced, uninitialized routine local => warn
+            AssertRoutine(@"""AUX"" X", @"<>")
+                .WithWarnings(SWarningCode)
+                .Compiles();
+
+            // add a read => OK
+            AssertRoutine(@"""AUX"" X", @".X")
+                .WithoutWarnings()
+                .Compiles();
+
+            // unreferenced routine local, initialized to routine call => OK
+            AssertRoutine(@"""AUX"" (X <FOO>)", @"<>")
+                .WithGlobal(@"<ROUTINE FOO () <TELL ""hi""> 123>")
+                .WithoutWarnings()
+                .Compiles();
+
+            // unreferenced, uninitialized BIND local => warn
+            AssertRoutine("", @"<BIND (X) <>>")
+                .WithWarnings(SWarningCode)
+                .Compiles();
+
+            // add a read => OK
+            AssertRoutine("", @"<BIND (X) .X>")
+                .WithoutWarnings()
+                .Compiles();
+
+            // unreferenced BIND local, initialized to routine call => OK
+            AssertRoutine("", @"<BIND ((X <FOO>)) <>>")
+                .WithGlobal(@"<ROUTINE FOO () <TELL ""hi""> 123>")
+                .WithoutWarnings()
+                .Compiles();
+        }
+
     }
 }

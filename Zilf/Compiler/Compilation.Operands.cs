@@ -103,8 +103,8 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    PushInnerLocal(rb, tempAtom);
-                    values[i] = Locals[tempAtom];
+                    PushInnerLocal(rb, tempAtom, LocalBindingType.CompilerTemporary);
+                    values[i] = Locals[tempAtom].LocalBuilder;
                     rb.EmitStore((IVariable)values[i], value);
                     temps[i] = true;
                 }
