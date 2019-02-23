@@ -699,7 +699,7 @@ Returns:
 
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
-    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE INVENTORY UNDO
+    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE RESTART INVENTORY UNDO
                 SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
                 PRONOUNS TELL
                 !<IFFLAG (DEBUG '(XTRACE)) (ELSE '())>
