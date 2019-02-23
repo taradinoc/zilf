@@ -600,26 +600,52 @@ Args:
 
 The behavior of MAIN-LOOP can be extended by overriding macros such as HOOK-BEFORE-PARSER.
 These extensions will be respected by other code that simulates the main loop, e.g. V-WAIT."
-<ROUTINE MAIN-LOOP ("AUX" RESULT)
-    <REPEAT ()
-        <COND (<BIND ()
-                   <HOOK-BEFORE-PARSER>
-                   <SET RESULT <PARSER>>
-                   <HOOK-AFTER-PARSER RESULT>
-                   .RESULT>
-               <HOOK-BEFORE-PERFORM>
-               <SET RESULT <PERFORM ,PRSA ,PRSO ,PRSI>>
-               <HOOK-AFTER-PERFORM RESULT>
-               <COND (<NOT <GAME-VERB?>>
-                      <HOOK-BEFORE-M-END>
-                      <SET RESULT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-                      <HOOK-AFTER-M-END RESULT>
-                      <HOOK-BEFORE-CLOCKER>
-                      <SET RESULT <CLOCKER>>
-                      <HOOK-AFTER-CLOCKER RESULT>)>
-               <SETG HERE <LOC ,WINNER>>
-               <HOOK-END-OF-COMMAND>)>
-        <HOOK-END-OF-ITERATION>>>
+<ROUTINE MAIN-LOOP ()
+    <REPEAT () <MAIN-LOOP-ITERATION>>>
+
+<DEFMAC MAIN-LOOP-ITERATION ()
+    '<BIND ()
+        <COND (<MAIN-LOOP-PARSER>
+               <MAIN-LOOP-HANDLE-COMMAND>)>
+        <MAIN-LOOP-END-OF-ITERATION>>>
+
+<DEFMAC WITH-HOOK (NAME:ATOM 'EXPR "AUX" (RA ?RESULT))
+    <FORM BIND (.RA)
+        <FORM <PARSE <STRING "HOOK-BEFORE-" <SPNAME .NAME>>>>
+        <FORM SET .RA .EXPR>
+        <FORM <PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> .RA>
+        <FORM LVAL .RA>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-PARSER
+    <DEFMAC MAIN-LOOP-PARSER ()
+        '<WITH-HOOK PARSER <PARSER>>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-HANDLE-COMMAND
+    <DEFMAC MAIN-LOOP-HANDLE-COMMAND ()
+        '<BIND ()
+           <MAIN-LOOP-PERFORM>
+           <MAIN-LOOP-ADVANCE-TIME>
+           <MAIN-LOOP-END-OF-COMMAND>>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-PERFORM
+    <DEFMAC MAIN-LOOP-PERFORM ()
+        '<WITH-HOOK PERFORM <PERFORM ,PRSA ,PRSO ,PRSI>>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-ADVANCE-TIME
+    <DEFMAC MAIN-LOOP-ADVANCE-TIME ()
+        '<COND (<NOT <GAME-VERB?>>
+                <WITH-HOOK M-END <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
+                <WITH-HOOK CLOCKER <CLOCKER>>)>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-END-OF-COMMAND
+    <DEFMAC MAIN-LOOP-END-OF-COMMAND ()
+        '<BIND ()
+            <SETG HERE <LOC ,WINNER>>
+            <HOOK-END-OF-COMMAND>>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-END-OF-ITERATION
+    <DEFMAC MAIN-LOOP-END-OF-ITERATION ()
+        '<HOOK-END-OF-ITERATION>>>
 
 ;"Dummy implementations of MAIN-LOOP's BEFORE hooks."
 <DEFAULT-DEFINITION HOOK-BEFORE-PARSER

@@ -1260,19 +1260,7 @@ Returns:
                                  <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
                   <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
                   <RTRUE>)>
-           <HOOK-BEFORE-PERFORM>
-           <SET RESULT <PERFORM ,PRSA ,PRSO ,PRSI>>
-           <HOOK-AFTER-PERFORM RESULT>
-           ;"TODO: The COND below should be factored out (of V-AGAIN and MAIN-LOOP)."
-           <COND (<NOT <GAME-VERB?>>
-                  <HOOK-BEFORE-M-END>
-                  <SET RESULT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
-                  <HOOK-AFTER-M-END RESULT>
-                  <HOOK-BEFORE-CLOCKER>
-                  <SET RESULT <CLOCKER>>
-                  <HOOK-AFTER-CLOCKER RESULT>)>
-           <SETG HERE <LOC ,WINNER>>
-           <HOOK-END-OF-COMMAND>)
+           <MAIN-LOOP-HANDLE-COMMAND>)
           (ELSE <TELL "Nothing to repeat." CR>)>
     <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RTRUE>>

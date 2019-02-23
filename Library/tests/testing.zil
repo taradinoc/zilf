@@ -212,11 +212,7 @@ Returns:
     ;"Parse and perform command"
     <DIROUT 3 ,OUTBUF>
     <REPEAT ()
-        <COND (<PARSER>
-               <PERFORM ,PRSA ,PRSO ,PRSI>
-               <COND (<NOT <GAME-VERB?>>
-                      <APPLY <GETP ,HERE ,P?ACTION> ,M-END>
-                      <CLOCKER>)>)>
+        <MAIN-LOOP-ITERATION>
         <COND (<L=? ,P-CONT 0> <RETURN>)>>
     <DIROUT -3>>
 
