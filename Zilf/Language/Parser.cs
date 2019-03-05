@@ -104,6 +104,7 @@ namespace Zilf.Language
         {
         }
     }
+
     interface IParserSite
     {
         [NotNull]
@@ -123,9 +124,6 @@ namespace Zilf.Language
 
         [NotNull]
         string CurrentFilePath { get; }
-
-        [NotNull]
-        ZilObject FALSE { get; }
     }
 
     enum ParserOutputType
@@ -395,7 +393,7 @@ namespace Zilf.Language
                             ParseCurrentStructure(
                                 chars,
                                 '>', Bang.RightAngle,
-                                zos => zos.Count == 0 ? site.FALSE : new ZilForm(zos)));
+                                zos => new ZilForm(zos)));
 
                     case '[':
                         return ParserOutput.FromObject(

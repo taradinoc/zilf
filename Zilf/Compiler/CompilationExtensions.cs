@@ -165,12 +165,16 @@ namespace Zilf.Compiler
 
                     switch (zo)
                     {
+                        case ZilForm form when form.IsEmpty:
+                            return ctx.FALSE;
+
                         case ZilAdecl adecl:
                             // TODO: check DECL
                             zo = adecl.First;
                             break;
 
                         case IMayExpandAfterEvaluation expandAfter when expandAfter.ShouldExpandAfterEvaluation:
+                            // TODO: don't use Parse here
                             zo = expandAfter.ExpandAfterEvaluation()
                                 .FirstOrCombine(zos =>
                                     Program.Parse(ctx, src, "<BIND () {0:SPLICE}>", new ZilList(zos))

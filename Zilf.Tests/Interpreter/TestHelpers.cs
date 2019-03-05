@@ -26,11 +26,8 @@ namespace Zilf.Tests.Interpreter
 {
     internal static class TestHelpers
     {
-        [CanBeNull]
-        internal static ZilObject Evaluate([NotNull] string expression)
-        {
-            return Evaluate(null, expression);
-        }
+        [NotNull]
+        internal static ZilObject Evaluate([NotNull] string expression) => Evaluate(null, expression);
 
         [NotNull]
         internal static ZilObject Evaluate([CanBeNull] Context ctx, [NotNull] string expression)
@@ -67,22 +64,26 @@ namespace Zilf.Tests.Interpreter
             const string SNoException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual: no exception, returned <{1}>. Expression was: {2}";
             const string SPredicateFailed = "TestHelpers.EvalAndCatch failed. Predicate returned false. Exception: {0}";
 
-            bool caught = false;
-            ZilObject result = null;
+            ZilObject result;
+
             try
             {
                 result = Evaluate(ctx, expression);
             }
+            catch (TException ex) when (predicate == null || predicate(ex))
+            {
+                // expected exception type, predicate passed (or no predicate)
+                return;
+            }
             catch (TException ex)
             {
-                caught = true;
-
-                if (predicate != null && !predicate(ex))
-                    throw new AssertFailedException(
-                        string.Format(SPredicateFailed, ex));
+                // expected exception type, predicate failed
+                throw new AssertFailedException(
+                    string.Format(SPredicateFailed, ex));
             }
             catch (Exception ex)
             {
+                // unexpected exception type
                 throw new AssertFailedException(string.Format(SWrongException,
                     typeof(TException).FullName,
                     ex.GetType().FullName,
@@ -91,11 +92,11 @@ namespace Zilf.Tests.Interpreter
                     ex.Message), ex);
             }
 
-            if (!caught)
-                throw new AssertFailedException(string.Format(SNoException,
-                    typeof(TException).FullName,
-                    result,
-                    expression));
+            // no exception was thrown
+            throw new AssertFailedException(string.Format(SNoException,
+                typeof(TException).FullName,
+                result,
+                expression));
         }
 
         [AssertionMethod]

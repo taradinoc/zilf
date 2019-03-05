@@ -29,7 +29,7 @@ namespace Zilf.Interpreter.Values
         [CanBeNull]
         public abstract ZilObject First { get; set; }
         [CanBeNull]
-        public abstract ZilListoidBase Rest { get; set; }  // TODO: make this ZilListoidBase (or ZilListBase?) instead of ZilList
+        public abstract ZilListoidBase Rest { get; set; }
 
         public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilListoidBase rest)
         {
