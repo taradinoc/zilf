@@ -42,8 +42,6 @@ namespace Zilf.Tests.Interpreter
 
             public string CurrentFilePath => "sample.zil";
 
-            public ZilObject FALSE { get; } = new ZilFalse(new ZilList(null, null));
-
             public ZilAtom ParseAtom(string text)
             {
                 if (atoms.TryGetValue(text, out var result))
@@ -199,7 +197,7 @@ namespace Zilf.Tests.Interpreter
             var result = parser.Parse("<>").ToArray();
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
-            Assert.AreSame(site.FALSE, result[0].Object);
+            TestHelpers.AssertStructurallyEqual(new ZilForm(null, null), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
             result = parser.Parse("<1 2>").ToArray();
@@ -212,7 +210,12 @@ namespace Zilf.Tests.Interpreter
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
-                new ZilForm(new[] { site.FALSE, new ZilFix(1), site.FALSE }),
+                new ZilForm(new ZilObject[]
+                {
+                    new ZilForm(null, null),
+                    new ZilFix(1),
+                    new ZilForm(null, null),
+                }),
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }

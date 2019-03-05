@@ -240,14 +240,14 @@ namespace Zilf.Interpreter
 
         [NotNull]
         [Subr]
-        public static ZilObject FORM([NotNull] Context ctx, [NotNull] [Required] ZilObject[] args)
+        public static ZilObject FORM([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             return new ZilForm(args) { SourceLine = ctx.TopFrame.SourceLine };
         }
 
         [NotNull]
         [Subr]
-        public static ZilObject LIST(Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject LIST([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             return new ZilList(args);
         }
@@ -255,7 +255,7 @@ namespace Zilf.Interpreter
         [NotNull]
         [Subr]
         [Subr("TUPLE")]
-        public static ZilObject VECTOR(Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject VECTOR([NotNull] Context ctx, [NotNull] ZilObject[] args)
         {
             return new ZilVector(args);
         }

@@ -105,7 +105,6 @@ namespace Zilf.Interpreter.Values
 
         public override StdAtom StdTypeAtom => StdAtom.FORM;
 
-        /// <exception cref="InvalidOperationException">The form is empty.</exception>
         /// <exception cref="InterpreterError">The form's first element is an atom that has no local or global value, or a non-applicable type.</exception>
         protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
         {
@@ -115,7 +114,10 @@ namespace Zilf.Interpreter.Values
             }
 
             if (First == null)
-                throw new InvalidOperationException("Can't evaluate null");
+            {
+                Debug.Assert(Rest == null);
+                return ctx.FALSE;
+            }
 
             Debug.Assert(Rest != null);
 

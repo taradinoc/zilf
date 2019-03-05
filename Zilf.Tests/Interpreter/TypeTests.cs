@@ -827,6 +827,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void TestFORM()
         {
+            TestHelpers.EvalAndAssert(ctx, "<FORM>", new ZilForm(null, null));
             TestHelpers.EvalAndAssert(ctx, "<FORM + 1 2>", new ZilForm(
                 new ZilObject[] {
                     ctx.GetStdAtom(StdAtom.Plus),
@@ -834,9 +835,6 @@ namespace Zilf.Tests.Interpreter
                     new ZilFix(2)
                 }
             ));
-
-            // must have at least 1 argument
-            TestHelpers.EvalAndCatch<InterpreterError>("<FORM>");
         }
 
         [TestMethod]
@@ -1020,6 +1018,8 @@ namespace Zilf.Tests.Interpreter
                 new ZilVector(new ZilFix(3), new ZilFix(7)));
 
             TestHelpers.EvalAndAssert(ctx, "<+ 1 2>:FIX", new ZilFix(3));
+
+            TestHelpers.EvalAndAssert(ctx, "<>", ctx.FALSE);
         }
 
         [TestMethod]
