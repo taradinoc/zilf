@@ -35,7 +35,7 @@ namespace Zilf.Interpreter.Values
         public virtual ISourceLine SourceLine { get; set; }
 
         [NotNull]
-        public static IEnumerable<ZilObject> ExpandTemplateToken([NotNull] ZilObject selector, [NotNull] ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> ExpandTemplateToken([NotNull] ZilObject selector, [CanBeNull, ItemNotNull] ZilObject[] templateParams)
         {
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
