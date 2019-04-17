@@ -6,7 +6,7 @@
     <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <Product>ZILF</Product>
     <Version>0.8</Version>
     <Authors>Jesse McGrew</Authors>
@@ -17,8 +17,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="difflib" Version="2017.7.26.1241" />
-    <PackageReference Include="JetBrains.Annotations" Version="2018.2.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2018.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
   </ItemGroup>

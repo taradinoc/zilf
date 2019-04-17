@@ -1522,6 +1522,7 @@ B * <PRINTB .X>
 
             return null;
         }
+
         [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
         public ReturnQuirkMode ReturnQuirkMode
         {
@@ -1536,10 +1537,8 @@ B * <PRINTB .X>
                         return ReturnQuirkMode.PreferBlock;
 
                     case null:
-                        return ReturnQuirkMode.ByVersion;
-
                     default:
-                        goto case null;
+                        return ReturnQuirkMode.ByVersion;
                 }
             }
         }

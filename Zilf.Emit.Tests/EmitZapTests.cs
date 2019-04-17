@@ -17,44 +17,44 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NMock;
+using Moq;
 using System;
 using Zilf.Emit.Zap;
 
 namespace Zilf.Emit.Tests
 {
     [TestClass, TestCategory("Compiler")]
-    public class EmitZapTests : IDisposable
+    public class EmitZapTests
     {
-        MockFactory mockFactory;
+        MockRepository mockRepository;
         Mock<IZapStreamFactory> mockStreamFactory;
 
         [TestInitialize]
         public void Initialize()
         {
-            mockFactory = new MockFactory();
+            mockRepository = new MockRepository(MockBehavior.Strict);
 
-            mockStreamFactory = mockFactory.CreateMock<IZapStreamFactory>();
+            mockStreamFactory = mockRepository.Create<IZapStreamFactory>();
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            mockFactory.VerifyAllExpectationsHaveBeenMet();
+            mockRepository.VerifyAll();
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException), "zversion 0 should be rejected")]
         public void Ctor_Should_Reject_Low_Zversion()
         {
-            var dummy = new GameBuilder(0, mockStreamFactory.MockObject, false);
+            var dummy = new GameBuilder(0, mockStreamFactory.Object, false);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException), "zversion 9 should be rejected")]
         public void Ctor_Should_Reject_High_Zversion()
         {
-            var dummy = new GameBuilder(9, mockStreamFactory.MockObject, false);
+            var dummy = new GameBuilder(9, mockStreamFactory.Object, false);
         }
 
         [TestMethod]
@@ -63,11 +63,6 @@ namespace Zilf.Emit.Tests
         {
             // ReSharper disable once AssignNullToNotNullAttribute
             var dummy = new GameBuilder(5, null, false);
-        }
-
-        public void Dispose()
-        {
-            mockFactory?.Dispose();
         }
     }
 }
