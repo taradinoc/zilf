@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ZilfAnalyzers
 {
+    // TODO: remove references to Workspaces types to resolve warning RS1022 (see https://github.com/dotnet/roslyn-sdk/issues/105)
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ErrorExceptionUsageAnalyzer : DiagnosticAnalyzer
     {

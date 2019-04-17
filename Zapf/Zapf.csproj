@@ -6,7 +6,7 @@
     <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFrameworks>net471;netcoreapp2.0</TargetFrameworks>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <OutputType>Exe</OutputType>
     <Product>ZILF</Product>
     <Version>0.8</Version>
@@ -17,7 +17,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2018.2.1">
+    <PackageReference Include="JetBrains.Annotations" Version="2018.3.0">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
       <IncludeAssets>compile; build; native; contentfiles; analyzers</IncludeAssets>

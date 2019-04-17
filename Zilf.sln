@@ -24,7 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf", "Zapf\Zapf.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dezapf.Tests", "Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf.Tests", "Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Emit", "Zilf.Emit\Zilf.Emit.csproj", "{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}"
 EndProject

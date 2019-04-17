@@ -108,11 +108,14 @@ namespace Dezapf.Tests
         }*/
 
         [TestMethod]
-        void TestRoundTrip(byte[] zcode)
+        public void NoTest()
         {
             Assert.Inconclusive("DeZapf is not ready for end-to-end testing");
+        }
 
 /*
+        void TestRoundTrip(byte[] zcode)
+        {
             int rc;
 
             rc = RunDezapf(zcode, out var code);
@@ -122,7 +125,7 @@ namespace Dezapf.Tests
             Assert.AreEqual(0, rc, "Zapf signaled error");
 
             CollectionAssert.AreEqual(zcode, actual);
-*/
         }
+*/
     }
 }

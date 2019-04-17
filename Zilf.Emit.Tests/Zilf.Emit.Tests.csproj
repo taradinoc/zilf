@@ -6,7 +6,7 @@
     <SccLocalPath>&lt;Local Binding Root of Project&gt;</SccLocalPath>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <Product>ZILF</Product>
     <Version>0.8</Version>
     <Authors>Jesse McGrew</Authors>
@@ -16,11 +16,11 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2018.2.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2018.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
+    <PackageReference Include="Moq" Version="4.10.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
-    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
-    <PackageReference Include="NMock3" Version="3.5.44.0" />    
+    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />
