@@ -76,12 +76,6 @@ namespace Zilf.Compiler
         /// </summary>
         public bool IsEverWritten { get; set; }
 
-        public LocalBindingRecord(LocalBindingType type, [NotNull] ZilAtom definingAtom,
-            [NotNull] ILocalBuilder storage)
-            : this(type, definingAtom.SourceLine, definingAtom.Text, storage)
-        {
-        }
-
         public LocalBindingRecord(LocalBindingType type, [NotNull] ISourceLine definition, [NotNull] string boundName,
             [NotNull] ILocalBuilder storage)
         {
