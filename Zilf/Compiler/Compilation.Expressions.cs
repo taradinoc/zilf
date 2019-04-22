@@ -221,7 +221,7 @@ namespace Zilf.Compiler
                     var atom = (ZilAtom)expr;
                     if (Globals.ContainsKey(atom))
                     {
-                        Context.HandleError(new CompilerError(expr.SourceLine ?? src,
+                        Context.HandleError(new CompilerError(src,
                             CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index, atom));
                         return Globals[atom].Indirect;
                     }
