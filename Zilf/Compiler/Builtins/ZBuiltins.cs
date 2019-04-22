@@ -454,7 +454,7 @@ namespace Zilf.Compiler.Builtins
                 if (arg1 == c.rb.Stack)
                 {
                     tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                    var tempLocal = c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary);
+                    var tempLocal = c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
                     c.rb.EmitStore(tempLocal, arg1);
                     arg1 = tempLocal;
                 }
@@ -1307,7 +1307,7 @@ namespace Zilf.Compiler.Builtins
                     if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                     {
                         var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                        c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary);
+                        c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
                         try
                         {
                             var tempLocal = c.cc.Locals[tempAtom].LocalBuilder;
@@ -2139,7 +2139,7 @@ namespace Zilf.Compiler.Builtins
             }
 
             var tmpAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-            var lb = c.cc.PushInnerLocal(c.rb, tmpAtom, LocalBindingType.CompilerTemporary);
+            var lb = c.cc.PushInnerLocal(c.rb, tmpAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
             try
             {
                 c.rb.EmitStore(lb, c.cc.Game.MakeOperand(offset));

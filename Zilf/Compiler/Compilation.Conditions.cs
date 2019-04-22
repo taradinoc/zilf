@@ -255,7 +255,7 @@ namespace Zilf.Compiler
                 if (tempVar != null)
                     return tempVar;
 
-                PushInnerLocal(rb, tempAtom, LocalBindingType.CompilerTemporary);
+                PushInnerLocal(rb, tempAtom, LocalBindingType.CompilerTemporary, src);
                 tempVar = Locals[tempAtom].LocalBuilder;
                 return tempVar;
             }

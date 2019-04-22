@@ -149,7 +149,7 @@ namespace Zilf.Compiler
                         rb.EmitPrint(PrintOp.Number, lb);
                     }
 
-                    var lbr = new LocalBindingRecord(arg.Type.ToLocalBindingType(), originalArgName, lb);
+                    var lbr = new LocalBindingRecord(arg.Type.ToLocalBindingType(), routine.SourceLine, originalArgName.Text, lb);
                     Locals.Add(originalArgName, lbr);
                     AllLocalBindingRecords.Add(lbr);
 
@@ -307,11 +307,12 @@ namespace Zilf.Compiler
         /// <param name="rb"></param>
         /// <param name="atom"></param>
         /// <param name="reason"></param>
+        /// <param name="src"></param>
         /// <returns></returns>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [NotNull]
         public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom,
-            LocalBindingType reason)
+            LocalBindingType reason, ISourceLine src)
         {
             if (Locals.TryGetValue(atom, out var prev))
             {
@@ -347,7 +348,7 @@ namespace Zilf.Compiler
                 TempLocalNames.Add(tempName);
             }
 
-            var lbr = new LocalBindingRecord(reason, atom, result);
+            var lbr = new LocalBindingRecord(reason, src, atom.Text, result);
             Locals[atom] = lbr;
             AllLocalBindingRecords.Add(lbr);
             return result;

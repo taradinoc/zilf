@@ -89,13 +89,13 @@ namespace Zilf.Compiler
             void AddLocal(ZilAtom atom)
             {
                 innerLocals.Enqueue(atom);
-                PushInnerLocal(rb, atom, LocalBindingType.ProgAuxiliary);
+                PushInnerLocal(rb, atom, LocalBindingType.ProgAuxiliary, src);
             }
 
             void AddLocalWithDefault(ZilAtom atom, ZilObject value)
             {
                 innerLocals.Enqueue(atom);
-                var lb = PushInnerLocal(rb, atom, LocalBindingType.ProgAuxiliary);
+                var lb = PushInnerLocal(rb, atom, LocalBindingType.ProgAuxiliary, src);
                 var loc = CompileAsOperand(rb, value, src, lb);
                 if (loc != lb)
                     rb.EmitStore(lb, loc);
@@ -561,7 +561,7 @@ namespace Zilf.Compiler
                 protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
                 {
                     // initialize counter
-                    this.counter = cc.PushInnerLocal(rb, atom, LocalBindingType.LoopState);
+                    this.counter = cc.PushInnerLocal(rb, atom, LocalBindingType.LoopState, src);
                     var operand = cc.CompileAsOperand(rb, start, src, counter);
                     if (operand != counter)
                         rb.EmitStore(counter, operand);
@@ -703,7 +703,7 @@ namespace Zilf.Compiler
                 protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
                 {
                     // initialize counter
-                    counter = cc.PushInnerLocal(rb, atom, LocalBindingType.LoopState);
+                    counter = cc.PushInnerLocal(rb, atom, LocalBindingType.LoopState, src);
                     var operand = cc.CompileAsOperand(rb, container, src);
                     rb.EmitGetChild(operand, counter, exhaustedLabel, false);
                 }
@@ -752,7 +752,7 @@ namespace Zilf.Compiler
                 protected override void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel)
                 {
                     // initialize next
-                    next = cc.PushInnerLocal(rb, nextAtom, LocalBindingType.LoopState);
+                    next = cc.PushInnerLocal(rb, nextAtom, LocalBindingType.LoopState, src);
                     var tempLabel = rb.DefineLabel();
                     rb.EmitGetSibling(counter, next, tempLabel, true);
                     rb.MarkLabel(tempLabel);
@@ -839,7 +839,7 @@ namespace Zilf.Compiler
                 protected override void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel)
                 {
                     // initialize counter
-                    counter = cc.PushInnerLocal(rb, dirAtom, LocalBindingType.LoopState);
+                    counter = cc.PushInnerLocal(rb, dirAtom, LocalBindingType.LoopState, src);
                     rb.EmitStore(counter, cc.Game.MakeOperand(cc.Game.MaxProperties + 1));
                 }
 
@@ -850,7 +850,7 @@ namespace Zilf.Compiler
                         cc.Constants[cc.Context.GetStdAtom(StdAtom.LOW_DIRECTION)], exhaustedLabel, true);
 
                     // get next prop table
-                    var propTable = cc.PushInnerLocal(rb, ptAtom, LocalBindingType.LoopState);
+                    var propTable = cc.PushInnerLocal(rb, ptAtom, LocalBindingType.LoopState, src);
                     var roomOperand = cc.CompileAsOperand(rb, room, src);
                     rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
                     rb.BranchIfZero(propTable, againLabel, true);
