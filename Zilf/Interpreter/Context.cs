@@ -251,9 +251,16 @@ namespace Zilf.Interpreter
             set => diagnostics.WarningsAsErrors = value;
         }
 
+        public void SuppressDiagnostic([NotNull] string code)
+        {
+            diagnostics.AddSuppression(code);
+        }
+
         public int ErrorCount => diagnostics.ErrorCount;
 
         public int WarningCount => diagnostics.WarningCount;
+
+        public int SuppressedWarningCount => diagnostics.SuppressedWarningCount;
 
         [NotNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics.Diagnostics;

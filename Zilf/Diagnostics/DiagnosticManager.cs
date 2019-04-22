@@ -32,9 +32,16 @@ namespace Zilf.Diagnostics
         readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
 
         [NotNull]
+        readonly List<Diagnostic> suppressedDiagnostics = new List<Diagnostic>();
+
+        [NotNull]
+        readonly HashSet<string> suppressions = new HashSet<string>();
+
+        [NotNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
         public int WarningCount => Diagnostics.Count(d => d.Severity == Severity.Warning);
+        public int SuppressedWarningCount => suppressedDiagnostics.Count(d => d.Severity == Severity.Warning);
 
         public bool WarningsAsErrors { get; set; }
 
@@ -49,6 +56,11 @@ namespace Zilf.Diagnostics
         {
             Formatter = formatter ?? new DefaultDiagnosticFormatter();
             OutputWriter = outputWriter ?? Console.Error;
+        }
+
+        public void AddSuppression([NotNull] string code)
+        {
+            suppressions.Add(code);
         }
 
         public void Handle([NotNull] Diagnostic diag)
@@ -68,7 +80,14 @@ namespace Zilf.Diagnostics
                 }
             }
 
-            OutputWriter.WriteLine(Formatter.Format(diag));
+            if (diag.Severity < Severity.Error && suppressions.Contains(diag.Code))
+            {
+                suppressedDiagnostics.Add(diag);
+            }
+            else
+            { 
+                OutputWriter.WriteLine(Formatter.Format(diag));
+            }
         }
     }
 }

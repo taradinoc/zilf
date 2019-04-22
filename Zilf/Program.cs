@@ -87,16 +87,25 @@ namespace Zilf
 
                     if (result.WarningCount > 0)
                     {
-                        Console.Error.WriteLine("{0} warning{1}",
-                            ctx.WarningCount,
-                            ctx.WarningCount == 1 ? "" : "s");
+                        Console.Error.Write("{0} warning{1}",
+                            result.WarningCount,
+                            result.WarningCount == 1 ? "" : "s");
+
+                        if (result.SuppressedWarningCount > 0)
+                        {
+                            Console.Error.Write(
+                                " ({0} suppressed)",
+                                result.SuppressedWarningCount);
+                        }
+
+                        Console.Error.WriteLine();
                     }
 
                     if (result.ErrorCount > 0)
                     {
                         Console.Error.WriteLine("{0} error{1}",
-                            ctx.ErrorCount,
-                            ctx.ErrorCount == 1 ? "" : "s");
+                            result.ErrorCount,
+                            result.ErrorCount == 1 ? "" : "s");
                         return 2;
                     }
                 }
@@ -234,6 +243,7 @@ namespace Zilf
             RunMode? mode = null;
             bool? quiet = null;
             var includePaths = new List<string>();
+            var suppressedDiagnosticCodes = new List<string>();
 
             if (!ParseArgs())
                 return null;
@@ -257,6 +267,9 @@ namespace Zilf
 
             ctx.IncludePaths.AddRange(includePaths);
             AddImplicitIncludePaths(ctx.IncludePaths, newInFile, mode.Value);
+
+            foreach (var code in suppressedDiagnosticCodes)
+                ctx.SuppressDiagnostic(code);
 
             inFile = newInFile;
             outFile = newOutFile;
@@ -320,6 +333,23 @@ namespace Zilf
 
                         case "-we":
                             warningsAsErrors = true;
+                            break;
+
+                        case "-ws":
+                            i++;
+                            if (i < args.Length)
+                            {
+                                foreach (var code in args[i].Split(','))
+                                {
+                                    suppressedDiagnosticCodes.Add(args[i]);
+                                }
+                            }
+                            else
+                            {
+                                Usage();
+                                return false;
+                            }
+
                             break;
 
                         case "-?":
@@ -514,7 +544,8 @@ General switches:
 Compiler switches:
   -tr                   trace routine calls at runtime
   -d                    include debug information
-  -we                   treat warnings as errors");
+  -we                   treat warnings as errors
+  -ws code[,code...]    suppress specific warnings (may be repeated)");
         }
 
         // TODO: move Parse somewhere more sensible
