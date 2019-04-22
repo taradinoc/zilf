@@ -332,7 +332,7 @@ namespace Zilf.Compiler.Builtins
                     var result = spec.Method.Invoke(null, builtinParams.ToArray());
                     return result;
                 }
-                catch (TargetInvocationException ex) when (ex.InnerException is ZilError zex)
+                catch (TargetInvocationException ex) when (ex.InnerException is ZilErrorBase zex)
                 {
                     ExceptionDispatchInfo.Capture(zex).Throw();
                     // ReSharper disable once HeuristicUnreachableCode
