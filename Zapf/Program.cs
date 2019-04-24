@@ -254,12 +254,6 @@ namespace Zapf
                         result.ListAddresses = true;
                         break;
 
-                    case "-v":
-                        if (++i == args.Count)
-                            return null;
-                        result.ZVersion = byte.Parse(args[i]);
-                        break;
-
                     case "-r":
                         if (++i == args.Count)
                             return null;
@@ -323,7 +317,6 @@ namespace Zapf
 General switches:
   -i                    use Inform opcode/stack names
   -q                    quiet (no banner)
-  -v #                  set default Z-machine version (.NEW overrides this)
   -la                   list global label addresses
   -r #                  set release number (this overrides RELEASEID)
   -s ######             set serial number
