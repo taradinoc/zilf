@@ -1038,10 +1038,7 @@ namespace Zapf
 
     class Fixup
     {
-        public Fixup(string symbol)
-        {
-            Symbol = symbol;
-        }
+        public Fixup(string symbol) => Symbol = symbol;
 
         public string Symbol { get; }
 

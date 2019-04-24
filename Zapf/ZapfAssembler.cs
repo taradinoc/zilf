@@ -43,10 +43,7 @@ namespace Zapf
 
     class CheckingFilePresenceEventArgs : EventArgs
     {
-        public CheckingFilePresenceEventArgs([NotNull] string filename)
-        {
-            FileName = filename;
-        }
+        public CheckingFilePresenceEventArgs([NotNull] string filename) => FileName = filename;
 
         [NotNull]
         public string FileName { get; }
@@ -57,10 +54,7 @@ namespace Zapf
 
     class InitializingContextEventArgs : EventArgs
     {
-        public InitializingContextEventArgs([NotNull] Context ctx)
-        {
-            Context = ctx;
-        }
+        public InitializingContextEventArgs([NotNull] Context ctx) => Context = ctx;
 
         [NotNull]
         public Context Context { get; set; }

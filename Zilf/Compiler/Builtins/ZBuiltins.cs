@@ -36,6 +36,7 @@ using Zilf.ZModel.Values;
 
 namespace Zilf.Compiler.Builtins
 {
+    [SuppressMessage("Style", "IDE0060", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
     static class ZBuiltins
     {
         #region Infrastructure

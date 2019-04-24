@@ -946,12 +946,12 @@ General switches:
                     return ((uint)num.Value & 0xffffff00) != 0;
 
                 case SymbolExpr symExpr:
-                    if (ctx.LocalSymbols.TryGetValue(symExpr.Text, out var sym))
+                    if (ctx.LocalSymbols.TryGetValue(symExpr.Text, out _))
                     {
                         // the only legal local symbol operand is a local variable
                         return false;
                     }
-                    else if (ctx.GlobalSymbols.TryGetValue(symExpr.Text, out sym))
+                    else if (ctx.GlobalSymbols.TryGetValue(symExpr.Text, out var sym))
                     {
                         return sym.Value < 0 || sym.Value > 255;
                     }
@@ -1776,14 +1776,13 @@ General switches:
 
         static void HandleLabel([NotNull] Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
         {
-            Symbol sym;
             string name;
 
             switch (node)
             {
                 case GlobalLabel globalNode:
                     name = globalNode.Name;
-                    if (ctx.GlobalSymbols.TryGetValue(name, out sym))
+                    if (ctx.GlobalSymbols.TryGetValue(name, out var sym))
                     {
                         // we don't require it to be a phantom because a global label might be
                         // defined inside a routine, and reassembly could cause it to be defined twice
