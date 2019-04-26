@@ -285,7 +285,7 @@ namespace Zilf.ZModel
         static bool IsSimpleOutputElement([NotNull] ZilObject obj)
         {
             return obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse ||
-                   obj.IsLVAL(out _) || obj.IsGVAL(out _);
+                   obj.IsLVAL(out _) || obj.IsGVAL(out _) || (obj as ZilForm)?.IsEmpty == true;
         }
     }
 }

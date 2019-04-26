@@ -44,21 +44,41 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void Tell_Builtin_Should_Support_New_Tokens()
         {
-            AssertRoutine("", @"<TELL DBL 21 CRLF WUTEVA ""hello"" GLOB WUTEVA 45 CR MAC1 MAC2>")
-                .WithGlobal(
-                    @"<TELL-TOKENS " +
-                    @"  (CR CRLF)        <CRLF>" +
-                    @"  DBL *            <PRINT-DBL .X>" +
-                    @"  WUTEVA *:STRING  <PRINTI .X>" +
-                    @"  WUTEVA *:FIX     <PRINTN .X>" +
-                    @"  GLOB             <PRINTN ,GLOB>" +
-                    @"  MAC1             <PRINT-MAC-1>" +
-                    @"  MAC2             <PRINT-MAC-2>>")
-                .WithGlobal(@"<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>")
-                .WithGlobal(@"<GLOBAL GLOB 123>")
-                .WithGlobal(@"<DEFMAC PRINT-MAC-1 () '<PRINT ""macro"">>")
-                .WithGlobal(@"<DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT ""mac""> <PRINT ""ro"">)>")
-                .Outputs("42\n" + "hello12345\n" + @"macromacro");
+            const string STokens = @"
+<TELL-TOKENS
+    (CR CRLF)        <CRLF>
+    DBL *            <PRINT-DBL .X>
+    DBL0             <PRINT-DBL <>>
+    WUTEVA *:STRING  <PRINTI .X>
+    WUTEVA *:FIX     <PRINTN .X>
+    GLOB             <PRINTN ,GLOB>
+    MAC1             <PRINT-MAC-1>
+    MAC2             <PRINT-MAC-2>>
+
+<ROUTINE PRINT-DBL (X) <PRINTN <* 2 .X>>>
+<GLOBAL GLOB 123>
+<DEFMAC PRINT-MAC-1 () '<PRINT ""macro"">>
+<DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT ""mac""> <PRINT ""ro"">)>";
+
+            AssertRoutine("", @"<TELL DBL 21 CRLF>")
+                .WithGlobal(STokens)
+                .Outputs("42\n");
+
+            AssertRoutine("", @"<TELL DBL0>")
+                .WithGlobal(STokens)
+                .Outputs("0");
+
+            AssertRoutine("", @"<TELL WUTEVA ""hello"">")
+                .WithGlobal(STokens)
+                .Outputs("hello");
+
+            AssertRoutine("", @"<TELL GLOB WUTEVA 45 CR>")
+                .WithGlobal(STokens)
+                .Outputs("12345\n");
+
+            AssertRoutine("", @"<TELL MAC1 MAC2>")
+                .WithGlobal(STokens)
+                .Outputs("macromacro");
         }
 
         [TestMethod]
