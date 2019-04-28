@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ZilfAnalyzers\ZilfAnalyzers.csproj" />
+    <ProjectReference Include="$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj" />
   </ItemGroup>
 
 </Project>

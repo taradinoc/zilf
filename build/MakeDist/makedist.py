@@ -126,28 +126,27 @@ def make_dist() -> str:
 
     with Archiver(output, sln_dir) as d:
         d.add_static('/', 'COPYING.txt')
-        d.add_static('/', 'distfiles/README.txt')
 
         d.add_project_output('bin/', 'Zapf')
         d.add_project_output('bin/', 'Zilf')
 
-        d.add_static('doc/', 'Zilf/quickref.txt')
-        d.add_static('doc/', 'zapf_manual.html')
-        d.add_static('doc/', 'zilf_manual.html')
+        d.add_static('doc/', 'doc/quickref.txt')
+        d.add_static('doc/', 'doc/zapf_manual.html')
+        d.add_static('doc/', 'doc/zilf_manual.html')
 
-        d.add_static('library/', 'Library/LICENSE.txt')
-        d.add_static('library/', 'Library/ZIL_ZILF_differences.txt')
-        d.add_glob('library/', 'Library/*.mud')
-        d.add_glob('library/', 'Library/*.zil')
+        d.add_static('lib/', 'zillib/LICENSE.txt')
+        d.add_static('lib/', 'zillib/ZIL_ZILF_differences.txt')
+        d.add_glob('lib/', 'zillib/*.mud')
+        d.add_glob('lib/', 'zillib/*.zil')
 
-        d.add_glob('sample/advent/', 'Examples/advent/*.zil')
+        d.add_glob('sample/advent/', 'sample/advent/*.zil')
 
-        d.add_glob('sample/cloak/', 'Examples/cloak/*.zil')
+        d.add_glob('sample/cloak/', 'sample/cloak/*.zil')
 
-        d.add_glob('sample/cloak_plus/', 'Examples/cloak_plus/*.md')
-        d.add_glob('sample/cloak_plus/', 'Examples/cloak_plus/*.zil')
+        d.add_glob('sample/cloak_plus/', 'sample/cloak_plus/*.md')
+        d.add_glob('sample/cloak_plus/', 'sample/cloak_plus/*.zil')
 
-        d.add_glob('sample/empty/', 'Examples/empty/*.zil')
+        d.add_glob('sample/empty/', 'sample/empty/*.zil')
 
     return output
 

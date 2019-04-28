@@ -1,0 +1,6 @@
+<!--EXTERNAL_PROPERTIES: MSBuildThisFileDirectory-->
+<Project>
+  <PropertyGroup>
+    <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
+  </PropertyGroup>
+</Project>

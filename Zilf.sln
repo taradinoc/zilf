@@ -1,52 +1,50 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{46FB864A-6499-4C61-A70B-964ACF6968F6}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "src\Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf", "src\Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf", "src\Zapf\Zapf.csproj", "{C4379053-B0C7-4826-AC41-CEA59A743B15}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf", "src\Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf.Tests", "test\Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Emit", "src\Zilf.Emit\Zilf.Emit.csproj", "{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Emit.Tests", "test\Zilf.Emit.Tests\Zilf.Emit.Tests.csproj", "{44193312-FD34-4A33-A9BC-D4170028B279}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests", "test\Zilf.Tests\Zilf.Tests.csproj", "{E7119E94-B1B0-4C23-9D61-69746A7AA1A3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests.Integration", "test\Zilf.Tests.Integration\Zilf.Tests.Integration.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Tests", "test\Zapf.Tests\Zapf.Tests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common", "src\Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Parsing", "src\Zapf.Parsing\Zapf.Parsing.csproj", "{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MakeDist", "build\MakeDist\MakeDist.pyproj", "{B6BE475F-4F21-4FED-9F49-506DC59F140A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers", "src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj", "{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers.Test", "src\Analyzers\ZilfAnalyzers.Test\ZilfAnalyzers.Test.csproj", "{55BC8693-4255-4F7C-B69D-734406DE6C88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfAnalyzers.Vsix", "src\Analyzers\ZilfAnalyzers.Vsix\ZilfAnalyzers.Vsix.csproj", "{1451DB23-3FE9-4207-9903-9B5395934806}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{639D8160-38EF-4ED1-8202-8B8CFBE22FBD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{65A2B38C-4851-42E5-900C-DAD903A288F8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{6BBC3638-AC21-4186-89D1-E3A699469C9B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1E9A9589-73D4-466C-9A3D-D44D058B2359}"
 	ProjectSection(SolutionItems) = preProject
-		Compatibility Notes.txt = Compatibility Notes.txt
-		zapf_manual.html = zapf_manual.html
-		ZIL Guide.odt = ZIL Guide.odt
-		zilf_manual.html = zilf_manual.html
+		Directory.Build.props = Directory.Build.props
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4E29B85-317C-4E0F-AABD-D0101C558D91}"
-	ProjectSection(SolutionItems) = preProject
-		CustomDictionary.xml = CustomDictionary.xml
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf", "Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf", "Zapf\Zapf.csproj", "{C4379053-B0C7-4826-AC41-CEA59A743B15}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf", "Dezapf\Dezapf.csproj", "{EF94747E-F175-4AF5-8882-2FA99EB1505A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dezapf.Tests", "Dezapf.Tests\Dezapf.Tests.csproj", "{81653942-09FB-4D69-B2D3-423FE0E8F339}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Emit", "Zilf.Emit\Zilf.Emit.csproj", "{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Emit.Tests", "Zilf.Emit.Tests\Zilf.Emit.Tests.csproj", "{44193312-FD34-4A33-A9BC-D4170028B279}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests", "Zilf.Tests\Zilf.Tests.csproj", "{E7119E94-B1B0-4C23-9D61-69746A7AA1A3}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Tests.Integration", "Zilf.Tests.Integration\Zilf.Tests.Integration.csproj", "{D429D279-234D-43A7-8523-1E3E61FED51A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Tests", "Zapf.Tests\Zapf.Tests.csproj", "{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common", "Zilf.Common\Zilf.Common.csproj", "{433B6DA6-FF85-4370-9012-4C6B7177FC0D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Parsing", "Zapf.Parsing\Zapf.Parsing.csproj", "{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}"
-EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MakeDist", "MakeDist\MakeDist.pyproj", "{B6BE475F-4F21-4FED-9F49-506DC59F140A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers", "Analyzers\ZilfAnalyzers\ZilfAnalyzers\ZilfAnalyzers.csproj", "{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers.Test", "Analyzers\ZilfAnalyzers\ZilfAnalyzers.Test\ZilfAnalyzers.Test.csproj", "{55BC8693-4255-4F7C-B69D-734406DE6C88}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfAnalyzers.Vsix", "Analyzers\ZilfAnalyzers\ZilfAnalyzers.Vsix\ZilfAnalyzers.Vsix.csproj", "{1451DB23-3FE9-4207-9903-9B5395934806}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -166,6 +164,19 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{598B603F-F081-440B-BD43-4813EC6E043C} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{B043E397-658B-412C-93F7-2F705FEE885E} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{C4379053-B0C7-4826-AC41-CEA59A743B15} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{EF94747E-F175-4AF5-8882-2FA99EB1505A} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{81653942-09FB-4D69-B2D3-423FE0E8F339} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
+		{3DD99678-F71C-4CAA-A8BF-7DBA6188C3C4} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{44193312-FD34-4A33-A9BC-D4170028B279} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
+		{E7119E94-B1B0-4C23-9D61-69746A7AA1A3} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
+		{D429D279-234D-43A7-8523-1E3E61FED51A} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
+		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
+		{433B6DA6-FF85-4370-9012-4C6B7177FC0D} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{B6BE475F-4F21-4FED-9F49-506DC59F140A} = {6BBC3638-AC21-4186-89D1-E3A699469C9B}
 		{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{55BC8693-4255-4F7C-B69D-734406DE6C88} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{1451DB23-3FE9-4207-9903-9B5395934806} = {598B603F-F081-440B-BD43-4813EC6E043C}

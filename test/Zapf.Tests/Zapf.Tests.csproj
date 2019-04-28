@@ -11,22 +11,23 @@
     <Version>0.8</Version>
     <Authors>Jesse McGrew</Authors>
     <Company />
-    <Description>Tests for Zilf.Emit.</Description>
+    <Description>Tests for Zapf.</Description>
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2018.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
-    <PackageReference Include="Moq" Version="4.10.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
-    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />    
+    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
+    <PackageReference Include="NSubstitute" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />
+    <ProjectReference Include="$(SolutionDir)src\Zapf\Zapf.csproj" />
+    <ProjectReference Include="$(SolutionDir)src\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader">
+    <None Include="$(SolutionDir)Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>

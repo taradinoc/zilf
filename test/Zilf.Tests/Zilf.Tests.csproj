@@ -7,11 +7,12 @@
   </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
+    <LangVersion>7.3</LangVersion>
     <Product>ZILF</Product>
     <Version>0.8</Version>
     <Authors>Jesse McGrew</Authors>
     <Company />
-    <Description>Tests for Zapf.</Description>
+    <Description>Tests for Zilf.</Description>
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -20,17 +21,24 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
-    <PackageReference Include="NSubstitute" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Zapf\Zapf.csproj" />
-    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
+    <ProjectReference Include="$(SolutionDir)src\Zilf\Zilf.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader">
+    <None Include="$(SolutionDir)\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>
+
+  <!-- only use the analyzer if it's been built for this target -->
+  <PropertyGroup>
+    <ZilfAnalyzersAssembly>$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />
+  </ItemGroup>
+
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

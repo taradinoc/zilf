@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (c)  Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information. -->
+<!--EXTERNAL_PROPERTIES: MSBuildToolsVersion-->
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
@@ -74,7 +75,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ZilfAnalyzers\ZilfAnalyzers.csproj">
+    <ProjectReference Include="$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj">
       <Project>{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}</Project>
       <Name>ZilfAnalyzers</Name>
     </ProjectReference>
