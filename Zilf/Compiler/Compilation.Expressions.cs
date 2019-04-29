@@ -221,21 +221,23 @@ namespace Zilf.Compiler
                     var atom = (ZilAtom)expr;
                     if (Globals.ContainsKey(atom))
                     {
-                        Context.HandleError(new CompilerError(src,
-                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index, atom));
+                        Context.HandleError(new CompilerError(
+                            src,
+                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index,
+                            atom));
                         return Globals[atom].Indirect;
                     }
                     if (SoftGlobals.ContainsKey(atom))
                     {
                         Context.HandleError(new CompilerError(
-                            expr.SourceLine ?? src,
+                            src,
                             CompilerMessages.Soft_Variable_0_May_Not_Be_Used_Here,
                             atom));
                     }
                     else
                     {
                         Context.HandleError(new CompilerError(
-                            expr.SourceLine ?? src,
+                            src,
                             CompilerMessages.Bare_Atom_0_Used_As_Operand_Is_Not_A_Global_Variable,
                             atom));
                     }
