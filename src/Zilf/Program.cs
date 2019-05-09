@@ -452,8 +452,8 @@ namespace Zilf
             }
 
             // look for a "library" directory somewhere near zilf.exe
-            var strippables = new HashSet<string> { "bin", "debug", "release", "zilf" };
-            string[] libraryDirNames = { "Library", "library", "lib" };
+            var strippables = new HashSet<string> { "bin", "debug", "release", "zilf", "src" };
+            string[] libraryDirNames = { "Library", "library", "lib", "zillib" };
 
             var zilfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Debug.Assert(zilfDir != null);
