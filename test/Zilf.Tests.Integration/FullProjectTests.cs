@@ -31,7 +31,7 @@ namespace Zilf.Tests.Integration
     public class FullProjectTests
     {
         const string ProjectsDirName = "FullTestProjects";
-        const string LibraryDirName = "Library";
+        const string LibraryDirName = "zillib";
         const int PerTestTimeoutMilliseconds = 60000;
 
         static string projectsDir, libraryDir;
@@ -42,18 +42,19 @@ namespace Zilf.Tests.Integration
         {
             projectsDir = libraryDir = null;
 
-            // find a directory containing ProjectsDirName and LibraryDirName
+            // find directories containing ProjectsDirName and LibraryDirName
             var dir = Directory.GetCurrentDirectory();
 
             do
             {
-                if (Directory.Exists(Path.Combine(dir, ProjectsDirName)) &&
-                    Directory.Exists(Path.Combine(dir, LibraryDirName)))
-                {
+                if (projectsDir == null && Directory.Exists(Path.Combine(dir, ProjectsDirName)))
                     projectsDir = Path.Combine(dir, ProjectsDirName);
+
+                if (libraryDir == null && Directory.Exists(Path.Combine(dir, LibraryDirName)))
                     libraryDir = Path.Combine(dir, LibraryDirName);
+
+                if (projectsDir != null && libraryDir != null)
                     break;
-                }
 
                 dir = Directory.GetParent(dir).FullName;
             } while (dir != Path.GetPathRoot(dir));

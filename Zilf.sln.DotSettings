@@ -494,6 +494,7 @@ System.Xml.Linq.*</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ZBACK/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ZBUFOUT/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ZCRLF/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=zenv/@EntryIndexedValue">True</s:Boolean>
 	
 	
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ZILF/@EntryIndexedValue">True</s:Boolean>
