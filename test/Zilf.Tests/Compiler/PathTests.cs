@@ -22,6 +22,7 @@ using System.IO;
 using System.Text;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common.StringEncoding;
 using Zilf.Compiler;
 
 namespace Zilf.Tests.Compiler
@@ -42,6 +43,12 @@ namespace Zilf.Tests.Compiler
                 inputs[path] = content;
             }
 
+            public string GetOutputContent([NotNull] string path)
+            {
+                var stream = outputs[path];
+                return Encoding.UTF8.GetString(stream.ToArray());
+            }
+
             public void Compile([NotNull] string mainZilFile)
             {
                 var compiler = new FrontEnd();
@@ -57,19 +64,18 @@ namespace Zilf.Tests.Compiler
                     {
                         e.Stream = outputs[e.FileName] = new MemoryStream();
                     }
-                    else
+                    else if (inputs.TryGetValue(e.FileName, out var content))
                     {
-                        if (inputs.TryGetValue(e.FileName, out var content))
+                        var result = new MemoryStream();
+
+                        using (var wtr = new StreamWriter(result, Encoding.UTF8, 512, true))
                         {
-                            var result = new MemoryStream();
-                            using (var wtr = new StreamWriter(result, Encoding.UTF8, 512, true))
-                            {
-                                wtr.Write(content);
-                                wtr.Flush();
-                            }
-                            result.Position = 0;
-                            e.Stream = result;
+                            wtr.Write(content);
+                            wtr.Flush();
                         }
+
+                        result.Position = 0;
+                        e.Stream = result;
                     }
                 };
 
@@ -104,6 +110,36 @@ namespace Zilf.Tests.Compiler
             };
 
             CollectionAssert.AreEquivalent(expected, helper.OutputFilePaths);
+        }
+
+        [TestMethod]
+        public void Frequent_Words_File_Without_Underscore_Should_Be_Used_If_Present()
+        {
+            var helper = new PathTestHelper();
+
+            helper.SetInputFile("foo.zil", @"
+<VERSION ZIP>
+
+<ROUTINE GO ()
+    <PRINTI ""Hello, world!"">
+    <CRLF>
+    <QUIT>>
+");
+
+            helper.SetInputFile(@"foofreq.xzap", "; use me");
+
+            helper.Compile("foo.zil");
+
+            var expected = new[]
+            {
+                "foo.zap",
+                "foo_data.zap",
+                "foo_str.zap"
+            };
+
+            CollectionAssert.AreEquivalent(expected, helper.OutputFilePaths);
+
+            Assert.IsTrue(helper.GetOutputContent("foo.zap").Contains(@"foofreq"));
         }
     }
 }

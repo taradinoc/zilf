@@ -105,8 +105,11 @@ namespace Zilf.Compiler
                 writing ? FileAccess.Write : FileAccess.Read);
         }
 
-        bool CheckFileExists(string path)
+        bool CheckFileExists([NotNull] string path)
         {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
             var handler = CheckingFilePresence;
             if (handler != null)
             {
@@ -138,7 +141,8 @@ namespace Zilf.Compiler
             [NotNull]
             readonly string stringFile;
 
-            const string FrequentWordsSuffix = "_freq";
+            const string FrequentWordsSuffix1 = "_freq";
+            const string FrequentWordsSuffix2 = "freq";
             const string DataSuffix = "_data";
             const string StringSuffix = "_str";
 
@@ -155,67 +159,62 @@ namespace Zilf.Compiler
                 var baseName = Path.GetFileNameWithoutExtension(mainFile);
                 var ext = Path.GetExtension(mainFile);
 
-                fwordsFile = Path.Combine(dir, baseName + FrequentWordsSuffix + ext);
+                fwordsFile = IdentifyFrequentWordsFilePath(dir, baseName, ext);
                 dataFile = Path.Combine(dir, baseName + DataSuffix + ext);
                 stringFile = Path.Combine(dir, baseName + StringSuffix + ext);
             }
 
+            private string IdentifyFrequentWordsFilePath(string dir, string baseName, string ext)
+            {
+                return
+                    Try(FrequentWordsSuffix1, ext, out string defaultPath) ??
+                    Try(FrequentWordsSuffix2, ext, out _) ??
+                    Try(FrequentWordsSuffix1, @".xzap", out _) ??
+                    Try(FrequentWordsSuffix2, @".xzap", out _) ??
+                    defaultPath;
+
+                string Try(string suffix, string myExt, out string path)
+                {
+                    path = Path.Combine(dir, baseName + suffix + myExt);
+                    return owner.CheckFileExists(path) ? path : null;
+                }
+            }
+
             #region IZapStreamFactory Members
 
-            public Stream CreateMainStream()
-            {
-                return owner.OpenFile(mainFile, true);
-            }
+            public Stream CreateMainStream() => owner.OpenFile(mainFile, true);
 
-            public Stream CreateFrequentWordsStream()
-            {
-                return owner.OpenFile(fwordsFile, true);
-            }
+            public Stream CreateFrequentWordsStream() => owner.OpenFile(fwordsFile, true);
 
-            public Stream CreateDataStream()
-            {
-                return owner.OpenFile(dataFile, true);
-            }
+            public Stream CreateDataStream() => owner.OpenFile(dataFile, true);
 
-            public Stream CreateStringStream()
-            {
-                return owner.OpenFile(stringFile, true);
-            }
+            public Stream CreateStringStream() => owner.OpenFile(stringFile, true);
 
             public string GetMainFileName(bool withExt)
             {
                 var result = mainFile;
-                if (!withExt)
-                    result = Path.ChangeExtension(result, null);
-                return result;
+                return withExt ? result : Path.ChangeExtension(result, null);
             }
 
             public string GetDataFileName(bool withExt)
             {
                 var result = dataFile;
-                if (!withExt)
-                    result = Path.ChangeExtension(result, null);
-                return result;
+                return withExt ? result : Path.ChangeExtension(result, null);
             }
 
             public string GetFrequentWordsFileName(bool withExt)
             {
                 var result = fwordsFile;
-                if (!withExt)
-                    result = Path.ChangeExtension(result, null);
-                return result;
+                return withExt ? result : Path.ChangeExtension(result, null);
             }
 
             public string GetStringFileName(bool withExt)
             {
                 var result = stringFile;
-                if (!withExt)
-                    result = Path.ChangeExtension(result, null);
-                return result;
+                return withExt ? result : Path.ChangeExtension(result, null);
             }
 
-            public bool FrequentWordsFileExists => owner.CheckFileExists(fwordsFile) ||
-                                                   owner.CheckFileExists(Path.ChangeExtension(fwordsFile, ".xzap"));
+            public bool FrequentWordsFileExists => owner.CheckFileExists(fwordsFile);
 
             #endregion
         }
@@ -243,10 +242,8 @@ namespace Zilf.Compiler
         }
 
         internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName,
-            [NotNull] string outputFileName, bool wantDebugInfo = false)
-        {
-            return InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
-        }
+            [NotNull] string outputFileName, bool wantDebugInfo = false) =>
+            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
 
         // FIXME: not supported by R#, sadly...
         //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
@@ -355,7 +352,7 @@ namespace Zilf.Compiler
                     v5Plus.Mouse = ctx.GetGlobalOption(StdAtom.USE_MOUSE_P);
                     v5Plus.Color = ctx.GetGlobalOption(StdAtom.USE_COLOR_P);
                     v5Plus.SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
-                                            ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P);
+                                          ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P);
 
                     if (doCharset)
                     {
