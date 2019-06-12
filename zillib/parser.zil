@@ -384,7 +384,7 @@ Args:
 
 <IF-DEBUG
     ;"Prints the meaning of a noun phrase."
-    <ROUTINE PRINT-NOUN-PHRASE (NP "AUX" CNT F S A N)
+    <ROUTINE PRINT-NOUN-PHRASE (NP "AUX" CNT F S)
         ;"Mode"
         <SET F <NP-MODE .NP>>
         <COND (<=? .F ,MCM-ALL> <TELL "all ">)
@@ -1818,7 +1818,7 @@ Returns:
   by the WINNER, or they are held, possibly as the result of an implicit TAKE.
   False if the objects have to be held, the WINNER is not holding them, and
   they couldn't be taken implicitly."
-<ROUTINE HAVE-TAKE-CHECK-TBL (TBL OPTS "AUX" MAX DO-TAKE? O N ORM)
+<ROUTINE HAVE-TAKE-CHECK-TBL (TBL OPTS "AUX" MAX O N ORM)
     <SET MAX <GETB .TBL 0>>
     ;"Attempt implicit take if WINNER isn't directly holding the objects"
     <COND (<BTST .OPTS ,SF-TAKE>
@@ -2262,7 +2262,7 @@ Args:
 
 Returns:
   True if the word is located, otherwise false."
-<ROUTINE IN-PWTBL? (O P V "AUX" PT MAX)
+<ROUTINE IN-PWTBL? (O P V "AUX" PT)
     <AND <SET PT <GETPT .O .P>>
          <IN-WTBL? .PT </ <PTSIZE .PT> 2> .V>>>
 
@@ -2275,7 +2275,7 @@ Args:
 
 Returns:
   True if the byte is located, otherwise false."
-<ROUTINE IN-PBTBL? (O P V "AUX" PT MAX)
+<ROUTINE IN-PBTBL? (O P V "AUX" PT)
     <AND <SET PT <GETPT .O .P>>
          <IN-BTBL? .PT <PTSIZE .PT> .V>>>
 
@@ -2720,7 +2720,7 @@ Returns:
 
 Args:
   STR: The string to emphasize."
-<ROUTINE ITALICIZE (STR "AUX" A)
+<ROUTINE ITALICIZE (STR)
     <VERSION? (ZIP)
               (T <HLIGHT ,H-ITALIC>)>
     <TELL .STR>
@@ -2827,7 +2827,7 @@ Args:
 Returns:
   True if RESURRECT? indicated that the game should resume.
   Otherwise, never returns."
-<ROUTINE JIGS-UP (TEXT "AUX" RESP W)
+<ROUTINE JIGS-UP (TEXT "AUX" W)
     <SETG P-CONT 0>
     <TELL .TEXT CR CR>
     <PRINT-GAME-OVER>

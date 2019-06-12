@@ -352,7 +352,7 @@ Uses:
 Args:
   RM: The room."
 
-    <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P F N S)
+    <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P N)
         <MAP-CONTENTS (I .RM)
             <COND
                 (<FSET? .I ,NDESCBIT>)
@@ -713,7 +713,7 @@ Returns:
 
 <CONSTANT CANT-GO-THAT-WAY "You can't go that way.">
 
-<ROUTINE V-WALK ("AUX" PT PTS RM THERE-LIT D)
+<ROUTINE V-WALK ("AUX" PT PTS RM D)
     <COND (<NOT ,PRSO-DIR>
            <PRINTR "You must give a direction to walk in.">)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
@@ -770,7 +770,7 @@ Returns:
            <NOT-POSSIBLE "get inside"> <RTRUE>)>>
 
 ;"Performs the WALK action with a direction."
-<ROUTINE DO-WALK (DIR "AUX" ODD R)
+<ROUTINE DO-WALK (DIR)
     <WITH-GLOBAL ((PRSO-DIR T)) <PERFORM ,V?WALK .DIR>>>
 
 ;"Finds a direction from HERE that leads through the given door.
@@ -868,7 +868,7 @@ Args:
 
 Returns:
   True if the object was taken."
-<ROUTINE TRY-TAKE (OBJ "OPT" SILENT "AUX" HOLDER S X)
+<ROUTINE TRY-TAKE (OBJ "OPT" SILENT "AUX" HOLDER)
     <COND (<=? .OBJ ,WINNER>
            <COND (.SILENT)
                  (<=? ,P-V-WORD ,W?GET> <TELL "Not quite." CR>)
@@ -1123,7 +1123,7 @@ Returns:
               (ELSE <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>)>>
 
 ;"Calculates the weight of all objects in a container, non-recursively."
-<ROUTINE CONTENTS-WEIGHT (O "AUX" X W)
+<ROUTINE CONTENTS-WEIGHT (O "AUX" W)
     ;"add size of objects inside container - does not recurse through containers
       within this container"
     <MAP-CONTENTS (I .O)
@@ -1245,7 +1245,7 @@ Returns:
                    .INTERRUPT>
                <RETURN>)>>>
 
-<ROUTINE V-AGAIN ("AUX" RESULT)
+<ROUTINE V-AGAIN ()
     <SAVE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
     <COND (,PRSA
@@ -1432,23 +1432,22 @@ Returns:
 
 ;"Action handlers for game verbs"
 
-<ROUTINE V-UNDO ("AUX" R)
+<ROUTINE V-UNDO ()
     <IFFLAG
         (UNDO
          <COND (<NOT ,USAVE>
                 <TELL "Cannot undo any further." CR>
-                <RETURN>)>
-         <SET R <IRESTORE>>
-         <COND (<EQUAL? .R 0>
+                <RETURN>)
+               (<NOT <IRESTORE>>
                 <TELL "Undo failed." CR>)>)
         (ELSE <TELL "Undo is not available in this version." CR>)>>
 
-<ROUTINE V-SAVE ("AUX" S)
+<ROUTINE V-SAVE ()
     <TELL "Saving..." CR CR>
     <COND (<SAVE> <V-LOOK>)
           (ELSE <TELL "Save failed." CR>)>>
 
-<ROUTINE V-RESTORE ("AUX" R)
+<ROUTINE V-RESTORE ()
     <COND (<NOT <RESTORE>>
            <TELL "Restore failed." CR>)>>
 
