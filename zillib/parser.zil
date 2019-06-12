@@ -885,6 +885,18 @@ Sets:
                       <TRACE 3 "[NP start word " N .I ", now NOBJ=" N .NOBJ "]" CR>
                       <TRACE-IN>
                       <COND (<==? .NOBJ 1>
+                             ;"If we found a direction earlier, try it as a preposition instead"
+                             ;"This fixes GO IN BUILDING (vs. GO IN)"
+                             <COND (<AND .DIR
+                                         ,P-V
+                                         <NOT ,P-P1>
+                                         <SET V <GETWORD? .DIR-WN>>
+                                         <SET VAL <CHKWORD? .V ,PS?PREPOSITION 0>>>
+                                    <TRACE 3 "[revising direction word " N .DIR-WN
+                                             " as P1: '" B .V "' = " N .VAL "]" CR>
+                                    <SETG P-P1 .VAL>
+                                    <SET DIR <>>
+                                    <SET DIR-WN <>>)>
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-DOBJ>>)
                             (<==? .NOBJ 2>
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
