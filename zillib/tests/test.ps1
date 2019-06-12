@@ -1,13 +1,15 @@
 $slnDir = if (Test-Path env:ZILF_SLN_PATH) { $env:ZILF_SLN_PATH } else { "..\..\.." }
-$zilfPath = $slnDir + "\Zilf\bin\Debug\net471\zilf.exe"
-$zapfPath = $slnDir + "\Zapf\bin\Debug\net471\zapf.exe"
-$czlrPath = $slnDir + "\Library\tests\ConsoleZLR.exe"
-$includeDir = $slnDir + "\Library"
-$testsDir = $slnDir + "\Library\tests"
+$zilfProjectPath = $slnDir + "\src\Zilf\Zilf.csproj"
+$zapfProjectPath = $slnDir + "\src\Zapf\Zapf.csproj"
+$includeDir = $slnDir + "\zillib"
+$testsDir = $slnDir + "\zillib\tests"
+
+$zlrSlnDir = if (Test-Path env:ZLR_SLN_PATH) { $env:ZLR_SLN_PATH } else { $slnDir + "\..\ZLR" }
+$zlrProjectPath = $zlrSlnDir + "\ConsoleZLR\ConsoleZLR.csproj"
 
 function Invoke-Zilf {
     param ([string]$SrcFile = $(throw "SrcFile parameter is required."))
-    $output = (& $zilfPath -ip $includeDir $SrcFile 2>&1)
+    $output = (& dotnet run --project $zilfProjectPath -- -ip $includeDir $SrcFile 2>&1)
     if ($LASTEXITCODE -eq 0) {
         return $true
     } else {
@@ -20,7 +22,7 @@ Set-Alias izilf Invoke-Zilf
 
 function Invoke-Zapf {
     param ([string]$SrcFile = $(throw "SrcFile parameter is required."))
-    $output = (& $zapfPath $SrcFile 2>&1)
+    $output = (& dotnet run --project $zapfProjectPath -- $SrcFile 2>&1)
     if ($LASTEXITCODE -eq 0) {
         return $true
     } else {
@@ -33,7 +35,7 @@ Set-Alias izapf Invoke-Zapf
 
 function Invoke-ZLR {
     param ([string]$StoryFile = $(throw "StoryFile parameter is required."))
-    & $czlrPath -nowait -dumb $StoryFile
+    & dotnet run --project $zlrProjectPath --framework netcoreapp2.2 -- -nowait -dumb $StoryFile
 }
 
 Set-Alias izlr Invoke-ZLR
