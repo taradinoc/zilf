@@ -339,10 +339,7 @@ namespace Zilf
                             i++;
                             if (i < args.Length)
                             {
-                                foreach (var code in args[i].Split(','))
-                                {
-                                    suppressedDiagnosticCodes.Add(args[i]);
-                                }
+                                suppressedDiagnosticCodes.AddRange(args[i].Split(','));
                             }
                             else
                             {
