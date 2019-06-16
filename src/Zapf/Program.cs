@@ -628,8 +628,20 @@ General switches:
             }
 
             if (length > maxLength * 1024)
-                Errors.ThrowSerious("file length of {0} exceeds V{1} maximum of {2}K",
-                    length, ctx.ZVersion, maxLength);
+            {
+                string protip;
+                if (ctx.StringEncoder.AbbreviationCount < 96)
+                {
+                    protip = " (generating text abbreviations may help; see documentation for the -ab switch)";
+                }
+                else
+                {
+                    protip = "";
+                }
+
+                Errors.ThrowSerious("file length of {0} exceeds platform limit by {1} bytes{2}",
+                    length, length - maxLength * 1024, protip);
+            }
 
             // calculate file checksum
             ctx.Position = 64;

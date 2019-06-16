@@ -68,6 +68,8 @@ namespace Zilf.Common.StringEncoding
             charset = DefaultCharset.Select(s => s.Select(UnicodeTranslation.ToZscii).ToArray()).ToArray();
         }
 
+        public int AbbreviationCount => abbrevs.Count;
+
         public bool Frozen { get; private set; }
 
         /// <exception cref="InvalidOperationException">Too late to add abbreviations, or too many abbreviations.</exception>
