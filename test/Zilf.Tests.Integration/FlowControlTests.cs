@@ -227,6 +227,13 @@ namespace Zilf.Tests.Integration
                 .DoesNotCompile();
         }
 
+        [TestMethod]
+        public void Unused_DO_Variables_Should_Not_Warn()
+        {
+            AssertRoutine("", "<DO (I 1 10) <TELL \"spam\">>")
+                .WithoutWarnings()
+                .Compiles();
+        }
 
         #endregion
 
@@ -291,6 +298,26 @@ namespace Zilf.Tests.Integration
             AssertRoutine("\"AUX\" (SUM 0)", "<MAP-CONTENTS (F N ,TABLE) (END <RETURN 42>) <RFALSE>>")
                 .WithGlobal("<OBJECT TABLE (DESC \"table\")>")
                 .GivesNumber("42");
+        }
+
+        [TestMethod]
+        public void Unused_MAP_CONTENTS_Variables_Should_Not_Warn()
+        {
+            AssertRoutine("\"AUX\" CNT", "<MAP-CONTENTS (I ,STARTROOM) <SET CNT <+ .CNT 1>>>")
+                .WithGlobal("<ROOM STARTROOM>")
+                .WithGlobal("<OBJECT CHIMP (IN STARTROOM)>")
+                .WithGlobal("<OBJECT CHAMP (IN STARTROOM)>")
+                .WithGlobal("<OBJECT CHUMP (IN STARTROOM)>")
+                .WithoutWarnings()
+                .Compiles();
+
+            AssertRoutine("", "<MAP-CONTENTS (I N ,STARTROOM) <REMOVE .I>>")
+                .WithGlobal("<ROOM STARTROOM>")
+                .WithGlobal("<OBJECT CHIMP (IN STARTROOM)>")
+                .WithGlobal("<OBJECT CHAMP (IN STARTROOM)>")
+                .WithGlobal("<OBJECT CHUMP (IN STARTROOM)>")
+                .WithoutWarnings()
+                .Compiles();
         }
 
         #endregion
@@ -409,6 +436,22 @@ namespace Zilf.Tests.Integration
         {
             AssertRoutine("", "<REPEAT () 123>")
                 .GeneratesCodeNotMatching(@"PUSH");
+        }
+
+        [TestMethod]
+        public void Unused_PROG_Variables_Should_Warn()
+        {
+            AssertRoutine("", "<PROG (X) <TELL \"hi\">>")
+                .WithWarnings("ZIL0210")
+                .Compiles();
+
+            AssertRoutine("", "<BIND (X) <TELL \"hi\">>")
+                .WithWarnings("ZIL0210")
+                .Compiles();
+
+            AssertRoutine("", "<REPEAT (X) <TELL \"hi\">>")
+                .WithWarnings("ZIL0210")
+                .Compiles();
         }
 
         #endregion

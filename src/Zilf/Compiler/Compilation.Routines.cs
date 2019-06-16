@@ -237,11 +237,7 @@ namespace Zilf.Compiler
                     if (lbr.IsEverRead || lbr.IsEverWritten)
                         continue;
 
-                    if (lbr.Type == LocalBindingType.CompilerTemporary)
-                        continue;
-
-                    //XXX not sure about this
-                    if (lbr.Type == LocalBindingType.RoutineRequired)
+                    if (!lbr.Type.ShouldWarnIfUnused())
                         continue;
 
                     var warning = new CompilerError(

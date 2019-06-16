@@ -20,7 +20,6 @@ using System;
 using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter;
-using Zilf.Interpreter.Values;
 using Zilf.Language;
 
 namespace Zilf.Compiler
@@ -49,6 +48,19 @@ namespace Zilf.Compiler
                     return LocalBindingType.RoutineAuxiliary;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(argType), argType, null);
+            }
+        }
+
+        public static bool ShouldWarnIfUnused(this LocalBindingType type)
+        {
+            switch (type)
+            {
+                case LocalBindingType.ProgAuxiliary:
+                case LocalBindingType.RoutineAuxiliary:
+                case LocalBindingType.RoutineOptional:
+                    return true;
+                default:
+                    return false;
             }
         }
     }
