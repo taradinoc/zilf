@@ -49,6 +49,7 @@ namespace Zilf.Tests.Integration
         // ReSharper disable once NotAccessedField.Global
         public string Output;
         public int WarningCount;
+        public int SuppressedWarningCount;
         public int ErrorCount;
         public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
@@ -56,7 +57,7 @@ namespace Zilf.Tests.Integration
     sealed class ZlrHelper : IDisposable
     {
         public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput,
-            IEnumerable<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)> warningChecks = null,
+            IEnumerable<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = null,
             bool wantCompileOutput = false)
         {
             var helper = new ZlrHelper(code, input);
@@ -75,8 +76,16 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");
             if (warningChecks != null)
             {
+                var result = new ZlrHelperRunResult
+                {
+                    Diagnostics = helper.Diagnostics,
+                    ErrorCount = helper.ErrorCount,
+                    WarningCount = helper.WarningCount,
+                    Status = ZlrTestStatus.Finished,
+                    SuppressedWarningCount = helper.SuppressedWarningCount,
+                };
                 foreach (var (check, message) in warningChecks)
-                    if (!check(helper.Diagnostics))
+                    if (!check(result))
                         Assert.Fail(message);
             }
             string actualOutput = compileOutput + helper.Execute();
@@ -134,8 +143,9 @@ namespace Zilf.Tests.Integration
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
+        public int SuppressedWarningCount { get; private set; }
         [CanBeNull]
-        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
+        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }    // includes suppressed
 
         public ZlrHelper([NotNull] string code, [CanBeNull] string input)
         {
@@ -217,6 +227,7 @@ namespace Zilf.Tests.Integration
             ErrorCount = result.ErrorCount;
             WarningCount = result.WarningCount;
             Diagnostics = result.Diagnostics;
+            SuppressedWarningCount = result.SuppressedWarningCount;
             if (result.Success)
             {
                 PrintZapCode();

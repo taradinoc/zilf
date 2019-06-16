@@ -95,7 +95,7 @@ namespace Zilf.Interpreter
 
         [NotNull]
         [Subr]
-        public static ZilObject LOOKUP(Context ctx, [NotNull] string str, [NotNull] ObList oblist)
+        public static ZilObject LOOKUP([NotNull] Context ctx, [NotNull] string str, [NotNull] ObList oblist)
         {
             return oblist.Contains(str) ? oblist[str] : ctx.FALSE;
         }
@@ -103,8 +103,8 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="stringOrAtom"/>, or <paramref name="stringOrAtom"/> is an atom that is already on a different OBLIST.</exception>
         [NotNull]
         [Subr]
-        public static ZilObject INSERT(Context ctx,
-            [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
+        public static ZilObject INSERT([NotNull] Context ctx,
+            [NotNull, Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
             [NotNull] ObList oblist)
         {
             switch (stringOrAtom)

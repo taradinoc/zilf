@@ -40,6 +40,7 @@ namespace Zilf.Language
         ADECL,
         ADJ,
         ADJECTIVE,
+        ALL,
         AND,
         ANY,
         APPLICABLE,

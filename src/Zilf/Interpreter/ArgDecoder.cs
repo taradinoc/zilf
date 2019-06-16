@@ -722,7 +722,7 @@ namespace Zilf.Interpreter
             }
             else
             {
-                throw new ArgumentOutOfRangeException(nameof(paramType));
+                throw new ArgumentOutOfRangeException(nameof(paramType), $"Unhandled type '{paramType}'");
             }
 
             // modifiers

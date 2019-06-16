@@ -245,5 +245,28 @@ namespace Zilf.Tests.Integration
                 .DoesNotCompile("ZIL0204", // no such {0} variable '{1}', using the {2} instead
                     diag => diag.Severity == Severity.Error);
         }
+
+        [TestMethod]
+        public void Warnings_Can_Be_Suppressed()
+        {
+            AssertRoutine("", ".X")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithGlobal("<SUPPRESS-WARNINGS? \"ZIL0204\">")
+                .WithoutUnsuppressedWarnings()
+                .GivesNumber("5");
+
+            AssertRoutine("", ".X")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithGlobal("<SUPPRESS-WARNINGS? ALL>")
+                .WithoutUnsuppressedWarnings()
+                .GivesNumber("5");
+
+            AssertRoutine("", ".X")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithGlobal("<SUPPRESS-WARNINGS? \"ZIL0204\">")
+                .WithGlobal("<SUPPRESS-WARNINGS? NONE>")
+                .WithWarnings("ZIL0204")
+                .GivesNumber("5");
+        }
     }
 }

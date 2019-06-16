@@ -37,6 +37,8 @@ namespace Zilf.Diagnostics
         [NotNull]
         readonly HashSet<string> suppressions = new HashSet<string>();
 
+        bool suppressAllTheThings = false;
+
         [NotNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
@@ -58,9 +60,28 @@ namespace Zilf.Diagnostics
             OutputWriter = outputWriter ?? Console.Error;
         }
 
-        public void AddSuppression([NotNull] string code)
+        public void Suppress([NotNull] string code)
         {
-            suppressions.Add(code);
+            if (!suppressAllTheThings)
+                suppressions.Add(code);
+        }
+
+        public void Suppress([NotNull, ItemNotNull] IEnumerable<string> codes)
+        {
+            if (!suppressAllTheThings)
+                suppressions.UnionWith(codes);
+        }
+
+        public void SuppressAll()
+        {
+            suppressAllTheThings = true;
+            suppressions.Clear();
+        }
+
+        public void SuppressNone()
+        {
+            suppressAllTheThings = false;
+            suppressions.Clear();
         }
 
         public void Handle([NotNull] Diagnostic diag)
@@ -80,14 +101,22 @@ namespace Zilf.Diagnostics
                 }
             }
 
-            if (diag.Severity < Severity.Error && suppressions.Contains(diag.Code))
+            if (IsSuppressed(diag))
             {
                 suppressedDiagnostics.Add(diag);
             }
             else
-            { 
+            {
                 OutputWriter.WriteLine(Formatter.Format(diag));
             }
+        }
+
+        private bool IsSuppressed([NotNull] Diagnostic diag)
+        {
+            if (diag.Severity >= Severity.Error)
+                return false;
+
+            return suppressAllTheThings || suppressions.Contains(diag.Code);
         }
     }
 }

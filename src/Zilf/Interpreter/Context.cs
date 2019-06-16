@@ -103,7 +103,7 @@ namespace Zilf.Interpreter
         }
 
         [NotNull]
-        readonly DiagnosticManager diagnostics;
+        public DiagnosticManager DiagnosticManager { get; }
 
         readonly bool ignoreCase;
         [NotNull]
@@ -154,8 +154,8 @@ namespace Zilf.Interpreter
         {
             this.ignoreCase = ignoreCase;
 
-            diagnostics = new DiagnosticManager();
-            diagnostics.TooManyErrors += (sender, args) =>
+            this.DiagnosticManager = new DiagnosticManager();
+            this.DiagnosticManager.TooManyErrors += (sender, args) =>
             {
                 if (RunMode == RunMode.Compiler)
                 {
@@ -247,23 +247,18 @@ namespace Zilf.Interpreter
 
         public bool WarningsAsErrors
         {
-            get => diagnostics.WarningsAsErrors;
-            set => diagnostics.WarningsAsErrors = value;
+            get => DiagnosticManager.WarningsAsErrors;
+            set => DiagnosticManager.WarningsAsErrors = value;
         }
 
-        public void SuppressDiagnostic([NotNull] string code)
-        {
-            diagnostics.AddSuppression(code);
-        }
+        public int ErrorCount => DiagnosticManager.ErrorCount;
 
-        public int ErrorCount => diagnostics.ErrorCount;
+        public int WarningCount => DiagnosticManager.WarningCount;
 
-        public int WarningCount => diagnostics.WarningCount;
-
-        public int SuppressedWarningCount => diagnostics.SuppressedWarningCount;
+        public int SuppressedWarningCount => DiagnosticManager.SuppressedWarningCount;
 
         [NotNull]
-        public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics.Diagnostics;
+        public IReadOnlyCollection<Diagnostic> Diagnostics => DiagnosticManager.Diagnostics;
 
         [NotNull]
         public ZEnvironment ZEnvironment => zenv;
@@ -775,7 +770,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        public void HandleError([NotNull] ZilErrorBase ex) => diagnostics.Handle(ex.Diagnostic);
+        public void HandleError([NotNull] ZilErrorBase ex) => DiagnosticManager.Handle(ex.Diagnostic);
 
         /// <exception cref="FileNotFoundException">The file wasn't found in any include path.</exception>
         [NotNull]

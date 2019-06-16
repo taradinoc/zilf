@@ -384,6 +384,66 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        public static class WarningParams
+        {
+            [ZilSequenceParam]
+            [ParamDesc("all-none-or-codes")]
+            public struct CodesOrWildcard
+            {
+                [Either(typeof(Wildcard), typeof(AtomParams.StringOrAtom[]))]
+                public object Content;
+
+                public StdAtom? GetWildcard()
+                {
+                    return Content is Wildcard w ? w.Atom.StdAtom : (StdAtom?)null;
+                }
+
+                [CanBeNull]
+                public string[] GetCodes()
+                {
+                    return Content is AtomParams.StringOrAtom[] sas
+                        ? sas.Select(sa => sa.ToString()).ToArray()
+                        : null;
+                }
+            }
+
+            [ZilSequenceParam]
+            public struct Wildcard
+            {
+                [Decl("<OR 'ALL 'NONE>")]
+                public ZilAtom Atom;
+
+                public StdAtom StdAtom => Atom.StdAtom;
+            }
+        }
+
+        [NotNull]
+        [Subr("SUPPRESS-WARNINGS?")]
+        public static ZilObject SUPPRESS_WARNINGS_P([NotNull] Context ctx,
+            WarningParams.CodesOrWildcard codesOrWildcard)
+        {
+            switch (codesOrWildcard.GetWildcard())
+            {
+                case StdAtom.ALL:
+                    ctx.DiagnosticManager.SuppressAll();
+                    break;
+
+                case StdAtom.NONE:
+                    ctx.DiagnosticManager.SuppressNone();
+                    break;
+
+                default:
+                    var codes = codesOrWildcard.GetCodes();
+                    System.Diagnostics.Debug.Assert(codes != null);
+
+                    foreach (var code in codes)
+                        ctx.DiagnosticManager.Suppress(code.ToString());
+                    break;
+            }
+
+            return ctx.TRUE;
+        }
+
         #region IDE Help
 
         [NotNull]

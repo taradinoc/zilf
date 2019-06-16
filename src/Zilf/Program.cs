@@ -269,7 +269,7 @@ namespace Zilf
             AddImplicitIncludePaths(ctx.IncludePaths, newInFile, mode.Value);
 
             foreach (var code in suppressedDiagnosticCodes)
-                ctx.SuppressDiagnostic(code);
+                ctx.DiagnosticManager.Suppress(code);
 
             inFile = newInFile;
             outFile = newOutFile;

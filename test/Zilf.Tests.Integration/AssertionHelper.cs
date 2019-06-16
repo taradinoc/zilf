@@ -37,8 +37,8 @@ namespace Zilf.Tests.Integration
         [NotNull]
         protected readonly StringBuilder input = new StringBuilder();
         [NotNull]
-        protected readonly List<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)> warningChecks =
-            new List<(Predicate<IReadOnlyCollection<Diagnostic>>, string message)>();
+        protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks =
+            new List<(Predicate<ZlrHelperRunResult>, string message)>();
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 
@@ -108,7 +108,7 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public TThis WithWarnings()
         {
-            warningChecks.Add((diags => diags.Any(d => d.Severity == Severity.Warning),
+            warningChecks.Add((res => res.Diagnostics.Any(d => d.Severity == Severity.Warning),
                 "Expected a nonzero number of warnings."));
             return (TThis)this;
         }
@@ -123,7 +123,7 @@ namespace Zilf.Tests.Integration
         {
             foreach (var code in expectedWarningCodes)
             {
-                warningChecks.Add((diags => diags.Any(d => DiagnosticCodeMatches(d, code)),
+                warningChecks.Add((res => res.Diagnostics.Any(d => DiagnosticCodeMatches(d, code)),
                     $"Expected a diagnostic with code '{code}'."));
             }
             return (TThis)this;
@@ -132,8 +132,17 @@ namespace Zilf.Tests.Integration
         [NotNull]
         public TThis WithoutWarnings()
         {
-            warningChecks.Add((diags => diags.All(d => d.Severity != Severity.Warning),
+            warningChecks.Add((res => res.Diagnostics.All(d => d.Severity != Severity.Warning),
                 "Expected no warnings."));
+            return (TThis)this;
+        }
+
+        [NotNull]
+        public TThis WithoutUnsuppressedWarnings()
+        {
+            warningChecks.Add(
+                (res => res.Diagnostics.Count(d => d.Severity == Severity.Warning) == res.SuppressedWarningCount,
+                "Expected all warnings to be suppressed."));
             return (TThis)this;
         }
 
@@ -142,7 +151,7 @@ namespace Zilf.Tests.Integration
         {
             foreach (var code in unexpectedWarningCodes)
             {
-                warningChecks.Add((diags => !diags.Any(d => DiagnosticCodeMatches(d, code)),
+                warningChecks.Add((res => !res.Diagnostics.Any(d => DiagnosticCodeMatches(d, code)),
                     $"Expected no diagnostic with code '{code}'."));
             }
             return (TThis)this;
@@ -183,7 +192,7 @@ namespace Zilf.Tests.Integration
         protected void CheckWarnings(ZlrHelperRunResult res)
         {
             foreach (var (check, message) in warningChecks)
-                if (!check(res.Diagnostics))
+                if (!check(res))
                     Assert.Fail(message);
         }
     }
@@ -375,6 +384,7 @@ namespace Zilf.Tests.Integration
             {
                 WarningCount = helper.WarningCount,
                 Diagnostics = helper.Diagnostics,
+                SuppressedWarningCount = helper.SuppressedWarningCount,
             });
 
             return new CodeMatchingResult(output);
