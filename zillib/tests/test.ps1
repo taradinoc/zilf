@@ -1,4 +1,4 @@
-$slnDir = if (Test-Path env:ZILF_SLN_PATH) { $env:ZILF_SLN_PATH } else { "..\..\.." }
+$slnDir = if (Test-Path env:ZILF_SLN_PATH) { $env:ZILF_SLN_PATH } else { "..\.." }
 $zilfProjectPath = $slnDir + "\src\Zilf\Zilf.csproj"
 $zapfProjectPath = $slnDir + "\src\Zapf\Zapf.csproj"
 $includeDir = $slnDir + "\zillib"
