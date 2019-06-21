@@ -71,7 +71,10 @@ namespace Zilf.Compiler
                     break;
 
                 default:
-                    Context.HandleError(new CompilerError(expr.SourceLine ?? src, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                    Context.HandleError(new CompilerError(
+                        expr.SourceLine ?? src,
+                        CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
+                        type));
                     return;
             }
 
@@ -455,7 +458,9 @@ namespace Zilf.Compiler
                         break;
 
                     case ZilList _:
-                        throw new CompilerError(stmt, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled)
+                        throw new CompilerError(stmt,
+                                CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
+                                stmt.GetTypeAtom(Context))
                             .Combine(new CompilerError(CompilerMessages.Misplaced_Bracket_In_COND_Or_Loop));
 
                     default:
@@ -466,8 +471,10 @@ namespace Zilf.Compiler
                             if (result == null)
                             {
                                 // TODO: show "expressions of this type cannot be compiled" warning even if wantResult is false?
-                                throw new CompilerError(stmt,
-                                    CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled);
+                                throw new CompilerError(
+                                    stmt,
+                                    CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
+                                    stmt.GetTypeAtom(Context));
                             }
                         }
                         break;

@@ -246,7 +246,8 @@ namespace Zilf.Compiler
                 default:
                     Context.HandleError(new CompilerError(
                         expr.SourceLine ?? src,
-                        CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                        CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
+                        expr.GetTypeAtom(Context)));
                     return Game.Zero;
             }
         }
@@ -413,7 +414,10 @@ namespace Zilf.Compiler
                     var constValue = CompileConstant(expr);
                     if (constValue == null)
                     {
-                        Context.HandleError(new CompilerError(expr, CompilerMessages.Expressions_Of_This_Type_Cannot_Be_Compiled));
+                        Context.HandleError(new CompilerError(
+                            expr,
+                            CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
+                            expr.GetTypeAtom(Context)));
                         return Game.Zero;
                     }
                     else
