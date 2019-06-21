@@ -2750,24 +2750,31 @@ Args:
 
 Returns:
   A random element from the table."
-<ROUTINE PICK-ONE (TABL "AUX" LENGTH CNT RND S MSG)
-    <SET LENGTH <GET .TABL 0>>
-    <SET CNT <GET .TABL 1>>
-    <REPEAT ()
-        <PUT ,TEMPTABLE .S <GET .TABL <+ .CNT .S>>>
-        <SET S <+ .S 1>>
-        ;<PROG () <TELL "IN LOOP: S IS NOW: "> <PRINTN .S> <TELL CR>>
-        <COND (<G? <+ .S .CNT> .LENGTH> <RETURN>)>>
-    ;<PROG () <TELL "S IS CURRENTLY: "> <PRINTN .S> <TELL CR>>
-    <SET RND <- <RANDOM .S> 1>>
-    ;<PROG () <TELL "RND IS CURRENTLY: "> <PRINTN .RND> <TELL CR>>
-    <SET MSG <GET ,TEMPTABLE .RND>>
-    <PUT .TABL <+ .CNT .RND> <GET .TABL .CNT>>
-    <PUT .TABL .CNT .MSG>
+<ROUTINE PICK-ONE (TABL "AUX" (LENGTH <GET .TABL 0>) (CNT <GET .TABL 1>) OCNT RND S MSG)
+    ;"Choose a random table element between CNT and LENGTH"
+    <SET RND <RANDOM-IN-RANGE .CNT .LENGTH>>
+    <SET MSG <GET .TABL .RND>>
+    ;"Increase CNT"
+    <SET OCNT .CNT>
     <SET CNT <+ 1 .CNT>>
-    <COND (<G? .CNT .LENGTH> <SET CNT 2>)>
+    ;"If that finishes the table, reset and exit"
+    <COND (<G? .CNT .LENGTH>
+           <PUT .TABL 1 2>
+           <RETURN .MSG>)>
+    ;"Otherwise, move the item we just picked below CNT"
+    <COND (<N=? .RND .OCNT>
+           <PUT .TABL .RND <GET .TABL .OCNT>>
+           <PUT .TABL .OCNT .MSG>)>
     <PUT .TABL 1 .CNT>
     <RETURN .MSG>>
+
+<DEFAULT-DEFINITION RANDOM-IN-RANGE
+  <DEFMAC RANDOM-IN-RANGE ('LO 'HI)
+    <COND (<TYPE? .LO LVAL GVAL FIX FALSE CONSTANT>
+           <FORM - <FORM + .LO <FORM RANDOM <FORM + <FORM - .HI .LO> 1>>> 1>)
+          (ELSE
+           <FORM BIND ((?LO .LO))
+               <FORM - <FORM + '.?LO <FORM RANDOM <FORM + <FORM - .HI '.?LO> 1>>> 1>>)>>>
 
 ;"Returns a random element from a table, possibly repeating.
 
@@ -2777,9 +2784,8 @@ Args:
 Returns:
   A random element from the table."
 <ROUTINE PICK-ONE-R (TABL "AUX" MSG RND)
-    <SET RND <RANDOM <GET .TABL 0>>>
-    <SET MSG <GET .TABL .RND>>
-    <RETURN .MSG>>
+    <SET RND <RANDOM-IN-RANGE 1 <GET .TABL 0>>>
+    <GET .TABL .RND>>
 
 ;"The game can override this with SETG. It doesn't go through DARKNESS-F, since
  it has to be a constant on V3."
