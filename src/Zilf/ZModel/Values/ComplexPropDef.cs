@@ -321,6 +321,7 @@ namespace Zilf.ZModel.Values
                                 break;
 
                             case ZilFalse _:
+                            case ZilForm form when form.IsEmpty:
                                 outputs.Add(new OutputElement(OutputElementType.Length, constant));
                                 break;
 

@@ -353,6 +353,16 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void PROPDEF_With_Empty_FORM_For_Length_Should_Work()
+        {
+            AssertGlobals(
+                    "<PROPDEF HEIGHT <> " +
+                    " (HEIGHT FEET:FIX FT INCHES:FIX = <> (H-FEET <WORD .FEET>) (H-INCHES <BYTE .INCHES>))>")
+                .Compiles();
+        }
+
+
+        [TestMethod]
         public void PROPDEF_For_DIRECTIONS_Should_Be_Used_For_All_Directions()
         {
             AssertGlobals(
