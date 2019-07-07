@@ -59,7 +59,7 @@ namespace Zilf.Interpreter
             var result = (ZilObject)st.GetRest(skip);
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements, "REST");
-            return result;
+            return result.GetPrimitive(ctx);
         }
 
         /// <exception cref="InterpreterError">The type of <paramref name="st"/> does not support this operation, or <paramref name="st"/> has not been RESTed at least <paramref name="skip"/> elements.</exception>

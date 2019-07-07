@@ -79,8 +79,10 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        protected ZilListBase(ZilObject first, ZilListoidBase rest)
+        protected ZilListBase([CanBeNull] ZilObject first, [CanBeNull] ZilListoidBase rest)
         {
+            Debug.Assert((first == null) == (rest == null));
+
             this.first = first;
             this.rest = rest;
         }
@@ -106,6 +108,7 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         protected virtual string CloseBracket => ")";
 
+        [NotNull]
         public override string ToString()
         {
             if (Recursion.TryLock(this))

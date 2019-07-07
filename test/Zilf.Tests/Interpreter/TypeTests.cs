@@ -1408,5 +1408,10 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<2 .X>", ZilAtom.Parse("Y", ctx));
         }
 
+        [TestMethod]
+        public void REST_0_Should_Return_Primitive_Type()
+        {
+            TestHelpers.EvalAndAssert(ctx, "<REST '<1> 0>", new ZilList(new ZilFix(1), new ZilList(null, null)));
+        }
     }
 }
