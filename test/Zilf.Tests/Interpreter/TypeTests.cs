@@ -1395,5 +1395,18 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<TYPE? ',X GVAL>", ctx.GetStdAtom(StdAtom.GVAL));
         }
 
+        [TestMethod]
+        public void Accessing_Elements_Of_FORM_Should_Work()
+        {
+            TestHelpers.Evaluate(ctx, "<SET X '.A>");
+            TestHelpers.EvalAndAssert(ctx, "<1 .X>", ctx.GetStdAtom(StdAtom.LVAL));
+            TestHelpers.Evaluate(ctx, "<1 .X EVAL>");
+            TestHelpers.EvalAndAssert(ctx, "<1 .X>", ctx.GetStdAtom(StdAtom.EVAL));
+            TestHelpers.Evaluate(ctx, "<PUT .X 1 GVAL>");
+            TestHelpers.EvalAndAssert(ctx, "<1 .X>", ctx.GetStdAtom(StdAtom.GVAL));
+            TestHelpers.Evaluate(ctx, "<2 .X Y>");
+            TestHelpers.EvalAndAssert(ctx, "<2 .X>", ZilAtom.Parse("Y", ctx));
+        }
+
     }
 }

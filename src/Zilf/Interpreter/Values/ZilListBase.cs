@@ -208,7 +208,7 @@ namespace Zilf.Interpreter.Values
             }
             set
             {
-                if (GetRest(index) is ZilList rested && !rested.IsEmpty)
+                if (GetRest(index) is ZilListoidBase rested && !rested.IsEmpty)
                 {
                     rested.First = value;
                 }
