@@ -2750,7 +2750,7 @@ Args:
 
 Returns:
   A random element from the table."
-<ROUTINE PICK-ONE (TABL "AUX" (LENGTH <GET .TABL 0>) (CNT <GET .TABL 1>) OCNT RND S MSG)
+<ROUTINE PICK-ONE (TABL "AUX" (LENGTH <GET .TABL 0>) (CNT <GET .TABL 1>) OCNT RND MSG)
     ;"Choose a random table element between CNT and LENGTH"
     <SET RND <RANDOM-IN-RANGE .CNT .LENGTH>>
     <SET MSG <GET .TABL .RND>>
@@ -2783,7 +2783,7 @@ Args:
 
 Returns:
   A random element from the table."
-<ROUTINE PICK-ONE-R (TABL "AUX" MSG RND)
+<ROUTINE PICK-ONE-R (TABL "AUX" RND)
     <SET RND <RANDOM-IN-RANGE 1 <GET .TABL 0>>>
     <GET .TABL .RND>>
 
