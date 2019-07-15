@@ -1246,22 +1246,24 @@ Returns:
                <RETURN>)>>>
 
 <ROUTINE V-AGAIN ()
+    <COND (<NOT <PST-PRSA ,AGAIN-STORAGE>>
+           <TELL "Nothing to repeat." CR>
+           <RTRUE>)>
     <SAVE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
-    <COND (,PRSA
-           <COND (<AND ,PRSO
-                       <NOT ,PRSO-DIR>
-                       <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>
-                                 <HAVE-TAKE-CHECK-TBL ,P-PRSOS <GETB ,P-SYNTAX ,SYN-OPTS1>>>>>
-                  <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
-                  <RTRUE>)
-                 (<AND ,PRSI
-                       <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
-                                 <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
-                  <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
-                  <RTRUE>)>
-           <MAIN-LOOP-HANDLE-COMMAND>)
-          (ELSE <TELL "Nothing to repeat." CR>)>
+    <PROG ()
+        ;"if PRSO and/or PRSI are set, make sure the object(s) still pass the checks"
+        <COND (<AND ,PRSO
+                    <NOT ,PRSO-DIR>
+                    <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>
+                              <HAVE-TAKE-CHECK-TBL ,P-PRSOS <GETB ,P-SYNTAX ,SYN-OPTS1>>>>>
+               <RETURN>)
+              (<AND ,PRSI
+                    <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
+                              <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
+               <RETURN>)>
+        ;"if we get here, they were unset or they passed"
+        <MAIN-LOOP-HANDLE-COMMAND>>
     <RESTORE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RTRUE>>
 
