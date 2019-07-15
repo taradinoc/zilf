@@ -251,6 +251,12 @@ namespace Zilf.Interpreter
             set => DiagnosticManager.WarningsAsErrors = value;
         }
 
+        public bool SuppressNoisyWarnings
+        {
+            get => DiagnosticManager.SuppressNoisyWarnings;
+            set => DiagnosticManager.SuppressNoisyWarnings = value;
+        }
+
         public int ErrorCount => DiagnosticManager.ErrorCount;
 
         public int WarningCount => DiagnosticManager.WarningCount;

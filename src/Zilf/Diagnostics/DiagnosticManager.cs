@@ -46,6 +46,7 @@ namespace Zilf.Diagnostics
         public int SuppressedWarningCount => suppressedDiagnostics.Count(d => d.Severity == Severity.Warning);
 
         public bool WarningsAsErrors { get; set; }
+        public bool SuppressNoisyWarnings { get; set; }
 
         [NotNull]
         public IDiagnosticFormatter Formatter { get; }
@@ -93,12 +94,9 @@ namespace Zilf.Diagnostics
 
             diagnostics.Add(diag);
 
-            if (diag.Severity == Severity.Error)
+            if (diag.Severity == Severity.Error && ErrorCount >= MaxErrorCount)
             {
-                if (ErrorCount >= MaxErrorCount)
-                {
-                    TooManyErrors?.Invoke(this, EventArgs.Empty);
-                }
+                TooManyErrors?.Invoke(this, EventArgs.Empty);
             }
 
             if (IsSuppressed(diag))
@@ -115,6 +113,9 @@ namespace Zilf.Diagnostics
         {
             if (diag.Severity >= Severity.Error)
                 return false;
+
+            if (SuppressNoisyWarnings && diag.Severity == Severity.Warning && diag.Noisy)
+                return true;
 
             return suppressAllTheThings || suppressions.Contains(diag.Code);
         }

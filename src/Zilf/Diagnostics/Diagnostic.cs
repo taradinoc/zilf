@@ -41,9 +41,13 @@ namespace Zilf.Diagnostics
         [NotNull]
         public string CodePrefix { get; }
         public int CodeNumber { get; }
+        public bool Noisy { get; }
 
         [NotNull]
-        public string Code => $"{CodePrefix}{CodeNumber:0000}";
+        public static string FormatCode([NotNull] string prefix, int number) => $"{prefix}{number:0000}";
+
+        [NotNull]
+        public string Code => FormatCode(CodePrefix, CodeNumber);
 
         [CanBeNull]
         public string StackTrace { get; }
@@ -61,7 +65,8 @@ namespace Zilf.Diagnostics
         public Diagnostic([NotNull] ISourceLine location, Severity severity,
             [NotNull] string codePrefix, int codeNumber,
             [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
-            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] IReadOnlyList<Diagnostic> subDiagnostics)
+            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] IReadOnlyList<Diagnostic> subDiagnostics,
+            bool noisy)
         {
             Location = location;
             Severity = severity;
@@ -71,6 +76,7 @@ namespace Zilf.Diagnostics
             MessageArgs = messageArgs ?? NoArguments;
             StackTrace = stackTrace;
             SubDiagnostics = subDiagnostics ?? NoDiagnostics;
+            Noisy = noisy;
         }
 
         [NotNull]
@@ -84,7 +90,8 @@ namespace Zilf.Diagnostics
                 MessageFormat,
                 MessageArgs,
                 StackTrace,
-                newSubDiagnostics);
+                newSubDiagnostics,
+                Noisy);
         }
 
         [NotNull]
@@ -98,7 +105,8 @@ namespace Zilf.Diagnostics
                 MessageFormat,
                 MessageArgs,
                 StackTrace,
-                SubDiagnostics);
+                SubDiagnostics,
+                Noisy);
         }
 
         [NotNull]
@@ -234,6 +242,7 @@ namespace Zilf.Diagnostics
             }
         }
 
+        [NotNull]
         public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
             string stackTrace, Diagnostic[] subDiagnostics)
         {
@@ -246,7 +255,8 @@ namespace Zilf.Diagnostics
                 attr.Format,
                 messageArgs,
                 stackTrace,
-                subDiagnostics);
+                subDiagnostics,
+                attr is IMaybeNoisy mpm && mpm.Noisy);
         }
     }
 
@@ -262,15 +272,64 @@ namespace Zilf.Diagnostics
     }
 
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class MessageAttribute : Attribute
+    public abstract class MessageAttribute : Attribute
     {
         public string Format { get; }
-        public Severity Severity { get; set; }
+        public Severity Severity { get; }
 
-        public MessageAttribute(string format)
+        public MessageAttribute(string format, Severity severity)
         {
             Format = format;
-            Severity = Severity.Error;
+            Severity = severity;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class FatalAttribute : MessageAttribute
+    {
+        public FatalAttribute(string format)
+            : base(format, Severity.Fatal)
+        {
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class ErrorAttribute : MessageAttribute
+    {
+        public ErrorAttribute(string format)
+            : base(format, Severity.Error)
+        {
+        }
+    }
+
+    interface IMaybeNoisy
+    {
+        bool Noisy { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class WarningAttribute : MessageAttribute, IMaybeNoisy
+    {
+        /// <summary>
+        /// True if the warning should be suppressed by default.
+        /// </summary>
+        /// <remarks>
+        /// This is used for warnings that are likely to be false positives.
+        /// </remarks>
+        public bool Noisy { get; set; }
+
+        public WarningAttribute(string format)
+            : base(format, Severity.Warning)
+        {
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class InfoAttribute : MessageAttribute
+    {
+        public InfoAttribute(string format)
+            : base(format, Severity.Info)
+        {
         }
     }
 }

@@ -238,7 +238,7 @@ namespace Zilf
             string newInFile = inFile = null;
             string newOutFile = outFile = null;
 
-            bool traceRoutines = false, debugInfo = false, warningsAsErrors = false;
+            bool traceRoutines = false, debugInfo = false, warningsAsErrors = false, suppressNoisyWarnings = true;
             bool? caseSensitive = null;
             RunMode? mode = null;
             bool? quiet = null;
@@ -261,6 +261,7 @@ namespace Zilf
                 TraceRoutines = traceRoutines,
                 WantDebugInfo = debugInfo,
                 WarningsAsErrors = warningsAsErrors,
+                SuppressNoisyWarnings = suppressNoisyWarnings,
                 RunMode = mode.Value,
                 Quiet = quiet.Value
             };
@@ -329,6 +330,10 @@ namespace Zilf
                                 return false;
                             }
 
+                            break;
+
+                        case "-w":
+                            suppressNoisyWarnings = false;
                             break;
 
                         case "-we":
@@ -541,6 +546,8 @@ General switches:
 Compiler switches:
   -tr                   trace routine calls at runtime
   -d                    include debug information
+Warning message options:
+  -w                    enable all warnings (even noisy ones)
   -we                   treat warnings as errors
   -ws code[,code...]    suppress specific warnings (may be repeated)");
         }
