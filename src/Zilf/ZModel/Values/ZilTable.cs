@@ -86,10 +86,7 @@ namespace Zilf.ZModel.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilTable FromTable([NotNull] Context ctx, [NotNull] ZilTable other)
-        {
-            return other.AsNewTable();
-        }
+        public static ZilTable FromTable([NotNull] ZilTable other) => other.AsNewTable();
 
         public sealed override string ToString()
         {
@@ -106,10 +103,7 @@ namespace Zilf.ZModel.Values
         public sealed override PrimType PrimType => PrimType.TABLE;
 
         [NotNull]
-        public sealed override ZilObject GetPrimitive(Context ctx)
-        {
-            return this;
-        }
+        public sealed override ZilObject GetPrimitive(Context ctx) => this;
 
         IStructure IProvideStructureForDeclCheck.GetStructureForDeclCheck(Context ctx)
         {

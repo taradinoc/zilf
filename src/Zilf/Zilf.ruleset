@@ -1,9 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Rules for Zilf" Description="Code analysis rules for Zilf.csproj." ToolsVersion="14.0">
+<RuleSet Name="Rules for Zilf" Description="Code analysis rules for Zilf.csproj." ToolsVersion="16.0">
   <IncludeAll Action="Warning" />
   <Rules AnalyzerId="RefactoringEssentials" RuleNamespace="RefactoringEssentials">
     <Rule Id="CS0126ReturnMustBeFollowedByAnyExpression" Action="Warning" />
     <Rule Id="CS1729TypeHasNoConstructorWithNArgumentsAnalyzer" Action="Warning" />
+    <Rule Id="IDE1003" Action="None" />
     <Rule Id="ProhibitedModifiersAnalyzer" Action="Warning" />
     <Rule Id="RECS0002" Action="Warning" />
     <Rule Id="RECS0004" Action="Warning" />
@@ -91,6 +92,8 @@
     <Rule Id="RECS0158" Action="Warning" />
     <Rule Id="RECS0159" Action="Warning" />
     <Rule Id="RECS0164" Action="Warning" />
-    <Rule Id="IDE1003" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="Roslynator.CSharp.Analyzers" RuleNamespace="Roslynator.CSharp.Analyzers">
+    <Rule Id="RCS1018" Action="None" />
   </Rules>
 </RuleSet>

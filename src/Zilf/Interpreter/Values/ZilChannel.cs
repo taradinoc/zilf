@@ -35,10 +35,8 @@ namespace Zilf.Interpreter.Values
     {
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilChannel FromVector([NotNull] Context ctx, [NotNull] ZilVector vector)
-        {
+        public static ZilChannel FromVector([NotNull] Context ctx, [NotNull] ZilVector vector) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "CHANNEL");
-        }
 
         public override StdAtom StdTypeAtom => StdAtom.CHANNEL;
 

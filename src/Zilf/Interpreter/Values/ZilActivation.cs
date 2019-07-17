@@ -41,10 +41,8 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
         [ContractAnnotation("=> halt")]
-        public static ZilActivation FromAtom([NotNull] Context ctx, [NotNull] ZilAtom name)
-        {
+        public static ZilActivation FromAtom([NotNull] Context ctx, [NotNull] ZilAtom name) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
-        }
 
         public override StdAtom StdTypeAtom => StdAtom.ACTIVATION;
 

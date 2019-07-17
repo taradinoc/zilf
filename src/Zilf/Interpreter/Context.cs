@@ -799,11 +799,24 @@ namespace Zilf.Interpreter
         }
 
         /// <summary>
+        /// Adapts a MethodInfo, describing a function that takes a
+        /// specific ZilObject type and returns a ZilObject, to ChtypeDelegate.
+        /// </summary>
+        [NotNull]
+        static ChtypeDelegate AdaptChtypeMethod1<T>([NotNull] MethodInfo mi)
+            where T : ZilObject
+        {
+            var rawDel = Delegate.CreateDelegate(typeof(Func<T, ZilObject>), mi);
+            var del = (Func<T, ZilObject>)rawDel;
+            return (_, zo) => del((T)zo);
+        }
+
+        /// <summary>
         /// Adapts a MethodInfo, describing a function that takes a context and a
         /// specific ZilObject type and returns a ZilObject, to ChtypeDelegate.
         /// </summary>
         [NotNull]
-        static ChtypeDelegate AdaptChtypeMethod<T>([NotNull] MethodInfo mi)
+        static ChtypeDelegate AdaptChtypeMethod2<T>([NotNull] MethodInfo mi)
             where T : ZilObject
         {
             var rawDel = Delegate.CreateDelegate(typeof(Func<Context, T, ZilObject>), mi);
@@ -813,7 +826,7 @@ namespace Zilf.Interpreter
 
         /// <summary>
         /// Adapts a ConstructorInfo, describing a constructor that creates a
-        /// given a specific ZilObject type, to ChtypeDelegate.
+        /// given specific ZilObject type, to ChtypeDelegate.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="ci"></param>
@@ -844,44 +857,51 @@ namespace Zilf.Interpreter
                         from a in t.GetCustomAttributes<BuiltinTypeAttribute>(false)
                         select new { Type = t, Attr = a };
 
-            Type[] chtypeParamTypes = { typeof(Context), null };
+            Type primitiveClassType;
 
             foreach (var r in query)
             {
                 // look up chtype method
-                Func<MethodInfo, ChtypeDelegate> adaptChtypeMethod;
+                Func<MethodInfo, ChtypeDelegate> adaptChtypeMethod1;
+                Func<MethodInfo, ChtypeDelegate> adaptChtypeMethod2;
                 Func<ConstructorInfo, ChtypeDelegate> adaptChtypeCtor;
 
                 switch (r.Attr.PrimType)
                 {
                     case PrimType.ATOM:
-                        chtypeParamTypes[1] = typeof(ZilAtom);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilAtom>;
+                        primitiveClassType = typeof(ZilAtom);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilAtom>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilAtom>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilAtom>;
                         break;
                     case PrimType.FIX:
-                        chtypeParamTypes[1] = typeof(ZilFix);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilFix>;
+                        primitiveClassType = typeof(ZilFix);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilFix>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilFix>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilFix>;
                         break;
                     case PrimType.LIST:
-                        chtypeParamTypes[1] = typeof(ZilListBase);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilList>;
+                        primitiveClassType = typeof(ZilListBase);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilList>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilList>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilList>;
                         break;
                     case PrimType.STRING:
-                        chtypeParamTypes[1] = typeof(ZilString);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilString>;
+                        primitiveClassType = typeof(ZilString);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilString>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilString>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilString>;
                         break;
                     case PrimType.TABLE:
-                        chtypeParamTypes[1] = typeof(ZilTable);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilTable>;
+                        primitiveClassType = typeof(ZilTable);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilTable>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilTable>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilTable>;
                         break;
                     case PrimType.VECTOR:
-                        chtypeParamTypes[1] = typeof(ZilVector);
-                        adaptChtypeMethod = AdaptChtypeMethod<ZilVector>;
+                        primitiveClassType = typeof(ZilVector);
+                        adaptChtypeMethod1 = AdaptChtypeMethod1<ZilVector>;
+                        adaptChtypeMethod2 = AdaptChtypeMethod2<ZilVector>;
                         adaptChtypeCtor = AdaptChtypeCtor<ZilVector>;
                         break;
                     default:
@@ -901,17 +921,33 @@ namespace Zilf.Interpreter
                 {
                     // adapt the static method
                     var foundParamTypes = chtypeMethod.GetParameters().Select(pi => pi.ParameterType).ToArray();
-                    if (foundParamTypes.Length != chtypeParamTypes.Length ||
-                        foundParamTypes[0] != chtypeParamTypes[0] ||
-                        !foundParamTypes[1].IsAssignableFrom(chtypeParamTypes[1]))
+
+                    switch (foundParamTypes.Length)
                     {
-                        throw new InvalidOperationException(
-                            $"Wrong parameters for static ChtypeMethod {chtypeMethod.Name} on type {r.Type.Name}\n" +
-                            $"Expected: ({string.Join(", ", chtypeParamTypes.Select(t => t.Name))})\n" +
-                            $"Actual: ({string.Join(", ", chtypeMethod.GetParameters().Select(pi => pi.ParameterType.Name))})");
+                        case 1:
+                            if (!foundParamTypes[0].IsAssignableFrom(primitiveClassType))
+                            {
+                                goto default;
+                            }
+                            chtypeDelegate = adaptChtypeMethod1(chtypeMethod);
+                            break;
+
+                        case 2:
+                            if (foundParamTypes[0] != typeof(Context) ||
+                                !foundParamTypes[1].IsAssignableFrom(primitiveClassType))
+                            {
+                                goto default;
+                            }
+                            chtypeDelegate = adaptChtypeMethod2(chtypeMethod);
+                            break;
+
+                        default:
+                            throw new InvalidOperationException(
+                                $"Wrong parameters for static ChtypeMethod {chtypeMethod.Name} on type {r.Type.Name}\n" +
+                                $"Expected: ({primitiveClassType.Name}) or ({typeof(Context).Name}, {primitiveClassType.Namespace})\n" +
+                                $"Actual: ({string.Join(", ", foundParamTypes.Select(t => t.Name))})");
                     }
 
-                    chtypeDelegate = adaptChtypeMethod(chtypeMethod);
                 }
                 else
                 {
@@ -923,12 +959,16 @@ namespace Zilf.Interpreter
 
                     if (chtypeCtor != null)
                     {
+                        var foundParamTypes = chtypeCtor.GetParameters().Select(pi => pi.ParameterType).ToArray();
+
                         // adapt the constructor
-                        if (!chtypeCtor.GetParameters()
-                            .Select(pi => pi.ParameterType)
-                            .SequenceEqual(chtypeParamTypes.Skip(1)))
+                        if (foundParamTypes.Length != 1 || !foundParamTypes[0].IsAssignableFrom(primitiveClassType))
+                        {
                             throw new InvalidOperationException(
-                                $"Wrong parameters for ChtypeMethod constructor on type {r.Type.Name}");
+                                $"Wrong parameters for ChtypeMethod constructor on type {r.Type.Name}\n" +
+                                $"Expected: ({primitiveClassType.Name})\n" +
+                                $"Actual: ({string.Join(", ", foundParamTypes.Select(t => t.Name))})");
+                        }
 
                         chtypeDelegate = adaptChtypeCtor(chtypeCtor);
                     }

@@ -38,13 +38,11 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilChar FromFix([NotNull] Context ctx, [NotNull] ZilFix fix)
-        {
-            return new ZilChar(fix.Value);
-        }
+        public static ZilChar FromFix([NotNull] ZilFix fix) => new ZilChar(fix.Value);
 
         public char Char => (char)value;
 
+        [NotNull]
         public override string ToString()
         {
             return "!\\" + Char;

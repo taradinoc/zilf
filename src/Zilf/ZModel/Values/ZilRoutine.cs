@@ -46,7 +46,7 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [NotNull]
         [ChtypeMethod]
-        public static ZilRoutine FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
+        public static ZilRoutine FromList([NotNull] ZilListBase list)
         {
             if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(

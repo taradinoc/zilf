@@ -23,6 +23,7 @@ using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
+// ReSharper disable StringLiteralTypo
 
 namespace Zilf.Interpreter.Values
 {
@@ -34,21 +35,13 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilString FromString([NotNull] Context ctx, [NotNull] ZilString other)
-        {
-            return new OriginalString(other.Text);
-        }
+        public static ZilString FromString([NotNull] ZilString other) => new OriginalString(other.Text);
 
         [NotNull]
-        public static ZilString FromString([NotNull] string text)
-        {
-            return new OriginalString(text);
-        }
+        public static ZilString FromString([NotNull] string text) => new OriginalString(text);
 
-        public sealed override string ToString()
-        {
-            return Quote(Text);
-        }
+        [NotNull]
+        public sealed override string ToString() => Quote(Text);
 
         [NotNull]
         public static string Quote([NotNull] string text)
@@ -76,20 +69,12 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        protected sealed override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return friendly ? Text : ToString();
-        }
+        protected sealed override string ToStringContextImpl(Context ctx, bool friendly) =>
+            friendly ? Text : ToString();
 
-        public override bool ExactlyEquals(ZilObject obj)
-        {
-            return (obj as ZilString)?.Text.Equals(Text) ?? false;
-        }
+        public override bool ExactlyEquals(ZilObject obj) => (obj as ZilString)?.Text.Equals(Text) ?? false;
 
-        public override int GetHashCode()
-        {
-            return Text.GetHashCode();
-        }
+        public override int GetHashCode() => Text.GetHashCode();
 
         public sealed override StdAtom StdTypeAtom => StdAtom.STRING;
 
@@ -98,10 +83,7 @@ namespace Zilf.Interpreter.Values
         public abstract ZilObject this[int index] { get; set; }
 
         [NotNull]
-        public sealed override ZilObject GetPrimitive(Context ctx)
-        {
-            return this;
-        }
+        public sealed override ZilObject GetPrimitive(Context ctx) => this;
 
         public abstract ZilObject GetFirst();
         public abstract IStructure GetRest(int skip);
@@ -117,10 +99,7 @@ namespace Zilf.Interpreter.Values
             throw new NotSupportedException();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [BuiltinAlternate(typeof(ZilString))]
         sealed class OriginalString : ZilString
@@ -163,12 +142,18 @@ namespace Zilf.Interpreter.Values
                 set
                 {
                     if (!(value is ZilChar ch))
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "a STRING", "CHARACTERs");
-                    if (index >= 0 && index < Text.Length)
-                        Text = Text.Substring(0, index) + ch.Char +
-                               Text.Substring(index + 1, Text.Length - index - 1);
-                    else
+                    {
+                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2,
+                            "elements",
+                            "a STRING",
+                            "CHARACTERs");
+                    }
+
+                    if (index < 0 || index >= Text.Length)
                         throw new ArgumentOutOfRangeException(nameof(index));
+
+                    Text = Text.Substring(0, index) + ch.Char +
+                           Text.Substring(index + 1, Text.Length - index - 1);
                 }
             }
 

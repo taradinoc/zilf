@@ -40,10 +40,8 @@ namespace Zilf.Interpreter.Values
 
         [ChtypeMethod]
         [NotNull]
-        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
-        {
-            return FromString(ctx, str.ToStringContext(ctx, true));
-        }
+        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] ZilString str) =>
+            FromString(ctx, str.ToStringContext(ctx, true));
 
         [NotNull]
         public static ZilSubr FromString([NotNull] Context ctx, [NotNull] string name)
@@ -56,20 +54,15 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "SUBR name", name);
         }
 
-        public override string ToString()
-        {
-            return $"#SUBR \"{name}\"";
-        }
+        [NotNull]
+        public override string ToString() => $"#SUBR \"{name}\"";
 
         public override StdAtom StdTypeAtom => StdAtom.SUBR;
 
         public override PrimType PrimType => PrimType.STRING;
 
         [NotNull]
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return ZilString.FromString(name);
-        }
+        public override ZilObject GetPrimitive(Context ctx) => ZilString.FromString(name);
 
         public virtual ZilResult Apply(Context ctx, ZilObject[] args)
         {
@@ -82,15 +75,10 @@ namespace Zilf.Interpreter.Values
                 argList.Add((ZilObject)r);
             }
 
-            var result = handler(name, ctx, argList.ToArray());
-            return result;
+            return handler(name, ctx, argList.ToArray());
         }
 
-        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
-        {
-            var result = handler(name, ctx, args);
-            return result;
-        }
+        public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => handler(name, ctx, args);
 
         public override bool ExactlyEquals(ZilObject obj)
         {
@@ -101,9 +89,6 @@ namespace Zilf.Interpreter.Values
                 other.handler.Equals(handler);
         }
 
-        public override int GetHashCode()
-        {
-            return handler.GetHashCode();
-        }
+        public override int GetHashCode() => handler.GetHashCode();
     }
 }

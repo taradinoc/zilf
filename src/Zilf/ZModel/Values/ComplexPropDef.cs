@@ -628,10 +628,7 @@ namespace Zilf.ZModel.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ComplexPropDef FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
-        {
-            return Parse(list);
-        }
+        public static ComplexPropDef FromList([NotNull] ZilListBase list) => Parse(list);
 
         public struct ElementPreBuilders
         {

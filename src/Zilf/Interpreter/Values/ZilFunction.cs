@@ -64,8 +64,7 @@ namespace Zilf.Interpreter.Values
 
         protected override TiedLayout GetLayout()
         {
-            return TiedLayout.Create<ZilFunction>(
-                x => x.ArgSpecAsList)
+            return TiedLayout.Create<ZilFunction>(x => x.ArgSpecAsList)
                 .WithCatchAll<ZilFunction>(x => x.BodyAsList);
         }
 

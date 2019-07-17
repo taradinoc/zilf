@@ -35,10 +35,7 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilList FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
-        {
-            return new ZilList(list.First, list.Rest);
-        }
+        public static ZilList FromList([NotNull] ZilListBase list) => new ZilList(list.First, list.Rest);
 
         public override StdAtom StdTypeAtom => StdAtom.LIST;
 

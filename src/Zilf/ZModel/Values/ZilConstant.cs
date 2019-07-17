@@ -37,9 +37,7 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [NotNull]
         [ChtypeMethod]
-#pragma warning disable RECS0154 // Parameter is never used
-        public static ZilConstant FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
-#pragma warning restore RECS0154 // Parameter is never used
+        public static ZilConstant FromList([NotNull] ZilListBase list)
         {
             if (!list.HasLength(2))
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to CONSTANT", 2);

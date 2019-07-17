@@ -41,7 +41,7 @@ namespace Zilf.Interpreter.Values.Tied
             return new TiedLayout(properties.ToArray());
         }
 
-        public TiedLayout(PropertyInfo[] properties, [CanBeNull] PropertyInfo catchAll = null)
+        TiedLayout(IReadOnlyList<PropertyInfo> properties, [CanBeNull] PropertyInfo catchAll = null)
         {
             PropertyInfos = properties;
             CatchAllPropertyInfo = catchAll;

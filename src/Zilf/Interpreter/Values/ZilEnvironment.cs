@@ -30,10 +30,8 @@ namespace Zilf.Interpreter.Values
         readonly WeakReference<LocalEnvironment> env;
 
         [ChtypeMethod]
-        public static ZilEnvironment FromAtom([NotNull] Context ctx, [NotNull] ZilAtom atom)
-        {
+        public static ZilEnvironment FromAtom([NotNull] Context ctx, [NotNull] ZilAtom atom) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ENVIRONMENT");
-        }
 
         public ZilEnvironment(LocalEnvironment env, ZilAtom name)
         {

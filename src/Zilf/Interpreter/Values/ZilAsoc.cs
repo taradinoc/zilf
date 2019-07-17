@@ -44,10 +44,8 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
-        {
+        public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
-        }
 
         public ZilObject Item => results[index].Item;
         public ZilObject Indicator => results[index].Indicator;

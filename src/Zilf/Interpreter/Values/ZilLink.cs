@@ -33,14 +33,10 @@ namespace Zilf.Interpreter.Values
         public override StdAtom StdTypeAtom => StdAtom.LINK;
 
         [ChtypeMethod]
-        public new static ZilLink FromAtom(Context ctx, ZilAtom atom)
-        {
+        public new static ZilLink FromAtom(ZilAtom atom) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "LINK");
-        }
 
-        public override ZilObject GetPrimitive(Context ctx)
-        {
+        public override ZilObject GetPrimitive(Context ctx) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_Away_From_0_Not_Supported, "LINK");
-        }
     }
 }

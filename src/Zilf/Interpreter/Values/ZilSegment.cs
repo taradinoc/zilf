@@ -42,7 +42,7 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilSegment FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
+        public static ZilSegment FromList([NotNull] ZilListBase list)
         {
             if (!(list is ZilForm form))
             {
@@ -55,6 +55,7 @@ namespace Zilf.Interpreter.Values
         [NotNull]
         public ZilForm Form => form;
 
+        [NotNull]
         public override string ToString() => "!" + form;
 
         public override StdAtom StdTypeAtom => StdAtom.SEGMENT;

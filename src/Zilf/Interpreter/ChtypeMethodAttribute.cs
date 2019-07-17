@@ -26,8 +26,9 @@ namespace Zilf.Interpreter
     /// </summary>
     /// <remarks>
     /// <para>If applied to a constructor, it must take a single value of the primitive type.</para>
-    /// <para>If applied to a static method, it must take two parameters, <see cref="Context"/>
-    /// and the primitive type, and return a type assignable to <see cref="Values.ZilObject"/>.</para>
+    /// <para>If applied to a static method, it must take either one or two parameters,
+    /// an optional <see cref="Context"/> followed by the primitive type, and return a type
+    /// assignable to <see cref="Values.ZilObject"/>.</para>
     /// </remarks>
     /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]

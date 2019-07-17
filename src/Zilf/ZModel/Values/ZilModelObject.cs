@@ -39,7 +39,7 @@ namespace Zilf.ZModel.Values
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [NotNull]
         [ChtypeMethod]
-        public static ZilModelObject FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
+        public static ZilModelObject FromList([NotNull] ZilListBase list)
         {
             if (!list.IsCons(out var first, out var rest))
                 throw new InterpreterError(

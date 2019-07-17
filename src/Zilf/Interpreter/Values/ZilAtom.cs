@@ -44,11 +44,8 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilAtom FromAtom([NotNull] Context ctx, [NotNull] ZilAtom other)
-        {
-            // we can't construct a new atom since it wouldn't be equal to the old one
-            return other;
-        }
+        // we can't construct a new atom since it wouldn't be equal to the old one
+        public static ZilAtom FromAtom([NotNull] ZilAtom other) => other;
 
         [NotNull]
         public string Text { get; }
@@ -158,8 +155,10 @@ namespace Zilf.Interpreter.Values
             // or (2) no atom by that name can be found in the path.
 
             foreach (var oblist in obListPath.OfType<ObList>())
+            {
                 if (oblist.Contains(Text))
                     return oblist[Text] != this;
+            }
 
             return true;
         }
@@ -247,9 +246,6 @@ namespace Zilf.Interpreter.Values
         public override PrimType PrimType => PrimType.ATOM;
 
         [NotNull]
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return this;
-        }
+        public override ZilObject GetPrimitive(Context ctx) => this;
     }
 }

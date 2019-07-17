@@ -46,10 +46,7 @@ namespace Zilf.Interpreter.Values
 
         [NotNull]
         [ChtypeMethod]
-        public static ZilForm FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
-        {
-            return new ZilForm(list.First, list.Rest);
-        }
+        public static ZilForm FromList([NotNull] ZilListBase list) => new ZilForm(list.First, list.Rest);
 
         protected override string OpenBracket => "<";
 
@@ -275,7 +272,7 @@ namespace Zilf.Interpreter.Values
 
             return (IsLVAL(out var myAtom) && other.IsLVAL(out var theirAtom) ||
                     IsGVAL(out myAtom) && other.IsGVAL(out theirAtom)) &&
-                    myAtom == theirAtom;
+                   myAtom == theirAtom;
         }
 
         public override int GetHashCode()

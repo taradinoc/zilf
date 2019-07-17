@@ -23,7 +23,7 @@ using JetBrains.Annotations;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FSUBR, PrimType.STRING)]
-    class ZilFSubr : ZilSubr
+    sealed class ZilFSubr : ZilSubr
     {
         public ZilFSubr([NotNull] string name, [NotNull] SubrDelegate handler)
             : base(name, handler)
@@ -32,10 +32,8 @@ namespace Zilf.Interpreter.Values
 
         [ChtypeMethod]
         [NotNull]
-        public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str)
-        {
-            return FromString(ctx, str.ToStringContext(ctx, true));
-        }
+        public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] ZilString str) =>
+            FromString(ctx, str.ToStringContext(ctx, true));
 
         [NotNull]
         public new static ZilFSubr FromString([NotNull] Context ctx, [NotNull] string name)
@@ -48,16 +46,11 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "FSUBR name", name);
         }
 
-        public override string ToString()
-        {
-            return $"#FSUBR \"{name}\"";
-        }
+        [NotNull]
+        public override string ToString() => $"#FSUBR \"{name}\"";
 
         public override StdAtom StdTypeAtom => StdAtom.FSUBR;
 
-        public override ZilResult Apply(Context ctx, ZilObject[] args)
-        {
-            return ApplyNoEval(ctx, args);
-        }
+        public override ZilResult Apply(Context ctx, ZilObject[] args) => ApplyNoEval(ctx, args);
     }
 }
