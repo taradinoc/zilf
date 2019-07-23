@@ -69,6 +69,33 @@ namespace Zilf.Tests.Interpreter
                 new ZilVector(new ZilList(new ZilObject[] { new ZilFix(5) }), new ZilFix(6), new ZilFix(7)));
         }
 
+        // https://vaporware.atlassian.net/browse/ZILF-198
+        // MEMBER should do substring searches:
+        // <MEMBER "PART" "SUM OF PARTS">$
+        // "PARTS"
+        [TestMethod]
+        public void TestMEMBER_Substring()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<MEMBER \"PART\" \"SUM OF PARTS\">", ZilString.FromString("PARTS"));
+            TestHelpers.EvalAndAssert(ctx, "<MEMBER \"Ham\" \"I am Hamster\">", ZilString.FromString("Hamster"));
+            TestHelpers.EvalAndAssert(ctx, "<MEMBER \"\" \"Hamster\">", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<SET X \"a|bc\"> <==? <MEMBER \"|\" .X> <REST .X>>", ctx.TRUE);
+
+            // should work for newtypes with primtype STRING also
+            TestHelpers.EvalAndAssert(ctx,
+                "<MEMBER #SUBR \"MEMBER\" \"I REMEMBER YOU\">",
+                ZilString.FromString("MEMBER YOU"));
+
+            // we can't pass a string as the second argument...
+            // TODO: sort out the inconsistency with [F]SUBR being primtype STRING but non-structured
+
+            ctx.RegisterType(ZilAtom.Parse("FOO", ctx), PrimType.STRING);
+            TestHelpers.EvalAndAssert(ctx,
+                "<MEMBER \"EM\" #FOO \"MEMQ\">",
+                ZilString.FromString("EMQ"));
+        }
+
         [TestMethod]
         public void TestILIST()
         {

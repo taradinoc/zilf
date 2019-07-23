@@ -303,6 +303,20 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject MEMBER(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack)
         {
+            if (needle.PrimType == PrimType.STRING && ((ZilObject)haystack).PrimType == PrimType.STRING)
+            {
+                string n = ((ZilString)needle.GetPrimitive(ctx)).Text;
+                if (n != "")
+                {
+                    string h = ((ZilString)((ZilObject)haystack).GetPrimitive(ctx)).Text;
+                    int pos = h.IndexOf(n, StringComparison.Ordinal);
+                    if (pos >= 0)
+                    {
+                        return (ZilObject)haystack.GetRest(pos) ?? ctx.FALSE;
+                    }
+                }
+            }
+
             return PerformMember(ctx, needle, haystack, (a, b) => a.StructurallyEquals(b));
         }
 
