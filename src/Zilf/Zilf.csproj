@@ -19,13 +19,13 @@
     <Deterministic>false</Deterministic>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2018.3.0">
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
       <IncludeAssets>compile; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="ReadLine" Version="2.0.1" />
   </ItemGroup>
   <ItemGroup>

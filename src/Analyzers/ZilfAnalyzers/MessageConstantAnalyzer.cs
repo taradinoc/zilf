@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ZilfAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [UsedImplicitly]
     public class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
         static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
@@ -67,48 +68,44 @@ namespace ZilfAnalyzers
             {
                 foreach (var attr in field.DescendantNodes().OfType<AttributeSyntax>())
                 {
-                    if (context.SemanticModel.GetTypeInfo(attr).Type?.Name == "MessageAttribute")
+                    if (IsMessageAttribute(context.SemanticModel, attr) && attr.ArgumentList.Arguments.Count >= 1)
                     {
-                        if (attr.ArgumentList.Arguments.Count >= 1)
+                        var formatExpr = attr.ArgumentList.Arguments[0].Expression;
+                        var constValue = context.SemanticModel.GetConstantValue(formatExpr);
+
+                        if (!constValue.HasValue || !(constValue.Value is string formatStr))
+                            continue;
+
+                        // check for duplicate message
+                        Diagnostic diagnostic;
+
+                        if (seenFormats.ContainsKey(formatStr))
                         {
-                            var formatExpr = attr.ArgumentList.Arguments[0].Expression;
-                            var constValue = context.SemanticModel.GetConstantValue(formatExpr);
+                            diagnostic = Diagnostic.Create(
+                                Rule_DuplicateMessageFormat,
+                                formatExpr.GetLocation(),
+                                new[] { seenFormats[formatStr] },
+                                classDecl.Identifier);
 
-                            if (constValue.HasValue)
-                            {
-                                if (constValue.Value is string formatStr)
-                                {
-                                    // check for duplicate message
-                                    if (seenFormats.ContainsKey(formatStr))
-                                    {
-                                        var diagnostic = Diagnostic.Create(
-                                            Rule_DuplicateMessageFormat,
-                                            formatExpr.GetLocation(),
-                                            new[] { seenFormats[formatStr] },
-                                            classDecl.Identifier);
-
-                                        context.ReportDiagnostic(diagnostic);
-                                    }
-                                    else
-                                    {
-                                        seenFormats = seenFormats.Add(formatStr, formatExpr.GetLocation());
-                                    }
-
-                                    // check for prefixed message
-                                    var match = PrefixedMessageFormatRegex.Match(formatStr);
-
-                                    if (match.Success)
-                                    {
-                                        var diagnostic = Diagnostic.Create(
-                                            Rule_PrefixedMessageFormat,
-                                            formatExpr.GetLocation(),
-                                            match.Groups["prefix"].Value);
-
-                                        context.ReportDiagnostic(diagnostic);
-                                    }
-                                }
-                            }
+                            context.ReportDiagnostic(diagnostic);
                         }
+                        else
+                        {
+                            seenFormats = seenFormats.Add(formatStr, formatExpr.GetLocation());
+                        }
+
+                        // check for prefixed message
+                        var match = PrefixedMessageFormatRegex.Match(formatStr);
+
+                        if (!match.Success)
+                            continue;
+
+                        diagnostic = Diagnostic.Create(
+                            Rule_PrefixedMessageFormat,
+                            formatExpr.GetLocation(),
+                            match.Groups["prefix"].Value);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
 
@@ -118,29 +115,44 @@ namespace ZilfAnalyzers
                     {
                         var constValue = context.SemanticModel.GetConstantValue(varDecl.Initializer.Value);
 
-                        if (constValue.HasValue)
+                        if (!constValue.HasValue)
+                            continue;
+
+                        // check for duplicate code
+                        var value = (int)constValue.Value;
+
+                        if (seenCodes.Contains(value))
                         {
-                            // check for duplicate code
-                            var value = (int)constValue.Value;
+                            var diagnostic = Diagnostic.Create(
+                                Rule_DuplicateMessageCode,
+                                varDecl.GetLocation(),
+                                varDecl.Initializer.Value,
+                                classDecl.Identifier);
 
-                            if (seenCodes.Contains(value))
-                            {
-                                var diagnostic = Diagnostic.Create(
-                                    Rule_DuplicateMessageCode,
-                                    varDecl.GetLocation(),
-                                    varDecl.Initializer.Value,
-                                    classDecl.Identifier);
-
-                                context.ReportDiagnostic(diagnostic);
-                            }
-                            else
-                            {
-                                seenCodes = seenCodes.Add(value);
-                            }
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            seenCodes = seenCodes.Add(value);
                         }
                     }
                 }
             }
+        }
+
+        public static bool IsMessageAttribute(SemanticModel semanticModel, [NotNull] AttributeSyntax attr)
+        {
+            var type = semanticModel.GetTypeInfo(attr).Type;
+
+            while (type != null)
+            {
+                if (type.Name == "MessageAttribute")
+                    return true;
+
+                type = type.BaseType;
+            }
+
+            return false;
         }
 
         [NotNull]

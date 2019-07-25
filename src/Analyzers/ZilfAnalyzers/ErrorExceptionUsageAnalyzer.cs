@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -132,7 +133,7 @@ namespace ZilfAnalyzers
                 var prefix = match.Groups["prefix"].Value;
                 var rest = match.Groups["rest"].Value;
 
-                format = "{0}" + MessageConstantCodeFixProvider.IncrementFormatTokens(rest);
+                format = "{0}" + IncrementFormatTokens(rest);
                 newArgs = newArgs.Insert(
                     0,
                     SyntaxFactory.LiteralExpression(
@@ -231,6 +232,15 @@ namespace ZilfAnalyzers
             {
                 yield return expr;
             }
+        }
+
+        [NotNull]
+        public static string IncrementFormatTokens([NotNull] string format)
+        {
+            return MessageConstantAnalyzer.FormatTokenRegex.Replace(
+                format,
+                match =>
+                    $"{{{int.Parse(match.Groups["number"].Value) + 1}{match.Groups["suffix"].Value}}}");
         }
     }
 

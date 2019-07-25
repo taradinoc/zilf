@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.Rename;
 namespace ZilfAnalyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MessageConstantCodeFixProvider)), Shared]
+    [UsedImplicitly]
     public class MessageConstantCodeFixProvider : CodeFixProvider
     {
         const string Title = "Move prefix to call sites";
@@ -84,30 +85,36 @@ namespace ZilfAnalyzers
                     fieldDecl.WithAdditionalAnnotations(fieldDeclAnnotation)));
             var solution = document.Project.Solution;
 
-            FieldDeclarationSyntax FindFieldDecl(SyntaxNode node) =>
-                node.DescendantNodes()
+            SemanticModel semanticModel;
+
+            FieldDeclarationSyntax FindFieldDecl(SyntaxNode node)
+            {
+                return node.DescendantNodes()
                     .OfType<FieldDeclarationSyntax>()
                     .Single(n => n.HasAnnotation(fieldDeclAnnotation));
+            }
 
-            ExpressionSyntax FindFormatExpr(SyntaxNode node) =>
-                FindFieldDecl(node)
+            ExpressionSyntax FindFormatExpr(SyntaxNode node)
+            {
+                return FindFieldDecl(node)
                     .DescendantNodes()
                     .OfType<AttributeSyntax>()
-                    .First(a => a.Name.ToString() == "Message" || a.Name.ToString() == "MessageAttribute")
+                    .First(a => MessageConstantAnalyzer.IsMessageAttribute(semanticModel, a))
                     .DescendantNodes()
                     .OfType<AttributeArgumentSyntax>()
                     .First()
                     .Expression;
+            }
 
             // get format string and split it into prefix + rest
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
+            semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             root = await document.GetSyntaxRootAsync(cancellationToken);
             var formatStr = (string)semanticModel.GetConstantValue(FindFormatExpr(root), cancellationToken).Value;
             var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(formatStr);
             var prefix = match.Groups["prefix"].Value;
             var rest = match.Groups["rest"].Value;
 
-            var newFormatStr = "{0}" + IncrementFormatTokens(rest);
+            var newFormatStr = "{0}" + ErrorExceptionUsageAnalyzer.IncrementFormatTokens(rest);
 
             // replace format string
             var newFormatExpr = SyntaxFactory.LiteralExpression(
@@ -208,15 +215,6 @@ namespace ZilfAnalyzers
                     SyntaxFactory.Argument(prefixSyntax)));
 
             return new PendingReplacement(location.Document, argumentListExpr, newArgumentListExpr);
-        }
-
-        [NotNull]
-        public static string IncrementFormatTokens([NotNull] string format)
-        {
-            return MessageConstantAnalyzer.FormatTokenRegex.Replace(
-                format,
-                match =>
-                    $"{{{int.Parse(match.Groups["number"].Value) + 1}{match.Groups["suffix"].Value}}}");
         }
     }
 }
